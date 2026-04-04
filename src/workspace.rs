@@ -46,14 +46,36 @@ pub fn expand_tilde(path: &str) -> String {
     path.to_string()
 }
 
+/// Expand tilde and resolve relative paths to absolute using the current working directory.
+pub fn resolve_path(path: &str) -> String {
+    let expanded = expand_tilde(path);
+    if !expanded.starts_with('/') {
+        if let Ok(cwd) = std::env::current_dir() {
+            return cwd.join(&expanded).display().to_string();
+        }
+    }
+    expanded
+}
+
 pub fn parse_mount_spec(spec: &str) -> anyhow::Result<MountConfig> {
+    parse_mount_spec_inner(spec, false)
+}
+
+/// Like [`parse_mount_spec`] but also resolves relative paths to absolute.
+/// Use this for CLI arguments where the user may pass relative paths.
+pub fn parse_mount_spec_resolved(spec: &str) -> anyhow::Result<MountConfig> {
+    parse_mount_spec_inner(spec, true)
+}
+
+fn parse_mount_spec_inner(spec: &str, resolve: bool) -> anyhow::Result<MountConfig> {
     let (raw, readonly) = spec
         .strip_suffix(":ro")
         .map_or((spec, false), |value| (value, true));
     let (src, dst) = raw
         .split_once(':')
         .map_or_else(|| (raw, raw), |(s, d)| (s, d));
-    let expanded_src = expand_tilde(src);
+    let expand = if resolve { resolve_path } else { expand_tilde };
+    let expanded_src = expand(src);
     let dst = if src == dst {
         expanded_src.clone()
     } else {
