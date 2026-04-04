@@ -343,6 +343,49 @@ mod tests {
     }
 
     #[test]
+    fn resolve_path_resolves_relative_to_cwd() {
+        let cwd = std::env::current_dir().unwrap();
+        let resolved = resolve_path("my-project");
+
+        assert_eq!(resolved, cwd.join("my-project").display().to_string());
+        assert!(resolved.starts_with('/'));
+    }
+
+    #[test]
+    fn resolve_path_leaves_absolute_unchanged() {
+        assert_eq!(resolve_path("/workspace/project"), "/workspace/project");
+    }
+
+    #[test]
+    fn parse_mount_spec_resolved_resolves_relative_src_and_dst() {
+        let cwd = std::env::current_dir().unwrap();
+        let mount = parse_mount_spec_resolved("my-project").unwrap();
+        let expected = cwd.join("my-project").display().to_string();
+
+        assert_eq!(mount.src, expected);
+        assert_eq!(mount.dst, expected);
+        assert!(!mount.readonly);
+    }
+
+    #[test]
+    fn parse_mount_spec_resolved_resolves_relative_src_with_explicit_dst() {
+        let cwd = std::env::current_dir().unwrap();
+        let mount = parse_mount_spec_resolved("my-project:/workspace/project").unwrap();
+
+        assert_eq!(mount.src, cwd.join("my-project").display().to_string());
+        assert_eq!(mount.dst, "/workspace/project");
+        assert!(!mount.readonly);
+    }
+
+    #[test]
+    fn parse_mount_spec_does_not_resolve_relative_paths() {
+        let mount = parse_mount_spec("my-project").unwrap();
+
+        assert_eq!(mount.src, "my-project");
+        assert_eq!(mount.dst, "my-project");
+    }
+
+    #[test]
     fn current_dir_workspace_uses_same_host_and_container_path() {
         let dir = tempdir().unwrap();
         let workspace = current_dir_workspace(dir.path()).unwrap();
