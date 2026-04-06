@@ -68,14 +68,12 @@ fn normalize_path(path: &Path) -> PathBuf {
 /// directory, and normalize `.` / `..` components.
 pub fn resolve_path(path: &str) -> String {
     let expanded = expand_tilde(path);
-    let abs = if !expanded.starts_with('/') {
-        if let Ok(cwd) = std::env::current_dir() {
-            cwd.join(&expanded)
-        } else {
-            return expanded;
-        }
-    } else {
+    let abs = if expanded.starts_with('/') {
         PathBuf::from(&expanded)
+    } else if let Ok(cwd) = std::env::current_dir() {
+        cwd.join(&expanded)
+    } else {
+        return expanded;
     };
     normalize_path(&abs).display().to_string()
 }
