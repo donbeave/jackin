@@ -2104,6 +2104,23 @@ plugins = []
     }
 
     #[test]
+    fn is_missing_cleanup_error_tolerates_all_resource_types() {
+        let container_err =
+            anyhow::anyhow!("Error response from daemon: No such container: jackin-agent-smith");
+        let volume_err = anyhow::anyhow!(
+            "Error response from daemon: No such volume: jackin-agent-smith-dind-certs"
+        );
+        let network_err =
+            anyhow::anyhow!("Error response from daemon: No such network: jackin-agent-smith-net");
+        let real_err = anyhow::anyhow!("Error response from daemon: permission denied");
+
+        assert!(is_missing_cleanup_error(&container_err));
+        assert!(is_missing_cleanup_error(&volume_err));
+        assert!(is_missing_cleanup_error(&network_err));
+        assert!(!is_missing_cleanup_error(&real_err));
+    }
+
+    #[test]
     fn load_agent_configures_dind_with_tls() {
         let temp = tempdir().unwrap();
         let paths = JackinPaths::for_tests(temp.path());
