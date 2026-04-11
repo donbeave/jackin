@@ -196,12 +196,24 @@ impl AgentManifest {
                 );
             };
 
+            // Empty name
+            if dep_name.is_empty() {
+                anyhow::bail!("env var {name}: depends_on contains empty reference \"env.\"");
+            }
+
+            // Invalid name
+            if !is_valid_env_var_name(dep_name) {
+                anyhow::bail!(
+                    "env var {name}: depends_on contains invalid env var name \"{dep_name}\""
+                );
+            }
+
             // Self-reference
             if dep_name == name {
                 anyhow::bail!("env var {name}: depends_on cannot reference self");
             }
 
-            // Dangling reference
+            // Must exist
             if !self.env.contains_key(dep_name) {
                 anyhow::bail!(
                     "env var {name}: depends_on references unknown env var \"{dep_name}\""
@@ -1470,5 +1482,60 @@ default = "prefix-${env.}"
 
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains("empty"));
+    }
+
+    #[test]
+    fn validate_rejects_empty_depends_on_name() {
+        let temp = tempdir().unwrap();
+        std::fs::write(
+            temp.path().join("jackin.agent.toml"),
+            r#"dockerfile = "Dockerfile"
+
+[claude]
+plugins = []
+
+[env.FOO]
+interactive = true
+depends_on = ["env."]
+prompt = "Value:"
+"#,
+        )
+        .unwrap();
+
+        let manifest = AgentManifest::load(temp.path()).unwrap();
+        let result = manifest.validate();
+
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("empty"));
+    }
+
+    #[test]
+    fn validate_rejects_invalid_depends_on_name() {
+        let temp = tempdir().unwrap();
+        std::fs::write(
+            temp.path().join("jackin.agent.toml"),
+            r#"dockerfile = "Dockerfile"
+
+[claude]
+plugins = []
+
+[env.FOO]
+interactive = true
+depends_on = ["env.MY-VAR"]
+prompt = "Value:"
+"#,
+        )
+        .unwrap();
+
+        let manifest = AgentManifest::load(temp.path()).unwrap();
+        let result = manifest.validate();
+
+        assert!(result.is_err());
+        assert!(
+            result
+                .unwrap_err()
+                .to_string()
+                .contains("invalid env var name")
+        );
     }
 }
