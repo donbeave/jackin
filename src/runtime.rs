@@ -214,30 +214,51 @@ fn confirm_agent_trust(
 ) -> anyhow::Result<()> {
     if !std::io::stdin().is_terminal() {
         anyhow::bail!(
-            "untrusted agent source {selector} — cannot prompt for trust confirmation (stdin is not a terminal)"
+            "untrusted agent source \"{selector}\" from {}\n\
+             Trust it first with an interactive terminal, or pre-register it in config.toml with `trusted = true`.",
+            source.git,
         );
     }
 
+    eprintln!();
+    eprintln!("{}", "!! Untrusted agent source !!".red().bold());
+    eprintln!();
+    eprintln!("  agent:  {}", selector.to_string().bold());
+    eprintln!("  source: {}", source.git.yellow());
+    eprintln!();
     eprintln!(
-        "\n{}",
-        "⚠  Untrusted agent source detected:".yellow().bold()
+        "  {}",
+        "jackin' has never loaded this agent before. Trusting it means:".bold()
     );
-    eprintln!("     agent:  {}", selector.to_string().bold());
-    eprintln!("     source: {}", source.git.dimmed());
     eprintln!(
-        "   {}",
-        "This is a third-party agent. Its Dockerfile and build instructions will be executed on your machine."
-            .dimmed()
+        "    {} Its {} will be executed during the image build",
+        "-".dimmed(),
+        "Dockerfile".bold()
     );
+    eprintln!(
+        "    {} Arbitrary commands in that Dockerfile will run {}",
+        "-".dimmed(),
+        "on your machine".bold()
+    );
+    eprintln!(
+        "    {} The agent will have access to your {}",
+        "-".dimmed(),
+        "mounted workspace files".bold()
+    );
+    eprintln!();
+    eprintln!("  {}", "Review the repository before trusting it.".dimmed());
     eprintln!();
 
     let confirmed = dialoguer::Confirm::new()
-        .with_prompt("Do you trust this agent source?")
+        .with_prompt("Do you trust this agent source and want to proceed?")
         .default(false)
         .interact()?;
 
     if !confirmed {
-        anyhow::bail!("agent source not trusted — aborting");
+        anyhow::bail!(
+            "agent source \"{selector}\" not trusted — aborting.\n\
+             To trust it later, run `jackin load {selector}` again and confirm."
+        );
     }
 
     Ok(())

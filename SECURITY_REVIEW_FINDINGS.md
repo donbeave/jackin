@@ -73,15 +73,8 @@ Current design uses privileged `docker:dind` sidecar (already documented clearly
 
 ---
 
-### 9) Mount policy guardrails
-Mount validation is structurally good.
-
-**Recommendation**
-- Add optional deny/warn rules for sensitive host paths:
-  - `~/.ssh`
-  - `~/.aws`
-  - `~/.gnupg`
-  - etc.
+### 9) ~~Mount policy guardrails~~ ✅ Resolved
+`find_sensitive_mounts()` detects mounts matching `~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gcloud`, `~/.kube`, `~/.docker` and `confirm_sensitive_mounts()` prompts the operator before proceeding.
 
 ---
 
