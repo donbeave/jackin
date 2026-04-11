@@ -12,6 +12,7 @@ Individual items are tracked in [`todo/`](todo/). Each file is a self-contained 
 - [Rootless DinD Research](todo/rootless-dind.md) — reduce privileged container attack surface
 - [Selectable Sandbox Backends: DinD and MicroVM](todo/selectable-sandbox-backends.md) — operator-selectable runtime modes with backend-neutral lifecycle design
 - [Reproducibility and Provenance Pinning](todo/reproducibility-pinning.md) — commit SHA pinning for agent repos
+
 ## Resolved
 
 - [Interactive Env Var Interpolation](todo/env-var-interpolation.md) — `${env.VAR}` interpolation in prompt and default fields for dependent env vars

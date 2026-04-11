@@ -9,7 +9,7 @@ When an agent manifest declares interactive environment variables with `depends_
 ## Why It Matters
 
 - A prompt like "Branch name for project2:" is more contextual than "Branch name for this project:"
-- Default values that derive from prior selections (e.g., `feature/${PROJECT_TO_CLONE}`) reduce typing and enforce conventions
+- Default values that derive from prior selections (e.g., `feature/${env.PROJECT_TO_CLONE}`) reduce typing and enforce conventions
 - The dependency chain already implies a relationship — interpolation makes it explicit in the UI
 
 ## Implementation
@@ -66,10 +66,10 @@ Env vars declared in the agent manifest need to be overridable at multiple level
 3. **Agent manifest default** (`jackin.agent.toml`):
    ```toml
    [env.JACKIN_CLAUDE_ENV]
-   default_value = "docker"
+   default = "docker"
    ```
 
-The `$VAR` syntax (single dollar, no braces) means "resolve from host environment at launch time," mirroring `docker run -e` behavior.
+Host env passthrough syntax is TBD — could use `${host.VAR}` to stay consistent with the `${env.VAR}` namespace convention.
 
 ### Secret Resolution (Future)
 
@@ -83,6 +83,6 @@ This needs its own design pass — see [1Password Integration](onepassword-integ
 ## Related Files
 
 - `src/manifest.rs` — env var declaration parsing and interpolation validation
-- `src/env_resolver.rs` — launch-time env var resolution with `${VAR_NAME}` interpolation
+- `src/env_resolver.rs` — launch-time env var resolution with `${env.VAR}` interpolation
 - `src/config.rs` — operator config and workspace config
 - `src/workspace.rs` — workspace-level overrides
