@@ -22,14 +22,38 @@ pub trait EnvPrompter {
 }
 
 /// Replace `${VAR_NAME}` placeholders with values from already-resolved vars.
+///
+/// Uses a single left-to-right scan so that replacement values containing `${...}`
+/// are never re-interpreted as placeholders.
 fn interpolate(template: &str, resolved: &[(String, String)]) -> String {
-    let mut result = template.to_string();
-    for (name, value) in resolved {
-        let placeholder = format!("${{{name}}}");
-        if result.contains(&placeholder) {
-            result = result.replace(&placeholder, value);
+    let resolved_map: std::collections::HashMap<&str, &str> = resolved
+        .iter()
+        .map(|(k, v)| (k.as_str(), v.as_str()))
+        .collect();
+
+    let mut result = String::with_capacity(template.len());
+    let mut rest = template;
+
+    while let Some(start) = rest.find("${") {
+        result.push_str(&rest[..start]);
+        let after_open = &rest[start + 2..];
+        if let Some(end) = after_open.find('}') {
+            let var_name = &after_open[..end];
+            if let Some(&value) = resolved_map.get(var_name) {
+                result.push_str(value);
+            } else {
+                // Unknown placeholder — preserve as-is
+                result.push_str(&rest[start..=start + 2 + end]);
+            }
+            rest = &after_open[end + 1..];
+        } else {
+            // Unclosed `${` — preserve rest as-is
+            result.push_str(&rest[start..]);
+            rest = "";
+            break;
         }
     }
+    result.push_str(rest);
     result
 }
 
@@ -491,6 +515,33 @@ mod tests {
         // LABEL is the second prompt (PROJECT is first, TEAM is static)
         assert_eq!(titles[1], "Label for backend/api:");
         assert_eq!(defaults[1], Some("backend/api".to_string()));
+    }
+
+    #[test]
+    fn resolved_values_containing_dollar_brace_are_not_re_interpolated() {
+        let mut decls = BTreeMap::new();
+
+        // A resolves to a value that looks like an interpolation placeholder
+        decls.insert("A".to_string(), static_var("${B}"));
+        decls.insert("B".to_string(), static_var("secret"));
+
+        let c = EnvVarDecl {
+            default_value: Some("prefix-${A}-suffix".to_string()),
+            interactive: false,
+            skippable: false,
+            prompt: None,
+            options: vec![],
+            depends_on: vec!["env.A".to_string()],
+        };
+        decls.insert("C".to_string(), c);
+
+        let prompter = MockPrompter::new(vec![]);
+
+        let resolved = resolve_env(&decls, &prompter).unwrap();
+
+        // C should be "prefix-${B}-suffix" (literal), NOT "prefix-secret-suffix"
+        let c_value = resolved.vars.iter().find(|(k, _)| k == "C").unwrap();
+        assert_eq!(c_value.1, "prefix-${B}-suffix");
     }
 
     #[test]

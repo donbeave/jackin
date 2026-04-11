@@ -37,6 +37,12 @@ The manifest validator ensures that `${VAR_NAME}` references:
 - Point to declared env vars (rejects unknown references)
 - Are listed in `depends_on` (guarantees topological ordering so the value is available at prompt time)
 
+Additional safety checks:
+- **Env var names** must match `[A-Za-z_][A-Za-z0-9_]*` — prevents parser ambiguity from special characters like `$`, `{`, `}`
+- **Options arrays** reject `${...}` placeholders — options are always static to keep validation possible
+- **Bare `$VAR` syntax** (no braces) in `prompt` and `default` triggers a warning — reserves the syntax for future host env passthrough without breaking existing manifests
+- **No re-interpolation** — the interpolation engine uses a single left-to-right scan, so resolved values containing `${...}` are never re-interpreted as placeholders
+
 ### How It Works
 
 Since env vars are already resolved in topological (dependency) order, the `resolve_env` function interpolates `${VAR_NAME}` placeholders in `prompt` and `default` fields using already-resolved values before presenting the prompt to the user. Static (non-interactive) vars also have their `default` values interpolated.
