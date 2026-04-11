@@ -1322,4 +1322,66 @@ prompt = "Value (use ${other.THING} for other):"
         // ${other.THING} is not an env. ref, so no error or warning
         assert!(warnings.is_empty());
     }
+
+    #[test]
+    fn validate_rejects_interpolation_in_default_not_in_depends_on() {
+        let temp = tempdir().unwrap();
+        std::fs::write(
+            temp.path().join("jackin.agent.toml"),
+            r#"dockerfile = "Dockerfile"
+
+[claude]
+plugins = []
+
+[env.PROJECT]
+interactive = true
+options = ["a", "b"]
+prompt = "Select:"
+
+[env.BRANCH]
+interactive = true
+prompt = "Branch:"
+default = "feature/${env.PROJECT}"
+"#,
+        )
+        .unwrap();
+
+        let manifest = AgentManifest::load(temp.path()).unwrap();
+        let result = manifest.validate();
+
+        assert!(result.is_err());
+        let msg = result.unwrap_err().to_string();
+        assert!(msg.contains("PROJECT"));
+        assert!(msg.contains("depends_on"));
+    }
+
+    #[test]
+    fn validate_rejects_when_one_of_multiple_refs_is_invalid() {
+        let temp = tempdir().unwrap();
+        std::fs::write(
+            temp.path().join("jackin.agent.toml"),
+            r#"dockerfile = "Dockerfile"
+
+[claude]
+plugins = []
+
+[env.PROJECT]
+interactive = true
+options = ["a", "b"]
+prompt = "Select:"
+
+[env.LABEL]
+interactive = true
+depends_on = ["env.PROJECT"]
+prompt = "Label for ${env.PROJECT} in ${env.MISSING}:"
+"#,
+        )
+        .unwrap();
+
+        let manifest = AgentManifest::load(temp.path()).unwrap();
+        let result = manifest.validate();
+
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("MISSING"));
+    }
 }
