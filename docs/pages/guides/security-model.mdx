@@ -69,13 +69,13 @@ You can also manage trust from the command line:
 
 ```bash
 # Pre-trust an agent without loading it
-jackin trust chainargos/the-architect
+jackin config trust grant chainargos/the-architect
 
 # Revoke trust (next load will prompt again)
-jackin trust chainargos/the-architect --untrust
+jackin config trust revoke chainargos/the-architect
 
-# Check current trust status
-jackin trust chainargos/the-architect --show
+# List all trusted agents
+jackin config trust list
 ```
 
 For non-interactive environments (CI, automation), pre-trust an agent by adding `trusted = true` to its config entry:

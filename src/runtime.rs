@@ -215,7 +215,7 @@ fn confirm_agent_trust(
     if !std::io::stdin().is_terminal() {
         anyhow::bail!(
             "untrusted agent source \"{selector}\" from {}\n\
-             Trust it first with an interactive terminal, or pre-register it in config.toml with `trusted = true`.",
+             Trust it first: `jackin config trust grant {selector}`, or add `trusted = true` in config.toml.",
             source.git,
         );
     }
@@ -257,7 +257,7 @@ fn confirm_agent_trust(
     if !confirmed {
         anyhow::bail!(
             "agent source \"{selector}\" not trusted — aborting.\n\
-             To trust it later, run `jackin load {selector}` again and confirm."
+             To trust it later, run `jackin config trust grant {selector}` or try loading again."
         );
     }
 

@@ -130,30 +130,6 @@ Examples:
         #[arg(long)]
         all: bool,
     },
-    /// Manage trust for a third-party agent source
-    ///
-    /// Trust controls whether jackin' will build and run an agent without
-    /// prompting.  Untrusted agents require interactive confirmation on
-    /// every load.
-    #[command(
-        before_help = BANNER,
-        styles = HELP_STYLES,
-        after_long_help = "\
-Examples:
-  jackin trust chainargos/the-architect
-  jackin trust chainargos/the-architect --untrust
-  jackin trust chainargos/the-architect --show"
-    )]
-    Trust {
-        /// Agent class selector (e.g. `chainargos/agent-brown`)
-        selector: String,
-        /// Revoke trust — next load will prompt for confirmation again
-        #[arg(long)]
-        untrust: bool,
-        /// Show current trust status without changing it
-        #[arg(long, conflicts_with = "untrust")]
-        show: bool,
-    },
     /// Open the interactive TUI launcher to pick a workspace and agent
     #[command(before_help = BANNER, styles = HELP_STYLES)]
     Launch,
@@ -178,6 +154,12 @@ pub enum ConfigCommand {
     Mount {
         #[command(subcommand)]
         command: MountCommand,
+    },
+    /// Manage trust for third-party agent sources
+    #[command(before_help = BANNER, styles = HELP_STYLES)]
+    Trust {
+        #[command(subcommand)]
+        command: TrustCommand,
     },
 }
 
@@ -336,6 +318,43 @@ Examples:
         scope: Option<String>,
     },
     /// List all registered global mounts
+    #[command(before_help = BANNER, styles = HELP_STYLES)]
+    List,
+}
+
+#[derive(Debug, Subcommand, PartialEq, Eq)]
+pub enum TrustCommand {
+    /// Mark a third-party agent source as trusted
+    ///
+    /// Trust controls whether jackin' will build and run an agent without
+    /// prompting.  Untrusted agents require interactive confirmation on
+    /// every load.
+    #[command(
+        before_help = BANNER,
+        styles = HELP_STYLES,
+        after_long_help = "\
+Examples:
+  jackin config trust grant chainargos/the-architect"
+    )]
+    Grant {
+        /// Agent class selector (e.g. `chainargos/agent-brown`)
+        selector: String,
+    },
+    /// Revoke trust for a third-party agent source
+    ///
+    /// The next `jackin load` will prompt for confirmation again.
+    #[command(
+        before_help = BANNER,
+        styles = HELP_STYLES,
+        after_long_help = "\
+Examples:
+  jackin config trust revoke chainargos/the-architect"
+    )]
+    Revoke {
+        /// Agent class selector (e.g. `chainargos/agent-brown`)
+        selector: String,
+    },
+    /// Show current trust status for all known agent sources
     #[command(before_help = BANNER, styles = HELP_STYLES)]
     List,
 }

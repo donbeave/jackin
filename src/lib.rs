@@ -435,6 +435,45 @@ pub fn run(cli: Cli) -> Result<()> {
                     Ok(())
                 }
             },
+            cli::ConfigCommand::Trust { command: trust_cmd } => match trust_cmd {
+                cli::TrustCommand::Grant { selector } => {
+                    let class = ClassSelector::parse(&selector)?;
+                    config.resolve_agent_source(&class)?;
+                    if config.trust_agent(&class.key()) {
+                        config.save(&paths)?;
+                        println!("Trusted {}.", class.key());
+                    } else {
+                        println!("{} is already trusted.", class.key());
+                    }
+                    Ok(())
+                }
+                cli::TrustCommand::Revoke { selector } => {
+                    let class = ClassSelector::parse(&selector)?;
+                    if config.untrust_agent(&class.key()) {
+                        config.save(&paths)?;
+                        println!("Revoked trust for {}.", class.key());
+                    } else {
+                        println!("{} is not currently trusted.", class.key());
+                    }
+                    Ok(())
+                }
+                cli::TrustCommand::List => {
+                    let agents: Vec<_> = config
+                        .agents
+                        .iter()
+                        .filter(|(_, source)| source.trusted)
+                        .map(|(key, _)| key.clone())
+                        .collect();
+                    if agents.is_empty() {
+                        println!("No trusted agents.");
+                    } else {
+                        for key in agents {
+                            println!("{key}");
+                        }
+                    }
+                    Ok(())
+                }
+            },
         },
         Command::Workspace { command } => match command {
             WorkspaceCommand::Create {
@@ -676,43 +715,6 @@ pub fn run(cli: Cli) -> Result<()> {
                 Ok(())
             }
         },
-        Command::Trust {
-            selector,
-            untrust,
-            show,
-        } => {
-            let class = ClassSelector::parse(&selector)?;
-            let mut config = AppConfig::load_or_init(&paths)?;
-
-            if show {
-                let trusted = config.agents.get(&class.key()).is_some_and(|s| s.trusted);
-                println!(
-                    "{}: {}",
-                    class.key(),
-                    if trusted { "trusted" } else { "untrusted" }
-                );
-                return Ok(());
-            }
-
-            if untrust {
-                if config.untrust_agent(&class.key()) {
-                    config.save(&paths)?;
-                    println!("Revoked trust for {}.", class.key());
-                } else {
-                    println!("{} is not currently trusted.", class.key());
-                }
-            } else {
-                // Ensure the source exists (register if new, but don't clone yet)
-                config.resolve_agent_source(&class)?;
-                if config.trust_agent(&class.key()) {
-                    config.save(&paths)?;
-                    println!("Trusted {}.", class.key());
-                } else {
-                    println!("{} is already trusted.", class.key());
-                }
-            }
-            Ok(())
-        }
         Command::Purge { selector, all } => match Selector::parse(&selector)? {
             Selector::Container(container) => {
                 remove_data_dir_if_exists(&paths.data_dir.join(&container))?;
