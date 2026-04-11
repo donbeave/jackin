@@ -94,9 +94,7 @@ fn extract_interpolation_refs(s: &str) -> Vec<&str> {
         let after_open = &rest[start + 2..];
         if let Some(end) = after_open.find('}') {
             let ref_expr = &after_open[..end];
-            if let Some(var_name) = ref_expr.strip_prefix("env.")
-                && !var_name.is_empty()
-            {
+            if let Some(var_name) = ref_expr.strip_prefix("env.") {
                 refs.push(var_name);
             }
             rest = &after_open[end + 1..];
@@ -228,6 +226,16 @@ impl AgentManifest {
 
         for (field, value) in fields_to_check {
             for ref_name in extract_interpolation_refs(value) {
+                if ref_name.is_empty() {
+                    anyhow::bail!(
+                        "env var {name}: {field} contains empty interpolation reference \"${{env.}}\""
+                    );
+                }
+                if !is_valid_env_var_name(ref_name) {
+                    anyhow::bail!(
+                        "env var {name}: {field} contains invalid env var name in \"${{env.{ref_name}}}\""
+                    );
+                }
                 if !self.env.contains_key(ref_name) {
                     anyhow::bail!(
                         "env var {name}: {field} references unknown env var \"${{env.{ref_name}}}\""
@@ -345,8 +353,8 @@ mod tests {
     }
 
     #[test]
-    fn extract_interpolation_refs_skips_empty_env_ref() {
-        assert!(extract_interpolation_refs("${env.}").is_empty());
+    fn extract_interpolation_refs_returns_empty_name_for_empty_env_ref() {
+        assert_eq!(extract_interpolation_refs("${env.}"), vec![""]);
     }
 
     #[test]
@@ -1383,5 +1391,84 @@ prompt = "Label for ${env.PROJECT} in ${env.MISSING}:"
 
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains("MISSING"));
+    }
+
+    #[test]
+    fn validate_rejects_empty_env_ref_in_prompt() {
+        let temp = tempdir().unwrap();
+        std::fs::write(
+            temp.path().join("jackin.agent.toml"),
+            r#"dockerfile = "Dockerfile"
+
+[claude]
+plugins = []
+
+[env.FOO]
+interactive = true
+prompt = "Value: ${env.}"
+"#,
+        )
+        .unwrap();
+
+        let manifest = AgentManifest::load(temp.path()).unwrap();
+        let result = manifest.validate();
+
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("empty"));
+    }
+
+    #[test]
+    fn validate_rejects_invalid_var_name_in_interpolation_ref() {
+        let temp = tempdir().unwrap();
+        std::fs::write(
+            temp.path().join("jackin.agent.toml"),
+            r#"dockerfile = "Dockerfile"
+
+[claude]
+plugins = []
+
+[env.FOO]
+interactive = true
+depends_on = []
+prompt = "Value: ${env.MY-VAR}"
+"#,
+        )
+        .unwrap();
+
+        let manifest = AgentManifest::load(temp.path()).unwrap();
+        let result = manifest.validate();
+
+        assert!(result.is_err());
+        assert!(
+            result
+                .unwrap_err()
+                .to_string()
+                .contains("invalid env var name")
+        );
+    }
+
+    #[test]
+    fn validate_rejects_empty_env_ref_in_default() {
+        let temp = tempdir().unwrap();
+        std::fs::write(
+            temp.path().join("jackin.agent.toml"),
+            r#"dockerfile = "Dockerfile"
+
+[claude]
+plugins = []
+
+[env.FOO]
+interactive = true
+prompt = "Value:"
+default = "prefix-${env.}"
+"#,
+        )
+        .unwrap();
+
+        let manifest = AgentManifest::load(temp.path()).unwrap();
+        let result = manifest.validate();
+
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("empty"));
     }
 }

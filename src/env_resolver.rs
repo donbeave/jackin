@@ -527,8 +527,8 @@ mod tests {
     fn resolved_values_containing_dollar_brace_are_not_re_interpolated() {
         let mut decls = BTreeMap::new();
 
-        // A resolves to a value that looks like an interpolation placeholder
-        decls.insert("A".to_string(), static_var("${env.B}"));
+        // User types a value that looks like an interpolation placeholder
+        decls.insert("A".to_string(), interactive_text("Enter A:"));
         decls.insert("B".to_string(), static_var("secret"));
 
         let c = EnvVarDecl {
@@ -541,7 +541,8 @@ mod tests {
         };
         decls.insert("C".to_string(), c);
 
-        let prompter = MockPrompter::new(vec![]);
+        // User enters a value that looks like an interpolation ref
+        let prompter = MockPrompter::new(vec![PromptResult::Value("${env.B}".to_string())]);
 
         let resolved = resolve_env(&decls, &prompter).unwrap();
 
