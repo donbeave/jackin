@@ -74,6 +74,25 @@ pub struct ManifestWarning {
     pub message: String,
 }
 
+/// Extract variable names from `${VAR_NAME}` interpolation placeholders in a string.
+fn extract_interpolation_refs(s: &str) -> Vec<&str> {
+    let mut refs = Vec::new();
+    let mut rest = s;
+    while let Some(start) = rest.find("${") {
+        let after_open = &rest[start + 2..];
+        if let Some(end) = after_open.find('}') {
+            let var_name = &after_open[..end];
+            if !var_name.is_empty() {
+                refs.push(var_name);
+            }
+            rest = &after_open[end + 1..];
+        } else {
+            break;
+        }
+    }
+    refs
+}
+
 impl AgentManifest {
     pub fn load(repo_dir: &Path) -> anyhow::Result<Self> {
         let manifest_path = repo_dir.join("jackin.agent.toml");
@@ -151,6 +170,36 @@ impl AgentManifest {
                     );
                 }
             }
+
+            // Validate ${VAR_NAME} interpolation references in prompt and default_value
+            let dep_names: std::collections::HashSet<&str> = decl
+                .depends_on
+                .iter()
+                .filter_map(|d| d.strip_prefix("env."))
+                .collect();
+
+            let fields_to_check: Vec<(&str, &str)> = [
+                decl.prompt.as_deref().map(|v| ("prompt", v)),
+                decl.default_value.as_deref().map(|v| ("default", v)),
+            ]
+            .into_iter()
+            .flatten()
+            .collect();
+
+            for (field, value) in fields_to_check {
+                for ref_name in extract_interpolation_refs(value) {
+                    if !self.env.contains_key(ref_name) {
+                        anyhow::bail!(
+                            "env var {name}: {field} references unknown env var \"${{{ref_name}}}\""
+                        );
+                    }
+                    if !dep_names.contains(ref_name) {
+                        anyhow::bail!(
+                            "env var {name}: {field} references \"${{{ref_name}}}\" which is not listed in depends_on"
+                        );
+                    }
+                }
+            }
         }
 
         // Cycle detection via topological sort (Kahn's algorithm)
@@ -213,6 +262,37 @@ impl AgentManifest {
 mod tests {
     use super::*;
     use tempfile::tempdir;
+
+    #[test]
+    fn extract_interpolation_refs_finds_single_ref() {
+        assert_eq!(
+            extract_interpolation_refs("Branch for ${PROJECT}:"),
+            vec!["PROJECT"]
+        );
+    }
+
+    #[test]
+    fn extract_interpolation_refs_finds_multiple_refs() {
+        assert_eq!(
+            extract_interpolation_refs("${TEAM}/${PROJECT}"),
+            vec!["TEAM", "PROJECT"]
+        );
+    }
+
+    #[test]
+    fn extract_interpolation_refs_returns_empty_for_no_refs() {
+        assert!(extract_interpolation_refs("plain text").is_empty());
+    }
+
+    #[test]
+    fn extract_interpolation_refs_skips_empty_braces() {
+        assert!(extract_interpolation_refs("${}").is_empty());
+    }
+
+    #[test]
+    fn extract_interpolation_refs_handles_unclosed_brace() {
+        assert!(extract_interpolation_refs("${OPEN").is_empty());
+    }
 
     #[test]
     fn loads_manifest_with_plugins() {
@@ -935,5 +1015,117 @@ skippable = true
 
         assert!(!warnings.is_empty());
         assert!(warnings[0].message.contains("skippable"));
+    }
+
+    #[test]
+    fn validate_accepts_interpolation_in_prompt_and_default() {
+        let temp = tempdir().unwrap();
+        std::fs::write(
+            temp.path().join("jackin.agent.toml"),
+            r#"dockerfile = "Dockerfile"
+
+[claude]
+plugins = []
+
+[env.PROJECT]
+interactive = true
+options = ["project1", "project2"]
+prompt = "Select a project:"
+
+[env.BRANCH]
+interactive = true
+depends_on = ["env.PROJECT"]
+prompt = "Branch name for ${PROJECT}:"
+default = "feature/${PROJECT}"
+"#,
+        )
+        .unwrap();
+
+        let manifest = AgentManifest::load(temp.path()).unwrap();
+        let warnings = manifest.validate().unwrap();
+
+        assert!(warnings.is_empty());
+    }
+
+    #[test]
+    fn validate_rejects_interpolation_referencing_unknown_var() {
+        let temp = tempdir().unwrap();
+        std::fs::write(
+            temp.path().join("jackin.agent.toml"),
+            r#"dockerfile = "Dockerfile"
+
+[claude]
+plugins = []
+
+[env.BRANCH]
+interactive = true
+depends_on = []
+prompt = "Branch for ${NONEXISTENT}:"
+"#,
+        )
+        .unwrap();
+
+        let manifest = AgentManifest::load(temp.path()).unwrap();
+        let result = manifest.validate();
+
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("NONEXISTENT"));
+    }
+
+    #[test]
+    fn validate_rejects_interpolation_not_in_depends_on() {
+        let temp = tempdir().unwrap();
+        std::fs::write(
+            temp.path().join("jackin.agent.toml"),
+            r#"dockerfile = "Dockerfile"
+
+[claude]
+plugins = []
+
+[env.PROJECT]
+interactive = true
+options = ["a", "b"]
+prompt = "Select:"
+
+[env.BRANCH]
+interactive = true
+prompt = "Branch for ${PROJECT}:"
+"#,
+        )
+        .unwrap();
+
+        let manifest = AgentManifest::load(temp.path()).unwrap();
+        let result = manifest.validate();
+
+        assert!(result.is_err());
+        let msg = result.unwrap_err().to_string();
+        assert!(msg.contains("PROJECT"));
+        assert!(msg.contains("depends_on"));
+    }
+
+    #[test]
+    fn validate_rejects_interpolation_in_default_referencing_unknown_var() {
+        let temp = tempdir().unwrap();
+        std::fs::write(
+            temp.path().join("jackin.agent.toml"),
+            r#"dockerfile = "Dockerfile"
+
+[claude]
+plugins = []
+
+[env.BRANCH]
+interactive = true
+depends_on = []
+default = "feature/${GHOST}"
+prompt = "Branch:"
+"#,
+        )
+        .unwrap();
+
+        let manifest = AgentManifest::load(temp.path()).unwrap();
+        let result = manifest.validate();
+
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("GHOST"));
     }
 }

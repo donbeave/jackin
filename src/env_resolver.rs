@@ -21,6 +21,18 @@ pub trait EnvPrompter {
     ) -> PromptResult;
 }
 
+/// Replace `${VAR_NAME}` placeholders with values from already-resolved vars.
+fn interpolate(template: &str, resolved: &[(String, String)]) -> String {
+    let mut result = template.to_string();
+    for (name, value) in resolved {
+        let placeholder = format!("${{{name}}}");
+        if result.contains(&placeholder) {
+            result = result.replace(&placeholder, value);
+        }
+    }
+    result
+}
+
 pub fn resolve_env(
     declarations: &BTreeMap<String, EnvVarDecl>,
     prompter: &impl EnvPrompter,
@@ -43,24 +55,28 @@ pub fn resolve_env(
             continue;
         }
 
+        // Interpolate prompt and default_value using already-resolved vars
+        let interpolated_default = decl.default_value.as_deref().map(|d| interpolate(d, &vars));
+
         if !decl.interactive {
             // Static var — use default
-            if let Some(ref default) = decl.default_value {
-                vars.push((name.clone(), default.clone()));
+            if let Some(default) = interpolated_default {
+                vars.push((name.clone(), default));
             }
             continue;
         }
 
-        // Interactive var — prompt
-        let title = decl.prompt.as_deref().unwrap_or(name.as_str());
+        // Interactive var — prompt with interpolated fields
+        let raw_title = decl.prompt.as_deref().unwrap_or(name.as_str());
+        let title = interpolate(raw_title, &vars);
 
         let result = if decl.options.is_empty() {
-            prompter.prompt_text(title, decl.default_value.as_deref(), decl.skippable)
+            prompter.prompt_text(&title, interpolated_default.as_deref(), decl.skippable)
         } else {
             prompter.prompt_select(
-                title,
+                &title,
                 &decl.options,
-                decl.default_value.as_deref(),
+                interpolated_default.as_deref(),
                 decl.skippable,
             )
         };
@@ -137,12 +153,16 @@ mod tests {
 
     struct MockPrompter {
         responses: std::cell::RefCell<Vec<PromptResult>>,
+        captured_titles: std::cell::RefCell<Vec<String>>,
+        captured_defaults: std::cell::RefCell<Vec<Option<String>>>,
     }
 
     impl MockPrompter {
         fn new(responses: Vec<PromptResult>) -> Self {
             Self {
                 responses: std::cell::RefCell::new(responses),
+                captured_titles: std::cell::RefCell::new(vec![]),
+                captured_defaults: std::cell::RefCell::new(vec![]),
             }
         }
     }
@@ -150,20 +170,28 @@ mod tests {
     impl EnvPrompter for MockPrompter {
         fn prompt_text(
             &self,
-            _title: &str,
-            _default: Option<&str>,
+            title: &str,
+            default: Option<&str>,
             _skippable: bool,
         ) -> PromptResult {
+            self.captured_titles.borrow_mut().push(title.to_string());
+            self.captured_defaults
+                .borrow_mut()
+                .push(default.map(String::from));
             self.responses.borrow_mut().remove(0)
         }
 
         fn prompt_select(
             &self,
-            _title: &str,
+            title: &str,
             _options: &[String],
-            _default: Option<&str>,
+            default: Option<&str>,
             _skippable: bool,
         ) -> PromptResult {
+            self.captured_titles.borrow_mut().push(title.to_string());
+            self.captured_defaults
+                .borrow_mut()
+                .push(default.map(String::from));
             self.responses.borrow_mut().remove(0)
         }
     }
@@ -347,5 +375,134 @@ mod tests {
         let resolved = resolve_env(&decls, &prompter).unwrap();
 
         assert!(resolved.vars.is_empty());
+    }
+
+    #[test]
+    fn interpolates_prompt_with_resolved_value() {
+        let mut decls = BTreeMap::new();
+        decls.insert(
+            "PROJECT".to_string(),
+            interactive_select("Select a project:", vec!["alpha", "beta"]),
+        );
+
+        let mut branch = interactive_text("Branch for ${PROJECT}:");
+        branch.depends_on = vec!["env.PROJECT".to_string()];
+        decls.insert("BRANCH".to_string(), branch);
+
+        let prompter = MockPrompter::new(vec![
+            PromptResult::Value("alpha".to_string()),
+            PromptResult::Value("main".to_string()),
+        ]);
+
+        resolve_env(&decls, &prompter).unwrap();
+
+        let titles = prompter.captured_titles.borrow();
+        assert_eq!(titles[1], "Branch for alpha:");
+    }
+
+    #[test]
+    fn interpolates_default_value_with_resolved_value() {
+        let mut decls = BTreeMap::new();
+        decls.insert(
+            "PROJECT".to_string(),
+            interactive_select("Select:", vec!["proj1", "proj2"]),
+        );
+
+        let branch = EnvVarDecl {
+            default_value: Some("feature/${PROJECT}".to_string()),
+            interactive: true,
+            skippable: false,
+            prompt: Some("Branch:".to_string()),
+            options: vec![],
+            depends_on: vec!["env.PROJECT".to_string()],
+        };
+        decls.insert("BRANCH".to_string(), branch);
+
+        let prompter = MockPrompter::new(vec![
+            PromptResult::Value("proj1".to_string()),
+            PromptResult::Value("feature/proj1".to_string()),
+        ]);
+
+        resolve_env(&decls, &prompter).unwrap();
+
+        let defaults = prompter.captured_defaults.borrow();
+        assert_eq!(defaults[1], Some("feature/proj1".to_string()));
+    }
+
+    #[test]
+    fn interpolates_static_default_value() {
+        let mut decls = BTreeMap::new();
+        decls.insert(
+            "PROJECT".to_string(),
+            interactive_select("Select:", vec!["proj1", "proj2"]),
+        );
+
+        let derived = EnvVarDecl {
+            default_value: Some("${PROJECT}-derived".to_string()),
+            interactive: false,
+            skippable: false,
+            prompt: None,
+            options: vec![],
+            depends_on: vec!["env.PROJECT".to_string()],
+        };
+        decls.insert("DERIVED".to_string(), derived);
+
+        let prompter = MockPrompter::new(vec![PromptResult::Value("proj1".to_string())]);
+
+        let resolved = resolve_env(&decls, &prompter).unwrap();
+
+        assert_eq!(
+            resolved.vars,
+            vec![
+                ("PROJECT".to_string(), "proj1".to_string()),
+                ("DERIVED".to_string(), "proj1-derived".to_string()),
+            ]
+        );
+    }
+
+    #[test]
+    fn interpolates_multiple_refs_in_one_field() {
+        let mut decls = BTreeMap::new();
+        decls.insert("TEAM".to_string(), static_var("backend"));
+        decls.insert(
+            "PROJECT".to_string(),
+            interactive_select("Select:", vec!["api", "web"]),
+        );
+
+        let label = EnvVarDecl {
+            default_value: Some("${TEAM}/${PROJECT}".to_string()),
+            interactive: true,
+            skippable: false,
+            prompt: Some("Label for ${TEAM}/${PROJECT}:".to_string()),
+            options: vec![],
+            depends_on: vec!["env.TEAM".to_string(), "env.PROJECT".to_string()],
+        };
+        decls.insert("LABEL".to_string(), label);
+
+        let prompter = MockPrompter::new(vec![
+            PromptResult::Value("api".to_string()),
+            PromptResult::Value("backend/api".to_string()),
+        ]);
+
+        resolve_env(&decls, &prompter).unwrap();
+
+        let titles = prompter.captured_titles.borrow();
+        let defaults = prompter.captured_defaults.borrow();
+        // LABEL is the second prompt (PROJECT is first, TEAM is static)
+        assert_eq!(titles[1], "Label for backend/api:");
+        assert_eq!(defaults[1], Some("backend/api".to_string()));
+    }
+
+    #[test]
+    fn no_interpolation_without_placeholders() {
+        let mut decls = BTreeMap::new();
+        decls.insert("BRANCH".to_string(), interactive_text("Branch name:"));
+
+        let prompter = MockPrompter::new(vec![PromptResult::Value("main".to_string())]);
+
+        resolve_env(&decls, &prompter).unwrap();
+
+        let titles = prompter.captured_titles.borrow();
+        assert_eq!(titles[0], "Branch name:");
     }
 }
