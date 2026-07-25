@@ -24,6 +24,13 @@ inputs:
 runs:
   using: composite
   steps:
+    - name: Download same-run CI tool bundle
+      if: inputs.include-tools == 'true'
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      with:
+        name: ci-xtask-${{ inputs.lane }}
+        path: ${{ github.workspace }}/.ci-tools/${{ inputs.lane }}
+
     - name: Download prepared xtask
       shell: bash
       env:
@@ -31,7 +38,6 @@ runs:
         ARTIFACT_PATH: ${{ github.workspace }}/.ci-tools/${{ inputs.lane }}
         GH_TOKEN: ${{ github.token }}
         REPOSITORY: ${{ github.repository }}
-        RUN_ID: ${{ github.run_id }}
         TOOLS_ARTIFACT_NAME: ci-tools-${{ runner.os }}-${{ runner.arch }}-${{ inputs.tools-contract || hashFiles('mise.toml', 'mise.lock') }}
         XTASK_ARTIFACT_NAME: ci-xtask-${{ runner.os }}-${{ runner.arch }}-${{ inputs.xtask-contract || hashFiles('Cargo.lock', 'Cargo.toml', 'rust-toolchain.toml', '.cargo/**', 'crates/*/Cargo.toml', 'crates/jackin-xtask/src/**', 'crates/jackin-process/src/**') }}
         XTASK_EXACT_ARTIFACT_NAME: ci-xtask-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Cargo.lock', 'Cargo.toml', 'rust-toolchain.toml', '.cargo/**', 'crates/*/Cargo.toml', 'crates/jackin-xtask/src/**', 'crates/jackin-process/src/**') }}
@@ -53,23 +59,11 @@ runs:
           done
         }
         mkdir -p "$ARTIFACT_PATH"
-        artifact_id=
-        if [ "$INCLUDE_TOOLS" = "true" ]; then
-          artifact_id=$(
-            gh_api_retry "repos/${REPOSITORY}/actions/runs/${RUN_ID}/artifacts" \
-              --paginate \
-              --jq ".artifacts[] | select(.name == \"${ARTIFACT_NAME}\") | .id" \
-              | head -n 1
-          )
-        fi
-        if [ -n "$artifact_id" ]; then
-          archive="$ARTIFACT_PATH/.artifact.zip"
-          gh_api_retry "repos/${REPOSITORY}/actions/artifacts/${artifact_id}/zip" > "$archive"
-          python3 -m zipfile -e "$archive" "$ARTIFACT_PATH"
-          rm "$archive"
+        if [ -x "$ARTIFACT_PATH/jackin-xtask" ] || [ -f "$ARTIFACT_PATH/jackin-xtask" ]; then
           exit 0
         fi
 
+        artifact_id=
         names=()
         if [ "$INCLUDE_TOOLS" = "true" ]; then
           names+=("$TOOLS_ARTIFACT_NAME")
