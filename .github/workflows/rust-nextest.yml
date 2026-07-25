@@ -118,6 +118,7 @@ jobs:
           RUNNER_OS: ${{ runner.os }}
           SOURCE_SHA: ${{ github.sha }}
           REFRESH_PACKAGE: ${{ inputs.refresh-package }}
+          SKIP_ARTIFACT_LOOKUP: ${{ matrix.config.lane == 'Velnor' }}
         run: |
           set -euo pipefail
           common_contract_key=$COMMON_CONTRACT_KEY

@@ -37,6 +37,17 @@ lookup_artifact() {
 
 if [ -n "$cache_key" ]; then
   name="ci-crate-result-v1-${runner_os}-${runner_arch}-${package}-${cache_key}-${contract_key}-${suffix}"
+fi
+
+if [ "${SKIP_ARTIFACT_LOOKUP:-false}" = "true" ]; then
+  jq -cn \
+    --arg name "$name" \
+    --arg sha_name "$sha_name" \
+    '{name: $name, sha_name: $sha_name, artifact_id: "", hit: false}'
+  exit 0
+fi
+
+if [ -n "$cache_key" ]; then
   if ! artifact_id=$(lookup_artifact "$name"); then
     echo "::warning::successful-result lookup failed; scheduling ${package}" >&2
     artifact_id=
