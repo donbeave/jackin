@@ -368,7 +368,7 @@ written).
   (`native/Tests/JackinUsageBridgeTests/ArchitectureTests.swift:6-9`).
   License header on every file:
   `// SPDX-FileCopyrightText: 2026 Alexey Zhokhov` +
-  `// SPDX-License-Identifier: Apache-2.0`.
+  the `Apache-2.0` SPDX license identifier.
 
 ### (b) Expected postconditions of 005/006 (quoted from the hub manifest, `plans/jackin-desktop/README.md`)
 

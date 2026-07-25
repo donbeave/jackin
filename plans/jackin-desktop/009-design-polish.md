@@ -399,7 +399,7 @@ material tokens (`.ultraThinMaterial`, `.thinMaterial`) appear ONLY in
   `GlassFallbacks.swift` header explaining the HIG split).
 - SPDX headers on Swift files:
   `// SPDX-FileCopyrightText: 2026 Alexey Zhokhov` +
-  `// SPDX-License-Identifier: Apache-2.0` (see any file under
+  the `Apache-2.0` SPDX license identifier (see any file under
   `native/Sources/JackinDesktop/`).
 - Brand in prose/comments/PR text: `jackin❯` (the no-chevron spelling is
   reserved for identifiers/paths).
