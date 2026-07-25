@@ -82,6 +82,7 @@ jobs:
   packages:
     strategy:
       fail-fast: false
+      max-parallel: 4
       matrix:
         config: ${{ fromJSON(inputs.runner-configs-json) }}
         package: ${{ fromJSON(inputs.packages-json) }}
@@ -105,26 +106,28 @@ jobs:
         shell: bash
         env:
           ALL_FEATURES: ${{ inputs.all-features }}
-          CACHE_KEY: ${{ fromJSON(inputs.package-cache-keys-json)[matrix.package] }}
           COMMON_CONTRACT_KEY: ${{ inputs.nextest-contract }}
           CONSTRUCT_IMAGE_CHANGED: ${{ inputs.construct-image-changed }}
           DOCKER_CONTRACT_KEY: ${{ inputs.docker-contract || hashFiles('docker/**', 'docker-bake.hcl') }}
           DOCKER_E2E: ${{ inputs.docker-e2e }}
           GH_TOKEN: ${{ github.token }}
           PACKAGE: ${{ matrix.package }}
+          PACKAGE_CACHE_KEYS_JSON: ${{ inputs.package-cache-keys-json }}
           REPOSITORY: ${{ github.repository }}
           RUNNER_ARCH: ${{ runner.arch }}
           RUNNER_OS: ${{ runner.os }}
           SOURCE_SHA: ${{ github.sha }}
           REFRESH_PACKAGE: ${{ inputs.refresh-package }}
+          SKIP_ARTIFACT_LOOKUP: ${{ matrix.config.lane == 'Velnor' }}
         run: |
           set -euo pipefail
           common_contract_key=$COMMON_CONTRACT_KEY
           if [ -z "$common_contract_key" ]; then
             common_contract_key=$(scripts/ci/crate-test-contract.sh)
           fi
+          cache_key=$(jq -r --arg package "$PACKAGE" '.[$package] // ""' <<< "$PACKAGE_CACHE_KEYS_JSON")
           result=$(scripts/ci/find-crate-result.sh \
-            "$PACKAGE" "$CACHE_KEY" "$ALL_FEATURES" \
+            "$PACKAGE" "$cache_key" "$ALL_FEATURES" \
             "$DOCKER_E2E" "$CONSTRUCT_IMAGE_CHANGED" \
             "$common_contract_key" "$DOCKER_CONTRACT_KEY" \
             "$RUNNER_OS" "$RUNNER_ARCH" "$SOURCE_SHA")
@@ -138,7 +141,7 @@ jobs:
             echo "hit=$hit"
           } >> "$GITHUB_OUTPUT"
       - uses: ./.github/actions/download-ci-xtask
-        if: steps.crate-result.outputs.hit != 'true'
+        if: steps.crate-result.outputs.hit != 'true' && matrix.config.lane != 'Velnor'
         with:
           lane: ${{ matrix.config.lane }}
           tools-contract: ${{ inputs.ci-tools-contract }}
@@ -163,16 +166,26 @@ jobs:
         uses: ./.github/actions/cache-cargo-registry
         with:
           contract-key: ${{ inputs.registry-contract }}
+      - name: Build Velnor CI xtask from offline inputs
+        if: steps.crate-result.outputs.hit != 'true' && matrix.config.lane == 'Velnor'
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo build --locked --offline --release -p jackin-xtask
+          ci_tools="$RUNNER_TEMP/ci-tools"
+          mkdir -p "$ci_tools"
+          cp target/release/jackin-xtask "$ci_tools/jackin-xtask"
+          echo "CI_XTASK=$ci_tools/jackin-xtask" >> "$GITHUB_ENV"
       - name: Resolve exact crate target key
         id: crate-target-key
         if: steps.crate-result.outputs.hit != 'true'
         shell: bash
         env:
           PACKAGE: ${{ matrix.package }}
-          SUPPLIED_KEY: ${{ fromJSON(inputs.package-cache-keys-json)[matrix.package] }}
+          PACKAGE_CACHE_KEYS_JSON: ${{ inputs.package-cache-keys-json }}
         run: |
           set -euo pipefail
-          key=$SUPPLIED_KEY
+          key=$(jq -r --arg package "$PACKAGE" '.[$package] // ""' <<< "$PACKAGE_CACHE_KEYS_JSON")
           if [ -z "$key" ]; then
             key=$("$CI_XTASK" affected-crates --metadata "$CI_METADATA" --all --cache-keys \
               | jq -er --arg package "$PACKAGE" '.[$package]')
@@ -180,7 +193,7 @@ jobs:
           echo "key=$key" >> "$GITHUB_OUTPUT"
       - name: Find input-identical crate target
         id: crate-target
-        if: steps.crate-result.outputs.hit != 'true'
+        if: steps.crate-result.outputs.hit != 'true' && matrix.config.lane != 'Velnor'
         shell: bash
         env:
           ALL_FEATURES: ${{ inputs.all-features }}
@@ -260,10 +273,13 @@ jobs:
           fi
           cargo nextest run "${args[@]}"
       - name: Run crate doctests
-        if: >-
-          steps.crate-result.outputs.hit != 'true' &&
-          !contains(fromJSON('["jackin-dev","jackin-pr-trailers","jackin-xtask"]'), matrix.package)
-        run: cargo test --doc -p "${{ matrix.package }}" --locked --offline
+        if: steps.crate-result.outputs.hit != 'true'
+        shell: bash
+        run: |
+          case "${{ matrix.package }}" in
+            jackin-dev|jackin-pr-trailers|jackin-xtask) exit 0 ;;
+          esac
+          cargo test --doc -p "${{ matrix.package }}" --locked --offline
       - name: Check crate default features
         if: steps.crate-result.outputs.hit != 'true'
         run: cargo check -p "${{ matrix.package }}" --all-targets --locked --offline
@@ -271,19 +287,25 @@ jobs:
         if: steps.crate-result.outputs.hit != 'true'
         run: cargo clippy -p "${{ matrix.package }}" --all-targets --all-features --locked --offline -- -D warnings
       - name: Check crate feature powerset
-        if: >-
-          steps.crate-result.outputs.hit != 'true' &&
-          contains(fromJSON('["jackin","jackin-agent-status","jackin-capsule","jackin-diagnostics","jackin-runtime","jackin-term"]'), matrix.package)
-        run: cargo hack check -p "${{ matrix.package }}" --feature-powerset --all-targets --locked
+        if: steps.crate-result.outputs.hit != 'true'
+        shell: bash
+        run: |
+          case "${{ matrix.package }}" in
+            jackin|jackin-agent-status|jackin-capsule|jackin-diagnostics|jackin-runtime|jackin-term) ;;
+            *) exit 0 ;;
+          esac
+          cargo hack check -p "${{ matrix.package }}" --feature-powerset --all-targets --locked
       - name: Build crate benchmarks
-        if: >-
-          steps.crate-result.outputs.hit != 'true' &&
-          contains(fromJSON('["jackin","jackin-capsule","jackin-config","jackin-diagnostics","jackin-manifest","jackin-runtime","jackin-term","jackin-usage"]'), matrix.package)
-        run: cargo build --benches -p "${{ matrix.package }}" --locked --offline
+        if: steps.crate-result.outputs.hit != 'true'
+        shell: bash
+        run: |
+          case "${{ matrix.package }}" in
+            jackin|jackin-capsule|jackin-config|jackin-diagnostics|jackin-manifest|jackin-runtime|jackin-term|jackin-usage) ;;
+            *) exit 0 ;;
+          esac
+          cargo build --benches -p "${{ matrix.package }}" --locked --offline
       - name: Run bounded crate fuzz targets
-        if: >-
-          steps.crate-result.outputs.hit != 'true' &&
-          contains(fromJSON('["jackin-config","jackin-env","jackin-manifest","jackin-protocol","jackin-term"]'), matrix.package)
+        if: steps.crate-result.outputs.hit != 'true'
         shell: bash
         env:
           CARGO_TARGET_DIR: ${{ github.workspace }}/target
@@ -294,11 +316,12 @@ jobs:
             jackin-manifest) dir=crates/jackin-manifest; targets="manifest_migrate manifest_validate" ;;
             jackin-protocol) dir=crates/jackin-protocol; targets="decode_frames" ;;
             jackin-term) dir=crates/jackin-term; targets="damage_grid_process" ;;
+            *) exit 0 ;;
           esac
           cd "$dir"
           cargo fetch --locked --offline
           for fuzz_target in $targets; do
-            "$CI_CARGO_FUZZ" fuzz run --sanitizer none --target x86_64-unknown-linux-gnu \
+            cargo fuzz run --sanitizer none --target x86_64-unknown-linux-gnu \
               "$fuzz_target" -- -max_total_time=5
           done
       - name: Enforce telemetry volume ratchet
