@@ -321,7 +321,7 @@ jobs:
           cd "$dir"
           cargo fetch --locked --offline
           for fuzz_target in $targets; do
-            "$CI_CARGO_FUZZ" fuzz run --sanitizer none --target x86_64-unknown-linux-gnu \
+            cargo fuzz run --sanitizer none --target x86_64-unknown-linux-gnu \
               "$fuzz_target" -- -max_total_time=5
           done
       - name: Enforce telemetry volume ratchet
