@@ -517,7 +517,7 @@ pub struct FocusedAccountHeader {
 pub enum StatusSlot {
     /// `Session` variant.
     Session,
-    /// Daily allowance glance (Amp Free's `N% remaining today`).
+    /// Daily allowance glance (the Amp Free plan's `N% remaining today`).
     Daily,
     /// `Weekly` variant.
     Weekly,
