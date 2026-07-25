@@ -193,7 +193,7 @@ jobs:
           echo "key=$key" >> "$GITHUB_OUTPUT"
       - name: Find input-identical crate target
         id: crate-target
-        if: steps.crate-result.outputs.hit != 'true'
+        if: steps.crate-result.outputs.hit != 'true' && matrix.config.lane != 'Velnor'
         shell: bash
         env:
           ALL_FEATURES: ${{ inputs.all-features }}
