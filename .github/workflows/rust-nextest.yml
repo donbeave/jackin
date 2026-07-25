@@ -106,13 +106,13 @@ jobs:
         shell: bash
         env:
           ALL_FEATURES: ${{ inputs.all-features }}
-          CACHE_KEY: ${{ fromJSON(inputs.package-cache-keys-json)[matrix.package] }}
           COMMON_CONTRACT_KEY: ${{ inputs.nextest-contract }}
           CONSTRUCT_IMAGE_CHANGED: ${{ inputs.construct-image-changed }}
           DOCKER_CONTRACT_KEY: ${{ inputs.docker-contract || hashFiles('docker/**', 'docker-bake.hcl') }}
           DOCKER_E2E: ${{ inputs.docker-e2e }}
           GH_TOKEN: ${{ github.token }}
           PACKAGE: ${{ matrix.package }}
+          PACKAGE_CACHE_KEYS_JSON: ${{ inputs.package-cache-keys-json }}
           REPOSITORY: ${{ github.repository }}
           RUNNER_ARCH: ${{ runner.arch }}
           RUNNER_OS: ${{ runner.os }}
@@ -125,8 +125,9 @@ jobs:
           if [ -z "$common_contract_key" ]; then
             common_contract_key=$(scripts/ci/crate-test-contract.sh)
           fi
+          cache_key=$(jq -r --arg package "$PACKAGE" '.[$package] // ""' <<< "$PACKAGE_CACHE_KEYS_JSON")
           result=$(scripts/ci/find-crate-result.sh \
-            "$PACKAGE" "$CACHE_KEY" "$ALL_FEATURES" \
+            "$PACKAGE" "$cache_key" "$ALL_FEATURES" \
             "$DOCKER_E2E" "$CONSTRUCT_IMAGE_CHANGED" \
             "$common_contract_key" "$DOCKER_CONTRACT_KEY" \
             "$RUNNER_OS" "$RUNNER_ARCH" "$SOURCE_SHA")
@@ -181,10 +182,10 @@ jobs:
         shell: bash
         env:
           PACKAGE: ${{ matrix.package }}
-          SUPPLIED_KEY: ${{ fromJSON(inputs.package-cache-keys-json)[matrix.package] }}
+          PACKAGE_CACHE_KEYS_JSON: ${{ inputs.package-cache-keys-json }}
         run: |
           set -euo pipefail
-          key=$SUPPLIED_KEY
+          key=$(jq -r --arg package "$PACKAGE" '.[$package] // ""' <<< "$PACKAGE_CACHE_KEYS_JSON")
           if [ -z "$key" ]; then
             key=$("$CI_XTASK" affected-crates --metadata "$CI_METADATA" --all --cache-keys \
               | jq -er --arg package "$PACKAGE" '.[$package]')
