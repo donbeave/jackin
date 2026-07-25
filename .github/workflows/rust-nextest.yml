@@ -139,7 +139,7 @@ jobs:
             echo "hit=$hit"
           } >> "$GITHUB_OUTPUT"
       - uses: ./.github/actions/download-ci-xtask
-        if: steps.crate-result.outputs.hit != 'true'
+        if: steps.crate-result.outputs.hit != 'true' && matrix.config.lane != 'Velnor'
         with:
           lane: ${{ matrix.config.lane }}
           tools-contract: ${{ inputs.ci-tools-contract }}
@@ -164,6 +164,16 @@ jobs:
         uses: ./.github/actions/cache-cargo-registry
         with:
           contract-key: ${{ inputs.registry-contract }}
+      - name: Build Velnor CI xtask from offline inputs
+        if: steps.crate-result.outputs.hit != 'true' && matrix.config.lane == 'Velnor'
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo build --locked --offline --release -p jackin-xtask
+          ci_tools="$RUNNER_TEMP/ci-tools"
+          mkdir -p "$ci_tools"
+          cp target/release/jackin-xtask "$ci_tools/jackin-xtask"
+          echo "CI_XTASK=$ci_tools/jackin-xtask" >> "$GITHUB_ENV"
       - name: Resolve exact crate target key
         id: crate-target-key
         if: steps.crate-result.outputs.hit != 'true'
