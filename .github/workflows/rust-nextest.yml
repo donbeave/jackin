@@ -273,10 +273,13 @@ jobs:
           fi
           cargo nextest run "${args[@]}"
       - name: Run crate doctests
-        if: >-
-          steps.crate-result.outputs.hit != 'true' &&
-          !contains(fromJSON('["jackin-dev","jackin-pr-trailers","jackin-xtask"]'), matrix.package)
-        run: cargo test --doc -p "${{ matrix.package }}" --locked --offline
+        if: steps.crate-result.outputs.hit != 'true'
+        shell: bash
+        run: |
+          case "${{ matrix.package }}" in
+            jackin-dev|jackin-pr-trailers|jackin-xtask) exit 0 ;;
+          esac
+          cargo test --doc -p "${{ matrix.package }}" --locked --offline
       - name: Check crate default features
         if: steps.crate-result.outputs.hit != 'true'
         run: cargo check -p "${{ matrix.package }}" --all-targets --locked --offline
@@ -284,19 +287,25 @@ jobs:
         if: steps.crate-result.outputs.hit != 'true'
         run: cargo clippy -p "${{ matrix.package }}" --all-targets --all-features --locked --offline -- -D warnings
       - name: Check crate feature powerset
-        if: >-
-          steps.crate-result.outputs.hit != 'true' &&
-          contains(fromJSON('["jackin","jackin-agent-status","jackin-capsule","jackin-diagnostics","jackin-runtime","jackin-term"]'), matrix.package)
-        run: cargo hack check -p "${{ matrix.package }}" --feature-powerset --all-targets --locked
+        if: steps.crate-result.outputs.hit != 'true'
+        shell: bash
+        run: |
+          case "${{ matrix.package }}" in
+            jackin|jackin-agent-status|jackin-capsule|jackin-diagnostics|jackin-runtime|jackin-term) ;;
+            *) exit 0 ;;
+          esac
+          cargo hack check -p "${{ matrix.package }}" --feature-powerset --all-targets --locked
       - name: Build crate benchmarks
-        if: >-
-          steps.crate-result.outputs.hit != 'true' &&
-          contains(fromJSON('["jackin","jackin-capsule","jackin-config","jackin-diagnostics","jackin-manifest","jackin-runtime","jackin-term","jackin-usage"]'), matrix.package)
-        run: cargo build --benches -p "${{ matrix.package }}" --locked --offline
+        if: steps.crate-result.outputs.hit != 'true'
+        shell: bash
+        run: |
+          case "${{ matrix.package }}" in
+            jackin|jackin-capsule|jackin-config|jackin-diagnostics|jackin-manifest|jackin-runtime|jackin-term|jackin-usage) ;;
+            *) exit 0 ;;
+          esac
+          cargo build --benches -p "${{ matrix.package }}" --locked --offline
       - name: Run bounded crate fuzz targets
-        if: >-
-          steps.crate-result.outputs.hit != 'true' &&
-          contains(fromJSON('["jackin-config","jackin-env","jackin-manifest","jackin-protocol","jackin-term"]'), matrix.package)
+        if: steps.crate-result.outputs.hit != 'true'
         shell: bash
         env:
           CARGO_TARGET_DIR: ${{ github.workspace }}/target
@@ -307,6 +316,7 @@ jobs:
             jackin-manifest) dir=crates/jackin-manifest; targets="manifest_migrate manifest_validate" ;;
             jackin-protocol) dir=crates/jackin-protocol; targets="decode_frames" ;;
             jackin-term) dir=crates/jackin-term; targets="damage_grid_process" ;;
+            *) exit 0 ;;
           esac
           cd "$dir"
           cargo fetch --locked --offline
