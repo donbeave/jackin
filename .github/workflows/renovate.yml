@@ -36,7 +36,7 @@ jobs:
           sudo chmod -R 0777 /tmp/renovate
 
       - name: Self-hosted Renovate
-        uses: renovatebot/github-action@22e0a16091fc706b04affe6ae53d5e3358ac4023 # v46.1.19
+        uses: renovatebot/github-action@316d7cd859606d6039a2182b7d69199e9b036835 # v46.2.1
         with:
           token: ${{ secrets.RENOVATE_TOKEN }}
         env:
