@@ -10,10 +10,10 @@ on:
   workflow_dispatch:
     inputs:
       lanes:
-        description: "Which runner(s) to run on. Default velnor; use both for parity runs."
+        description: "Which runner(s) to run on. Default github; use both for parity runs."
         type: choice
-        options: [velnor, github, both]
-        default: velnor
+        options: [github, velnor, both]
+        default: github
   schedule:
     - cron: '17 4 * * *'
 
@@ -37,7 +37,7 @@ jobs:
   # validate against the source tree at schedule time.
   changes:
     if: github.event_name != 'schedule'
-    runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'github') && 'ubuntu-26.04' || fromJSON('["self-hosted","velnor-target-mvp"]') }}
+    runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'velnor') && fromJSON('["self-hosted","velnor-target-mvp"]') || 'ubuntu-26.04' }}
     timeout-minutes: 5
     outputs:
       docs: ${{ steps.dispatch.outputs.docs || steps.filter.outputs.docs }}
@@ -64,7 +64,11 @@ jobs:
 
       - name: Resolve Docs xtask contract
         id: contracts
-        run: echo "docs-xtask=$(scripts/ci/docs-xtask-contract.sh)" >> "$GITHUB_OUTPUT"
+        uses: actions/github-script@373c709c69115d41ff229c7e5df9f8788daa9553 # v9.0.0
+        env:
+          CONTRACT: ${{ hashFiles('.cargo/**', 'Cargo.lock', 'Cargo.toml', 'rust-toolchain.toml', 'crates/*/Cargo.toml', 'crates/jackin-xtask/src/arch.rs', 'crates/jackin-xtask/src/cmd.rs', 'crates/jackin-xtask/src/docs.rs', 'crates/jackin-xtask/src/docs/**', 'crates/jackin-xtask/src/fs_util.rs', 'crates/jackin-xtask/src/main.rs', 'crates/jackin-xtask/src/report.rs') }}
+        with:
+          script: core.setOutput('docs-xtask', process.env.CONTRACT)
 
       - name: Classify changed paths
         id: filter
@@ -173,39 +177,7 @@ jobs:
         if: >-
           github.event_name == 'push' ||
           github.event_name == 'workflow_dispatch'
-        env:
-          GH_TOKEN: ${{ github.token }}
-          REPOSITORY: ${{ github.repository }}
-        run: |
-          set -euo pipefail
-          reuse=false
-          deployments=$(
-            gh api "repos/${REPOSITORY}/deployments?environment=github-pages&per_page=10" \
-              --jq '.[] | [.id, .sha] | @tsv'
-          )
-          while IFS=$'\t' read -r deployment_id source_sha; do
-            if [ -z "$deployment_id" ] || [ -z "$source_sha" ]; then
-              continue
-            fi
-            state=$(
-              gh api "repos/${REPOSITORY}/deployments/${deployment_id}/statuses?per_page=1" \
-                --jq '.[0].state // empty'
-            )
-            if [ "$state" != success ]; then
-              continue
-            fi
-            if ! git cat-file -e "$source_sha^{commit}" 2>/dev/null && \
-               ! git fetch --no-tags --depth=1 origin "$source_sha"; then
-              break
-            fi
-            if [ "$(scripts/ci/docs-site-contract.sh "$source_sha")" = \
-                 "$(scripts/ci/docs-site-contract.sh)" ]; then
-              echo "::notice::reusing semantically identical successful Pages deployment"
-              reuse=true
-            fi
-            break
-          done <<< "$deployments"
-          echo "reuse=$reuse" >> "$GITHUB_OUTPUT"
+        run: echo "reuse=false" >> "$GITHUB_OUTPUT"
 
   # The docs site links to repository files via the <RepoFile path="…" />
   # component, which renders a `blob/main` URL that lychee remaps to the
@@ -217,10 +189,11 @@ jobs:
   repo-link-check:
     if: github.event_name != 'schedule' && needs.changes.outputs.result-reuse != 'true'
     needs: changes
-    runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'github') && 'ubuntu-26.04' || fromJSON('["self-hosted","velnor-target-mvp"]') }}
+    runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'velnor') && fromJSON('["self-hosted","velnor-target-mvp"]') || 'ubuntu-26.04' }}
     timeout-minutes: 15
     env:
-      DOCS_XTASK: ${{ github.workspace }}/.ci-tools/GitHub/jackin-xtask
+      CI_LANE: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'velnor') && 'Velnor' || 'GitHub' }}
+      DOCS_XTASK: ${{ github.workspace }}/.ci-prebuilt-xtask/jackin-xtask
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -237,7 +210,8 @@ jobs:
 
       - uses: ./.github/actions/download-ci-xtask
         with:
-          lane: GitHub
+          token: ${{ github.token }}
+          lane: ${{ env.CI_LANE }}
           xtask-contract: ${{ needs.changes.outputs.docs-xtask-contract }}
           include-tools: "false"
 
@@ -288,42 +262,31 @@ jobs:
       (needs.changes.outputs.result-reuse != 'true' ||
        (github.ref == 'refs/heads/main' &&
         needs.changes.outputs.deployment-reuse != 'true'))
-    runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'github') && 'ubuntu-26.04' || fromJSON('["self-hosted","velnor-target-mvp"]') }}
+    runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'velnor') && fromJSON('["self-hosted","velnor-target-mvp"]') || 'ubuntu-26.04' }}
     timeout-minutes: 20
+    env:
+      CI_LANE: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'velnor') && 'Velnor' || 'GitHub' }}
+      DOCS_XTASK: ${{ github.workspace }}/.ci-prebuilt-xtask/jackin-xtask
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
+      - uses: ./.github/actions/download-ci-xtask
+        with:
+          token: ${{ github.token }}
+          lane: ${{ env.CI_LANE }}
+          xtask-contract: ${{ needs.changes.outputs.docs-xtask-contract }}
+          include-tools: "false"
+
       - name: Find repository-wide successful link result
         id: link-result
         env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
           GH_TOKEN: ${{ github.token }}
           REPOSITORY: ${{ github.repository }}
           REPOSITORY_ID: ${{ github.event.repository.id }}
-        run: |
-          set -euo pipefail
-          name="docs-links-v2-${RUNNER_OS}-$(scripts/ci/docs-link-contract.sh)"
-          artifact=$(
-            gh api "repos/${REPOSITORY}/actions/artifacts?name=${name}&per_page=10" \
-              | jq -c --argjson repository_id "$REPOSITORY_ID" \
-                '[.artifacts[] | select(.expired == false and .workflow_run.head_repository_id == $repository_id)] | sort_by(.created_at) | last // {}'
-          )
-          artifact_id=$(jq -r '.id // empty' <<< "$artifact")
-          created_at=$(jq -r '.created_at // empty' <<< "$artifact")
-          verified=false
-          refresh=true
-          if [ -n "$artifact_id" ]; then
-            created_epoch=$(date -u -d "$created_at" +%s)
-            if [ $(( $(date -u +%s) - created_epoch )) -lt 259200 ]; then
-              verified=true
-              refresh=false
-            fi
-          fi
-          {
-            echo "name=$name"
-            echo "refresh=$refresh"
-            echo "verified=$verified"
-          } >> "$GITHUB_OUTPUT"
+        run: >-
+          "$DOCS_XTASK" docs ci-link-result
 
       - name: Restore input-identical built site
         id: built-site
@@ -337,7 +300,7 @@ jobs:
           REPOSITORY: ${{ github.repository }}
         run: |
           set -euo pipefail
-          name="docs-site-v3-${RUNNER_OS}-$(scripts/ci/docs-site-contract.sh)"
+          name="docs-site-v3-${RUNNER_OS}-$("$DOCS_XTASK" docs contract site)"
           artifact_id=
           exact=false
           if ! artifact_id=$(
@@ -424,15 +387,15 @@ jobs:
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: .lycheecache
-          key: lychee-v1-${{ runner.os }}-${{ hashFiles('docs/lychee.toml', 'scripts/ci/docs-link-check.sh') }}
+          key: lychee-v1-${{ runner.os }}-${{ hashFiles('docs/lychee.toml', 'crates/jackin-xtask/src/docs/contract.rs', 'crates/jackin-xtask/src/docs/site_links.rs') }}
           restore-keys: lychee-v1-${{ runner.os }}-
 
       - name: Check built site links
         if: steps.link-result.outputs.verified != 'true'
         env:
           GITHUB_TOKEN: ${{ github.token }}
-        run: |
-          scripts/ci/docs-link-check.sh
+        run: >-
+          "$DOCS_XTASK" docs site-links
 
       - name: Stage repository-wide successful link result
         if: steps.link-result.outputs.refresh == 'true'
@@ -484,7 +447,7 @@ jobs:
       github.event_name != 'schedule' &&
       needs.changes.outputs.result-reuse != 'true' &&
       (needs.changes.outputs.docs == 'true' || needs.changes.outputs.source == 'true')
-    runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'github') && 'ubuntu-26.04' || fromJSON('["self-hosted","velnor-target-mvp"]') }}
+    runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'velnor') && fromJSON('["self-hosted","velnor-target-mvp"]') || 'ubuntu-26.04' }}
     timeout-minutes: 10
     steps:
       - name: Checkout repository
@@ -564,7 +527,7 @@ jobs:
       github.event_name != 'schedule' &&
       needs.changes.outputs.result-reuse != 'true' &&
       needs.changes.outputs.docs == 'true'
-    runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'github') && 'ubuntu-26.04' || fromJSON('["self-hosted","velnor-target-mvp"]') }}
+    runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'velnor') && fromJSON('["self-hosted","velnor-target-mvp"]') || 'ubuntu-26.04' }}
     timeout-minutes: 10
     steps:
       - name: Checkout repository
@@ -609,7 +572,7 @@ jobs:
       github.event_name != 'schedule' &&
       needs.changes.outputs.result-reuse != 'true' &&
       needs.changes.outputs.source == 'true'
-    runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'github') && 'ubuntu-26.04' || fromJSON('["self-hosted","velnor-target-mvp"]') }}
+    runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'velnor') && fromJSON('["self-hosted","velnor-target-mvp"]') || 'ubuntu-26.04' }}
     timeout-minutes: 10
     steps:
       - name: Checkout repository
@@ -658,7 +621,7 @@ jobs:
       needs.docs-link-check.result == 'success' &&
       (needs.repo-link-check.result == 'success' ||
        needs.repo-link-check.result == 'skipped')
-    runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'github') && 'ubuntu-26.04' || fromJSON('["self-hosted","velnor-target-mvp"]') }}
+    runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'velnor') && fromJSON('["self-hosted","velnor-target-mvp"]') || 'ubuntu-26.04' }}
     timeout-minutes: 35
     outputs:
       page-url: ${{ steps.deploy1.outputs.page_url || steps.deploy2.outputs.page_url || steps.deploy3.outputs.page_url }}
@@ -719,7 +682,7 @@ jobs:
       needs.deploy.result == 'success' &&
       (github.event_name == 'push' ||
        (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'))
-    runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'github') && 'ubuntu-26.04' || fromJSON('["self-hosted","velnor-target-mvp"]') }}
+    runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'velnor') && fromJSON('["self-hosted","velnor-target-mvp"]') || 'ubuntu-26.04' }}
     timeout-minutes: 10
     permissions:
       contents: read
@@ -756,7 +719,7 @@ jobs:
     # surface only; remapping the deployed main site against a feature checkout
     # produces false missing-file failures after source moves.
     if: github.event_name == 'schedule'
-    runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'github') && 'ubuntu-26.04' || fromJSON('["self-hosted","velnor-target-mvp"]') }}
+    runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'velnor') && fromJSON('["self-hosted","velnor-target-mvp"]') || 'ubuntu-26.04' }}
     timeout-minutes: 10
     permissions:
       contents: read
@@ -777,7 +740,7 @@ jobs:
   docs-required:
     if: always() && github.event_name != 'schedule'
     needs: [changes, repo-link-check, docs-link-check, prepare-codebook, spell-check-docs, spell-check-source, deploy, verify-deployed, check-deployed]
-    runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'github') && 'ubuntu-26.04' || fromJSON('["self-hosted","velnor-target-mvp"]') }}
+    runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'velnor') && fromJSON('["self-hosted","velnor-target-mvp"]') || 'ubuntu-26.04' }}
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

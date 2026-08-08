@@ -185,7 +185,7 @@ model = "gpt-5"
     // each PTY. Classic attach uses `docker exec … jackin-capsule`; when the
     // ambient shell has host-attach enabled (`JACKIN_HOST_ATTACH`), the client
     // path is socket-based and never records a docker exec.
-    if !jackin_runtime::runtime::host_attach::host_attach_enabled() {
+    if !jackin_runtime::runtime::host_attach::host_attach_enabled(&paths) {
         let session_cmd = recorded_capsule_exec(&runner);
         assert!(session_cmd.contains("jackin-capsule"), "{session_cmd}");
     }
