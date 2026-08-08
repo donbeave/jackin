@@ -1004,6 +1004,7 @@ jobs:
       CARGO_BUILD_JOBS: "2"
       CARGO_INCREMENTAL: "0"
       CARGO_TERM_COLOR: always
+      CARGO_ZIGBUILD_ZIG_PATH: ${{ github.workspace }}/.github/scripts/zig-for-cargo-zigbuild
       CARGO_ZIGBUILD_ZIG_VERSION: "0.16.0"
       MISE_DATA_DIR: ${{ matrix.config.mise_data_dir }}
       RUSTC_WRAPPER: sccache
