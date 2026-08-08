@@ -3,7 +3,6 @@
 - **Status**: PARTIALLY IMPLEMENTED
 - **Slug**: jackin-desktop
 - **Created**: 2026-07-24 · **Updated**: 2026-08-09
-- **Plan**: [`plans/jackin-desktop/`](../../plans/jackin-desktop/README.md)
 
 ## Intent
 
@@ -57,9 +56,8 @@ Distribution decision (2026-07-24): public notarized Homebrew activation could n
 - 2026-07-24 — **Popover displays availability only, from data providers
   expose directly via their APIs, with no action buttons.** All detailed
   information lives in native macOS windows — the Usage window already
-  previewed in this repository's plan
-  (`plans/native-macos-usage-menu-bar/010-usage-window.md`: native window,
-  glass sidebar Overview + providers, full provider card, Capsule parity).
+  previewed by the superseded native design: native window, glass sidebar
+  Overview + providers, full provider card, Capsule parity.
   Because the popover is a glance surface; actions and detail belong to
   real windows.
 - 2026-07-24 — **Popover footer keeps only a Refresh button.** No Settings
@@ -124,11 +122,10 @@ Distribution decision (2026-07-24): public notarized Homebrew activation could n
   window focused on that provider. Because the popover stays button-free
   (navigation, not action buttons) and right-click is the standard macOS
   status-item pattern.
-- 2026-07-24 — **Future work plans under `plans/jackin-desktop/`** (via
-  tailrocks-plan), folding in the still-open 003/004 distribution plans;
-  `plans/native-macos-usage-menu-bar/` 013's screen roadmap gets
-  reconciled against this item; the old program retires as executed
-  history. Because one item, one plan home.
+- 2026-07-24 — **Future work stays on this roadmap item.** The earlier
+  native execution corpus and its distribution/screen residuals were
+  reconciled here before that corpus retired. Because one open product
+  needs one durable authority.
 - 2026-07-24 — **Adopt Amp Free's current daily `displayText` now.**
   Parse `N% remaining today (resets daily)` plus individual/workspace
   credit balances; retire the hourly-dollar reader, speculative structured
@@ -426,11 +423,10 @@ dialog; numbers come from the same Rust views).
   Swift over UniFFI.
 - `docs/content/docs/roadmap/(operator-surface)/native-macos-usage-menu-bar.mdx`
   — repo's own roadmap page for this feature. Status "Partially
-  implemented"; remaining: plan 003 (notarized public ZIP + Homebrew cask,
-  blocked on Apple secrets in `release-macos`), plan 004 (production install
-  proof, deferred until 003 ships).
-- `plans/native-macos-usage-menu-bar/` — repo's own implementation plans
-  001–012 for Desktop v1.
+  implemented"; remaining: notarized public ZIP + Homebrew cask, blocked on
+  Apple secrets in `release-macos`, followed by production install proof.
+- Git history of the earlier native execution corpus — completed implementation
+  evidence and superseded screen decisions.
 - ADR-011 (`/reference/adrs/adr-011-native-macos-usage-menu-bar/`) —
   shipped architecture decision record.
 - [`reference-popover-overview.png`](reference-popover-overview.png) —
@@ -496,8 +492,8 @@ dialog; numbers come from the same Rust views).
 - ~~Amp Free daily reparse?~~ DECIDED 2026-07-24: implement now from the
   public live capture and regression fixture (see Decisions/research
   ch. 11). Paid-plan parsing remains capture-gated.
-- ~~Relation to plans/native-macos-usage-menu-bar/?~~ DECIDED 2026-07-24:
-  new `plans/jackin-desktop/` home (see Decisions).
+- ~~Relation to the earlier native execution corpus?~~ DECIDED 2026-07-24:
+  fold every live residual into this item, then retire the corpus.
 
 ## Open research questions
 
@@ -527,7 +523,7 @@ dialog; numbers come from the same Rust views).
 
 ## Log
 
-- 2026-08-09 — plans-to-roadmap audit — corrected the terminal implementation program's `DONE` label to `PARTIALLY IMPLEMENTED`. Recovered production activation/proof, the live macOS interaction/visual matrix, deterministic render snapshots, capture-gated Amp paid-plan parsing, and superseded-program deferred candidates into this item. The published roadmap page is the current residual authority; numbered plan directories remain execution history.
+- 2026-08-09 — plans-to-roadmap audit — corrected the terminal implementation program's `DONE` label to `PARTIALLY IMPLEMENTED`. Recovered production activation/proof, the live macOS interaction/visual matrix, deterministic render snapshots, capture-gated Amp paid-plan parsing, and superseded-program deferred candidates into this item. The published roadmap page is the current residual authority; the retired numbered corpus remains available in git history.
 
 - 2026-07-24 — tailrocks-idea — created (DRAFT).
 - 2026-07-24 — tailrocks-brainstorm — first touch (SHAPING); resolved crate
@@ -557,7 +553,7 @@ dialog; numbers come from the same Rust views).
   decision (right-click menu + header click), status-bar degradation
   states, popover/status-bar/Usage-window schematics confirmed, five
   flows, checkable quality bar, destination sentence, vocabulary; last
-  two open questions decided (plans home = plans/jackin-desktop; Amp
+  two open questions decided (residual-work home = this roadmap item; Amp
   reparse after capture); readiness gate passed → READY.
 - 2026-07-24 — tailrocks-plan continuation — operator directed Amp Free
   daily adoption after CodexBar re-check; deep follow-up research chapter
@@ -565,8 +561,7 @@ dialog; numbers come from the same Rust views).
   workspace balances; status-bar contract refined to weekly-for-six +
   Amp-Free-daily; paid subscription parsing remains capture-gated.
 - 2026-07-24 — tailrocks-plan — generated and cold-reviewed 11 executable
-  slices plus coverage/spec hub and autonomous
-  [`GOAL.md`](../../plans/jackin-desktop/GOAL.md); current Amp Free Daily,
+  slices plus a coverage/spec hub and autonomous goal; current Amp Free Daily,
   Claude terminal-local Keychain policy, current Grok billing config,
   AppKit lifecycle, shared Capsule/Desktop detail presentation, verification,
   distribution, and reconciliation are fully planned → PLANNED.
@@ -680,5 +675,5 @@ dialog; numbers come from the same Rust views).
   error-ownership census and updated four README doc-byte budgets + three
   jackin-usage expect budgets in `ratchet.toml`.
 - 2026-07-24 — execution reconciliation — plan 010's validate lane is green in run 30092919141 after provisioning the repository-pinned `cargo-nextest` already invoked by its offline reconciliation step. Public notarized Homebrew activation is REJECTED from this program: the `release-macos` environment has no required Apple secret or variable names, and publish, notarization, tap mutation, and tap merge remain explicitly unauthorized. Readiness remains complete; no production artifact or install proof is claimed.
-- 2026-07-24 — execution — plan 011 retired `plans/native-macos-usage-menu-bar/` as superseded history and reconciled the published roadmap, native package README, and operator guide to the shipped per-provider status items, Refresh-only Agent Usage preview, Capsule-parity Usage window, no Settings surface, limits-only contract, and rejected public-activation boundary. Docs build, repository links, roadmap/research audits, TypeScript, and docs tests pass.
+- 2026-07-24 — execution — plan 011 retired the earlier native execution corpus as superseded history and reconciled the published roadmap, native package README, and operator guide to the shipped per-provider status items, Refresh-only Agent Usage preview, Capsule-parity Usage window, no Settings surface, limits-only contract, and rejected public-activation boundary. Docs build, repository links, roadmap/research audits, TypeScript, and docs tests pass.
 - 2026-07-24 — completion — all implementation-plan rows are terminal (001–009 and 011 DONE; 010 REJECTED because public notarized Homebrew activation requires absent Apple authority and prohibited publish/tap-merge actions). On final current HEAD, `cargo xtask ci --fast` exits 0 with `ci gate OK`; `cargo xtask desktop test` exits 0 with 246/246 Rust tests and all three Swift harnesses passing.

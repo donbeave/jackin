@@ -43,6 +43,20 @@ fn clean_file_passes() {
 }
 
 #[test]
+fn scans_roadmap_tree() {
+    let dir = tempfile::tempdir().unwrap();
+    let root = dir.path();
+    fs::create_dir_all(root.join("roadmap/topic")).unwrap();
+    fs::write(
+        root.join("roadmap/topic/README.md"),
+        "The jackin' roadmap item.\n",
+    )
+    .unwrap();
+    let err = check_brand(root).unwrap_err().to_string();
+    assert!(err.contains("roadmap/topic/README.md"), "{err}");
+}
+
+#[test]
 fn bare_prose_jackin_is_violation() {
     assert!(contains_bare_brand_prose("install jackin for agents"));
     assert!(contains_bare_brand_prose("the jackin product"));

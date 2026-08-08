@@ -766,7 +766,7 @@ jobs:
       # they fail on growth above budget and on stale/missing/shrunken rows.
       # dependency-direction stays informational (exits 0) until the P2 layer
       # inversions are cleaned up. Grandfathered entries in each ratchet file
-      # may only ever shrink. See `plans/codebase-health/`.
+      # may only ever shrink. See TESTING.md and the ratchet manifests.
       - name: Register xtask problem matcher
         run: echo "::add-matcher::.github/problem-matchers/xtask.json"
       - run: |
