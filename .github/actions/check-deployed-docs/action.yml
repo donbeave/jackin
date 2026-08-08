@@ -100,7 +100,8 @@ runs:
           if [[ "$EXTERNAL_LINKS" != "true" ]]; then
             site_origin="${SITEMAP_URL%/sitemap.xml}"
             site_origin_re="$(printf '%s' "$site_origin" | sed 's/[][\/.^$*+?{}()|]/\\&/g')"
-            args+=(--include "^${site_origin_re}(/|$)|^file://")
+            # `--include` overrides exclusions; it is not an allowlist by itself.
+            args+=(--exclude '^https?://' --include "^${site_origin_re}(/|$)")
           fi
 
           lychee "${args[@]}"
