@@ -237,7 +237,7 @@ fn api_json<T: for<'de> Deserialize<'de>>(endpoint: &str) -> Result<T> {
 fn api_bytes(endpoint: &str) -> Result<Vec<u8>> {
     let mut last = None;
     for attempt in 0..4 {
-        match cmd::output(Command::new("gh").args(["api", endpoint])) {
+        match cmd::output(Command::new("gh").args(["api", "--allow-escape-sequences", endpoint])) {
             Ok(bytes) if !bytes.starts_with(b"<") => return Ok(bytes),
             Ok(_) => last = Some(anyhow::anyhow!("GitHub API returned HTML")),
             Err(error) => last = Some(error),

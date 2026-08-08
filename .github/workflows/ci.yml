@@ -1001,8 +1001,10 @@ jobs:
     timeout-minutes: 60
     name: cargo build validator (${{ matrix.config.lane }})
     env:
+      CARGO_BUILD_JOBS: "2"
       CARGO_INCREMENTAL: "0"
       CARGO_TERM_COLOR: always
+      CARGO_ZIGBUILD_ZIG_VERSION: "0.16.0"
       MISE_DATA_DIR: ${{ matrix.config.mise_data_dir }}
       RUSTC_WRAPPER: sccache
       RUSTUP_HOME: ${{ github.workspace }}/.ci-rustup
