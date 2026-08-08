@@ -8,6 +8,12 @@ on:
   schedule:
     - cron: "0 6 * * *"
   workflow_dispatch:
+    inputs:
+      lanes:
+        description: github (default) | velnor
+        type: choice
+        default: github
+        options: [github, velnor]
 
 permissions:
   actions: read
@@ -19,7 +25,7 @@ concurrency:
 
 jobs:
   renovate:
-    runs-on: ubuntu-26.04
+    runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'velnor') && fromJSON('["self-hosted","velnor-target-mvp"]') || 'ubuntu-26.04' }}
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7

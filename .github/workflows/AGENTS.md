@@ -30,12 +30,13 @@ Apply these rules to every workflow under this directory. They define the reposi
 
 ## Runner Capacity
 
-- Velnor is the automatic and dispatch default. Every runner-selectable
-  pipeline exposes a `workflow_dispatch` `lanes` choice ordered `velnor`,
-  `github`, and `both`; omitted input resolves to Velnor. The GitHub lane is
-  pinned to `ubuntu-26.04`, and workflows do not use macOS runners.
+- GitHub-hosted runners are the automatic and dispatch default. Every
+  runner-selectable pipeline exposes a `workflow_dispatch` `lanes` choice
+  ordered `github`, `velnor`, and `both`; omitted input resolves to GitHub.
+  Velnor runs only when explicitly selected or in scheduled parity. The GitHub
+  lane is pinned to `ubuntu-26.04`, and workflows do not use macOS runners.
 - The canonical Sunday parity schedule selects `both`. Other automatic events
-  remain Velnor-default.
+  remain GitHub-default.
 
 ## Semantic Boundaries
 
