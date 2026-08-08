@@ -1,8 +1,8 @@
 # jackin❯ Desktop — agent usage macOS status bar
 
-- **Status**: DONE
+- **Status**: PARTIALLY IMPLEMENTED
 - **Slug**: jackin-desktop
-- **Created**: 2026-07-24 · **Updated**: 2026-07-24
+- **Created**: 2026-07-24 · **Updated**: 2026-08-09
 - **Plan**: [`plans/jackin-desktop/`](../../plans/jackin-desktop/README.md)
 
 ## Intent
@@ -22,7 +22,14 @@ provider's glance availability % in the menu bar (weekly for six
 providers, Amp Free daily for Amp), the CodexBar-style popover glance,
 and the Capsule-parity Usage window, for all seven providers.
 
-Distribution decision (2026-07-24): public notarized Homebrew activation is rejected from this implementation program because required Apple release authority is absent and publish/tap-merge actions are outside the granted authority. Secret-free validation, cask generation, and clean-host proof automation are ready; no notarized production artifact or cask install is claimed.
+Distribution decision (2026-07-24): public notarized Homebrew activation could not be executed in the implementation program because required Apple release authority was absent and publish/tap-merge actions were outside the granted authority. That terminal plan outcome did not satisfy the product destination. Secret-free validation, cask generation, and clean-host proof automation are ready; no notarized production artifact or cask install is claimed.
+
+## Remaining work
+
+- Provision the five documented `release-macos` Apple secrets and the two repository signing variables; cut the first non-development `main` release; sign, notarize, staple, Gatekeeper-validate, publish, and independently verify every immutable release artifact and sidecar.
+- Advance the stable formula and first `jackin-desktop` cask in one tap PR, require operator review/merge, then prove clean public-cask install, launch, status/popover/Usage behavior, uninstall, idempotent completed-version rerun, and partial/conflict fail-closed handling on Apple Silicon macOS 14+.
+- Run the full live native matrix on macOS 14 fallback materials and macOS 26 Liquid Glass: light/dark, contrast/transparency, keyboard/VoiceOver, privacy, provider/account/window-count/string-length/state/size combinations, and same-snapshot parity across Desktop, Capsule, and CLI. Retain redacted evidence and add deterministic rendered-surface snapshots on a stable macOS 26 lane.
+- Capture authenticated Amp Megawatt, Gigawatt, and linked paid-subscription responses, then implement paid-plan/monthly parsing from evidence. Do not guess wire shapes.
 
 ## Vocabulary
 
@@ -514,7 +521,13 @@ dialog; numbers come from the same Rust views).
 
 ## Deferred
 
+- All Accounts and Status & Sources Usage views.
+- Rust-owned provider quick links, incident metadata, reset-credit expiry details, collapsible secondary quota metrics, and segmented capacity markers.
+- A future configuration UI. The superseded single-status-item display modes and Settings-centric provider toggles are not an active contract.
+
 ## Log
+
+- 2026-08-09 — plans-to-roadmap audit — corrected the terminal implementation program's `DONE` label to `PARTIALLY IMPLEMENTED`. Recovered production activation/proof, the live macOS interaction/visual matrix, deterministic render snapshots, capture-gated Amp paid-plan parsing, and superseded-program deferred candidates into this item. The published roadmap page is the current residual authority; numbered plan directories remain execution history.
 
 - 2026-07-24 — tailrocks-idea — created (DRAFT).
 - 2026-07-24 — tailrocks-brainstorm — first touch (SHAPING); resolved crate

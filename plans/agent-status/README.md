@@ -2,6 +2,8 @@
 
 Fully shipped structural layers (**001–004, 008, 011**) are removed from `plans/`. Code is SoT.
 
+The authoritative shipped/remaining summary is `docs/content/docs/roadmap/(agent-orchestrator-research)/(phase-2-operator-surface)/agent-runtime-status.mdx`. This directory retains only execution detail for its substantial open residuals.
+
 **Open product goal:** four tab states (🔴 blocked, 🟡 working, 🔵 done, 🟢 idle) zero-config for every supported agent, from **real** chrome.
 
 ## Keep — substantial unfinished work
