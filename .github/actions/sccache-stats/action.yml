@@ -12,11 +12,6 @@ inputs:
     description: Step summary heading.
     required: false
     default: ""
-  retention-days:
-    description: Artifact retention in days.
-    required: false
-    default: "7"
-
 runs:
   using: composite
   steps:
@@ -47,4 +42,4 @@ runs:
         name: ${{ inputs.artifact-name }}
         path: ${{ inputs.artifact-name }}.txt
         if-no-files-found: ignore
-        retention-days: ${{ inputs.retention-days }}
+        retention-days: 7
