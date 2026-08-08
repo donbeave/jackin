@@ -253,7 +253,7 @@ Examples:
     /// Wraps `claude setup-token`, the 1Password write API, and
     /// the workspace config so the operator can move from "no
     /// token" to "token mode active" in one command. See
-    /// <https://jackin.tailrocks.com/reference/roadmap/workspace-claude-token-setup/>
+    /// <https://jackin.tailrocks.com/roadmap/workspace-claude-token-setup/>
     /// for the full design.
     #[command(subcommand, before_help = BANNER, styles = HELP_STYLES, disable_help_subcommand = true)]
     ClaudeToken(WorkspaceClaudeTokenCommand),

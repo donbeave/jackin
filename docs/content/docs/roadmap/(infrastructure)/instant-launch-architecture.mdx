@@ -2,7 +2,9 @@
 title: "Runtime Restore and Image Architecture"
 ---
 
-**Status**: Partially implemented — image bake, home seeding, container identity, the restore ladder, schema migration, console instance surfaces, launch cockpit hard-exit, build-performance work, and the in-capsule dirty-exit flow (shared detection, the exit modal, host keep/discard execution) have all landed in code; only operator live end-to-end signoff and the Inspect diff pane remain.
+**Status**: Partially implemented
+
+**Current state**: image bake, home seeding, container identity, the restore ladder, schema migration, console instance surfaces, launch cockpit hard-exit, build-performance work, and the in-capsule dirty-exit flow (shared detection, the exit modal, host keep/discard execution) have all landed in code; only operator live end-to-end signoff and the Inspect diff pane remain.
 
 ## Shipped facts
 
@@ -10,7 +12,7 @@ The dirty-exit decision now lives entirely in-container instead of on the host a
 
 The rest of the feature set named in the status line — image bake, home seeding, container identity, the restore ladder, and console instance surfaces — is implemented and documented as steady-state behavior in [Runtime Instance Model](/reference/runtime/runtime-instance-model/), [Construct Image: User Creation Responsibility](/reference/runtime/user-identity/), [Image Labels & Recipe Hash](/reference/runtime/image-labels/), and [Capsule Session Lifecycle](/reference/capsule/session-lifecycle/). This item stopped tracking that work as design-in-progress once it landed; what remains here is signoff, not design.
 
-Design rationale, the alternatives considered for the host signal (file vs. exit code vs. control frame), and the agreed TUI mockup for the exit modal are captured in [In-Capsule Dirty-Exit: Design Rationale and Implementation Record](/reference/research/runtime/in-capsule-dirty-exit-design/).
+Design rationale, the alternatives considered for the host signal (file vs. exit code vs. control frame), and the agreed TUI mockup for the exit modal are captured in [In-Capsule Dirty-Exit: Design Rationale and Implementation Record](/research/platform/runtime/in-capsule-dirty-exit-design/).
 
 ## Remaining work
 
@@ -20,7 +22,7 @@ Design rationale, the alternatives considered for the host signal (file vs. exit
 
 ## Related work
 
-- Research: [In-Capsule Dirty-Exit: Design Rationale and Implementation Record](/reference/research/runtime/in-capsule-dirty-exit-design/)
+- Research: [In-Capsule Dirty-Exit: Design Rationale and Implementation Record](/research/platform/runtime/in-capsule-dirty-exit-design/)
 - [Runtime Instance Model](/reference/runtime/runtime-instance-model/)
 - [Construct Image: User Creation Responsibility](/reference/runtime/user-identity/)
 - [Image Labels & Recipe Hash](/reference/runtime/image-labels/)

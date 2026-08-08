@@ -2,7 +2,9 @@
 title: "Registry configurations"
 ---
 
-**Status**: Open — design proposal, nothing shipped yet
+**Status**: Open
+
+**Current state**: design proposal, nothing shipped yet
 
 ## Problem
 
@@ -19,7 +21,7 @@ Running `jackin❯` against a role whose `published_image` lives in a private re
 
 A `jackin registry login` (keychain-backed, no plaintext store) and a read-only `jackin registry status` are candidate follow-ups, not required for v1.
 
-Design details — provider mechanics, config surface, ADRs on each decision above, and open questions — live in [Registry Configurations: design](/reference/research/security/credential-exposure/registry-configurations-design/).
+Design details — provider mechanics, config surface, ADRs on each decision above, and open questions — live in [Registry Configurations: design](/research/platform/security/credential-exposure/registry-configurations-design/).
 
 ## Out of scope
 
@@ -28,9 +30,9 @@ Design details — provider mechanics, config surface, ADRs on each decision abo
 
 ## Related work
 
-- [Registry Configurations: design](/reference/research/security/credential-exposure/registry-configurations-design/) — provider mechanics, config surface, decision rationale, and source material.
+- [Registry Configurations: design](/research/platform/security/credential-exposure/registry-configurations-design/) — provider mechanics, config surface, decision rationale, and source material.
 - [Credential source pattern](/roadmap/credential-source-pattern/) — the unified sourcing abstraction this item makes concrete and consumes.
-- [Container Credential Exposure — Beyond Env Injection](/reference/research/security/credential-exposure/container-credential-exposure/) — resolved credentials must not leak into layers, `docker inspect`, or logs.
+- [Container Credential Exposure — Beyond Env Injection](/research/platform/security/credential-exposure/container-credential-exposure/) — resolved credentials must not leak into layers, `docker inspect`, or logs.
 - [Workspace registry cache](/roadmap/workspace-registry-cache/) — a pull-through cache still needs upstream registry credentials.
 - [1Password integration](/roadmap/onepassword-integration/) — one credential source among several.
 - <RepoFile path="crates/jackin-docker/src/docker_client.rs">crates/jackin-docker/src/docker_client.rs</RepoFile> — `pull_image`; bollard `create_image` with `RegistryAuth` currently `None`.

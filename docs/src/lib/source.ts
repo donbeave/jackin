@@ -19,7 +19,12 @@ export const source = loader({
 export const publicPageUrls = source
   .getPages()
   .map((page) => page.url)
-  .filter((url) => !url.startsWith('/reference') && !url.startsWith('/roadmap'))
+  .filter(
+    (url) =>
+      !url.startsWith('/reference') &&
+      !url.startsWith('/roadmap') &&
+      !url.startsWith('/research'),
+  )
 
 const serializedPageTreeJson = source
   .serializePageTree(source.getPageTree())

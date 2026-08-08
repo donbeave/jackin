@@ -2,7 +2,9 @@
 title: "Security Threat Model & Signed Releases"
 ---
 
-**Status**: Partially implemented — signing/release artifacts have shipped in dev releases, and operator artifact verification passed end to end against `jackin-dev-v0.1.13` on 2026-07-04; clean-cache capsule download verification and residual Fulcio-chain hardening remain
+**Status**: Partially implemented
+
+**Current state**: signing/release artifacts have shipped in dev releases, and operator artifact verification passed end to end against `jackin-dev-v0.1.13` on 2026-07-04; clean-cache capsule download verification and residual Fulcio-chain hardening remain
 
 ## Problem
 
@@ -40,7 +42,7 @@ This item retires once the capsule download path has been clean-cache verified e
 ## Non-goals
 
 - No hostile multi-tenant safety claim from Docker hardening alone — that is [Docker runtime hardening contract](/roadmap/docker-runtime-hardening-contract/) scope.
-- No microVM replacement — [smolvm backend research](/reference/research/isolation/smolvm-backend/) tracks that separately.
+- No microVM replacement — [smolvm backend research](/research/platform/isolation/smolvm-backend/) tracks that separately.
 - No retroactive signing of historical releases — provenance starts from the first workflow that includes signing.
 - No source-level (`cargo-cyclonedx`) SBOM — `syft scan` on the binary archive is sufficient for the supply chain transparency goal here.
 
@@ -49,11 +51,11 @@ This item retires once the capsule download path has been clean-cache verified e
 | Item | Relationship |
 |---|---|
 | [Docker runtime hardening contract](/roadmap/docker-runtime-hardening-contract/) | Container escape is out of scope for this item; Docker hardening tracks that |
-| [Process-level sandboxing](/reference/research/security/process-sandboxing/process-level-sandboxing/) | Per-operation isolation inside the container; complementary to the threat model |
-| [smolvm backend research](/reference/research/isolation/smolvm-backend/) | Future microVM backend that addresses the shared-kernel residual risk |
+| [Process-level sandboxing](/research/platform/security/process-sandboxing/process-level-sandboxing/) | Per-operation isolation inside the container; complementary to the threat model |
+| [smolvm backend research](/research/platform/isolation/smolvm-backend/) | Future microVM backend that addresses the shared-kernel residual risk |
 | [Network egress policy](/roadmap/network-egress-policy/) | Network exfiltration threat is tracked there |
-| [Container credential exposure](/reference/research/security/credential-exposure/container-credential-exposure/) | Credential safety beyond symlink rejection |
-| [Rust CI tooling](/reference/research/ci/rust-tooling/rust-ci-tooling/) | CI workflow patterns that signing and SBOM generation follow |
+| [Container credential exposure](/research/platform/security/credential-exposure/container-credential-exposure/) | Credential safety beyond symlink rejection |
+| [Rust CI tooling](/research/engineering/ci/rust-tooling/rust-ci-tooling/) | CI workflow patterns that signing and SBOM generation follow |
 
 ## Related files
 

@@ -73,7 +73,7 @@ trap cleanup EXIT
 echo ""
 echo "╔══════════════════════════════════════════════════════════════════╗"
 echo "║  jackin' apple-container Phase 0 empirical validation           ║"
-echo "║  Roadmap: docs/content/docs/reference/roadmap/                  ║"
+echo "║  Roadmap: docs/content/docs/roadmap/                            ║"
 echo "║           apple-container-backend.mdx                           ║"
 echo "╚══════════════════════════════════════════════════════════════════╝"
 echo ""

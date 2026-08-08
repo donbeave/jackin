@@ -13,7 +13,7 @@
 //! | Root `*.md` | include (non-recursive) |
 //! | `crates/*/README.md`, `crates/*/AGENTS.md`, `crates/AGENTS.md` | include |
 //! | `docs/content/**` (`*.md`/`*.mdx`) | include |
-//! | `plans/**/*.md` | include (plan 029) |
+//! | `roadmap/**/*.md` | include |
 //! | `security-review/`, `docker/`, `.github/` | exclude — ops/CI prose; revisit if brand copy moves there |
 //! | Code / binary crates `src/**` | exclude (not prose) |
 
@@ -196,9 +196,9 @@ fn collect_prose_files(root: &Path, out: &mut Vec<PathBuf>) -> Result<()> {
     if content.is_dir() {
         walk_mdx(&content, out)?;
     }
-    let plans = root.join("plans");
-    if plans.is_dir() {
-        walk_mdx(&plans, out)?;
+    let roadmap = root.join("roadmap");
+    if roadmap.is_dir() {
+        walk_mdx(&roadmap, out)?;
     }
     Ok(())
 }

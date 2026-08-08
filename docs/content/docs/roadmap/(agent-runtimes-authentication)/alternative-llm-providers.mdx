@@ -2,7 +2,9 @@
 title: "Alternative LLM Providers (MiniMax, Kimi, GLM everywhere)"
 ---
 
-**Status**: Partially implemented — provider catalog, Claude Code routing, MiniMax Codex routing, OpenCode routing, Auth-tab key support for Z.AI/MiniMax/Kimi, N-provider launch picker, provider tab labels, per-provider role-manifest model overrides, and operator guides for Z.AI/MiniMax/Kimi have shipped. Codex GLM/Z.AI and Codex Kimi remain deferred until those providers expose a Responses-compatible endpoint. Remaining work is provider-catalog polish: remove known config-generation drift, tighten availability/update detection, and keep provider docs aligned with upstream endpoint/model changes.
+**Status**: Partially implemented
+
+**Current state**: provider catalog, Claude Code routing, MiniMax Codex routing, OpenCode routing, Auth-tab key support for Z.AI/MiniMax/Kimi, N-provider launch picker, provider tab labels, per-provider role-manifest model overrides, and operator guides for Z.AI/MiniMax/Kimi have shipped. Codex GLM/Z.AI and Codex Kimi remain deferred until those providers expose a Responses-compatible endpoint. Remaining work is provider-catalog polish: remove known config-generation drift, tighten availability/update detection, and keep provider docs aligned with upstream endpoint/model changes.
 
 > **Registry note.** Provider routing now lives behind the workspace crate registry. The durable design record for the runtime/provider adapter work lives in [Architecture](/reference/getting-oriented/architecture/#agentruntime-and-provider-registry).
 
@@ -52,7 +54,7 @@ Do the same for OpenCode generation after the catalog grows: `build_opencode_con
 
 Provider docs and constants should be audited when upstream changes plan names, endpoint hosts, key shapes, or model ids. The current documented subscription flows are key-copy flows: Z.AI API key, MiniMax Token Plan `sk-cp-…` subscription key, and Kimi Code `sk-ki…` key.
 
-## Source evidence
+## Canonical implementation references
 
 - <RepoFile path="crates/jackin-protocol/src/lib.rs">crates/jackin-protocol/src/lib.rs</RepoFile> — `Provider` variants, labels, env overrides, `available_for`, key env vars, Codex profile hook, provider-model map in `CapsuleConfig`.
 - <RepoFile path="crates/jackin-protocol/src/provider_adapter.rs">crates/jackin-protocol/src/provider_adapter.rs</RepoFile> — sealed `ProviderAdapter`, native provider behavior, Z.AI/MiniMax/Kimi support matrix, Codex profile support only for MiniMax, OpenCode model strings.
@@ -69,4 +71,4 @@ Provider docs and constants should be audited when upstream changes plan names, 
 - [Multi-runtime support](/roadmap/multi-runtime-support/) — agent runtimes this routing targets.
 - [AgentRuntime and Provider registry](/reference/getting-oriented/architecture/#agentruntime-and-provider-registry) — provider adapter architecture.
 - [Agent launch flags API](/roadmap/agent-launch-flags-api/) — shares the `jackin-capsule runtime-setup` dispatch surface.
-- [Reliable Claude authentication strategy](/reference/research/authentication/claude-auth-strategy/) — parallel Anthropic-native auth strategy.
+- [Reliable Claude authentication strategy](/research/agents/authentication/claude-auth-strategy/) — parallel Anthropic-native auth strategy.

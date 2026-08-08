@@ -7,7 +7,7 @@
 //! host console consumes. The detection state machine itself lives in the
 //! capsule (`jackin-capsule::agent_status`); only the values that cross the
 //! control socket belong here. See the roadmap item
-//! `reference/roadmap/agent-runtime-status` for the design.
+//! `/roadmap/agent-runtime-status/` for remaining implementation work.
 
 use serde::{Deserialize, Serialize};
 

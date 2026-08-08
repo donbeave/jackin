@@ -20,6 +20,9 @@ exclude = [
   "https://ampcode\\.com/",
   # chatgpt.com returns 403 to all automated clients including lychee.
   "https://chatgpt\\.com/",
+  # These OpenAI pages are browser-visible but return 403 to automated clients.
+  "https://openai\\.com/index/introducing-gpt-5-3-codex-spark/",
+  "https://help\\.openai\\.com/en/articles/9793128-about-chatgpt-pro-tiers",
   # GitHub issue-list links are remapped to the API during static docs checks;
   # the API endpoint can return 403 from GitHub Actions even for public repos.
   "https://api\\.github\\.com/repos/jackin-project/jackin/issues",
@@ -43,6 +46,10 @@ exclude = [
   "https://grok\\.com/supergrok",
   # Medium returns 403 to all automated clients for this page.
   "https://paul-hackenberger\\.medium\\.com/the-ultimate-token-saving-stack-rtk-caveman-and-tokensave-163badadd9ec",
+  # These cited research sources reject or time out for automated clients.
+  "https://git\\.joshthomas\\.dev/mirrors/claude-code-sandbox/src/commit/b44cf1a84e0bab3f5f2ded8a871cbdc43ce50249/docs/lift-and-shift-credentials\\.md",
+  "https://winbuzzer\\.com/2026/02/24/openai-chatgpt-pro-lite-100-dollar-plan-found-checkout-code-xcxwbn/",
+  "https://pranoti\\.thesciencetalk\\.com/perspectives/claude-5-hour-session-limit-how-it-works/",
   # InfoQ returns 405/captcha to automated clients for this browser-visible page.
   "https://www\\.infoq\\.com/news/2025/11/toon-reduce-llm-cost-tokens/",
   # handler.dev is a browser-visible research reference, but CI lychee
@@ -52,7 +59,7 @@ exclude = [
   # article is browser-visible. Cited from docs/reference/tui/navigation.mdx.
   "https://www\\.nngroup\\.com/",
   # code.visualstudio.com is browser-visible but its WAF intermittently returns
-  # 403 to automated clients (lychee). Cited from reference/research-watchlist.mdx.
+  # 403 to automated clients (lychee). Cited from research/watchlist.mdx.
   "https://code\\.visualstudio\\.com/",
   # code.claude.com is browser-visible, but redirects automated clients to
   # dns.google where the documentation path returns 404.
@@ -64,7 +71,7 @@ exclude = [
   # to it. Cited from reference/tui and capsule terminal-model docs.
   "https://wezterm\\.org/",
   # xtermjs.org is browser-visible but CI lychee fails to connect to it.
-  # Cited from reference/roadmap/clipboard-image-bridge.
+  # Cited from roadmap/clipboard-image-bridge.
   "https://xtermjs\\.org/",
   # Reddit returns 403 to automated clients for this curated Clippy lint list.
   "https://www\\.reddit\\.com/r/rust/comments/1rxbygj/curated_list_of_clippy_lints_worth_adding_to_the/",

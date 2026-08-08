@@ -2,7 +2,9 @@
 title: "Auth overwrite on new tab — root cause, fix, and long-term strategy"
 ---
 
-**Status**: Partially implemented — new-tab auth overwrite fixed; live cross-session token sync deferred to the [jackin❯ daemon](/roadmap/jackin-daemon/) program
+**Status**: Partially implemented
+
+**Current state**: new-tab auth overwrite fixed; live cross-session token sync deferred to the [jackin❯ daemon](/roadmap/jackin-daemon/) program
 
 ## Problem
 
@@ -46,8 +48,8 @@ Implementation order stays:
 - [Auth reliability and convenience program](/roadmap/auth-reliability-program/) — umbrella that places this fix as Phase 0 in the complete auth reliability sequence; read it for how this item connects to live sync, health visibility, and multi-company isolation.
 - [jackin❯ daemon](/roadmap/jackin-daemon/) — the umbrella long-running-process item. Lifecycle, install, control socket, and security posture are still in design; live auth sync is proposed as a later adapter.
 - [Live bidirectional auth sync](/roadmap/live-auth-sync/) — proposed architecture for the shared store, per-axis adapters, in-container watcher, and conflict resolution. The long-term answer to the auth fragility problem this shipped fix partially addresses.
-- [Reliable Claude authentication strategy](/reference/research/authentication/claude-auth-strategy/) — design history for the `sync` / `token` / `ignore` mode set; the concurrent-session token-drift concerns documented there are what this root-cause fix narrows.
-- [Container credential exposure](/reference/research/security/credential-exposure/container-credential-exposure/) — threat model for tokens in containers. The shared store introduced by live sync is the next hardening target in that trajectory.
+- [Reliable Claude authentication strategy](/research/agents/authentication/claude-auth-strategy/) — design history for the `sync` / `token` / `ignore` mode set; the concurrent-session token-drift concerns documented there are what this root-cause fix narrows.
+- [Container credential exposure](/research/platform/security/credential-exposure/container-credential-exposure/) — threat model for tokens in containers. The shared store introduced by live sync is the next hardening target in that trajectory.
 - <RepoFile path="crates/jackin-capsule/src/runtime_setup.rs">crates/jackin-capsule/src/runtime_setup.rs</RepoFile> — the fixed file; `run()`, `run_agent_setup()`, and `setup_*()` are the changed functions.
 - <RepoFile path="crates/jackin-instance/src/auth.rs">crates/jackin-instance/src/auth.rs</RepoFile> — `provision_*_auth()` functions that write the launch-time credential snapshot. The snapshot model is unchanged by the shipped new-tab fix; it remains the input to first-boot auth bootstrap.
 - <RepoFile path="crates/jackin-runtime/src/runtime/launch.rs">crates/jackin-runtime/src/runtime/launch.rs</RepoFile> — `agent_mounts()` that bind-mounts the provisioned snapshot into the container.

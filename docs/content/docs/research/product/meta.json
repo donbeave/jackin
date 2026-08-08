@@ -1,0 +1,5 @@
+{
+  "title": "Product",
+  "defaultOpen": false,
+  "pages": ["index", "desktop", "operator-experience", "growth", "future-directions"]
+}

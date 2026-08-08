@@ -2,9 +2,11 @@
 title: "Docker Runtime Hardening Contract"
 ---
 
-**Status**: Partially implemented — Docker profile enforcement is wired, `standard` is the compiled default, and rootless DinD is a recommended explicit grant; credential env-only posture remains
+**Status**: Partially implemented
 
-## Shipped evidence
+**Current state**: Docker profile enforcement is wired, `standard` is the compiled default, and rootless DinD is a recommended explicit grant; credential env-only posture remains
+
+## Shipped baseline
 
 The hardening contract is no longer just a model. The launch path applies the profile decisions and the core decisions are unit-tested through pure launch-plan helpers.
 
@@ -43,7 +45,7 @@ Parallel hardening tracks remain independent: host.sock auth is already implemen
 
 ## Remaining work
 
-1. **Credential env-only posture.** Under `hardened`/`locked`, prefer env-only or otherwise reduced credential exposure and emit a `credential_posture` decision per agent auth type. Coordinate with [Container credential exposure](/reference/research/security/credential-exposure/container-credential-exposure/).
+1. **Credential env-only posture.** Under `hardened`/`locked`, prefer env-only or otherwise reduced credential exposure and emit a `credential_posture` decision per agent auth type. Coordinate with [Container credential exposure](/research/platform/security/credential-exposure/container-credential-exposure/).
 
 Rootless DinD default research is closed for this track: keep `standard` default DinD as `none`, recommend `dind = "rootless"` as the explicit Docker-workflow grant on cgroup v2, and reserve `compat`/privileged DinD for workflows that cannot run rootless.
 
@@ -71,5 +73,5 @@ Rootless DinD default research is closed for this track: keep `standard` default
 | [Apple Container backend](/roadmap/apple-container-backend/) | macOS 26 VM backend; rootless DinD validation informs Apple Container viability. |
 | [Network egress policy](/roadmap/network-egress-policy/) | Future proxy-sidecar egress and connection logs beyond Docker firewall rules. |
 | [Declarative resource limits](/roadmap/declarative-resource-limits/) | Resource-budget schema and parser. |
-| [Process-level sandboxing](/reference/research/security/process-sandboxing/process-level-sandboxing/) | Per-command isolation inside any Docker profile. |
+| [Process-level sandboxing](/research/platform/security/process-sandboxing/process-level-sandboxing/) | Per-command isolation inside any Docker profile. |
 | [Session contract and explain mode](/roadmap/session-contract-explain-mode/) | Active profile inspection before launch. |
