@@ -193,7 +193,7 @@ jobs:
     timeout-minutes: 15
     env:
       CI_LANE: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'velnor') && 'Velnor' || 'GitHub' }}
-      DOCS_XTASK: ${{ github.workspace }}/.ci-tools/${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'velnor') && 'Velnor' || 'GitHub' }}/jackin-xtask
+      DOCS_XTASK: ${{ github.workspace }}/.ci-prebuilt-xtask/jackin-xtask
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -266,7 +266,7 @@ jobs:
     timeout-minutes: 20
     env:
       CI_LANE: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'velnor') && 'Velnor' || 'GitHub' }}
-      DOCS_XTASK: ${{ github.workspace }}/.ci-tools/${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'velnor') && 'Velnor' || 'GitHub' }}/jackin-xtask
+      DOCS_XTASK: ${{ github.workspace }}/.ci-prebuilt-xtask/jackin-xtask
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
