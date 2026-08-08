@@ -1120,7 +1120,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: >-
           "$CI_XTASK" ci-audit
-          --expect-clean "${{ needs.changes.outputs.result-reuse == 'true' }}"
+          --expect-clean "${{ needs.changes.outputs.result-reuse == 'true' && needs.changes.outputs.workflows != 'true' }}"
           --workflow-label CI
       - name: Stage input-identical successful CI result
         if: >-
