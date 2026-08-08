@@ -2,7 +2,9 @@
 title: "jackin❯ join & Debug Export"
 ---
 
-**Status**: Open — local telemetry artifacts and their reveal/open surfaces have been removed; project join and a non-telemetry redacted debug bundle remain unimplemented
+**Status**: Open
+
+**Current state**: local telemetry artifacts and their reveal/open surfaces have been removed; project join and a non-telemetry redacted debug bundle remain unimplemented
 
 ## Shipped facts
 
@@ -16,9 +18,9 @@ Add a diagnostic export command, name still open (`jackin debug export` or simil
 
 Redaction must hide token/API-key values and 1Password vault/item/field specifics while preserving enough structure to debug resolution failures. Bundles stay local; no upload service and no import/replay command in this item.
 
-### 2. `jackin join` research
+### 2. Project onboarding
 
-Research project-level onboarding separately from debug export. `jackin join <org>/<project>` would let a repo publish jackin❯ workspace setup information, then guide a new contributor through trust, workspace choice, credentials, clone/setup, and first launch. Open questions remain: config file shape, private-repo auth, trust model, multi-workspace monorepos, and whether prerequisites are installed or only diagnosed.
+Implement project-level onboarding separately from debug export. `jackin join <org>/<project>` should let a repository publish jackin❯ workspace setup information, then guide a new contributor through trust, workspace choice, credentials, clone/setup, and first launch. Before implementation, decide the config shape, private-repository auth, trust model, multi-workspace monorepo behavior, and whether prerequisites are installed or only diagnosed.
 
 ## Non-goals
 
@@ -35,5 +37,5 @@ Research project-level onboarding separately from debug export. `jackin join <or
 ## Cross-references
 
 - [Operator CLI Hygiene](/roadmap/operator-cli-hygiene/) — `doctor`, `status`, JSON output, and dry-run complement debug export.
-- [/reference/research/agent-orchestration/program-research/](/reference/research/agent-orchestration/program-research/) — workspace-as-code context.
-- [/reference/research/desktop/agent-hub/jackin-desktop-agent-hub/](/reference/research/desktop/agent-hub/jackin-desktop-agent-hub/) — desktop hub could consume debug bundles.
+- [/research/agents/orchestration/program-research/](/research/agents/orchestration/program-research/) — workspace-as-code context.
+- [/research/product/desktop/agent-hub/jackin-desktop-agent-hub/](/research/product/desktop/agent-hub/jackin-desktop-agent-hub/) — desktop hub could consume debug bundles.

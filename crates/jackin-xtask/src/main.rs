@@ -138,7 +138,7 @@ enum Command {
     Docs(docs::DocsCommand),
     /// Scaffold or validate research dossiers.
     ///
-    /// Use as `cargo xtask research scaffold <slug>` / `research check`.
+    /// Use as `cargo xtask research scaffold <slug> --group <domain>` / `research check`.
     #[command(subcommand)]
     Research(docs::ResearchCommand),
     /// Roadmap sidebar maintenance.

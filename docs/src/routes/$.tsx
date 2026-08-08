@@ -11,7 +11,7 @@ import { staticFunctionMiddleware } from '@tanstack/start-static-server-function
 import browserCollections from 'collections/browser'
 import { useFumadocsLoader } from 'fumadocs-core/source/client'
 import { DocsLayout } from 'fumadocs-ui/layouts/docs'
-import { Layers, Route as RoadmapIcon, SquareTerminal } from "lucide-react"
+import { Layers, Microscope, Route as RoadmapIcon, SquareTerminal } from 'lucide-react'
 import {
   DocsBody,
   DocsDescription,
@@ -73,7 +73,7 @@ const serverLoader = createServerFn({
       : undefined
 
     // The public/jackin❯ tab is the catch-all section — every page not under the
-    // /reference or /roadmap roots. It can't be matched by a url prefix (the
+    // /reference, /roadmap, or /research roots. It can't be matched by a url prefix (the
     // section has several), so the switcher matches it by exact membership.
     return {
       path: page.path,
@@ -141,16 +141,16 @@ function Page() {
         // shows it when tabMode === 'auto'; don't rely on the fumadocs default
         // (it changed across versions and silently dropped the switcher).
         tabMode: 'auto',
-        // Three doc blocks, switched via the sidebar dropdown (fumadocs Sidebar Tabs).
-        // Public is the default; Internals and Roadmap are separate roots, hidden
+        // Four doc blocks, switched via the sidebar dropdown (fumadocs Sidebar Tabs).
+        // Public is the default; Internals, Roadmap, and Research are separate roots, hidden
         // until the reader switches. Order matters: `/` prefix-matches everything,
         // so the more specific roots must come after it for active-tab detection.
         tabs: [
           {
             // Public is the catch-all section (everything not under /reference or
-            // /roadmap). It has no single url prefix isActive can match, so it's
+            // /roadmap or /research). It has no single url prefix isActive can match, so it's
             // matched by exact page membership via `urls`. `url` is just the click
-            // target. Order matters: /reference and /roadmap win via findLast.
+            // target. Order matters: the three explicit roots win via findLast.
             title: 'jackin❯',
             description: 'Install, run, and operate jackin❯.',
             url: '/getting-started/why',
@@ -159,15 +159,21 @@ function Page() {
           },
           {
             title: 'Behind jackin❯',
-            description: 'Internals, research, and developer reference.',
+            description: 'Internals and developer reference.',
             url: '/reference',
             icon: <Layers />,
           },
           {
             title: 'Roadmap',
-            description: 'Planned, in-progress, and shipped work on jackin❯ itself.',
+            description: 'Planned, in-progress, and brainstormed work.',
             url: '/roadmap',
             icon: <RoadmapIcon />,
+          },
+          {
+            title: 'Research',
+            description: 'Evidence, comparisons, and design rationale.',
+            url: '/research',
+            icon: <Microscope />,
           },
         ],
         footer: (

@@ -66,7 +66,7 @@ RUN apt-get update && \
 # libnss-extrausers reads extra passwd/group files (bind-mounted at runtime) so
 # `getpwuid(host_uid)` resolves to `agent` with HOME=/home/agent and host GIDs
 # can resolve when the base image has no matching group. See
-# /reference/roadmap/construct-user-creation/.
+# /reference/runtime/user-identity/.
 RUN sed -ri 's/^(passwd:.*)$/\1 extrausers/; s/^(group:.*)$/\1 extrausers/' /etc/nsswitch.conf && \
     install -d -m 0755 /var/lib/extrausers && \
     : > /var/lib/extrausers/passwd && \

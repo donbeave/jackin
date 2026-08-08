@@ -1,10 +1,5 @@
 {
-  "title": "Reactive daemon program",
+  "title": "Reactive daemon",
   "defaultOpen": false,
-  "pages": [
-    "jackin-daemon",
-    "jackin-capsule",
-    "(phase-2-first-reactive-adapters)",
-    "(phase-3-host-bridge)"
-  ]
+  "pages": ["jackin-daemon", "jackin-capsule", "(reactive-adapters)", "(host-integration)"]
 }

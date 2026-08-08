@@ -70,22 +70,24 @@ Markers without TODO.md entry OK for transient in-flight work, but anything outl
 
 ## Roadmap
 
-Roadmap items — open work and resolved design docs — live in docs site. See:
+Roadmap items are unfinished implementation outcomes only. Evidence and design rationale live under [Research](docs/content/docs/research/index.mdx). See:
 
 - Overview: [`docs/content/docs/roadmap/index.mdx`](docs/content/docs/roadmap/index.mdx)
 - Per-item design docs: [`docs/content/docs/roadmap/`](docs/content/docs/roadmap/)
-- Browsable: <https://jackin.tailrocks.com/reference/roadmap/>
+- Browsable: <https://jackin.tailrocks.com/roadmap/>
 
-To add an item, create an MDX page under that directory and update the appropriate `meta.json` sidebar file under [`docs/content/docs/roadmap/`](docs/content/docs/roadmap/). Whenever you add, rename, delete, or change an item's `**Status**` (Open ↔ Resolved), update the sidebar in same PR — directory and sidebar must stay in sync. Operators discover open work through the sidebar; an item reachable only via overview page or direct URL is effectively hidden. Run `cargo xtask roadmap audit` to confirm the roadmap overview and sidebar metadata match the file tree.
+To add an item, use `cargo xtask change new <slug> --group <group>`, then fill the outcome, current state, remaining work, completion gate, and related research. Register it in exactly one status view: `in-progress.mdx`, `planned.mdx`, or `ideas.mdx`. Run `cargo xtask roadmap audit` and `cargo xtask research check` after structural changes.
 
-Each design doc should include (see any existing page as template):
+Each roadmap item should include:
 
-- `**Status**: Open | Deferred | Resolved`
-- `## Problem`
-- `## Why It Matters`
-- `## Related Files`
+- `**Status**: Partially implemented | Open | Deferred | Exploring`
+- `**Outcome**`
+- `## Current state`
+- `## Remaining work`
+- `## Completion gate`
+- `## Related research` when evidence exists
 
-Roadmap vs. follow-up: needs a problem statement and design discussion → roadmap item. "Swap a SHA when upstream releases" or "rename three callers for consistency" → follow-up.
+Roadmap vs. research vs. follow-up: implementation outcome with meaningful remaining scope → Roadmap; evidence, comparison, experiment, or design rationale → Research; small concrete maintenance action → follow-up.
 
 ## Stale-docs check (every PR)
 
@@ -105,10 +107,10 @@ Docs rot silently. Every PR must include a one-pass verification structure-sensi
 
 ### When your PR touches a roadmap item
 
-- [ ] If the PR resolves or advances an item under `docs/content/docs/roadmap/`, update that item's `Status` field (`Open | Deferred | Resolved`) and `Related Files` section in same PR.
+- [ ] If the PR advances an item under `docs/content/docs/roadmap/`, update its exact status, current-state boundary, remaining work, completion gate, and links in the same PR. If all work ships, retire the item.
 - [ ] If the PR references source paths that have since moved (e.g., a roadmap doc mentions the old monolith runtime path and the code now lives in the `crates/jackin-runtime` runtime module tree), fix those path references.
 - [ ] If the PR adds, renames, deletes, or moves a roadmap MDX file between status sections, update the matching `meta.json` file under [`docs/content/docs/roadmap/`](docs/content/docs/roadmap/) so the roadmap sidebar matches the directory. Run `cargo xtask roadmap audit` to confirm the sidebar is in sync.
-- [ ] If the PR adds a new roadmap item, or changes any item's `**Status**` (e.g. Open → Resolved, Open → Deferred, Open → Partially implemented), update [`docs/content/docs/roadmap/index.mdx`](docs/content/docs/roadmap/index.mdx) so the item lands in the correct section (Completed / Partially implemented / Planned with the right `(status: …)` suffix). Run `cargo xtask roadmap audit` to confirm no items are missing.
+- [ ] If the PR adds a roadmap item or changes its `**Status**`, update exactly one of [`in-progress.mdx`](docs/content/docs/roadmap/in-progress.mdx), [`planned.mdx`](docs/content/docs/roadmap/planned.mdx), or [`ideas.mdx`](docs/content/docs/roadmap/ideas.mdx). Retired items disappear; there is no Completed section.
 
 ### How to verify
 

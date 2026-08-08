@@ -19,13 +19,13 @@ Deeper questions — module layout, what each `src/` subdir owns, where to start
 | "How do instance identity, restore, and parallel sessions work?" | [Runtime Instance Model](https://jackin.tailrocks.com/reference/runtime/runtime-instance-model/) |
 | "What does `~/.config/jackin/config.toml` look like?" | [Configuration File](https://jackin.tailrocks.com/reference/runtime/configuration/) |
 | "How are role repositories structured?" | [Role Repositories](https://jackin.tailrocks.com/guides/role-repos/) |
-| "What is on the roadmap?" | [Roadmap](https://jackin.tailrocks.com/reference/roadmap/) |
+| "What is on the roadmap?" | [Roadmap](https://jackin.tailrocks.com/roadmap/) |
 
 Docs = single source of truth for *narrative* internals. This file stays terse on purpose — prose belongs on docs page; here we point at it.
 
 ## Ecosystem repositories
 
-jackin❯ split across multiple GitHub repos. This repo owns CLI; siblings own roles, construct image source, Homebrew tap, docs site (docs live inside this repo today — see roadmap item [Move documentation to a separate repository](https://jackin.tailrocks.com/reference/roadmap/docs-separate-repository/)).
+jackin❯ splits across multiple GitHub repos. This repo owns the CLI; siblings own roles, construct-image source, and the Homebrew tap. The docs site lives inside this repo today; see the [documentation repository strategy](https://jackin.tailrocks.com/research/engineering/documentation/repository-strategy/docs-separate-repository/).
 
 | Repository | Owns |
 |---|---|
@@ -44,7 +44,7 @@ Workspace Rust source lives under [crates/](crates/). For what each crate owns, 
 
 ## Documentation site (`docs/`)
 
-Fumadocs site on TanStack Start and Vite. **Lives alongside source today** — update docs in same commit as code (see roadmap item [Move documentation to a separate repository](https://jackin.tailrocks.com/reference/roadmap/docs-separate-repository/)).
+Fumadocs site on TanStack Start and Vite. **Lives alongside source today** — update docs in same commit as code (see research [Documentation repository strategy](https://jackin.tailrocks.com/research/engineering/documentation/repository-strategy/docs-separate-repository/)).
 
 - Published at: <https://jackin.tailrocks.com/>
 - Dev server: `cd docs && bun run dev`
@@ -56,7 +56,7 @@ Sidebar split by **three audiences**:
 
 - **Operator** (Getting Started, Operator Guide, Commands) — uses jackin❯ as product through CLI/TUI. Pages describe behaviour through CLI/TUI flows — no TOML schemas, no on-disk paths, no Rust internals.
 - **Role author** (Role Authoring) — *also user-facing*, but for users building own role repos (`backend-engineer`, `docs-writer`, `security-reviewer`, …). Explain how to create role from scratch, manifest schema, what tools ship in `construct`. No knowledge of jackin❯ implementation required.
-- **Contributor** (Behind jackin❯ — Internals) — works on jackin❯ itself. Architecture, Configuration File schema, Codebase Map, Roadmap. On-disk layouts, internal mechanisms, Rust-level detail live here.
+- **Contributor** (Behind jackin❯, Roadmap, Research) — works on jackin❯ itself. Behind jackin❯ documents current internals, Roadmap tracks unfinished implementation intent, and Research preserves evidence and design rationale.
 
 Slugs stable across audience split — parenthesized content group directories keep audience organization out of URLs.
 

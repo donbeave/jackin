@@ -2,7 +2,9 @@
 title: "jackin❯ Desktop — native macOS usage status bar"
 ---
 
-**Status**: **Partially implemented**. jackin❯ Desktop ships one native status item per auto-detected provider, the tab-grid Agent Usage preview, the Capsule-parity Usage window, host-global snapshot coordination, and secret-free release validation. Public notarized distribution and production acceptance remain unfinished, so this item cannot move to Completed or retire yet.
+**Status**: Partially implemented
+
+**Current state**: jackin❯ Desktop ships one native status item per auto-detected provider, the tab-grid Agent Usage preview, the Capsule-parity Usage window, host-global snapshot coordination, and secret-free release validation. Public notarized distribution and production acceptance remain unfinished, so this item cannot retire yet.
 
 ## Shipped baseline
 
@@ -24,7 +26,7 @@ As of 2026-08-09, the `release-macos` environment has none of the five required 
 2. Cut the first non-development release from `main`; run publish mode; sign, notarize, staple, and Gatekeeper-validate `JackinDesktop.app`; then publish the immutable ZIP, SHA-256 sidecar, Sigstore bundle, SBOM, and GitHub attestation. Verify the downloaded artifact with `cargo xtask release-verify`.
 3. Advance the stable formula and `jackin-desktop` cask in one independently checked tap PR. The first cask requires operator review and merge; it must not auto-merge from the credentials-bearing workflow.
 4. On Apple Silicon macOS 14+, install from the public cask, launch the installed app, exercise the status item/popover/Usage window, uninstall cleanly, and prove a completed-version release rerun makes no writes. Retain partial/conflict fail-closed behavior.
-5. Reconcile durable operator, architecture, and release-verification docs with observed production behavior. Only then retire this roadmap page and replace it with a Completed overview bullet linking canonical docs.
+5. Reconcile durable operator, architecture, and release-verification docs with observed production behavior. Only then retire this roadmap page; canonical docs and Git history retain the shipped record.
 
 ### Native interaction and visual acceptance
 

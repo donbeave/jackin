@@ -141,7 +141,7 @@ For a deeper comparison, including adjacent approaches and where jackin❯ is we
 <Aside type="caution">
 jackin❯ is not a general-purpose container orchestrator. It's specifically designed for AI coding agents.
 </Aside>
-- **Not a microVM today** — the current proof-of-concept boundary is the `Docker` container, not a hypervisor. If you need hypervisor-level isolation right now, use a microVM-based product such as `Docker Sandboxes`. Stronger boundaries — microVMs, alternative sandbox backends — are research items on the [Roadmap](/roadmap/); the long-term plan is to make the boundary configurable per workspace, not to force a single approach on everyone.
+- **Not a microVM today** — the current proof-of-concept boundary is the `Docker` container, not a hypervisor. If you need hypervisor-level isolation right now, use a microVM-based product such as `Docker Sandboxes`. Stronger boundaries are explored in [isolation research](/research/platform/isolation/) and tracked as unfinished implementation work on the [Roadmap](/roadmap/); the long-term plan is to make the boundary configurable per workspace, not to force a single approach on everyone.
 - **Not a sandbox for untrusted code execution** — it's for running *trusted agent runtimes* (`Claude Code`, `Codex`, `Amp`, `Kimi`, `OpenCode`) in a controlled environment. The agent binary itself is trusted; it's the agent's *actions* you want to contain.
 - **Not Kubernetes** — jackin❯ runs on a single machine with `Docker`. Kubernetes support is on the roadmap for teams that need multi-node orchestration.
 

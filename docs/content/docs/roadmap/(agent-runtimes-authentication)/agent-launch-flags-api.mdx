@@ -2,7 +2,9 @@
 title: "Agent Launch Flags API"
 ---
 
-**Status**: Open — baseline shipped, override API unimplemented
+**Status**: Open
+
+**Current state**: baseline shipped, override API unimplemented
 
 ## Shipped facts
 
@@ -12,7 +14,7 @@ The `AgentRuntime` trait and adapter registry now exist in <RepoFile path="crate
 
 The high-autonomy defaults remain documented in [Security implementation](/reference/security-implementation/#high-autonomy-launch-flags). Current built-in defaults cover Claude, Codex, Amp, Kimi, OpenCode, and Grok. OpenCode's approval behavior is partly environment/config based rather than only CLI flags.
 
-Research: [Agent Launch Flags API: Design Options](/reference/research/agent-runtimes/agent-launch-flags-api-design/) has the proposed static-manifest + runtime-API shape, phasing, and open design questions.
+Research: [Agent Launch Flags API: Design Options](/research/agents/runtimes/agent-launch-flags-api-design/) has the proposed static-manifest + runtime-API shape, phasing, and open design questions.
 
 ## Remaining work
 
@@ -30,4 +32,4 @@ Research: [Agent Launch Flags API: Design Options](/reference/research/agent-run
 ## Related work
 
 - [Docker runtime hardening contract](/roadmap/docker-runtime-hardening-contract/) — hardened profiles may restrict launch flags.
-- Research: [Agent Launch Flags API: Design Options](/reference/research/agent-runtimes/agent-launch-flags-api-design/) — proposal, phasing, open questions.
+- Research: [Agent Launch Flags API: Design Options](/research/agents/runtimes/agent-launch-flags-api-design/) — proposal, phasing, open questions.

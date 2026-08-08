@@ -11,7 +11,7 @@
 //! cargo xtask docs brand                          # brand-prose lint (RULES.md)
 //! cargo xtask docs specs                          # spec↔test citation gate
 //! cargo xtask docs map-check                      # workspace crates named in Codebase Map
-//! cargo xtask research scaffold <slug>            # scaffold a research dossier
+//! cargo xtask research scaffold <slug> --group <domain> # scaffold a research dossier
 //! cargo xtask research check                      # validate research meta.json
 //! cargo xtask roadmap audit                       # validate roadmap meta.json
 //! ```
@@ -35,7 +35,7 @@ mod specs;
 const DOCS_ROOT: &str = "docs/content/docs";
 const DOCS_MARKDOWN_ROOT: &str = "docs";
 const ROADMAP_REL: &str = "roadmap";
-const RESEARCH_REL: &str = "reference/research";
+const RESEARCH_REL: &str = "research";
 const REPO_FILE_PREFIXES: &[&str] = &[
     "crates/", "src/", "docs/", "docker/", ".github/", "scripts/",
 ];
@@ -131,8 +131,11 @@ pub(crate) enum ResearchCommand {
 
 #[derive(Args)]
 pub(crate) struct ResearchScaffoldArgs {
-    /// Kebab-case slug; becomes the dossier directory name.
+    /// Kebab-case slug; becomes the dossier directory name under `--group`.
     slug: String,
+    /// Top-level research domain: `agents`, `platform`, `product`, `engineering`, or `context`.
+    #[arg(long)]
+    group: String,
     /// Dossier title. Defaults to a title-cased form of the slug.
     #[arg(long)]
     title: Option<String>,
@@ -397,7 +400,7 @@ pub(crate) fn run_research(command: ResearchCommand) -> Result<()> {
         ResearchCommand::Check(args) => report::run_gate(
             args.output.resolved(),
             "research",
-            "docs/content/docs/reference/research/",
+            "docs/content/docs/research/",
             "repair meta.json page entries and orphaned research pages",
             "cargo xtask research check",
             || validate_tree(&research_dir()?, "research"),
@@ -546,13 +549,13 @@ fn change_new_in(roadmap: &Path, args: ChangeNewArgs) -> Result<()> {
     }
 
     let body = format!(
-        "---\ntitle: \"{title}\"\n---\n\n\
-         **Status**: Open — design proposal\n\n\
-         ## Problem\n\n<!-- What concrete problem or gap does this address? -->\n\n\
-         ## Why It Matters\n\n<!-- Why is this worth doing now? -->\n\n\
-         ## Design\n\n<!-- Filled in by brainstorming. -->\n\n\
-         ## Tasks\n\n<!-- Filled in by planning. -->\n\n\
-         ## Related Files\n\n<!-- Source paths this item touches. -->\n"
+        "---\ntitle: \"{title}\"\ndescription: \"<!-- One-sentence unfinished outcome. -->\"\n---\n\n\
+         **Status**: Open\n\n\
+         **Outcome**: <!-- What must become true? -->\n\n\
+         ## Current state\n\n<!-- What exists today? Keep research evidence in /research. -->\n\n\
+         ## Remaining work\n\n<!-- Concrete implementation scope. -->\n\n\
+         ## Completion gate\n\n<!-- Observable evidence required before retirement. -->\n\n\
+         ## Related research\n\n<!-- Site links under /research, when applicable. -->\n"
     );
     fs::write(&item_path, body).with_context(|| format!("writing {}", item_path.display()))?;
 
@@ -571,7 +574,17 @@ fn research_scaffold_in(research: &Path, args: ResearchScaffoldArgs) -> Result<(
     validate_slug(&args.slug)?;
     let title = args.title.unwrap_or_else(|| title_from_slug(&args.slug));
 
-    let dossier = research.join(&args.slug);
+    let group = args.group.trim_matches(['(', ')'].as_ref());
+    let group_dir = research.join(group);
+    let group_meta = group_dir.join("meta.json");
+    if !group_meta.is_file() {
+        bail!(
+            "research group `{group}` not found at {} — choose agents, platform, product, engineering, or context",
+            group_dir.display()
+        );
+    }
+
+    let dossier = group_dir.join(&args.slug);
     if dossier.exists() {
         bail!("research dossier already exists: {}", dossier.display());
     }
@@ -581,10 +594,13 @@ fn research_scaffold_in(research: &Path, args: ResearchScaffoldArgs) -> Result<(
     fs::write(
         &index,
         format!(
-            "---\ntitle: \"{title}\"\n---\n\n# {title}\n\n\
-             Research dossier. Specification: [`prompt`](prompt/).\n\n\
-             ## Headline numbers\n\n<!-- Key findings, each with a source. -->\n\n\
-             ## How to read\n\n<!-- Chapter map. -->\n"
+            "---\ntitle: \"{title}\"\ndescription: \"<!-- One-sentence research question. -->\"\n---\n\n\
+             **Research state**: Working — specification: [`prompt`](prompt/).\n\n\
+             ## Research question\n\n<!-- What must this dossier establish? -->\n\n\
+             ## Method and evidence\n\n<!-- Sources, measurements, dates, and confidence limits. -->\n\n\
+             ## Headline findings\n\n<!-- Key findings, each with a source. -->\n\n\
+             ## How to read\n\n<!-- Chapter map and recommended order. -->\n\n\
+             ## Roadmap implications\n\n<!-- Link implementation outcomes; do not schedule work here. -->\n"
         ),
     )
     .with_context(|| format!("writing {}", index.display()))?;
@@ -593,7 +609,7 @@ fn research_scaffold_in(research: &Path, args: ResearchScaffoldArgs) -> Result<(
     fs::write(
         &prompt,
         format!(
-            "---\ntitle: \"{title} Brief\"\n---\n\n# {title} Brief\n\n\
+            "---\ntitle: \"{title} brief\"\ndescription: \"Reproducible research specification for {title}.\"\n---\n\n\
              > **How to run this file:** `/goal Follow {}`. You are the researcher; \
              this brief is your full specification.\n\n\
              ## Mission\n\n<!-- What to produce, the evidence bar, the chapter list. -->\n",
@@ -608,14 +624,14 @@ fn research_scaffold_in(research: &Path, args: ResearchScaffoldArgs) -> Result<(
         &json!({ "title": title, "defaultOpen": false, "pages": ["index", "prompt"] }),
     )?;
 
-    // Register the dossier in the parent research sidebar.
-    append_page(&research.join("meta.json"), &args.slug)?;
+    // Register the dossier in its domain sidebar.
+    append_page(&group_meta, &args.slug)?;
 
     report_created(&[
         index.as_path(),
         prompt.as_path(),
         meta.as_path(),
-        research.join("meta.json").as_path(),
+        group_meta.as_path(),
     ]);
     Ok(())
 }
@@ -1060,8 +1076,8 @@ fn retire_plan(docs_root: &Path, roadmap: &Path, item: &Path, slug: &str) -> Res
 
     emit(&format!("Retirement plan for `{slug}` (read-only)\n"));
     emit("1. Move the page content below into canonical docs (operator detail →");
-    emit("   guides/commands, design detail → reference); write a ## Completed bullet");
-    emit("   in roadmap/index.mdx; repoint the inbound links listed below.");
+    emit("   guides/commands, design rationale → reference or research); remove it");
+    emit("   from the active roadmap status view; repoint the inbound links below.");
     emit("2. Then run: cargo xtask roadmap retire <slug> --apply\n");
     match group {
         Some((meta, entry)) => emit(&format!(

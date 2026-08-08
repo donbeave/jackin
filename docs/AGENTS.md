@@ -104,32 +104,32 @@ bun install --frozen-lockfile
   ```
 
   Scripts report any MDX file with no matching `meta.json` entry and any entry with no matching MDX file. Both directions must be clean.
-- **Roadmap overview discipline.** `content/docs/roadmap/index.mdx` is the entry operators land on for a single picture of *what shipped, partial, planned, deferred, on hold*. Sidebar lists every item alphabetically/by phase; overview tells the **status story**. Different jobs, maintained together, not folded into one.
+- **Research sidebar discipline.** Research is a separate root at `content/docs/research/`, grouped under `agents`, `platform`, `product`, `engineering`, and `context`. Every research MDX file must be reachable through nested `meta.json` entries. Research pages use `**Research state**`, never roadmap `**Status**`; evidence, comparisons, experiments, and design rationale stay here, while implementation commitment stays under `/roadmap/`. New dossiers use `cargo xtask research scaffold <slug> --group <domain>`.
+- **Roadmap overview discipline.** `content/docs/roadmap/index.mdx` explains the planning contract. `in-progress.mdx`, `planned.mdx`, and `ideas.mdx` are the status views. Sidebar groups every item by product area. The Roadmap contains no completed archive and no research evidence.
 
-  On any add/rename/delete/`**Status**`-change of a roadmap item, update `roadmap.mdx` so item lands in matching section:
+  On any add/rename/delete/`**Status**`-change of a roadmap item, update the matching status view:
 
-  | `**Status**` value | Section in `roadmap.mdx` |
+  | `**Status**` value | Status view |
   |---|---|
-  | `Resolved` / `Implemented in V1` | **Completed** |
-  | `Partially implemented` | **Partially implemented** |
-  | `Open` (active design / Phase work) | **Planned** (under the right subsection) |
-  | `Deferred` / `Proposed` / `Needs design` | **Planned** with a `(status: …)` suffix on the bullet |
+  | `Partially implemented` | `in-progress.mdx` |
+  | `Open` | `planned.mdx` |
+  | `Deferred` / `Exploring` | `ideas.mdx` |
 
-  An item in `roadmap/` unreachable from `roadmap.mdx` is half-hidden: overview-only reader thinks work doesn't exist; sidebar-only reader sees title without status. Both must agree.
+  When the last unfinished outcome ships, retire the page and remove it from the status view. Put shipped behavior in canonical docs and durable rationale in Research; never add a `Resolved` page or Completed section.
 
-  Roadmap pages don't duplicate shipped feature docs. When work lands, move durable operator details to the guide/command/reference page; keep roadmap item to status, canonical-doc links, remaining/future work. Long implementation walkthroughs belong in contributor references, not roadmap items.
+  Roadmap pages don't duplicate shipped feature docs or research dossiers. When work advances, keep only status, current-state boundary, outcome, remaining work, completion gate, and links. Long implementation walkthroughs belong in contributor references; evidence and design rationale belong in Research.
 
   Audit which roadmap items are missing from overview:
 
   ```sh
   find docs/content/docs/roadmap -name '*.mdx' \
     | xargs -n1 basename -s .mdx | grep -v '^index$' | sort > /tmp/roadmap-files
-  grep -oE 'roadmap/[a-z0-9-]+' docs/content/docs/roadmap/index.mdx \
+  grep -hoE 'roadmap/[a-z0-9-]+' docs/content/docs/roadmap/{in-progress,planned,ideas}.mdx \
     | sed 's|roadmap/||' | sort -u > /tmp/roadmap-overview
   comm -23 /tmp/roadmap-files /tmp/roadmap-overview
   ```
 
-  Output lists items in directory but missing from overview. Must be empty *unless* missing items are intentionally umbrella-covered by a parent program entry (e.g. Agent Orchestration leaves, Codebase readability program leaves) — then the program entry itself must appear in overview and explicitly say it covers them.
+  Exclude the four navigation pages (`index`, `in-progress`, `planned`, `ideas`) from the file side. Remaining output lists item pages missing from every status view and must be empty.
 - Use MDX components from `src/components/mdx.tsx` for callouts (`<Aside type="note|tip|caution">`), steps (`<Steps>` around an `<ol>`), tabs (`<Tabs><TabItem>`). Global in MDX.
 - Every page needs a `title:` frontmatter field.
 - **Do not hard-wrap MDX prose, or any markdown the docs site renders, or AGENTS.md / PULL_REQUESTS.md / CLAUDE.md / README.md / CHANGELOG.md / any other prose markdown in the repo.** Each paragraph = one long line. Fumadocs, GitHub's renderer, every reasonable editor wrap at display width; hard-wrapping at ~70 cols makes one-word edits touch every line and splits sentences across meaningless boundaries. Exception: content with meaningful line breaks — code fences, list bullets, table cells, frontmatter values. Unwrap existing hard-wrapped paragraphs as part of the edit that brings you there. The PR-body rule in [PULL_REQUESTS.md](../PULL_REQUESTS.md) is the same rule applied to every prose markdown surface.
@@ -139,7 +139,7 @@ bun install --frozen-lockfile
 - **The site has three audiences, not two.** Classify every docs change against this list before writing:
   1. **Operator** (sidebar groups: *Getting Started*, *Operator Guide*, *Commands*) — uses jackin❯ as a product via CLI/TUI. Never asked to know on-disk paths, TOML schemas, internals.
   2. **Role author** (sidebar group: *Role Authoring* — pages under `guides/role-repos.mdx` and `developing/*`) — **also user-facing**. Builds own role repos with own toolchain + plugins. Needs no jackin❯ implementation knowledge to follow. Only concession: `developing/construct-image.mdx` has a contributor lower half for `mise run construct-build-local` / CI workflow.
-  3. **Contributor** (sidebar group: *Behind jackin❯ — Internals* — `reference/*`, including `roadmap/*.mdx`) — works on jackin❯ itself. Architecture, config-file schema, codebase map, roadmap design proposals. On-disk layouts, internal mechanisms, Rust-level details live here.
+  3. **Contributor** (top-level roots: *Behind jackin❯*, *Roadmap*, and *Research*) — works on jackin❯ itself. `reference/*` owns current internals, `roadmap/*` owns unfinished implementation intent, and `research/*` owns evidence and design rationale. On-disk layouts, internal mechanisms, and Rust-level details remain contributor-facing.
 
   When adding/rewriting a page, decide which audience it serves and put it under matching sidebar group. Never mix audiences in one page beyond the explicit `developing/construct-image.mdx` exception. User-facing surfaces (Operator, Role Authoring) link out to Internals for deeper detail; don't inline it.
 

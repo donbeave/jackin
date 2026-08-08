@@ -2,7 +2,9 @@
 title: "Platform Support Policy & Roadmap Freshness"
 ---
 
-**Status**: Open — nothing implemented yet: no `reference/platform-support.mdx` page exists, no `last_reviewed` frontmatter baseline has been applied beyond this item and the roadmap index, and `docs/scripts/check-roadmap-freshness.ts` does not exist
+**Status**: Open
+
+**Current state**: nothing implemented yet: no `reference/platform-support.mdx` page exists, no `last_reviewed` frontmatter baseline has been applied beyond this item and the roadmap index, and `docs/scripts/check-roadmap-freshness.ts` does not exist
 
 ## Shipped facts
 
@@ -17,9 +19,9 @@ Only a thin platform note exists today: `getting-started/installation.mdx` state
 
 ## Related work
 
-- Research: [Platform support policy and roadmap freshness tracking — design rationale](/reference/research/infrastructure/platform-support-and-freshness-policy/) — platform matrix philosophy, Debian rationale, and staleness-check design.
+- Research: [Platform support policy and roadmap freshness tracking — design rationale](/research/platform/infrastructure/platform-support-and-freshness-policy/) — platform matrix philosophy, Debian rationale, and staleness-check design.
 - <RepoFile path=".github/workflows/release.yml">.github/workflows/release.yml</RepoFile>
 - <RepoFile path="crates/jackin-xtask/src/docs.rs">crates/jackin-xtask/src/docs.rs</RepoFile> (roadmap/docs validators)
-- [/reference/research/isolation/smolvm-backend/](/reference/research/isolation/smolvm-backend/) — Linux/KVM support affects platform matrix.
-- [/reference/research/isolation/orbstack-isolated-machines/](/reference/research/isolation/orbstack-isolated-machines/) — macOS-only backend.
-- [/reference/research/security/sandbox-backends/selectable-sandbox-backends/](/reference/research/security/sandbox-backends/selectable-sandbox-backends/) — backend selection affects platform support.
+- [/research/platform/isolation/smolvm-backend/](/research/platform/isolation/smolvm-backend/) — Linux/KVM support affects platform matrix.
+- [/research/platform/isolation/orbstack-isolated-machines/](/research/platform/isolation/orbstack-isolated-machines/) — macOS-only backend.
+- [/research/platform/security/sandbox-backends/selectable-sandbox-backends/](/research/platform/security/sandbox-backends/selectable-sandbox-backends/) — backend selection affects platform support.

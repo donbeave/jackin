@@ -55,7 +55,7 @@ fn auto_prep_ignores_docs_only_changes() {
     let repo = test_repo_root();
     let auto = auto_prep(
         &repo,
-        &["docs/content/docs/reference/roadmap/pr-verification.mdx".to_owned()],
+        &["docs/content/docs/roadmap/(operator-surface)/pr-verification.mdx".to_owned()],
     )
     .unwrap();
 

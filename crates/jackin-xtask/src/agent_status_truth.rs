@@ -10,7 +10,8 @@ use clap::Args;
 
 use crate::docs::repo_root;
 
-const PAGE: &str = "docs/content/docs/roadmap/(agent-orchestrator-research)/(phase-2-operator-surface)/agent-runtime-status.mdx";
+const PAGE: &str =
+    "docs/content/docs/roadmap/(agent-orchestration)/(live-operations)/agent-runtime-status.mdx";
 const CAPSULE_LIB: &str = "crates/jackin-capsule/src/lib.rs";
 
 #[derive(Args, Debug)]

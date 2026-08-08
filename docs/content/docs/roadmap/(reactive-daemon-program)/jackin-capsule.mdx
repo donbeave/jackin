@@ -2,7 +2,9 @@
 title: "jackin❯ Capsule: In-Container Control Plane"
 ---
 
-**Status**: Partially implemented — Phases 1–3 are shipped in full: `jackin-capsule` is the PID 1 in-container PTY multiplexer (built on jackin-term `DamageGrid`), tmux is fully removed from the derived image and the host CLI, and every terminal-fidelity item once tracked as "remaining" (resize, mouse, focus events, OSC/CSI passthrough, prefix-key input, git-context-driven title/branch bar) is live. Phase 4 (host daemon integration and Desktop Agent Hub bridge) remains open, alongside a smaller set of real control-channel and passthrough gaps below.
+**Status**: Partially implemented
+
+**Current state**: Phases 1–3 are shipped in full: `jackin-capsule` is the PID 1 in-container PTY multiplexer (built on jackin-term `DamageGrid`), tmux is fully removed from the derived image and the host CLI, and every terminal-fidelity item once tracked as "remaining" (resize, mouse, focus events, OSC/CSI passthrough, prefix-key input, git-context-driven title/branch bar) is live. Phase 4 (host daemon integration and Desktop Agent Hub bridge) remains open, alongside a smaller set of real control-channel and passthrough gaps below.
 
 The canonical description of Capsule's current architecture and behaviour lives in:
 
@@ -10,7 +12,7 @@ The canonical description of Capsule's current architecture and behaviour lives 
 - [Multiplexer design rules](/reference/capsule/multiplexer-design-rules/) — the passthrough contract and per-feature verification checklist.
 - [Capsule Terminal Model](/reference/capsule/terminal-model/) — why the VT emulator was replaced twice (hand-rolled → `vt100` fork → `jackin-term`).
 - [`jackin console`](/commands/console/) and [`jackin hardline`](/commands/hardline/) — operator-facing prefix keys, palette, tabs.
-- Research: [Multiplexer rewrite design history](/reference/research/agent-orchestration/jackin-capsule-multiplexer-rewrite/) — why the Phase 3 rewrite happened (the five defects in the first attempt), the Zellij and Herdr borrows, and the tmux/Ghostty compatibility rationale, kept for the design-history record now that this page is lean.
+- Research: [Multiplexer rewrite design history](/research/agents/orchestration/jackin-capsule-multiplexer-rewrite/) — why the Phase 3 rewrite happened (the five defects in the first attempt), the Zellij and Herdr borrows, and the tmux/Ghostty compatibility rationale, kept for the design-history record now that this page is lean.
 
 ## Shipped facts
 
@@ -35,11 +37,11 @@ The control channel today is request/reply only (`Status`, `Snapshot`, `Agents`,
 
 ## Related work
 
-- Research: [Multiplexer rewrite design history](/reference/research/agent-orchestration/jackin-capsule-multiplexer-rewrite/) — why the rewrite happened, Zellij/Herdr borrows, tmux/Ghostty compatibility rationale.
-- Research: [Agent Orchestration Program](/reference/research/agent-orchestration/program-research/) — the full Herdr-vs-jackin❯ comparative table.
+- Research: [Multiplexer rewrite design history](/research/agents/orchestration/jackin-capsule-multiplexer-rewrite/) — why the rewrite happened, Zellij/Herdr borrows, tmux/Ghostty compatibility rationale.
+- Research: [Agent Orchestration Program](/research/agents/orchestration/program-research/) — the full Herdr-vs-jackin❯ comparative table.
 - [Agent runtime status authority](/roadmap/agent-runtime-status/) — owns the shipped state vocabulary and arbitration; item 1 above is the delivery mechanism for pushing its transitions to the host instead of polling.
 - [Agent attention prompts](/roadmap/agent-attention-prompts/) — blocked on item 1 above to replace host PTY polling with real events.
 - [jackin❯ daemon](/roadmap/jackin-daemon/) — Phase 4 above is designed together with this item's per-container endpoint.
-- [jackin❯ Desktop Agent Hub](/reference/research/desktop/agent-hub/jackin-desktop-agent-hub/) — consumes the daemon's aggregated view once Phase 4 ships.
+- [jackin❯ Desktop Agent Hub](/research/product/desktop/agent-hub/jackin-desktop-agent-hub/) — consumes the daemon's aggregated view once Phase 4 ships.
 - [Console agent session control](/roadmap/console-agent-session-control/) — already consumes the shipped agent runtime status authority for its live pane list; its own Phase 4 (live session reconciliation) is separate, unblocked work.
 - [jackin-remote](/roadmap/jackin-remote/) — remote containers will need a `jackin-capsule` socket reachable over the tunnel; the socket mount and auth model still need to account for the remote path.

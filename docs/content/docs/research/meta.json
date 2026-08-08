@@ -1,0 +1,8 @@
+{
+  "root": true,
+  "title": "Research",
+  "description": "Evidence, comparisons, experiments, and design rationale that inform jackin❯.",
+  "icon": "Microscope",
+  "defaultOpen": false,
+  "pages": ["index", "agents", "platform", "product", "engineering", "context", "watchlist"]
+}

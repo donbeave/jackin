@@ -2,7 +2,9 @@
 title: "Config versioning and migration framework"
 ---
 
-**Status**: Partially implemented — Phase 1 (config file versioning) and Phase 2 (role manifest versioning) shipped; Phase 3 (`--pr` auto-migration) and Phase 4 (Renovate-style migration GitHub Action) remain open (Configuration ergonomics)
+**Status**: Partially implemented
+
+**Current state**: Phase 1 (config file versioning) and Phase 2 (role manifest versioning) shipped; Phase 3 (`--pr` auto-migration) and Phase 4 (Renovate-style migration GitHub Action) remain open (Configuration ergonomics)
 
 ## Shipped facts
 
@@ -19,7 +21,7 @@ Full version history, per-file current versions, and the field-level migration t
 
 ## Related work
 
-- Research: [Renovate-style role-manifest migration automation](/reference/research/runtime/config-versioning-migration-design/) — Phase 3/4 design proposal, prior-art comparison to Renovate, and open design questions for the CI automation.
+- Research: [Renovate-style role-manifest migration automation](/research/platform/runtime/config-versioning-migration-design/) — Phase 3/4 design proposal, prior-art comparison to Renovate, and open design questions for the CI automation.
 - [Schema Versions](/reference/runtime/schema-versions/) — canonical version history and migration tables.
 - [Configuration File](/reference/runtime/configuration/) — `version` field and config schema reference.
 - [Agent version pinning](/roadmap/reproducibility-pinning/) — pinning roles to tagged versions implies a version relationship between the jackin❯ binary and the role manifest schema.

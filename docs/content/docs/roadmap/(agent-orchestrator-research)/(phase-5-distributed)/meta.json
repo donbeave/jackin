@@ -1,9 +1,0 @@
-{
-  "title": "Fleet phase 5 \u2014 Distributed & extensibility",
-  "defaultOpen": false,
-  "pages": [
-    "jackin-remote",
-    "credential-source-pattern",
-    "workspace-skills-mount"
-  ]
-}

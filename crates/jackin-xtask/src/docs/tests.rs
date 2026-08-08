@@ -346,7 +346,7 @@ fn change_new_in_scaffolds_and_registers() {
         body.contains("title: \"New Item\""),
         "title-cased frontmatter: {body}"
     );
-    assert!(body.contains("## Problem") && body.contains("## Design"));
+    assert!(body.contains("## Current state") && body.contains("## Completion gate"));
     let pages = read_meta(&r.join("(operator-surface)/meta.json")).unwrap();
     assert_eq!(pages["pages"].as_array().unwrap()[0], "../new-item");
 }
@@ -372,21 +372,24 @@ fn research_scaffold_in_creates_dossier_and_registers() {
     let research = tempfile::tempdir().unwrap();
     let r = research.path();
     write_meta(&r.join("meta.json"), &json!({ "pages": [] })).unwrap();
+    fs::create_dir_all(r.join("agents")).unwrap();
+    write_meta(&r.join("agents/meta.json"), &json!({ "pages": [] })).unwrap();
 
     research_scaffold_in(
         r,
         ResearchScaffoldArgs {
             slug: "my-study".to_owned(),
+            group: "agents".to_owned(),
             title: None,
         },
     )
     .unwrap();
 
-    assert!(r.join("my-study/index.mdx").is_file());
-    assert!(r.join("my-study/prompt.mdx").is_file());
-    let dossier_meta = read_meta(&r.join("my-study/meta.json")).unwrap();
+    assert!(r.join("agents/my-study/index.mdx").is_file());
+    assert!(r.join("agents/my-study/prompt.mdx").is_file());
+    let dossier_meta = read_meta(&r.join("agents/my-study/meta.json")).unwrap();
     assert_eq!(dossier_meta["pages"], json!(["index", "prompt"]));
-    let parent = read_meta(&r.join("meta.json")).unwrap();
+    let parent = read_meta(&r.join("agents/meta.json")).unwrap();
     assert_eq!(parent["pages"].as_array().unwrap()[0], "my-study");
 }
 

@@ -1,9 +1,0 @@
-{
-  "title": "Fleet phase 4 \u2014 Fleet operations",
-  "defaultOpen": false,
-  "pages": [
-    "task-source-abstraction",
-    "autonomous-task-queue",
-    "idle-runtime-cleanup"
-  ]
-}
