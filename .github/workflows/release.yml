@@ -18,10 +18,10 @@ on:
         options: [validate, publish]
       lanes:
         description: |
-          Which runner(s) to run on for Linux CLI/capsule builds. Default velnor; use both for parity runs.
+          Which runner(s) to run on for Linux CLI/capsule builds. Default github; use both for parity runs.
           Menu-bar signing always uses GitHub-hosted macOS (never Velnor).
         type: choice
-        default: velnor
+        default: github
         options: [github, velnor, both]
 
 permissions:
@@ -40,7 +40,7 @@ concurrency:
 jobs:
   matrix-setup:
     name: Select runner lane
-    runs-on: ubuntu-latest
+    runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'velnor') && fromJSON('["self-hosted","velnor-target-mvp"]') || 'ubuntu-26.04' }}
     timeout-minutes: 5
     outputs:
       configs: ${{ steps.set.outputs.configs }}
@@ -48,9 +48,9 @@ jobs:
     steps:
       - id: set
         env:
-          LANES: ${{ github.event_name == 'workflow_dispatch' && inputs.lanes || 'velnor' }}
+          LANES: ${{ github.event_name == 'workflow_dispatch' && inputs.lanes || 'github' }}
         run: |
-          github='{"lane":"GitHub","runner":"\"ubuntu-24.04\"","runner_os":"Linux","runner_arch":"X64"}'
+          github='{"lane":"GitHub","runner":"\"ubuntu-26.04\"","runner_os":"Linux","runner_arch":"X64"}'
           velnor='{"lane":"Velnor","runner":"[\"self-hosted\",\"velnor-target-mvp\"]","runner_os":"Linux","runner_arch":"X64"}'
           case "$LANES" in
             velnor)
@@ -72,7 +72,7 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
   check-version:
-    runs-on: ubuntu-latest
+    runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'velnor') && fromJSON('["self-hosted","velnor-target-mvp"]') || 'ubuntu-26.04' }}
     timeout-minutes: 5
     outputs:
       published: ${{ steps.published.outputs.published }}
@@ -373,7 +373,9 @@ jobs:
   # Secret-free (validate) or credentialed (publish) arm64 menu-bar app.
   # GitHub-hosted macOS only — never Velnor (Apple credential boundary).
   build-usage-menu-bar:
-    if: needs.check-version.outputs.published != 'true'
+    if: >-
+      needs.check-version.outputs.published != 'true' &&
+      (github.event_name != 'workflow_dispatch' || inputs.lanes != 'velnor')
     needs: [check-version]
     # macos-latest: Swift 6 tools (Package.swift tools-version 6.0), same as CI native job.
     runs-on: macos-latest
@@ -594,7 +596,7 @@ jobs:
       needs.check-version.outputs.published != 'true' &&
       needs.check-version.outputs.mode == 'publish'
     needs: [check-version, matrix-setup, test, build, build-jackin-capsule, build-usage-menu-bar]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 60
     permissions:
       contents: write
@@ -705,7 +707,7 @@ jobs:
     # cannot silently ship a formula update for an unreleased version.
     if: needs.release.result == 'success'
     needs: [check-version, release]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

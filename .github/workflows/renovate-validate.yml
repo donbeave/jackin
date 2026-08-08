@@ -24,6 +24,12 @@ on:
   pull_request:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      lanes:
+        description: github (default) | velnor
+        type: choice
+        default: github
+        options: [github, velnor]
 
 permissions:
   contents: read
@@ -34,7 +40,7 @@ concurrency:
 
 jobs:
   validate:
-    runs-on: ${{ fromJSON('["self-hosted","velnor-target-mvp"]') }}
+    runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'velnor') && fromJSON('["self-hosted","velnor-target-mvp"]') || 'ubuntu-26.04' }}
     timeout-minutes: 10
     steps:
       - name: Checkout repository
