@@ -76,7 +76,7 @@ This README is a first impression. The full documentation at **<https://jackin.t
 - [Comparison with Alternatives](https://jackin.tailrocks.com/guides/comparison/) — honest snapshot vs. Docker Sandboxes and others
 - Behind jackin❯ — [Architecture](https://jackin.tailrocks.com/reference/getting-oriented/architecture/) and [Codebase Map](https://jackin.tailrocks.com/reference/getting-oriented/codebase-map/)
 - [Roadmap](https://jackin.tailrocks.com/roadmap/) — in-progress, planned, and brainstormed implementation work
-- [Research](https://jackin.tailrocks.com/research/) — evidence, comparisons, experiments, and design rationale
+- [Research](docs/content/docs/research/index.mdx) — evidence, comparisons, experiments, and design rationale
 
 ## Development
 
