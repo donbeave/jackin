@@ -15,6 +15,9 @@ cache = true
 # are also throttled below to make a 429 less likely.
 accept = ["100..=103", "200..=299", "429"]
 exclude = [
+  # ampcode.com is browser-visible but intermittently fails HTTP/2 negotiation
+  # for automated clients on GitHub-hosted runners.
+  "https://ampcode\\.com/",
   # chatgpt.com returns 403 to all automated clients including lychee.
   "https://chatgpt\\.com/",
   # GitHub issue-list links are remapped to the API during static docs checks;

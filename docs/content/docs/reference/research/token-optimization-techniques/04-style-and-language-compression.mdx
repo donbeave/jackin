@@ -110,7 +110,7 @@ Stating a numeric per-problem token budget cuts reasoning tokens ~67% with &lt;3
 - **Layer:** output (visible reasoning; budget phrasing in prompt).
 - **Mechanism:** TALE-EP pre-estimates a per-problem budget with a cheap zero-shot estimator call, then injects it ("use fewer than N tokens" ≈ 17 tok locally). Exact figures (arXiv 2412.18547, v5 of): ~67% token reduction with &lt;3% accuracy decrease (avg 81.03% vs 83.75%); GSM8K accuracy RISES 81.35% → 84.46% while output falls 318.10 → 77.26 tok (−75.7%). Token elasticity: a 10-token budget produced 157 actual tokens vs 86 at a 50-token budget — under-budgeting nearly doubles real cost.
 - **Expected savings:** ~67% of CoT output on QA tasks; same Fable-5 caveat as CoD — documented effect is on visible CoT, and thinking depth is officially controlled by effort, not prompts.
-- **Evidence tier:** T3 (arXiv v5, code public at github.com/GeniusHTX/TALE; venue unverified).
+- **Evidence tier:** T2 (ACL Findings 2025 publication; linked implementation repository is no longer public).
 - **Quality risk:** NEUTRAL to mild QUALITY-TRADE (−2.72pp avg, GSM8K positive); **RISKY if you set aggressive fixed budgets and ignore elasticity**. Degradation manifests as the model blowing through the budget verbosely, not as silence.
 - **Availability:** CLAUDE-CODE-TODAY / SDK (prompt-only for TALE-EP; use Haiku 4.5 at $1/$5 as the estimator).
 - **Effort to adopt:** low (phrasing) to hours (estimator pre-call plumbing).
@@ -259,7 +259,7 @@ Meta distilled System-2 pipelines into direct answers: 147 → 56 output tokens 
 | MAX_THINKING_TOKENS=0 no effect on Fable 5; ultrathink = in-context instruction; "say so directly in your prompt or in CLAUDE.md"; per-skill/subagent effort frontmatter | https://code.claude.com/docs/en/model-config |
 | CoD "as little as only 7.6% of the tokens" (v2) | https://arxiv.org/abs/2502.18600 ; per-task table (190.0→39.8 etc.) from https://arxiv.org/html/2502.18600v2 (sweep fetch, same day) |
 | CCoT 48.70% / 27.69% / 22.67%; venue FLLM 2024 pp. 476–483 | https://arxiv.org/abs/2401.05618 |
-| TALE 67% / &lt;3%; GSM8K 318.10→77.26, 81.35→84.46%; elasticity 157 vs 86 tok (v5) | https://arxiv.org/html/2412.18547v5 ; variants per https://github.com/GeniusHTX/TALE (sweep fetch, same day) |
+| TALE 67% / &lt;3%; GSM8K 318.10→77.26, 81.35→84.46%; elasticity 157 vs 86 tok (v5) | https://arxiv.org/html/2412.18547v5 ; publication record at https://aclanthology.org/2025.findings-acl.1274/ |
 | SoT "up to 84%", 3 paradigms, 18 datasets, EMNLP 2025 (v4) | https://arxiv.org/abs/2503.05179 |
 | SynthLang "up to 70%" / "up to 233%", no methodology | https://github.com/ruvnet/SynthLang |
 | MetaGlyph 62–81%; Claude Haiku 4.5 100% parse / 26% membership fidelity; ∩ near-zero; U-curve; 8 models; van Gassen | https://arxiv.org/html/2601.07354 |
