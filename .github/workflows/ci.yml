@@ -1050,6 +1050,10 @@ jobs:
         with:
           contract-key: ${{ needs.changes.outputs.registry-contract }}
       - name: Build complete validator archive set
+        env:
+          # sccache cannot interrogate cargo-zigbuild's generated compiler
+          # wrappers reliably; the hosted run otherwise fails before compile.
+          RUSTC_WRAPPER: ""
         run: |
           set -euo pipefail
           # Dual zigbuild/mold peaks FDs; sequential xtask + higher soft limit
