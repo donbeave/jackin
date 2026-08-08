@@ -1051,7 +1051,7 @@ jobs:
           contract-key: ${{ needs.changes.outputs.registry-contract }}
       - name: Build complete validator archive set
         env:
-          # sccache cannot interrogate cargo-zigbuild's generated compiler
+          # sccache cannot interrogate the generated cargo-zigbuild compiler
           # wrappers reliably; the hosted run otherwise fails before compile.
           RUSTC_WRAPPER: ""
         run: |
