@@ -229,6 +229,9 @@ jobs:
 
       # README links are not part of the generated docs site. Check them live
       # without cache so a malformed or removed destination fails this PR.
+      # New top-level docs routes cannot be live before their first deployment;
+      # validate Research against its canonical source while the site gate
+      # separately validates the generated `/research/` route.
       - name: Check README links
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -236,6 +239,7 @@ jobs:
           MISE_CONFIG_FILE=docs/mise.toml mise exec -- lychee \
             --config docs/lychee.toml \
             --cache=false \
+            --remap 'https://jackin.tailrocks.com/research/ file://${{ github.workspace }}/docs/content/docs/research/index.mdx' \
             --root-dir "${{ github.workspace }}" \
             README.md
 
