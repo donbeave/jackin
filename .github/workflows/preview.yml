@@ -256,7 +256,8 @@ jobs:
     needs: [source-changed]
     if: needs.source-changed.outputs.source == 'true'
     runs-on: ${{ fromJSON(matrix.config.runner) }}
-    timeout-minutes: 60
+    # Cold four-platform archive builds measured just over 60 minutes on GitHub.
+    timeout-minutes: 90
     concurrency:
       group: preview-jackin-${{ needs.source-changed.outputs.jackin_archive_contract }}
       cancel-in-progress: false
