@@ -1,7 +1,14 @@
 # jackin❯ desktop — HTML visual reference
 
 **Source of craft truth until Swift ships.**  
-Open [`index.html`](./index.html) in Safari/Chrome. Toggle **Dark / Light**.
+
+| File | Contents |
+|---|---|
+| [`index.html`](./index.html) | **Hub:** status left-click → focused popover, right-click context menu, **Usage window**, Liquid Glass check |
+| [`popover.html`](./popover.html) | Full popover: Overview + all 7 provider templates |
+| [`AGENT_HANDOFF.md`](./AGENT_HANDOFF.md) | Agent procedure |
+
+Open in Safari/Chrome. Toggle **Dark / Light**.
 
 ## For operators
 

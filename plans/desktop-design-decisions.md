@@ -94,13 +94,30 @@ When the operator runs `/goal` against this workstream, **done** means all of:
 
 ```text
 plans/desktop-design-decisions.md          ← this file (product + craft law)
-plans/previews/desktop-ui/index.html       ← visual composition (dark/light)
+plans/previews/desktop-ui/index.html       ← hub: status flow + Usage window + Liquid Glass check
+plans/previews/desktop-ui/popover.html     ← full popover reference (all providers)
 plans/previews/desktop-ui/AGENT_HANDOFF.md ← agent procedure + token map
 plans/previews/desktop-ui/README.md        ← short operator/agent index
 plans/README.md                            ← index of plan artifacts
 ```
 
 Any material design change: update **HTML + this file** in the same PR. HTML without a decision ID is not CONFIRMED.
+
+### 0.6 Liquid Glass re-verify (CONFIRMED 2026-08-10)
+
+Apple: glass is the **navigation/control layer**; content stays standard materials.
+
+| Surface | Material | Consistent with Tahoe? |
+|---|---|---|
+| Menu bar status items | Transparent / template (no chip chrome) | Yes |
+| Right-click context menu | Glass menu | Yes |
+| Glance popover shell | Glass | Yes |
+| Popover content cards | Solid / inset | Yes |
+| Usage sidebar + toolbar | Glass | Yes |
+| Usage detail pane | Solid content | Yes |
+| Meters / text / buckets | Content layer | Yes — no glass on data |
+
+**jackin accent** only on selection, CTA, high status, monogram — does not recolor system glass.
 
 ---
 
@@ -605,6 +622,10 @@ jackin = soul   (j❯, phosphor accent, mono metrics, deep canvas tint, optional
 | FB1-34 | **Credential source** = exact winning Rust `credential_origin` only (e.g. `OAuth · ~/.codex/auth.json`). Never disjunctions; never explain resolution order in-app | CONFIRMED |
 | FB1-35 | HTML visual ref + decisions + `AGENT_HANDOFF.md` = **canonical design package** for implementer agents | CONFIRMED |
 | FB1-36 | **Popover design track complete** for planning reference (operator: rest looks great); next design track = **Usage window / full app** | CONFIRMED |
+| FB1-37 | **Status left-click** → popover with **Providers + that provider + account** focused (never Overview). HTML flow demo required | CONFIRMED (reaffirm SB-23–26) |
+| FB1-38 | **Status right-click** → glass context menu: Open Usage Window · Refresh · Quit (enabled) | CONFIRMED |
+| FB1-39 | **Usage window** design track open: glass **sidebar + toolbar**; solid content; multi-account nest; same tokens as popover | CONFIRMED direction |
+| FB1-40 | Design must stay **Liquid Glass–consistent** (glass = nav only; solid content; transparent menu bar items) | CONFIRMED re-verify |
 
 ### One-by-one queue (after FB-1)
 

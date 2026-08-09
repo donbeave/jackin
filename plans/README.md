@@ -6,7 +6,8 @@ Advisor-produced plans and decision records for jackin❯ (improve skill).
 | File | Role | Status |
 |---|---|---|
 | [desktop-design-decisions.md](./desktop-design-decisions.md) | Living **CONFIRMED / PROPOSED / OPEN** decisions for jackin❯ desktop | Active |
-| [previews/desktop-ui/index.html](./previews/desktop-ui/index.html) | **Visual reference** (popover + bar, light/dark) — open in browser | Active |
+| [previews/desktop-ui/index.html](./previews/desktop-ui/index.html) | **Hub:** status interactions, Usage window, Liquid Glass check | Active |
+| [previews/desktop-ui/popover.html](./previews/desktop-ui/popover.html) | Full popover + bar craft reference | Active |
 | [previews/desktop-ui/AGENT_HANDOFF.md](./previews/desktop-ui/AGENT_HANDOFF.md) | How implementer agents use HTML + tokens for predictable native Swift | Active |
 
 Implementation plans (`001-*.md`, …) only after freeze sequence + concept picks. Plans must cite decisions file (+ chosen concept IDs).
