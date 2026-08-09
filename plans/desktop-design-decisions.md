@@ -513,9 +513,9 @@ jackin = soul   (j❯, phosphor accent, mono metrics, deep canvas tint, optional
 | FB1-29 | **Account chips** stick **left** (not centered); horizontal scroll when many | CONFIRMED |
 | FB1-30 | Providers detail must follow **real Rust bucket templates** per surface (OpenAI, Anthropic, Amp, xAI, Kimi, Z.ai, MiniMax) from `usage_bucket_order` / probes — full Capsule-parity fields | CONFIRMED |
 | FB1-31 | **Reset line separation:** relative reset + exact date/time always on **their own line(s)** — never jammed with % used, pace, deficit, or run-out | CONFIRMED |
-| FB1-32 | **Auth / credential origin is first-class detail** per account (file path, Keychain, env var, OAuth home, etc.). Must be visible and honest; extend Rust/presentation if fields missing | CONFIRMED |
+| FB1-32 | **Auth / credential origin is first-class detail** per account. App UI shows **only** the credential source string (exact winning path/env/Keychain). No “how jackin decided” / resolver narrative in the app — that belongs in docs | CONFIRMED |
 | FB1-33 | Popover craft **liked overall** — keep polishing Apple+jackin; next major surface = Usage window after final OK | CONFIRMED |
-| FB1-34 | **Credential source** = exact winning resolver string from Rust (`credential_origin`), never “A or B” ambiguity. Optional second line: how jackin used it for the probe | CONFIRMED |
+| FB1-34 | **Credential source** = exact winning Rust `credential_origin` only (e.g. `OAuth · ~/.codex/auth.json`). Never disjunctions; never explain resolution order in-app | CONFIRMED |
 | FB1-35 | HTML visual ref + decisions + `AGENT_HANDOFF.md` = **canonical design package** for implementer agents | CONFIRMED |
 | FB1-36 | **Popover design track complete** for planning reference (operator: rest looks great); next design track = **Usage window / full app** | CONFIRMED |
 

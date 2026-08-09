@@ -59,14 +59,15 @@ HTML alone without tokens becomes “generic SaaS.” Tokens alone without a com
 
 ## Credential source (product rule)
 
-UI shows the **exact** Rust `credential_origin` string for the winning resolver arm, e.g.:
+UI shows **only** the **exact** Rust `credential_origin` string for the winning resolver arm, e.g.:
 
 - `OAuth · ~/.codex/auth.json`
 - `OAuth · macOS Keychain (Claude Code-credentials)`
 - `API key · env AMP_API_KEY`
 - `API token · env ZAI_API_KEY`
 
-Never “file or env” disjunctions. Optional second line: **how jackin used it** (probe path), still factual.
+Never “file or env” disjunctions.  
+**Never** in-app “how jackin resolved it” / resolver narrative — that is documentation only.
 
 ## Popover IA (locked)
 
