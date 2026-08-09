@@ -1,5 +1,8 @@
 # Agent handoff: HTML visual reference → native macOS Swift
 
+> **Canonical stack:** `plans/desktop-design-decisions.md` **§0** is the product-level source-of-truth law. This file is the procedural companion for implementers.  
+> Used when operator runs **`/goal`** (or improve execute) against the desktop visual package.
+
 ## Is HTML good enough?
 
 **Yes as a primary craft reference**, if it is **repo-local, tokenized, dual-theme, and paired with written rules**. It is **not** enough alone for pixel-perfect Liquid Glass or trademark logos.

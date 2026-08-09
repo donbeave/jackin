@@ -2,9 +2,11 @@
 
 **Purpose:** Single source of truth for operator-confirmed choices from the Desktop improve / Liquid Glass / status-bar program. Planning and execution **must** read this file; when it conflicts with chat memory, **this file wins** after the last confirmed update.
 
+**Also the contract for `/goal` and implementer agents:** this file + the HTML visual package define **what “done” looks like**. Agents do not invent look/feel; they implement and verify against these artifacts.
+
 **Product:** jackin❯ desktop (`JackinDesktop.app`) — native macOS usage menu bar; CodexBar / OpenUsage replacement for **limits only**.
 
-**Repo HEAD when opened:** `b234e078` (update when material decisions land).
+**Branch for this workstream:** `plan/desktop-visual` (update HEAD stamp when material decisions land).
 
 **Status key**
 
@@ -14,6 +16,91 @@
 | **PROPOSED** | Advisor recommendation; **not** binding until moved to CONFIRMED |
 | **OPEN** | Needs discussion; do not implement as settled |
 | **REJECTED** | Explicitly out; do not reintroduce without new confirmation |
+
+---
+
+## 0. Source of truth for agents & `/goal` (CONFIRMED)
+
+**Why this exists:** Operator will run implementation via `/goal` (or equivalent). The agent must produce a native app whose design matches **what was decided and shown**, not a generic macOS menu bar. Verification must be possible without re-litigating taste in chat.
+
+### 0.1 Artifact stack (priority order)
+
+When sources conflict, higher wins:
+
+| Priority | Artifact | Path | Agent must |
+|---|---|---|---|
+| **1** | This decisions file | `plans/desktop-design-decisions.md` | Treat every **CONFIRMED** ID as a hard requirement. Do not “improve away” CONFIRMED craft. |
+| **2** | HTML visual reference | `plans/previews/desktop-ui/index.html` | Match IA, hierarchy, spacing rhythm, light/dark tokens, component structure. Open in **dark and light**. |
+| **3** | Agent handoff | `plans/previews/desktop-ui/AGENT_HANDOFF.md` | Follow token map, credential rules, predictability checklist. |
+| **4** | Preview README | `plans/previews/desktop-ui/README.md` | Provider templates, strip rules, meter bands. |
+| **5** | Future `plans/00x-*.md` | Implementation plans generated after freeze | Cite CONFIRMED IDs; steps + done criteria must map to 1–4. |
+| **6** | Repo product law | `native/AGENTS.md`, `crates/jackin-usage/AGENTS.md` | Display-only Swift, limits-only, GlassFallbacks. |
+| — | Chat history | — | **Not** source of truth after decisions are recorded. |
+
+**Chat is input to this file; this file is input to agents.**
+
+### 0.2 What HTML is (and is not)
+
+| HTML **is** | HTML **is not** |
+|---|---|
+| Composed **look & feel** for status bar + popover (and later Usage window) | Copy-paste Swift / AppKit code |
+| **Structure + IA** (Overview vs Providers, account left, strip centered) | Trademark-final official logo files (stand-ins until kits land) |
+| **Tokenized** colors/spacing for dual theme | Pixel-perfect Liquid Glass physics |
+| Acceptance **oracle** for “does the app match the design?” | Substitute for Rust data truth |
+
+**Best practice (agent handoff research, 2025–26):** repo-local mockups + **semantic tokens** + written rules + verification gates beat free-form “make it Apple.” HTML alone → generic UI; tokens alone → no composition. **We ship composition + tokens + rules.**
+
+### 0.3 Predictable agent output (required practices)
+
+Implementer agents **must**:
+
+1. **Read stack 1→4 before coding.**  
+2. Produce a **token map** (CSS custom property → Swift `Color` / font / spacing constant) in the plan or PR.  
+3. Implement **screen-by-screen** in order: status bar → Overview → Providers detail → (later) Usage window.  
+4. Use **only** named tokens for color/spacing; no free hex inventing.  
+5. Keep **meters** on 3 status levels only; brand color **only** on logo plates.  
+6. Show **credential source** as exact Rust `credential_origin` only.  
+7. Keep **reset** on its own line (not mixed with pace/used).  
+8. Verify **dark + light** (or document Reduce Transparency fallback).  
+9. After UI lands: **compare** native screenshots to HTML (human and/or vision). Mismatch = not done.  
+10. Cite **CONFIRMED IDs** (e.g. SB-17, FB1-31) in PR/plan done criteria.
+
+Implementer agents **must not**:
+
+1. Treat “Apple HIG” as license to ignore HTML layout.  
+2. Invent multi-provider rainbow meters.  
+3. Add in-app “how jackin resolved credentials” prose.  
+4. Redesign product IA without operator confirmation.  
+5. Skip the visual package because “SwiftUI has defaults.”
+
+### 0.4 `/goal` verification package (acceptance)
+
+When the operator runs `/goal` against this workstream, **done** means all of:
+
+| Gate | How to verify |
+|---|---|
+| Product law | Limits-only; display-only Swift; frozen catalog |
+| Decisions | Every **CONFIRMED** requirement in this file for in-scope surfaces is met or explicitly deferred |
+| Visual | Native UI matches `index.html` for status bar + popover (dark + light) within craft tolerance |
+| Tokens | Colors/spacing from shared map, not ad hoc |
+| Auth UI | Credential source = Rust string only |
+| Bar | Transparent dual-stack; ≤3; weekly-first rank; hide 0% |
+| Popover IA | Overview inventory; Providers strip + full templates; accounts left; providers centered |
+| Tests | Existing desktop harnesses + new tests for rank/selection as planned |
+
+**Operator check:** “Does this look like the HTML reference I approved?” If no → not accepted.
+
+### 0.5 Package paths (always keep in sync)
+
+```text
+plans/desktop-design-decisions.md          ← this file (product + craft law)
+plans/previews/desktop-ui/index.html       ← visual composition (dark/light)
+plans/previews/desktop-ui/AGENT_HANDOFF.md ← agent procedure + token map
+plans/previews/desktop-ui/README.md        ← short operator/agent index
+plans/README.md                            ← index of plan artifacts
+```
+
+Any material design change: update **HTML + this file** in the same PR. HTML without a decision ID is not CONFIRMED.
 
 ---
 
@@ -544,7 +631,7 @@ As if shipping on macOS Tahoe with jackin soul:
 | Brand blend | Good | j❯ + phosphor accent; not full matrix |
 | Still improve later | — | Official logos; exact reset clock when Rust has `resets_at`; Usage window craft |
 
-**Rust note:** `FocusedAccountHeader.credential_origin` already exists — UI must show it. If origin is too coarse (only “OAuth”), extend probe strings to distinguish file vs Keychain vs env (implementation phase).
+**Rust note:** `FocusedAccountHeader.credential_origin` already exists — UI must show **that string only**. If origin is too coarse (only “OAuth”), extend probe strings so the origin is the exact winning source (implementation phase). No in-app resolver essay.
 
 ## 8. Confirmation log
 
@@ -574,7 +661,9 @@ Append-only record of operator confirmations.
 | 2026-08-10 | Primary UI names = provider (OpenAI, Anthropic, Amp…); per-provider color; one-by-one decisions | **CONFIRMED** | LG-5–LG-7 |
 | 2026-08-10 | Phosphor jackin accent liked; product title **jackin❯ desktop** (desktop lowercase); drop construct footer tagline | **CONFIRMED** | FB-1 batch |
 | 2026-08-10 | Overview direction liked (iterate); status bar transparent system-style; Usage window + multi-account sidebar; tab meters; Concept C providers list | **CONFIRMED** | FB-1 batch |
-| — | Idle/auth, missing reset, bar % style hard-lock | **OPEN** | §4.3 |
+| 2026-08-10 | Credential source only (no resolver narrative) | **CONFIRMED** | FB1-32/34 |
+| 2026-08-10 | **§0 agent/HTML source-of-truth stack for `/goal`** | **CONFIRMED** | §0 |
+| — | Idle/auth on bar, missing reset, meter bands exact numbers | **OPEN** | §4.3 / FB1-27 |
 | — | PDF template as ship format | **PROPOSED** | §5.2 — needs explicit confirm |
 
 ---
@@ -632,4 +721,4 @@ operator: “decisions complete” / “generate plan from decisions file”
 
 ---
 
-*Last updated: 2026-08-10 — jackin construct port map (VS-14, §6.1b); Apple skeleton + jackin soul; HTML concept F next.*
+*Last updated: 2026-08-10 — §0 source of truth for /goal agents; HTML+decisions package is acceptance oracle.*
