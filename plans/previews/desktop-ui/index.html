@@ -608,9 +608,8 @@
                         <div class="row-stack"><div class="k">Status</div><div class="v dim">fresh</div></div>
                         <div class="row-stack"><div class="k">Updated</div><div class="v dim">Just now</div></div>
                         <div class="auth-block">
-                          <div class="row-stack"><div class="k">Authentication</div><div class="v">OAuth session</div></div>
-                          <div class="row-stack"><div class="k">Credential source</div><div class="v">~/.codex/auth.json</div></div>
-                          <div class="row-stack"><div class="k">Origin</div><div class="v">Host file (not env, not Keychain)</div></div>
+                          <div class="row-stack"><div class="k">Credential source</div><div class="v">OAuth · ~/.codex/auth.json</div></div>
+                          <div class="row-stack"><div class="k">How jackin resolved it</div><div class="v dim">Host auth.json path that won the resolver (same string Rust stores on the account). Used for Codex usage probes.</div></div>
                         </div>
                       </div>
                       <div class="block">
@@ -703,9 +702,8 @@
                       <div class="row-stack"><div class="k">Status</div><div class="v dim">fresh</div></div>
                       <div class="row-stack"><div class="k">Updated</div><div class="v dim">2 min ago</div></div>
                       <div class="auth-block">
-                        <div class="row-stack"><div class="k">Authentication</div><div class="v">OAuth (Claude Code)</div></div>
-                        <div class="row-stack"><div class="k">Credential source</div><div class="v">macOS Keychain · Claude Code-credentials</div></div>
-                        <div class="row-stack"><div class="k">Origin</div><div class="v">Keychain (not ~/.claude file first)</div></div>
+                        <div class="row-stack"><div class="k">Credential source</div><div class="v">OAuth · macOS Keychain (Claude Code-credentials)</div></div>
+                        <div class="row-stack"><div class="k">How jackin resolved it</div><div class="v dim">Keychain first for CLAUDE_CONFIG_DIR scope; file/env only if Keychain missing. Used for Claude OAuth usage API.</div></div>
                       </div>
                     </div>
                     <div class="block">
@@ -774,9 +772,8 @@
                       </div>
                       <div class="row-stack"><div class="k">Updated</div><div class="v dim">1 min ago</div></div>
                       <div class="auth-block">
-                        <div class="row-stack"><div class="k">Authentication</div><div class="v">Amp secrets / session</div></div>
-                        <div class="row-stack"><div class="k">Credential source</div><div class="v">Host Amp secrets (home / handoff last)</div></div>
-                        <div class="row-stack"><div class="k">Origin</div><div class="v">Local secret store</div></div>
+                        <div class="row-stack"><div class="k">Credential source</div><div class="v">API key · env AMP_API_KEY</div></div>
+                        <div class="row-stack"><div class="k">How jackin resolved it</div><div class="v dim">Env wins when set; else Amp home secrets.json (exact path jackin opened). Used for Amp usage API / CLI.</div></div>
                       </div>
                     </div>
                     <div class="block">
@@ -813,9 +810,8 @@
                         <div class="row-stack"><div class="k">Status</div><div class="v dim">fresh</div></div>
                       </div>
                       <div class="auth-block">
-                        <div class="row-stack"><div class="k">Authentication</div><div class="v">Grok host auth</div></div>
-                        <div class="row-stack"><div class="k">Credential source</div><div class="v">~/.grok auth</div></div>
-                        <div class="row-stack"><div class="k">Plan source</div><div class="v">xAI billing.subscription_tier (server)</div></div>
+                        <div class="row-stack"><div class="k">Credential source</div><div class="v">OAuth · ~/.grok/auth.json</div></div>
+                        <div class="row-stack"><div class="k">How jackin resolved it</div><div class="v dim">auth.json won over XAI_API_KEY / GROK_DEPLOYMENT_KEY. Plan tier from xAI billing.subscription_tier.</div></div>
                       </div>
                     </div>
                     <div class="block">
@@ -847,9 +843,8 @@
                     <div class="block">
                       <h5>Account</h5>
                       <div class="auth-block">
-                        <div class="row-stack"><div class="k">Authentication</div><div class="v">Token / local Kimi home</div></div>
-                        <div class="row-stack"><div class="k">Credential source</div><div class="v">KIMI_AUTH_TOKEN or ~/.kimi-code</div></div>
-                        <div class="row-stack"><div class="k">Origin</div><div class="v">Environment or file</div></div>
+                        <div class="row-stack"><div class="k">Credential source</div><div class="v">API token · env KIMI_CODE_API_KEY</div></div>
+                        <div class="row-stack"><div class="k">How jackin resolved it</div><div class="v dim">Env token won this snapshot (else would be API key · ~/.kimi-code). Used for Kimi usage probe.</div></div>
                       </div>
                       <div class="row-stack"><div class="k">Updated</div><div class="v dim">5 min ago</div></div>
                     </div>
@@ -884,9 +879,8 @@
                     <div class="block">
                       <h5>Account</h5>
                       <div class="auth-block">
-                        <div class="row-stack"><div class="k">Authentication</div><div class="v">API key</div></div>
-                        <div class="row-stack"><div class="k">Credential source</div><div class="v">ZAI_API_KEY / Z_AI_API_KEY</div></div>
-                        <div class="row-stack"><div class="k">Origin</div><div class="v">Process environment</div></div>
+                        <div class="row-stack"><div class="k">Credential source</div><div class="v">API token · env ZAI_API_KEY</div></div>
+                        <div class="row-stack"><div class="k">How jackin resolved it</div><div class="v dim">Exact env name that resolved (ZAI_API_KEY or Z_AI_API_KEY). Used for Z.ai / GLM usage probe.</div></div>
                       </div>
                       <div class="row-stack"><div class="k">Updated</div><div class="v dim">8 min ago</div></div>
                     </div>
@@ -927,9 +921,8 @@
                     <div class="block">
                       <h5>Account</h5>
                       <div class="auth-block">
-                        <div class="row-stack"><div class="k">Authentication</div><div class="v">API key</div></div>
-                        <div class="row-stack"><div class="k">Credential source</div><div class="v">MINIMAX_CODING_API_KEY / MINIMAX_API_KEY</div></div>
-                        <div class="row-stack"><div class="k">Origin</div><div class="v">Process environment</div></div>
+                        <div class="row-stack"><div class="k">Credential source</div><div class="v">API token · env MINIMAX_API_KEY</div></div>
+                        <div class="row-stack"><div class="k">How jackin resolved it</div><div class="v dim">Exact env name that resolved. Used for MiniMax usage probe.</div></div>
                       </div>
                       <div class="row-stack"><div class="k">Updated</div><div class="v dim">10 min ago</div></div>
                     </div>
