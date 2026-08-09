@@ -1,4 +1,4 @@
-//! Independent publication state for jackin❯ Desktop release assets.
+//! Independent publication state for jackin❯ desktop release assets.
 //!
 //! Prints `KEY=value` lines suitable for `GITHUB_OUTPUT` / shell capture.
 

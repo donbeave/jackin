@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Alexey Zhokhov
 // SPDX-License-Identifier: Apache-2.0
 //
-// jackin❯ Desktop — display-only shell over Rust UniFFI.
+// jackin❯ desktop — display-only shell over Rust UniFFI.
 // Minimal AppKit menu-agent bootstrap: no SwiftUI App/Scene graph, no window.
 // The delegate owns the store, per-provider status items, and the popover.
 

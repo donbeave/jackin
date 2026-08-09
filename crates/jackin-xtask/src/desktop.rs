@@ -1,4 +1,4 @@
-//! jackin❯ Desktop (native macOS usage menu bar) assembly and verification.
+//! jackin❯ desktop (native macOS usage menu bar) assembly and verification.
 //!
 //! Canonical local/CI path — Rust owns orchestration; mise tasks thin-wrap
 //! these subcommands. No shell scripts.
@@ -191,7 +191,7 @@ fn run_desktop_tests(root: &Path) -> Result<()> {
 
     progress("");
     progress("┌─────────────────────────────────────────────────────────────");
-    progress("│ jackin❯ Desktop — tests OK");
+    progress("│ jackin❯ desktop — tests OK");
     progress("│   host nextest + StatusItemChipHarness");
     progress("│   DesktopArchitectureLint + DesktopParityMatrixHarness");
     progress("│   (full Xcode: cd native && swift test -c release)");
@@ -228,7 +228,7 @@ fn run_app(args: &RunArgs) -> Result<()> {
 
     progress("");
     progress("┌─────────────────────────────────────────────────────────────");
-    progress("│ jackin❯ Desktop — launching");
+    progress("│ jackin❯ desktop — launching");
     progress(format!("│   app:  {}", app.display()));
     progress(format!("│   bin:  {}", bin.display()));
     progress("│   note: LSUIElement — no Dock icon; look at the menu bar");
@@ -278,7 +278,7 @@ fn print_app_ready_banner(app: &Path, version: &str, build: &str) {
     let rel = PathBuf::from("native/dist/JackinDesktop.app");
     progress("");
     progress("┌─────────────────────────────────────────────────────────────");
-    progress("│ jackin❯ Desktop — build complete");
+    progress("│ jackin❯ desktop — build complete");
     progress(format!("│   version: {version}  (CFBundleVersion {build})"));
     progress(format!("│   app:     {}", abs.display()));
     progress(format!("│   rel:     {}", rel.display()));
@@ -734,7 +734,7 @@ pub(super) fn verify_app(
     let abs = fs::canonicalize(app).unwrap_or_else(|_| app.to_path_buf());
     progress("");
     progress("┌─────────────────────────────────────────────────────────────");
-    progress("│ jackin❯ Desktop — verify OK");
+    progress("│ jackin❯ desktop — verify OK");
     progress(format!("│   app:     {}", abs.display()));
     progress(format!("│   version: {version}  (CFBundleVersion {build})"));
     progress(format!(

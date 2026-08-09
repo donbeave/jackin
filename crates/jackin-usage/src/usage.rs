@@ -871,7 +871,7 @@ pub fn resolved_usage_provider_label(
     (surface != UsageSurface::Unsupported).then_some(surface.label())
 }
 
-/// Shared provider display remap for Capsule tabs and jackin❯ Desktop overview.
+/// Shared provider display remap for Capsule tabs and jackin❯ desktop overview.
 ///
 /// Single mapping so Desktop never grows a second Swift-side provider rename.
 #[must_use]

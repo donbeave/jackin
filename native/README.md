@@ -1,7 +1,7 @@
-# jackin❯ Desktop (native macOS usage menu bar)
+# jackin❯ desktop (native macOS usage menu bar)
 
 Display-only Swift shell over `jackin-usage-ffi` (UniFFI). Product identity:
-**jackin❯ Desktop** (`JackinDesktop.app`, bundle ID `com.jackin-project.desktop`).
+**jackin❯ desktop** (`JackinDesktop.app`, bundle ID `com.jackin-project.desktop`).
 Rust owns probes, cache, severity, and `status_bar_label`. CodexBar is a visual
 reference only (clean-room).
 

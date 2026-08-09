@@ -21,7 +21,9 @@ final class StatusBarController: NSObject {
     private var cancellables: Set<AnyCancellable> = []
     /// Opens the Usage window focused on a provider (`nil` = Overview).
     private let onOpenUsage: (String?) -> Void
-    private let menu: NSMenu
+    /// Owns the context menu and is the `NSMenuItem` target. Must stay retained
+    /// for the bar lifetime (see `StatusItemMenu` docs — drop target ⇒ all rows disabled).
+    private let statusItemMenu: StatusItemMenu
 
     init(
         store: PresentationStore,
@@ -30,7 +32,7 @@ final class StatusBarController: NSObject {
     ) {
         self.store = store
         self.onOpenUsage = onOpenUsage
-        self.menu = StatusItemMenu(router: menuRouter).build()
+        self.statusItemMenu = StatusItemMenu(router: menuRouter)
         super.init()
         popover.behavior = .transient
         // Provider-header click opens the Usage window focused on that provider
@@ -105,7 +107,7 @@ final class StatusBarController: NSObject {
             button.target = self
             button.action = #selector(handleClick(_:))
             button.sendAction(on: [.leftMouseUp, .rightMouseUp])
-            button.setAccessibilityLabel("jackin❯ Desktop usage")
+            button.setAccessibilityLabel("jackin❯ desktop usage")
         }
         fallbackItem = item
     }
@@ -146,7 +148,7 @@ final class StatusBarController: NSObject {
     @objc private func handleClick(_ sender: NSStatusBarButton) {
         // Right-click shows the static context menu; left-click toggles the popover.
         if NSApp.currentEvent?.type == .rightMouseUp {
-            menu.popUp(
+            statusItemMenu.menu.popUp(
                 positioning: nil,
                 at: NSPoint(x: 0, y: sender.bounds.height + 4),
                 in: sender
@@ -184,7 +186,7 @@ final class StatusBarController: NSObject {
     }
 }
 
-/// Application delegate for jackin❯ Desktop (menu-bar agent). Owns the store and
+/// Application delegate for jackin❯ desktop (menu-bar agent). Owns the store and
 /// the status-bar controller; constructs no SwiftUI scene graph and no window.
 @MainActor
 final class DesktopAppDelegate: NSObject, NSApplicationDelegate {

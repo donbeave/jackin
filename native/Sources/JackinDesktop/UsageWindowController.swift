@@ -34,7 +34,7 @@ final class UsageWindowController {
             backing: .buffered,
             defer: false
         )
-        window.title = "jackin❯ Desktop — Usage"
+        window.title = "jackin❯ desktop — Usage"
         window.isReleasedWhenClosed = false
         window.contentView = NSHostingView(rootView: UsageWindowRoot(store: store))
         window.center()

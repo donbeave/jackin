@@ -28,7 +28,7 @@ public enum StatusItemMenuModel {
     public static let rows: [StatusItemMenuRow] = [
         StatusItemMenuRow(title: "Open Usage Window", action: .openUsageWindow, keyEquivalent: ""),
         StatusItemMenuRow(title: "Refresh", action: .refresh, keyEquivalent: "r"),
-        StatusItemMenuRow(title: "Quit jackin❯ Desktop", action: .quit, keyEquivalent: "q"),
+        StatusItemMenuRow(title: "Quit jackin❯ desktop", action: .quit, keyEquivalent: "q"),
     ]
 }
 

@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Alexey Zhokhov
 // SPDX-License-Identifier: Apache-2.0
 
-/// OpenUsage / CodexBar **limits-only** parity matrix for jackin❯ Desktop.
+/// OpenUsage / CodexBar **limits-only** parity matrix for jackin❯ desktop.
 ///
 /// Drives shipped pure presentation builders (no XCTest, no AppKit window) to
 /// prove multi-provider strip + dual-bucket + depleted + full catalog display

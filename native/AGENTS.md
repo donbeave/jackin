@@ -1,6 +1,6 @@
-# jackin❯ Desktop (native)
+# jackin❯ desktop (native)
 
-Display-only Swift shell over `jackin-usage-ffi` (UniFFI). Product: **jackin❯ Desktop**
+Display-only Swift shell over `jackin-usage-ffi` (UniFFI). Product: **jackin❯ desktop**
 (`JackinDesktop.app`). Rust owns probes, cache, severity, and every usage number.
 
 > **CLAUDE.md = symlink to AGENTS.md beside it** — recreate: `ln -s AGENTS.md CLAUDE.md`.

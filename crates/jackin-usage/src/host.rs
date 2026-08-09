@@ -270,7 +270,7 @@ pub fn host_accounts_path(data_dir: &Path) -> PathBuf {
 const MAX_EVENT_LOG: usize = 4_096;
 const MAX_EVENT_BATCH: u32 = 256;
 
-/// One enabled-surface overview row for jackin❯ Desktop (popover + Usage window).
+/// One enabled-surface overview row for jackin❯ desktop (popover + Usage window).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct HostOverviewRow {
     /// Machine surface id (`claude`, `codex`, …).

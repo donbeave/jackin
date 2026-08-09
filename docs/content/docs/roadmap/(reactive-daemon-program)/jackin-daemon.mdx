@@ -18,7 +18,7 @@ The Plan 047/048 production daemon lives in <RepoFile path="crates/jackin-runtim
 
 ## Remaining work
 
-1. **Desktop-ready API.** Add the small versioned endpoints [jackin❯ Desktop Agent Hub](/research/product/desktop/agent-hub/jackin-desktop-agent-hub/) needs first: `daemon/hello`, workspace/session discovery, GitHub PR lookup, account status, event subscription, Ghostty/browser open actions.
+1. **Desktop-ready API.** Add the small versioned endpoints [jackin❯ desktop Agent Hub](/research/product/desktop/agent-hub/jackin-desktop-agent-hub/) needs first: `daemon/hello`, workspace/session discovery, GitHub PR lookup, account status, event subscription, Ghostty/browser open actions.
 2. **Caffeinate migration.** Move the keep-awake reconciler from per-command into a daemon-owned Docker-events watcher.
 3. **Live auth sync.** Add the per-axis watcher adapters for [live bidirectional auth sync](/roadmap/live-auth-sync/) only after the daemon foundation has shipped and log/core-dump redaction is proven.
 4. **Further reactive adapters.** Container event watcher, cross-session notifications, and [host bridge](/roadmap/host-bridge/) each plug into the daemon's adapter surface once it exists; host bridge remains blocked until per-request approval and audit are specified.
@@ -30,7 +30,7 @@ The Plan 047/048 production daemon lives in <RepoFile path="crates/jackin-runtim
 - [Agent attention prompts](/roadmap/agent-attention-prompts/) — host-side OS notifications when an agent waits on operator input. Plugs into this daemon.
 - [Host bridge — secrets and approved host actions](/roadmap/host-bridge/) — operator-mediated channel for agents to request secrets or invoke host commands. Plugs into this daemon and uses the same approval surface (TouchID / polkit / password) the daemon hosts.
 - [jackin❯ Capsule](/roadmap/jackin-capsule/) — the in-container per-container control plane; its Phase 4 (host daemon integration) is designed together with this item.
-- [jackin❯ Desktop Agent Hub](/research/product/desktop/agent-hub/jackin-desktop-agent-hub/) — native macOS status bar and desktop companion that consumes daemon state for workspaces, sessions, GitHub PRs, account status, notifications, and approved host actions.
+- [jackin❯ desktop Agent Hub](/research/product/desktop/agent-hub/jackin-desktop-agent-hub/) — native macOS status bar and desktop companion that consumes daemon state for workspaces, sessions, GitHub PRs, account status, notifications, and approved host actions.
 - <RepoFile path="crates/jackin-host/src/caffeinate.rs">crates/jackin-host/src/caffeinate.rs</RepoFile> — today's per-command keep-awake reconciler; first migration target once the daemon exists.
 - <RepoFile path="crates/jackin-runtime/src/reactive_daemon.rs">crates/jackin-runtime/src/reactive_daemon.rs</RepoFile> — feature-gated Plan 042 prototype proving the control socket shape and one-way attention adapter.
 - [Reliable Claude authentication strategy](/research/agents/authentication/claude-auth-strategy/) — concurrent-session token-drift concerns the live-auth-sync feature ultimately answers, so the daemon hosts the answer.
