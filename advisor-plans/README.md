@@ -12,11 +12,11 @@ Execute in order below. Each plan is self-contained for a cold executor.
 
 | Plan | Title | Priority | Effort | Depends on | Status |
 |------|-------|----------|--------|------------|--------|
-| [001](./001-status-item-click-focuses-provider.md) | Status left-click focuses that provider in popover | P1 | S | — | TODO |
-| [002](./002-popover-sot-craft-and-data.md) | Popover craft + data path matches `popover.html` / Rust presentation | P1 | L | 001 | TODO |
-| [003](./003-usage-account-nest-and-overview.md) | Usage account nest meters + Overview per-account inventory | P1 | M | — | TODO |
-| [004](./004-usage-detail-polish-and-links.md) | Usage detail polish (Limit Reset, Open usage, de-dupe) verification + gaps | P2 | M | 003 | TODO |
-| [005](./005-activation-toolbar-harness-guards.md) | Activation/main menu + NSToolbar host + structural harness guards | P2 | M | 001, 002 | TODO |
+| [001](./001-status-item-click-focuses-provider.md) | Status left-click focuses that provider in popover | P1 | S | — | DONE |
+| [002](./002-popover-sot-craft-and-data.md) | Popover craft + data path matches `popover.html` / Rust presentation | P1 | L | 001 | DONE |
+| [003](./003-usage-account-nest-and-overview.md) | Usage account nest meters + Overview per-account inventory | P1 | M | — | DONE |
+| [004](./004-usage-detail-polish-and-links.md) | Usage detail polish (Limit Reset, Open usage, de-dupe) verification + gaps | P2 | M | 003 | DONE |
+| [005](./005-activation-toolbar-harness-guards.md) | Activation/main menu + NSToolbar host + structural harness guards | P2 | M | 001, 002 | DONE |
 
 Status values: `TODO` | `IN PROGRESS` | `DONE` | `BLOCKED` | `REJECTED`
 
