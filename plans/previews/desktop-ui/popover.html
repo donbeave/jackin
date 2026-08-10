@@ -193,9 +193,15 @@
     .hero:not(.mid):not(.low) { color: var(--status-high); }
 
     .btn-icon {
-      width: 28px; height: 28px; border: 0; border-radius: 8px; cursor: pointer;
+      width: 28px; height: 28px; border-radius: 8px; cursor: pointer;
+      border: 0.5px solid color-mix(in srgb, var(--jk) 28%, var(--glass-border));
       background: color-mix(in srgb, var(--jk) 12%, transparent);
       color: var(--jk); display: grid; place-items: center; flex-shrink: 0;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+      backdrop-filter: blur(12px);
+    }
+    .btn-icon:hover {
+      background: color-mix(in srgb, var(--jk) 20%, transparent);
     }
 
     /* Transparent status */
@@ -228,6 +234,8 @@
     /* Popover liquid glass — chrome only (HIG navigation layer) */
     .pop {
       width: 400px; position: relative;
+      display: flex; flex-direction: column;
+      max-height: min(640px, 88vh);
       background: var(--glass);
       backdrop-filter: blur(50px) saturate(1.55);
       -webkit-backdrop-filter: blur(50px) saturate(1.55);
@@ -257,35 +265,80 @@
     @media (prefers-reduced-motion: reduce) {
       .pop .rain { display: none; }
     }
-    .pop .inner { position: relative; z-index: 1; }
+    .pop .inner {
+      position: relative; z-index: 1;
+      display: flex; flex-direction: column;
+      flex: 1; min-height: 0;
+    }
+
+    /* Sticky glass chrome — brand + mode (does not scroll away) */
+    .chrome { flex-shrink: 0; }
 
     .seg {
-      margin: 10px 16px 12px; display: flex; padding: 2px;
-      background: var(--fill); border-radius: 9px;
+      margin: 8px 16px 10px; display: flex; padding: 3px;
+      background: color-mix(in srgb, var(--fill) 88%, transparent);
+      border-radius: 10px;
+      border: 0.5px solid color-mix(in srgb, var(--glass-border) 70%, transparent);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
     }
     .seg button {
       flex: 1; border: 0; background: transparent; color: var(--secondary);
-      font: inherit; font-size: 12px; font-weight: 560; padding: 7px; border-radius: 7px; cursor: pointer;
+      font: inherit; font-size: 12px; font-weight: 560; padding: 7px; border-radius: 8px; cursor: pointer;
     }
     .seg button.on {
       background: color-mix(in srgb, var(--label) 12%, transparent);
       color: var(--label);
-      box-shadow: 0 1px 2px rgba(0,0,0,0.12);
+      box-shadow: 0 1px 2px rgba(0,0,0,0.12), inset 0 0.5px 0 rgba(255,255,255,0.12);
     }
     [data-theme="dark"] .seg button.on { background: rgba(255,255,255,0.14); }
 
-    /* CENTERED provider strip + horizontal scroll when many */
+    /* Mode bodies fill remaining height; content scrolls under chrome + footer */
+    #mode-overview, #mode-providers {
+      display: flex; flex-direction: column;
+      flex: 1; min-height: 0;
+    }
+    #mode-overview.hidden, #mode-providers.hidden { display: none !important; }
+
+    /*
+      Provider strip — sticky nav chrome.
+      Horizontal soft edge dissolve (Apple scroll-edge proxy) so tabs never
+      look hard-clipped mid-glyph. Native: edge-to-edge under glass + soft fade.
+    */
+    .pstrip-shell {
+      flex-shrink: 0;
+      position: relative;
+      padding: 0 0 4px;
+    }
     .pstrip-wrap {
-      padding: 0 8px 12px;
+      padding: 0 4px 10px;
       overflow-x: auto;
       overflow-y: hidden;
       -webkit-overflow-scrolling: touch;
-      scrollbar-width: thin;
+      scrollbar-width: none; /* edge fades signal more content */
+      overscroll-behavior-x: contain;
+      /* default: no edge fade until JS measures overflow */
+      --fade-l: 0px;
+      --fade-r: 0px;
+      mask-image: linear-gradient(
+        to right,
+        transparent 0,
+        #000 var(--fade-l),
+        #000 calc(100% - var(--fade-r)),
+        transparent 100%
+      );
+      -webkit-mask-image: linear-gradient(
+        to right,
+        transparent 0,
+        #000 var(--fade-l),
+        #000 calc(100% - var(--fade-r)),
+        transparent 100%
+      );
     }
+    .pstrip-wrap::-webkit-scrollbar { display: none; height: 0; }
     .pstrip {
       display: flex; justify-content: safe center; gap: 6px;
       width: max-content; min-width: 100%;
-      margin: 0 auto; padding: 0 8px;
+      margin: 0 auto; padding: 0 14px; /* inset so first/last not flush cut */
     }
     .pstrip .ptab {
       flex: 0 0 auto;
@@ -293,6 +346,7 @@
       text-align: center; cursor: pointer; color: var(--secondary);
       font-size: 10px; font-weight: 500; border: 0; background: transparent;
       font-family: inherit;
+      transition: background 0.12s ease, color 0.12s ease, box-shadow 0.12s ease;
     }
     .pstrip .ptab.on {
       background: color-mix(in srgb, var(--jk) 14%, transparent);
@@ -311,20 +365,85 @@
     .pstrip .track.mid > i { background: var(--status-mid); }
     .pstrip .track.low > i { background: var(--status-low); }
 
-    /* Account pills: LEFT-aligned + horizontal scroll when many */
+    /* Account pills: LEFT + H-scroll with soft edge dissolve */
     .acct-switch-wrap {
       overflow-x: auto; overflow-y: hidden;
       -webkit-overflow-scrolling: touch;
-      margin-bottom: 12px;
-      scrollbar-width: thin;
+      margin: 0 -2px 12px;
+      padding: 0 2px 2px;
+      scrollbar-width: none;
+      --fade-l: 0px;
+      --fade-r: 0px;
+      mask-image: linear-gradient(
+        to right,
+        transparent 0,
+        #000 var(--fade-l),
+        #000 calc(100% - var(--fade-r)),
+        transparent 100%
+      );
+      -webkit-mask-image: linear-gradient(
+        to right,
+        transparent 0,
+        #000 var(--fade-l),
+        #000 calc(100% - var(--fade-r)),
+        transparent 100%
+      );
     }
+    .acct-switch-wrap::-webkit-scrollbar { display: none; height: 0; }
     .acct-switch {
       display: flex; justify-content: flex-start; gap: 6px;
       width: max-content; min-width: 100%;
       margin: 0; padding: 0 2px;
     }
 
-    .ov-scroll, .detail-scroll { padding: 0 12px 12px; max-height: 480px; overflow: auto; }
+    /*
+      Vertical scroller + soft scroll-edge effect (WWDC25 / HIG).
+      Content dissolves under chrome/footer instead of hard clip.
+      Native: scrollEdgeEffect(.soft) under glass bars.
+    */
+    .scroll-shell {
+      position: relative;
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+    }
+    .ov-scroll, .detail-scroll {
+      flex: 1;
+      min-height: 0;
+      padding: 2px 12px 10px;
+      overflow: auto;
+      overscroll-behavior: contain;
+      scrollbar-width: thin;
+      scrollbar-color: color-mix(in srgb, var(--label) 22%, transparent) transparent;
+      --fade-t: 0px;
+      --fade-b: 0px;
+      mask-image: linear-gradient(
+        to bottom,
+        transparent 0,
+        #000 var(--fade-t),
+        #000 calc(100% - var(--fade-b)),
+        transparent 100%
+      );
+      -webkit-mask-image: linear-gradient(
+        to bottom,
+        transparent 0,
+        #000 var(--fade-t),
+        #000 calc(100% - var(--fade-b)),
+        transparent 100%
+      );
+    }
+    .ov-scroll::-webkit-scrollbar,
+    .detail-scroll::-webkit-scrollbar { width: 7px; }
+    .ov-scroll::-webkit-scrollbar-thumb,
+    .detail-scroll::-webkit-scrollbar-thumb {
+      background: color-mix(in srgb, var(--label) 18%, transparent);
+      border-radius: 99px;
+      border: 2px solid transparent;
+      background-clip: padding-box;
+    }
+    .ov-scroll::-webkit-scrollbar-track,
+    .detail-scroll::-webkit-scrollbar-track { background: transparent; }
 
     /* Content layer = solid/inset fills (not Liquid Glass) */
     .group {
@@ -333,6 +452,7 @@
       border: 0.5px solid var(--separator);
       overflow: hidden;
     }
+    .group:last-child { margin-bottom: 4px; }
     .group-head {
       display: flex; align-items: center; gap: 10px;
       padding: 12px 14px 8px;
@@ -351,12 +471,86 @@
     }
     .account .meter { margin-top: 10px; }
 
-    .cta { margin: 4px 12px 14px; }
-    .cta button {
-      width: 100%; border: 0; cursor: pointer; font: inherit; font-size: 13px; font-weight: 600;
-      padding: 11px 14px; border-radius: 10px; background: var(--jk); color: var(--jk-ink);
-      box-shadow: 0 4px 16px color-mix(in srgb, var(--jk) 22%, transparent);
+    /*
+      Footer dock — glass control layer (not solid green slab).
+      Content peeks/dissolves above; CTA is Liquid Glass capsule + phosphor accent.
+    */
+    .footer-dock {
+      flex-shrink: 0;
+      position: relative;
+      padding: 8px 14px 14px;
+      /* soft top dissolve into dock (scroll-edge hard-style under floating control) */
+      background: linear-gradient(
+        to bottom,
+        transparent 0,
+        color-mix(in srgb, var(--glass) 55%, transparent) 28%,
+        color-mix(in srgb, var(--glass) 88%, transparent) 100%
+      );
+      border-top: 0.5px solid color-mix(in srgb, var(--glass-border) 55%, transparent);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
     }
+    [data-theme="light"] .footer-dock {
+      background: linear-gradient(
+        to bottom,
+        transparent 0,
+        color-mix(in srgb, var(--glass) 40%, transparent) 30%,
+        color-mix(in srgb, var(--glass) 92%, transparent) 100%
+      );
+    }
+    .cta-btn {
+      width: 100%;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      border: 0.5px solid color-mix(in srgb, var(--jk) 38%, var(--glass-border));
+      cursor: pointer;
+      font: inherit; font-size: 13px; font-weight: 600;
+      letter-spacing: -0.1px;
+      padding: 11px 16px;
+      border-radius: 12px;
+      color: var(--jk);
+      background:
+        linear-gradient(
+          180deg,
+          color-mix(in srgb, var(--jk) 18%, transparent) 0%,
+          color-mix(in srgb, var(--jk) 10%, transparent) 100%
+        );
+      backdrop-filter: blur(24px) saturate(1.45);
+      -webkit-backdrop-filter: blur(24px) saturate(1.45);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.14),
+        0 1px 2px rgba(0,0,0,0.08),
+        0 6px 18px color-mix(in srgb, var(--jk) 12%, transparent);
+      transition: background 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
+    }
+    [data-theme="light"] .cta-btn {
+      color: var(--jk);
+      background:
+        linear-gradient(
+          180deg,
+          color-mix(in srgb, var(--jk) 14%, #fff) 0%,
+          color-mix(in srgb, var(--jk) 8%, #fff) 100%
+        );
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.9),
+        0 1px 2px rgba(0,0,0,0.06),
+        0 6px 16px color-mix(in srgb, var(--jk) 10%, transparent);
+    }
+    .cta-btn:hover {
+      background:
+        linear-gradient(
+          180deg,
+          color-mix(in srgb, var(--jk) 28%, transparent) 0%,
+          color-mix(in srgb, var(--jk) 16%, transparent) 100%
+        );
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.16),
+        0 2px 4px rgba(0,0,0,0.1),
+        0 8px 22px color-mix(in srgb, var(--jk) 18%, transparent);
+    }
+    .cta-btn:active { transform: scale(0.985); }
+    .cta-btn .glyph {
+      width: 14px; height: 14px; opacity: 0.9; flex-shrink: 0;
+    }
+    .cta-btn .glyph svg { width: 100%; height: 100%; fill: currentColor; }
 
     .detail-head {
       display: flex; align-items: flex-start; gap: 12px; margin-bottom: 14px;
@@ -370,8 +564,17 @@
       padding: 7px 11px; border-radius: 980px;
       background: var(--fill); color: var(--secondary);
       white-space: nowrap;
+      transition: background 0.12s ease, color 0.12s ease;
     }
-    .acct-switch button.on { background: var(--jk); color: var(--jk-ink); }
+    .acct-switch button.on {
+      background: color-mix(in srgb, var(--jk) 88%, var(--label));
+      color: var(--jk-ink);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.2);
+    }
+    [data-theme="light"] .acct-switch button.on {
+      background: var(--jk);
+      color: #fff;
+    }
 
     .block {
       /* solid content surface — never full glass chrome */
@@ -379,6 +582,7 @@
       border-radius: 14px; padding: 14px; margin-bottom: 10px;
       border: 0.5px solid color-mix(in srgb, var(--separator) 70%, transparent);
     }
+    .block:last-child { margin-bottom: 4px; }
     .block h5 {
       margin: 0 0 10px; font-size: 11px; font-weight: 600;
       color: var(--secondary); text-transform: uppercase; letter-spacing: 0.04em;
@@ -459,9 +663,8 @@
       /* slightly tighter for menu-bar attachment feel */
       max-height: calc(100vh - 20px);
     }
-    html.embed .ov-scroll,
-    html.embed .detail-scroll {
-      max-height: min(480px, calc(100vh - 200px));
+    html.embed .pop {
+      max-height: min(620px, calc(100vh - 16px));
     }
   </style>
 </head>
@@ -483,8 +686,8 @@
       <p>
         ✓ Status transparent · ✓ Overview inventory · ✓ Providers strip + full detail<br />
         ✓ <strong>3 status colors</strong> for % + meters (high / mid / low) — logos keep brand color<br />
-        ✓ Provider + account strips <strong>centered</strong> with <strong>horizontal scroll</strong> when many<br />
-        Next after you confirm: Usage window
+        ✓ Soft scroll edges (no hard mid-card cut) · glass footer CTA · sticky chrome<br />
+        Next after you confirm: Usage window craft
       </p>
     </div>
 
@@ -498,21 +701,24 @@
           <div class="pop" id="app">
             <div class="rain" aria-hidden="true"></div>
             <div class="inner">
-              <div class="brand-line">
-                <div class="jmark" aria-label="j❯"><span class="j">j</span><span class="ch">❯</span></div>
-                <div class="brand-text">
-                  <span class="word">jackin</span><span class="chev">❯</span><span class="desktop">desktop</span>
+              <div class="chrome">
+                <div class="brand-line">
+                  <div class="jmark" aria-label="j❯"><span class="j">j</span><span class="ch">❯</span></div>
+                  <div class="brand-text">
+                    <span class="word">jackin</span><span class="chev">❯</span><span class="desktop">desktop</span>
+                  </div>
                 </div>
-              </div>
 
-              <div class="seg" id="seg">
-                <button type="button" class="on" data-mode="overview">Overview</button>
-                <button type="button" data-mode="providers">Providers</button>
+                <div class="seg" id="seg">
+                  <button type="button" class="on" data-mode="overview">Overview</button>
+                  <button type="button" data-mode="providers">Providers</button>
+                </div>
               </div>
 
               <!-- OVERVIEW -->
               <div id="mode-overview">
-                <div class="ov-scroll">
+                <div class="scroll-shell">
+                <div class="ov-scroll" data-vscroll>
                   <div class="group">
                     <div class="group-head">
                       <div class="plogo openai" aria-hidden="true">
@@ -587,14 +793,13 @@
                     </div>
                   </div>
                 </div>
-                <div class="cta" style="margin:4px 12px 14px">
-                  <button type="button">Open Usage Window</button>
                 </div>
               </div>
 
               <!-- PROVIDERS: strip centered+scroll; accounts LEFT; full real templates -->
               <div id="mode-providers" class="hidden">
-                <div class="pstrip-wrap">
+                <div class="pstrip-shell">
+                <div class="pstrip-wrap" data-hscroll>
                 <div class="pstrip" id="pstrip">
                   <button type="button" class="ptab on" data-provider="openai">
                     <div class="ic"><div class="plogo sm openai"><svg viewBox="0 0 24 24"><path d="M22.3 10.5a5.4 5.4 0 0 0-.7-5.1 5.5 5.5 0 0 0-5.9-2.6A5.5 5.5 0 0 0 12 .8a5.5 5.5 0 0 0-3.7 1.9 5.5 5.5 0 0 0-5.9 2.6 5.4 5.4 0 0 0-.7 5.1A5.4 5.4 0 0 0 .3 14.7a5.5 5.5 0 0 0 2.1 5.6 5.5 5.5 0 0 0 5.9 1.1A5.5 5.5 0 0 0 12 23.2a5.5 5.5 0 0 0 3.7-1.8 5.5 5.5 0 0 0 5.9-1.1 5.5 5.5 0 0 0 2.1-5.6 5.4 5.4 0 0 0-1.4-4.2z"/></svg></div></div>
@@ -633,8 +838,10 @@
                   </button>
                 </div>
                 </div>
+                </div>
 
-                <div class="detail-scroll">
+                <div class="scroll-shell">
+                <div class="detail-scroll" data-vscroll>
                   <!-- OPENAI / CODEX — bucket order: Session, Weekly, Spark 5h, Spark Weekly, Limit Reset Credits -->
                   <div class="pdetail" data-provider="openai">
                     <div class="detail-head">
@@ -645,7 +852,7 @@
                       </div>
                       <button class="btn-icon" type="button">↻</button>
                     </div>
-                    <div class="acct-switch-wrap">
+                    <div class="acct-switch-wrap" data-hscroll>
                       <div class="acct-switch" data-accounts="openai">
                         <button type="button" class="on" data-acct="a1">alexey@chainargos.com</button>
                         <button type="button" data-acct="a2">alexey@zhokhov.com</button>
@@ -741,7 +948,7 @@
                       </div>
                       <button class="btn-icon" type="button">↻</button>
                     </div>
-                    <div class="acct-switch-wrap">
+                    <div class="acct-switch-wrap" data-hscroll>
                       <div class="acct-switch">
                         <button type="button" class="on">Personal</button>
                         <button type="button" disabled>Work</button>
@@ -814,7 +1021,7 @@
                       </div>
                       <button class="btn-icon" type="button">↻</button>
                     </div>
-                    <div class="acct-switch-wrap">
+                    <div class="acct-switch-wrap" data-hscroll>
                       <div class="acct-switch"><button type="button" class="on">Free</button></div>
                     </div>
                     <div class="block">
@@ -852,7 +1059,7 @@
                       </div>
                       <button class="btn-icon" type="button">↻</button>
                     </div>
-                    <div class="acct-switch-wrap">
+                    <div class="acct-switch-wrap" data-hscroll>
                       <div class="acct-switch"><button type="button" class="on">Primary</button></div>
                     </div>
                     <div class="block">
@@ -888,7 +1095,7 @@
                       </div>
                       <button class="btn-icon" type="button">↻</button>
                     </div>
-                    <div class="acct-switch-wrap">
+                    <div class="acct-switch-wrap" data-hscroll>
                       <div class="acct-switch"><button type="button" class="on">Default</button></div>
                     </div>
                     <div class="block">
@@ -923,7 +1130,7 @@
                       </div>
                       <button class="btn-icon" type="button">↻</button>
                     </div>
-                    <div class="acct-switch-wrap">
+                    <div class="acct-switch-wrap" data-hscroll>
                       <div class="acct-switch"><button type="button" class="on">API key</button></div>
                     </div>
                     <div class="block">
@@ -964,7 +1171,7 @@
                       </div>
                       <button class="btn-icon" type="button">↻</button>
                     </div>
-                    <div class="acct-switch-wrap">
+                    <div class="acct-switch-wrap" data-hscroll>
                       <div class="acct-switch"><button type="button" class="on">API key</button></div>
                     </div>
                     <div class="block">
@@ -994,9 +1201,17 @@
                     </div>
                   </div>
                 </div>
-                <div class="cta" style="margin:4px 12px 14px">
-                  <button type="button">Open Usage Window</button>
                 </div>
+              </div>
+
+              <!-- Shared glass footer dock (outside scrollers — no hard cut under CTA) -->
+              <div class="footer-dock">
+                <button type="button" class="cta-btn">
+                  <span class="glyph" aria-hidden="true">
+                    <svg viewBox="0 0 16 16"><path d="M3 2.5A1.5 1.5 0 0 1 4.5 1h7A1.5 1.5 0 0 1 13 2.5v11a1.5 1.5 0 0 1-1.5 1.5h-7A1.5 1.5 0 0 1 3 13.5v-11zM4.5 2a.5.5 0 0 0-.5.5V4h8V2.5a.5.5 0 0 0-.5-.5h-7zM4 5v8.5a.5.5 0 0 0 .5.5h7a.5.5 0 0 0 .5-.5V5H4z"/></svg>
+                  </span>
+                  Open Usage Window
+                </button>
               </div>
             </div>
           </div>
@@ -1038,7 +1253,18 @@
           </p>
           <p>
             <strong>2. Materials:</strong> Popover = liquid glass chrome (<code>GlassFallbacks</code>);
-            content cards = solid/inset fills. Sidebar glass in Usage window later.
+            content cards = solid/inset fills. Footer dock = glass control layer.
+            Sidebar glass in Usage window later.
+          </p>
+          <p>
+            <strong>2b. Scroll edges (critical craft):</strong> never hard-clip content mid-card.
+            Use soft scroll-edge dissolve under sticky chrome / above footer.
+            Native: <code>scrollEdgeEffect(.soft)</code> (WWDC25 / HIG Materials).
+            H-scroll strips use the same soft left/right dissolve — no mid-tab cut.
+          </p>
+          <p>
+            <strong>2c. Open Usage CTA:</strong> glass capsule + phosphor tint (not solid green slab).
+            Sits in sticky footer dock outside scrollers.
           </p>
           <p>
             <strong>3. Metrics:</strong> <strong>3 status levels only</strong> (high / mid / low + depleted).
@@ -1046,7 +1272,7 @@
             Brand color only on logo plates (template mono on menu bar).
           </p>
           <p>
-            <strong>3b. Strips:</strong> providers centered + H-scroll; accounts <strong>left</strong> + H-scroll.
+            <strong>3b. Strips:</strong> providers centered + H-scroll with edge fade; accounts <strong>left</strong> + H-scroll with edge fade.
           </p>
           <p>
             <strong>3c. Detail templates:</strong> OpenAI, Anthropic, Amp, xAI, Kimi, Z.ai, MiniMax
@@ -1094,6 +1320,11 @@
       );
       modeOverview.classList.toggle("hidden", mode !== "overview");
       modeProviders.classList.toggle("hidden", mode !== "providers");
+      // reset detail scroll to top when switching modes
+      requestAnimationFrame(() => {
+        document.querySelectorAll("[data-vscroll]").forEach((el) => { el.scrollTop = 0; });
+        updateAllEdges();
+      });
     }
     document.querySelectorAll("#seg button").forEach((btn) => {
       btn.addEventListener("click", () => setMode(btn.dataset.mode));
@@ -1108,14 +1339,17 @@
       document.querySelectorAll(".pdetail").forEach((d) =>
         d.classList.toggle("hidden", d.dataset.provider !== id)
       );
+      const detail = document.querySelector(".detail-scroll");
+      if (detail) detail.scrollTop = 0;
       // scroll focused tab into view (centered strip, many providers)
       try { tab.scrollIntoView({ inline: "center", block: "nearest", behavior: "auto" }); } catch (_) {}
+      requestAnimationFrame(updateAllEdges);
     }
     document.querySelectorAll("#pstrip .ptab").forEach((tab) => {
       tab.addEventListener("click", () => setProvider(tab.dataset.provider));
     });
     // default: only openai detail visible
-    document.querySelectorAll(".pdetail").forEach((d, i) => {
+    document.querySelectorAll(".pdetail").forEach((d) => {
       if (d.dataset.provider !== "openai") d.classList.add("hidden");
     });
 
@@ -1130,8 +1364,45 @@
         document.querySelectorAll('.pdetail[data-provider="openai"] [data-acct-panel]').forEach((p) =>
           p.classList.toggle("hidden", p.dataset.acctPanel !== id)
         );
+        requestAnimationFrame(updateAllEdges);
       });
     });
+
+    /*
+      Soft scroll-edge dissolves (Apple Liquid Glass companion).
+      Content fades at edges instead of hard-clipping mid-card / mid-tab.
+      Native: scrollEdgeEffect(.soft) under glass chrome + footer.
+    */
+    const FADE = 22; // px soft edge
+    function updateVScroll(el) {
+      if (!el) return;
+      const max = el.scrollHeight - el.clientHeight;
+      const top = el.scrollTop;
+      const atTop = top <= 1;
+      const atBot = max <= 1 || top >= max - 1;
+      el.style.setProperty("--fade-t", atTop ? "0px" : FADE + "px");
+      el.style.setProperty("--fade-b", atBot ? "0px" : FADE + "px");
+    }
+    function updateHScroll(el) {
+      if (!el) return;
+      const max = el.scrollWidth - el.clientWidth;
+      const left = el.scrollLeft;
+      const atL = left <= 1;
+      const atR = max <= 1 || left >= max - 1;
+      el.style.setProperty("--fade-l", atL ? "0px" : FADE + "px");
+      el.style.setProperty("--fade-r", atR ? "0px" : FADE + "px");
+    }
+    function updateAllEdges() {
+      document.querySelectorAll("[data-vscroll]").forEach(updateVScroll);
+      document.querySelectorAll("[data-hscroll]").forEach(updateHScroll);
+    }
+    document.querySelectorAll("[data-vscroll]").forEach((el) => {
+      el.addEventListener("scroll", () => updateVScroll(el), { passive: true });
+    });
+    document.querySelectorAll("[data-hscroll]").forEach((el) => {
+      el.addEventListener("scroll", () => updateHScroll(el), { passive: true });
+    });
+    window.addEventListener("resize", updateAllEdges);
 
     // URL params: ?embed=1&mode=providers&provider=anthropic&theme=dark&account=a1
     // Used by index.html status left-click so interaction demos the REAL popover.
@@ -1154,6 +1425,7 @@
         );
         if (acctBtn) acctBtn.click();
       }
+      requestAnimationFrame(updateAllEdges);
     })();
   </script>
 </body>

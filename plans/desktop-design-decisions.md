@@ -627,6 +627,9 @@ jackin = soul   (j❯, phosphor accent, mono metrics, deep canvas tint, optional
 | FB1-39 | **Usage window** design track open: glass **sidebar + toolbar**; solid content; multi-account nest; same tokens as popover | CONFIRMED direction |
 | FB1-40 | Design must stay **Liquid Glass–consistent** (glass = nav only; solid content; transparent menu bar items) | CONFIRMED re-verify |
 | FB1-41 | **One popover artifact:** status interaction and standalone craft use the **same** `popover.html` (embed via `?embed=1&mode=providers&provider=…`). No mini-pop reimplementation in hub or native | CONFIRMED |
+| FB1-42 | **Soft scroll edges:** vertical detail/overview + horizontal provider/account strips dissolve at edges — never hard mid-card / mid-tab clip. Native: `scrollEdgeEffect(.soft)` under glass chrome and above footer dock | CONFIRMED |
+| FB1-43 | **Open Usage Window CTA** = glass capsule + phosphor tint/hairline (not solid green slab); lives in sticky glass **footer dock** outside scrollers | CONFIRMED |
+| FB1-44 | Popover layout = sticky **chrome** (brand+seg[+provider strip]) + flex scroller + sticky **footer dock** — content scrolls between glass layers | CONFIRMED |
 
 ### One-by-one queue (after FB-1)
 

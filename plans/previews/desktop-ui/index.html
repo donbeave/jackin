@@ -259,9 +259,20 @@
     .win .toolbar-glass h3 { margin: 0; font-size: 17px; font-weight: 650; }
     .win .toolbar-glass .actions { display: flex; gap: 8px; }
     .win .toolbar-glass button {
-      border: 0; cursor: pointer; font: inherit; font-size: 12px; font-weight: 500;
-      padding: 6px 12px; border-radius: 8px;
-      background: color-mix(in srgb, var(--jk) 14%, transparent); color: var(--jk);
+      border: 0.5px solid color-mix(in srgb, var(--jk) 30%, var(--glass-border));
+      cursor: pointer; font: inherit; font-size: 12px; font-weight: 560;
+      padding: 6px 12px; border-radius: 980px;
+      background: color-mix(in srgb, var(--jk) 12%, transparent); color: var(--jk);
+      backdrop-filter: blur(16px);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.1);
+    }
+    .win .toolbar-glass button:hover {
+      background: color-mix(in srgb, var(--jk) 20%, transparent);
+    }
+    /* Usage main content soft scroll edge under glass toolbar */
+    .win .main {
+      mask-image: linear-gradient(to bottom, transparent 0, #000 14px, #000 100%);
+      -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 14px, #000 100%);
     }
     .win .main h2 { margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -0.4px; }
     .win .main .sub { margin-top: 4px; font-size: 13px; color: var(--secondary); }
@@ -515,35 +526,36 @@
       <div class="lg-grid">
         <div class="lg-card ok">
           <h3>✓ Glass (navigation)</h3>
-          Glance <code>popover.html</code> shell · status context menu · Usage sidebar · Usage toolbar<br />
+          Popover shell · sticky chrome · footer dock · context menu · Usage sidebar/toolbar<br />
           Matches Tahoe: bars, popovers, sidebars, menus.
         </div>
         <div class="lg-card ok">
           <h3>✓ Solid (content)</h3>
-          Inset cards / buckets inside popover · Usage detail pane · meters/text<br />
-          HIG: do not put Liquid Glass on the content layer.
+          Inset cards / buckets · Usage detail pane · meters/text<br />
+          HIG: Liquid Glass is not for the content layer.
+        </div>
+        <div class="lg-card ok">
+          <h3>✓ Soft scroll edges</h3>
+          Content dissolves under chrome / above footer — no mid-card hard clip.<br />
+          Provider + account H-scroll soft-fade edges. Native: <code>scrollEdgeEffect(.soft)</code>.
+        </div>
+        <div class="lg-card ok">
+          <h3>✓ Glass CTA (not green slab)</h3>
+          Open Usage = glass capsule + phosphor tint + hairline. jackin accent without fighting glass.
         </div>
         <div class="lg-card ok">
           <h3>✓ Transparent menu bar</h3>
-          Template mono logos + dual stack — no chip fill (matches popover status lock).
-        </div>
-        <div class="lg-card ok">
-          <h3>✓ jackin accent without fighting glass</h3>
-          Phosphor only on selection rings, CTAs, high-status metrics, j❯ — never full green glass.
-        </div>
-        <div class="lg-card ok">
-          <h3>✓ One popover artifact</h3>
-          Status left-click loads <code>popover.html?embed=1</code> — same craft as the standalone template.
+          Template mono logos + dual stack — no chip fill.
         </div>
         <div class="lg-card warn">
           <h3>⚠ Watch</h3>
-          Busy wallpapers: hairline + blur. Reduce Transparency → <code>GlassFallbacks</code> ultraThinMaterial.
-          Rain whisper ≤ ~4% chrome only; off with Reduce Motion / Transparency.
+          Busy wallpapers: hairline + blur. Reduce Transparency → <code>GlassFallbacks</code>.
+          Rain ≤ ~4% chrome; off with Reduce Motion / Transparency. Do not stack hard+soft edges.
         </div>
       </div>
       <p class="flow-caption">
-        Verdict: approved popover + Usage nav/content split is <strong>Liquid Glass–consistent</strong>.
-        Native implement only via <code>GlassFallbacks</code>.
+        Verdict: popover + Usage split is <strong>Liquid Glass–ready</strong> (nav glass, solid content, scroll edges).
+        Native: <code>GlassFallbacks</code> + system scroll edge effects.
       </p>
     </section>
   </div>

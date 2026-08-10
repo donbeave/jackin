@@ -40,14 +40,17 @@ HTML alone without tokens becomes “generic SaaS.” Tokens alone without a com
 4. Require **dark + light** verification.  
 5. Require **no invented credential text** — only `credential_origin` and related Rust fields.  
 6. Use **screenshot compare** after SwiftUI build against HTML (human or vision).  
-7. Keep **GlassFallbacks** as sole glass gate (repo rule).
+7. Keep **GlassFallbacks** as sole glass gate (repo rule).  
+8. Use **soft scroll edge effects** under glass chrome / above footer (FB1-42) — never hard-clip scrolling content.  
+9. Open Usage CTA = **glass capsule** (FB1-43), not a solid green rectangle.
 
 ### Do not
 
 1. Ask the agent to “make it look Apple” without HTML + tokens.  
 2. Let the agent hardcode hex outside the token table.  
 3. Use multi-brand colors on meters.  
-4. Treat HTML as copy-paste Swift — it is **structure + tokens + IA**, not AppKit API.
+4. Treat HTML as copy-paste Swift — it is **structure + tokens + IA**, not AppKit API.  
+5. Clip provider strip or detail scroll with a hard rectangular mask and no edge dissolve.
 
 ## Token map (HTML → Swift)
 
