@@ -1,8 +1,9 @@
 # VISUAL_QA_LOG — jackin❯ desktop HTML SoT parity
 
 **Date:** 2026-08-10  
-**Tip:** `30879f31` (+ this docs pass)  
-**Verification:** Session capsule meter CAPSULE_OK · ALL_PIXEL_OK · live 2 rows BLOCKED honest · junk removed  
+**Tip:** `f6905200`  
+**Verification:** re-run L1/L2 green · CAPSULE_OK Session meters · ALL_PIXEL_OK · live 2 BLOCKED · app RUNNING  
+
 **Branch:** plan/desktop-visual  
 **Toolchain:** Xcode 26.6 (17F113) · Swift 6.3.3  
 **Authority:** `qi-artifacts/EVIDENCE_LEDGER.toml` + dual-image §7.2/7.3  
