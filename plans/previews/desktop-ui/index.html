@@ -209,6 +209,32 @@
       De-slop: complete continuous strokes (never one-sided borders),
       no multi-shadow gradient pills, 8pt rhythm, SF-like hierarchy.
     */
+    /* System menu bar mock (visible when Usage is open → .regular activation). */
+    .sys-menubar {
+      width: min(980px, 100%);
+      margin: 0 auto 8px;
+      height: 24px;
+      display: flex; align-items: center; gap: 14px;
+      padding: 0 12px;
+      border-radius: 8px;
+      font-size: 12px; font-weight: 500;
+      color: var(--label);
+      background: color-mix(in srgb, var(--glass) 55%, transparent);
+      border: 0.5px solid color-mix(in srgb, var(--separator) 55%, transparent);
+      backdrop-filter: blur(20px) saturate(1.4);
+      -webkit-backdrop-filter: blur(20px) saturate(1.4);
+    }
+    .sys-menubar .apple {
+      font-size: 13px; line-height: 1; opacity: 0.9;
+    }
+    .sys-menubar .app-menu {
+      font-weight: 700; color: var(--label);
+    }
+    .sys-menubar .app-menu b { color: var(--jk); font-weight: 700; }
+    .sys-menubar .m { color: var(--secondary); font-weight: 500; }
+    .sys-menubar .hint {
+      margin-left: auto; font-size: 10px; color: var(--tertiary); font-weight: 500;
+    }
     .win {
       --win-r: 14px;
       --side-w: 228px;
@@ -757,6 +783,15 @@
         See <code>DATA_CONTRACT.md</code>.
       </p>
       <div class="stage" style="padding: 20px 16px 28px;">
+        <!-- System menu bar (native: AppMainMenu when Usage opens → .regular) -->
+        <div class="sys-menubar" data-sys-menubar title="System menu bar while Usage is open">
+          <span class="apple" aria-hidden="true"></span>
+          <span class="app-menu">jackin<b>❯</b> desktop</span>
+          <span class="m">Edit</span>
+          <span class="m">View</span>
+          <span class="m">Window</span>
+          <span class="hint">About · Settings… · Quit · Refresh ⌘R</span>
+        </div>
         <div class="win" id="usage-win">
           <!-- Edge-to-edge content first (sidebar floats above it) -->
           <main class="main">

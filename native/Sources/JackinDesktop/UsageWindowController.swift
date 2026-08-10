@@ -8,13 +8,18 @@ import SwiftUI
 /// Lazily creates and retains the AppKit Usage window hosting the existing
 /// `UsageWindowRoot`. Plan 008 owns the window's content; this controller only
 /// owns its lifecycle and focus.
+///
+/// Showing the window promotes the process to `.regular` so the **system menu
+/// bar** ( + AppMainMenu) is available; closing the last titled window returns
+/// to `.accessory` status-item mode.
 @MainActor
-final class UsageWindowController {
+final class UsageWindowController: NSObject, NSWindowDelegate {
     private let store: PresentationStore
     private var window: NSWindow?
 
     init(store: PresentationStore) {
         self.store = store
+        super.init()
     }
 
     /// Show the Usage window, focused on a provider surface id (`nil` = Overview),
@@ -24,7 +29,7 @@ final class UsageWindowController {
         let window = window ?? makeWindow()
         self.window = window
         window.makeKeyAndOrderFront(nil)
-        NSApp.activate(ignoringOtherApps: true)
+        AppActivation.presentWindows()
     }
 
     private func makeWindow() -> NSWindow {
@@ -37,13 +42,22 @@ final class UsageWindowController {
         // Centered title-bar brand (macOS centers NSWindow.title).
         window.title = "jackin❯ desktop"
         window.isReleasedWhenClosed = false
+        window.delegate = self
         window.contentView = NSHostingView(rootView: UsageWindowRoot(store: store))
         window.center()
         window.setFrameAutosaveName("jackin.desktop.usage-window")
         return window
     }
 
+    func windowWillClose(_ notification: Notification) {
+        // Window is still visible during willClose; resign on next run-loop turn.
+        DispatchQueue.main.async {
+            AppActivation.resignToAccessoryIfNeeded()
+        }
+    }
+
     func invalidate() {
+        window?.delegate = nil
         window?.orderOut(nil)
         window?.contentView = nil
         window = nil

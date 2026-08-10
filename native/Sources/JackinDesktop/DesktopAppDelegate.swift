@@ -202,14 +202,16 @@ final class StatusBarController: NSObject {
     }
 }
 
-/// Application delegate for jackin❯ desktop (menu-bar agent). Owns the store and
-/// the status-bar controller; constructs no SwiftUI scene graph and no window.
+/// Application delegate for jackin❯ desktop (menu-bar agent). Owns the store,
+/// status-bar controller, main menu, and document windows (Usage / Settings).
 @MainActor
 final class DesktopAppDelegate: NSObject, NSApplicationDelegate {
     let store: PresentationStore
     private let launchConfiguration: PresentationStore.LaunchConfiguration
     private var statusBar: StatusBarController?
     private var usageWindow: UsageWindowController?
+    /// Retained: menu item targets point here / AppMainMenu for the process life.
+    private var mainMenu: AppMainMenu?
 
     override init() {
         self.launchConfiguration = PresentationStore.LaunchConfiguration.resolve(
@@ -229,6 +231,13 @@ final class DesktopAppDelegate: NSObject, NSApplicationDelegate {
         store.openForLaunch(launchConfiguration)
         let usageWindow = UsageWindowController(store: store)
         self.usageWindow = usageWindow
+
+        let menu = AppMainMenu(store: store) { [weak usageWindow] in
+            usageWindow?.show(focusOn: nil)
+        }
+        menu.install()
+        self.mainMenu = menu
+
         let router = StatusItemMenuRouter(
             openUsageWindow: { [weak usageWindow] surfaceId in usageWindow?.show(focusOn: surfaceId) },
             refresh: { [weak store] in store?.refreshAll() },
@@ -240,11 +249,16 @@ final class DesktopAppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
+        // Menu-bar agent stays alive after Usage/Settings close.
         false
     }
 
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows: Bool) -> Bool {
-        false
+        // Dock click while regular (or after hide) → bring Usage forward.
+        if !hasVisibleWindows {
+            usageWindow?.show(focusOn: nil)
+        }
+        return true
     }
 
     func applicationWillTerminate(_ notification: Notification) {
@@ -252,6 +266,7 @@ final class DesktopAppDelegate: NSObject, NSApplicationDelegate {
         statusBar = nil
         usageWindow?.invalidate()
         usageWindow = nil
+        mainMenu = nil
         store.shutdown()
     }
 }

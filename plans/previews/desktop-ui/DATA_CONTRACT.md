@@ -66,6 +66,21 @@ Every multi-account Codex fixture must keep this label order (depleted accounts 
 - **Bar / glance:** Daily % only.  
 - **Window also:** Credits / bounds as detail-only (never status-bar %).
 
+## System menu bar (when Usage / Settings open)
+
+Status-item-only mode uses `.accessory` (no app menu chrome). Opening Usage or
+Settings promotes to `.regular` so the **standard macOS menu bar** appears.
+
+| Menu | Now | Notes |
+|---|---|---|
+|  | System | Always when regular |
+| **jackin❯ desktop** | About · Settings… · Hide · Quit | App menu; Quit ⌘Q |
+| **Edit** | Undo/Redo/Cut/Copy/Paste/Select All | First-responder; future forms |
+| **View** | Refresh ⌘R | Same action as Usage window toolbar |
+| **Window** | Minimize · Zoom · Usage · Bring All to Front | Standard window management |
+
+Not now: Help, File, Services. Implementer: `AppMainMenu.swift`, `AppActivation`.
+
 ## Consistency rule
 
 If the bar shows OpenAI **57%**, the Usage window **Weekly** row for that

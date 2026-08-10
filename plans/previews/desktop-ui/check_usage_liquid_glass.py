@@ -27,6 +27,14 @@ def main() -> int:
     need('id="usage-win"' in html, "usage-win root missing")
     need("data-lg-sidebar" in html, "Liquid Glass sidebar marker missing")
     need(
+        "data-sys-menubar" in html and "sys-menubar" in html,
+        "system menu bar mock ( + app menus) missing above Usage",
+    )
+    need(
+        "Quit" in html and "Settings" in html,
+        "system menu bar must surface Quit + Settings",
+    )
+    need(
         "var(--lg-blur)" in html
         or re.search(
             r"\.win\s+\.side\s*\{[^}]*backdrop-filter:\s*blur\(([5-9]\d|\d{3,})",
