@@ -919,54 +919,65 @@
     <section class="panel" id="glass">
       <h2 class="st">Liquid Glass consistency check</h2>
       <p class="sl">
-        Apple HIG: Liquid Glass = <strong>navigation / control layer</strong> floating above content.
-        Do not glass the data layer. Our design follows that; verify it does not fight Tahoe.
+        Per Apple
+        <a href="https://developer.apple.com/documentation/technologyoverviews/adopting-liquid-glass" style="color:var(--jk)">Adopting Liquid Glass</a>
+        +
+        <a href="https://developer.apple.com/documentation/technologyoverviews/liquid-glass" style="color:var(--jk)">Liquid Glass</a>
+        +
+        <a href="https://developer.apple.com/documentation/technologyoverviews/swiftui" style="color:var(--jk)">SwiftUI</a>:
+        glass = topmost <strong>navigation layer</strong>; content stays standard materials.
+        Native: SwiftUI + <code>GlassFallbacks</code> only (decisions §6.0 LG-A1–A12).
       </p>
       <div class="lg-grid">
         <div class="lg-card ok">
-          <h3>✓ Glass (navigation)</h3>
-          Popover shell · continuous Usage titlebar · floating glass sidebar · context menu
+          <h3>✓ LG-A1 Navigation glass</h3>
+          Popover shell · continuous Usage titlebar · floating sidebar · context menu · footer CTA
         </div>
         <div class="lg-card ok">
-          <h3>✓ Solid (content)</h3>
-          Single limit list + quiet details · meters/text<br />
-          HIG: Liquid Glass is not for the content layer — <code>.main</code> is solid.
+          <h3>✓ LG-A2 Content not glass</h3>
+          Limit list + details · meters/text · solid <code>.main</code>
         </div>
         <div class="lg-card ok">
-          <h3>✓ Provider ≠ account selection</h3>
-          Provider = glass capsule + logo plate + mini meter.<br />
-          Account = nested rail + left phosphor bar + quiet mono (never same chrome).
+          <h3>✓ LG-A3 Clear hierarchy</h3>
+          Provider capsule ≠ account rail · Overview vs Providers · sidebar vs detail
         </div>
         <div class="lg-card ok">
-          <h3>✓ Seamless Usage chrome</h3>
-          No 4-pane hard split · sidebar soft shadow only · no titlebar/content border wall.
+          <h3>✓ LG-A4 / A5 Sparing glass</h3>
+          No glass-on-glass · no glass data tables · custom glass only on chrome
         </div>
         <div class="lg-card ok">
-          <h3>✓ No duplicate limits</h3>
-          One <code>limit-list</code> — never tiles + buckets restating the same %.
+          <h3>✓ LG-A6 Floating sidebar</h3>
+          Soft depth over solid content · ambient stage bleed under glass
         </div>
         <div class="lg-card ok">
-          <h3>✓ Soft scroll edges</h3>
-          Content dissolves under chrome / above footer — no mid-card hard clip.<br />
-          Provider + account H-scroll soft-fade edges. Native: <code>scrollEdgeEffect(.soft)</code>.
+          <h3>✓ LG-A7 Scroll edges</h3>
+          Soft dissolve under chrome / strips — native scroll edge effects
         </div>
         <div class="lg-card ok">
-          <h3>✓ Glass CTA (not green slab)</h3>
-          Open Usage = glass capsule + phosphor tint + hairline. jackin accent without fighting glass.
+          <h3>✓ LG-A8 Toolbar grouping</h3>
+          Single Refresh group on glass titlebar
+        </div>
+        <div class="lg-card ok">
+          <h3>✓ LG-A9 Selective tint</h3>
+          Phosphor on selection / CTA / high metrics / j❯ only
+        </div>
+        <div class="lg-card ok">
+          <h3>✓ LG-A12 SwiftUI path</h3>
+          <code>NavigationSplitView</code> + toolbar + <code>GlassFallbacks</code> only
         </div>
         <div class="lg-card ok">
           <h3>✓ Transparent menu bar</h3>
-          Template mono logos + dual stack — no chip fill.
+          Template mono dual stack — not glass chips (FB1-6)
         </div>
         <div class="lg-card warn">
-          <h3>⚠ Watch</h3>
-          Busy wallpapers: hairline + blur. Reduce Transparency → <code>GlassFallbacks</code>.
-          Rain ≤ ~4% chrome; off with Reduce Motion / Transparency. Do not stack hard+soft edges.
+          <h3>⚠ LG-A10 / A11</h3>
+          Reduce Transparency → ultraThinMaterial in <code>GlassFallbacks</code>.
+          Release SDK macOS 26 for Tahoe LG.
         </div>
       </div>
       <p class="flow-caption">
-        Verdict: popover + Usage split is <strong>Liquid Glass–ready</strong> (nav glass, solid content, scroll edges).
-        Native: <code>GlassFallbacks</code> + system scroll edge effects.
+        Map: <a href="./LIQUID_GLASS_REFERENCES.md" style="color:var(--jk)">LIQUID_GLASS_REFERENCES.md</a>
+        · decisions §6.0
       </p>
     </section>
   </div>
