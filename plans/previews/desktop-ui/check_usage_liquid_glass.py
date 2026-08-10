@@ -39,18 +39,19 @@ def main() -> int:
     need("--lg-side" in html, "--lg-side glass token missing")
     need("--lg-specular" in html, "multi-layer specular token missing")
     need("limit-list" in html, "single limit-list (anti-dupe) missing")
-    need("win .body" in html or 'class="body"' in html, "body grid wrapper missing")
     # Anti-dupe: do not ship both metric-row and bucket heroes in usage views
     usage = html.split('id="usage"', 1)[-1].split('id="glass"', 1)[0]
     need("metric-row" not in usage or "bucket" not in usage, "usage still has metric-row + bucket dual story")
     need("usage-crumb" not in usage, "titlebar crumb re-stating content title must be removed")
+    # One continuous surface: content fills .win; glass chrome floats on top.
     need(
-        re.search(r"\.win\s*\{[^}]*background:\s*transparent", html, re.S) is not None,
-        "window shell must be transparent for stage bleed under glass",
+        re.search(r"\.win\s*\{[^}]*background:\s*var\(--content-bg\)", html, re.S) is not None
+        or "background: var(--content-bg)" in html,
+        "usage window must be one solid content canvas",
     )
     need(
-        re.search(r"\.win\s+\.main\s*\{[^}]*var\(--content-bg\)", html, re.S) is not None,
-        "content pane must use solid --content-bg",
+        re.search(r"\.win\s+\.side\s*\{[^}]*position:\s*absolute", html, re.S) is not None,
+        "sidebar must float (position absolute) over content",
     )
     need("nav-provider" in html, "provider nav system missing")
     need("nav-acct" in html, "account nav system missing")
@@ -65,8 +66,7 @@ def main() -> int:
         "border-left: 2.5px solid transparent" not in html,
         "AI-slop one-sided account border still present",
     )
-    need("chrome-float" in html or "side" in html and "position: absolute" in html,
-         "floating sidebar layout missing")
+    need("chrome-float" in html, "floating chrome-float overlay missing")
     need(".nav-provider.on" in html, "provider selection rule missing")
     need(".nav-acct.on" in html, "account selection rule missing")
     # Same selection chrome for both would re-use one class; require distinct classes
