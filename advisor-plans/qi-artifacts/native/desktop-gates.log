@@ -1,37 +1,27 @@
-=== L1 check_usage_liquid_glass ===
+=== L1 glass ===
 PASS: Usage Liquid Glass + provider≠account structural checks
-=== L1 check_qi_evidence_ledger ===
+=== L1 ledger ===
 PASS: QI evidence ledger — 15 pass rows, 2 blocked, prose PNG refs consistent
-=== L2 ArchitectureLint ===
-PASS  AppMainMenu.swift
-PASS  DesktopAppDelegate.swift
+=== L2 gates ===
 PASS  StatusItemLabel.swift
 PASS  StatusItemMenu.swift
 PASS  GlassFallbacks.swift
 ---
 DesktopArchitectureLint: scanned 18 files, 18 clean
 DesktopArchitectureLint: ALL PASS
-=== L2 SoTParity ===
-PASS  100% meter fraction full
 PASS  57% meter fraction
 PASS  status context menu three rows
 ---
 DesktopSoTParityHarness: ALL PASS (18/18 checks)
-=== L2 ParityMatrix ===
-PASS  ProviderUsageLinks desktop map complete
 PASS  no sparkline/donut/trend product UI in status item
 PASS  no sparkline/donut in popover
 ---
 DesktopParityMatrixHarness: ALL PASS
 Matrix: 8/8 providers displayable · dual-bucket · depleted · limits-only
-=== L2 StatusItemChip ===
-PASS  gauge secondary drops bare 100%
 PASS  gauge secondary keeps money limit
 PASS  dual depleted a11y keeps weekly
 ---
 StatusItemChipHarness: ALL PASS
-=== L2 ProviderMarks ===
-PASS  grok mark maxA=242 (need ≥200)
 PASS  zai mark maxA=234 (need ≥200)
 PASS  kimi mark maxA=231 (need ≥200)
 PASS  minimax mark maxA=244 (need ≥200)
