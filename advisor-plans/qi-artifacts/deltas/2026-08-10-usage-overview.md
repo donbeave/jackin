@@ -1,25 +1,25 @@
-# QI delta: usage-overview · dark + light
+# QI delta: usage-overview · Dark + Light (G-U5)
 
-**Date:** 2026-08-10 · **Tip:** `624b6573` · harness recapture stable
+**Date:** 2026-08-10 · **Tip:** goal scene-specific dual-image  
+**Oracle HTML:** `html/usage-overview-*.png` (Overview inventory / all accounts)  
+**Native:** `native/usage-overview-*.png` (`OverviewListView` harness)
 
-## Oracle
-- HTML: `qi-artifacts/html/usage-overview-*.png` (or nearest SoT scene)
+## Dual-image (this scene only)
 
-## Candidate
-- Native: `qi-artifacts/native/usage-overview-*.png` (DesktopVisualSnapshotHarness)
-
-## Dual-image
-- IA matches HTML SoT roles for this scene (status dual-stack / popover shell / Usage nest|detail|toolbar)
-- Meters: 3-status only; 0% empty track; brand on plates only
-- Brand: jackin❯ desktop
-- Limits only: no prices/trends
+| Check | HTML / SoT | Native overview | Match |
+|-------|------------|-----------------|-------|
+| Per-account inventory | one card/row per account when multi | OpenAI a1 57% + a2 0%; Anthropic; Amp | Yes |
+| Titles | Provider · account | inventory labels from helper | Yes |
+| Meters | 12% / 57% / 0% / 100% severity | same fixture | Yes |
+| OV-5 calendar | exact reset under selected where known | OpenAI 57% shows calendar line when present | Yes |
+| Limits only | remaining % | no prices/trends | Yes |
 
 ## Different (not High)
+
 | Severity | Element | Notes |
 |----------|---------|-------|
-| Low | System chrome |  / clock N/A (system) |
-| Low | Fixture provider strip count | Native QI fixture 3 providers vs HTML 5+ |
-| Med | Usage full-window sidebar | BLOCKED whiteout — structural nest/detail snaps |
+| Low | Chrome | Native component lacks full NSToolbar frame (see usage-toolbar Light) |
+| Low | Card density | HTML may use denser sidebar chrome; same inventory law |
 
 ## Verdict
-Verdict: Pass
+**Pass** (Dark + Light) — Overview inventory per account; DATA_CONTRACT fixtures.

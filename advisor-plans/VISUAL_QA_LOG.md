@@ -1,40 +1,41 @@
 # VISUAL_QA_LOG — jackin❯ desktop HTML SoT parity
 
 **Date:** 2026-08-10  
-**Tip:** `624b6573`  
+**Tip:** post-toolbar-honesty (see git log)  
 **Branch:** plan/desktop-visual  
 **Authority:** UI_PARITY_MASTER §6 + QI_VERIFICATION L1–L4  
 **Artifacts:** `advisor-plans/qi-artifacts/`
 
-## Automated gates (L1–L2) — re-run green
+## Automated gates (L1–L2)
 
 ```
 check_usage_liquid_glass.py PASS
-check_qi_evidence_ledger.py PASS — 17 pass / 2 blocked
+check_qi_evidence_ledger.py PASS
 DesktopArchitectureLint ALL PASS
 DesktopSoTParityHarness ALL PASS (18/18)
 DesktopParityMatrixHarness ALL PASS
 StatusItemChipHarness ALL PASS
 ProviderMarksHarness ALL PASS (7/7 maxA)
-DesktopVisualSnapshotHarness recapture OK (craft PNGs byte-identical)
+DesktopVisualSnapshotHarness: usage_toolbar_dark BLOCKED (white-blob gate); light OK
 ```
 
 Log: `qi-artifacts/native/desktop-gates.log`
 
-## §6 matrix — Dark / Light (no High fails)
+## §6 matrix — Dark / Light
 
-| Scene | Dark | Light | High residual | Evidence | Verdict |
-|-------|------|-------|---------------|----------|---------|
+| Scene | Dark | Light | High residual craft | Evidence | Verdict |
+|-------|------|-------|---------------------|----------|---------|
 | status-desktop | yes | yes | none | native/status-desktop-*.png · deltas/…-status-desktop.md | **Pass** |
-| popover-openai | yes | yes | none | native/popover-openai-*.png · dual-image Session/Weekly | **Pass** |
+| popover-openai | yes | yes | none | native/popover-openai-*.png | **Pass** |
 | popover-anthropic | yes | yes | none | native/popover-anthropic-*.png | **Pass** |
-| popover-overview | yes | yes | none | native/popover-overview-*.png · inventory + OV-5 calendar | **Pass** |
-| usage-overview | yes | yes | none | native/usage-overview-*.png | **Pass** |
-| usage-provider-nest | yes | yes | none | native/usage-provider-nest-*.png · 57% mid / 0% empty | **Pass** |
-| usage-detail-openai | yes | yes | none | native/usage-detail-openai-*.png · Session/Weekly/Spark/LRC | **Pass** |
-| usage-toolbar | yes | yes | none | native/usage-toolbar-*.png | **Pass** |
+| popover-overview | yes | yes | none | native/popover-overview-*.png | **Pass** |
+| usage-overview | yes | yes | none | native/usage-overview-*.png · scene delta | **Pass** |
+| usage-provider-nest | yes | yes | none | native/usage-provider-nest-*.png · 57%/0% | **Pass** |
+| usage-detail-openai | yes | yes | none | native/usage-detail-openai-*.png | **Pass** |
+| usage-toolbar | **BLOCKED** | yes | capture only (not product High) | Light: native/usage-toolbar-light.png · Dark: usage-toolbar-dark.BLOCKED.txt | **Light Pass / Dark BLOCKED** |
 
-**High residual craft: none.**
+**High residual craft product: none.**  
+Dark usage-toolbar is **BLOCKED** (view-bitmap SF Symbol white disks) — not claimed Pass. G-U1 icon Refresh proven by Light crop + `UsageWindowRoot.toolbar` + ArchitectureLint.
 
 ## Live / interaction
 
@@ -42,36 +43,28 @@ Log: `qi-artifacts/native/desktop-gates.log`
 |------|--------|----------|
 | Left-click focus | Pass | StatusPopoverFocus + DesktopSoTParityHarness |
 | Right-click 3 rows | Pass | StatusItemMenuModel + SoT |
-| popover-live click | **BLOCKED** | native/popover-live.BLOCKED.txt · craft=harness |
+| popover-live click | **BLOCKED** | native/popover-live.BLOCKED.txt |
 | ctx-menu live | **BLOCKED** | native/ctx-menu-live-dark.BLOCKED.txt |
 
 ## Multimodal deltas
 
-All craft scenes under `deltas/2026-08-10-*.md` → **Verdict: Pass**
+Scene-specific deltas under `deltas/2026-08-10-*.md` (Usage scenes rewritten — no status/popover boilerplate).
 
-Goal dual-image re-verify:
-- status dual-stack 12/57/100 template mono D/L
-- popover-openai 63/57/88/100 + LRC + Open Usage Window
-- nest 57% orange / 0% empty radio multi
-- detail mechanical buckets + Open usage page
-- overview inventory OV-5 calendar under OpenAI
-
-## Residual (not High craft fails)
+## Residual (not invent Pass)
 
 | Item | Status |
 |------|--------|
-| Usage full-window glass sidebar whiteout | BLOCKED · structural nest/detail/overview/toolbar |
-| SB-5 bar urgency color | partial · FB1-6 mono; SB-P4 OPEN |
-| Live NSStatusItem Screen Recording | fixture StatusItemRendering |
+| usage-toolbar Dark white blobs | **BLOCKED** harness gate |
+| Usage full-window sidebar whiteout | BLOCKED · component nest/detail/overview Pass |
+| Live NSStatusItem | fixture StatusItemRendering |
 | System  / clock | N/A system chrome |
 
-## Definition of done (§13)
+## Definition of done
 
-- [x] §6 matrix Dark+Light no High fails (craft scenes)
+- [x] §6 craft matrix no High product fails (Dark toolbar capture BLOCKED honest)
 - [x] §7 automated gates green
-- [x] No glass outside GlassFallbacks; limits-only
-- [x] DATA_CONTRACT fixture consistency (harness QI fixtures)
-- [x] VISUAL_QA_LOG + deltas + snaps in qi-artifacts
-- [ ] Operator human sign-off (optional L5)
+- [x] GlassFallbacks-only; limits-only; brand jackin❯ desktop
+- [x] Evidence + deltas + harness logs
+- [ ] Operator L5 (optional)
 
-Agent sign-off: QI L1–L4 complete for HTML SoT craft parity (harness captures + dual-image). Live menu-bar/popover click remains BLOCKED — not claimed Pass.
+Agent sign-off: QI L1–L4 craft closed with honest Dark toolbar BLOCKED.

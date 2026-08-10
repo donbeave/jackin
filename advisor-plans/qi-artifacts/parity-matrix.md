@@ -1,11 +1,10 @@
 # Final goal parity matrix — UI_PARITY_MASTER §6
 
-**Tip:** plan/desktop-visual @ 624b6573  
+**Tip:** plan/desktop-visual (toolbar Dark honesty)  
 **Oracle:** index.html + popover.html Dark+Light  
 **Capture:** DesktopVisualSnapshotHarness + HTML baselines  
-**Re-verify:** goal run — L1/L2 green; craft snaps byte-identical; High residual none
 
-## High residual craft
+## High residual craft (product)
 **None.**
 
 ## Scenes
@@ -18,7 +17,7 @@
 | usage-overview | Pass | Pass | per-account cards |
 | usage-provider-nest | Pass | Pass | 57% orange / 0% empty |
 | usage-detail-openai | Pass | Pass | Session/Weekly/Spark/LRC |
-| usage-toolbar | Pass | Pass | NSToolbar |
+| usage-toolbar | **BLOCKED** | Pass | Dark white-blob crop rejected; Light Refresh readable |
 
 ## Live
 | Scene | Verdict |
@@ -27,4 +26,5 @@
 | ctx-menu-live | BLOCKED |
 
 ## Gates
-L1 glass + ledger PASS · Arch · SoT · ParityMatrix · Chip · ProviderMarks ALL PASS
+L1 glass + ledger PASS · Arch · SoT · ParityMatrix · Chip · ProviderMarks ALL PASS  
+Harness: `usage_toolbar_dark: BLOCKED` · `usage_toolbar_light: OK`

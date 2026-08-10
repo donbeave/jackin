@@ -1,60 +1,15 @@
-=== tip 624b6573 2026-08-10T09:07Z goal re-verify ===
-
-=== tip 624b6573 2026-08-10T09:07Z ===
+=== tip d7b575c4 2026-08-10T09:17Z toolbar honesty ===
 PASS: Usage Liquid Glass + provider≠account structural checks
-PASS: QI evidence ledger — 17 pass rows, 2 blocked, prose PNG refs consistent
+PASS: QI evidence ledger — 16 pass rows, 3 blocked, prose PNG refs consistent
 
-=== L2 (excerpt ALL PASS) ===
-DesktopArchitectureLint: ALL PASS
-DesktopSoTParityHarness: ALL PASS (18/18 checks)
-DesktopParityMatrixHarness: ALL PASS
-Matrix: 8/8 providers displayable · dual-bucket · depleted · limits-only
-StatusItemChipHarness: ALL PASS
-ProviderMarksHarness: ALL PASS (7/7 official marks)
+/var/folders/8p/h376l_nn3375kyj72czdq2x80000gn/T/grok-goal-67fc7c62e424/implementer/l2-gates.log:DesktopArchitectureLint: ALL PASS
+/var/folders/8p/h376l_nn3375kyj72czdq2x80000gn/T/grok-goal-67fc7c62e424/implementer/l2-gates.log:DesktopSoTParityHarness: ALL PASS (18/18 checks)
+/var/folders/8p/h376l_nn3375kyj72czdq2x80000gn/T/grok-goal-67fc7c62e424/implementer/l2-gates.log:DesktopParityMatrixHarness: ALL PASS
+/var/folders/8p/h376l_nn3375kyj72czdq2x80000gn/T/grok-goal-67fc7c62e424/implementer/l2-gates.log:Matrix: 8/8 providers displayable · dual-bucket · depleted · limits-only
+/var/folders/8p/h376l_nn3375kyj72czdq2x80000gn/T/grok-goal-67fc7c62e424/implementer/snapshot-harness-toolbar-fix.log:BLOCKED ../advisor-plans/qi-artifacts/native/usage-toolbar-dark.png [dark toolbar icons unreadable — white blobs]
+/var/folders/8p/h376l_nn3375kyj72czdq2x80000gn/T/grok-goal-67fc7c62e424/implementer/snapshot-harness-toolbar-fix.log:usage_toolbar_dark: BLOCKED
+/var/folders/8p/h376l_nn3375kyj72czdq2x80000gn/T/grok-goal-67fc7c62e424/implementer/snapshot-harness-toolbar-fix.log:usage_toolbar_light: UsageWindowController titlebar crop
 
-=== Snapshot ===
-WROTE ../advisor-plans/qi-artifacts/native/popover-amp-light.png
-WROTE ../advisor-plans/qi-artifacts/native/popover-overview-light.png
-WROTE ../advisor-plans/qi-artifacts/native/usage-detail-openai-light.png
-WROTE ../advisor-plans/qi-artifacts/native/usage-overview-light.png
-WROTE ../advisor-plans/qi-artifacts/native/usage-provider-nest-light.png
-WROTE ../advisor-plans/qi-artifacts/native/status-desktop-light.png [StatusItemRendering]
-WROTE ../advisor-plans/qi-artifacts/native/usage-window-openai-light.png [UsageWindowController window capture]
-WROTE ../advisor-plans/qi-artifacts/native/usage-toolbar-light.png [UsageWindowController titlebar crop]
-WROTE ../advisor-plans/qi-artifacts/native/usage-window-overview-light.png [UsageWindowController window capture]
-# DesktopVisualSnapshotHarness manifest
-out: ../advisor-plans/qi-artifacts/native
-popover: PopoverRoot (TabGrid + ProviderTab + Footer) via PresentationStore.applyQIFixture
-status: StatusItemRendering.icon + StatusItemRendering.title (AppKit bitmap)
-status_live_nsstatusitem: prefer live screencapture when JackinDesktop is running (see VISUAL_QA_LOG)
-usage_window: UsageWindowController CGWindow full (sidebar nest + detail) — not blank NSHostingView split
-usage_detail: ProviderCardView (+ window detail column)
-usage_overview: OverviewListView (+ window overview)
-usage_nest: UsageAccountNestView (+ window sidebar when CGWindow OK)
-usage_window_openai_dark: OK
-usage_window_overview_dark: OK
-usage_window_openai_light: OK
-usage_window_overview_light: OK
-usage_toolbar_dark: UsageWindowController titlebar crop
-usage_toolbar_light: UsageWindowController titlebar crop
-DesktopVisualSnapshotHarness: wrote snapshots to ../advisor-plans/qi-artifacts/native
-
-PNG hash vs HEAD
-SAME status-desktop-dark.png
-SAME status-desktop-light.png
-SAME popover-openai-dark.png
-SAME popover-openai-light.png
-SAME popover-anthropic-dark.png
-SAME popover-overview-dark.png
-SAME usage-provider-nest-dark.png
-SAME usage-detail-openai-dark.png
-SAME usage-overview-dark.png
-SAME usage-toolbar-dark.png
-SAME usage-provider-nest-light.png
-SAME usage-detail-openai-light.png
-SAME=12 DIFF=0
-
-=== Law ===
-glassEffect only GlassFallbacks.swift (ArchitectureLint PASS)
-limits-only ParityMatrix PASS
-brand jackin❯ desktop present on user surfaces
+-rw-r--r--@ 1 donbeave  staff    254 Aug 10 16:16 ../advisor-plans/qi-artifacts/native/usage-toolbar-dark.BLOCKED.txt
+-rw-r--r--@ 1 donbeave  staff   3387 Aug 10 16:16 ../advisor-plans/qi-artifacts/native/usage-toolbar-dark.png
+-rw-r--r--@ 1 donbeave  staff  15261 Aug 10 16:16 ../advisor-plans/qi-artifacts/native/usage-toolbar-light.png

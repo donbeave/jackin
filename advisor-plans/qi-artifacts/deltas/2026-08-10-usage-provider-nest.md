@@ -1,25 +1,26 @@
-# QI delta: usage-provider-nest · dark + light
+# QI delta: usage-provider-nest · Dark + Light (G-U3 / G-U4)
 
-**Date:** 2026-08-10 · **Tip:** `624b6573` · harness recapture stable
+**Date:** 2026-08-10 · **Tip:** goal scene-specific dual-image  
+**Oracle HTML:** `html/usage-provider-nest-*.png` (sidebar ACCOUNTS nest under OpenAI)  
+**Native:** `native/usage-provider-nest-*.png` (`UsageAccountNestView` harness)
 
-## Oracle
-- HTML: `qi-artifacts/html/usage-provider-nest-*.png` (or nearest SoT scene)
+## Dual-image (this scene only)
 
-## Candidate
-- Native: `qi-artifacts/native/usage-provider-nest-*.png` (DesktopVisualSnapshotHarness)
-
-## Dual-image
-- IA matches HTML SoT roles for this scene (status dual-stack / popover shell / Usage nest|detail|toolbar)
-- Meters: 3-status only; 0% empty track; brand on plates only
-- Brand: jackin❯ desktop
-- Limits only: no prices/trends
+| Check | HTML nest | Native nest | Match |
+|-------|-----------|-------------|-------|
+| Provider caption | OpenAI · multi accounts | “OpenAI” + “2 accounts” | Yes |
+| Selected account | radio · chainargos · **57%** orange mini-meter | same | Yes |
+| Second account | radio off · zhokhov · **0%** empty track | same | Yes |
+| Plan under name | Pro 20x / Plus | Pro 20x / Plus | Yes |
+| Provider % on provider row | none (identity only) | nest is accounts-only | Yes |
+| Limits only | remaining % only | no prices/trends | Yes |
 
 ## Different (not High)
+
 | Severity | Element | Notes |
 |----------|---------|-------|
-| Low | System chrome |  / clock N/A (system) |
-| Low | Fixture provider strip count | Native QI fixture 3 providers vs HTML 5+ |
-| Med | Usage full-window sidebar | BLOCKED whiteout — structural nest/detail snaps |
+| Low | Framing | Native is isolated nest component; HTML shows full Usage chrome around nest |
+| Low | Truncation | HTML email ellipsis in narrow sidebar; native full email in wider nest snap |
 
 ## Verdict
-Verdict: Pass
+**Pass** (Dark + Light) — 57% mid fill + 0% empty track; radio multi; DATA_CONTRACT fixtures.

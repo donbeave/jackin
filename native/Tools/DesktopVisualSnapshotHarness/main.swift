@@ -161,7 +161,10 @@ struct DesktopVisualSnapshotHarness {
             fullPath: "\(out)/usage-window-overview-dark.png",
             toolbarPath: nil
         )
-        let toolbarOkDark = windowOkDark
+        // Toolbar may be BLOCKED even when full window PNG exists (white-blob icon crop).
+        let toolbarOkDark =
+            windowOkDark
+            && !FileManager.default.fileExists(atPath: "\(out)/usage-toolbar-dark.BLOCKED.txt")
 
         // ── Light ──
         NSApp.appearance = NSAppearance(named: .aqua)
@@ -253,7 +256,9 @@ struct DesktopVisualSnapshotHarness {
             fullPath: "\(out)/usage-window-overview-light.png",
             toolbarPath: nil
         )
-        let toolbarOkLight = windowOkLight
+        let toolbarOkLight =
+            windowOkLight
+            && !FileManager.default.fileExists(atPath: "\(out)/usage-toolbar-light.BLOCKED.txt")
 
         // Manifest for VISUAL_QA_LOG honesty
         let manifest = """
@@ -517,16 +522,26 @@ struct DesktopVisualSnapshotHarness {
 
         // Accessory→regular so titlebar/toolbar composites (matches live app path).
         NSApp.setActivationPolicy(.regular)
-        window.setFrame(NSRect(x: 80, y: 80, width: 920, height: 620), display: true)
+        // On-screen frame so screencapture -R can sample real composite pixels.
+        if let screen = NSScreen.main {
+            let vis = screen.visibleFrame
+            let w: CGFloat = 920
+            let h: CGFloat = 620
+            let x = vis.midX - w / 2
+            let y = vis.midY - h / 2
+            window.setFrame(NSRect(x: x, y: y, width: w, height: h), display: true)
+        } else {
+            window.setFrame(NSRect(x: 80, y: 80, width: 920, height: 620), display: true)
+        }
         window.orderFrontRegardless()
         window.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
         window.layoutIfNeeded()
         window.contentViewController?.view.layoutSubtreeIfNeeded()
-        // Allow NavigationSplitView + toolbar to materialize before capture.
-        RunLoop.current.run(until: Date(timeIntervalSinceNow: 0.65))
+        // Allow NavigationSplitView + toolbar SF Symbols to composite.
+        RunLoop.current.run(until: Date(timeIntervalSinceNow: 0.9))
         window.contentViewController?.view.layoutSubtreeIfNeeded()
-        RunLoop.current.run(until: Date(timeIntervalSinceNow: 0.15))
+        RunLoop.current.run(until: Date(timeIntervalSinceNow: 0.25))
 
         guard let full = captureWindowImageNonBlank(window: window) else {
             writeBlockedPlaceholder(
@@ -562,10 +577,30 @@ struct DesktopVisualSnapshotHarness {
             let scale = CGFloat(full.width) / max(window.frame.width, 1)
             let bandPx = max(1, Int((56 * scale).rounded()))
             let cropH = min(bandPx, full.height)
-            if let band = full.cropping(to: CGRect(x: 0, y: 0, width: full.width, height: cropH)),
-                writeCGImagePNG(band, path: toolbarPath, requireNonBlank: true)
-            {
-                print("WROTE \(toolbarPath) [UsageWindowController titlebar crop]")
+            if let band = full.cropping(to: CGRect(x: 0, y: 0, width: full.width, height: cropH)) {
+                // Dark `cacheDisplay` often paints SF Symbol toolbar icons as solid white
+                // disks — not acceptable G-U1 evidence (HTML has readable Refresh glyph).
+                if appearance == .darkAqua, toolbarCropHasBlownOutIcons(band) {
+                    writeBlockedPlaceholder(
+                        path: toolbarPath,
+                        reason: """
+                        Dark titlebar crop: SF Symbol toolbar icons unreadable (solid white blobs). \
+                        Prefer CGWindow/screencapture -R/-l. Product: icon-only Refresh via UsageWindowRoot.toolbar. \
+                        Light harness crop + ArchitectureLint prove NSToolbar host when Dark composite fails.
+                        """
+                    )
+                    print("BLOCKED \(toolbarPath) [dark toolbar icons unreadable — white blobs]")
+                } else if writeCGImagePNG(band, path: toolbarPath, requireNonBlank: true) {
+                    // Clear any prior BLOCKED sidecar after successful readable crop.
+                    let side = toolbarPath.replacingOccurrences(of: ".png", with: ".BLOCKED.txt")
+                    try? FileManager.default.removeItem(atPath: side)
+                    print("WROTE \(toolbarPath) [UsageWindowController titlebar crop]")
+                } else {
+                    writeBlockedPlaceholder(
+                        path: toolbarPath,
+                        reason: "titlebar crop blank or failed"
+                    )
+                }
             } else {
                 writeBlockedPlaceholder(
                     path: toolbarPath,
@@ -579,24 +614,68 @@ struct DesktopVisualSnapshotHarness {
         return true
     }
 
-    /// Prefer CGWindow; reject pure-black buffers (Screen Recording denial).
-    /// Next: `screencapture -l` (often works when CGWindow returns black).
-    /// Last: theme-frame `cacheDisplay` (may blank Liquid Glass sidebar — only if non-blank overall).
+    /// Prefer live composite: screencapture -R region, then -l, then CGWindow.
+    /// Last: theme-frame `cacheDisplay` (may blank Liquid Glass sidebar / blow out Dark toolbar icons).
     @MainActor
     private static func captureWindowImageNonBlank(window: NSWindow) -> CGImage? {
-        if let cg = captureFullWindowCGImage(window: window), !cgImageIsBlank(cg) {
-            return cg
+        // Prefer on-screen region capture (Screen Recording often works when CGWindow is black).
+        fputs("INFO trying screencapture -R window frame\n", stderr)
+        if let region = captureWindowViaScreencaptureRegion(window: window), !cgImageIsBlank(region) {
+            return region
         }
-        fputs("WARN CGWindow blank/unavailable — trying screencapture -l\n", stderr)
+        fputs("WARN screencapture -R failed — trying screencapture -l\n", stderr)
         if let sc = captureWindowViaScreencapture(window: window), !cgImageIsBlank(sc) {
             return sc
         }
-        fputs("WARN screencapture -l failed — trying view bitmap\n", stderr)
+        fputs("WARN screencapture -l failed — trying CGWindow\n", stderr)
+        if let cg = captureFullWindowCGImage(window: window), !cgImageIsBlank(cg) {
+            return cg
+        }
+        fputs("WARN CGWindow blank/unavailable — trying view bitmap\n", stderr)
         if let viewImg = captureWindowViaViewBitmap(window: window), !cgImageIsBlank(viewImg) {
-            // View bitmap can white-out glass sidebar; still better than pure black.
+            // View bitmap can white-out glass sidebar + Dark SF Symbols; still better than pure black.
             return viewImg
         }
         return nil
+    }
+
+    /// `screencapture -R x,y,w,h` using Cocoa frame → top-left screen coords.
+    @MainActor
+    private static func captureWindowViaScreencaptureRegion(window: NSWindow) -> CGImage? {
+        let frame = window.frame
+        guard frame.width > 8, frame.height > 8 else { return nil }
+        // Global Cocoa coords: origin bottom-left. screencapture -R: origin top-left of main display.
+        guard let screen = window.screen ?? NSScreen.main else { return nil }
+        let screenFrame = screen.frame
+        // Convert window bottom-left to global top-left pixel coords for -R.
+        // Use primary display height for Y flip when multi-display (screencapture uses global desktop).
+        let globalMaxY = NSScreen.screens.map(\.frame.maxY).max() ?? screenFrame.maxY
+        let x = Int(frame.minX.rounded())
+        let y = Int((globalMaxY - frame.maxY).rounded())
+        let w = Int(frame.width.rounded())
+        let h = Int(frame.height.rounded())
+        guard w > 0, h > 0 else { return nil }
+
+        let tmp = FileManager.default.temporaryDirectory
+            .appendingPathComponent("jackin-qi-region-\(window.windowNumber).png")
+        let proc = Process()
+        proc.executableURL = URL(fileURLWithPath: "/usr/sbin/screencapture")
+        proc.arguments = ["-x", "-R", "\(x),\(y),\(w),\(h)", tmp.path]
+        do {
+            try proc.run()
+            proc.waitUntilExit()
+        } catch {
+            return nil
+        }
+        guard proc.terminationStatus == 0,
+              let img = NSImage(contentsOf: tmp),
+              let cg = img.cgImage(forProposedRect: nil, context: nil, hints: nil)
+        else {
+            try? FileManager.default.removeItem(at: tmp)
+            return nil
+        }
+        try? FileManager.default.removeItem(at: tmp)
+        return cg
     }
 
     /// macOS `screencapture -l <windowID>` — captures real window pixels.
@@ -624,6 +703,54 @@ struct DesktopVisualSnapshotHarness {
         }
         try? FileManager.default.removeItem(at: tmp)
         return cg
+    }
+
+    /// Dark titlebar: solid white disks where SF Symbols should be (view-bitmap / bad composite).
+    /// Readable Dark icons are soft gray/phosphor, not near-pure white fills.
+    private static func toolbarCropHasBlownOutIcons(_ image: CGImage, sampleStep: Int = 2) -> Bool {
+        let w = image.width
+        let h = image.height
+        guard w > 8, h > 4 else { return true }
+        let bytesPerPixel = 4
+        let bytesPerRow = w * bytesPerPixel
+        var data = [UInt8](repeating: 0, count: h * bytesPerRow)
+        guard let ctx = CGContext(
+            data: &data,
+            width: w,
+            height: h,
+            bitsPerComponent: 8,
+            bytesPerRow: bytesPerRow,
+            space: CGColorSpaceCreateDeviceRGB(),
+            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+        ) else {
+            return true
+        }
+        ctx.draw(image, in: CGRect(x: 0, y: 0, width: w, height: h))
+        var pureWhite = 0
+        var total = 0
+        let step = max(1, sampleStep)
+        // Focus mid band where unified toolbar icons sit (skip traffic lights left strip).
+        let x0 = w / 4
+        let x1 = (w * 3) / 4
+        var y = 0
+        while y < h {
+            var x = x0
+            while x < x1 {
+                let i = y * bytesPerRow + x * bytesPerPixel
+                let r = data[i]
+                let g = data[i + 1]
+                let b = data[i + 2]
+                total += 1
+                if r >= 245, g >= 245, b >= 245 {
+                    pureWhite += 1
+                }
+                x += step
+            }
+            y += step
+        }
+        guard total > 0 else { return true }
+        // >1.2% near-pure white in icon zone ⇒ blown-out disks (not thin glyph edges).
+        return Double(pureWhite) / Double(total) > 0.012
     }
 
     @MainActor

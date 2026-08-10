@@ -11,5 +11,5 @@ usage_window_openai_dark: OK
 usage_window_overview_dark: OK
 usage_window_openai_light: OK
 usage_window_overview_light: OK
-usage_toolbar_dark: UsageWindowController titlebar crop
+usage_toolbar_dark: BLOCKED
 usage_toolbar_light: UsageWindowController titlebar crop

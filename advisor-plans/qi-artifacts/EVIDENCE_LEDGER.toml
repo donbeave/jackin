@@ -117,10 +117,12 @@ verdict = "pass"
 id = "usage-toolbar"
 theme = "dark"
 html_path = "advisor-plans/qi-artifacts/html/usage-toolbar-dark.png"
-native_path = "advisor-plans/qi-artifacts/native/usage-toolbar-dark.png"
-capture_tier = "harness"
-verdict = "pass"
-notes = "UsageWindowController real NSToolbar titlebar crop; harness rejects blank CGWindow"
+native_path = ""
+capture_tier = "blocked"
+verdict = "blocked"
+blocked_reason = "Dark titlebar crop from view-bitmap shows solid white SF Symbol disks (not readable Refresh). Screencapture/CGWindow unavailable on CLT. Product: UsageWindowRoot icon-only Refresh + NSToolbar host; Light harness crop is craft Pass."
+blocked_note_path = "advisor-plans/qi-artifacts/native/usage-toolbar-dark.BLOCKED.txt"
+notes = "Do not claim Dark Pass on white-blob crop; G-U1 proven Light + ArchitectureLint"
 
 [[scene]]
 id = "usage-toolbar"
@@ -129,6 +131,7 @@ html_path = "advisor-plans/qi-artifacts/html/usage-toolbar-light.png"
 native_path = "advisor-plans/qi-artifacts/native/usage-toolbar-light.png"
 capture_tier = "harness"
 verdict = "pass"
+notes = "Readable sidebar toggle + arrow.clockwise Refresh on unified titlebar; brand jackin❯ desktop leading"
 
 # Interaction / live tiers — not craft Pass without files
 

@@ -1,25 +1,30 @@
-# QI delta: usage-detail-openai · dark + light
+# QI delta: usage-detail-openai · Dark + Light (G-U6 / G-U7)
 
-**Date:** 2026-08-10 · **Tip:** `624b6573` · harness recapture stable
+**Date:** 2026-08-10 · **Tip:** goal scene-specific dual-image  
+**Oracle HTML:** `html/usage-detail-openai-*.png` (detail column: Open usage + buckets)  
+**Native:** `native/usage-detail-openai-*.png` (`ProviderCardView` + fixture detail)
 
-## Oracle
-- HTML: `qi-artifacts/html/usage-detail-openai-*.png` (or nearest SoT scene)
+## Dual-image (this scene only)
 
-## Candidate
-- Native: `qi-artifacts/native/usage-detail-openai-*.png` (DesktopVisualSnapshotHarness)
-
-## Dual-image
-- IA matches HTML SoT roles for this scene (status dual-stack / popover shell / Usage nest|detail|toolbar)
-- Meters: 3-status only; 0% empty track; brand on plates only
-- Brand: jackin❯ desktop
-- Limits only: no prices/trends
+| Check | HTML detail | Native detail | Match |
+|-------|-------------|---------------|-------|
+| Head | OpenAI · account · Pro 20x | same | Yes |
+| Open usage page | CTA + external affordance | green pill + ↗ | Yes |
+| Meta | Status fresh · Updated · Auth OAuth | same mechanical rows | Yes |
+| Session | **63% left** green meter | same | Yes |
+| Weekly | **57% left** orange · 13% deficit | same | Yes |
+| Codex Spark 5-hour | **88% left** | same | Yes |
+| Codex Spark Weekly | **100% left** (native) | full track | Yes |
+| Limit Reset Credits | present in HTML lower plate | LRC card at bottom (may clip in crop) | Yes (struct) |
+| Limits only | no prices | no prices/trends | Yes |
 
 ## Different (not High)
+
 | Severity | Element | Notes |
 |----------|---------|-------|
-| Low | System chrome |  / clock N/A (system) |
-| Low | Fixture provider strip count | Native QI fixture 3 providers vs HTML 5+ |
-| Med | Usage full-window sidebar | BLOCKED whiteout — structural nest/detail snaps |
+| Low | Sidebar | HTML full-window includes nest; native detail-only snap |
+| Low | Exact calendar clock on heroes | Native compact “Resets in 3d” from Rust segments |
+| Med | Full-window sidebar whiteout | Separate BLOCKED path; not this component Pass |
 
 ## Verdict
-Verdict: Pass
+**Pass** (Dark + Light) — mechanical Rust rows; meters; Open usage; limits only.
