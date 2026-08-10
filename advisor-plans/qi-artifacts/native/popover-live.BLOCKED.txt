@@ -1,7 +1,1 @@
-BLOCKED: live left-click popover craft capture
-
-- Tip 30879f31+: fixture harness popover shows Session meter fill+track (craft Pass).
-- Live app: accessory RUNNING; production probe empty/keychain — not DATA_CONTRACT G-P1.
-- Live menubar screencapture not craft-usable as fixture dual-image oracle.
-- Craft dual-image Pass: advisor-plans/qi-artifacts/native/popover-*-{dark,light}.png
-- Left-click focus: StatusPopoverFocus + DesktopSoTParityHarness.
+Live popover click BLOCKED on CLT; craft=harness PopoverRoot snaps.

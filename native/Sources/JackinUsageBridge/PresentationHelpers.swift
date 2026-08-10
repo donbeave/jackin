@@ -596,13 +596,16 @@ public func statusItemChipDisplayLines(
 /// Build OpenUsage/CodexBar-style per-provider chips from pure snapshots (unit-testable).
 ///
 /// - Catalog order when `preferWorstFirst` is false.
-/// - Lowest remaining first when true (focus mode).
-/// - `includeAllEnabled`: strip mode shows **every enabled** host surface (icon always),
-///   with remaining % when Rust supplies it; empty data shows `—` (never invents %).
+/// - When true: **higher remaining first** (SB-17 time-unknown tie-break). Live
+///   Desktop multi-item bar ranks via Rust `statusBarProviderGlanceRows` (soonest
+///   reset first). Name is historical; do not reintroduce scarcity-first.
+/// - `includeAllEnabled`: strip mode shows enabled hosts (icon always), with
+///   remaining % when Rust supplies it; empty data shows `—` (never invents %).
 /// - Otherwise hides surfaces without preview data.
+/// - **SB-3:** hard-cap ≤3 chips. **SB-19:** pure 0% remaining excluded.
 /// - `percentStyle` (`left`/`used`) shapes stacked percent lines to match
 ///   Rust compact labels (OpenUsage remaining default).
-/// - Depleted + reset countdown prefers Rust compact over bare `0%`.
+/// - Dual-bucket depleted session + healthy weekly keeps the positive window.
 public func buildStatusItemChips(
     surfaces: [StatusItemSurfaceSnapshot],
     maxCount: Int,

@@ -238,9 +238,10 @@ struct StatusItemChipHarness {
             includeAllEnabled: false
         )
         let ids = chips.map(\.surfaceId)
+        // SB-3 hard-cap 3; catalog order among non-empty enabled (amp empty, grok disabled).
         check(
             "hides empty/disabled without includeAll",
-            ids == ["claude", "codex", "zai", "kimi", "minimax", "opencode"],
+            ids == ["claude", "codex", "zai"],
             "ids=\(ids)"
         )
 
@@ -312,14 +313,15 @@ struct StatusItemChipHarness {
             preferWorstFirst: true,
             percentStyle: "left"
         )
+        // preferWorstFirst name is historical: SB-17 time-unknown tie-break =
+        // higher remaining first (opencode 90, then codex 84 / claude dual…).
         check(
-            "worst-first remaining order",
-            worst.map(\.surfaceId) == ["zai", "kimi", "minimax"]
-                || worst.map(\.surfaceId).prefix(1).elementsEqual(["zai"]),
-            "worst=\(worst.map(\.surfaceId))"
+            "higher-remaining-first order (SB-17 tie-break)",
+            worst.map(\.surfaceId).first == "opencode"
+                || worst.map(\.surfaceId) == ["opencode", "codex", "claude"],
+            "order=\(worst.map(\.surfaceId))"
         )
-        // zai 12 is lowest remaining among enabled with data.
-        check("worst is zai", worst.first?.surfaceId == "zai")
+        check("highest remaining first is opencode", worst.first?.surfaceId == "opencode")
 
         let used = buildStatusItemChips(
             surfaces: surfaces,
@@ -357,16 +359,38 @@ struct StatusItemChipHarness {
             preferWorstFirst: false,
             percentStyle: "left"
         )
+        // SB-19: pure 0% remaining is out of burn-first membership.
         check(
-            "depleted shows reset countdown",
-            depChips.count == 1
-                && depChips[0].percentLines == ["resets 1h 21m"]
-                && depChips[0].compactLabel == "Cl resets 1h 21m",
+            "depleted pure-0 excluded from strip (SB-19)",
+            depChips.isEmpty,
             "lines=\(depChips.first?.percentLines ?? []) compact=\(depChips.first?.compactLabel ?? "")"
+        )
+        // Display helper still formats countdown when building lines for dual-bucket.
+        check(
+            "depleted countdown helper still formats compact",
+            statusItemChipDisplayLines(
+                remainings: [0],
+                compactLabel: "Cl resets 1h 21m",
+                percentStyle: "left"
+            ) == ["resets 1h 21m"]
         )
         check(
             "depleted a11y uses full compact",
-            statusItemAccessibilityLabel(chips: depChips) == "jackin Desktop Cl resets 1h 21m"
+            statusItemAccessibilityLabel(
+                chips: [
+                    StatusItemChip(
+                        surfaceId: "claude",
+                        glyph: "Cl",
+                        systemImage: "sparkles",
+                        percentLines: ["resets 1h 21m"],
+                        compactLabel: "Cl resets 1h 21m",
+                        remainingPercent: 0,
+                        remainingPerLine: [0],
+                        severityPerLine: ["danger"],
+                        severity: "danger"
+                    ),
+                ]
+            ) == "jackin Desktop Cl resets 1h 21m"
         )
         check(
             "display lines helper remaining healthy",

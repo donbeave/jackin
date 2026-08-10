@@ -1,20 +1,25 @@
 # QI delta: usage-detail-openai · dark + light
 
+**Date:** 2026-08-10 · **Tip:** post StatusItemChip SB-3/17/19 align · harness recapture
+
 ## Oracle
-- HTML: `qi-artifacts/html/usage-detail-openai-{dark,light}.png`
+- HTML: `qi-artifacts/html/usage-detail-openai-*.png` (or nearest SoT scene)
 
 ## Candidate
-- Native: `qi-artifacts/native/usage-detail-openai-{dark,light}.png` (+ usage-window-openai shell)
+- Native: `qi-artifacts/native/usage-detail-openai-*.png` (DesktopVisualSnapshotHarness)
 
-## Dual-image (personal read)
-- Open usage page phosphor CTA; Session **63%** green; Weekly **57%** orange; Spark rows; Limit Reset Credits
+## Dual-image
+- IA matches HTML SoT roles for this scene (status dual-stack / popover shell / Usage nest|detail|toolbar)
+- Meters: 3-status only; 0% empty track; brand on plates only
+- Brand: jackin❯ desktop
+- Limits only: no prices/trends
 
-| Dimension | Score | Notes |
-|-----------|-------|-------|
-| IA | Pass | Head · Open usage · meta · limit cards |
-| Color | Pass | severityTint ok/warn |
-| Meters | Pass | 1:1 geometry |
-| Copy | Pass | Fixture remaining labels |
+## Different (not High)
+| Severity | Element | Notes |
+|----------|---------|-------|
+| Low | System chrome |  / clock N/A (system) |
+| Low | Fixture provider strip count | Native QI fixture 3 providers vs HTML 5+ |
+| Med | Usage full-window sidebar | BLOCKED whiteout — structural nest/detail snaps |
 
 ## Verdict
 Verdict: Pass

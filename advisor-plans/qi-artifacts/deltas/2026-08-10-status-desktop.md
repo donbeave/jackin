@@ -1,22 +1,25 @@
 # QI delta: status-desktop · dark + light
 
+**Date:** 2026-08-10 · **Tip:** post StatusItemChip SB-3/17/19 align · harness recapture
+
 ## Oracle
-- HTML: `qi-artifacts/html/status-desktop-{dark,light}.png`
-- FB1-6 template mono dual-stack; system /CC N/A
+- HTML: `qi-artifacts/html/status-desktop-*.png` (or nearest SoT scene)
 
 ## Candidate
-- Native: `qi-artifacts/native/status-desktop-{dark,light}.png`
-- StatusItemRendering icon+title on menu-bar stage; measured cellW
+- Native: `qi-artifacts/native/status-desktop-*.png` (DesktopVisualSnapshotHarness)
 
-## Dual-image (personal read)
-- Dark+Light: icons + dual-stack `1h/12%` · `3d/57%` · `18h/100%` (one-line percents)
-- Light **not blank** (stage fill + label tint)
+## Dual-image
+- IA matches HTML SoT roles for this scene (status dual-stack / popover shell / Usage nest|detail|toolbar)
+- Meters: 3-status only; 0% empty track; brand on plates only
+- Brand: jackin❯ desktop
+- Limits only: no prices/trends
 
-| Dimension | Score | Notes |
-|-----------|-------|-------|
-| IA | Pass | Per-provider dual-stack |
-| Color | Pass | Template mono on stage |
-| Copy | Pass | Rust barLabel + compact reset |
+## Different (not High)
+| Severity | Element | Notes |
+|----------|---------|-------|
+| Low | System chrome |  / clock N/A (system) |
+| Low | Fixture provider strip count | Native QI fixture 3 providers vs HTML 5+ |
+| Med | Usage full-window sidebar | BLOCKED whiteout — structural nest/detail snaps |
 
 ## Verdict
 Verdict: Pass

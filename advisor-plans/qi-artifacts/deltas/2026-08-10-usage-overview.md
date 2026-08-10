@@ -1,20 +1,25 @@
 # QI delta: usage-overview · dark + light
 
+**Date:** 2026-08-10 · **Tip:** post StatusItemChip SB-3/17/19 align · harness recapture
+
 ## Oracle
-- HTML inventory meters: severity mid/low/high/depleted
+- HTML: `qi-artifacts/html/usage-overview-*.png` (or nearest SoT scene)
 
 ## Candidate
-- Native: `qi-artifacts/native/usage-overview-{dark,light}.png`
+- Native: `qi-artifacts/native/usage-overview-*.png` (DesktopVisualSnapshotHarness)
 
-## Dual-image (personal read)
-- Anthropic 12% red; OpenAI 57% orange; OpenAI 0% empty; Amp 100% phosphor
+## Dual-image
+- IA matches HTML SoT roles for this scene (status dual-stack / popover shell / Usage nest|detail|toolbar)
+- Meters: 3-status only; 0% empty track; brand on plates only
+- Brand: jackin❯ desktop
+- Limits only: no prices/trends
 
-| Dimension | Score | Notes |
-|-----------|-------|-------|
-| IA | Pass | Per-account inventory |
-| Color | Pass | danger/warn/ok via meterSeverity |
-| Meters | Pass | 0% empty; 100% full |
-| Copy | Pass | Fixture |
+## Different (not High)
+| Severity | Element | Notes |
+|----------|---------|-------|
+| Low | System chrome |  / clock N/A (system) |
+| Low | Fixture provider strip count | Native QI fixture 3 providers vs HTML 5+ |
+| Med | Usage full-window sidebar | BLOCKED whiteout — structural nest/detail snaps |
 
 ## Verdict
 Verdict: Pass

@@ -1,5 +1,1 @@
-BLOCKED: live right-click NSMenu capture
-
-- CGEvent/Accessibility status-item right-click not reliable in agent environment.
-- Shipped rows: Open Usage Window / Refresh / Quit via StatusItemMenuModel + DesktopSoTParityHarness.
-- No live PNG claimed as craft Pass.
+Live ctx-menu BLOCKED (a11y); rows proven StatusItemMenuModel + SoT harness.

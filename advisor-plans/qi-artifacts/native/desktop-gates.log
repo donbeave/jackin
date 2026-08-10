@@ -1,160 +1,38 @@
-[0/1] Planning build
-Building for debugging...
-[0/17] Write sources
-[1/17] Write swift-version--58304C5D6DBC2206.txt
-[3/5] Emitting module JackinUsageBridgeTests
-[4/5] Compiling JackinUsageBridgeTests ArchitectureTests.swift
-[4/6] Write Objects.LinkFileList
-[5/6] Linking JackinDesktopPackageTests
-Build complete! (1.02s)
-Test Suite 'Selected tests' started at 2026-08-10 15:47:36.960.
-Test Suite 'JackinDesktopPackageTests.xctest' started at 2026-08-10 15:47:36.961.
-Test Suite 'ArchitectureTests' started at 2026-08-10 15:47:36.961.
-Test Case '-[JackinUsageBridgeTests.ArchitectureTests testApplicationDelegateOpensRuntimeOnLaunch]' started.
-Test Case '-[JackinUsageBridgeTests.ArchitectureTests testApplicationDelegateOpensRuntimeOnLaunch]' passed (0.001 seconds).
-Test Case '-[JackinUsageBridgeTests.ArchitectureTests testBucketRowShapeSelection]' started.
-Test Case '-[JackinUsageBridgeTests.ArchitectureTests testBucketRowShapeSelection]' passed (0.000 seconds).
-Test Case '-[JackinUsageBridgeTests.ArchitectureTests testBuildStatusItemChipsMultiProviderDualBucket]' started.
-Test Case '-[JackinUsageBridgeTests.ArchitectureTests testBuildStatusItemChipsMultiProviderDualBucket]' passed (0.000 seconds).
-Test Case '-[JackinUsageBridgeTests.ArchitectureTests testBuildStatusItemChipsRespectsCapAndHidesEmpty]' started.
-Test Case '-[JackinUsageBridgeTests.ArchitectureTests testBuildStatusItemChipsRespectsCapAndHidesEmpty]' passed (0.000 seconds).
-Test Case '-[JackinUsageBridgeTests.ArchitectureTests testDesktopSourcesContainNoForbiddenUsagePresentation]' started.
-Test Case '-[JackinUsageBridgeTests.ArchitectureTests testDesktopSourcesContainNoForbiddenUsagePresentation]' passed (0.040 seconds).
-Test Case '-[JackinUsageBridgeTests.ArchitectureTests testDesktopSourcesDoNotComposePercentOrResetLiterals]' started.
-Test Case '-[JackinUsageBridgeTests.ArchitectureTests testDesktopSourcesDoNotComposePercentOrResetLiterals]' passed (0.008 seconds).
-Test Case '-[JackinUsageBridgeTests.ArchitectureTests testDesktopSourcesHaveNoHardcodedProviderDisplayNames]' started.
-Test Case '-[JackinUsageBridgeTests.ArchitectureTests testDesktopSourcesHaveNoHardcodedProviderDisplayNames]' passed (0.008 seconds).
-Test Case '-[JackinUsageBridgeTests.ArchitectureTests testFullFrozenCatalogStripDisplayable]' started.
-Test Case '-[JackinUsageBridgeTests.ArchitectureTests testFullFrozenCatalogStripDisplayable]' passed (0.000 seconds).
-Test Case '-[JackinUsageBridgeTests.ArchitectureTests testGlassEffectOnlyInGlassFallbacks]' started.
-Test Case '-[JackinUsageBridgeTests.ArchitectureTests testGlassEffectOnlyInGlassFallbacks]' passed (0.004 seconds).
-Test Case '-[JackinUsageBridgeTests.ArchitectureTests testJackinPhosphorTokensMatchHTMLSoT]' started.
-Test Case '-[JackinUsageBridgeTests.ArchitectureTests testJackinPhosphorTokensMatchHTMLSoT]' passed (0.000 seconds).
-Test Case '-[JackinUsageBridgeTests.ArchitectureTests testMacOS26AvailabilityOnlyInGlassFallbacks]' started.
-Test Case '-[JackinUsageBridgeTests.ArchitectureTests testMacOS26AvailabilityOnlyInGlassFallbacks]' passed (0.004 seconds).
-Test Case '-[JackinUsageBridgeTests.ArchitectureTests testNoSwiftPercentArithmeticOnDisplayStrings]' started.
-Test Case '-[JackinUsageBridgeTests.ArchitectureTests testNoSwiftPercentArithmeticOnDisplayStrings]' passed (0.002 seconds).
-Test Case '-[JackinUsageBridgeTests.ArchitectureTests testOverviewGlanceBodySelection]' started.
-Test Case '-[JackinUsageBridgeTests.ArchitectureTests testOverviewGlanceBodySelection]' passed (0.000 seconds).
-Test Case '-[JackinUsageBridgeTests.ArchitectureTests testOverviewHasNoOrphanOverviewLevelProgress]' started.
-Test Case '-[JackinUsageBridgeTests.ArchitectureTests testOverviewHasNoOrphanOverviewLevelProgress]' passed (0.000 seconds).
-Test Case '-[JackinUsageBridgeTests.ArchitectureTests testPackageSwiftUsesBinaryTargetNotHostDylib]' started.
-Test Case '-[JackinUsageBridgeTests.ArchitectureTests testPackageSwiftUsesBinaryTargetNotHostDylib]' passed (0.000 seconds).
-Test Case '-[JackinUsageBridgeTests.ArchitectureTests testPopoverHasNoGaugeAndSurfaceCardGone]' started.
-Test Case '-[JackinUsageBridgeTests.ArchitectureTests testPopoverHasNoGaugeAndSurfaceCardGone]' passed (0.000 seconds).
-Test Case '-[JackinUsageBridgeTests.ArchitectureTests testRemainingPercentMeterSeverityMatchesHTMLNestBands]' started.
-Test Case '-[JackinUsageBridgeTests.ArchitectureTests testRemainingPercentMeterSeverityMatchesHTMLNestBands]' passed (0.000 seconds).
-Test Case '-[JackinUsageBridgeTests.ArchitectureTests testScreenShareProbeLivesOnlyInPresentationStore]' started.
-Test Case '-[JackinUsageBridgeTests.ArchitectureTests testScreenShareProbeLivesOnlyInPresentationStore]' passed (0.004 seconds).
-Test Case '-[JackinUsageBridgeTests.ArchitectureTests testSelectStatusBarGlanceRowsHidesZeroAndCapsThree]' started.
-Test Case '-[JackinUsageBridgeTests.ArchitectureTests testSelectStatusBarGlanceRowsHidesZeroAndCapsThree]' passed (0.000 seconds).
-Test Case '-[JackinUsageBridgeTests.ArchitectureTests testSeverityAndStatusBadgeMappings]' started.
-Test Case '-[JackinUsageBridgeTests.ArchitectureTests testSeverityAndStatusBadgeMappings]' passed (0.000 seconds).
-Test Case '-[JackinUsageBridgeTests.ArchitectureTests testStatusBarIsTemplateMonoWithoutSeverityTint]' started.
-Test Case '-[JackinUsageBridgeTests.ArchitectureTests testStatusBarIsTemplateMonoWithoutSeverityTint]' passed (0.000 seconds).
-Test Case '-[JackinUsageBridgeTests.ArchitectureTests testStatusBarOrderRequiresRebuildOnRankChange]' started.
-Test Case '-[JackinUsageBridgeTests.ArchitectureTests testStatusBarOrderRequiresRebuildOnRankChange]' passed (0.000 seconds).
-Test Case '-[JackinUsageBridgeTests.ArchitectureTests testStatusItemChipHelpers]' started.
-Test Case '-[JackinUsageBridgeTests.ArchitectureTests testStatusItemChipHelpers]' passed (0.000 seconds).
-Test Case '-[JackinUsageBridgeTests.ArchitectureTests testStatusItemTextSelectionModes]' started.
-Test Case '-[JackinUsageBridgeTests.ArchitectureTests testStatusItemTextSelectionModes]' passed (0.000 seconds).
-Test Case '-[JackinUsageBridgeTests.ArchitectureTests testSwiftSourcesHaveNoProviderProbeImports]' started.
-Test Case '-[JackinUsageBridgeTests.ArchitectureTests testSwiftSourcesHaveNoProviderProbeImports]' passed (0.024 seconds).
-Test Case '-[JackinUsageBridgeTests.ArchitectureTests testSystemMaterialFallbacksOnlyInGlassFallbacks]' started.
-Test Case '-[JackinUsageBridgeTests.ArchitectureTests testSystemMaterialFallbacksOnlyInGlassFallbacks]' passed (0.002 seconds).
-Test Case '-[JackinUsageBridgeTests.ArchitectureTests testUsageWindowRendersSharedDetailModel]' started.
-Test Case '-[JackinUsageBridgeTests.ArchitectureTests testUsageWindowRendersSharedDetailModel]' passed (0.006 seconds).
-Test Suite 'ArchitectureTests' passed at 2026-08-10 15:47:37.066.
-	 Executed 27 tests, with 0 failures (0 unexpected) in 0.104 (0.105) seconds
-Test Suite 'OverviewInventoryTests' started at 2026-08-10 15:47:37.066.
-Test Case '-[JackinUsageBridgeTests.OverviewInventoryTests testEmptyAccountsFallsBackToGlanceRows]' started.
-Test Case '-[JackinUsageBridgeTests.OverviewInventoryTests testEmptyAccountsFallsBackToGlanceRows]' passed (0.000 seconds).
-Test Case '-[JackinUsageBridgeTests.OverviewInventoryTests testGlanceFallbackComposesExactReset]' started.
-Test Case '-[JackinUsageBridgeTests.OverviewInventoryTests testGlanceFallbackComposesExactReset]' passed (0.000 seconds).
-Test Case '-[JackinUsageBridgeTests.OverviewInventoryTests testMultiAccountExpandsPerAccountInGlanceOrder]' started.
-Test Case '-[JackinUsageBridgeTests.OverviewInventoryTests testMultiAccountExpandsPerAccountInGlanceOrder]' passed (0.000 seconds).
-Test Case '-[JackinUsageBridgeTests.OverviewInventoryTests testOverviewResetDisplayStripsParenthesesAndJoins]' started.
-Test Case '-[JackinUsageBridgeTests.OverviewInventoryTests testOverviewResetDisplayStripsParenthesesAndJoins]' passed (0.000 seconds).
-Test Case '-[JackinUsageBridgeTests.OverviewInventoryTests testSelectedAccountComposesExactResetCalendarWithRelative]' started.
-Test Case '-[JackinUsageBridgeTests.OverviewInventoryTests testSelectedAccountComposesExactResetCalendarWithRelative]' passed (0.000 seconds).
-Test Suite 'OverviewInventoryTests' passed at 2026-08-10 15:47:37.067.
-	 Executed 5 tests, with 0 failures (0 unexpected) in 0.001 (0.001) seconds
-Test Suite 'ProviderUsageLinksTests' started at 2026-08-10 15:47:37.067.
-Test Case '-[JackinUsageBridgeTests.ProviderUsageLinksTests testDesktopProviderOrderHasOfficialURLs]' started.
-Test Case '-[JackinUsageBridgeTests.ProviderUsageLinksTests testDesktopProviderOrderHasOfficialURLs]' passed (0.000 seconds).
-Test Case '-[JackinUsageBridgeTests.ProviderUsageLinksTests testOpenUsagePageTitleIsFixed]' started.
-Test Case '-[JackinUsageBridgeTests.ProviderUsageLinksTests testOpenUsagePageTitleIsFixed]' passed (0.000 seconds).
-Test Case '-[JackinUsageBridgeTests.ProviderUsageLinksTests testUnknownSurfaceHasNoURL]' started.
-Test Case '-[JackinUsageBridgeTests.ProviderUsageLinksTests testUnknownSurfaceHasNoURL]' passed (0.000 seconds).
-Test Suite 'ProviderUsageLinksTests' passed at 2026-08-10 15:47:37.068.
-	 Executed 3 tests, with 0 failures (0 unexpected) in 0.000 (0.000) seconds
-Test Suite 'StatusBarCompactResetTests' started at 2026-08-10 15:47:37.068.
-Test Case '-[JackinUsageBridgeTests.StatusBarCompactResetTests testNilAndEmpty]' started.
-Test Case '-[JackinUsageBridgeTests.StatusBarCompactResetTests testNilAndEmpty]' passed (0.000 seconds).
-Test Case '-[JackinUsageBridgeTests.StatusBarCompactResetTests testStripsResetsInPrefix]' started.
-Test Case '-[JackinUsageBridgeTests.StatusBarCompactResetTests testStripsResetsInPrefix]' passed (0.000 seconds).
-Test Case '-[JackinUsageBridgeTests.StatusBarCompactResetTests testTakesSegmentBeforeDotSeparator]' started.
-Test Case '-[JackinUsageBridgeTests.StatusBarCompactResetTests testTakesSegmentBeforeDotSeparator]' passed (0.000 seconds).
-Test Suite 'StatusBarCompactResetTests' passed at 2026-08-10 15:47:37.068.
-	 Executed 3 tests, with 0 failures (0 unexpected) in 0.000 (0.000) seconds
-Test Suite 'StatusPopoverFocusTests' started at 2026-08-10 15:47:37.068.
-Test Case '-[JackinUsageBridgeTests.StatusPopoverFocusTests testEmptySurfaceIdOpensOverview]' started.
-Test Case '-[JackinUsageBridgeTests.StatusPopoverFocusTests testEmptySurfaceIdOpensOverview]' passed (0.000 seconds).
-Test Case '-[JackinUsageBridgeTests.StatusPopoverFocusTests testFallbackItemOpensOverview]' started.
-Test Case '-[JackinUsageBridgeTests.StatusPopoverFocusTests testFallbackItemOpensOverview]' passed (0.000 seconds).
-Test Case '-[JackinUsageBridgeTests.StatusPopoverFocusTests testProviderClickSelectsSurface]' started.
-Test Case '-[JackinUsageBridgeTests.StatusPopoverFocusTests testProviderClickSelectsSurface]' passed (0.000 seconds).
-Test Case '-[JackinUsageBridgeTests.StatusPopoverFocusTests testSurfaceIdMapLookup]' started.
-Test Case '-[JackinUsageBridgeTests.StatusPopoverFocusTests testSurfaceIdMapLookup]' passed (0.000 seconds).
-Test Suite 'StatusPopoverFocusTests' passed at 2026-08-10 15:47:37.068.
-	 Executed 4 tests, with 0 failures (0 unexpected) in 0.000 (0.000) seconds
-Test Suite 'UsageWindowModelTests' started at 2026-08-10 15:47:37.068.
-Test Case '-[JackinUsageBridgeTests.UsageWindowModelTests testDetailRowAndLineOrderFlattenedExactlyOnce]' started.
-Test Case '-[JackinUsageBridgeTests.UsageWindowModelTests testDetailRowAndLineOrderFlattenedExactlyOnce]' passed (0.000 seconds).
-Test Case '-[JackinUsageBridgeTests.UsageWindowModelTests testDisabledIncomingSelectionFallsBackToOverview]' started.
-Test Case '-[JackinUsageBridgeTests.UsageWindowModelTests testDisabledIncomingSelectionFallsBackToOverview]' passed (0.000 seconds).
-Test Case '-[JackinUsageBridgeTests.UsageWindowModelTests testDuplicateBucketLabelsKeepDistinctIds]' started.
-Test Case '-[JackinUsageBridgeTests.UsageWindowModelTests testDuplicateBucketLabelsKeepDistinctIds]' passed (0.000 seconds).
-Test Case '-[JackinUsageBridgeTests.UsageWindowModelTests testEmptyEnabledSet]' started.
-Test Case '-[JackinUsageBridgeTests.UsageWindowModelTests testEmptyEnabledSet]' passed (0.000 seconds).
-Test Case '-[JackinUsageBridgeTests.UsageWindowModelTests testIncomingProviderSelectionResolvesToDetail]' started.
-Test Case '-[JackinUsageBridgeTests.UsageWindowModelTests testIncomingProviderSelectionResolvesToDetail]' passed (0.000 seconds).
-Test Case '-[JackinUsageBridgeTests.UsageWindowModelTests testMultiAccountActionAndSelectedStyling]' started.
-Test Case '-[JackinUsageBridgeTests.UsageWindowModelTests testMultiAccountActionAndSelectedStyling]' passed (0.000 seconds).
-Test Case '-[JackinUsageBridgeTests.UsageWindowModelTests testSentinelRowsTransmittedUnchanged]' started.
-Test Case '-[JackinUsageBridgeTests.UsageWindowModelTests testSentinelRowsTransmittedUnchanged]' passed (0.000 seconds).
-Test Case '-[JackinUsageBridgeTests.UsageWindowModelTests testSidebarOrderAndOverviewSelection]' started.
-Test Case '-[JackinUsageBridgeTests.UsageWindowModelTests testSidebarOrderAndOverviewSelection]' passed (0.000 seconds).
-Test Case '-[JackinUsageBridgeTests.UsageWindowModelTests testStaleDetailAndLastGoodBucketCoexist]' started.
-Test Case '-[JackinUsageBridgeTests.UsageWindowModelTests testStaleDetailAndLastGoodBucketCoexist]' passed (0.000 seconds).
-Test Suite 'UsageWindowModelTests' passed at 2026-08-10 15:47:37.069.
-	 Executed 9 tests, with 0 failures (0 unexpected) in 0.001 (0.001) seconds
-Test Suite 'JackinDesktopPackageTests.xctest' passed at 2026-08-10 15:47:37.069.
-	 Executed 51 tests, with 0 failures (0 unexpected) in 0.106 (0.108) seconds
-Test Suite 'Selected tests' passed at 2026-08-10 15:47:37.069.
-	 Executed 51 tests, with 0 failures (0 unexpected) in 0.106 (0.109) seconds
-◇ Test run started.
-↳ Testing Library Version: 1902
-↳ Target Platform: arm64e-apple-macos14.0
-✔ Test run with 0 tests in 0 suites passed after 0.001 seconds.
-=== OV-11 + SB-5 structural tests above ===
-=== compact_duration_sb18 ===
-
-running 3 tests
-test usage::format::compact_duration_sb18_tests::at_and_above_forty_eight_hours_uses_days ... ok
-test usage::format::compact_duration_sb18_tests::under_forty_eight_hours_stays_hours_not_days ... ok
-test usage::format::compact_duration_sb18_tests::under_one_hour_is_minutes ... ok
-
-test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 242 filtered out; finished in 0.00s
-
-=== DesktopSoT ===
+=== L1 check_usage_liquid_glass ===
+PASS: Usage Liquid Glass + provider≠account structural checks
+=== L1 check_qi_evidence_ledger ===
+PASS: QI evidence ledger — 15 pass rows, 2 blocked, prose PNG refs consistent
+=== L2 ArchitectureLint ===
+PASS  AppMainMenu.swift
+PASS  DesktopAppDelegate.swift
+PASS  StatusItemLabel.swift
+PASS  StatusItemMenu.swift
+PASS  GlassFallbacks.swift
+---
+DesktopArchitectureLint: scanned 18 files, 18 clean
+DesktopArchitectureLint: ALL PASS
+=== L2 SoTParity ===
 PASS  100% meter fraction full
 PASS  57% meter fraction
 PASS  status context menu three rows
 ---
 DesktopSoTParityHarness: ALL PASS (18/18 checks)
-=== ArchitectureLint ===
-PASS  GlassFallbacks.swift
+=== L2 ParityMatrix ===
+PASS  ProviderUsageLinks desktop map complete
+PASS  no sparkline/donut/trend product UI in status item
+PASS  no sparkline/donut in popover
 ---
-DesktopArchitectureLint: scanned 18 files, 18 clean
-DesktopArchitectureLint: ALL PASS
+DesktopParityMatrixHarness: ALL PASS
+Matrix: 8/8 providers displayable · dual-bucket · depleted · limits-only
+=== L2 StatusItemChip ===
+PASS  gauge secondary drops bare 100%
+PASS  gauge secondary keeps money limit
+PASS  dual depleted a11y keeps weekly
+---
+StatusItemChipHarness: ALL PASS
+=== L2 ProviderMarks ===
+PASS  grok mark maxA=242 (need ≥200)
+PASS  zai mark maxA=234 (need ≥200)
+PASS  kimi mark maxA=231 (need ≥200)
+PASS  minimax mark maxA=244 (need ≥200)
+ProviderMarksHarness: ALL PASS (7/7 official marks)

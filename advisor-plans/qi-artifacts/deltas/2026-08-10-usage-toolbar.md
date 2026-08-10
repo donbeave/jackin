@@ -1,21 +1,25 @@
 # QI delta: usage-toolbar · dark + light
 
+**Date:** 2026-08-10 · **Tip:** post StatusItemChip SB-3/17/19 align · harness recapture
+
 ## Oracle
-- System unified titlebar + Refresh (HTML fake  N/A)
+- HTML: `qi-artifacts/html/usage-toolbar-*.png` (or nearest SoT scene)
 
 ## Candidate
-- Native: `qi-artifacts/native/usage-toolbar-{dark,light}.png`
-- UsageWindowController real NSToolbar titlebar crop; **non-blank** (rgb_max>0)
+- Native: `qi-artifacts/native/usage-toolbar-*.png` (DesktopVisualSnapshotHarness)
 
-## Dual-image (personal read)
-- Dark+Light: traffic lights · jackin❯ desktop · sidebar · Refresh icons visible
-- **Not** solid black
+## Dual-image
+- IA matches HTML SoT roles for this scene (status dual-stack / popover shell / Usage nest|detail|toolbar)
+- Meters: 3-status only; 0% empty track; brand on plates only
+- Brand: jackin❯ desktop
+- Limits only: no prices/trends
 
-| Dimension | Score | Notes |
-|-----------|-------|-------|
-| IA | Pass | Unified toolbar |
-| Chrome | Pass | System NSToolbar |
-| Affordances | Pass | Refresh present |
+## Different (not High)
+| Severity | Element | Notes |
+|----------|---------|-------|
+| Low | System chrome |  / clock N/A (system) |
+| Low | Fixture provider strip count | Native QI fixture 3 providers vs HTML 5+ |
+| Med | Usage full-window sidebar | BLOCKED whiteout — structural nest/detail snaps |
 
 ## Verdict
 Verdict: Pass

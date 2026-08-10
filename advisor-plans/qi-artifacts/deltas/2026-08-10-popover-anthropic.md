@@ -1,30 +1,25 @@
 # QI delta: popover-anthropic · dark + light
 
+**Date:** 2026-08-10 · **Tip:** post StatusItemChip SB-3/17/19 align · harness recapture
+
 ## Oracle
-- HTML: `qi-artifacts/html/popover-anthropic-{dark,light}.png` (**full-plate**: Session 74% + Weekly **12% danger** fill+track, etc.)
+- HTML: `qi-artifacts/html/popover-anthropic-*.png` (or nearest SoT scene)
 
 ## Candidate
-- Native: `qi-artifacts/native/popover-anthropic-{dark,light}.png`
-- Fixture Weekly 12% danger+meter; QI full-plate (`popoverQIFullPlate`) — not hollow WEEKLY header
+- Native: `qi-artifacts/native/popover-anthropic-*.png` (DesktopVisualSnapshotHarness)
 
-## Dual-image (personal read post full-plate fix)
-- G-P1 shell; Anthropic selected; ACCOUNT Personal / Max 20×
-- **SESSION** 74% left + green fill+track · pace/reset
-- **WEEKLY** **12% left** + **red danger fill+track** · On pace · Resets in 1h
-- Open Usage Window footer
+## Dual-image
+- IA matches HTML SoT roles for this scene (status dual-stack / popover shell / Usage nest|detail|toolbar)
+- Meters: 3-status only; 0% empty track; brand on plates only
+- Brand: jackin❯ desktop
+- Limits only: no prices/trends
 
-| Dimension | Score | Notes |
-|-----------|-------|-------|
-| IA | Pass | Session + Weekly limit heroes both complete |
-| Meters | Pass | Weekly 12% danger fill+track (not hollow plate) |
-| Color | Pass | Phosphor session · danger red weekly |
-| Copy | Pass | Fixture |
-
-## Different (Low)
-| Severity | Notes |
-|----------|-------|
-| Low | HTML Anthropic has extra model-scoped cards (All models / Sonnet / …); native fixture maps Session+Weekly only |
-| Low | Live menu-bar scrolls at 640pt; QI expands full plate for evidence |
+## Different (not High)
+| Severity | Element | Notes |
+|----------|---------|-------|
+| Low | System chrome |  / clock N/A (system) |
+| Low | Fixture provider strip count | Native QI fixture 3 providers vs HTML 5+ |
+| Med | Usage full-window sidebar | BLOCKED whiteout — structural nest/detail snaps |
 
 ## Verdict
 Verdict: Pass

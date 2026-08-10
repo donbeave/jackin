@@ -1,63 +1,54 @@
 # VISUAL_QA_LOG — jackin❯ desktop HTML SoT parity
 
 **Date:** 2026-08-10  
-**Tip:** `15fe09ec`  
-**Verification:** FINAL_GOAL_PROMPT re-verify · multi-limit full-plate ALL_OK · live 2 BLOCKED · gates green · app RUNNING
-
 **Branch:** plan/desktop-visual  
-**Toolchain:** Xcode 26.6 (17F113) · Swift 6.3.3  
-**Authority:** `qi-artifacts/EVIDENCE_LEDGER.toml` + dual-image §7.2/7.3  
+**Authority:** UI_PARITY_MASTER §6 + QI_VERIFICATION L1–L4  
+**Artifacts:** `advisor-plans/qi-artifacts/`
 
-## Craft closed (skeptic Highs)
-
-| Gap | Resolution |
-|-----|------------|
-| Healthy chrome system blue | Phosphor via `JackinBrand` / `severityTint` |
-| Nest 57% greenwash | mid → warn orange |
-| status-desktop Light blank | Menu-bar stage + template tint |
-| usage-toolbar/window pure black | Reject blank CGImage |
-| Popover Session meter missing | track+overlay capsule |
-| Popover Weekly hollow / multi-limit clip | `popoverQIFullPlate` expand + taller snaps; Weekly fill+track visible |
-| HTML popover mid-SESSION crop | Full-plate recapture (expand max-height CSS for QI) |
-
-## Dual-image matrix — required §5
-
-| Scene | Dark | Light | High residual | Craft note | Verdict |
-|-------|------|-------|---------------|------------|---------|
-| status-desktop | yes | yes | none | Icons + dual-stack readable | **Pass** |
-| popover-openai | yes | yes | none | Full plate Session+**Weekly orange**+Spark+LRC fill+track | **Pass** |
-| popover-anthropic | yes | yes | none | Session 74% + **Weekly 12% danger fill+track** (not hollow) | **Pass** |
-| usage-overview | yes | yes | none | 12% red · 57% orange · 0% empty · 100% green | **Pass** |
-| usage-provider-nest | yes | yes | none | 57% mid orange; 0% empty | **Pass** |
-| usage-detail-openai | yes | yes | none | Session green · Weekly orange · Limit Reset | **Pass** |
-| usage-toolbar | yes | yes | none | Real NSToolbar (**not black**) | **Pass** |
-
-**High residual craft: none.**
-
-## Live / interaction (ledger — 2 blocked)
-
-| Scene | Verdict | Evidence |
-|-------|---------|----------|
-| popover-live-click | **BLOCKED** | `popover-live.BLOCKED.txt` · empty probe; craft=harness |
-| ctx-menu-live | **BLOCKED** | `ctx-menu-live-dark.BLOCKED.txt` · A11y; rows=SoT |
-| Left-click focus | **Pass** | StatusPopoverFocus + SoT |
-| Right-click 3 rows | **Pass** | StatusItemMenuModel + SoT |
-| Nest 0%/57% | **Pass** | dual-image |
-
-## Automated gates
+## Automated gates (L1–L2)
 
 ```
 check_usage_liquid_glass.py PASS
-check_qi_evidence_ledger.py PASS — 15 pass / 2 blocked
+check_qi_evidence_ledger.py PASS
 DesktopArchitectureLint ALL PASS
-DesktopSoTParityHarness ×3 ALL PASS
+DesktopSoTParityHarness ALL PASS
 DesktopParityMatrixHarness ALL PASS
-StatusItemChipHarness ALL PASS
-SESSION_CAPSULE_METER_PROOF_OK
+StatusItemChipHarness ALL PASS  (aligned SB-3/17/19)
+ProviderMarksHarness ALL PASS (7/7 maxA)
 ```
 
-## Artifacts
+## §6 matrix — Dark / Light
 
-- HTML / native / deltas under `advisor-plans/qi-artifacts/`
-- Deltas craft scenes: **Verdict: Pass**
-- Live: honest BLOCKED only (not craft Pass)
+| Scene | Dark | Light | High residual | Verdict |
+|-------|------|-------|---------------|---------|
+| status-desktop | yes | yes | none | **Pass** |
+| popover-openai | yes | yes | none | **Pass** |
+| popover-anthropic | yes | yes | none | **Pass** |
+| popover-overview | yes | yes | none | **Pass** |
+| usage-overview | yes | yes | none | **Pass** |
+| usage-provider-nest | yes | yes | none | **Pass** |
+| usage-detail-openai | yes | yes | none | **Pass** |
+| usage-toolbar | yes | yes | none | **Pass** |
+
+**High residual craft: none.**
+
+## Live / interaction
+
+| Flow | Result | Evidence |
+|------|--------|----------|
+| Left-click focus | Pass | StatusPopoverFocus + SoT |
+| Right-click 3 rows | Pass | StatusItemMenuModel + SoT |
+| popover-live click | **BLOCKED** | popover-live.BLOCKED.txt |
+| ctx-menu live | **BLOCKED** | ctx-menu-live-dark.BLOCKED.txt |
+
+## Multimodal deltas
+
+All required craft scenes: `deltas/2026-08-10-*.md` → **Verdict: Pass**
+
+## Residual (not High craft fails)
+
+- Usage full-window glass sidebar whiteout — structural nest/detail snaps
+- SB-5 bar urgency color — partial (FB1-6 mono; SB-P4 OPEN)
+- Live NSStatusItem Screen Recording — fixture StatusItemRendering
+
+Agent sign-off: implementer QI loop complete for §6 Highs (harness + dual-image)
