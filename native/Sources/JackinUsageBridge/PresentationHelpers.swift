@@ -176,6 +176,30 @@ public let desktopProviderIconKeys = [
     "codex", "claude", "amp", "grok", "zai", "kimi", "minimax",
 ]
 
+/// SB-3 / SB-14 hard cap for burn-first status-bar chips.
+public let statusBarMaxChips = 3
+
+/// Defensive / QI filter for status-bar membership when Rust ranking is not
+/// available (fixture inject): **hide 0%** (SB-19), hard-cap ≤3 (SB-3).
+///
+/// Live Desktop path uses Rust `statusBarProviderGlanceRows` (SB-17 soonest-
+/// then-remaining). This helper never invents order beyond filtering zeros and
+/// preserving input order for the remaining prefix.
+public func selectStatusBarGlanceRows(
+    from rows: [PresentationStore.GlanceProviderRow],
+    maxCount: Int = statusBarMaxChips
+) -> [PresentationStore.GlanceProviderRow] {
+    let cap = min(statusBarMaxChips, max(1, maxCount))
+    return Array(
+        rows
+            .filter { row in
+                guard let rem = row.glanceRemainingPercent else { return false }
+                return rem > 0
+            }
+            .prefix(cap)
+    )
+}
+
 /// SF Symbol name for a Desktop provider status item. Rejects any key outside
 /// `desktopProviderIconKeys` (so `opencode` and unknown keys return `nil`),
 /// then delegates to the existing `statusItemSystemImage` mapping. Performs no
@@ -580,17 +604,31 @@ public func buildStatusItemChips(
     percentStyle: String = "left",
     includeAllEnabled: Bool = false
 ) -> [StatusItemChip] {
-    let cap = max(1, min(8, maxCount))
+    // SB-3 hard-caps chip strip at 3; preferWorstFirst is legacy — live Desktop
+    // multi-item bar uses Rust statusBarProviderGlanceRows (SB-17).
+    let cap = max(1, min(statusBarMaxChips, maxCount))
     var candidates = surfaces.filter { surface in
         guard surface.enabled else { return false }
+        // SB-19: hide depleted (every remaining window is 0). Dual-bucket
+        // Session 0 + Weekly 79 still qualifies via max remaining > 0.
+        // Empty remainings (no data yet) are not "depleted" — includeAllEnabled
+        // may still show a honest "—" placeholder for enabled surfaces.
+        let positive = surface.remainings.contains { $0 > 0 }
+            || (surface.remainings.isEmpty
+                && (surface.drivingRemaining ?? 0) > 0)
+        let depleted = !surface.remainings.isEmpty
+            && surface.remainings.allSatisfy { $0 == 0 }
+            && (surface.drivingRemaining ?? 0) == 0
+        if depleted { return false }
         if includeAllEnabled { return true }
-        return surface.hasPreviewData
+        return surface.hasPreviewData || positive
     }
     if preferWorstFirst {
+        // Prefer higher remaining when times unknown (SB-17 tie-break only).
         candidates.sort { lhs, rhs in
-            let l = lhs.drivingRemaining ?? 100
-            let r = rhs.drivingRemaining ?? 100
-            if l != r { return l < r }
+            let l = lhs.drivingRemaining ?? 0
+            let r = rhs.drivingRemaining ?? 0
+            if l != r { return l > r }
             return false
         }
     }

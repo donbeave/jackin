@@ -100,10 +100,11 @@ struct DesktopParityMatrixHarness {
             percentStyle: "left",
             includeAllEnabled: true
         )
-        check("strip shows all 8 providers", strip.count == 8, "count=\(strip.count)")
+        // SB-3: burn-first hard-caps at 3 even when maxCount asks for 8.
+        check("strip hard-caps at 3 (SB-3)", strip.count == 3, "count=\(strip.count)")
         check(
-            "strip ids catalog order",
-            strip.map(\.surfaceId) == frozenHostSurfaceIds,
+            "strip ids catalog order prefix",
+            strip.map(\.surfaceId) == Array(frozenHostSurfaceIds.prefix(3)),
             "ids=\(strip.map(\.surfaceId))"
         )
         for chip in strip {
@@ -242,7 +243,8 @@ struct DesktopParityMatrixHarness {
             percentStyle: "left",
             includeAllEnabled: true
         )
-        check("mixed strip still 8 chips", mixedChips.count == 8)
+        check("mixed strip hard-caps at 3 (SB-3)", mixedChips.count == 3)
+        // Amp is third in frozen catalog — empty data still shows honest "—" when in cap.
         check(
             "amp empty shows placeholder not invented percent",
             mixedChips.first(where: { $0.surfaceId == "amp" })?.percentLines == ["—"]

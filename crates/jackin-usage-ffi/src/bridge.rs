@@ -201,13 +201,32 @@ impl UsageMenuBarBridge {
     }
 
     /// Selected-account-aware provider glance rows in the canonical Desktop
-    /// order (status bar / popover / Usage window). Rust owns detection,
-    /// ordering, and every display string.
+    /// order (popover / Usage inventory). Full detected set — includes 0%.
+    /// Rust owns detection, ordering, and every display string.
     pub fn provider_glance_rows(&self) -> Result<Vec<ProviderGlanceRowDto>, UsageBridgeError> {
         catch_entry(|| {
             let mut guard = self.lock()?;
             Ok(guard
                 .provider_glance_rows()
+                .map_err(map_runtime_err)?
+                .into_iter()
+                .map(provider_glance_row_dto)
+                .collect())
+        })
+    }
+
+    /// Burn-first **status bar** glance rows only (SB-3/14/17/19).
+    ///
+    /// Filters 0%, ranks soonest-then-remaining, hard-caps at 3. `max` is
+    /// clamped into `1…3`. Popover/Usage keep using [`Self::provider_glance_rows`].
+    pub fn status_bar_provider_glance_rows(
+        &self,
+        max: u32,
+    ) -> Result<Vec<ProviderGlanceRowDto>, UsageBridgeError> {
+        catch_entry(|| {
+            let mut guard = self.lock()?;
+            Ok(guard
+                .status_bar_provider_glance_rows(max)
                 .map_err(map_runtime_err)?
                 .into_iter()
                 .map(provider_glance_row_dto)

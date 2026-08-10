@@ -1,0 +1,13 @@
+Usage full-window harness captures often paint Liquid Glass sidebar as near-white
+(~90%+ blank left column) under CLT CGWindow / NSHostingView bitmap fallback.
+
+Not a Pass for glass sidebar nest + detail together.
+
+Structural proof instead:
+  usage-provider-nest-dark/light.png
+  usage-detail-openai-dark/light.png
+  usage-overview-dark/light.png
+  usage-toolbar-dark/light.png
+
+Harness still may write usage-window-*.png with status OK for window host wiring;
+that OK is host controller alive, not sidebar pixel craft.

@@ -2,23 +2,19 @@
 
 | HTML surface | Native | Parity |
 |--------------|--------|--------|
-| Status dual-stack template logos | StatusItemRendering | **match** (fixture; live BLOCKED) |
+| Status dual-stack ≤3 burn-first | statusBarGlanceRows + StatusItemRendering | **match** (fixture; live BLOCKED) |
 | Brand + Overview\|Providers | PopoverTabGrid | **match** |
-| mode-overview groups multi-account % meter refresh | PopoverOverviewTab + OverviewInventory | **match** |
-| OV-5 relative + calendar when known | overviewResetDisplay dual-line | **match** selected/glance |
-| OV-5 unselected multi-account reset | no Account DTO | **deferred** |
-| mode-providers strip + full detail | TabGrid + PopoverProviderTab | **match** |
-| Open Usage glass CTA | PopoverFooter | **match** |
-| Usage glass sidebar / solid detail / nest | UsageWindowRoot | **match** craft roles |
-| Meters 3-status | severityTint / phosphor | **match** |
-| Credential Rust string | credentialOrigin | **match** |
-| No spend/price product UI | parity matrix | **match** |
+| mode-overview inventory | PopoverOverviewTab | **match** |
+| OV-5 calendar when known | overviewResetDisplay | **match** selected/glance |
+| Providers strip + detail | TabGrid + PopoverProviderTab | **match** |
+| Open Usage CTA | PopoverFooter | **match** |
+| Usage glass sidebar + solid detail | UsageWindowRoot | **craft roles match**; full-window PNG sidebar often **whites out** (residual) |
+| Meters 3-status | severityTint | **match** |
+| No spend/price UI | parity matrix | **match** |
 
-## Token map (AGENT_HANDOFF → Swift)
-| CSS | Swift |
-|-----|-------|
-| `--jk` phosphor | `Color.jackinPhosphor` (BrandColors) |
-| `--glass` | `GlassFallbacks.panelSurfaceBackground` |
-| `--status-high/mid/low` | `severityTint` / remaining bands |
-| brand plates only | `brandChrome` on logo plates |
+## Token map
+`--jk` → Color.jackinPhosphor · `--glass` → GlassFallbacks · status bands → severityTint
 
+## Residual honesty
+- `usage-window-sidebar.BLOCKED.txt` — do not claim full-window sidebar+detail OK
+- Structural Usage bar: usage-provider-nest / usage-detail / usage-overview / usage-toolbar snaps

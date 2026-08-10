@@ -358,14 +358,14 @@ final class ArchitectureTests: XCTestCase {
         )
         XCTAssertTrue(chips[0].percentLines.contains("79%"))
 
-        let worstFirst = buildStatusItemChips(
+        let higherRemFirst = buildStatusItemChips(
             surfaces: surfaces,
             maxCount: 1,
             preferWorstFirst: true,
             percentStyle: "left"
         )
-        // Claude min remaining 79 < Codex 84 → Claude worst.
-        XCTAssertEqual(worstFirst.map(\.surfaceId), ["claude"])
+        // No reset epochs: SB-17 tie-break = higher remaining (Codex 84 > Claude 79).
+        XCTAssertEqual(higherRemFirst.map(\.surfaceId), ["codex"])
 
         // Used style flips stacked lines only; remainings stay Rust-owned.
         let usedChips = buildStatusItemChips(
@@ -395,13 +395,18 @@ final class ArchitectureTests: XCTestCase {
             preferWorstFirst: false,
             percentStyle: "left"
         )
-        XCTAssertEqual(dep.count, 1)
-        XCTAssertEqual(dep[0].percentLines, ["resets 1h 21m"])
-        XCTAssertTrue(statusItemCompactIsResetCountdown(dep[0].compactLabel))
+        // SB-19: pure 0% remaining is out of burn-first chip membership.
+        XCTAssertEqual(dep.count, 0)
+        // Display helpers still format depleted countdown when chip is built manually.
         XCTAssertEqual(
-            statusItemAccessibilityLabel(chips: dep),
-            "jackin Desktop Cl resets 1h 21m"
+            statusItemChipDisplayLines(
+                remainings: [0],
+                compactLabel: "Cl resets 1h 21m",
+                percentStyle: "left"
+            ),
+            ["resets 1h 21m"]
         )
+        XCTAssertTrue(statusItemCompactIsResetCountdown("Cl resets 1h 21m"))
 
         // Dual-bucket depleted session + healthy weekly must keep 79%.
         XCTAssertEqual(
@@ -527,6 +532,42 @@ final class ArchitectureTests: XCTestCase {
         XCTAssertEqual(chips.map(\.surfaceId), ["s0", "s1", "s2"])
     }
 
+    /// SB-3/19 fixture filter for status-bar membership (QI / defensive path).
+    func testSelectStatusBarGlanceRowsHidesZeroAndCapsThree() {
+        func row(id: String, pct: UInt8?) -> PresentationStore.GlanceProviderRow {
+            PresentationStore.GlanceProviderRow(
+                surfaceId: id,
+                iconKey: id,
+                displayLabel: id,
+                accountLabel: "",
+                planLabel: nil,
+                glanceRemainingPercent: pct,
+                barLabel: pct.map { "\($0)%" } ?? "–",
+                headline: pct.map { "\($0)% left" } ?? "–",
+                resetLabel: nil,
+                exactReset: nil,
+                statusWord: "fresh",
+                isRefreshing: false,
+                statusLabel: "fresh",
+                severity: "normal",
+                updatedLabel: "now",
+                lastError: nil,
+                dimmed: false
+            )
+        }
+        let inventory = [
+            row(id: "claude", pct: 12),
+            row(id: "codex", pct: 0),
+            row(id: "amp", pct: 100),
+            row(id: "grok", pct: 72),
+            row(id: "kimi", pct: 45),
+        ]
+        let bar = selectStatusBarGlanceRows(from: inventory, maxCount: 8)
+        XCTAssertEqual(bar.count, 3)
+        XCTAssertEqual(bar.map(\.surfaceId), ["claude", "amp", "grok"])
+        XCTAssertFalse(bar.contains(where: { $0.surfaceId == "codex" }))
+    }
+
     /// OpenUsage/CodexBar matrix: all 8 frozen hosts displayable with icons + remaining %.
     func testFullFrozenCatalogStripDisplayable() {
         XCTAssertEqual(frozenHostSurfaceIds.count, 8)
@@ -550,7 +591,9 @@ final class ArchitectureTests: XCTestCase {
             percentStyle: "left",
             includeAllEnabled: true
         )
-        XCTAssertEqual(chips.map(\.surfaceId), frozenHostSurfaceIds)
+        // SB-3: hard-cap 3 even when maxCount asks for 8.
+        XCTAssertEqual(chips.count, 3)
+        XCTAssertEqual(chips.map(\.surfaceId), Array(frozenHostSurfaceIds.prefix(3)))
         for chip in chips {
             XCTAssertNotNil(chip.systemImage, "\(chip.surfaceId) needs SF Symbol")
             XCTAssertFalse(chip.percentLines.isEmpty, "\(chip.surfaceId) needs displayable %")

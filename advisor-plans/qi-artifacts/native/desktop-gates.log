@@ -1,7 +1,47 @@
+=== cargo host tests ===
+test host::tests::provider_glance_rows_show_three_weekly_labels ... ok
+test host::tests::provider_glance_rows_select_amp_daily ... ok
+test host::tests::provider_glance_rows_show_dash_before_first_success ... ok
+test host::tests::provider_glance_rows_marks_canonical_placeholder_refreshing ... ok
+test host::tests::provider_glance_rows_show_dash_for_paid_only_amp ... ok
+test host::tests::unavailable_and_refreshing_never_invent_percent ... ok
+test host::tests::provider_glance_rows_use_exact_seven_provider_order ... ok
+test host::tests::status_bar_provider_glance_rows_sb3_sb17_sb19 ... ok
+test host::tests::next_events_resync_flag_not_error ... ok
+test host::tests::multi_account_list_select_and_snapshot ... ok
+test host::tests::refresh_floor_skips_non_forced_calls ... ok
+test host::tests::next_refresh_label_due_and_countdown ... ok
+
+test result: ok. 42 passed; 0 failed; 0 ignored; 0 measured; 200 filtered out; finished in 35.03s
+
+=== cargo ffi ===
+test bridge::tests::overview_rows_and_format_prefs_round_trip ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests jackin_usage_ffi
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+=== swift tests ===
+Test Case '-[JackinUsageBridgeTests.UsageWindowModelTests testStaleDetailAndLastGoodBucketCoexist]' started.
+Test Case '-[JackinUsageBridgeTests.UsageWindowModelTests testStaleDetailAndLastGoodBucketCoexist]' passed (0.000 seconds).
+Test Suite 'UsageWindowModelTests' passed at 2026-08-10 15:12:55.826.
+	 Executed 9 tests, with 0 failures (0 unexpected) in 0.001 (0.001) seconds
+Test Suite 'JackinDesktopPackageTests.xctest' passed at 2026-08-10 15:12:55.826.
+	 Executed 48 tests, with 0 failures (0 unexpected) in 0.104 (0.106) seconds
+Test Suite 'Selected tests' passed at 2026-08-10 15:12:55.826.
+	 Executed 48 tests, with 0 failures (0 unexpected) in 0.104 (0.107) seconds
+◇ Test run started.
+↳ Testing Library Version: 1902
+↳ Target Platform: arm64e-apple-macos14.0
+✔ Test run with 0 tests in 0 suites passed after 0.001 seconds.
 === ProviderMarksHarness ===
-Building for production...
-[0/2] Write swift-version--58304C5D6DBC2206.txt
-Build of product 'ProviderMarksHarness' complete! (0.07s)
+[4/6] Write Objects.LinkFileList
+[5/6] Linking ProviderMarksHarness
+Build of product 'ProviderMarksHarness' complete! (3.43s)
 ProviderMarksHarness: 7 Desktop keys
 PASS  codex hasMark=true markSize=(18.0, 18.0) statusTemplate=true
 PASS  claude hasMark=true markSize=(18.0, 18.0) statusTemplate=true
@@ -20,7 +60,6 @@ PASS  kimi mark maxA=231 (need ≥200)
 PASS  minimax mark maxA=244 (need ≥200)
 ProviderMarksHarness: ALL PASS (7/7 official marks)
 === DesktopSoTParityHarness ===
-Building for production...
 [0/2] Write swift-version--58304C5D6DBC2206.txt
 Build of product 'DesktopSoTParityHarness' complete! (0.07s)
 PASS  provider click → provider selection
@@ -42,91 +81,6 @@ PASS  status context menu three rows
 ---
 DesktopSoTParityHarness: ALL PASS (18/18 checks)
 === DesktopParityMatrixHarness ===
-Building for production...
-[0/2] Write swift-version--58304C5D6DBC2206.txt
-Build of product 'DesktopParityMatrixHarness' complete! (0.07s)
-=== OpenUsage/CodexBar limits-only parity matrix ===
-In scope: remaining %, dual windows, resets, multi-provider icons, mini bars
-Out of scope: token unit prices, usage/spend trends (AGENTS hard rule)
-
-PASS  remaining fraction complements used
-PASS  percent lines eligible for mini bars
-PASS  frozen catalog has 8 surfaces
-PASS  catalog order matches HostSurfaceId::ALL
-PASS  every frozen surface has SF Symbol (displayable icon)
-PASS  icon claude
-PASS  glyph claude
-PASS  icon codex
-PASS  glyph codex
-PASS  icon amp
-PASS  glyph amp
-PASS  icon grok
-PASS  glyph grok
-PASS  icon zai
-PASS  glyph zai
-PASS  icon kimi
-PASS  glyph kimi
-PASS  icon minimax
-PASS  glyph minimax
-PASS  icon opencode
-PASS  glyph opencode
-PASS  strip shows all 8 providers
-PASS  strip ids catalog order
-PASS  claude has displayable icon or glyph
-PASS  claude has percent lines
-PASS  claude lines are limit tokens not empty
-PASS  codex has displayable icon or glyph
-PASS  codex has percent lines
-PASS  codex lines are limit tokens not empty
-PASS  amp has displayable icon or glyph
-PASS  amp has percent lines
-PASS  amp lines are limit tokens not empty
-PASS  grok has displayable icon or glyph
-PASS  grok has percent lines
-PASS  grok lines are limit tokens not empty
-PASS  zai has displayable icon or glyph
-PASS  zai has percent lines
-PASS  zai lines are limit tokens not empty
-PASS  kimi has displayable icon or glyph
-PASS  kimi has percent lines
-PASS  kimi lines are limit tokens not empty
-PASS  minimax has displayable icon or glyph
-PASS  minimax has percent lines
-PASS  minimax lines are limit tokens not empty
-PASS  opencode has displayable icon or glyph
-PASS  opencode has percent lines
-PASS  opencode lines are limit tokens not empty
-PASS  claude dual remaining stack displayable
-PASS  codex dual remaining stack displayable
-PASS  a11y multi-provider non-empty
-PASS  default remaining token
-PASS  used style flips display
-PASS  primary label remaining
-PASS  primary label used
-PASS  depleted+healthy dual keeps weekly
-PASS  tile dual remaining (OpenUsage stack)
-PASS  tile depleted bucket Resets label
-PASS  pace split CodexBar columns
-PASS  metric primary depleted reset
-PASS  sidebar dual subtitle
-PASS  overview keeps third scoped window
-PASS  account pill remaining a11y
-PASS  mixed strip still 8 chips
-PASS  amp empty shows placeholder not invented percent
-PASS  gauge when remaining
-PASS  valueOnly money without remaining
-PASS  empty honest
-PASS  StatusItemRendering displays the Rust bar label verbatim
-PASS  StatusItemRendering invents no severity tint or percent
-PASS  Popover composes tab grid + Overview/provider tabs + footer
-PASS  Popover reads Rust glance rows verbatim (no Swift percent recompute)
-PASS  Popover multi-account selection
-PASS  Usage Overview renders Rust glance rows verbatim (no bucket synthesis)
-PASS  machine status_slot tokens recognized
-PASS  gauge secondary never bare 100%
-PASS  Popover provider bucket path is generic Rust segments
-PASS  ProviderCard renders Rust detail rows mechanically (plan 008)
-PASS  ProviderCard splits/joins no usage string and invents no field copy
 PASS  ProviderCard bucket identity is Rust rowId, not label
 PASS  Usage detail meter/severity are geometry+style only (no visible text)
 PASS  Usage window drives sidebar/detail from UsageWindowModel
@@ -143,25 +97,6 @@ PASS  no sparkline/donut in popover
 DesktopParityMatrixHarness: ALL PASS
 Matrix: 8/8 providers displayable · dual-bucket · depleted · limits-only
 === DesktopArchitectureLint ===
-Building for production...
-[0/2] Write swift-version--58304C5D6DBC2206.txt
-Build of product 'DesktopArchitectureLint' complete! (0.07s)
-PASS  PresentationStore.swift serializes all bridge access via RefreshScheduler
-PASS  glassEffect / #available(macOS 26 only in GlassFallbacks
-PASS  UsageWindowController NSToolbar hosting
-PASS  status left-click popover focus wiring
-PASS  SettingsView.swift (preference chrome allowlist)
-PASS  SettingsView.swift
-PASS  OverviewListView.swift
-PASS  UsageAccountNestView.swift
-PASS  UsageWindowRoot.swift
-PASS  ProviderCardView.swift
-PASS  GlassPopoverHostingController.swift
-PASS  PopoverRoot.swift
-PASS  ProviderMarks.swift
-PASS  UsageWindowController.swift
-PASS  PopoverTabGrid.swift
-PASS  PopoverProviderTab.swift
 PASS  PopoverFooter.swift
 PASS  PopoverOverviewTab.swift
 PASS  AppMainMenu.swift
@@ -172,43 +107,3 @@ PASS  GlassFallbacks.swift
 ---
 DesktopArchitectureLint: scanned 18 files, 18 clean
 DesktopArchitectureLint: ALL PASS
-=== OverviewInventoryTests ===
-Test Case '-[JackinUsageBridgeTests.OverviewInventoryTests testEmptyAccountsFallsBackToGlanceRows]' started.
-Test Case '-[JackinUsageBridgeTests.OverviewInventoryTests testEmptyAccountsFallsBackToGlanceRows]' passed (0.000 seconds).
-Test Case '-[JackinUsageBridgeTests.OverviewInventoryTests testGlanceFallbackComposesExactReset]' started.
-Test Case '-[JackinUsageBridgeTests.OverviewInventoryTests testGlanceFallbackComposesExactReset]' passed (0.000 seconds).
-Test Case '-[JackinUsageBridgeTests.OverviewInventoryTests testMultiAccountExpandsPerAccountInGlanceOrder]' started.
-Test Case '-[JackinUsageBridgeTests.OverviewInventoryTests testMultiAccountExpandsPerAccountInGlanceOrder]' passed (0.000 seconds).
-Test Case '-[JackinUsageBridgeTests.OverviewInventoryTests testOverviewResetDisplayStripsParenthesesAndJoins]' started.
-Test Case '-[JackinUsageBridgeTests.OverviewInventoryTests testOverviewResetDisplayStripsParenthesesAndJoins]' passed (0.000 seconds).
-Test Case '-[JackinUsageBridgeTests.OverviewInventoryTests testSelectedAccountComposesExactResetCalendarWithRelative]' started.
-Test Case '-[JackinUsageBridgeTests.OverviewInventoryTests testSelectedAccountComposesExactResetCalendarWithRelative]' passed (0.000 seconds).
-Test Suite 'OverviewInventoryTests' passed at 2026-08-10 14:52:39.506.
-	 Executed 5 tests, with 0 failures (0 unexpected) in 0.001 (0.001) seconds
-Test Suite 'JackinDesktopPackageTests.xctest' passed at 2026-08-10 14:52:39.506.
-	 Executed 5 tests, with 0 failures (0 unexpected) in 0.001 (0.001) seconds
-Test Suite 'Selected tests' passed at 2026-08-10 14:52:39.506.
-	 Executed 5 tests, with 0 failures (0 unexpected) in 0.001 (0.002) seconds
-◇ Test run started.
-↳ Testing Library Version: 1902
-↳ Target Platform: arm64e-apple-macos14.0
-✔ Test run with 0 tests in 0 suites passed after 0.001 seconds.
-=== JackinUsageBridgeTests ===
-Test Case '-[JackinUsageBridgeTests.UsageWindowModelTests testSentinelRowsTransmittedUnchanged]' passed (0.000 seconds).
-Test Case '-[JackinUsageBridgeTests.UsageWindowModelTests testSidebarOrderAndOverviewSelection]' started.
-Test Case '-[JackinUsageBridgeTests.UsageWindowModelTests testSidebarOrderAndOverviewSelection]' passed (0.000 seconds).
-Test Case '-[JackinUsageBridgeTests.UsageWindowModelTests testStaleDetailAndLastGoodBucketCoexist]' started.
-Test Case '-[JackinUsageBridgeTests.UsageWindowModelTests testStaleDetailAndLastGoodBucketCoexist]' passed (0.000 seconds).
-Test Suite 'UsageWindowModelTests' passed at 2026-08-10 14:52:40.047.
-	 Executed 9 tests, with 0 failures (0 unexpected) in 0.001 (0.001) seconds
-Test Suite 'JackinDesktopPackageTests.xctest' passed at 2026-08-10 14:52:40.047.
-	 Executed 47 tests, with 0 failures (0 unexpected) in 0.103 (0.104) seconds
-Test Suite 'Selected tests' passed at 2026-08-10 14:52:40.047.
-	 Executed 47 tests, with 0 failures (0 unexpected) in 0.103 (0.105) seconds
-◇ Test run started.
-↳ Testing Library Version: 1902
-↳ Target Platform: arm64e-apple-macos14.0
-✔ Test run with 0 tests in 0 suites passed after 0.001 seconds.
-=== product-law static ===
-(none spend/trend UI)
-(glassEffect only GlassFallbacks)

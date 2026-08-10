@@ -45,7 +45,8 @@ public final class StatusBarController: NSObject {
         }
         popover.contentViewController = GlassPopoverHostingController(rootView: root)
 
-        store.$providerGlanceRows
+        // Burn-first chips only (SB-3/14/17/19) — not full providerGlanceRows inventory.
+        store.$statusBarGlanceRows
             .receive(on: RunLoop.main)
             .sink { [weak self] rows in self?.apply(rows: rows) }
             .store(in: &cancellables)
@@ -54,7 +55,7 @@ public final class StatusBarController: NSObject {
             .sink { [weak self] _ in self?.refreshTitles() }
             .store(in: &cancellables)
 
-        apply(rows: store.providerGlanceRows)
+        apply(rows: store.statusBarGlanceRows)
     }
 
     private func apply(rows: [PresentationStore.GlanceProviderRow]) {
@@ -65,11 +66,11 @@ public final class StatusBarController: NSObject {
         }
         removeFallbackItem()
         canonicalOrder = rows.map(\.surfaceId)
-        // Remove items whose id disappeared from the Rust list.
+        // Remove items whose id disappeared from the burn-first list.
         for id in Array(providerItems.keys) where !canonicalOrder.contains(id) {
             removeProviderItem(id: id)
         }
-        // Create only new ids while iterating the unchanged Rust order; update the rest in place.
+        // Create only new ids; order is Rust SB-17 rank (soonest-then-remaining).
         for row in rows {
             let item = providerItems[row.surfaceId] ?? makeProviderItem(surfaceId: row.surfaceId)
             providerItems[row.surfaceId] = item
@@ -122,7 +123,7 @@ public final class StatusBarController: NSObject {
     }
 
     private func refreshTitles() {
-        for row in store.providerGlanceRows {
+        for row in store.statusBarGlanceRows {
             if let item = providerItems[row.surfaceId] {
                 configure(item: item, row: row)
             }

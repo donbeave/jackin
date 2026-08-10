@@ -40,11 +40,12 @@ public struct SettingsView: View {
 
                 if store.displayMode == .strip {
                     Picker("Max providers in menu bar", selection: $store.stripMax) {
-                        ForEach(1...8, id: \.self) { n in
-                            Text(n == 8 ? "8 (all)" : "\(n)").tag(n)
+                        // SB-3: burn-first bar never exceeds three chips.
+                        ForEach(1...3, id: \.self) { n in
+                            Text("\(n)").tag(n)
                         }
                     }
-                    .accessibilityLabel("Maximum providers shown in menu bar strip")
+                    .accessibilityLabel("Maximum providers shown in menu bar strip (1–3)")
                 }
 
                 Picker("Percent style", selection: $store.percentStyle) {

@@ -338,6 +338,19 @@ struct DrivingBucket {
     resets_at: Option<i64>,
 }
 
+/// Hard cap for burn-first status-bar chips (SB-3 / SB-14). Never more than three.
+pub const STATUS_BAR_MAX_CHIPS: usize = 3;
+
+/// SB-17 rank keys for ascending sort: **soonest reset first**, then **higher
+/// remaining %** (invert remaining so ascending puts larger headroom first).
+/// Missing `resets_at` sorts last on the time key.
+#[must_use]
+pub(crate) fn status_bar_rank_key(remaining: u8, resets_at: Option<i64>) -> (i64, u8) {
+    let time_key = resets_at.unwrap_or(i64::MAX);
+    let remaining_key = u8::MAX.saturating_sub(remaining);
+    (time_key, remaining_key)
+}
+
 /// Capsule-free host usage runtime.
 #[derive(Debug)]
 pub struct HostUsageRuntime {
@@ -837,10 +850,14 @@ impl HostUsageRuntime {
         )))
     }
 
-    /// Worst-first multi-surface strip, capped, joined with ` · `.
+    /// Burn-first multi-surface strip (SB-3/14/17/19), capped ≤3, joined with ` · `.
+    ///
+    /// Eligible surfaces only (numeric remaining **> 0**). Order: **soonest
+    /// reset first**, then **higher remaining %** (SB-17). Never more than
+    /// [`STATUS_BAR_MAX_CHIPS`] tokens.
     pub fn compact_status_bar_strip(&mut self, max: u32) -> Result<String, String> {
         self.require_open()?;
-        let cap = max.clamp(1, 8) as usize;
+        let cap = (max as usize).clamp(1, STATUS_BAR_MAX_CHIPS);
         let prefs = self.format_prefs;
         let mut rows: Vec<(u8, HostSurfaceId, Option<i64>)> = Vec::new();
         for surface in HostSurfaceId::ALL.iter().copied() {
@@ -848,13 +865,18 @@ impl HostUsageRuntime {
                 continue;
             }
             if let Some(drive) = self.driving_bucket_for(surface) {
+                // SB-19: depleted never appears on the burn-first bar.
+                if drive.remaining == 0 {
+                    continue;
+                }
                 rows.push((drive.remaining, surface, drive.resets_at));
             }
         }
-        // Ascending remaining (worst first); ties keep ALL order (stable sort).
-        rows.sort_by_key(|(remaining, surface, _)| {
+        rows.sort_by_key(|(remaining, surface, resets_at)| {
+            let (time_key, rem_key) = status_bar_rank_key(*remaining, *resets_at);
             (
-                *remaining,
+                time_key,
+                rem_key,
                 HostSurfaceId::ALL
                     .iter()
                     .position(|s| *s == *surface)
@@ -869,6 +891,70 @@ impl HostUsageRuntime {
             })
             .collect();
         Ok(parts.join(" · "))
+    }
+
+    /// Desktop **status-bar** provider chips only (SB-3/14/17/19).
+    ///
+    /// Unlike [`Self::provider_glance_rows`] (full inventory for popover/Usage),
+    /// this drops 0% rows, ranks soonest-then-remaining, and hard-caps at
+    /// [`STATUS_BAR_MAX_CHIPS`]. `max` is clamped into `1…STATUS_BAR_MAX_CHIPS`.
+    #[must_use = "status-bar rows are the multi-item NSStatusItem source"]
+    pub fn status_bar_provider_glance_rows(
+        &mut self,
+        max: u32,
+    ) -> Result<Vec<HostProviderGlanceRow>, String> {
+        self.require_open()?;
+        let cap = (max as usize).clamp(1, STATUS_BAR_MAX_CHIPS);
+        let prefs = self.format_prefs;
+        let now = chrono::Utc::now().timestamp();
+        let mut candidates: Vec<(u8, Option<i64>, HostProviderGlanceRow)> = Vec::new();
+        for surface in HostSurfaceId::DESKTOP_PROVIDER_ORDER.iter().copied() {
+            let Ok(view) = self.snapshot(surface.id()) else {
+                self.desktop_detected_surfaces.remove(surface.id());
+                continue;
+            };
+            let detected = if view_is_auto_detected(&view) {
+                self.desktop_detected_surfaces
+                    .insert(surface.id().to_owned());
+                true
+            } else if view.is_refreshing_placeholder() {
+                self.desktop_detected_surfaces.contains(surface.id())
+            } else {
+                self.desktop_detected_surfaces.remove(surface.id());
+                false
+            };
+            if !detected {
+                continue;
+            }
+            let glance = glance_bucket(surface, &view);
+            let remaining = glance.and_then(|b| b.remaining_percent);
+            // SB-19: no numeric remaining or 0% → out of bar membership.
+            let Some(rem) = remaining else {
+                continue;
+            };
+            if rem == 0 {
+                continue;
+            }
+            let resets_at = glance.and_then(|b| b.resets_at);
+            let row = build_provider_glance_row(surface, &view, now, prefs);
+            candidates.push((rem, resets_at, row));
+        }
+        candidates.sort_by_key(|(remaining, resets_at, row)| {
+            let (time_key, rem_key) = status_bar_rank_key(*remaining, *resets_at);
+            (
+                time_key,
+                rem_key,
+                HostSurfaceId::DESKTOP_PROVIDER_ORDER
+                    .iter()
+                    .position(|s| s.id() == row.surface_id)
+                    .unwrap_or(usize::MAX),
+            )
+        });
+        Ok(candidates
+            .into_iter()
+            .take(cap)
+            .map(|(_, _, row)| row)
+            .collect())
     }
 
     /// Next network refresh relative to the floor (`Next update in …` / due).
