@@ -56,19 +56,30 @@ def main() -> int:
     need("nav-provider" in html, "provider nav system missing")
     need("nav-acct" in html, "account nav system missing")
     need("acct-rail" in html, "account rail container missing")
-    need("p-meter" in html, "provider mini-meter missing")
-    # Account = secondary radio well (not provider full-fill / not one-sided bar).
+    # Glance progress on accounts, not providers.
+    need("a-meter" in html, "account mini-meter (glance progress) missing")
+    need(
+        re.search(r"\.win\s+\.nav-provider\s+\.p-meter", html) is None
+        and 'class="p-meter' not in html
+        and "p-trail" not in html.split('id="usage"', 1)[-1].split('id="glass"', 1)[0],
+        "provider row must not show glance meter/trail (moved to accounts)",
+    )
+    # Account = secondary radio well (multi); no detail chip strip dupe.
     need(
         "a-radio" in html and ".nav-acct.on .a-radio" in html,
         "account radio selection indicator missing",
     )
     need(
-        "acct-switch" in html and "acct-chip" in html,
-        "detail multi-account chip strip missing",
+        "acct-switch" not in html and "acct-chip" not in html,
+        "detail account chip strip must stay removed (sidebar nest only)",
     )
     need(
         "border-left: 2.5px solid transparent" not in html,
         "AI-slop one-sided account border still present",
+    )
+    need(
+        "2 accounts" in html,
+        "multi-account provider caption missing",
     )
     need(
         re.search(

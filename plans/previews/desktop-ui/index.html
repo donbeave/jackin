@@ -402,34 +402,15 @@
     .win .nav-overview .p-meta {
       margin-top: 2px; font-size: 11px; color: var(--tertiary); font-weight: 500;
     }
-    .win .nav-provider .p-trail {
-      display: flex; flex-direction: column; align-items: flex-end; gap: 3px;
-      flex-shrink: 0; min-width: 34px;
-    }
-    .win .nav-provider .p-pct {
-      font-family: var(--mono); font-size: 12px; font-weight: 650;
-      font-variant-numeric: tabular-nums; color: var(--secondary);
-    }
-    .win .nav-provider .p-pct.high { color: var(--status-high); }
-    .win .nav-provider .p-pct.mid { color: var(--status-mid); }
-    .win .nav-provider .p-pct.low { color: var(--status-low); }
-    .win .nav-provider .p-meter {
-      width: 34px; height: 3px; border-radius: 99px;
-      background: var(--meter-track); overflow: hidden;
-    }
-    .win .nav-provider .p-meter > i {
-      display: block; height: 100%; border-radius: inherit; background: var(--status-high);
-    }
-    .win .nav-provider .p-meter.mid > i { background: var(--status-mid); }
-    .win .nav-provider .p-meter.low > i { background: var(--status-low); }
+    /* Provider has NO glance % / meter — that lives on account rows (anti-dupe). */
 
     /*
-      Accounts = SECONDARY system (FB1-48) — never provider full-fill chrome.
-      Soft inset well + radio indicator. Content-layer only (LG-A2), not glass.
-      Single-account surfaces: rail stays hidden (no fake multi-account UI).
+      Accounts nest under the *selected* provider only (FB1-48 secondary system).
+      Glance progress (% + mini meter) lives HERE, not on the provider row.
+      Multi: radio switcher. Single: one quiet identity + progress row (no radio).
     */
     .win .acct-rail {
-      margin: 2px 2px 8px 12px;
+      margin: 0 2px 10px 14px;
       padding: 4px;
       border-radius: 10px;
       background: color-mix(in srgb, var(--label) 5.5%, transparent);
@@ -445,7 +426,7 @@
     .win .nav-acct {
       display: flex; align-items: center; gap: 8px;
       width: 100%; text-align: left; cursor: pointer; font: inherit; color: var(--label);
-      border: 0; /* no card stroke — distinct from .nav-provider */
+      border: 0;
       margin: 0;
       padding: 7px 8px;
       border-radius: 7px;
@@ -457,13 +438,18 @@
     .win .nav-acct.on {
       background: color-mix(in srgb, var(--label) 9%, transparent);
     }
-    /* Radio = selection affordance (not phosphor plate / mini-provider) */
+    .win .nav-acct.solo {
+      cursor: default;
+    }
+    .win .nav-acct.solo:hover { background: transparent; }
+    /* Radio only when multi-account */
     .win .nav-acct .a-radio {
       width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0;
       border: 1.5px solid color-mix(in srgb, var(--label) 28%, transparent);
       box-sizing: border-box;
       position: relative;
     }
+    .win .nav-acct.solo .a-radio { display: none; }
     .win .nav-acct.on .a-radio {
       border-color: var(--jk);
     }
@@ -484,56 +470,30 @@
     .win .nav-acct .a-plan {
       margin-top: 1px; font-size: 10px; color: var(--tertiary); font-weight: 500;
     }
+    /* Glance progress on account (moved off provider) */
+    .win .nav-acct .a-trail {
+      display: flex; flex-direction: column; align-items: flex-end; gap: 3px;
+      flex-shrink: 0; min-width: 32px;
+    }
     .win .nav-acct .a-pct {
-      font-family: var(--mono); font-size: 11px; font-weight: 600;
+      font-family: var(--mono); font-size: 11px; font-weight: 650;
       font-variant-numeric: tabular-nums; color: var(--tertiary);
     }
     .win .nav-acct .a-pct.high { color: var(--status-high); }
     .win .nav-acct .a-pct.mid { color: var(--status-mid); }
     .win .nav-acct .a-pct.low { color: var(--status-low); }
-
-    /*
-      Detail account switcher — left H-scroll chips (native ProviderCardView).
-      Selected = phosphor-tint glass pill; unselected = quiet material. Not solid green.
-    */
-    .win .acct-switch {
-      display: flex; flex-wrap: wrap; gap: 6px;
-      justify-content: flex-start;
-      margin: 0 0 16px;
+    .win .nav-acct .a-meter {
+      width: 32px; height: 3px; border-radius: 99px;
+      background: var(--meter-track); overflow: hidden;
     }
-    .win .acct-chip {
-      display: inline-flex; align-items: center; gap: 6px;
-      max-width: 100%;
-      height: 28px; padding: 0 11px;
-      border-radius: 980px;
-      cursor: pointer; font: inherit; font-size: 12px; font-weight: 500;
-      color: var(--secondary);
-      background: color-mix(in srgb, var(--fill) 55%, transparent);
-      border: 0.5px solid color-mix(in srgb, var(--separator) 70%, transparent);
-      backdrop-filter: blur(16px) saturate(1.3);
-      -webkit-backdrop-filter: blur(16px) saturate(1.3);
+    .win .nav-acct .a-meter > i {
+      display: block; height: 100%; border-radius: inherit; background: var(--status-high);
     }
-    .win .acct-chip .chip-label {
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-      max-width: 200px;
-      font-family: var(--mono); font-size: 11.5px; letter-spacing: -0.2px;
-    }
-    .win .acct-chip .chip-pct {
-      font-family: var(--mono); font-size: 11px; font-weight: 650;
-      font-variant-numeric: tabular-nums; color: var(--tertiary);
-    }
-    .win .acct-chip.on {
-      color: var(--jk);
-      font-weight: 600;
-      border-color: color-mix(in srgb, var(--jk) 40%, var(--lg-hairline));
-      background: color-mix(in srgb, var(--jk) 12%, transparent);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,0.1);
-    }
-    .win .acct-chip.on .chip-pct.mid { color: var(--status-mid); }
-    .win .acct-chip.on .chip-pct.high { color: var(--status-high); }
-    .win .acct-chip.on .chip-pct.low { color: var(--status-low); }
-    .win .acct-chip:hover:not(.on) {
-      background: color-mix(in srgb, var(--label) 8%, transparent);
+    .win .nav-acct .a-meter.mid > i { background: var(--status-mid); }
+    .win .nav-acct .a-meter.low > i { background: var(--status-low); }
+    .win .nav-acct .a-meter.depleted > i {
+      background: color-mix(in srgb, var(--label) 28%, transparent);
+      width: 3% !important; min-width: 3px;
     }
 
     .win .side-foot {
@@ -788,12 +748,12 @@
     <section class="panel" id="usage">
       <h2 class="st">Usage window</h2>
       <p class="sl">
-        <strong>One surface:</strong> content fills the window; glass sidebar + chrome float <em>on top</em>.
-        <strong>Provider</strong> = full-fill nav + brand plate + mini meter.
-        <strong>Account</strong> = secondary radio well (sidebar) + left chip strip (detail) — never the same chrome.
-        Multi-account only when <code>list_accounts</code> length &gt; 1. Data = Rust
-        <code>usage_detail_presentation</code> + selected-account glance; see
-        <code>DATA_CONTRACT.md</code>.
+        <strong>One surface:</strong> content fills the window; glass chrome floats on top.
+        <strong>Provider</strong> = identity (logo + name); no glance % on the provider row.
+        <strong>Account</strong> nests under the selected provider with glance % + mini meter
+        (multi = radio switcher via <code>list_accounts</code>; single = one quiet row).
+        Detail = full <code>usage_detail_presentation</code> only — no second account chip strip.
+        See <code>DATA_CONTRACT.md</code>.
       </p>
       <div class="stage" style="padding: 20px 16px 28px;">
         <div class="win" id="usage-win">
@@ -818,35 +778,37 @@
                 </button>
 
                 <div class="lab">Providers</div>
+                <!-- Provider = identity only. Glance % lives on nested account rows. -->
                 <button type="button" class="nav-provider on" data-nav="openai" data-glance-bucket="Weekly">
                   <div class="p-ic"><span class="plogo sm openai">O</span></div>
                   <div class="p-body">
                     <div class="p-name">OpenAI</div>
-                    <div class="p-meta" data-provider-meta>alexey@chainargos.com · Weekly</div>
-                  </div>
-                  <div class="p-trail">
-                    <span class="p-pct mid" data-provider-pct>57%</span>
-                    <div class="p-meter mid" data-provider-meter><i style="width:57%"></i></div>
+                    <div class="p-meta">2 accounts · Weekly</div>
                   </div>
                 </button>
-                <!-- Multi-account only (list_accounts). Radio well ≠ provider fill. -->
                 <div class="acct-rail" data-for="openai" data-multi-account>
                   <div class="acct-rail-lab">Accounts</div>
-                  <button type="button" class="nav-acct on" data-acct="a1" data-pct="57" data-sev="mid" data-plan="Pro 20×" data-label="alexey@chainargos.com">
+                  <button type="button" class="nav-acct on" data-acct="a1" data-pct="57" data-sev="mid">
                     <span class="a-radio" aria-hidden="true"></span>
                     <div class="a-body">
                       <div class="a-name">alexey@chainargos.com</div>
-                      <div class="a-plan">Pro 20× · Weekly 57%</div>
+                      <div class="a-plan">Pro 20×</div>
                     </div>
-                    <span class="a-pct mid">57%</span>
+                    <div class="a-trail">
+                      <span class="a-pct mid">57%</span>
+                      <div class="a-meter mid"><i style="width:57%"></i></div>
+                    </div>
                   </button>
-                  <button type="button" class="nav-acct" data-acct="a2" data-pct="0" data-sev="" data-plan="Plus" data-label="alexey@zhokhov.com">
+                  <button type="button" class="nav-acct" data-acct="a2" data-pct="0" data-sev="">
                     <span class="a-radio" aria-hidden="true"></span>
                     <div class="a-body">
                       <div class="a-name">alexey@zhokhov.com</div>
-                      <div class="a-plan">Plus · Weekly 0%</div>
+                      <div class="a-plan">Plus</div>
                     </div>
-                    <span class="a-pct">0%</span>
+                    <div class="a-trail">
+                      <span class="a-pct">0%</span>
+                      <div class="a-meter depleted"><i style="width:3%"></i></div>
+                    </div>
                   </button>
                 </div>
 
@@ -854,26 +816,41 @@
                   <div class="p-ic"><span class="plogo sm anthropic">A</span></div>
                   <div class="p-body">
                     <div class="p-name">Anthropic</div>
-                    <div class="p-meta">Personal · Weekly</div>
-                  </div>
-                  <div class="p-trail">
-                    <span class="p-pct low">12%</span>
-                    <div class="p-meter low"><i style="width:12%"></i></div>
+                    <div class="p-meta">Weekly</div>
                   </div>
                 </button>
-                <!-- Single-account: no rail (list_accounts length 1 → no switcher) -->
+                <div class="acct-rail hidden" data-for="anthropic">
+                  <button type="button" class="nav-acct solo on" data-acct="p1" data-pct="12" data-sev="low">
+                    <div class="a-body">
+                      <div class="a-name">Personal</div>
+                      <div class="a-plan">Max 20×</div>
+                    </div>
+                    <div class="a-trail">
+                      <span class="a-pct low">12%</span>
+                      <div class="a-meter low"><i style="width:12%"></i></div>
+                    </div>
+                  </button>
+                </div>
 
                 <button type="button" class="nav-provider" data-nav="amp" data-glance-bucket="Daily">
                   <div class="p-ic"><span class="plogo sm amp">A</span></div>
                   <div class="p-body">
                     <div class="p-name">Amp</div>
-                    <div class="p-meta">Free · Daily</div>
-                  </div>
-                  <div class="p-trail">
-                    <span class="p-pct high">100%</span>
-                    <div class="p-meter"><i style="width:100%"></i></div>
+                    <div class="p-meta">Daily</div>
                   </div>
                 </button>
+                <div class="acct-rail hidden" data-for="amp">
+                  <button type="button" class="nav-acct solo on" data-acct="f1" data-pct="100" data-sev="high">
+                    <div class="a-body">
+                      <div class="a-name">Free</div>
+                      <div class="a-plan">Amp Free</div>
+                    </div>
+                    <div class="a-trail">
+                      <span class="a-pct high">100%</span>
+                      <div class="a-meter high"><i style="width:100%"></i></div>
+                    </div>
+                  </button>
+                </div>
               </div>
             </div>
             <div class="side-foot"><strong>Limits only</strong> · next update 4m</div>
@@ -892,8 +869,8 @@
         </div>
       </div>
       <p class="flow-caption">
-        Provider full-fill ≠ account radio well · multi-account chips in detail ·
-        selected-account Weekly/Daily drives sidebar trail + status bar · Session/Spark/Auth only in detail.
+        Provider = name only · accounts nest under selection with glance progress ·
+        multi-account radio · detail buckets only (no chip strip dupe).
       </p>
     </section>
 
@@ -1080,52 +1057,6 @@
       - Auth = credential_origin only
       - Codex bucket labels fixed order from usage/codex.rs
     */
-    const ACCOUNTS = {
-      openai: [
-        {
-          key: "a1",
-          label: "alexey@chainargos.com",
-          plan: "Pro 20×",
-          pct: 57,
-          sev: "mid",
-          statusWord: "fresh",
-          auth: "OAuth · ~/.codex/auth.json",
-          updated: "Just now",
-        },
-        {
-          key: "a2",
-          label: "alexey@zhokhov.com",
-          plan: "Plus",
-          pct: 0,
-          sev: "",
-          statusWord: "fresh",
-          auth: "OAuth · ~/.codex/auth.json",
-          updated: "4 min ago",
-        },
-      ],
-    };
-
-    function acctSwitchHtml(surface, selectedKey) {
-      const rows = ACCOUNTS[surface];
-      if (!rows || rows.length < 2) return "";
-      return (
-        `<div class="acct-switch" role="tablist" aria-label="Accounts">` +
-        rows
-          .map((a) => {
-            const on = a.key === selectedKey ? " on" : "";
-            const sev = a.sev ? ` ${a.sev}` : "";
-            return (
-              `<button type="button" class="acct-chip${on}" data-surface="${surface}" data-acct="${a.key}" role="tab" aria-selected="${a.key === selectedKey}">` +
-              `<span class="chip-label">${a.label}</span>` +
-              `<span class="chip-pct${sev}">${a.pct}%</span>` +
-              `</button>`
-            );
-          })
-          .join("") +
-        `</div>`
-      );
-    }
-
     const usageViews = {
       overview: `
         <div class="page-head">
@@ -1166,11 +1097,9 @@
             <div class="sub">alexey@chainargos.com · Pro 20×</div>
           </div>
         </div>
-        __ACCT_SWITCH__
         <div class="group">
           <div class="grow"><span class="gl">Status</span><span class="gr dim">fresh</span></div>
           <div class="grow"><span class="gl">Updated</span><span class="gr dim">Just now</span></div>
-          <div class="grow"><span class="gl">Plan</span><span class="gr">Pro 20×</span></div>
           <div class="grow"><span class="gl">Auth</span><span class="gr mono">OAuth · ~/.codex/auth.json</span></div>
         </div>
         <div class="limit-list">
@@ -1212,11 +1141,9 @@
             <div class="sub">alexey@zhokhov.com · Plus</div>
           </div>
         </div>
-        __ACCT_SWITCH__
         <div class="group">
           <div class="grow"><span class="gl">Status</span><span class="gr dim">fresh</span></div>
           <div class="grow"><span class="gl">Updated</span><span class="gr dim">4 min ago</span></div>
-          <div class="grow"><span class="gl">Plan</span><span class="gr">Plus</span></div>
           <div class="grow"><span class="gl">Auth</span><span class="gr mono">OAuth · ~/.codex/auth.json</span></div>
         </div>
         <div class="limit-list">
@@ -1259,7 +1186,6 @@
         <div class="group">
           <div class="grow"><span class="gl">Status</span><span class="gr dim">fresh</span></div>
           <div class="grow"><span class="gl">Updated</span><span class="gr dim">2 min ago</span></div>
-          <div class="grow"><span class="gl">Plan</span><span class="gr">Max 20×</span></div>
           <div class="grow"><span class="gl">Auth</span><span class="gr mono">OAuth · macOS Keychain (Claude Code-credentials)</span></div>
         </div>
         <div class="limit-list">
@@ -1320,59 +1246,8 @@
       usageScroll.style.setProperty("--fade-b", atBot ? "0px" : "22px");
     }
 
-    /** Selected-account glance drives provider trail (HostProviderGlanceRow). */
-    function syncOpenAiGlance(acctKey) {
-      const acct = (ACCOUNTS.openai || []).find((a) => a.key === acctKey) || ACCOUNTS.openai[0];
-      const provider = document.querySelector('#usage-win .nav-provider[data-nav="openai"]');
-      if (!provider || !acct) return;
-      const pctEl = provider.querySelector("[data-provider-pct]");
-      const meter = provider.querySelector("[data-provider-meter]");
-      const meta = provider.querySelector("[data-provider-meta]");
-      const fill = meter?.querySelector("i");
-      if (pctEl) {
-        pctEl.textContent = `${acct.pct}%`;
-        pctEl.classList.remove("high", "mid", "low");
-        if (acct.sev) pctEl.classList.add(acct.sev);
-      }
-      if (meter) {
-        meter.classList.remove("high", "mid", "low");
-        if (acct.sev) meter.classList.add(acct.sev);
-      }
-      if (fill) fill.style.width = `${Math.max(acct.pct, 3)}%`;
-      if (meta) meta.textContent = `${acct.label} · Weekly`;
-    }
-
-    function selectAccount(surface, acctKey, { focusProvider = true } = {}) {
-      const rail = document.querySelector(`#usage-win .acct-rail[data-for="${surface}"]`);
-      rail?.querySelectorAll(".nav-acct").forEach((b) => {
-        b.classList.toggle("on", b.dataset.acct === acctKey);
-      });
-      if (focusProvider) {
-        document.querySelectorAll("#usage-win .nav-overview, #usage-win .nav-provider").forEach((b) =>
-          b.classList.toggle("on", b.dataset.nav === surface)
-        );
-        document.querySelectorAll("#usage-win .acct-rail").forEach((n) => {
-          n.classList.toggle("hidden", n.dataset.for !== surface);
-        });
-      }
-      if (surface === "openai") syncOpenAiGlance(acctKey);
-      showUsage(surface === "openai" ? `openai:${acctKey}` : surface, acctKey);
-    }
-
-    function showUsage(key, acctKey) {
-      let html = usageViews[key] || usageViews["openai:a1"];
-      if (key.startsWith("openai:")) {
-        const k = acctKey || key.split(":")[1] || "a1";
-        html = html.replace("__ACCT_SWITCH__", acctSwitchHtml("openai", k));
-      } else {
-        html = html.replace("__ACCT_SWITCH__", "");
-      }
-      usageDetail.innerHTML = html;
-      usageDetail.querySelectorAll(".acct-chip").forEach((chip) => {
-        chip.addEventListener("click", () => {
-          selectAccount(chip.dataset.surface, chip.dataset.acct);
-        });
-      });
+    function showUsage(key) {
+      usageDetail.innerHTML = usageViews[key] || usageViews["openai:a1"];
       if (usageScroll) usageScroll.scrollTop = 0;
       requestAnimationFrame(updateUsageScrollEdge);
     }
@@ -1382,40 +1257,62 @@
       return on?.dataset.acct || null;
     }
 
+    function detailKey(nav, acct) {
+      if (nav === "openai" && acct) return `openai:${acct}`;
+      return nav;
+    }
+
+    function focusProvider(nav, { keepAcct = true } = {}) {
+      document.querySelectorAll("#usage-win .nav-overview, #usage-win .nav-provider").forEach((b) =>
+        b.classList.toggle("on", b.dataset.nav === nav)
+      );
+      document.querySelectorAll("#usage-win .acct-rail").forEach((n) => {
+        n.classList.toggle("hidden", n.dataset.for !== nav);
+      });
+      if (nav === "overview") {
+        showUsage("overview");
+        return;
+      }
+      let acct = keepAcct ? selectedAcct(nav) : null;
+      if (!acct) {
+        const first = document.querySelector(`#usage-win .acct-rail[data-for="${nav}"] .nav-acct`);
+        acct = first?.dataset.acct || null;
+        if (first) {
+          document
+            .querySelectorAll(`#usage-win .acct-rail[data-for="${nav}"] .nav-acct`)
+            .forEach((a, i) => a.classList.toggle("on", i === 0));
+        }
+      }
+      showUsage(detailKey(nav, acct));
+    }
+
     document.querySelectorAll("#usage-win [data-nav]").forEach((btn) => {
       btn.addEventListener("click", () => {
-        const nav = btn.dataset.nav;
-        document.querySelectorAll("#usage-win .nav-overview, #usage-win .nav-provider").forEach((b) =>
-          b.classList.toggle("on", b === btn)
-        );
-        document.querySelectorAll("#usage-win .acct-rail").forEach((n) => {
-          n.classList.toggle("hidden", n.dataset.for !== nav);
-        });
-        if (nav === "overview") {
-          showUsage("overview");
-          return;
-        }
-        const acct = selectedAcct(nav) || (ACCOUNTS[nav] && ACCOUNTS[nav][0].key);
-        if (nav === "openai" && acct) {
-          selectAccount("openai", acct, { focusProvider: false });
-        } else {
-          showUsage(nav);
-        }
+        focusProvider(btn.dataset.nav);
       });
     });
     document.querySelectorAll("#usage-win .nav-acct").forEach((btn) => {
       btn.addEventListener("click", (e) => {
         e.stopPropagation();
+        if (btn.classList.contains("solo")) return; // single-account: not a switcher
         const rail = btn.closest(".acct-rail");
         const forId = rail?.dataset.for;
-        if (forId && btn.dataset.acct) selectAccount(forId, btn.dataset.acct);
+        if (!forId || !btn.dataset.acct) return;
+        rail.querySelectorAll(".nav-acct").forEach((b) => b.classList.toggle("on", b === btn));
+        document.querySelectorAll("#usage-win .nav-overview, #usage-win .nav-provider").forEach((b) =>
+          b.classList.toggle("on", b.dataset.nav === forId)
+        );
+        document.querySelectorAll("#usage-win .acct-rail").forEach((n) => {
+          n.classList.toggle("hidden", n.dataset.for !== forId);
+        });
+        showUsage(detailKey(forId, btn.dataset.acct));
       });
     });
     if (usageScroll) {
       usageScroll.addEventListener("scroll", updateUsageScrollEdge, { passive: true });
       window.addEventListener("resize", updateUsageScrollEdge);
     }
-    selectAccount("openai", "a1");
+    focusProvider("openai");
   </script>
 </body>
 </html>

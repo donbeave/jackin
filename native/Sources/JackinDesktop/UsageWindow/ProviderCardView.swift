@@ -6,24 +6,20 @@ import SwiftUI
 
 /// Provider detail — **content layer only** (LG-A2: no Liquid Glass on data).
 ///
-/// Renders Rust ``UsageDetailPresentation`` rows mechanically. Account switcher
-/// is a **secondary** system (left H-scroll chips + radio semantics — FB1-48):
-/// never the same full-fill chrome as sidebar provider rows.
+/// Renders Rust ``UsageDetailPresentation`` rows mechanically.
+/// Account switching lives in the **sidebar nest** under the selected provider
+/// (FB1-48) — no duplicate chip strip here.
 struct ProviderCardView: View {
     let content: UsageWindowModel.Content
-    var onSelectAccount: ((String) -> Void)?
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
-                // Multi-account only (`list_accounts` length > 1). Single account → no switcher.
-                if content.accounts.count > 1 {
-                    accountSwitcher
-                }
-
                 // Group metadata then buckets for scan hierarchy (VS-11).
-                let meta = content.detail.rows.filter { $0.kind != .bucket }
-                let buckets = content.detail.rows.filter { $0.kind == .bucket }
+                // Skip rows already shown in page chrome / sidebar (header, account, plan).
+                let meta = content.detail.rows.filter { row in
+                    row.kind != .bucket && !Self.sidebarDuplicatedMetaIds.contains(row.rowId)
+                }
 
                 if !meta.isEmpty {
                     VStack(alignment: .leading, spacing: 0) {
@@ -42,7 +38,7 @@ struct ProviderCardView: View {
                     }
                 }
 
-                ForEach(buckets) { row in
+                ForEach(content.detail.rows.filter { $0.kind == .bucket }) { row in
                     bucketCard(row)
                 }
             }
@@ -52,6 +48,11 @@ struct ProviderCardView: View {
         .modifier(GlassFallbacks.SoftScrollEdges())
         .accessibilityElement(children: .contain)
     }
+
+    /// Meta already carried by sidebar account nest + detail identity; omit to de-dupe.
+    private static let sidebarDuplicatedMetaIds: Set<String> = [
+        "focused", "header", "provider", "account", "username", "plan",
+    ]
 
     private func metadataRow(_ row: UsageDetailRow) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 8) {
@@ -127,71 +128,5 @@ struct ProviderCardView: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: line.leading == nil ? .trailing : .leading)
-    }
-
-    /// Left-aligned secondary chips — phosphor *tint* when selected, never solid green slab.
-    /// Shows Rust `accountLabel` + optional glance `remainingPercent` (same as list_accounts).
-    private var accountSwitcher: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-                ForEach(content.accounts) { account in
-                    Button {
-                        onSelectAccount?(account.accountKey)
-                    } label: {
-                        HStack(spacing: 6) {
-                            Text(account.accountLabel)
-                                .font(.caption.monospaced().weight(account.selected ? .semibold : .medium))
-                                .lineLimit(1)
-                            if let pct = account.remainingPercent {
-                                // Render Rust remainingPercent only — no severity invention in Swift.
-                                Text("\(pct)%")
-                                    .font(.caption2.monospacedDigit().weight(.semibold))
-                                    .foregroundStyle(account.selected ? Color.accentColor : .secondary)
-                            }
-                        }
-                        .padding(.horizontal, 11)
-                        .padding(.vertical, 7)
-                        .background {
-                            Capsule(style: .continuous)
-                                .fill(
-                                    account.selected
-                                        ? Color.accentColor.opacity(0.14)
-                                        : Color.primary.opacity(0.06)
-                                )
-                                .overlay {
-                                    Capsule(style: .continuous)
-                                        .strokeBorder(
-                                            account.selected
-                                                ? Color.accentColor.opacity(0.42)
-                                                : Color.primary.opacity(0.12),
-                                            lineWidth: 0.5
-                                        )
-                                }
-                        }
-                        .foregroundStyle(account.selected ? Color.accentColor : Color.primary.opacity(0.85))
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(
-                        accountAccessibilityLabel(account)
-                    )
-                    .accessibilityAddTraits(account.selected ? .isSelected : [])
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-        }
-    }
-
-    private func accountAccessibilityLabel(_ account: PresentationStore.AccountRow) -> String {
-        var parts = [account.accountLabel]
-        if let plan = account.planLabel, !plan.isEmpty {
-            parts.append(plan)
-        }
-        if let pct = account.remainingPercent {
-            parts.append("\(pct) percent remaining")
-        }
-        if account.selected {
-            parts.append("selected")
-        }
-        return parts.joined(separator: ", ")
     }
 }

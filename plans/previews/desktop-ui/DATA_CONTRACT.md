@@ -32,12 +32,14 @@ not re-derive %.
 
 | Role | Chrome | When shown |
 |---|---|---|
-| **Provider** (primary) | Full-fill selection, brand plate, mini meter + % | Always in sidebar for each enabled surface |
-| **Account** (secondary) | Soft inset **radio well** (sidebar nest) + left **chip strip** (detail) | Only when `list_accounts` length **> 1** |
-| Single account | No switcher, no rail | Subtitle/meta carries the one `account_label` |
+| **Provider** (primary) | Full-fill selection + brand plate + **name only** | Always in sidebar; multi-account caption e.g. `2 accounts` |
+| **Account** (secondary) | Soft inset nest **under selected provider**; glance **% + mini meter** here | Always when that provider is selected (`list_accounts` or glance fallback) |
+| Multi-account | Radio switcher in nest | `list_accounts` length **> 1** |
+| Single account | One quiet row (no radio) under provider | Still shows glance progress on the account row |
 
-**Do not** reuse provider full-fill / brand-plate / mini-meter chrome for accounts.  
-**Do not** use solid phosphor slab chips for selected accounts (phosphor **tint** + radio only).
+**Do not** put glance % / mini meter on the provider row (anti-dupe).  
+**Do not** add a second account chip strip in detail content (sidebar nest is the switcher).  
+**Do not** restate plan/account in detail metadata when already in page subtitle + sidebar.
 
 ## Usage window (detail)
 

@@ -37,10 +37,29 @@ struct UsageWindowRoot: View {
 
                 Section("Providers") {
                     ForEach(model.sidebar) { row in
+                        // Provider = identity only (no glance % — lives on account rows).
                         providerSidebarRow(row)
                             .tag(row.surfaceId)
                             .listRowInsets(EdgeInsets(top: 4, leading: 8, bottom: 4, trailing: 8))
-                            .accessibilityLabel("\(row.displayLabel) \(row.headline)")
+                            .accessibilityLabel(providerAccessibilityLabel(row))
+
+                        // Nest accounts under the selected provider only.
+                        if store.usageSelection == row.surfaceId {
+                            let accts = store.accountsForSurface(row.surfaceId)
+                            if !accts.isEmpty {
+                                ForEach(accts) { account in
+                                    accountSidebarRow(
+                                        account,
+                                        multi: accts.count > 1
+                                    )
+                                    .listRowInsets(EdgeInsets(top: 2, leading: 22, bottom: 2, trailing: 8))
+                                }
+                            } else if !row.accountLabel.isEmpty {
+                                // Glance-only identity when list_accounts empty but glance has label.
+                                accountFallbackRow(row)
+                                    .listRowInsets(EdgeInsets(top: 2, leading: 22, bottom: 2, trailing: 8))
+                            }
+                        }
                     }
                 }
             }
@@ -61,15 +80,7 @@ struct UsageWindowRoot: View {
             // LG-A2 content layer under floating glass nav (LG-A6).
             Group {
                 if let content = model.content {
-                    ProviderCardView(
-                        content: content,
-                        onSelectAccount: { key in
-                            store.setSelectedAccount(
-                                surfaceId: content.surfaceId,
-                                accountKey: key
-                            )
-                        }
-                    )
+                    ProviderCardView(content: content)
                 } else {
                     OverviewListView(model: model) { surfaceId in
                         store.selectUsageSurface(surfaceId)
@@ -105,29 +116,111 @@ struct UsageWindowRoot: View {
         .frame(minWidth: 760, minHeight: 500)
     }
 
-    /// Provider nav only — full-row selection (no one-sided “AI” accent bars).
+    /// Provider nav — logo/name only. Multi-account count in caption; no glance progress.
     @ViewBuilder
     private func providerSidebarRow(_ row: PresentationStore.GlanceProviderRow) -> some View {
-        HStack(spacing: 10) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(row.displayLabel)
-                    .font(.body.weight(.semibold))
-                    .lineLimit(1)
-                if !row.accountLabel.isEmpty {
-                    Text(row.accountLabel)
-                        .font(.caption)
+        let accts = store.accountsForSurface(row.surfaceId)
+        VStack(alignment: .leading, spacing: 2) {
+            Text(row.displayLabel)
+                .font(.body.weight(.semibold))
+                .lineLimit(1)
+            if accts.count > 1 {
+                Text("\(accts.count) accounts")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+            }
+        }
+        .padding(.vertical, 3)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    /// Account row under selected provider — glance % from `list_accounts` / remainingPercent.
+    @ViewBuilder
+    private func accountSidebarRow(
+        _ account: PresentationStore.AccountRow,
+        multi: Bool
+    ) -> some View {
+        Button {
+            if multi {
+                store.setSelectedAccount(surfaceId: account.surfaceId, accountKey: account.accountKey)
+            }
+        } label: {
+            HStack(spacing: 8) {
+                if multi {
+                    Image(systemName: account.selected ? "circle.inset.filled" : "circle")
+                        .font(.caption2)
+                        .foregroundStyle(account.selected ? Color.accentColor : .secondary)
+                        .frame(width: 12)
+                }
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(account.accountLabel)
+                        .font(.caption.monospaced().weight(account.selected || !multi ? .semibold : .medium))
+                        .lineLimit(1)
+                        .foregroundStyle(account.selected || !multi ? .primary : .secondary)
+                    if let plan = account.planLabel, !plan.isEmpty {
+                        Text(plan)
+                            .font(.caption2)
+                            .foregroundStyle(.tertiary)
+                            .lineLimit(1)
+                    }
+                }
+                Spacer(minLength: 4)
+                if let pct = account.remainingPercent {
+                    Text("\(pct)%")
+                        .font(.caption.monospacedDigit().weight(.semibold))
                         .foregroundStyle(.secondary)
+                }
+            }
+            .padding(.vertical, 2)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .disabled(!multi)
+        .accessibilityLabel(accountSidebarAccessibility(account, multi: multi))
+        .accessibilityAddTraits(account.selected || !multi ? .isSelected : [])
+    }
+
+    @ViewBuilder
+    private func accountFallbackRow(_ row: PresentationStore.GlanceProviderRow) -> some View {
+        HStack(spacing: 8) {
+            VStack(alignment: .leading, spacing: 1) {
+                Text(row.accountLabel)
+                    .font(.caption.monospaced().weight(.semibold))
+                    .lineLimit(1)
+                if let plan = row.planLabel, !plan.isEmpty {
+                    Text(plan)
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
                         .lineLimit(1)
                 }
             }
             Spacer(minLength: 4)
             if !row.barLabel.isEmpty {
                 Text(row.barLabel)
-                    .font(.caption.weight(.semibold).monospacedDigit())
-                    .foregroundStyle(severityTint(row.severity))
+                    .font(.caption.monospacedDigit().weight(.semibold))
+                    .foregroundStyle(.secondary)
             }
         }
-        .padding(.vertical, 3)
+        .padding(.vertical, 2)
+    }
+
+    private func providerAccessibilityLabel(_ row: PresentationStore.GlanceProviderRow) -> String {
+        let accts = store.accountsForSurface(row.surfaceId)
+        if accts.count > 1 {
+            return "\(row.displayLabel), \(accts.count) accounts"
+        }
+        return row.displayLabel
+    }
+
+    private func accountSidebarAccessibility(
+        _ account: PresentationStore.AccountRow,
+        multi: Bool
+    ) -> String {
+        var parts = [account.accountLabel]
+        if let plan = account.planLabel, !plan.isEmpty { parts.append(plan) }
+        if let pct = account.remainingPercent { parts.append("\(pct) percent remaining") }
+        if multi, account.selected { parts.append("selected") }
+        return parts.joined(separator: ", ")
     }
 
     private var selectionBinding: Binding<String?> {
