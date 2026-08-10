@@ -79,7 +79,8 @@ public enum OverviewInventory: Sendable {
                             remainingPercent: pct ?? (account.selected ? glance?.glanceRemainingPercent : nil),
                             barLabel: bar,
                             resetLabel: account.selected ? glance?.resetLabel : nil,
-                            severity: glance?.severity ?? "normal"
+                            // Per-account nest severity (HTML a-meter mid/low/high), not provider glance only.
+                            severity: account.meterSeverity
                         )
                     )
                 }

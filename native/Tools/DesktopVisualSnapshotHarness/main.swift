@@ -549,7 +549,8 @@ private struct QIFixture {
                 planLabel: "Pro 20×",
                 selected: true,
                 remainingPercent: 57,
-                statusWord: "fresh"
+                statusWord: "fresh",
+                severity: "warn" // HTML a-meter mid / --status-mid
             ),
             PresentationStore.AccountRow(
                 surfaceId: "codex",
@@ -558,7 +559,8 @@ private struct QIFixture {
                 planLabel: "Plus",
                 selected: false,
                 remainingPercent: 0,
-                statusWord: "fresh"
+                statusWord: "fresh",
+                severity: "normal" // depleted empty track
             ),
         ]
         let anthropicAccount = PresentationStore.AccountRow(
@@ -568,7 +570,8 @@ private struct QIFixture {
             planLabel: "Max 20×",
             selected: true,
             remainingPercent: 12,
-            statusWord: "fresh"
+            statusWord: "fresh",
+            severity: "danger" // HTML a-meter low
         )
         let ampAccount = PresentationStore.AccountRow(
             surfaceId: "amp",
@@ -577,7 +580,8 @@ private struct QIFixture {
             planLabel: nil,
             selected: true,
             remainingPercent: 100,
-            statusWord: "fresh"
+            statusWord: "fresh",
+            severity: "normal" // HTML a-meter high / phosphor
         )
         let openaiGlance = PresentationStore.GlanceProviderRow(
             surfaceId: "codex",

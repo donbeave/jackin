@@ -78,12 +78,16 @@ public struct UsageAccountNestView: View {
                 }
                 Spacer(minLength: 4)
                 if let pct = account.remainingPercent {
+                    let sev = account.meterSeverity
                     VStack(alignment: .trailing, spacing: 3) {
                         // Rust UInt8 remaining only — format without banned helpers.
+                        // Color = HTML a-pct mid|low|high via severityTint.
                         Text(verbatim: String(pct) + "%")
                             .font(.caption.monospacedDigit().weight(.semibold))
-                            .foregroundStyle(.secondary)
-                        UsageAccountMiniMeter(percent: pct)
+                            .foregroundStyle(
+                                pct == 0 ? Color.secondary : severityTint(sev)
+                            )
+                        UsageAccountMiniMeter(percent: pct, severity: sev)
                     }
                 }
             }
@@ -110,13 +114,15 @@ public struct UsageAccountNestView: View {
     }
 }
 
-/// Fixed-width remaining bar — geometry only from Rust percent.
-/// Healthy fill = phosphor (`--status-high`); empty track at 0% (no minimum sliver).
+/// Fixed-width remaining bar — geometry from Rust percent; fill from severity
+/// (HTML `.a-meter.mid|low|high` / depleted empty track at 0%).
 public struct UsageAccountMiniMeter: View {
     public let percent: UInt8
+    public let severity: String
 
-    public init(percent: UInt8) {
+    public init(percent: UInt8, severity: String = "normal") {
         self.percent = percent
+        self.severity = severity
     }
 
     public var body: some View {
@@ -125,7 +131,7 @@ public struct UsageAccountMiniMeter: View {
                 Capsule().fill(Color.primary.opacity(0.12))
                 if percent > 0 {
                     Capsule()
-                        .fill(Color.jackinPhosphor.opacity(0.85))
+                        .fill(severityTint(severity).opacity(0.90))
                         .frame(width: geo.size.width * CGFloat(percent) / 100.0)
                 }
             }

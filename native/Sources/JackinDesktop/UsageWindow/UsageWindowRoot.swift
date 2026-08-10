@@ -249,13 +249,16 @@ public struct UsageWindowRoot: View {
                 }
                 Spacer(minLength: 4)
                 // Glance progress on account (HTML SoT): % + mini meter; 0% empty.
+                // Color = HTML a-pct / a-meter mid|low|high (severityTint).
                 if let pct = account.remainingPercent {
+                    let sev = account.meterSeverity
                     VStack(alignment: .trailing, spacing: 3) {
-                        // Rust UInt8 remaining only — format without banned helpers.
                         Text(verbatim: String(pct) + "%")
                             .font(.caption.monospacedDigit().weight(.semibold))
-                            .foregroundStyle(.secondary)
-                        UsageAccountMiniMeter(percent: pct)
+                            .foregroundStyle(
+                                pct == 0 ? Color.secondary : severityTint(sev)
+                            )
+                        UsageAccountMiniMeter(percent: pct, severity: sev)
                     }
                 }
             }
@@ -284,11 +287,17 @@ public struct UsageWindowRoot: View {
             }
             Spacer(minLength: 4)
             if let pct = row.glanceRemainingPercent {
+                let sev = accountMeterSeverity(
+                    severity: row.severity,
+                    remainingPercent: pct
+                )
                 VStack(alignment: .trailing, spacing: 3) {
                     Text(row.barLabel.isEmpty ? String(pct) + "%" : row.barLabel)
                         .font(.caption.monospacedDigit().weight(.semibold))
-                        .foregroundStyle(.secondary)
-                    UsageAccountMiniMeter(percent: pct)
+                        .foregroundStyle(
+                            pct == 0 ? Color.secondary : severityTint(sev)
+                        )
+                    UsageAccountMiniMeter(percent: pct, severity: sev)
                 }
             } else if !row.barLabel.isEmpty {
                 Text(row.barLabel)

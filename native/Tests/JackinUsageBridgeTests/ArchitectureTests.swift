@@ -180,6 +180,24 @@ final class ArchitectureTests: XCTestCase {
         XCTAssertEqual(JackinBrand.phosphorLightSRGB.b, 0x4E / 255.0, accuracy: 0.0001)
     }
 
+    func testRemainingPercentMeterSeverityMatchesHTMLNestBands() {
+        // index.html nest fixture: 100 high, 57 mid, 12 low, 0 depleted.
+        XCTAssertEqual(remainingPercentMeterSeverity(100), "normal")
+        XCTAssertEqual(remainingPercentMeterSeverity(61), "normal")
+        XCTAssertEqual(remainingPercentMeterSeverity(60), "warn")
+        XCTAssertEqual(remainingPercentMeterSeverity(57), "warn")
+        XCTAssertEqual(remainingPercentMeterSeverity(21), "warn")
+        XCTAssertEqual(remainingPercentMeterSeverity(20), "danger")
+        XCTAssertEqual(remainingPercentMeterSeverity(12), "danger")
+        XCTAssertEqual(remainingPercentMeterSeverity(0), "normal")
+        XCTAssertEqual(accountMeterSeverity(severity: "mid", remainingPercent: 57), "warn")
+        XCTAssertEqual(accountMeterSeverity(severity: "low", remainingPercent: 12), "danger")
+        XCTAssertEqual(accountMeterSeverity(severity: "high", remainingPercent: 100), "normal")
+        XCTAssertEqual(accountMeterSeverity(severity: nil, remainingPercent: 57), "warn")
+        XCTAssertEqual(severityTint("warn"), Color.orange)
+        XCTAssertEqual(severityTint("danger"), Color.red)
+    }
+
     func testStatusItemChipHelpers() {
         let drive = drivingBucketForStatusItem(
             remainingAndSeverity: [

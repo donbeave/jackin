@@ -204,6 +204,9 @@ public final class PresentationStore: ObservableObject {
         public let selected: Bool
         public let remainingPercent: UInt8?
         public let statusWord: String
+        /// Optional presentation severity (`normal`/`warn`/`danger` or HTML mid/low/high).
+        /// Empty → derived from remaining via ``accountMeterSeverity``.
+        public let severity: String
 
         public init(
             surfaceId: String,
@@ -212,7 +215,8 @@ public final class PresentationStore: ObservableObject {
             planLabel: String?,
             selected: Bool,
             remainingPercent: UInt8?,
-            statusWord: String
+            statusWord: String,
+            severity: String = ""
         ) {
             self.surfaceId = surfaceId
             self.accountKey = accountKey
@@ -221,6 +225,12 @@ public final class PresentationStore: ObservableObject {
             self.selected = selected
             self.remainingPercent = remainingPercent
             self.statusWord = statusWord
+            self.severity = severity
+        }
+
+        /// Resolved meter severity for nest/overview (explicit or remaining band).
+        public var meterSeverity: String {
+            accountMeterSeverity(severity: severity, remainingPercent: remainingPercent)
         }
     }
 
@@ -804,7 +814,9 @@ public final class PresentationStore: ObservableObject {
                 planLabel: row.planLabel,
                 selected: row.selected,
                 remainingPercent: row.remainingPercent,
-                statusWord: row.statusWord
+                statusWord: row.statusWord,
+                // Account DTO has no severity yet — band from Rust remaining %.
+                severity: row.remainingPercent.map { remainingPercentMeterSeverity($0) } ?? "normal"
             )
         }
         // Rust owns detection, ordering, and every string — project verbatim.

@@ -6,13 +6,45 @@ import SwiftUI
 /// Pure mapping: Rust severity string → tint (no arithmetic, no probes).
 ///
 /// Healthy/default → product phosphor (HTML `--status-high` / LG-A9), never system
-/// `Color.accentColor` (host blue). Warn/danger stay system orange/red.
+/// `Color.accentColor` (host blue). Warn/danger stay system orange/red
+/// (HTML `--status-mid` / `--status-low`).
 public func severityTint(_ severity: String) -> Color {
     switch severity {
     case "danger": return .red
     case "warn": return .orange
     default: return .jackinPhosphor
     }
+}
+
+/// HTML nest/overview `a-meter` band from Rust remaining % when account DTO
+/// has no severity field (`high` / `mid` / `low` / depleted).
+///
+/// Bands match DATA_CONTRACT fixture + index.html: 100→high, 57→mid, 12→low,
+/// 0→depleted (empty track). Maps to Rust severity keys for ``severityTint``.
+/// Geometry only — does not invent a remaining percent.
+public func remainingPercentMeterSeverity(_ remaining: UInt8) -> String {
+    if remaining == 0 { return "normal" } // depleted: no fill; color unused
+    if remaining <= 20 { return "danger" } // HTML `low`
+    if remaining <= 60 { return "warn" } // HTML `mid`
+    return "normal" // HTML `high`
+}
+
+/// Resolve account meter severity: explicit Rust/fixture key, else remaining band.
+public func accountMeterSeverity(severity: String?, remainingPercent: UInt8?) -> String {
+    if let raw = severity?.trimmingCharacters(in: .whitespacesAndNewlines), !raw.isEmpty {
+        switch raw {
+        case "danger", "warn", "normal", "ok", "high", "mid", "low":
+            // HTML a-meter class aliases → severityTint keys.
+            if raw == "high" || raw == "ok" { return "normal" }
+            if raw == "mid" { return "warn" }
+            if raw == "low" { return "danger" }
+            return raw
+        default:
+            break
+        }
+    }
+    guard let remaining = remainingPercent else { return "normal" }
+    return remainingPercentMeterSeverity(remaining)
 }
 
 /// Pure mapping: Rust status → optional SF Symbol badge name.

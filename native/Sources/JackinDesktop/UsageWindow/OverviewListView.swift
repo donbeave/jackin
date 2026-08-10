@@ -58,7 +58,11 @@ public struct OverviewListView: View {
                 Spacer(minLength: 8)
                 Text(row.barLabel)
                     .font(.title3.weight(.semibold).monospacedDigit())
-                    .foregroundStyle(severityTint(row.severity))
+                    .foregroundStyle(
+                        (row.remainingPercent == 0)
+                            ? Color.secondary
+                            : severityTint(row.severity)
+                    )
             }
 
             if let plan = row.planLabel, !plan.isEmpty {

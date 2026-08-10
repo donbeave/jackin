@@ -10,6 +10,7 @@
 | Gap | Resolution |
 |-----|------------|
 | Healthy severity / CTAs system blue | **Phosphor** `#5CF07A` dark / `#0B774E` light via `JackinBrand` / `Color.jackinPhosphor`; `severityTint` default no longer `Color.accentColor` |
+| Nest 57% always phosphor (greenwash) | `UsageAccountMiniMeter` + a-pct use `account.meterSeverity` / `severityTint`; 57% → **warn orange** (HTML mid); 0% empty; unit `testRemainingPercentMeterSeverityMatchesHTMLNestBands` |
 | Brand mark / chevron / selection / Open Usage | All map to phosphor (LG-A9 / VS-13 / FB1-43) |
 | Footer CTA | **Open Usage Window** glass dock + phosphor hairline (FB1-43); ⌘R refresh invisible host (OV-9) |
 | Brand plate chroma | Per-provider decorative plate fills (HTML plogo family) |
@@ -24,7 +25,7 @@
 | popover-openai | yes | yes | none | phosphor brand/CTA/meters; warn orange when fixture | **Pass** |
 | popover-anthropic | yes | yes | none | same phosphor system | **Pass** |
 | usage-overview | yes | yes | none | red/orange/green severity Tint map | **Pass** |
-| usage-provider-nest | yes | yes | none | nest 0% empty / 57% phosphor mini | **Pass** |
+| usage-provider-nest | yes | yes | none | nest 0% empty / **57% mid orange** mini + a-pct | **Pass** |
 | usage-detail-openai | yes | yes | none | healthy green · warn orange meters | **Pass** |
 | usage-toolbar | yes | yes | none | system traffic + Refresh only | **Pass** |
 
