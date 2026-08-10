@@ -1,6 +1,6 @@
 # Final goal parity matrix — UI_PARITY_MASTER §6
 
-**Tip:** plan/desktop-visual @ 144ec22e  
+**Tip:** plan/desktop-visual @ 10ea5329  
 **Oracle:** index.html + popover.html Dark+Light  
 
 ## High residual craft (product)
