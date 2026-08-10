@@ -1,9 +1,9 @@
-# Parity matrix tip 5d0c7e0b (scratch e173e96d5752)
+# Parity matrix tip 8cb05e7f (scratch f68e9ce22532)
 
 ## C1 status/popover/menu
 | Item | Status | Evidence |
 |------|--------|----------|
-| Dual-stack mono | Pass | status-desktop non-blank |
+| Dual-stack mono | Pass | status-desktop non-blank dual-image |
 | Full G-P1 + Session fill+track | Pass | popover CAPSULE_OK openai/anthropic |
 | Left-click focus | Pass | SoT StatusPopoverFocus |
 | Right-click 3 rows | Pass | SoT; live BLOCKED |
