@@ -1,7 +1,7 @@
 # VISUAL_QA_LOG — jackin❯ desktop HTML SoT parity
 
 **Date:** 2026-08-10  
-**Tip:** `3ce6eadf`  
+**Tip:** `7df4d841`  
 **Branch:** plan/desktop-visual  
 **Authority:** UI_PARITY_MASTER §6 + QI_VERIFICATION L1–L4  
 **Artifacts:** `advisor-plans/qi-artifacts/`
@@ -10,12 +10,13 @@
 
 ```
 check_usage_liquid_glass.py PASS
-check_qi_evidence_ledger.py PASS — 15 pass / 2 blocked
+check_qi_evidence_ledger.py PASS — 17 pass / 2 blocked
 DesktopArchitectureLint ALL PASS
 DesktopSoTParityHarness ALL PASS (18/18)
 DesktopParityMatrixHarness ALL PASS
 StatusItemChipHarness ALL PASS
 ProviderMarksHarness ALL PASS (7/7 maxA)
+DesktopVisualSnapshotHarness recapture OK (PNG hashes == tip; no pixel drift)
 ```
 
 Log: `qi-artifacts/native/desktop-gates.log`
@@ -47,6 +48,15 @@ Log: `qi-artifacts/native/desktop-gates.log`
 ## Multimodal deltas
 
 All craft scenes under `deltas/2026-08-10-*.md` → **Verdict: Pass**
+
+Dual-image re-verify (tip `7df4d841`):
+
+- **status-desktop** D/L: dual-stack countdown+% ; template mono; no glass chips; 12/57/100 fixture
+- **popover-openai** D/L: brand · Overview|Providers · strip · multi-limit heroes · Open Usage Window; 63/57/88/100
+- **popover-overview**: inventory per account; OV-5 calendar under OpenAI 57%; Amp 100% full
+- **usage-nest**: 57% orange mid-fill; 0% empty track; radio multi
+- **usage-detail**: mechanical Session/Weekly/Spark/LRC; Open usage page CTA
+- **usage-window full**: sidebar whiteout still **BLOCKED** (component snaps Pass)
 
 ## Residual (not High craft fails)
 

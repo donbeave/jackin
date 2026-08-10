@@ -1,17 +1,15 @@
-# Desktop visual evidence manifest
-
-## Status
-- Fixture: `status-desktop-dark/light.png` (StatusItemRendering)
-- Live NSStatusItem: **BLOCKED** — `status-live-nsstatusitem.BLOCKED.txt`
-
-## Popover
-- Overview: `popover-overview-*.png`
-- Providers: `popover-openai-*.png`, `popover-anthropic-*.png`, `popover-amp-*.png`
-
-## Usage
-- Structural bar: nest / detail / overview list / toolbar component snaps
-- Full-window `usage-window-*.png`: host wiring only; glass sidebar residual **BLOCKED**
-  — `usage-window-sidebar.BLOCKED.txt`
-
-## Gates
-`desktop-gates.log` — SB-18 + SB-13 + host + Swift + harnesses ALL PASS
+# DesktopVisualSnapshotHarness manifest
+out: ../advisor-plans/qi-artifacts/native
+popover: PopoverRoot (TabGrid + ProviderTab + Footer) via PresentationStore.applyQIFixture
+status: StatusItemRendering.icon + StatusItemRendering.title (AppKit bitmap)
+status_live_nsstatusitem: prefer live screencapture when JackinDesktop is running (see VISUAL_QA_LOG)
+usage_window: UsageWindowController CGWindow full (sidebar nest + detail) — not blank NSHostingView split
+usage_detail: ProviderCardView (+ window detail column)
+usage_overview: OverviewListView (+ window overview)
+usage_nest: UsageAccountNestView (+ window sidebar when CGWindow OK)
+usage_window_openai_dark: OK
+usage_window_overview_dark: OK
+usage_window_openai_light: OK
+usage_window_overview_light: OK
+usage_toolbar_dark: UsageWindowController titlebar crop
+usage_toolbar_light: UsageWindowController titlebar crop

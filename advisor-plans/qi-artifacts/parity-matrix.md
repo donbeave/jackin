@@ -1,8 +1,9 @@
 # Final goal parity matrix — UI_PARITY_MASTER §6
 
-**Tip:** plan/desktop-visual @ ac389c68+ (fresh recapture)  
+**Tip:** plan/desktop-visual @ 7df4d841  
 **Oracle:** index.html + popover.html Dark+Light  
 **Capture:** DesktopVisualSnapshotHarness + HTML baselines  
+**Re-verify:** 2026-08-10 — L1/L2 green; recapture stable (no pixel drift)
 
 ## High residual craft
 **None.**

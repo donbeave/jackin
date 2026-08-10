@@ -4,6 +4,7 @@
 
 version = 1
 updated = "2026-08-10"
+# re-verify tip 7df4d841: gates green, recapture stable
 oracle_html_dir = "advisor-plans/qi-artifacts/html"
 native_dir = "advisor-plans/qi-artifacts/native"
 deltas_dir = "advisor-plans/qi-artifacts/deltas"

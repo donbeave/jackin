@@ -1,6 +1,6 @@
 # QI delta: popover-anthropic · dark + light
 
-**Date:** 2026-08-10 · **Tip:** post StatusItemChip SB-3/17/19 align · harness recapture
+**Date:** 2026-08-10 · **Tip:** `7df4d841` · harness recapture stable
 
 ## Oracle
 - HTML: `qi-artifacts/html/popover-anthropic-*.png` (or nearest SoT scene)
