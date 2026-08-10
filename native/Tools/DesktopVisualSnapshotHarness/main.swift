@@ -69,6 +69,7 @@ struct DesktopVisualSnapshotHarness {
         )
 
         let storeOverview = makeStore(fixture: fixture, popover: nil, usage: nil)
+        let storeDetailCodex = makeStore(fixture: fixture, popover: "codex", usage: "codex")
         let overviewModel = UsageWindowModel(
             glanceRows: storeOverview.providerGlanceRows,
             surfaces: storeOverview.surfaces,
@@ -94,6 +95,22 @@ struct DesktopVisualSnapshotHarness {
             .background(Color(nsColor: .windowBackgroundColor)),
             size: NSSize(width: 304, height: 244),
             path: "\(out)/usage-provider-nest-dark.png",
+            appearance: .darkAqua
+        )
+
+        // Full Usage shell — shipped UsageWindowRoot (sidebar nest + detail/overview).
+        render(
+            UsageWindowRoot(store: storeDetailCodex)
+                .frame(width: 920, height: 620),
+            size: NSSize(width: 920, height: 620),
+            path: "\(out)/usage-window-openai-dark.png",
+            appearance: .darkAqua
+        )
+        render(
+            UsageWindowRoot(store: storeOverview)
+                .frame(width: 920, height: 620),
+            size: NSSize(width: 920, height: 620),
+            path: "\(out)/usage-window-overview-dark.png",
             appearance: .darkAqua
         )
 
@@ -166,6 +183,22 @@ struct DesktopVisualSnapshotHarness {
             path: "\(out)/usage-provider-nest-light.png",
             appearance: .aqua
         )
+        render(
+            UsageWindowRoot(store: storeDetailCodex)
+                .frame(width: 920, height: 620)
+                .environment(\.colorScheme, .light),
+            size: NSSize(width: 920, height: 620),
+            path: "\(out)/usage-window-openai-light.png",
+            appearance: .aqua
+        )
+        render(
+            UsageWindowRoot(store: storeOverview)
+                .frame(width: 920, height: 620)
+                .environment(\.colorScheme, .light),
+            size: NSSize(width: 920, height: 620),
+            path: "\(out)/usage-window-overview-light.png",
+            appearance: .aqua
+        )
         captureStatusItemRendering(
             fixture: fixture,
             path: "\(out)/status-desktop-light.png",
@@ -183,7 +216,8 @@ struct DesktopVisualSnapshotHarness {
         out: \(out)
         popover: PopoverRoot (TabGrid + ProviderTab + Footer) via PresentationStore.applyQIFixture
         status: StatusItemRendering.icon + StatusItemRendering.title (AppKit bitmap)
-        status_live_nsstatusitem: BLOCKED (CLT / no menu-bar strip capture)
+        status_live_nsstatusitem: prefer live screencapture when JackinDesktop is running (see VISUAL_QA_LOG)
+        usage_window: UsageWindowRoot full shell @ 920×620
         usage_detail: ProviderCardView
         usage_overview: OverviewListView
         usage_nest: UsageAccountNestView

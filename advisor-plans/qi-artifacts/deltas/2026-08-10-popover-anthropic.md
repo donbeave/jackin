@@ -1,25 +1,21 @@
-# QI delta: popover-anthropic · dark (+ light host)
+# QI delta: popover-anthropic · hosted + live
 
 ## Oracle
 - HTML: qi-artifacts/html/popover-anthropic-dark.png
-- Source: popover.html Anthropic
 
 ## Candidate
-- Native: qi-artifacts/native/popover-anthropic-dark.png
-- Code: `PopoverRoot` with `popoverSelection = claude`
+- Hosted: qi-artifacts/native/popover-anthropic-dark.png (`popoverSelection=claude`)
+- Live: qi-artifacts/native/popover-live-anthropic-dark.png (left-click Anthropic status)
 
 ## Same (keep)
-- Tab selection on Anthropic; Overview/OpenAI/Amp unselected with meters
-- Weekly hero **12% left** danger red + short meter; Session 74%
-- Single account (no multi chip strip)
-- Open usage page; Refresh footer
-- Fixture: 12%, Max 20×, Personal
+- Full shell; Anthropic selected; Session/Weekly heroes; Open usage; Refresh footer
+- Live click focuses Anthropic (G-S2 verified)
 
 ## Different (must fix unless N/A)
 | Severity | Element | HTML | Native | Gap ID | Action |
 |----------|---------|------|--------|--------|--------|
-| Med | Footer | Open Usage Window CTA | Refresh dock | G-P4 | Product law |
-| Low | Brand bar | jackin❯ mark top | Absent | G-P1 | Optional |
+| Med | Footer CTA | Open Usage Window | Refresh | G-P4 | Product law |
+| Low | Live % | 12% fixture | Live remaining | G-D1 | Expected |
 
 ## Verdict
-**Pass** — Anthropic focus + danger weekly hero correct on full shell.
+**Pass**

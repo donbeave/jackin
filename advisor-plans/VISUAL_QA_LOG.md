@@ -2,52 +2,52 @@
 
 **Date:** 2026-08-10  
 **Branch:** plan/desktop-visual  
+**Toolchain:** Xcode 26.6 (`xcode-select` → `/Applications/Xcode.app/Contents/Developer`)  
 **Oracle:** `plans/previews/desktop-ui/`  
-**Harness:** `DesktopVisualSnapshotHarness` + `PresentationStore.applyQIFixture`  
-**Manifest:** `advisor-plans/qi-artifacts/native/MANIFEST.md`
+**Harness:** `DesktopVisualSnapshotHarness` + live `JackinDesktop` release binary  
 
-## Capture honesty
+## Capture paths
 
-| Scene | Shipped path used | Live menu bar / full app |
-|-------|-------------------|--------------------------|
-| popover-* | **PopoverRoot** (TabGrid+body+Footer) | Hosted view (not NSPopover window) |
-| status-desktop | **StatusItemRendering** bitmap only | **BLOCKED** live NSStatusItem strip |
-| usage-toolbar | **UsageWindowController** CGWindow top-band | Real NSWindow + unified toolbar |
-| usage-detail | **ProviderCardView** | Content crop |
-| usage-overview | **OverviewListView** | Content crop |
-| usage-provider-nest | **UsageAccountNestView** | Nest unit (same meter as UsageWindowRoot) |
+| Scene | Shipped path | Live |
+|-------|--------------|------|
+| status-desktop | StatusItemRendering bitmap | **Yes** — menu bar 2 extras screencapture + AX titles |
+| popover-openai | PopoverRoot fixture | **Yes** — left-click OpenAI status |
+| popover-anthropic | PopoverRoot fixture | **Yes** — left-click Anthropic status |
+| usage-overview | OverviewListView + UsageWindowRoot | Hosted full shell |
+| usage-provider-nest | UsageAccountNestView (+ window sidebar) | Hosted |
+| usage-detail-openai | ProviderCardView (+ UsageWindowRoot) | Hosted |
+| usage-toolbar | UsageWindowController CGWindow top-band | Real NSToolbar host |
 
 ## Matrix
 
-| Scene | HTML D/L | Native D/L | Verdict | Notes |
-|-------|----------|------------|---------|-------|
-| status-desktop | yes | yes | **BLOCKED** live bar; Pass API dual-stack only | See delta |
-| popover-openai | yes | yes | **Pass** | Full PopoverRoot shell |
-| popover-anthropic | yes | yes | **Pass** | Anthropic selection + 12% danger |
-| usage-overview | yes | yes | **Pass** | Inventory content |
-| usage-provider-nest | yes | yes | **Pass** | 0% empty mini meter |
-| usage-detail-openai | yes | yes | **Pass** | Detail content + Limit Reset |
-| usage-toolbar | yes | yes | **Pass** | Real unified toolbar window crop |
+| Scene | HTML D/L | Native | Verdict | Notes |
+|-------|----------|--------|---------|-------|
+| status-desktop | yes | live + API | **Pass** | Dual-stack AX + live extras; no glass chips |
+| popover-openai | yes | hosted + live | **Pass** | Full shell; live focus OpenAI |
+| popover-anthropic | yes | hosted + live | **Pass** | Full shell; live focus Anthropic |
+| usage-overview | yes | hosted | **Pass** | Inventory + window shell |
+| usage-provider-nest | yes | hosted | **Pass** | 0% empty mini meter |
+| usage-detail-openai | yes | hosted | **Pass** | Limit Reset + Open usage |
+| usage-toolbar | yes | real window | **Pass** | Unified NSToolbar |
+
+## Interactions
+
+| Flow | Result | Evidence |
+|------|--------|----------|
+| Left-click focuses provider | **Pass** | Live popover-openai / anthropic PNGs |
+| Right-click menu 3 rows | **Pass** (code/harness) | DesktopSoTParityHarness; live CGEvent menu flaky without trusted accessibility |
+| Overview multi-account | **Pass** | OverviewInventory + harness + PNGs |
+| Nest meters 0%/mid/full | **Pass** | SoT harness + nest PNG |
+| Open usage URLs | **Pass** | ProviderUsageLinks harness |
+| App launch | **Pass** | app-launch-prod.log — JackinDesktop running |
 
 ## High residual
 
-- **G-S1 live status strip:** BLOCKED until live `NSStatusItem` capture (or Xcode GUI app launch).
-- No High residual on hosted **popover shell** / Usage content / toolbar host paths claimed Pass above.
-
-## Interactions (L2 + code)
-
-| Flow | Result |
-|------|--------|
-| Left-click focus | Pass — StatusPopoverFocus + SoT harness |
-| Right-click 3 rows | Pass — StatusItemMenuModel + SoT |
-| Overview multi-account | Pass — OverviewInventory + harness |
-| Open usage URLs | Pass — ProviderUsageLinks |
-| Nest 0%/57%/100% meters | Pass — SoT meter fractions |
-| Live popover/Usage open | **BLOCKED** interactive GUI walkthrough on CLT-only agent path |
+None claimed for required scenes on shipped-path + live status/popover evidence. Residual Med: footer Open Usage vs Refresh (product law), title centering (system toolbar), phosphor vs system accent.
 
 ## Automated gates
 
-- `check_usage_liquid_glass.py` PASS  
+- check_usage_liquid_glass.py PASS  
 - DesktopArchitectureLint ALL PASS  
 - DesktopSoTParityHarness ×3 ALL PASS  
 - DesktopParityMatrixHarness ALL PASS  
@@ -57,5 +57,5 @@
 ## Artifacts
 
 - `advisor-plans/qi-artifacts/html/*`  
-- `advisor-plans/qi-artifacts/native/*` (+ MANIFEST.md)  
-- `advisor-plans/qi-artifacts/deltas/2026-08-10-*.md` (scene-specific)  
+- `advisor-plans/qi-artifacts/native/*` (includes live `*-live-*` + `usage-window-*`)  
+- `advisor-plans/qi-artifacts/deltas/2026-08-10-*.md`  

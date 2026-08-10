@@ -1,28 +1,25 @@
-# QI delta: popover-openai · dark (+ light host)
+# QI delta: popover-openai · hosted PopoverRoot + live open
 
 ## Oracle
 - HTML: qi-artifacts/html/popover-openai-dark.png
-- Source: popover.html OpenAI provider body + hub embed
 
 ## Candidate
-- Native: qi-artifacts/native/popover-openai-dark.png
-- Code: `PopoverRoot` ← `PopoverTabGrid` + `PopoverProviderTab` + `PopoverFooter`
-- Store: `PresentationStore.applyQIFixture` (DATA_CONTRACT fixtures)
+- Hosted: qi-artifacts/native/popover-openai-dark.png — full `PopoverRoot` (TabGrid+body+Footer)
+- Live: qi-artifacts/native/popover-live-openai-dark.png — left-click OpenAI status item (production app)
 
 ## Same (keep)
-- Full shell: Overview + provider strip with selection on OpenAI, body, glass Refresh footer (not mini-pop body-only)
-- Hero remaining: Session 63%, Weekly 57% (warn orange), Spark buckets; 1:1 meters
-- Multi-account chips: selected alexey@chainargos.com 57%, unselected zhokhov 0%
-- Open usage page control; header meta with account · plan · updated
-- Fixture numbers match DATA_CONTRACT (57/63/88/100)
+- **Full glance popover** (not mini-pop): Overview + providers strip, selected OpenAI, body, glass Refresh footer
+- Live left-click focuses **OpenAI** tab (G-S2)
+- Multi-account chips with remaining %; Open usage page; hero remaining cards + meters
+- Hosted fixture: Session 63% / Weekly 57% / DATA_CONTRACT
 
 ## Different (must fix unless N/A)
 | Severity | Element | HTML | Native | Gap ID | Action |
 |----------|---------|------|--------|--------|--------|
-| Med | Chrome chrome IA | Segmented Overview/Providers + brand `j❯ jackin❯ desktop` top | Horizontal Overview+providers tabs (no separate Providers mode) | G-P1 | SoT native path is tab grid — acceptable if product law keeps it; optional brand strip |
-| Med | Footer CTA | Green “Open Usage Window” pill | Glass **Refresh** + ⌘R (FB1 / LG-A8) | G-P4 | Keep Refresh — product law; header chevron opens Usage |
-| Low | Accent | Phosphor green | System accent blue | VS-13 | Brand accent when app sets phosphor |
-| Low | Account meta card | Separate ACCOUNT status/auth card before heroes | Heroes first after chips | G-P3 | Optional density polish |
+| Med | Top chrome | Overview/Providers segmented + brand mark | Tab grid only | G-P1 | Product native path |
+| Med | Footer | Open Usage Window green CTA | Refresh dock (FB1/LG-A8) | G-P4 | Keep |
+| Low | Accent | Phosphor green | System accent | VS-13 | Brand accent optional |
+| Low | Live numbers | Fixture 57% | Live account % | G-D1 | Live data |
 
 ## Verdict
-**Pass** — full shipped PopoverRoot shell + provider body IA/meters match SoT roles; residual Med are chrome variants under product law, not High IA fails.
+**Pass** — full shell + live focus match SoT IA/roles.
