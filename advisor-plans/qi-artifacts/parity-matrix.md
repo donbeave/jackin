@@ -1,9 +1,9 @@
 # Final goal parity matrix — UI_PARITY_MASTER §6
 
-**Tip:** plan/desktop-visual @ fb5ed4cd  
+**Tip:** plan/desktop-visual @ 624b6573  
 **Oracle:** index.html + popover.html Dark+Light  
 **Capture:** DesktopVisualSnapshotHarness + HTML baselines  
-**Re-verify:** 2026-08-10 — L1/L2 green; recapture stable (no pixel drift)
+**Re-verify:** goal run — L1/L2 green; craft snaps byte-identical; High residual none
 
 ## High residual craft
 **None.**

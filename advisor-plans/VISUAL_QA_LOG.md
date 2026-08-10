@@ -1,7 +1,7 @@
 # VISUAL_QA_LOG — jackin❯ desktop HTML SoT parity
 
 **Date:** 2026-08-10  
-**Tip:** `fb5ed4cd`  
+**Tip:** `624b6573`  
 **Branch:** plan/desktop-visual  
 **Authority:** UI_PARITY_MASTER §6 + QI_VERIFICATION L1–L4  
 **Artifacts:** `advisor-plans/qi-artifacts/`
@@ -16,7 +16,7 @@ DesktopSoTParityHarness ALL PASS (18/18)
 DesktopParityMatrixHarness ALL PASS
 StatusItemChipHarness ALL PASS
 ProviderMarksHarness ALL PASS (7/7 maxA)
-DesktopVisualSnapshotHarness recapture OK (PNG hashes == tip; no pixel drift)
+DesktopVisualSnapshotHarness recapture OK (craft PNGs byte-identical)
 ```
 
 Log: `qi-artifacts/native/desktop-gates.log`
@@ -26,7 +26,7 @@ Log: `qi-artifacts/native/desktop-gates.log`
 | Scene | Dark | Light | High residual | Evidence | Verdict |
 |-------|------|-------|---------------|----------|---------|
 | status-desktop | yes | yes | none | native/status-desktop-*.png · deltas/…-status-desktop.md | **Pass** |
-| popover-openai | yes | yes | none | native/popover-openai-*.png · dual-image Session/Weekly meters | **Pass** |
+| popover-openai | yes | yes | none | native/popover-openai-*.png · dual-image Session/Weekly | **Pass** |
 | popover-anthropic | yes | yes | none | native/popover-anthropic-*.png | **Pass** |
 | popover-overview | yes | yes | none | native/popover-overview-*.png · inventory + OV-5 calendar | **Pass** |
 | usage-overview | yes | yes | none | native/usage-overview-*.png | **Pass** |
@@ -49,14 +49,12 @@ Log: `qi-artifacts/native/desktop-gates.log`
 
 All craft scenes under `deltas/2026-08-10-*.md` → **Verdict: Pass**
 
-Dual-image re-verify (tip `7df4d841`):
-
-- **status-desktop** D/L: dual-stack countdown+% ; template mono; no glass chips; 12/57/100 fixture
-- **popover-openai** D/L: brand · Overview|Providers · strip · multi-limit heroes · Open Usage Window; 63/57/88/100
-- **popover-overview**: inventory per account; OV-5 calendar under OpenAI 57%; Amp 100% full
-- **usage-nest**: 57% orange mid-fill; 0% empty track; radio multi
-- **usage-detail**: mechanical Session/Weekly/Spark/LRC; Open usage page CTA
-- **usage-window full**: sidebar whiteout still **BLOCKED** (component snaps Pass)
+Goal dual-image re-verify:
+- status dual-stack 12/57/100 template mono D/L
+- popover-openai 63/57/88/100 + LRC + Open Usage Window
+- nest 57% orange / 0% empty radio multi
+- detail mechanical buckets + Open usage page
+- overview inventory OV-5 calendar under OpenAI
 
 ## Residual (not High craft fails)
 
@@ -76,4 +74,4 @@ Dual-image re-verify (tip `7df4d841`):
 - [x] VISUAL_QA_LOG + deltas + snaps in qi-artifacts
 - [ ] Operator human sign-off (optional L5)
 
-Agent sign-off: QI L1–L4 complete for HTML SoT craft parity (harness captures + dual-image). Live menu-bar/popover click remains BLOCKED on CLT — not claimed Pass.
+Agent sign-off: QI L1–L4 complete for HTML SoT craft parity (harness captures + dual-image). Live menu-bar/popover click remains BLOCKED — not claimed Pass.

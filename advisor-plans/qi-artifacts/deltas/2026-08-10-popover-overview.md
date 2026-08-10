@@ -1,5 +1,6 @@
 # QI delta: popover-overview · dark + light
 
+**Tip:** `624b6573` · goal multimodal re-verify
 ## Oracle
 - HTML: `popover.html` mode-overview (no separate html PNG required — IA matches popover.html groups)
 - Native: `qi-artifacts/native/popover-overview-{dark,light}.png`

@@ -1,42 +1,23 @@
-=== tip fb5ed4cd 2026-08-10T09:05Z ===
+=== tip 624b6573 2026-08-10T09:07Z goal re-verify ===
 
-=== L1 HTML glass ===
+=== tip 624b6573 2026-08-10T09:07Z ===
 PASS: Usage Liquid Glass + provider≠account structural checks
-
-=== L1 QI ledger ===
 PASS: QI evidence ledger — 17 pass rows, 2 blocked, prose PNG refs consistent
 
-=== DesktopArchitectureLint ===
-PASS  StatusItemMenu.swift
-PASS  GlassFallbacks.swift
----
-DesktopArchitectureLint: scanned 18 files, 18 clean
+=== L2 (excerpt ALL PASS) ===
 DesktopArchitectureLint: ALL PASS
-=== DesktopSoTParityHarness ===
-PASS  status context menu three rows
----
 DesktopSoTParityHarness: ALL PASS (18/18 checks)
-=== DesktopParityMatrixHarness ===
-PASS  no sparkline/donut/trend product UI in status item
-PASS  no sparkline/donut in popover
----
 DesktopParityMatrixHarness: ALL PASS
 Matrix: 8/8 providers displayable · dual-bucket · depleted · limits-only
-=== StatusItemChipHarness ===
----
 StatusItemChipHarness: ALL PASS
-=== ProviderMarksHarness ===
-PASS  minimax hasMark=true markSize=(18.0, 18.0) statusTemplate=true
-PASS  unknown key hasMark=false
-PASS  codex mark maxA=244 (need ≥200)
-PASS  claude mark maxA=249 (need ≥200)
-PASS  amp mark maxA=255 (need ≥200)
-PASS  grok mark maxA=242 (need ≥200)
-PASS  zai mark maxA=234 (need ≥200)
-PASS  kimi mark maxA=231 (need ≥200)
-PASS  minimax mark maxA=244 (need ≥200)
 ProviderMarksHarness: ALL PASS (7/7 official marks)
-=== DesktopVisualSnapshotHarness ===
+
+=== Snapshot ===
+WROTE ../advisor-plans/qi-artifacts/native/popover-amp-light.png
+WROTE ../advisor-plans/qi-artifacts/native/popover-overview-light.png
+WROTE ../advisor-plans/qi-artifacts/native/usage-detail-openai-light.png
+WROTE ../advisor-plans/qi-artifacts/native/usage-overview-light.png
+WROTE ../advisor-plans/qi-artifacts/native/usage-provider-nest-light.png
 WROTE ../advisor-plans/qi-artifacts/native/status-desktop-light.png [StatusItemRendering]
 WROTE ../advisor-plans/qi-artifacts/native/usage-window-openai-light.png [UsageWindowController window capture]
 WROTE ../advisor-plans/qi-artifacts/native/usage-toolbar-light.png [UsageWindowController titlebar crop]
@@ -57,5 +38,23 @@ usage_window_overview_light: OK
 usage_toolbar_dark: UsageWindowController titlebar crop
 usage_toolbar_light: UsageWindowController titlebar crop
 DesktopVisualSnapshotHarness: wrote snapshots to ../advisor-plans/qi-artifacts/native
-=== PNG craft vs HEAD ===
-10/10 SAME (byte-identical)
+
+PNG hash vs HEAD
+SAME status-desktop-dark.png
+SAME status-desktop-light.png
+SAME popover-openai-dark.png
+SAME popover-openai-light.png
+SAME popover-anthropic-dark.png
+SAME popover-overview-dark.png
+SAME usage-provider-nest-dark.png
+SAME usage-detail-openai-dark.png
+SAME usage-overview-dark.png
+SAME usage-toolbar-dark.png
+SAME usage-provider-nest-light.png
+SAME usage-detail-openai-light.png
+SAME=12 DIFF=0
+
+=== Law ===
+glassEffect only GlassFallbacks.swift (ArchitectureLint PASS)
+limits-only ParityMatrix PASS
+brand jackin❯ desktop present on user surfaces

@@ -1,6 +1,6 @@
 # QI delta: popover-openai · dark + light
 
-**Date:** 2026-08-10 · **Tip:** `7df4d841` · harness recapture stable
+**Date:** 2026-08-10 · **Tip:** `624b6573` · harness recapture stable
 
 ## Oracle
 - HTML: `qi-artifacts/html/popover-openai-*.png`
