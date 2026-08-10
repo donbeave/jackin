@@ -51,6 +51,10 @@ Account-strip re-audit mapped HTML `--jk` / `--jk-ink` exactly by theme:
 bright Dark selection uses dark ink; deep Light selection uses white ink. This
 removes the prior white-on-bright-green mismatch.
 
+Popover geometry re-audit replaced generic 12 pt cards / 28 pt rounded heroes
+with HTML’s 14 pt content-card geometry and 32 pt monospaced metrics. Overview
+groups and every provider block now share those named tokens.
+
 ## Live
 popover-live / ctx-menu **BLOCKED** — SoTParity proves focus/menu.
 

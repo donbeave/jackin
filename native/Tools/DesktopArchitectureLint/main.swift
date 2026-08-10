@@ -184,6 +184,12 @@ struct DesktopArchitectureLint {
             print("FAIL  popover account selection must use dual-theme HTML tokens")
             ok = false
         }
+        if !popoverProviderText.contains("size: 32, weight: .semibold, design: .monospaced")
+            || !popoverProviderText.contains("GlassFallbacks.popoverContentCardBackground()")
+        {
+            print("FAIL  popover metric type/card geometry must match HTML 32/14 tokens")
+            ok = false
+        }
         if ok {
             print("PASS  primary controls avoid solid phosphor slabs")
         } else {

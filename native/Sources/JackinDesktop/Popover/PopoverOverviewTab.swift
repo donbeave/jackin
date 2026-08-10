@@ -82,12 +82,17 @@ public struct PopoverOverviewTab: View {
                 accountRow(row, iconKey: glance.iconKey)
             }
         }
-        .padding(10)
+        .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background {
-            GlassFallbacks.contentCardBackground()
+            GlassFallbacks.popoverContentCardBackground()
         }
-        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .clipShape(
+            RoundedRectangle(
+                cornerRadius: GlassFallbacks.popoverContentCardCornerRadius,
+                style: .continuous
+            )
+        )
     }
 
     // MARK: - Account row (HTML `.account`)
@@ -187,7 +192,7 @@ public struct PopoverOverviewTab: View {
     }
 
     private func overviewBrandPlate(iconKey: String) -> some View {
-        let brand = brandChrome(for: iconKey)
+        let brand = desktopProviderBrandChrome(iconKey: iconKey)
         return ZStack {
             RoundedRectangle(cornerRadius: 7, style: .continuous)
                 .fill(brand.opacity(0.88))
@@ -208,17 +213,4 @@ public struct PopoverOverviewTab: View {
         .frame(width: 26, height: 26)
     }
 
-    /// Logo plate fills only (LG-6 / FB1-20) — not meter chrome.
-    private func brandChrome(for iconKey: String) -> Color {
-        switch iconKey {
-        case "codex": return Color(red: 0.12, green: 0.72, blue: 0.52)
-        case "claude": return Color(red: 0.86, green: 0.48, blue: 0.28)
-        case "amp": return Color(red: 0.52, green: 0.38, blue: 0.92)
-        case "grok": return Color(red: 0.35, green: 0.38, blue: 0.42)
-        case "zai": return Color(red: 0.20, green: 0.55, blue: 0.95)
-        case "kimi": return Color(red: 0.75, green: 0.35, blue: 0.55)
-        case "minimax": return Color(red: 0.90, green: 0.55, blue: 0.20)
-        default: return Color.jackinPhosphor
-        }
-    }
 }

@@ -19,6 +19,7 @@
 | Detail head | official provider plate + identity + local refresh | same | Yes |
 | External usage | external-link arrow | same; no Safari glyph ambiguity | Yes |
 | Account selection | Dark bright accent + dark ink; Light deep accent + white ink | same dual-theme token roles | Yes |
+| Metric geometry | 32 pt mono hero; 14 pt padding/radius | same named popover tokens | Yes |
 | Footer CTA | centered phosphor glyph + label | same; no trailing chevron | Yes |
 | Session order | 63% → On pace → Resets 2h 14m → meter | same | **Yes** |
 | Weekly order | 57% → 13% deficit → Resets 3d → meter | same | **Yes** |

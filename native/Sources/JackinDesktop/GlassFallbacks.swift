@@ -26,6 +26,8 @@ public enum GlassFallbacks {
     public static let chromeTileCornerRadius: CGFloat = 12
     /// Content-layer cards (standard materials — not glass).
     public static let contentCardCornerRadius: CGFloat = 12
+    /// Popover HTML `.group` / `.block` radius.
+    public static let popoverContentCardCornerRadius: CGFloat = 14
     public static let chipCornerRadius: CGFloat = 8
 
     // MARK: - LG-A1 Navigation glass (Tahoe)
@@ -128,6 +130,17 @@ public enum GlassFallbacks {
             .fill(.background.secondary)
             .overlay {
                 RoundedRectangle(cornerRadius: contentCardCornerRadius, style: .continuous)
+                    .strokeBorder(Color.primary.opacity(0.08), lineWidth: 0.5)
+            }
+    }
+
+    /// Popover content card — same material role, HTML-specific 14 pt geometry.
+    @ViewBuilder
+    public static func popoverContentCardBackground() -> some View {
+        RoundedRectangle(cornerRadius: popoverContentCardCornerRadius, style: .continuous)
+            .fill(.background.secondary)
+            .overlay {
+                RoundedRectangle(cornerRadius: popoverContentCardCornerRadius, style: .continuous)
                     .strokeBorder(Color.primary.opacity(0.08), lineWidth: 0.5)
             }
     }

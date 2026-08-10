@@ -137,10 +137,10 @@ public struct PopoverProviderTab: View {
                 .padding(.top, 2)
             }
         }
-        .padding(12)
+        .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background {
-            GlassFallbacks.contentCardBackground()
+            GlassFallbacks.popoverContentCardBackground()
         }
         .accessibilityElement(children: .combine)
     }
@@ -301,7 +301,7 @@ public struct PopoverProviderTab: View {
 
             if let hero {
                 Text(hero)
-                    .font(.system(size: 28, weight: .semibold, design: .rounded))
+                    .font(.system(size: 32, weight: .semibold, design: .monospaced))
                     .monospacedDigit()
                     .foregroundStyle(severityTint(row.severity))
                     .minimumScaleFactor(0.7)
@@ -325,10 +325,10 @@ public struct PopoverProviderTab: View {
                 bucketMeter(meter, severity: row.severity, height: 7)
             }
         }
-        .padding(12)
+        .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background {
-            GlassFallbacks.contentCardBackground()
+            GlassFallbacks.popoverContentCardBackground()
         }
     }
 
@@ -345,10 +345,10 @@ public struct PopoverProviderTab: View {
                     .foregroundStyle(.secondary)
             }
         }
-        .padding(12)
+        .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background {
-            GlassFallbacks.contentCardBackground()
+            GlassFallbacks.popoverContentCardBackground()
         }
     }
 
@@ -365,10 +365,10 @@ public struct PopoverProviderTab: View {
                 bucketMeter(meter, severity: "normal", height: 7)
             }
         }
-        .padding(12)
+        .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background {
-            GlassFallbacks.contentCardBackground()
+            GlassFallbacks.popoverContentCardBackground()
         }
     }
 
