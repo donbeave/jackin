@@ -1,7 +1,8 @@
 # Final goal parity matrix — UI_PARITY_MASTER §6
 
-**Tip:** plan/desktop-visual @ 10ea5329  
+**Tip:** plan/desktop-visual @ 55861dee  
 **Oracle:** index.html + popover.html Dark+Light  
+**Dual-image:** all craft scenes re-read; scene-specific deltas  
 
 ## High residual craft (product)
 **None.**
@@ -25,4 +26,4 @@
 | ctx-menu-live | BLOCKED |
 
 ## Gates
-L1+L2 ALL PASS · SoT×3 · usage_toolbar_dark BLOCKED · usage_toolbar_light OK
+L1+L2 ALL PASS · usage_toolbar_dark BLOCKED · usage_toolbar_light OK

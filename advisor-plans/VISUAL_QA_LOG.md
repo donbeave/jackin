@@ -1,7 +1,7 @@
 # VISUAL_QA_LOG — jackin❯ desktop HTML SoT parity
 
 **Date:** 2026-08-10  
-**Tip:** `10ea5329`  
+**Tip:** `55861dee`  
 **Branch:** plan/desktop-visual  
 **Authority:** UI_PARITY_MASTER §6 + QI_VERIFICATION L1–L4  
 **Artifacts:** `advisor-plans/qi-artifacts/`
@@ -12,27 +12,24 @@
 check_usage_liquid_glass.py PASS
 check_qi_evidence_ledger.py PASS — 16 pass / 3 blocked
 DesktopArchitectureLint ALL PASS
-DesktopSoTParityHarness ALL PASS ×3 (18/18)
+DesktopSoTParityHarness ALL PASS
 DesktopParityMatrixHarness ALL PASS
-StatusItemChipHarness ALL PASS
-ProviderMarksHarness ALL PASS (7/7 maxA)
-DesktopVisualSnapshotHarness: usage_toolbar_dark BLOCKED; light OK
 ```
 
 Log: `qi-artifacts/native/desktop-gates.log`
 
-## §6 matrix — Dark / Light
+## §6 matrix — Dark / Light (dual-image read)
 
-| Scene | Dark | Light | High residual craft | Evidence | Verdict |
-|-------|------|-------|---------------------|----------|---------|
-| status-desktop | yes | yes | none | dual-stack 12/57/100 | **Pass** |
-| popover-openai | yes | yes | none | 63/57/88/100 + LRC | **Pass** |
-| popover-anthropic | yes | yes | none | full multi-limit 74/12/28/35/28/100 + Extra | **Pass** |
-| popover-overview | yes | yes | none | inventory OV-5 | **Pass** |
-| usage-overview | yes | yes | none | per-account cards | **Pass** |
-| usage-provider-nest | yes | yes | none | 57%/0% | **Pass** |
-| usage-detail-openai | yes | yes | none | Session/Weekly/Spark/LRC | **Pass** |
-| usage-toolbar | **BLOCKED** | yes | capture only | Light Refresh · Dark BLOCKED.txt | **Light Pass / Dark BLOCKED** |
+| Scene | Dark | Light | High residual | Evidence | Verdict |
+|-------|------|-------|---------------|----------|---------|
+| status-desktop | yes | yes | none | html+native · deltas/…-status-desktop.md | **Pass** |
+| popover-openai | yes | yes | none | html+native · deltas/…-popover-openai.md | **Pass** |
+| popover-anthropic | yes | yes | none | full multi-limit · deltas/…-popover-anthropic.md | **Pass** |
+| popover-overview | yes | yes | none | native · deltas/…-popover-overview.md | **Pass** |
+| usage-overview | yes | yes | none | html+native · deltas/…-usage-overview.md | **Pass** |
+| usage-provider-nest | yes | yes | none | 57%/0% · deltas/…-usage-provider-nest.md | **Pass** |
+| usage-detail-openai | yes | yes | none | html+native · deltas/…-usage-detail-openai.md | **Pass** |
+| usage-toolbar | **BLOCKED** | yes | capture only | Light PNG · Dark BLOCKED.txt · deltas/…-usage-toolbar.md | **Light Pass / Dark BLOCKED** |
 
 **High residual craft product: none.**
 
@@ -47,6 +44,6 @@ Log: `qi-artifacts/native/desktop-gates.log`
 
 ## Multimodal
 
-Scene deltas: `deltas/2026-08-10-*.md`. Anthropic multi-limit: `deltas/2026-08-10-popover-anthropic.md` Verdict Pass.
+Every craft scene dual-read HTML+native; scene-specific QI §7.2 deltas with Severity table + Verdict.
 
-Agent sign-off: QI L1–L4 craft closed; Dark toolbar BLOCKED (§12); Anthropic multi-limit density Pass.
+Agent sign-off: QI L1–L4 craft closed; Dark toolbar BLOCKED (§12); Anthropic multi-limit Pass.
