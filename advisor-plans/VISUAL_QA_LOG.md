@@ -3,45 +3,60 @@
 **Date:** 2026-08-10  
 **Branch:** plan/desktop-visual  
 **Toolchain:** Xcode 26.6  
+**Authority:** `advisor-plans/qi-artifacts/EVIDENCE_LEDGER.toml`  
+**Lint:** `python3 plans/previews/desktop-ui/qi/check_qi_evidence_ledger.py`
 
-## Skeptic light-popover + live IA fix (this round)
+## Capture policy
 
-| Issue | Resolution |
-|-------|------------|
-| Light popover black void / missing G-P1 | Fixed: opaque `windowBackgroundColor` base under glass; light stage + taller frame; mode segment controlBackground. Recaptured light OpenAI/Anthropic. |
-| Live popover PNG pre-G-P1 / contaminated | Live re-capture post-rebuild empty + keychain noise — **removed from artifacts**; `popover-live.BLOCKED.txt`. G-P1 craft evidence = **harness Dark+Light only**. |
-| Dishonest dual-image Pass | Re-opened dual-image for light; Pass only after full chrome readable on light. |
+| Tier | Meaning |
+|------|---------|
+| **harness** | `DesktopVisualSnapshotHarness` / StatusItemRendering / UsageWindowController — craft dual-image Pass |
+| **live** | On-disk live screencapture accepted only if ledger row + file exist |
+| **blocked** | No craft Pass; `*.BLOCKED.txt` + interaction/harness wiring only |
 
-## Dual-image matrix
+## Matrix (from ledger)
 
-| Scene | Dark | Light | Dual-image | Verdict |
-|-------|------|-------|------------|---------|
-| status-desktop | harness + live extras prior | harness | yes | **Verdict: Pass** |
-| popover-openai | harness G-P1 | harness G-P1 full chrome | yes | **Verdict: Pass** |
-| popover-anthropic | harness G-P1 | harness G-P1 full chrome | yes | **Verdict: Pass** |
-| usage-overview | yes | yes | yes | **Verdict: Pass** |
-| usage-provider-nest | yes | yes | yes | **Verdict: Pass** |
-| usage-detail-openai | yes | yes | yes | **Verdict: Pass** |
-| usage-toolbar | yes | yes | yes | **Verdict: Pass** |
-| popover live click | — | — | BLOCKED | interaction harness only |
-| ctx-menu live | — | — | BLOCKED | model/harness rows |
+| Scene | Dark | Light | Tier | Verdict |
+|-------|------|-------|------|---------|
+| status-desktop | status-desktop-dark.png | status-desktop-light.png | harness | **Pass** |
+| popover-openai | popover-openai-dark.png | popover-openai-light.png | harness | **Pass** |
+| popover-anthropic | popover-anthropic-dark.png | popover-anthropic-light.png | harness | **Pass** |
+| usage-overview | usage-overview-*.png | same | harness | **Pass** |
+| usage-provider-nest | usage-provider-nest-*.png | same | harness | **Pass** |
+| usage-detail-openai | usage-detail-openai-*.png | same | harness | **Pass** |
+| usage-toolbar | usage-toolbar-*.png | same | harness | **Pass** |
+| popover-live-click | — | — | blocked | **BLOCKED** |
+| ctx-menu-live | — | — | blocked | **BLOCKED** |
+
+Left-click **craft** evidence = harness PopoverRoot Dark+Light only.  
+Left-click **wiring** = StatusPopoverFocus + DesktopSoTParityHarness (not a live PNG).
+
+## Interactions
+
+| Flow | Result | Evidence |
+|------|--------|----------|
+| Left-click focuses provider | Pass (wiring) | SoT harness; craft = harness popover PNGs |
+| Right-click 3 rows | Pass (model) | StatusItemMenuModel + SoT; live PNG BLOCKED |
+| Nest 0%/57%/100% | Pass | SoT meter fractions + nest/window harness PNGs |
+| Open usage URLs | Pass | ProviderUsageLinks harness |
 
 ## High residual
 
-**None** for required §5 harness scenes Dark+Light.  
-
-Live left-click craft PNG **BLOCKED** (empty probe/keychain) — not claimed Pass. Focus wiring still Pass via SoT harness.
+None for ledger `pass` scenes. Live popover/ctx screenshots remain **blocked**.
 
 ## Automated gates
 
-- check_usage_liquid_glass.py PASS  
-- ArchitectureLint ALL PASS  
-- SoTParity ×3 ALL PASS  
-- ParityMatrix ALL PASS  
-- StatusItemChip ALL PASS  
+```sh
+python3 plans/previews/desktop-ui/check_usage_liquid_glass.py
+python3 plans/previews/desktop-ui/qi/check_qi_evidence_ledger.py
+cd native && swift run -c release DesktopArchitectureLint
+swift run -c release DesktopSoTParityHarness   # ×3
+swift run -c release DesktopParityMatrixHarness
+swift run -c release StatusItemChipHarness
+```
 
 ## Artifacts
 
-- `advisor-plans/qi-artifacts/native/popover-*-{dark,light}.png` (light fixed)  
-- `advisor-plans/qi-artifacts/native/popover-live.BLOCKED.txt`  
-- `advisor-plans/qi-artifacts/native/ctx-menu-live-dark.BLOCKED.txt`  
+- Ledger: `qi-artifacts/EVIDENCE_LEDGER.toml`  
+- Deltas: `qi-artifacts/deltas/2026-08-10-*.md`  
+- BLOCKED notes: `popover-live.BLOCKED.txt`, `ctx-menu-live-dark.BLOCKED.txt`  

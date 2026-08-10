@@ -3,18 +3,12 @@
 ## Oracle
 - HTML: advisor-plans/qi-artifacts/html/popover-anthropic-dark.png (+ light)
 
-## Candidate
+## Candidate (ledger `popover-anthropic` harness)
 - Native: popover-anthropic-{dark,light}.png
-- Dual-image: Dark + Light full G-P1 chrome; Anthropic selected; Session 74% / Weekly 12% danger; Refresh
-- Live PNG: BLOCKED (see popover-live.BLOCKED.txt)
+- Live craft: **not used** — ledger `popover-live-click` blocked
 
-## Same (keep)
-- G-P1 chrome Dark+Light; Anthropic focus; heroes + meters
-
-## Different (must fix unless N/A)
-| Severity | Element | HTML | Native | Gap ID | Action |
-|----------|---------|------|--------|--------|--------|
-| Low | Footer | Open Usage Window | Refresh | G-P4 | Product law |
+## Dual-image
+- G-P1 chrome Dark+Light; Anthropic selected; Session 74% / Weekly 12%
 
 ## Verdict
 Verdict: Pass

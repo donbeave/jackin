@@ -1,0 +1,163 @@
+# Machine-owned QI evidence ledger — sole authority for Pass / BLOCKED claims.
+# Prose under advisor-plans/ must only cite paths present here (or sibling *.BLOCKED.txt).
+# Validated by: plans/previews/desktop-ui/qi/check_qi_evidence_ledger.py
+
+version = 1
+updated = "2026-08-10"
+oracle_html_dir = "advisor-plans/qi-artifacts/html"
+native_dir = "advisor-plans/qi-artifacts/native"
+deltas_dir = "advisor-plans/qi-artifacts/deltas"
+
+# capture_tier: harness | live | blocked
+# verdict: pass | fail | blocked
+
+[[scene]]
+id = "status-desktop"
+theme = "dark"
+html_path = "advisor-plans/qi-artifacts/html/status-desktop-dark.png"
+native_path = "advisor-plans/qi-artifacts/native/status-desktop-dark.png"
+capture_tier = "harness"
+verdict = "pass"
+notes = "StatusItemRendering dual-stack bitmap; optional live extras also on disk"
+
+[[scene]]
+id = "status-desktop"
+theme = "light"
+html_path = "advisor-plans/qi-artifacts/html/status-desktop-light.png"
+native_path = "advisor-plans/qi-artifacts/native/status-desktop-light.png"
+capture_tier = "harness"
+verdict = "pass"
+
+[[scene]]
+id = "popover-openai"
+theme = "dark"
+html_path = "advisor-plans/qi-artifacts/html/popover-openai-dark.png"
+native_path = "advisor-plans/qi-artifacts/native/popover-openai-dark.png"
+capture_tier = "harness"
+verdict = "pass"
+notes = "PopoverRoot G-P1 full shell (brand · Overview|Providers · strip · body · footer)"
+
+[[scene]]
+id = "popover-openai"
+theme = "light"
+html_path = "advisor-plans/qi-artifacts/html/popover-openai-light.png"
+native_path = "advisor-plans/qi-artifacts/native/popover-openai-light.png"
+capture_tier = "harness"
+verdict = "pass"
+
+[[scene]]
+id = "popover-anthropic"
+theme = "dark"
+html_path = "advisor-plans/qi-artifacts/html/popover-anthropic-dark.png"
+native_path = "advisor-plans/qi-artifacts/native/popover-anthropic-dark.png"
+capture_tier = "harness"
+verdict = "pass"
+
+[[scene]]
+id = "popover-anthropic"
+theme = "light"
+html_path = "advisor-plans/qi-artifacts/html/popover-anthropic-light.png"
+native_path = "advisor-plans/qi-artifacts/native/popover-anthropic-light.png"
+capture_tier = "harness"
+verdict = "pass"
+
+[[scene]]
+id = "usage-overview"
+theme = "dark"
+html_path = "advisor-plans/qi-artifacts/html/usage-overview-dark.png"
+native_path = "advisor-plans/qi-artifacts/native/usage-overview-dark.png"
+capture_tier = "harness"
+verdict = "pass"
+notes = "OverviewListView; full shell also usage-window-overview-dark.png"
+
+[[scene]]
+id = "usage-overview"
+theme = "light"
+html_path = "advisor-plans/qi-artifacts/html/usage-overview-light.png"
+native_path = "advisor-plans/qi-artifacts/native/usage-overview-light.png"
+capture_tier = "harness"
+verdict = "pass"
+
+[[scene]]
+id = "usage-provider-nest"
+theme = "dark"
+html_path = "advisor-plans/qi-artifacts/html/usage-provider-nest-dark.png"
+native_path = "advisor-plans/qi-artifacts/native/usage-provider-nest-dark.png"
+capture_tier = "harness"
+verdict = "pass"
+notes = "UsageAccountNestView; nest also in usage-window-openai-dark.png sidebar"
+
+[[scene]]
+id = "usage-provider-nest"
+theme = "light"
+html_path = "advisor-plans/qi-artifacts/html/usage-provider-nest-light.png"
+native_path = "advisor-plans/qi-artifacts/native/usage-provider-nest-light.png"
+capture_tier = "harness"
+verdict = "pass"
+
+[[scene]]
+id = "usage-detail-openai"
+theme = "dark"
+html_path = "advisor-plans/qi-artifacts/html/usage-detail-openai-dark.png"
+native_path = "advisor-plans/qi-artifacts/native/usage-detail-openai-dark.png"
+capture_tier = "harness"
+verdict = "pass"
+notes = "ProviderCardView detail head; shell usage-window-openai-dark.png"
+
+[[scene]]
+id = "usage-detail-openai"
+theme = "light"
+html_path = "advisor-plans/qi-artifacts/html/usage-detail-openai-light.png"
+native_path = "advisor-plans/qi-artifacts/native/usage-detail-openai-light.png"
+capture_tier = "harness"
+verdict = "pass"
+
+[[scene]]
+id = "usage-toolbar"
+theme = "dark"
+html_path = "advisor-plans/qi-artifacts/html/usage-toolbar-dark.png"
+native_path = "advisor-plans/qi-artifacts/native/usage-toolbar-dark.png"
+capture_tier = "harness"
+verdict = "pass"
+notes = "UsageWindowController CGWindow titlebar crop"
+
+[[scene]]
+id = "usage-toolbar"
+theme = "light"
+html_path = "advisor-plans/qi-artifacts/html/usage-toolbar-light.png"
+native_path = "advisor-plans/qi-artifacts/native/usage-toolbar-light.png"
+capture_tier = "harness"
+verdict = "pass"
+
+# Interaction / live tiers — not craft Pass without files
+
+[[scene]]
+id = "popover-live-click"
+theme = "dark"
+html_path = ""
+native_path = ""
+capture_tier = "blocked"
+verdict = "blocked"
+blocked_reason = "Live left-click craft PNG removed; empty probe/keychain. Craft = harness popover-*-{dark,light}. Focus wiring = StatusPopoverFocus + DesktopSoTParityHarness."
+blocked_note_path = "advisor-plans/qi-artifacts/native/popover-live.BLOCKED.txt"
+
+[[scene]]
+id = "ctx-menu-live"
+theme = "dark"
+html_path = ""
+native_path = ""
+capture_tier = "blocked"
+verdict = "blocked"
+blocked_reason = "Live right-click menu PNG not capturable without Accessibility trust. Rows = StatusItemMenuModel + DesktopSoTParityHarness."
+blocked_note_path = "advisor-plans/qi-artifacts/native/ctx-menu-live-dark.BLOCKED.txt"
+
+# Optional live status extras (file exists on disk; dual-stack API remains harness)
+
+[[scene]]
+id = "status-desktop-live-extras"
+theme = "dark"
+html_path = "advisor-plans/qi-artifacts/html/status-desktop-dark.png"
+native_path = "advisor-plans/qi-artifacts/native/status-desktop-live-dark.png"
+capture_tier = "live"
+verdict = "pass"
+notes = "Optional AX-geometry status extras strip; primary dual-stack API = status-desktop harness"

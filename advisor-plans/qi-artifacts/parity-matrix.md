@@ -1,13 +1,23 @@
 # Parity matrix — criteria 1–3
 
-| Criterion | Status | Evidence |
-|-----------|--------|----------|
-| Status dual-stack template mono; no glass chips | Present | StatusItemRendering + live status-desktop-live-dark.png |
-| Left-click full popover focused on provider | Present | PopoverRoot G-P1 + live popover-live-*; SoT harness |
-| Right-click Open Usage / Refresh / Quit enabled | Present | StatusItemMenuModel + SoT harness; live PNG BLOCKED |
-| Usage real NSToolbar | Present | usage-toolbar-*.png UsageWindowController |
-| provider≠account nest; 0% empty | Present | usage-window-openai sidebar + SoT meter fractions |
-| Detail head + Limit Reset + Open usage | Present | usage-detail-openai + usage-window-openai |
-| GlassFallbacks only; limits only | Present | ArchitectureLint + glass-and-limits-grep.log |
-| G-P1 sticky chrome | Present | brand · Overview\|Providers · strip in popover-openai-dark.png |
-| G-U2 sidebar craft | Present | Browse/logos/selection/nest in usage-window-openai-dark.png |
+**Authority:** `advisor-plans/qi-artifacts/EVIDENCE_LEDGER.toml`  
+Do not cite PNG paths that are not ledger-pass (or explicit `*.BLOCKED.txt`).
+
+| Criterion | Status | Evidence (ledger only) |
+|-----------|--------|------------------------|
+| Status dual-stack template mono; no glass chips | Present | Ledger `status-desktop` harness Dark+Light (`status-desktop-{dark,light}.png` via StatusItemRendering); optional live extras row `status-desktop-live-extras` |
+| Left-click full popover focused on provider | Present | Ledger `popover-openai` / `popover-anthropic` harness Dark+Light (`PopoverRoot` G-P1 craft); focus wiring `StatusPopoverFocus` + DesktopSoTParityHarness. **Not** live popover PNGs (ledger `popover-live-click` **blocked**) |
+| Right-click Open Usage / Refresh / Quit enabled | Present | StatusItemMenuModel + DesktopSoTParityHarness; ledger `ctx-menu-live` **blocked** (no live PNG) |
+| Usage real NSToolbar | Present | Ledger `usage-toolbar` harness (`usage-toolbar-*.png` UsageWindowController) |
+| provider≠account nest; 0% empty | Present | Ledger `usage-provider-nest` + `usage-window-openai-*.png` sidebar; SoT meter fractions |
+| Detail head + Limit Reset + Open usage | Present | Ledger `usage-detail-openai` harness |
+| GlassFallbacks only; limits only | Present | DesktopArchitectureLint + glass-and-limits-grep |
+| G-P1 sticky chrome | Present | Ledger `popover-openai` harness Dark+Light (brand · Overview\|Providers · strip) |
+| G-U2 sidebar craft | Present | `usage-window-openai-*.png` Browse/logos/selection/nest |
+
+## Blocked (ledger)
+
+| Scene id | Reason |
+|----------|--------|
+| popover-live-click | `native/popover-live.BLOCKED.txt` — craft = harness only |
+| ctx-menu-live | `native/ctx-menu-live-dark.BLOCKED.txt` — rows via model/harness |
