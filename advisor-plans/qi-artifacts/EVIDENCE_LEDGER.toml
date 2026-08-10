@@ -69,7 +69,7 @@ html_path = "advisor-plans/qi-artifacts/html/usage-overview-dark.png"
 native_path = "advisor-plans/qi-artifacts/native/usage-overview-dark.png"
 capture_tier = "harness"
 verdict = "pass"
-notes = "OverviewListView; full shell also usage-window-overview-dark.png"
+notes = "OverviewListView component harness. Full usage-window-overview shell is NOT Pass when sidebar whiteout (see usage-window-sidebar.BLOCKED.txt)."
 
 [[scene]]
 id = "usage-overview"
@@ -86,7 +86,7 @@ html_path = "advisor-plans/qi-artifacts/html/usage-provider-nest-dark.png"
 native_path = "advisor-plans/qi-artifacts/native/usage-provider-nest-dark.png"
 capture_tier = "harness"
 verdict = "pass"
-notes = "UsageAccountNestView; nest also in usage-window-openai-dark.png sidebar"
+notes = "UsageAccountNestView component. Do not claim Pass from usage-window-openai full shell if sidebar whiteout."
 
 [[scene]]
 id = "usage-provider-nest"
@@ -103,7 +103,7 @@ html_path = "advisor-plans/qi-artifacts/html/usage-detail-openai-dark.png"
 native_path = "advisor-plans/qi-artifacts/native/usage-detail-openai-dark.png"
 capture_tier = "harness"
 verdict = "pass"
-notes = "ProviderCardView detail head; shell usage-window-openai-dark.png"
+notes = "ProviderCardView detail component. Full usage-window-openai shell whiteout is BLOCKED — not Pass evidence."
 
 [[scene]]
 id = "usage-detail-openai"

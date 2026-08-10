@@ -256,7 +256,7 @@ public struct PopoverProviderTab: View {
         }
     }
 
-    /// Hero remaining (VS-11 primary) + meter + pace/reset — popover.html `.hero` / `.meter`.
+    /// Hero → pace → reset → meter last (popover.html `.block` anatomy / G-P3).
     private func detailBucketBlock(_ row: UsageDetailRow) -> some View {
         let hero = row.layoutLines.compactMap(\.leading).first
         let paceLines = row.layoutLines.dropFirst().compactMap(\.leading)
@@ -277,10 +277,6 @@ public struct PopoverProviderTab: View {
                     .lineLimit(1)
             }
 
-            if let meter = row.meterPercent {
-                bucketMeter(meter, severity: row.severity, height: 7)
-            }
-
             ForEach(Array(paceLines.enumerated()), id: \.offset) { _, pace in
                 Text(pace)
                     .font(.caption.weight(.medium))
@@ -291,6 +287,11 @@ public struct PopoverProviderTab: View {
                     .font(.caption)
                     .foregroundStyle(.tertiary)
                     .monospacedDigit()
+            }
+
+            // Meter last — HTML SoT: hero → pace → reset → meter (not meter under hero).
+            if let meter = row.meterPercent {
+                bucketMeter(meter, severity: row.severity, height: 7)
             }
         }
         .padding(12)
@@ -325,11 +326,12 @@ public struct PopoverProviderTab: View {
             Text(bucket.label.uppercased())
                 .font(.caption2.weight(.semibold))
                 .foregroundStyle(.secondary)
-            if let meter = bucket.meterPercent {
-                bucketMeter(meter, severity: "normal", height: 7)
-            }
             ForEach(Array(bucket.displaySegments.enumerated()), id: \.offset) { _, segment in
                 Text(segment).font(.caption)
+            }
+            // Meter last (G-P3 / popover.html) — same order as detailBucketBlock.
+            if let meter = bucket.meterPercent {
+                bucketMeter(meter, severity: "normal", height: 7)
             }
         }
         .padding(12)

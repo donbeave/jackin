@@ -571,7 +571,29 @@ struct DesktopVisualSnapshotHarness {
             NSApp.setActivationPolicy(.prohibited)
             return false
         }
-        print("WROTE \(fullPath) [UsageWindowController window capture]")
+
+        // View-bitmap path often paints Liquid Glass sidebar as solid white (esp. Dark) —
+        // not a Pass for full-shell nest+detail (see usage-window-sidebar.BLOCKED.txt).
+        let sidebarWhiteout =
+            appearance == .darkAqua && windowImageHasWhiteoutSidebar(full)
+        if sidebarWhiteout {
+            let side = fullPath.replacingOccurrences(of: ".png", with: ".BLOCKED.txt")
+            let reason = """
+            Full-window capture has whiteout Liquid Glass sidebar (view-bitmap/CLT composite). \
+            Not craft Pass for glass nest+detail shell. Use component snaps: \
+            usage-provider-nest / usage-detail / usage-overview / usage-toolbar.
+            """
+            try? reason.write(to: URL(fileURLWithPath: side), atomically: true, encoding: .utf8)
+            // Shared honesty marker for VISUAL_QA_LOG / ledger prose.
+            let shared = (fullPath as NSString).deletingLastPathComponent
+                + "/usage-window-sidebar.BLOCKED.txt"
+            try? reason.write(to: URL(fileURLWithPath: shared), atomically: true, encoding: .utf8)
+            print("BLOCKED \(fullPath) [sidebar whiteout — not full-shell Pass]")
+        } else {
+            let side = fullPath.replacingOccurrences(of: ".png", with: ".BLOCKED.txt")
+            try? FileManager.default.removeItem(atPath: side)
+            print("WROTE \(fullPath) [UsageWindowController window capture]")
+        }
 
         // Titlebar/toolbar band crop (CGImage y=0 is top in this bitmap path).
         if let toolbarPath {
@@ -612,7 +634,8 @@ struct DesktopVisualSnapshotHarness {
 
         controller.invalidate()
         NSApp.setActivationPolicy(.prohibited)
-        return true
+        // Full shell Pass only when sidebar composites (not whiteout).
+        return !sidebarWhiteout
     }
 
     /// Prefer live composite: screencapture -R region, then -l, then CGWindow.
@@ -704,6 +727,53 @@ struct DesktopVisualSnapshotHarness {
         }
         try? FileManager.default.removeItem(at: tmp)
         return cg
+    }
+
+    /// Left ~28% of content (below titlebar) is solid near-white — Liquid Glass sidebar whiteout.
+    private static func windowImageHasWhiteoutSidebar(_ image: CGImage, sampleStep: Int = 4) -> Bool {
+        let w = image.width
+        let h = image.height
+        guard w > 40, h > 40 else { return true }
+        let bytesPerPixel = 4
+        let bytesPerRow = w * bytesPerPixel
+        var data = [UInt8](repeating: 0, count: h * bytesPerRow)
+        guard let ctx = CGContext(
+            data: &data,
+            width: w,
+            height: h,
+            bitsPerComponent: 8,
+            bytesPerRow: bytesPerRow,
+            space: CGColorSpaceCreateDeviceRGB(),
+            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+        ) else {
+            return true
+        }
+        ctx.draw(image, in: CGRect(x: 0, y: 0, width: w, height: h))
+        // Skip titlebar band; sample left sidebar column only.
+        let y0 = h / 8
+        let x1 = w / 4
+        var pureWhite = 0
+        var total = 0
+        let step = max(1, sampleStep)
+        var y = y0
+        while y < h {
+            var x = 0
+            while x < x1 {
+                let i = y * bytesPerRow + x * bytesPerPixel
+                let r = data[i]
+                let g = data[i + 1]
+                let b = data[i + 2]
+                total += 1
+                if r >= 240, g >= 240, b >= 240 {
+                    pureWhite += 1
+                }
+                x += step
+            }
+            y += step
+        }
+        guard total > 0 else { return true }
+        // >35% near-white in left column ⇒ whiteout (not a painted dark glass sidebar).
+        return Double(pureWhite) / Double(total) > 0.35
     }
 
     /// Dark titlebar: solid white disks where SF Symbols should be (view-bitmap / bad composite).

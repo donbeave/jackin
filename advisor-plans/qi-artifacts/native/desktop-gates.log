@@ -1,22 +1,22 @@
-=== tip bd3f3dc9 2026-08-10T11:00Z dual-image delta rewrite ===
-=== tip bd3f3dc9 2026-08-10T11:00Z dual-image delta rewrite ===
+=== tip bc09f784 G-P3+whiteout 2026-08-10T11:08Z ===
+=== tip bc09f784 G-P3+whiteout 2026-08-10T11:08Z ===
 PASS: Usage Liquid Glass + provider≠account structural checks
 PASS: QI evidence ledger — 16 pass rows, 3 blocked, prose PNG refs consistent
 DesktopArchitectureLint: ALL PASS
 DesktopSoTParityHarness: ALL PASS (18/18 checks)
+DesktopSoTParityHarness: ALL PASS (18/18 checks)
+DesktopSoTParityHarness: ALL PASS (18/18 checks)
 DesktopParityMatrixHarness: ALL PASS
-=== glass outside Fallbacks ===
-(none)
-=== price/trend ===
-(none)
-=== brand ===
-native/Sources/JackinDesktopApp/JackinDesktopApp.swift:4:// jackin❯ desktop — display-only shell over Rust UniFFI.
-native/Sources/JackinDesktop/DesktopAppDelegate.swift:126:            button.setAccessibilityLabel("jackin❯ desktop usage")
-native/Sources/JackinDesktop/DesktopAppDelegate.swift:241:/// Application delegate for jackin❯ desktop (menu-bar agent). Owns the store,
-native/Sources/JackinDesktop/AppMainMenu.swift:8:/// System **menu bar** for jackin❯ desktop when a document window is front
-native/Sources/JackinDesktop/AppMainMenu.swift:52:            ?? "jackin❯ desktop"
-native/Sources/JackinDesktop/Popover/PopoverTabGrid.swift:65:        .accessibilityLabel("jackin❯ desktop")
-native/Sources/JackinDesktop/UsageWindowController.swift:47:        window.title = "jackin❯ desktop"
-native/Sources/JackinDesktop/UsageWindow/UsageWindowRoot.swift:136:        .navigationTitle("jackin❯ desktop")
-native/Sources/JackinUsageBridge/StatusItemMenuModel.swift:31:        StatusItemMenuRow(title: "Quit jackin❯ desktop", action: .quit, keyEquivalent: "q"),
-All craft scenes dual-image + scene-specific deltas Pass (toolbar Dark BLOCKED)
+Matrix: 8/8 providers displayable · dual-bucket · depleted · limits-only
+StatusItemChipHarness: ALL PASS
+BLOCKED ../advisor-plans/qi-artifacts/native/usage-window-openai-dark.png [sidebar whiteout — not full-shell Pass]
+BLOCKED ../advisor-plans/qi-artifacts/native/usage-toolbar-dark.png [dark toolbar icons unreadable — white blobs]
+usage_window: UsageWindowController CGWindow full (sidebar nest + detail) — not blank NSHostingView split
+usage_window_openai_dark: BLOCKED
+usage_window_overview_dark: OK
+usage_window_openai_light: OK
+usage_window_overview_light: OK
+usage_toolbar_dark: BLOCKED
+usage_toolbar_light: UsageWindowController titlebar crop
+G-P3: hero→pace→reset→meter Pass dual-image
+usage_window_openai_dark: BLOCKED (sidebar whiteout honest)

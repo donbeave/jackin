@@ -1,29 +1,22 @@
 # Final goal parity matrix — UI_PARITY_MASTER §6
 
-**Tip:** plan/desktop-visual @ 55861dee  
-**Oracle:** index.html + popover.html Dark+Light  
-**Dual-image:** all craft scenes re-read; scene-specific deltas  
+**Tip:** plan/desktop-visual @ bc09f784  
 
 ## High residual craft (product)
-**None.**
+**None** (G-P3 meter-last fixed; full-window whiteout BLOCKED honest).
 
 ## Scenes
 | Scene | Dark | Light | Verdict |
 |-------|------|-------|---------|
 | status-desktop | Pass | Pass | dual-stack template mono |
-| popover-openai | Pass | Pass | multi-limit meters + Open Usage |
-| popover-anthropic | Pass | Pass | full multi-limit plate (not mini-card) |
-| popover-overview | Pass | Pass | inventory OV-5 |
-| usage-overview | Pass | Pass | per-account cards |
-| usage-provider-nest | Pass | Pass | 57% orange / 0% empty |
-| usage-detail-openai | Pass | Pass | Session/Weekly/Spark/LRC |
-| usage-toolbar | **BLOCKED** | Pass | Dark white-blob rejected |
-
-## Live
-| Scene | Verdict |
-|-------|---------|
-| popover-live | BLOCKED |
-| ctx-menu-live | BLOCKED |
+| popover-openai | Pass | Pass | hero→pace→reset→meter (G-P3) |
+| popover-anthropic | Pass | Pass | multi-limit + G-P3 |
+| popover-overview | Pass | Pass | inventory |
+| usage-overview | Pass | Pass | component harness |
+| usage-provider-nest | Pass | Pass | 57%/0% |
+| usage-detail-openai | Pass | Pass | component harness |
+| usage-toolbar | BLOCKED | Pass | Dark white-blob |
+| usage-window full shell | BLOCKED | n/a | sidebar whiteout |
 
 ## Gates
-L1+L2 ALL PASS · usage_toolbar_dark BLOCKED · usage_toolbar_light OK
+L1+L2 ALL PASS · MANIFEST usage_window_openai_dark BLOCKED · usage_toolbar_dark BLOCKED

@@ -1,49 +1,40 @@
 # VISUAL_QA_LOG — jackin❯ desktop HTML SoT parity
 
 **Date:** 2026-08-10  
-**Tip:** `55861dee`  
+**Tip:** `bc09f784`  
 **Branch:** plan/desktop-visual  
 **Authority:** UI_PARITY_MASTER §6 + QI_VERIFICATION L1–L4  
-**Artifacts:** `advisor-plans/qi-artifacts/`
 
-## Automated gates (L1–L2)
+## Automated gates
 
 ```
 check_usage_liquid_glass.py PASS
-check_qi_evidence_ledger.py PASS — 16 pass / 3 blocked
+check_qi_evidence_ledger.py PASS
 DesktopArchitectureLint ALL PASS
-DesktopSoTParityHarness ALL PASS
+DesktopSoTParityHarness ALL PASS ×3
 DesktopParityMatrixHarness ALL PASS
+StatusItemChipHarness ALL PASS
+usage_window_openai_dark BLOCKED (sidebar whiteout)
+usage_toolbar_dark BLOCKED (white blobs)
 ```
 
-Log: `qi-artifacts/native/desktop-gates.log`
+## §6 matrix
 
-## §6 matrix — Dark / Light (dual-image read)
+| Scene | Dark | Light | High residual | Verdict |
+|-------|------|-------|---------------|---------|
+| status-desktop | Pass | Pass | none | dual-stack mono |
+| popover-openai | Pass | Pass | none | G-P3 meter-last |
+| popover-anthropic | Pass | Pass | none | multi-limit + G-P3 |
+| popover-overview | Pass | Pass | none | inventory |
+| usage-overview | Pass | Pass | none | component |
+| usage-provider-nest | Pass | Pass | none | 57%/0% |
+| usage-detail-openai | Pass | Pass | none | component |
+| usage-toolbar | BLOCKED | Pass | capture | Dark blobs |
+| usage-window full shell | BLOCKED | partial | whiteout | not Pass |
 
-| Scene | Dark | Light | High residual | Evidence | Verdict |
-|-------|------|-------|---------------|----------|---------|
-| status-desktop | yes | yes | none | html+native · deltas/…-status-desktop.md | **Pass** |
-| popover-openai | yes | yes | none | html+native · deltas/…-popover-openai.md | **Pass** |
-| popover-anthropic | yes | yes | none | full multi-limit · deltas/…-popover-anthropic.md | **Pass** |
-| popover-overview | yes | yes | none | native · deltas/…-popover-overview.md | **Pass** |
-| usage-overview | yes | yes | none | html+native · deltas/…-usage-overview.md | **Pass** |
-| usage-provider-nest | yes | yes | none | 57%/0% · deltas/…-usage-provider-nest.md | **Pass** |
-| usage-detail-openai | yes | yes | none | html+native · deltas/…-usage-detail-openai.md | **Pass** |
-| usage-toolbar | **BLOCKED** | yes | capture only | Light PNG · Dark BLOCKED.txt · deltas/…-usage-toolbar.md | **Light Pass / Dark BLOCKED** |
-
-**High residual craft product: none.**
+**High residual craft product: none** (G-P3 fixed; whiteout honest BLOCKED).
 
 ## Live
+popover-live / ctx-menu **BLOCKED** — SoTParity proves focus/menu.
 
-| Flow | Result | Evidence |
-|------|--------|----------|
-| Left-click focus | Pass | StatusPopoverFocus + SoTParity |
-| Right-click 3 rows | Pass | StatusItemMenuModel + SoT |
-| popover-live | **BLOCKED** | popover-live.BLOCKED.txt |
-| ctx-menu live | **BLOCKED** | ctx-menu-live-dark.BLOCKED.txt |
-
-## Multimodal
-
-Every craft scene dual-read HTML+native; scene-specific QI §7.2 deltas with Severity table + Verdict.
-
-Agent sign-off: QI L1–L4 craft closed; Dark toolbar BLOCKED (§12); Anthropic multi-limit Pass.
+Agent sign-off: G-P3 anatomy Pass; full-window whiteout not claimed Pass.

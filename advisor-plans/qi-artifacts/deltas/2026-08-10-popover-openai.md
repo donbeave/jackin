@@ -1,24 +1,26 @@
-# QI delta: popover-openai · Dark + Light (G-P1–P3)
+# QI delta: popover-openai · Dark + Light (G-P3 bucket anatomy)
 
-**Date:** 2026-08-10 · **Tip:** `bd3f3dc9`  
+**Date:** 2026-08-10 · **Tip:** G-P3 meter-last fix  
 **Oracle HTML:** `html/popover-openai-{dark,light}.png`  
-**Native:** `native/popover-openai-{dark,light}.png` (PopoverRoot + QI fixture)
+**Native:** `native/popover-openai-{dark,light}.png`
+
+## Fail → Pass trail
+
+| Cycle | High residual | Fix |
+|-------|---------------|-----|
+| Fail | G-P3 order hero→**meter**→pace→reset | `PopoverProviderTab.detailBucketBlock` meter before pace |
+| Pass | hero→pace→reset→**meter** matches HTML | recapture dual-image |
 
 ## Dual-image
 
 | Check | HTML | Native | Match |
 |-------|------|--------|-------|
 | Brand | jackin❯ desktop | same | Yes |
-| Tabs | Overview \| Providers | Providers selected | Yes |
-| Strip | OpenAI selected + meters | OpenAI selected (fixture 3 providers) | Yes |
-| Account chips | multi emails | chainargos 57% · zhokhov 0% | Yes |
-| ACCOUNT | Pro 20× · fresh · OAuth | same | Yes |
-| Session | **63% left** green | same · On pace · Resets 2h 14m | Yes |
-| Weekly | **57% left** orange | same · 13% in deficit · Resets 3d | Yes |
-| Spark 5-hour | **88% left** | same | Yes |
-| Spark Weekly | **100% left** | same | Yes |
-| LRC | 3 manual resets | same | Yes |
-| Footer | Open Usage Window | same | Yes |
+| Session order | 63% → On pace → Resets 2h 14m → meter | same | **Yes** |
+| Weekly order | 57% → 13% deficit → Resets 3d → meter | same | **Yes** |
+| Spark / LRC | multi-limit plate | same | Yes |
+| Meters 1:1 | fills match % | same | Yes |
+| 0% account chip | empty track | zhokhov 0% | Yes |
 | Light theme | same IA | same | Yes |
 | Limits only | no prices | no prices | Yes |
 
@@ -26,9 +28,8 @@
 
 | Severity | Element | Notes |
 |----------|---------|-------|
-| Low | Strip count | QI fixture 3 vs HTML 5+ providers |
-| Low | Exact wall-clock | Native compact Rust segments vs HTML “15 Aug…” |
-| Low | Open usage page link | Native shows in-body link + footer Open Usage Window |
+| Low | Strip count | QI fixture 3 vs HTML 5+ |
+| Low | Exact wall-clock | Native compact Rust segments |
 
 ## Verdict
-**Verdict: Pass** (Dark + Light)
+**Verdict: Pass** (Dark + Light) — G-P3 meter-last anatomy matches popover.html.
