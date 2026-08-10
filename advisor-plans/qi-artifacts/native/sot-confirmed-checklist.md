@@ -1,6 +1,6 @@
 # SoT CONFIRMED checklist — status / popover / Usage
 
-**Tip:** plan/desktop-visual @ def678f5  
+**Tip:** plan/desktop-visual @ 2a98061f  
 **SoT:** decisions §0 → HTML index/popover → AGENT_HANDOFF
 
 | ID | Surface | Status | Evidence |
