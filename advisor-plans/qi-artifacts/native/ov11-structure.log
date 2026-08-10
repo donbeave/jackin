@@ -1,4 +1,0 @@
-PASS OV-11: no ProgressView in PopoverOverviewTab
-PASS per-account meters present: True
-PASS SB-5 residual: StatusItemLabel is template mono, no severity tint (FB1-6)
-SB-5 checklist: partial — rank/order carries priority; urgency color not on bar (FB1-6 / SB-P4 OPEN)

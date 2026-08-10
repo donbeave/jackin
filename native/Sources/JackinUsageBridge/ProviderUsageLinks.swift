@@ -4,7 +4,7 @@
 import Foundation
 
 /// Official provider usage / quota pages for “Open usage page” (browser escape
-/// hatch). Table SoT: `plans/previews/desktop-ui/OFFICIAL_USAGE_URLS.md`.
+/// hatch). Product boundary: `plans/previews/desktop-ui/SPECIFICATION.md`.
 ///
 /// Keys are host `surface_id` values (`codex`, `claude`, …) from
 /// `DESKTOP_PROVIDER_ORDER`. No string synthesis beyond this map.
