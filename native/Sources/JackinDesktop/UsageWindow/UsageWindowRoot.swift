@@ -81,7 +81,7 @@ struct UsageWindowRoot: View {
             .modifier(GlassFallbacks.ContentBackgroundExtension())
         }
         .navigationSplitViewStyle(.balanced)
-        .navigationTitle("Usage")
+        .navigationTitle("jackin❯ desktop")
         .toolbar {
             // LG-A8: single primary action group on system glass toolbar.
             ToolbarItemGroup(placement: .primaryAction) {

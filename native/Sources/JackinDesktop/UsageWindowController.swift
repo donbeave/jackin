@@ -34,7 +34,8 @@ final class UsageWindowController {
             backing: .buffered,
             defer: false
         )
-        window.title = "jackin❯ desktop — Usage"
+        // Centered title-bar brand (macOS centers NSWindow.title).
+        window.title = "jackin❯ desktop"
         window.isReleasedWhenClosed = false
         window.contentView = NSHostingView(rootView: UsageWindowRoot(store: store))
         window.center()

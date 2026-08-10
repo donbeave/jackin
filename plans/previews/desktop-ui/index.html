@@ -262,17 +262,17 @@
     .win .traffic .c { background: #ff5f57; }
     .win .traffic .y { background: #febc2e; }
     .win .traffic .g { background: #28c840; }
+    /* Brand true-centered in chrome strip (traffic left, Refresh right) */
     .win .app-name {
-      font-size: 12px; font-weight: 500; color: var(--secondary);
-      letter-spacing: -0.1px; white-space: nowrap;
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 13px; font-weight: 600; color: var(--label);
+      letter-spacing: -0.2px; white-space: nowrap;
+      pointer-events: none;
     }
     .win .app-name b { color: var(--jk); font-weight: 700; }
     .win .chrome-float .tb-spacer { flex: 1; }
-    .win .page-title {
-      font-size: 13px; font-weight: 600; color: var(--label);
-      letter-spacing: -0.2px;
-      margin-right: 2px;
-    }
     /* De-slop control: full continuous capsule stroke (all sides), no gradient stack */
     .win .tb-btn {
       display: inline-flex; align-items: center; justify-content: center; gap: 6px;
@@ -794,7 +794,6 @@
             <div class="traffic" aria-hidden="true"><i class="c"></i><i class="y"></i><i class="g"></i></div>
             <div class="app-name">jackin<b>❯</b> desktop</div>
             <div class="tb-spacer"></div>
-            <div class="page-title">Usage</div>
             <button type="button" class="tb-btn primary" title="Refresh" aria-label="Refresh">
               <svg viewBox="0 0 16 16"><path d="M13.5 8a5.5 5.5 0 1 1-1.4-3.6l.7.7A4.5 4.5 0 1 0 12.5 8h1zM8 2.5V1l2.2 2.2L8 5.5V4a4 4 0 0 0-3.5 6.1l-.9.5A5 5 0 0 1 8 2.5z"/></svg>
               Refresh
