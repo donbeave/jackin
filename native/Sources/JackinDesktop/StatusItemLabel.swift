@@ -12,10 +12,14 @@ import JackinUsageBridge
 /// Every usage value is Rust-owned; Swift only layouts and templates icons.
 @MainActor
 public enum StatusItemRendering {
-    /// Template icon for a provider icon key, using the shared
-    /// `desktopProviderSystemImage` seam and falling back to the bundled
-    /// JackinMark for keys outside the seven-provider domain (e.g. `opencode`).
+    /// Template icon for a provider icon key.
+    ///
+    /// Prefers **official** bundled PDF logomarks (`ProviderMarks`, LG-P1–P4).
+    /// Falls back to SF Symbol stand-in, then JackinMark for unknown keys.
     public static func icon(forIconKey iconKey: String) -> NSImage {
+        if let official = ProviderMarks.templateImage(forIconKey: iconKey) {
+            return official
+        }
         if let symbol = desktopProviderSystemImage(iconKey: iconKey),
            let image = NSImage(systemSymbolName: symbol, accessibilityDescription: nil)
         {

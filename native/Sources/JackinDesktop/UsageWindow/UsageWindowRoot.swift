@@ -202,17 +202,32 @@ public struct UsageWindowRoot: View {
     }
 
     private func sidebarProviderLogo(iconKey: String) -> some View {
-        let symbol = desktopProviderSystemImage(iconKey: iconKey) ?? "circle.grid.cross"
-        return sidebarLogoPlate(systemImage: symbol, tint: Color.jackinPhosphor)
+        sidebarLogoPlate(iconKey: iconKey, tint: Color.jackinPhosphor)
     }
 
-    private func sidebarLogoPlate(systemImage: String, tint: Color) -> some View {
+    private func sidebarLogoPlate(
+        iconKey: String? = nil,
+        systemImage: String? = nil,
+        tint: Color
+    ) -> some View {
         ZStack {
             RoundedRectangle(cornerRadius: 7, style: .continuous)
                 .fill(tint.opacity(0.18))
-            Image(systemName: systemImage)
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(tint)
+            if let iconKey, let mark = ProviderMarks.swiftUIImage(forIconKey: iconKey) {
+                mark
+                    .resizable()
+                    .renderingMode(.template)
+                    .scaledToFit()
+                    .frame(width: 13, height: 13)
+                    .foregroundStyle(tint)
+            } else {
+                let symbol = systemImage
+                    ?? iconKey.flatMap { desktopProviderSystemImage(iconKey: $0) }
+                    ?? "circle.grid.cross"
+                Image(systemName: symbol)
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(tint)
+            }
         }
         .frame(width: 26, height: 26)
     }

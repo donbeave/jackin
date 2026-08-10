@@ -155,16 +155,26 @@ public struct PopoverTabGrid: View {
     }
 
     /// Provider identity plate (popover.html `.plogo` density + per-provider chrome tint).
+    /// Official logomark on brand plate when bundled; SF Symbol fallback only if missing.
     /// Colors are decorative chrome only — not usage/severity data.
     private func brandPlate(iconKey: String?, selected: Bool) -> some View {
-        let symbol = iconKey.flatMap { desktopProviderSystemImage(iconKey: $0) } ?? "circle.grid.cross"
         let brand = brandChrome(for: iconKey)
         return ZStack {
             RoundedRectangle(cornerRadius: 8, style: .continuous)
                 .fill(selected ? brand.opacity(0.95) : brand.opacity(0.78))
-            Image(systemName: symbol)
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(Color.white.opacity(0.95))
+            if let iconKey, let mark = ProviderMarks.swiftUIImage(forIconKey: iconKey) {
+                mark
+                    .resizable()
+                    .renderingMode(.template)
+                    .scaledToFit()
+                    .frame(width: 15, height: 15)
+                    .foregroundStyle(Color.white.opacity(0.98))
+            } else {
+                let symbol = iconKey.flatMap { desktopProviderSystemImage(iconKey: $0) } ?? "circle.grid.cross"
+                Image(systemName: symbol)
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(Color.white.opacity(0.95))
+            }
         }
         .frame(width: 30, height: 30)
         .shadow(color: brand.opacity(selected ? 0.35 : 0.15), radius: selected ? 4 : 1, y: 1)

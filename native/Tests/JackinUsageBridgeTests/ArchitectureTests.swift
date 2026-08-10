@@ -171,6 +171,8 @@ final class ArchitectureTests: XCTestCase {
         XCTAssertNil(statusBadgeSymbol("fresh"))
     }
 
+    // ProviderMarks live in JackinDesktopUI — covered by DesktopSoT / visual harness.
+
     func testJackinPhosphorTokensMatchHTMLSoT() {
         XCTAssertEqual(JackinBrand.phosphorDarkSRGB.r, 0x5C / 255.0, accuracy: 0.0001)
         XCTAssertEqual(JackinBrand.phosphorDarkSRGB.g, 0xF0 / 255.0, accuracy: 0.0001)

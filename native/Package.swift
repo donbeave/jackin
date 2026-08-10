@@ -33,7 +33,11 @@ let package = Package(
             name: "JackinDesktopUI",
             dependencies: ["JackinUsageBridge"],
             path: "Sources/JackinDesktop",
-            resources: [.copy("Resources/JackinMark.pdf")]
+            resources: [
+                .copy("Resources/JackinMark.pdf"),
+                // Official provider logomarks (template PDF) — see ProviderMarks/PROVENANCE.md
+                .copy("Resources/ProviderMarks"),
+            ]
         ),
         .executableTarget(
             name: "JackinDesktop",

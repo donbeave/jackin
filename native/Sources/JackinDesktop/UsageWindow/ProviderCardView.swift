@@ -178,13 +178,20 @@ public struct ProviderCardView: View {
         "focused", "header", "provider", "account", "username", "plan",
     ]
 
-    /// Logo plate for provider identity (HTML `.plogo` role — SF Symbol, not brand color plate on status bar).
+    /// Logo plate for provider identity (HTML `.plogo` role — official mark preferred).
     @ViewBuilder
     private func providerLogoPlate(iconKey: String?, size: CGFloat) -> some View {
         ZStack {
             RoundedRectangle(cornerRadius: size * 0.28, style: .continuous)
                 .fill(Color.jackinPhosphor.opacity(0.18))
-            if let iconKey, let symbol = desktopProviderSystemImage(iconKey: iconKey) {
+            if let iconKey, let mark = ProviderMarks.swiftUIImage(forIconKey: iconKey) {
+                mark
+                    .resizable()
+                    .renderingMode(.template)
+                    .scaledToFit()
+                    .frame(width: size * 0.52, height: size * 0.52)
+                    .foregroundStyle(Color.jackinPhosphor)
+            } else if let iconKey, let symbol = desktopProviderSystemImage(iconKey: iconKey) {
                 Image(systemName: symbol)
                     .font(.system(size: size * 0.42, weight: .semibold))
                     .foregroundStyle(Color.jackinPhosphor)
