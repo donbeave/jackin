@@ -532,6 +532,43 @@ final class ArchitectureTests: XCTestCase {
         XCTAssertEqual(chips.map(\.surfaceId), ["s0", "s1", "s2"])
     }
 
+    /// OV-11: Overview has no orphan Overview-level ProgressView / loading bar —
+    /// only per-account meters. Source under native/Sources (shipped path).
+    func testOverviewHasNoOrphanOverviewLevelProgress() throws {
+        let overview = sourcesRoot
+            .appendingPathComponent("JackinDesktop/Popover/PopoverOverviewTab.swift")
+        let text = try String(contentsOf: overview, encoding: .utf8)
+        XCTAssertFalse(
+            text.contains("ProgressView"),
+            "OV-11: Overview must not ship ProgressView as Overview-level chrome"
+        )
+        XCTAssertFalse(
+            text.contains("LinearProgress"),
+            "OV-11: no LinearProgress Overview-level chrome"
+        )
+        // Per-account meters remain (account-tied, not Overview-wide).
+        XCTAssertTrue(
+            text.contains("overviewMeter") || text.contains("Capsule"),
+            "per-account meter geometry still present"
+        )
+    }
+
+    /// SB-5 vs FB1-6: bar stays template mono (no severity tint). Urgency color
+    /// on chip chrome is SB-P4 OPEN — not silently met as full SB-5.
+    func testStatusBarIsTemplateMonoWithoutSeverityTint() throws {
+        let label = sourcesRoot
+            .appendingPathComponent("JackinDesktop/StatusItemLabel.swift")
+        let text = try String(contentsOf: label, encoding: .utf8)
+        XCTAssertTrue(
+            text.contains("isTemplate = true") || text.contains("isTemplate=true"),
+            "status icons must be template mono (FB1-6)"
+        )
+        XCTAssertTrue(
+            text.contains("no severity tint") || text.contains("FB1-6"),
+            "StatusItemLabel must document FB1-6 / no severity tint on bar"
+        )
+    }
+
     /// SB-13: ranked id order change forces status-item rebuild.
     func testStatusBarOrderRequiresRebuildOnRankChange() {
         XCTAssertFalse(

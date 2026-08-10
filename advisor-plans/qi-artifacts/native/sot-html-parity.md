@@ -15,3 +15,6 @@
 
 ## Token map
 `--jk` → Color.jackinPhosphor · `--glass` → GlassFallbacks · status bands → severityTint
+
+## SB-5 residual
+Bar priority = rank order (SB-13/17), not colored chip fills (FB1-6 template mono). SB-P4 OPEN.
