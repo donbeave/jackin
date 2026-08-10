@@ -1,7 +1,7 @@
 # VISUAL_QA_LOG — jackin❯ desktop HTML SoT parity
 
 **Date:** 2026-08-10  
-**Tip:** `8db3702c`  
+**Tip:** `15fe09ec`  
 **Verification:** FINAL_GOAL_PROMPT re-verify · multi-limit full-plate ALL_OK · live 2 BLOCKED · gates green · app RUNNING
 
 **Branch:** plan/desktop-visual  
