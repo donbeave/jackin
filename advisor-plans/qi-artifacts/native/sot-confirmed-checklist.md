@@ -1,6 +1,6 @@
 # SoT CONFIRMED checklist — status / popover / Usage
 
-**Tip:** plan/desktop-visual @ 3accf797 (SB-5/OV-11 honesty pack)
+**Tip:** plan/desktop-visual @ 3accf797 (SB-5 partial + OV-11 met + structural tests)
 **Code:** SB-18/SB-13 @ 7bac5273 · SB-3/17/19 @ b97f2a4c  
 **SoT:** decisions §0 → HTML index/popover → AGENT_HANDOFF
 
