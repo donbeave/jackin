@@ -3,6 +3,7 @@
 **Date:** 2026-08-10  
 **Branch:** plan/desktop-visual  
 **Toolchain:** Xcode 26.6 (17F113) · Swift 6.3.3  
+**Last full verification re-run:** 2026-08-10 (L1/L2 green · dual-image §5 Pass · live BLOCKED honest)
 **Authority:** `qi-artifacts/EVIDENCE_LEDGER.toml` + dual-image §7.2/7.3  
 
 ## Craft closed (skeptic Highs)
