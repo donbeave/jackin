@@ -209,20 +209,64 @@ pub(super) fn quota_pace_label(
     Some(pace)
 }
 
+/// SB-18 time ladder (48h breakpoint):
+/// - **&lt; 1 hour** → compact minutes (`45m`)
+/// - **&lt; 48 hours** → compact hours (`36h`, optional `36h 30m`) — never days
+/// - **≥ 48 hours** → compact days (`2d`, optional `2d 1h`)
+///
+/// Prefer hours until the 48h line; do not emit a day form for 24–47h windows.
 pub(crate) fn compact_duration_label(seconds: i64) -> String {
-    let days = seconds / 86_400;
-    let hours = (seconds % 86_400) / 3_600;
+    let seconds = seconds.max(0);
+    let total_hours = seconds / 3_600;
     let minutes = (seconds % 3_600) / 60;
-    if days > 0 {
+    if total_hours >= 48 {
+        let days = total_hours / 24;
+        let hours = total_hours % 24;
         if hours > 0 {
             format!("{days}d {hours}h")
         } else {
             format!("{days}d")
         }
-    } else if hours > 0 {
-        format!("{hours}h {minutes}m")
+    } else if total_hours > 0 {
+        if minutes > 0 {
+            format!("{total_hours}h {minutes}m")
+        } else {
+            format!("{total_hours}h")
+        }
     } else {
         format!("{minutes}m")
+    }
+}
+
+#[cfg(test)]
+mod compact_duration_sb18_tests {
+    use super::compact_duration_label;
+
+    #[test]
+    fn under_one_hour_is_minutes() {
+        assert_eq!(compact_duration_label(0), "0m");
+        assert_eq!(compact_duration_label(45 * 60), "45m");
+        assert_eq!(compact_duration_label(3_599), "59m");
+    }
+
+    #[test]
+    fn under_forty_eight_hours_stays_hours_not_days() {
+        // 24h–47h must remain hours (SB-18); never `1d …`.
+        assert_eq!(compact_duration_label(24 * 3_600), "24h");
+        assert_eq!(compact_duration_label(36 * 3_600), "36h");
+        assert_eq!(compact_duration_label(36 * 3_600 + 30 * 60), "36h 30m");
+        assert_eq!(compact_duration_label(47 * 3_600), "47h");
+        assert_eq!(compact_duration_label(47 * 3_600 + 59 * 60), "47h 59m");
+        let label = compact_duration_label(47 * 3_600);
+        assert!(!label.contains('d'), "got day form under 48h: {label}");
+    }
+
+    #[test]
+    fn at_and_above_forty_eight_hours_uses_days() {
+        assert_eq!(compact_duration_label(48 * 3_600), "2d");
+        assert_eq!(compact_duration_label(48 * 3_600 + 3_600), "2d 1h");
+        assert_eq!(compact_duration_label(72 * 3_600), "3d");
+        assert_eq!(compact_duration_label(3 * 86_400 + 4 * 3_600), "3d 4h");
     }
 }
 

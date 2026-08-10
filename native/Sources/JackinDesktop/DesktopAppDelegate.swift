@@ -7,14 +7,15 @@ import JackinUsageBridge
 import SwiftUI
 
 /// Owns the per-provider `NSStatusItem`s, keyed by Rust `surfaceId`, and the one
-/// shared transient popover. Rust owns detection, ordering, and every string;
-/// this controller only reconciles items against `store.providerGlanceRows`.
+/// shared transient popover. Rust owns detection, ranking (SB-17), and every
+/// string; this controller reconciles items against `store.statusBarGlanceRows`
+/// and rebuilds when ranked order changes (SB-13).
 @MainActor
 public final class StatusBarController: NSObject {
     private let store: PresentationStore
     private var providerItems: [String: NSStatusItem] = [:]
     private var fallbackItem: NSStatusItem?
-    /// Rust canonical id order (never sorted in Swift), for reconciliation.
+    /// Last applied burn-first rank order (left → right = rank 1…n).
     private var canonicalOrder: [String] = []
     private let popover = NSPopover()
     private weak var anchoredButton: NSStatusBarButton?
@@ -65,12 +66,17 @@ public final class StatusBarController: NSObject {
             return
         }
         removeFallbackItem()
-        canonicalOrder = rows.map(\.surfaceId)
-        // Remove items whose id disappeared from the burn-first list.
-        for id in Array(providerItems.keys) where !canonicalOrder.contains(id) {
-            removeProviderItem(id: id)
+        let newOrder = rows.map(\.surfaceId)
+        // SB-13: NSStatusItem left→right order is creation order. When Rust
+        // rank changes, remove and recreate so visual order tracks rank 1 first.
+        if statusBarOrderRequiresRebuild(previous: canonicalOrder, next: newOrder) {
+            removeAllProviderItems()
+        } else {
+            for id in Array(providerItems.keys) where !newOrder.contains(id) {
+                removeProviderItem(id: id)
+            }
         }
-        // Create only new ids; order is Rust SB-17 rank (soonest-then-remaining).
+        canonicalOrder = newOrder
         for row in rows {
             let item = providerItems[row.surfaceId] ?? makeProviderItem(surfaceId: row.surfaceId)
             providerItems[row.surfaceId] = item

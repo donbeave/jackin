@@ -532,6 +532,29 @@ final class ArchitectureTests: XCTestCase {
         XCTAssertEqual(chips.map(\.surfaceId), ["s0", "s1", "s2"])
     }
 
+    /// SB-13: ranked id order change forces status-item rebuild.
+    func testStatusBarOrderRequiresRebuildOnRankChange() {
+        XCTAssertFalse(
+            statusBarOrderRequiresRebuild(
+                previous: ["codex", "claude", "amp"],
+                next: ["codex", "claude", "amp"]
+            )
+        )
+        XCTAssertTrue(
+            statusBarOrderRequiresRebuild(
+                previous: ["codex", "claude", "amp"],
+                next: ["claude", "codex", "amp"]
+            ),
+            "SB-13: swap of rank 1/2 must rebuild visual bar order"
+        )
+        XCTAssertTrue(
+            statusBarOrderRequiresRebuild(
+                previous: ["codex", "claude"],
+                next: ["codex", "claude", "amp"]
+            )
+        )
+    }
+
     /// SB-3/19 fixture filter for status-bar membership (QI / defensive path).
     func testSelectStatusBarGlanceRowsHidesZeroAndCapsThree() {
         func row(id: String, pct: UInt8?) -> PresentationStore.GlanceProviderRow {

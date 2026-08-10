@@ -200,6 +200,12 @@ public func selectStatusBarGlanceRows(
     )
 }
 
+/// SB-13: status-item **visual** order follows creation order. When ranked
+/// surface ids change, `StatusBarController` must remove+recreate items.
+public func statusBarOrderRequiresRebuild(previous: [String], next: [String]) -> Bool {
+    previous != next
+}
+
 /// SF Symbol name for a Desktop provider status item. Rejects any key outside
 /// `desktopProviderIconKeys` (so `opencode` and unknown keys return `nil`),
 /// then delegates to the existing `statusItemSystemImage` mapping. Performs no
