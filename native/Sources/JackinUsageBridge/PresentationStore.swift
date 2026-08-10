@@ -528,6 +528,31 @@ public final class PresentationStore: ObservableObject {
         accounts.filter { $0.surfaceId == surfaceId }
     }
 
+    /// Inject frozen DATA_CONTRACT / QI presentation without a live bridge poll.
+    ///
+    /// Used by `DesktopVisualSnapshotHarness` so hosted snapshots drive the
+    /// **same** ``PresentationStore`` + SwiftUI surfaces as the running app.
+    /// Does not invent strings — caller supplies Rust-shaped fixtures.
+    public func applyQIFixture(
+        glanceRows: [GlanceProviderRow],
+        surfaces: [SurfaceRow],
+        accounts: [AccountRow],
+        popoverSelection: String?,
+        usageSelection: String?,
+        nextRefreshLabel: String = "next update 4m"
+    ) {
+        self.providerGlanceRows = glanceRows
+        self.surfaces = surfaces
+        self.accounts = accounts
+        self.popoverSelection = popoverSelection
+        self.usageSelection = usageSelection
+        self.nextRefreshLabel = nextRefreshLabel
+        self.refreshInProgress = false
+        self.isOpen = true
+        self.isOpening = false
+        self.lastError = nil
+    }
+
     public func setRefreshFloorSecs(_ secs: UInt64) {
         Task { [weak self] in
             guard let self else { return }

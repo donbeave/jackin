@@ -1,24 +1,22 @@
-# QI delta: usage-provider-nest · dark (+ light hosted)
+# QI delta: usage-provider-nest · dark (+ light)
 
 ## Oracle
-- HTML: qi-artifacts/html/usage-provider-nest-dark.png (and -light where present)
-- Source: plans/previews/desktop-ui/index.html | popover.html
+- HTML: qi-artifacts/html/usage-provider-nest-dark.png (sidebar nest under OpenAI)
 
 ## Candidate
-- Native: qi-artifacts/native/usage-provider-nest-dark.png (+ light)
-- Code: JackinDesktopUI hosted via DesktopVisualSnapshotHarness (CLT; no live NSStatusItem/NSPopover)
+- Native: qi-artifacts/native/usage-provider-nest-dark.png
+- Code: `UsageAccountNestView` + `UsageAccountMiniMeter` (same mini meter as `UsageWindowRoot`)
 
 ## Same (keep)
-- Provider identity only + 2 accounts caption
-- Radio multi; 57% mini meter; 0% empty mini meter
-- Shipped UsageAccountNestView / UsageAccountMiniMeter
+- Provider identity “OpenAI” + “2 accounts” — no provider %
+- Multi radio: selected a1 57% + mini meter fill; a2 0% empty mini meter
+- Plan labels Pro 20× / Plus
 
 ## Different (must fix unless N/A)
 | Severity | Element | HTML | Native | Gap ID | Action |
 |----------|---------|------|--------|--------|--------|
-| Med | Full shell chrome | Tab strip + glass footer on popover | Hosted body only (tab grid/footer need PopoverRoot+store) | G-P1 | Live app / PopoverRoot snapshot when Xcode GUI available |
-| N/A | System  / CC | Mocked in hub | System chrome | — | do not clone |
-| Low | Accent hue | Phosphor green | System accent (blue on this host) | VS-13 | Brand accent only when system accent set; not High |
+| Med | Context | Nested under full sidebar with other providers | Isolated nest strip | G-U4 | OK for nest unit; full sidebar in live UsageWindowRoot |
+| Low | Meter color | Severity orange on 57% | Neutral mini meter fill | G-U4 | Optional severity tint on mini |
 
 ## Verdict
-Pass
+**Pass** — provider≠account + nest meters (incl. 0% empty) match High IA for G-U3/G-U4.

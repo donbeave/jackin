@@ -1,24 +1,24 @@
-# QI delta: usage-toolbar · dark (+ light hosted)
+# QI delta: usage-toolbar · dark (+ light)
 
 ## Oracle
-- HTML: qi-artifacts/html/usage-toolbar-dark.png (and -light where present)
-- Source: plans/previews/desktop-ui/index.html | popover.html
+- HTML: qi-artifacts/html/usage-toolbar-dark.png
+- Source: Usage window titlebar mock — centered jackin❯ desktop + refresh
 
 ## Candidate
-- Native: qi-artifacts/native/usage-toolbar-dark.png (+ light)
-- Code: JackinDesktopUI hosted via DesktopVisualSnapshotHarness (CLT; no live NSStatusItem/NSPopover)
+- Native: qi-artifacts/native/usage-toolbar-dark.png
+- Code: **real** `UsageWindowController` → `NSWindow` `toolbarStyle = .unified` + `NSHostingController` + SwiftUI `.toolbar` Refresh
+- Capture: CGWindow full window, crop top band (not fake HStack)
 
 ## Same (keep)
-- Centered jackin❯ desktop title + icon Refresh stand-in
-- Real unified NSToolbar path verified in UsageWindowController + ArchitectureLint
-- Live titlebar chrome L4 partial without window capture
+- Real system traffic lights + window title **jackin❯ desktop**
+- Icon-only Refresh control present on unified titlebar/toolbar
+- Not a custom floating HTML strip
 
 ## Different (must fix unless N/A)
 | Severity | Element | HTML | Native | Gap ID | Action |
 |----------|---------|------|--------|--------|--------|
-| Med | Full shell chrome | Tab strip + glass footer on popover | Hosted body only (tab grid/footer need PopoverRoot+store) | G-P1 | Live app / PopoverRoot snapshot when Xcode GUI available |
-| N/A | System  / CC | Mocked in hub | System chrome | — | do not clone |
-| Low | Accent hue | Phosphor green | System accent (blue on this host) | VS-13 | Brand accent only when system accent set; not High |
+| Med | Title position | Centered in titlebar | Leading (system unified + sidebar affordance) | G-U1 | Native macOS layout OK |
+| Low | Extra controls | Refresh only | Sidebar toggle + Refresh | G-U1 | System NavigationSplitView chrome |
 
 ## Verdict
-Pass
+**Pass** — real NSToolbar host path evidenced by window capture; IA matches Usage chrome roles.

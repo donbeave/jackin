@@ -11,8 +11,12 @@ import SwiftUI
 /// floating glass sidebar over detail content; detail uses standard materials
 /// and may extend under the sidebar via `backgroundExtensionEffect`.
 public struct UsageWindowRoot: View {
-    @ObservedObject var store: PresentationStore
+    @ObservedObject public var store: PresentationStore
     @Environment(\.dismiss) private var dismiss
+
+    public init(store: PresentationStore) {
+        self.store = store
+    }
 
     private static let overviewId = "__overview__"
 

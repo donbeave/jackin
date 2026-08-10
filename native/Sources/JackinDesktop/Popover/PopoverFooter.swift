@@ -6,8 +6,13 @@ import SwiftUI
 /// Popover footer: one Refresh control on a **glass** capsule (LG-A8).
 /// Spinner reflects `refreshInProgress`. No other actions.
 public struct PopoverFooter: View {
-    let refreshInProgress: Bool
-    let onRefresh: () -> Void
+    public let refreshInProgress: Bool
+    public let onRefresh: () -> Void
+
+    public init(refreshInProgress: Bool, onRefresh: @escaping () -> Void) {
+        self.refreshInProgress = refreshInProgress
+        self.onRefresh = onRefresh
+    }
 
     public var body: some View {
         Button(action: onRefresh) {

@@ -9,8 +9,16 @@ import SwiftUI
 /// Rust `displayLabel`, the icon selected from `iconKey`, and thin geometry from
 /// `glanceRemainingPercent`; the Rust `barLabel` is the accessibility value.
 public struct PopoverTabGrid: View {
-    let providers: [PresentationStore.GlanceProviderRow]
-    @Binding var selection: String?
+    public let providers: [PresentationStore.GlanceProviderRow]
+    @Binding public var selection: String?
+
+    public init(
+        providers: [PresentationStore.GlanceProviderRow],
+        selection: Binding<String?>
+    ) {
+        self.providers = providers
+        self._selection = selection
+    }
 
     public var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {

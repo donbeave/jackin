@@ -1,23 +1,25 @@
-# QI delta: popover-anthropic · dark (+ light hosted)
+# QI delta: popover-anthropic · dark (+ light host)
 
 ## Oracle
-- HTML: qi-artifacts/html/popover-anthropic-dark.png (and -light where present)
-- Source: plans/previews/desktop-ui/index.html | popover.html
+- HTML: qi-artifacts/html/popover-anthropic-dark.png
+- Source: popover.html Anthropic
 
 ## Candidate
-- Native: qi-artifacts/native/popover-anthropic-dark.png (+ light)
-- Code: JackinDesktopUI hosted via DesktopVisualSnapshotHarness (CLT; no live NSStatusItem/NSPopover)
+- Native: qi-artifacts/native/popover-anthropic-dark.png
+- Code: `PopoverRoot` with `popoverSelection = claude`
 
 ## Same (keep)
-- 12% danger hero path via same PopoverProviderTab
-- Single-account (no chip strip when count==1)
+- Tab selection on Anthropic; Overview/OpenAI/Amp unselected with meters
+- Weekly hero **12% left** danger red + short meter; Session 74%
+- Single account (no multi chip strip)
+- Open usage page; Refresh footer
+- Fixture: 12%, Max 20×, Personal
 
 ## Different (must fix unless N/A)
 | Severity | Element | HTML | Native | Gap ID | Action |
 |----------|---------|------|--------|--------|--------|
-| Med | Full shell chrome | Tab strip + glass footer on popover | Hosted body only (tab grid/footer need PopoverRoot+store) | G-P1 | Live app / PopoverRoot snapshot when Xcode GUI available |
-| N/A | System  / CC | Mocked in hub | System chrome | — | do not clone |
-| Low | Accent hue | Phosphor green | System accent (blue on this host) | VS-13 | Brand accent only when system accent set; not High |
+| Med | Footer | Open Usage Window CTA | Refresh dock | G-P4 | Product law |
+| Low | Brand bar | jackin❯ mark top | Absent | G-P1 | Optional |
 
 ## Verdict
-Pass
+**Pass** — Anthropic focus + danger weekly hero correct on full shell.

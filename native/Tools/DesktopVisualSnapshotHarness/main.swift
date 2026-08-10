@@ -1,10 +1,16 @@
 // SPDX-FileCopyrightText: 2026 Alexey Zhokhov
 // SPDX-License-Identifier: Apache-2.0
 
-/// Renders shipped SwiftUI craft views with DATA_CONTRACT fixtures to PNG
-/// for QI native captures (no live network).
+/// QI native captures via **shipped** views + `PresentationStore.applyQIFixture`.
 ///
 ///   cd native && swift run -c release DesktopVisualSnapshotHarness [outDir]
+///
+/// Does **not** re-implement dual-stack, toolbar, or popover chrome. Those come
+/// from StatusItemRendering, UsageWindowController (real NSToolbar host), and
+/// PopoverRoot (TabGrid + body + Footer).
+///
+/// Live `NSStatusItem` in the system menu bar remains uncapturable on CLT —
+/// status PNGs are StatusItemRendering bitmap composites only (documented).
 
 import AppKit
 import JackinDesktopUI
@@ -23,40 +29,29 @@ struct DesktopVisualSnapshotHarness {
             withIntermediateDirectories: true
         )
 
-        // Headless-friendly app instance for AppKit image rendering.
         _ = NSApplication.shared
         NSApp.setActivationPolicy(.prohibited)
 
         let fixture = QIFixture.make()
-        let model = UsageWindowModel(
-            glanceRows: fixture.glanceRows,
-            surfaces: fixture.surfaces,
-            accounts: fixture.allAccounts,
-            selection: nil
-        )
 
-        // Dark scenes
+        // ── Dark: full PopoverRoot shell (tab grid + body + footer) ──
         NSApp.appearance = NSAppearance(named: .darkAqua)
-        render(
-            popoverBody(
-                provider: fixture.openaiGlance,
-                surface: fixture.openaiSurface,
-                accounts: fixture.openaiAccounts
-            ),
-            size: NSSize(width: 424, height: 560),
+        capturePopover(
+            fixture: fixture,
+            selection: "codex",
+            size: NSSize(width: 420, height: 580),
             path: "\(out)/popover-openai-dark.png",
             appearance: .darkAqua
         )
-        render(
-            popoverBody(
-                provider: fixture.anthropicGlance,
-                surface: fixture.anthropicSurface,
-                accounts: [fixture.anthropicAccount]
-            ),
-            size: NSSize(width: 424, height: 520),
+        capturePopover(
+            fixture: fixture,
+            selection: "claude",
+            size: NSSize(width: 420, height: 540),
             path: "\(out)/popover-anthropic-dark.png",
             appearance: .darkAqua
         )
+
+        // Usage detail / overview / nest — shipped detail surfaces
         render(
             ProviderCardView(
                 content: UsageWindowModel.Content(
@@ -72,8 +67,16 @@ struct DesktopVisualSnapshotHarness {
             path: "\(out)/usage-detail-openai-dark.png",
             appearance: .darkAqua
         )
+
+        let storeOverview = makeStore(fixture: fixture, popover: nil, usage: nil)
+        let overviewModel = UsageWindowModel(
+            glanceRows: storeOverview.providerGlanceRows,
+            surfaces: storeOverview.surfaces,
+            accounts: storeOverview.accounts,
+            selection: nil
+        )
         render(
-            OverviewListView(model: model, accounts: fixture.allAccounts) { _, _ in }
+            OverviewListView(model: overviewModel, accounts: storeOverview.accounts) { _, _ in }
                 .frame(width: 640, height: 560)
                 .padding(8)
                 .background(Color(nsColor: .windowBackgroundColor)),
@@ -93,42 +96,34 @@ struct DesktopVisualSnapshotHarness {
             path: "\(out)/usage-provider-nest-dark.png",
             appearance: .darkAqua
         )
-        render(
-            statusDualStackPreview(fixture: fixture)
-                .frame(width: 420, height: 80)
-                .padding(12)
-                .background(Color(nsColor: .underPageBackgroundColor)),
-            size: NSSize(width: 444, height: 104),
+
+        // Status dual-stack via **StatusItemRendering** (not a hand-rolled layout).
+        captureStatusItemRendering(
+            fixture: fixture,
             path: "\(out)/status-desktop-dark.png",
             appearance: .darkAqua
         )
-        render(
-            toolbarStandIn()
-                .environment(\.colorScheme, .dark),
-            size: NSSize(width: 920, height: 52),
+
+        // Real unified NSToolbar via UsageWindowController (not fake HStack).
+        let toolbarOkDark = captureUsageToolbar(
+            fixture: fixture,
             path: "\(out)/usage-toolbar-dark.png",
             appearance: .darkAqua
         )
 
-        // Light scenes
+        // ── Light ──
         NSApp.appearance = NSAppearance(named: .aqua)
-        render(
-            popoverBody(
-                provider: fixture.openaiGlance,
-                surface: fixture.openaiSurface,
-                accounts: fixture.openaiAccounts
-            ),
-            size: NSSize(width: 424, height: 560),
+        capturePopover(
+            fixture: fixture,
+            selection: "codex",
+            size: NSSize(width: 420, height: 580),
             path: "\(out)/popover-openai-light.png",
             appearance: .aqua
         )
-        render(
-            popoverBody(
-                provider: fixture.anthropicGlance,
-                surface: fixture.anthropicSurface,
-                accounts: [fixture.anthropicAccount]
-            ),
-            size: NSSize(width: 424, height: 520),
+        capturePopover(
+            fixture: fixture,
+            selection: "claude",
+            size: NSSize(width: 420, height: 540),
             path: "\(out)/popover-anthropic-light.png",
             appearance: .aqua
         )
@@ -149,7 +144,7 @@ struct DesktopVisualSnapshotHarness {
             appearance: .aqua
         )
         render(
-            OverviewListView(model: model, accounts: fixture.allAccounts) { _, _ in }
+            OverviewListView(model: overviewModel, accounts: storeOverview.accounts) { _, _ in }
                 .frame(width: 640, height: 560)
                 .padding(8)
                 .background(Color(nsColor: .windowBackgroundColor))
@@ -171,62 +166,257 @@ struct DesktopVisualSnapshotHarness {
             path: "\(out)/usage-provider-nest-light.png",
             appearance: .aqua
         )
-        render(
-            statusDualStackPreview(fixture: fixture)
-                .frame(width: 420, height: 80)
-                .padding(12)
-                .background(Color(nsColor: .controlBackgroundColor))
-                .environment(\.colorScheme, .light),
-            size: NSSize(width: 444, height: 104),
+        captureStatusItemRendering(
+            fixture: fixture,
             path: "\(out)/status-desktop-light.png",
             appearance: .aqua
         )
-        render(
-            toolbarStandIn()
-                .environment(\.colorScheme, .light),
-            size: NSSize(width: 920, height: 52),
+        let toolbarOkLight = captureUsageToolbar(
+            fixture: fixture,
             path: "\(out)/usage-toolbar-light.png",
             appearance: .aqua
         )
 
+        // Manifest for VISUAL_QA_LOG honesty
+        let manifest = """
+        # DesktopVisualSnapshotHarness manifest
+        out: \(out)
+        popover: PopoverRoot (TabGrid + ProviderTab + Footer) via PresentationStore.applyQIFixture
+        status: StatusItemRendering.icon + StatusItemRendering.title (AppKit bitmap)
+        status_live_nsstatusitem: BLOCKED (CLT / no menu-bar strip capture)
+        usage_detail: ProviderCardView
+        usage_overview: OverviewListView
+        usage_nest: UsageAccountNestView
+        usage_toolbar_dark: \(toolbarOkDark ? "UsageWindowController NSWindow titlebar+toolbar" : "BLOCKED")
+        usage_toolbar_light: \(toolbarOkLight ? "UsageWindowController NSWindow titlebar+toolbar" : "BLOCKED")
+        """
+        try? manifest.write(
+            to: URL(fileURLWithPath: "\(out)/MANIFEST.md"),
+            atomically: true,
+            encoding: .utf8
+        )
+        print(manifest)
         print("DesktopVisualSnapshotHarness: wrote snapshots to \(out)")
     }
 
-    /// Hosted popover body craft (provider tab on panel surface) — shell chrome needs live NSPopover.
-    @ViewBuilder
-    private static func popoverBody(
-        provider: PresentationStore.GlanceProviderRow,
-        surface: PresentationStore.SurfaceRow,
-        accounts: [PresentationStore.AccountRow]
-    ) -> some View {
-        PopoverProviderTab(
-            provider: provider,
-            surface: surface,
-            accounts: accounts,
-            refreshInProgress: false,
-            onSelectAccount: { _, _ in },
-            onOpenUsageWindow: { _ in }
+    // MARK: - Shipped capture paths
+
+    @MainActor
+    private static func makeStore(
+        fixture: QIFixture,
+        popover: String?,
+        usage: String?
+    ) -> PresentationStore {
+        let store = PresentationStore()
+        store.applyQIFixture(
+            glanceRows: fixture.glanceRows,
+            surfaces: fixture.surfaces,
+            accounts: fixture.allAccounts,
+            popoverSelection: popover,
+            usageSelection: usage
         )
-        .frame(width: 412)
-        .background {
-            GlassFallbacks.panelSurfaceBackground()
-        }
-        .clipShape(
-            RoundedRectangle(cornerRadius: GlassFallbacks.panelCornerRadius, style: .continuous)
-        )
-        .padding(6)
+        return store
     }
 
-    private static func toolbarStandIn() -> some View {
-        HStack {
-            Spacer()
-            Text("jackin❯ desktop").font(.headline)
-            Spacer()
-            Image(systemName: "arrow.clockwise")
+    @MainActor
+    private static func capturePopover(
+        fixture: QIFixture,
+        selection: String,
+        size: NSSize,
+        path: String,
+        appearance: NSAppearance.Name
+    ) {
+        let store = makeStore(fixture: fixture, popover: selection, usage: selection)
+        render(
+            PopoverRoot(store: store)
+                .frame(width: size.width, height: size.height),
+            size: size,
+            path: path,
+            appearance: appearance
+        )
+    }
+
+    /// Bitmap dual-stack extras using **only** StatusItemRendering APIs.
+    @MainActor
+    private static func captureStatusItemRendering(
+        fixture: QIFixture,
+        path: String,
+        appearance: NSAppearance.Name
+    ) {
+        let rows = fixture.glanceRows
+        let iconSize: CGFloat = 16
+        let cellW: CGFloat = 52
+        let height: CGFloat = 36
+        let width = CGFloat(rows.count) * cellW + 16
+        let size = NSSize(width: width, height: height)
+
+        let image = NSImage(size: size)
+        image.lockFocus()
+        if let nsApp = NSAppearance(named: appearance) {
+            nsApp.performAsCurrentDrawingAppearance {
+                drawStatusStrip(rows: rows, iconSize: iconSize, cellW: cellW, height: height)
+            }
+        } else {
+            drawStatusStrip(rows: rows, iconSize: iconSize, cellW: cellW, height: height)
         }
-        .padding(.horizontal, 16)
-        .frame(width: 920, height: 52)
-        .background(.bar)
+        image.unlockFocus()
+
+        guard let tiff = image.tiffRepresentation,
+            let bitmap = NSBitmapImageRep(data: tiff),
+            let png = bitmap.representation(using: .png, properties: [:])
+        else {
+            fputs("FAIL status StatusItemRendering png \(path)\n", stderr)
+            writeBlockedPlaceholder(path: path, reason: "StatusItemRendering encode failed")
+            return
+        }
+        do {
+            try png.write(to: URL(fileURLWithPath: path))
+            print("WROTE \(path) [StatusItemRendering]")
+        } catch {
+            fputs("FAIL write \(path): \(error)\n", stderr)
+        }
+    }
+
+    @MainActor
+    private static func drawStatusStrip(
+        rows: [PresentationStore.GlanceProviderRow],
+        iconSize: CGFloat,
+        cellW: CGFloat,
+        height: CGFloat
+    ) {
+        NSColor.clear.setFill()
+        NSRect(x: 0, y: 0, width: CGFloat(rows.count) * cellW + 16, height: height).fill()
+
+        var x: CGFloat = 8
+        for row in rows {
+            let icon = StatusItemRendering.icon(forIconKey: row.iconKey)
+            let iconRect = NSRect(x: x, y: (height - iconSize) / 2, width: iconSize, height: iconSize)
+            icon.draw(
+                in: iconRect,
+                from: .zero,
+                operation: .sourceOver,
+                fraction: 1.0,
+                respectFlipped: true,
+                hints: [.interpolation: NSImageInterpolation.high]
+            )
+
+            let title = StatusItemRendering.title(
+                barLabel: row.barLabel,
+                resetLabel: row.resetLabel
+            )
+            let textRect = NSRect(
+                x: x + iconSize + 2,
+                y: 2,
+                width: cellW - iconSize - 4,
+                height: height - 4
+            )
+            title.draw(in: textRect)
+            x += cellW
+        }
+    }
+
+    /// Capture real `UsageWindowController` window titlebar (unified NSToolbar host).
+    /// Returns false when window capture fails (caller must treat as BLOCKED).
+    @MainActor
+    @discardableResult
+    private static func captureUsageToolbar(
+        fixture: QIFixture,
+        path: String,
+        appearance: NSAppearance.Name
+    ) -> Bool {
+        NSApp.appearance = NSAppearance(named: appearance)
+        let store = makeStore(fixture: fixture, popover: "codex", usage: "codex")
+        let controller = UsageWindowController(store: store)
+        controller.show(focusOn: "codex")
+        guard let window = controller.qiWindow else {
+            fputs("FAIL usage toolbar: no window\n", stderr)
+            writeBlockedPlaceholder(path: path, reason: "UsageWindowController.qiWindow nil")
+            controller.invalidate()
+            return false
+        }
+
+        // Force layout of hosting controller + toolbar attachment.
+        window.layoutIfNeeded()
+        window.contentViewController?.view.layoutSubtreeIfNeeded()
+        RunLoop.current.run(until: Date(timeIntervalSinceNow: 0.15))
+
+        // Capture full window via CGWindow, then crop the **top** band (titlebar + unified toolbar).
+        // Prior rect math often hit content/footer; crop from bitmap is honest.
+        let titleH: CGFloat = 56
+        if let cgImage = captureWindowTopBand(window: window, bandHeight: titleH) {
+            let rep = NSBitmapImageRep(cgImage: cgImage)
+            if let png = rep.representation(using: .png, properties: [:]) {
+                do {
+                    try png.write(to: URL(fileURLWithPath: path))
+                    print("WROTE \(path) [UsageWindowController window top-band]")
+                    controller.invalidate()
+                    return true
+                } catch {
+                    fputs("FAIL write toolbar \(path): \(error)\n", stderr)
+                }
+            }
+        }
+
+        // Do **not** synthesize a fake toolbar HStack — BLOCKED is the honest outcome.
+        writeBlockedPlaceholder(
+            path: path,
+            reason: "CGWindow full-window top-band capture unavailable (screen recording / offscreen)"
+        )
+        print("BLOCKED \(path) [real toolbar window not capturable on this host]")
+        controller.invalidate()
+        return false
+    }
+
+    @MainActor
+    private static func captureWindowTopBand(window: NSWindow, bandHeight: CGFloat) -> CGImage? {
+        window.setFrame(
+            NSRect(x: 80, y: 120, width: 920, height: 620),
+            display: true
+        )
+        window.orderFrontRegardless()
+        window.makeKeyAndOrderFront(nil)
+        RunLoop.current.run(until: Date(timeIntervalSinceNow: 0.25))
+
+        let windowId = CGWindowID(window.windowNumber)
+        guard windowId != 0 else { return nil }
+
+        // Full window image (null rect = window bounds).
+        guard let full = CGWindowListCreateImage(
+            .null,
+            .optionIncludingWindow,
+            windowId,
+            [.boundsIgnoreFraming, .bestResolution]
+        ) else {
+            return nil
+        }
+
+        let w = full.width
+        let h = full.height
+        guard w > 0, h > 0 else { return nil }
+        // Image coords: origin top-left. Crop top bandHeight points * scale.
+        let scale = CGFloat(w) / max(window.frame.width, 1)
+        let bandPx = max(1, Int((bandHeight * scale).rounded()))
+        let cropH = min(bandPx, h)
+        let cropRect = CGRect(x: 0, y: 0, width: w, height: cropH)
+        return full.cropping(to: cropRect)
+    }
+
+    private static func writeBlockedPlaceholder(path: String, reason: String) {
+        // 1×1 transparent PNG + sidecar reason so absence of craft is honest.
+        let size = NSSize(width: 4, height: 4)
+        let image = NSImage(size: size)
+        image.lockFocus()
+        NSColor.clear.setFill()
+        NSRect(origin: .zero, size: size).fill()
+        image.unlockFocus()
+        if let tiff = image.tiffRepresentation,
+            let bitmap = NSBitmapImageRep(data: tiff),
+            let png = bitmap.representation(using: .png, properties: [:])
+        {
+            try? png.write(to: URL(fileURLWithPath: path))
+        }
+        let side = path.replacingOccurrences(of: ".png", with: ".BLOCKED.txt")
+        try? reason.write(to: URL(fileURLWithPath: side), atomically: true, encoding: .utf8)
     }
 
     @MainActor
@@ -268,45 +458,9 @@ struct DesktopVisualSnapshotHarness {
             fputs("FAIL write \(path): \(error)\n", stderr)
         }
     }
-
-    private static func statusDualStackPreview(fixture: QIFixture) -> some View {
-        HStack(spacing: 16) {
-            ForEach(fixture.glanceRows) { row in
-                HStack(spacing: 4) {
-                    Image(systemName: desktopProviderSystemImage(iconKey: row.iconKey) ?? "circle")
-                        .font(.system(size: 12))
-                    VStack(alignment: .leading, spacing: 0) {
-                        if let r = row.resetLabel {
-                            Text(compactReset(r))
-                                .font(.system(size: 8, weight: .medium, design: .monospaced))
-                                .foregroundStyle(.secondary)
-                        }
-                        Text(row.barLabel)
-                            .font(.system(size: 9, weight: .semibold, design: .monospaced))
-                    }
-                }
-            }
-            Spacer()
-        }
-    }
 }
 
-/// Local compact of reset labels (fixture display only; mirrors StatusItemRendering trim rules).
-private func compactReset(_ resetLabel: String) -> String {
-    var text = resetLabel.trimmingCharacters(in: .whitespacesAndNewlines)
-    for prefix in ["Resets in ", "Resets ", "resets in ", "resets "] {
-        if text.hasPrefix(prefix) {
-            text = String(text.dropFirst(prefix.count))
-            break
-        }
-    }
-    if let cut = text.split(separator: "·").first {
-        text = cut.trimmingCharacters(in: .whitespaces)
-    }
-    return text
-}
-
-// MARK: - Fixtures (DATA_CONTRACT numbers)
+// MARK: - Fixtures (DATA_CONTRACT numbers — labels only, no invented %)
 
 private struct QIFixture {
     let openaiGlance: PresentationStore.GlanceProviderRow
@@ -580,6 +734,22 @@ private struct QIFixture {
             lastError: nil,
             detailPresentation: anthropicDetail
         )
+        let ampSurface = PresentationStore.SurfaceRow(
+            id: "amp",
+            label: "Amp",
+            enabled: true,
+            statusBarLabel: "100%",
+            status: "fresh",
+            accountLabel: "Free",
+            username: nil,
+            planLabel: nil,
+            credentialOrigin: nil,
+            estimateCaption: nil,
+            buckets: [],
+            updatedLabel: "1 min ago",
+            lastError: nil,
+            detailPresentation: UsageDetailPresentation(rows: [])
+        )
 
         return QIFixture(
             openaiGlance: openaiGlance,
@@ -591,7 +761,7 @@ private struct QIFixture {
             anthropicAccount: anthropicAccount,
             allAccounts: openaiAccounts + [anthropicAccount, ampAccount],
             glanceRows: [anthropicGlance, openaiGlance, ampGlance],
-            surfaces: [openaiSurface, anthropicSurface],
+            surfaces: [openaiSurface, anthropicSurface, ampSurface],
             openaiDetail: openaiDetail
         )
     }

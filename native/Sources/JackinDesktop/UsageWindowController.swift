@@ -22,14 +22,14 @@ public final class UsageWindowController: NSObject, NSWindowDelegate {
     private var window: NSWindow?
     private var hostingController: NSHostingController<UsageWindowRoot>?
 
-    init(store: PresentationStore) {
+    public init(store: PresentationStore) {
         self.store = store
         super.init()
     }
 
     /// Show the Usage window, focused on a provider surface id (`nil` = Overview),
     /// creating it on first use and reusing it afterward.
-    func show(focusOn surfaceId: String?) {
+    public func show(focusOn surfaceId: String?) {
         store.selectUsageSurface(surfaceId)
         let window = window ?? makeWindow()
         self.window = window
@@ -72,11 +72,14 @@ public final class UsageWindowController: NSObject, NSWindowDelegate {
         }
     }
 
-    func invalidate() {
+    public func invalidate() {
         window?.delegate = nil
         window?.orderOut(nil)
         window?.contentViewController = nil
         hostingController = nil
         window = nil
     }
+
+    /// QI / snapshot: the live `NSWindow` after ``show(focusOn:)`` (nil if never shown).
+    public var qiWindow: NSWindow? { window }
 }

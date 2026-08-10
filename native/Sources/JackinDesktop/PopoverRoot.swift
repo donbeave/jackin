@@ -10,10 +10,10 @@ import SwiftUI
 /// peeks through (LG-A1). Tab strip + footer sit on glass; scroll body is still
 /// content (standard fills on rows only — LG-A2). Data remains Rust-owned.
 public struct PopoverRoot: View {
-    @ObservedObject var store: PresentationStore
-    var onOpenUsage: ((String?) -> Void)?
+    @ObservedObject public var store: PresentationStore
+    public var onOpenUsage: ((String?) -> Void)?
 
-    init(store: PresentationStore, onOpenUsage: ((String?) -> Void)? = nil) {
+    public init(store: PresentationStore, onOpenUsage: ((String?) -> Void)? = nil) {
         self.store = store
         self.onOpenUsage = onOpenUsage
     }
