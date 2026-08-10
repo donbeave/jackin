@@ -68,18 +68,22 @@ public struct UsageWindowRoot: View {
                         if store.usageSelection == row.surfaceId {
                             let accts = store.accountsForSurface(row.surfaceId)
                             if !accts.isEmpty {
-                                ForEach(accts) { account in
-                                    accountSidebarRow(
-                                        account,
-                                        multi: accts.count > 1
-                                    )
-                                    .listRowInsets(EdgeInsets(top: 2, leading: 18, bottom: 2, trailing: 8))
-                                    .listRowBackground(accountNestWellBackground)
+                                UsageAccountRailView(accounts: accts) { surfaceId, accountKey in
+                                    if accts.count > 1 {
+                                        store.setSelectedAccount(
+                                            surfaceId: surfaceId,
+                                            accountKey: accountKey
+                                        )
+                                    }
                                 }
+                                .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 8, trailing: -12))
+                                .listRowBackground(Color.clear)
                             } else if !row.accountLabel.isEmpty {
-                                accountFallbackRow(row)
-                                    .listRowInsets(EdgeInsets(top: 2, leading: 18, bottom: 2, trailing: 8))
-                                    .listRowBackground(accountNestWellBackground)
+                                accountRail {
+                                    accountFallbackRow(row)
+                                }
+                                .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 8, trailing: -12))
+                                .listRowBackground(Color.clear)
                             }
                         }
                     }
@@ -206,10 +210,28 @@ public struct UsageWindowRoot: View {
         }
     }
 
-    /// Inset nest under selected provider (HTML ACCOUNTS group).
-    private var accountNestWellBackground: some View {
-        RoundedRectangle(cornerRadius: 8, style: .continuous)
-            .fill(Color.primary.opacity(0.05))
+    /// Fallback inset shell when Rust has identity but no materialized account row.
+    private func accountRail<Rows: View>(@ViewBuilder rows: () -> Rows) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("Accounts")
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundStyle(.tertiary)
+                .textCase(.uppercase)
+                .tracking(0.4)
+                .padding(.horizontal, 8)
+                .padding(.top, 4)
+                .padding(.bottom, 3)
+            rows()
+        }
+        .padding(4)
+        .background {
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(Color.primary.opacity(0.055))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .strokeBorder(Color.primary.opacity(0.10), lineWidth: 0.5)
+                }
+        }
     }
 
     private func sidebarProviderLogo(iconKey: String) -> some View {
@@ -241,60 +263,6 @@ public struct UsageWindowRoot: View {
             }
         }
         .frame(width: 26, height: 26)
-    }
-
-    /// Account row under selected provider — glance % from `list_accounts` / remainingPercent.
-    @ViewBuilder
-    private func accountSidebarRow(
-        _ account: PresentationStore.AccountRow,
-        multi: Bool
-    ) -> some View {
-        Button {
-            if multi {
-                store.setSelectedAccount(surfaceId: account.surfaceId, accountKey: account.accountKey)
-            }
-        } label: {
-            HStack(spacing: 8) {
-                if multi {
-                    Image(systemName: account.selected ? "circle.inset.filled" : "circle")
-                        .font(.caption2)
-                        .foregroundStyle(account.selected ? Color.jackinPhosphor : .secondary)
-                        .frame(width: 12)
-                }
-                VStack(alignment: .leading, spacing: 1) {
-                    Text(account.accountLabel)
-                        .font(.caption.monospaced().weight(account.selected || !multi ? .semibold : .medium))
-                        .lineLimit(1)
-                        .foregroundStyle(account.selected || !multi ? .primary : .secondary)
-                    if let plan = account.planLabel, !plan.isEmpty {
-                        Text(plan)
-                            .font(.caption2)
-                            .foregroundStyle(.tertiary)
-                            .lineLimit(1)
-                    }
-                }
-                Spacer(minLength: 4)
-                // Glance progress on account (HTML SoT): % + mini meter; 0% empty.
-                // Color = HTML a-pct / a-meter mid|low|high (severityTint).
-                if let pct = account.remainingPercent {
-                    let sev = account.meterSeverity
-                    VStack(alignment: .trailing, spacing: 3) {
-                        Text(verbatim: String(pct) + "%")
-                            .font(.caption.monospacedDigit().weight(.semibold))
-                            .foregroundStyle(
-                                pct == 0 ? Color.secondary : severityTint(sev)
-                            )
-                        UsageAccountMiniMeter(percent: pct, severity: sev)
-                    }
-                }
-            }
-            .padding(.vertical, 2)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .disabled(!multi)
-        .accessibilityLabel(accountSidebarAccessibility(account, multi: multi))
-        .accessibilityAddTraits(account.selected || !multi ? .isSelected : [])
     }
 
     @ViewBuilder
@@ -331,7 +299,8 @@ public struct UsageWindowRoot: View {
                     .foregroundStyle(.secondary)
             }
         }
-        .padding(.vertical, 2)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 6)
     }
 
     private func providerAccessibilityLabel(_ row: PresentationStore.GlanceProviderRow) -> String {
@@ -340,17 +309,6 @@ public struct UsageWindowRoot: View {
             return "\(row.displayLabel), \(accts.count) accounts"
         }
         return row.displayLabel
-    }
-
-    private func accountSidebarAccessibility(
-        _ account: PresentationStore.AccountRow,
-        multi: Bool
-    ) -> String {
-        var parts = [account.accountLabel]
-        if let plan = account.planLabel, !plan.isEmpty { parts.append(plan) }
-        if let pct = account.remainingPercent { parts.append("\(pct) percent remaining") }
-        if multi, account.selected { parts.append("selected") }
-        return parts.joined(separator: ", ")
     }
 
     private var selectionBinding: Binding<String?> {

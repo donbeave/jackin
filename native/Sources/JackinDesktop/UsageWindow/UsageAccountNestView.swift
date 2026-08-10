@@ -34,17 +34,52 @@ public struct UsageAccountNestView: View {
                     .font(.caption)
                     .foregroundStyle(.tertiary)
             }
-            VStack(spacing: 4) {
-                ForEach(accounts) { account in
-                    accountRow(account, multi: accounts.count > 1)
-                }
-            }
-            .padding(6)
-            .background(Color.primary.opacity(0.05))
-            .cornerRadius(10)
+            UsageAccountRailView(
+                accounts: accounts,
+                onSelectAccount: onSelectAccount
+            )
         }
         .padding(8)
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+/// Shared HTML `.acct-rail` used by live sidebar and deterministic QI host.
+public struct UsageAccountRailView: View {
+    public let accounts: [PresentationStore.AccountRow]
+    public let onSelectAccount: (String, String) -> Void
+
+    public init(
+        accounts: [PresentationStore.AccountRow],
+        onSelectAccount: @escaping (String, String) -> Void = { _, _ in }
+    ) {
+        self.accounts = accounts
+        self.onSelectAccount = onSelectAccount
+    }
+
+    public var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("Accounts")
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundStyle(.tertiary)
+                .textCase(.uppercase)
+                .tracking(0.4)
+                .padding(.horizontal, 8)
+                .padding(.top, 4)
+                .padding(.bottom, 3)
+            ForEach(accounts) { account in
+                accountRow(account, multi: accounts.count > 1)
+            }
+        }
+        .padding(4)
+        .background {
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(Color.primary.opacity(0.055))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .strokeBorder(Color.primary.opacity(0.10), lineWidth: 0.5)
+                }
+        }
     }
 
     @ViewBuilder
@@ -92,8 +127,12 @@ public struct UsageAccountNestView: View {
                 }
             }
             .padding(6)
-            .background(Color.primary.opacity(account.selected ? 0.08 : 0.04))
-            .cornerRadius(8)
+            .background {
+                if account.selected {
+                    RoundedRectangle(cornerRadius: 7, style: .continuous)
+                        .fill(Color.primary.opacity(0.09))
+                }
+            }
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

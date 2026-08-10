@@ -66,6 +66,11 @@ the `NSWindow` explicitly and rejects identical theme pairs. New theme-distinct
 full-shell captures prove the floating sidebar, centered toolbar, and single
 divided limit-list together.
 
+Account-nest re-audit removed full-width repeated List rows. One shared,
+labeled inset rail now owns both accounts, its hairline, and selected-account
+fill in the live sidebar and QI component. This also removes duplicate SwiftUI
+implementations that had allowed product and evidence to drift.
+
 ## Live
 popover-live / ctx-menu **BLOCKED** — SoTParity proves focus/menu.
 

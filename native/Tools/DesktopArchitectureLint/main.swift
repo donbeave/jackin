@@ -40,6 +40,7 @@ struct DesktopArchitectureLint {
         checkStatusPopoverFocusWiring(desktopRoot: desktop)
         checkPrimaryControlCraft(desktopRoot: desktop)
         checkUsageDetailGrouping(desktopRoot: desktop)
+        checkUsageAccountRail(desktopRoot: desktop)
         run(desktopRoot: desktop)
     }
 
@@ -219,6 +220,28 @@ struct DesktopArchitectureLint {
             print("PASS  Usage detail groups limit rows in one list")
         } else {
             print("FAIL  Usage detail must retain one limit-list container with divided rows")
+            exit(1)
+        }
+    }
+
+    /// G-U4: account rows share one inset rail; list rows cannot each own a well.
+    static func checkUsageAccountRail(desktopRoot: URL) {
+        let path = desktopRoot.appendingPathComponent("UsageWindow/UsageWindowRoot.swift")
+        guard let text = try? String(contentsOf: path, encoding: .utf8) else {
+            fputs("FAIL  UsageWindowRoot.swift missing\n", stderr)
+            exit(2)
+        }
+        let required = [
+            "UsageAccountRailView(accounts: accts)",
+            ".listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 8, trailing: -12))",
+        ]
+        if required.allSatisfy(text.contains)
+            && !text.contains("listRowBackground(accountNestWellBackground)")
+            && !text.contains("private func accountSidebarRow")
+        {
+            print("PASS  Usage account rows share one inset rail")
+        } else {
+            print("FAIL  Usage account nest must retain one labeled inset rail")
             exit(1)
         }
     }

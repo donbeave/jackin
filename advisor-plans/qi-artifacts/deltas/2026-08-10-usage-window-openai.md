@@ -10,7 +10,7 @@
 |-------|------|--------|-------|
 | Toolbar | centered brand + Refresh | same | Yes |
 | Sidebar | floating glass navigation | same | Yes |
-| Provider nest | selected provider + two accounts | same | Yes |
+| Provider nest | labeled inset rail + two accounts | same | Yes |
 | Detail head | identity + external usage action | same | Yes |
 | Meta | one quiet details group | same | Yes |
 | Limits | one inset divided list | same | Yes |
@@ -22,6 +22,10 @@ Earlier full-window Dark and Light captures were byte-identical while the
 manifest reported both as Pass. Window appearance was inherited implicitly,
 and no cross-theme evidence gate existed. The harness now sets
 `NSWindow.appearance` and rejects byte-identical theme pairs.
+
+Second re-audit found live account rows owned separate full-width List
+backgrounds while the isolated QI component used different code. Live sidebar
+and QI host now share one `UsageAccountRailView`, preventing that drift.
 
 ## Different (not High)
 

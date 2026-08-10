@@ -87,7 +87,7 @@ html_path = "advisor-plans/qi-artifacts/html/usage-provider-nest-dark.png"
 native_path = "advisor-plans/qi-artifacts/native/usage-provider-nest-dark.png"
 capture_tier = "harness"
 verdict = "pass"
-notes = "UsageAccountNestView component; full-shell capture composites the floating sidebar without whiteout."
+notes = "UsageAccountNestView uses the same labeled inset UsageAccountRailView as the full-shell sidebar."
 
 [[scene]]
 id = "usage-provider-nest"
