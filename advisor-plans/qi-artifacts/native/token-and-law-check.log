@@ -1,24 +1,3 @@
-=== token map cite ===
-native/Sources/JackinUsageBridge/BrandColors.swift:42:        name: "jackinPhosphor",
-native/Sources/JackinUsageBridge/BrandColors.swift:65:    public static var jackinPhosphor: Color { JackinBrand.phosphor }
-plans/previews/desktop-ui/AGENT_HANDOFF.md:61:7. Keep **GlassFallbacks** as sole glass gate (repo rule).  
-plans/previews/desktop-ui/AGENT_HANDOFF.md:82:| `--glass` | Popover chrome | `GlassFallbacks.panelSurfaceBackground` |
-=== no spend/price UI (handwritten, exclude ffi) ===
-(none)
-=== glassEffect only GlassFallbacks ===
-native/Sources/JackinDesktop/GlassFallbacks.swift:13:// No other source file may contain `#available(macOS 26` or `glassEffect`.
-native/Sources/JackinDesktop/GlassFallbacks.swift:38:                .glassEffect(.regular, in: .rect(cornerRadius: chromeTileCornerRadius))
-native/Sources/JackinDesktop/GlassFallbacks.swift:52:            Rectangle().fill(.clear).glassEffect(.regular, in: .rect)
-native/Sources/JackinDesktop/GlassFallbacks.swift:73:    /// `glassEffect` fails to composite.
-native/Sources/JackinDesktop/GlassFallbacks.swift:83:                    .glassEffect(.regular, in: .rect(cornerRadius: panelCornerRadius))
-native/Sources/JackinDesktop/GlassFallbacks.swift:100:                    .glassEffect(.regular, in: .rect(cornerRadius: chromeTileCornerRadius))
-=== OV-5 composition source ===
-19:    /// Rust strings only — composed by ``overviewResetDisplay``.
-49:/// - `exactReset`: Rust parenthetical or bare calendar, e.g. `(15 Aug 2026, 17:02)`
-53:public func overviewResetDisplay(resetLabel: String?, exactReset: String?) -> String? {
-56:    var calendar = exactReset?
-85:    /// `resetLabel` + `exactReset` via ``overviewResetDisplay``.
-120:                        reset = overviewResetDisplay(
-122:                            exactReset: glance?.exactReset
-156:                resetLabel: overviewResetDisplay(
-158:                    exactReset: row.exactReset
+token: --jk -> Color.jackinPhosphor; --glass -> GlassFallbacks; status bands -> severityTint
+OPEN residual: LG-6 hex, UW-O1, OV-5 unselected Account DTO, live NSStatusItem
+product-law: no spend/trend UI; glassEffect only GlassFallbacks

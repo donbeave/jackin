@@ -1,11 +1,7 @@
 === ProviderMarksHarness ===
-[0/1] Planning build
 Building for production...
 [0/2] Write swift-version--58304C5D6DBC2206.txt
-[2/4] Compiling ProviderMarksHarness main.swift
-[2/4] Write Objects.LinkFileList
-[3/4] Linking ProviderMarksHarness
-Build of product 'ProviderMarksHarness' complete! (0.75s)
+Build of product 'ProviderMarksHarness' complete! (0.07s)
 ProviderMarksHarness: 7 Desktop keys
 PASS  codex hasMark=true markSize=(18.0, 18.0) statusTemplate=true
 PASS  claude hasMark=true markSize=(18.0, 18.0) statusTemplate=true
@@ -48,10 +44,7 @@ DesktopSoTParityHarness: ALL PASS (18/18 checks)
 === DesktopParityMatrixHarness ===
 Building for production...
 [0/2] Write swift-version--58304C5D6DBC2206.txt
-[2/4] Compiling DesktopParityMatrixHarness main.swift
-[2/4] Write Objects.LinkFileList
-[3/4] Linking DesktopParityMatrixHarness
-Build of product 'DesktopParityMatrixHarness' complete! (1.00s)
+Build of product 'DesktopParityMatrixHarness' complete! (0.07s)
 === OpenUsage/CodexBar limits-only parity matrix ===
 In scope: remaining %, dual windows, resets, multi-provider icons, mini bars
 Out of scope: token unit prices, usage/spend trends (AGENTS hard rule)
@@ -180,11 +173,6 @@ PASS  GlassFallbacks.swift
 DesktopArchitectureLint: scanned 18 files, 18 clean
 DesktopArchitectureLint: ALL PASS
 === OverviewInventoryTests ===
-[0/16] Write swift-version--58304C5D6DBC2206.txt
-Build complete! (0.12s)
-Test Suite 'Selected tests' started at 2026-08-10 14:42:31.739.
-Test Suite 'JackinDesktopPackageTests.xctest' started at 2026-08-10 14:42:31.740.
-Test Suite 'OverviewInventoryTests' started at 2026-08-10 14:42:31.740.
 Test Case '-[JackinUsageBridgeTests.OverviewInventoryTests testEmptyAccountsFallsBackToGlanceRows]' started.
 Test Case '-[JackinUsageBridgeTests.OverviewInventoryTests testEmptyAccountsFallsBackToGlanceRows]' passed (0.000 seconds).
 Test Case '-[JackinUsageBridgeTests.OverviewInventoryTests testGlanceFallbackComposesExactReset]' started.
@@ -195,34 +183,32 @@ Test Case '-[JackinUsageBridgeTests.OverviewInventoryTests testOverviewResetDisp
 Test Case '-[JackinUsageBridgeTests.OverviewInventoryTests testOverviewResetDisplayStripsParenthesesAndJoins]' passed (0.000 seconds).
 Test Case '-[JackinUsageBridgeTests.OverviewInventoryTests testSelectedAccountComposesExactResetCalendarWithRelative]' started.
 Test Case '-[JackinUsageBridgeTests.OverviewInventoryTests testSelectedAccountComposesExactResetCalendarWithRelative]' passed (0.000 seconds).
-Test Suite 'OverviewInventoryTests' passed at 2026-08-10 14:42:31.742.
+Test Suite 'OverviewInventoryTests' passed at 2026-08-10 14:52:39.506.
 	 Executed 5 tests, with 0 failures (0 unexpected) in 0.001 (0.001) seconds
-Test Suite 'JackinDesktopPackageTests.xctest' passed at 2026-08-10 14:42:31.742.
+Test Suite 'JackinDesktopPackageTests.xctest' passed at 2026-08-10 14:52:39.506.
 	 Executed 5 tests, with 0 failures (0 unexpected) in 0.001 (0.001) seconds
-Test Suite 'Selected tests' passed at 2026-08-10 14:42:31.742.
+Test Suite 'Selected tests' passed at 2026-08-10 14:52:39.506.
 	 Executed 5 tests, with 0 failures (0 unexpected) in 0.001 (0.002) seconds
 ◇ Test run started.
 ↳ Testing Library Version: 1902
 ↳ Target Platform: arm64e-apple-macos14.0
 ✔ Test run with 0 tests in 0 suites passed after 0.001 seconds.
-=== JackinUsageBridgeTests (full) ===
-Test Case '-[JackinUsageBridgeTests.UsageWindowModelTests testIncomingProviderSelectionResolvesToDetail]' started.
-Test Case '-[JackinUsageBridgeTests.UsageWindowModelTests testIncomingProviderSelectionResolvesToDetail]' passed (0.000 seconds).
-Test Case '-[JackinUsageBridgeTests.UsageWindowModelTests testMultiAccountActionAndSelectedStyling]' started.
-Test Case '-[JackinUsageBridgeTests.UsageWindowModelTests testMultiAccountActionAndSelectedStyling]' passed (0.000 seconds).
-Test Case '-[JackinUsageBridgeTests.UsageWindowModelTests testSentinelRowsTransmittedUnchanged]' started.
+=== JackinUsageBridgeTests ===
 Test Case '-[JackinUsageBridgeTests.UsageWindowModelTests testSentinelRowsTransmittedUnchanged]' passed (0.000 seconds).
 Test Case '-[JackinUsageBridgeTests.UsageWindowModelTests testSidebarOrderAndOverviewSelection]' started.
 Test Case '-[JackinUsageBridgeTests.UsageWindowModelTests testSidebarOrderAndOverviewSelection]' passed (0.000 seconds).
 Test Case '-[JackinUsageBridgeTests.UsageWindowModelTests testStaleDetailAndLastGoodBucketCoexist]' started.
 Test Case '-[JackinUsageBridgeTests.UsageWindowModelTests testStaleDetailAndLastGoodBucketCoexist]' passed (0.000 seconds).
-Test Suite 'UsageWindowModelTests' passed at 2026-08-10 14:42:32.289.
+Test Suite 'UsageWindowModelTests' passed at 2026-08-10 14:52:40.047.
 	 Executed 9 tests, with 0 failures (0 unexpected) in 0.001 (0.001) seconds
-Test Suite 'JackinDesktopPackageTests.xctest' passed at 2026-08-10 14:42:32.289.
-	 Executed 47 tests, with 0 failures (0 unexpected) in 0.101 (0.103) seconds
-Test Suite 'Selected tests' passed at 2026-08-10 14:42:32.289.
-	 Executed 47 tests, with 0 failures (0 unexpected) in 0.101 (0.104) seconds
+Test Suite 'JackinDesktopPackageTests.xctest' passed at 2026-08-10 14:52:40.047.
+	 Executed 47 tests, with 0 failures (0 unexpected) in 0.103 (0.104) seconds
+Test Suite 'Selected tests' passed at 2026-08-10 14:52:40.047.
+	 Executed 47 tests, with 0 failures (0 unexpected) in 0.103 (0.105) seconds
 ◇ Test run started.
 ↳ Testing Library Version: 1902
 ↳ Target Platform: arm64e-apple-macos14.0
 ✔ Test run with 0 tests in 0 suites passed after 0.001 seconds.
+=== product-law static ===
+(none spend/trend UI)
+(glassEffect only GlassFallbacks)

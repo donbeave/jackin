@@ -2,18 +2,23 @@
 
 | HTML surface | Native | Parity |
 |--------------|--------|--------|
-| Status dual-stack template logos | StatusItemRendering.icon + title | **match** (fixture; live may BLOCK) |
+| Status dual-stack template logos | StatusItemRendering | **match** (fixture; live BLOCKED) |
 | Brand + Overview\|Providers | PopoverTabGrid | **match** |
-| mode-overview provider groups, multi-account, %, meter, refresh | PopoverOverviewTab + OverviewInventory | **match** |
-| OV-5 relative + calendar when known | overviewResetDisplay → dual-line resetLabel | **match** selected/glance (OpenAI calendar in snap) |
+| mode-overview groups multi-account % meter refresh | PopoverOverviewTab + OverviewInventory | **match** |
+| OV-5 relative + calendar when known | overviewResetDisplay dual-line | **match** selected/glance |
 | OV-5 unselected multi-account reset | no Account DTO | **deferred** |
-| mode-providers strip + full detail | TabGrid strip + PopoverProviderTab | **match** |
-| Open Usage Window glass CTA | PopoverFooter | **match** |
-| Usage glass sidebar / solid detail / nest | UsageWindowRoot + nest + ProviderCard | **match** craft roles |
-| Meters 3-status not multi-brand rainbow | severityTint / phosphor | **match** |
-| Credential Rust string | credentialOrigin display | **match** |
-| No spend/price product UI | parity matrix + arch | **match** |
+| mode-providers strip + full detail | TabGrid + PopoverProviderTab | **match** |
+| Open Usage glass CTA | PopoverFooter | **match** |
+| Usage glass sidebar / solid detail / nest | UsageWindowRoot | **match** craft roles |
+| Meters 3-status | severityTint / phosphor | **match** |
+| Credential Rust string | credentialOrigin | **match** |
+| No spend/price product UI | parity matrix | **match** |
 
-## Token map cite
-AGENT_HANDOFF CSS → Swift: `--jk` → Color.jackinPhosphor (BrandColors); glass → GlassFallbacks; status high/mid/low → severityTint.
+## Token map (AGENT_HANDOFF → Swift)
+| CSS | Swift |
+|-----|-------|
+| `--jk` phosphor | `Color.jackinPhosphor` (BrandColors) |
+| `--glass` | `GlassFallbacks.panelSurfaceBackground` |
+| `--status-high/mid/low` | `severityTint` / remaining bands |
+| brand plates only | `brandChrome` on logo plates |
 
