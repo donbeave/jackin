@@ -27,7 +27,7 @@ Log: `qi-artifacts/native/desktop-gates.log`
 |-------|------|-------|---------------------|----------|---------|
 | status-desktop | yes | yes | none | html+native/status-desktop-*.png | **Pass** |
 | popover-openai | yes | yes | none | html+native/popover-openai-*.png | **Pass** |
-| popover-anthropic | yes | yes | none | html+native/popover-anthropic-*.png | **Pass** |
+| popover-anthropic | yes | yes | none | full multi-limit plate (74/12/28/35/28/100) · deltas | **Pass** |
 | popover-overview | yes | yes | none | native/popover-overview-*.png | **Pass** |
 | usage-overview | yes | yes | none | html+native/usage-overview-*.png | **Pass** |
 | usage-provider-nest | yes | yes | none | nest 57%/0% | **Pass** |

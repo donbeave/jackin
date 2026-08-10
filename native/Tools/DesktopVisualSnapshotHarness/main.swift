@@ -67,10 +67,11 @@ struct DesktopVisualSnapshotHarness {
             path: "\(out)/popover-openai-dark.png",
             appearance: .darkAqua
         )
+        // Tall plate: Session + Weekly + All models + Sonnet + Fable + Daily + Extra (HTML SoT).
         capturePopover(
             fixture: fixture,
             selection: "claude",
-            size: NSSize(width: 430, height: 900),
+            size: NSSize(width: 430, height: 1400),
             path: "\(out)/popover-anthropic-dark.png",
             appearance: .darkAqua
         )
@@ -178,7 +179,7 @@ struct DesktopVisualSnapshotHarness {
         capturePopover(
             fixture: fixture,
             selection: "claude",
-            size: NSSize(width: 430, height: 900),
+            size: NSSize(width: 430, height: 1400),
             path: "\(out)/popover-anthropic-light.png",
             appearance: .aqua
         )
@@ -951,16 +952,30 @@ private struct QIFixture {
                 severity: "normal" // depleted empty track
             ),
         ]
-        let anthropicAccount = PresentationStore.AccountRow(
-            surfaceId: "claude",
-            accountKey: "p1",
-            accountLabel: "Personal",
-            planLabel: "Max 20×",
-            selected: true,
-            remainingPercent: 12,
-            statusWord: "fresh",
-            severity: "danger" // HTML a-meter low
-        )
+        // HTML SoT: Personal (selected) + Work (secondary chip).
+        let anthropicAccounts = [
+            PresentationStore.AccountRow(
+                surfaceId: "claude",
+                accountKey: "p1",
+                accountLabel: "Personal",
+                planLabel: "Max 20×",
+                selected: true,
+                remainingPercent: 12,
+                statusWord: "fresh",
+                severity: "danger" // HTML a-meter low
+            ),
+            PresentationStore.AccountRow(
+                surfaceId: "claude",
+                accountKey: "w1",
+                accountLabel: "Work",
+                planLabel: "Team",
+                selected: false,
+                remainingPercent: nil,
+                statusWord: "fresh",
+                severity: "normal"
+            ),
+        ]
+        let anthropicAccount = anthropicAccounts[0]
         let ampAccount = PresentationStore.AccountRow(
             surfaceId: "amp",
             accountKey: "free",
@@ -1138,6 +1153,8 @@ private struct QIFixture {
             ),
         ])
 
+        // HTML popover.html Anthropic stack (order fixed by SoT):
+        // Session, Weekly, All models, Sonnet, Fable only, Daily Routines, Extra usage.
         let anthropicDetail = UsageDetailPresentation(rows: [
             bucket(
                 id: "bucket:0",
@@ -1154,8 +1171,60 @@ private struct QIFixture {
                 remaining: "12% left",
                 meter: 12,
                 severity: "danger",
-                pace: "On pace",
+                pace: "52% in reserve",
                 reset: "Resets in 1h"
+            ),
+            bucket(
+                id: "bucket:2",
+                label: "All models",
+                remaining: "28% left",
+                meter: 28,
+                severity: "warn",
+                pace: "Weekly all-models window",
+                reset: "Resets with weekly"
+            ),
+            bucket(
+                id: "bucket:3",
+                label: "Sonnet",
+                remaining: "35% left",
+                meter: 35,
+                severity: "warn",
+                pace: "Model-scoped · paced",
+                reset: "Resets in 6d 12h"
+            ),
+            bucket(
+                id: "bucket:4",
+                label: "Fable only",
+                remaining: "28% left",
+                meter: 28,
+                severity: "warn",
+                pace: nil,
+                reset: "Resets in 12h 19m"
+            ),
+            bucket(
+                id: "bucket:5",
+                label: "Daily Routines",
+                remaining: "100% left",
+                meter: 100,
+                severity: "normal",
+                pace: "No reset timestamp from provider",
+                reset: nil
+            ),
+            // Extra usage: limits-only spend bound (no invent % meter).
+            UsageDetailRow(
+                rowId: "bucket:6",
+                kind: .bucket,
+                label: "Extra usage",
+                layoutLines: [
+                    UsagePresentationLine(leading: "Spend bound", trailing: nil),
+                    UsagePresentationLine(
+                        leading: "Quota-bound money / spend slot (limits only)",
+                        trailing: nil
+                    ),
+                ],
+                displayLabel: "Spend bound · Quota-bound money / spend slot (limits only)",
+                meterPercent: nil,
+                severity: "normal"
             ),
         ])
 
@@ -1216,7 +1285,7 @@ private struct QIFixture {
             anthropicSurface: anthropicSurface,
             openaiAccounts: openaiAccounts,
             anthropicAccount: anthropicAccount,
-            allAccounts: openaiAccounts + [anthropicAccount, ampAccount],
+            allAccounts: openaiAccounts + anthropicAccounts + [ampAccount],
             glanceRows: [anthropicGlance, openaiGlance, ampGlance],
             surfaces: [openaiSurface, anthropicSurface, ampSurface],
             openaiDetail: openaiDetail
