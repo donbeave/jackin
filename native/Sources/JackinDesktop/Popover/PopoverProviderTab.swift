@@ -131,17 +131,18 @@ public struct PopoverProviderTab: View {
                             Capsule(style: .continuous)
                                 .fill(
                                     account.selected
-                                        ? Color.accentColor.opacity(0.88)
-                                        : Color.primary.opacity(0.08)
+                                        ? Color.accentColor.opacity(0.92)
+                                        : Color.secondary.opacity(0.22)
                                 )
                                 .overlay {
                                     if !account.selected {
                                         Capsule(style: .continuous)
-                                            .strokeBorder(Color.primary.opacity(0.12), lineWidth: 0.5)
+                                            .strokeBorder(Color.primary.opacity(0.14), lineWidth: 0.5)
                                     }
                                 }
                         }
-                        .foregroundStyle(account.selected ? Color.white : Color.primary.opacity(0.85))
+                        // Selected: light label on phosphor/accent fill; idle: primary on muted track.
+                        .foregroundStyle(account.selected ? Color.white : Color.primary)
                     }
                     .buttonStyle(.plain)
                     .accessibilityAddTraits(account.selected ? .isSelected : [])
