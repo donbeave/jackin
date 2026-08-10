@@ -8,7 +8,7 @@
 | OV-5 calendar when known | overviewResetDisplay | **match** selected/glance |
 | Providers strip + detail | TabGrid + PopoverProviderTab | **match** |
 | Open Usage CTA | PopoverFooter | **match** |
-| Usage glass sidebar + solid | craft roles match; inactive window-ID evidence | **BLOCKED** active state |
+| Usage glass sidebar + solid | active key/main window-ID evidence | **match** |
 | Structural Usage bar | nest/detail/overview/toolbar | **accepted** |
 | Meters 3-status; brand plates | severityTint / brandChrome | **match** |
 | No spend/price UI | parity matrix | **match** |

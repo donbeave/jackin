@@ -1,1 +1,0 @@
-Window-ID capture is structurally valid but app was not key/main; active-state color parity remains unproven.

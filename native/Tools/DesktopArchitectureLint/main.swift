@@ -302,14 +302,17 @@ struct DesktopArchitectureLint {
             "UsageAccountRailView(accounts: accts)",
             ".listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 8, trailing: -12))",
             "desktopProviderBrandChrome(iconKey: iconKey)",
+            "store.selectUsageSurface(row.surfaceId)",
+            ".listRowBackground(providerRowBackground(selected:",
         ]
         if required.allSatisfy(text.contains)
             && !text.contains("listRowBackground(accountNestWellBackground)")
             && !text.contains("private func accountSidebarRow")
+            && !text.contains("List(selection:")
         {
-            print("PASS  Usage account rows share one inset rail")
+            print("PASS  Usage account rows share one inset rail without system selection fill")
         } else {
-            print("FAIL  Usage account nest must retain one labeled inset rail")
+            print("FAIL  Usage sidebar must retain custom selection well and one labeled account rail")
             exit(1)
         }
     }

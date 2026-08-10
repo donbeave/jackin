@@ -139,10 +139,8 @@ theme = "dark"
 html_path = "advisor-plans/qi-artifacts/html/usage-window-dark.png"
 native_path = "advisor-plans/qi-artifacts/native/usage-window-openai-dark.png"
 capture_tier = "harness"
-verdict = "blocked"
-notes = "Window-ID Dark capture proves full-shell structure but harness process was not key/main."
-blocked_reason = "Active-window color state remains unproven; structural inactive capture retained."
-blocked_note_path = "advisor-plans/qi-artifacts/native/usage-window-openai-dark.INACTIVE.txt"
+verdict = "pass"
+notes = "Active key/main window-ID capture. Custom phosphor selection well avoids native solid-blue List selection."
 
 [[scene]]
 id = "usage-window-openai"
@@ -150,10 +148,8 @@ theme = "light"
 html_path = "advisor-plans/qi-artifacts/html/usage-window-light.png"
 native_path = "advisor-plans/qi-artifacts/native/usage-window-openai-light.png"
 capture_tier = "harness"
-verdict = "blocked"
-notes = "Window-ID Light capture proves full-shell structure but harness process was not key/main."
-blocked_reason = "Active-window color state remains unproven; structural inactive capture retained."
-blocked_note_path = "advisor-plans/qi-artifacts/native/usage-window-openai-light.INACTIVE.txt"
+verdict = "pass"
+notes = "Active key/main window-ID capture. Custom phosphor selection well avoids native solid-blue List selection."
 
 # Interaction / live tiers — not craft Pass without files
 

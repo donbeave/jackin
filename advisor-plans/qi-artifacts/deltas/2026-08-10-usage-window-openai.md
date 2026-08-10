@@ -14,7 +14,7 @@
 | Detail head | identity + external usage action | same | Yes |
 | Meta | one quiet details group | same | Yes |
 | Limits | one inset divided list | same | Yes |
-| Themes | active Dark and Light renderings | valid window-ID captures; both inactive | Blocked |
+| Themes | active Dark and Light renderings | active key/main window-ID captures | Yes |
 
 ## False-pass correction
 
@@ -29,15 +29,13 @@ and QI host now share one `UsageAccountRailView`, preventing that drift.
 
 Third re-audit found region-based screen capture had accepted pixels from an
 unrelated Telegram window occupying the same coordinates. Region capture is now
-forbidden; evidence uses window ID only. Current Dark and Light captures are
-structurally valid but inactive window captures.
+forbidden; evidence uses window ID only.
 
-## Different (not High)
-
-| Severity | Element | Notes |
-|----------|---------|-------|
-| High | Active full shell | Key-window state unavailable in harness |
+Fourth re-audit activated each window through a bounded AppKit modal event loop.
+Active pixels exposed solid-blue system List selection hidden by inactive captures.
+Sidebar navigation now owns selection through plain buttons and the HTML phosphor
+well; both themes recaptured key/main.
 
 ## Verdict
 
-**Verdict: Blocked** (structure proven; active full-shell pixels unproven)
+**Verdict: Pass** (active Dark + Light full-shell parity)

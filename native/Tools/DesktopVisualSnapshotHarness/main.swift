@@ -580,6 +580,10 @@ struct DesktopVisualSnapshotHarness {
         window.makeMain()
         window.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+            NSApp.stopModal()
+        }
+        NSApp.runModal(for: window)
         window.layoutIfNeeded()
         window.contentViewController?.view.layoutSubtreeIfNeeded()
         // Allow NavigationSplitView + toolbar SF Symbols to composite.
@@ -602,7 +606,6 @@ struct DesktopVisualSnapshotHarness {
             }
             print("BLOCKED \(fullPath) [blank-or-missing window capture]")
             controller.invalidate()
-            NSApp.setActivationPolicy(.prohibited)
             return false
         }
 
@@ -613,7 +616,6 @@ struct DesktopVisualSnapshotHarness {
                 writeBlockedPlaceholder(path: toolbarPath, reason: "full window PNG encode/blank")
             }
             controller.invalidate()
-            NSApp.setActivationPolicy(.prohibited)
             return false
         }
 
@@ -694,7 +696,6 @@ struct DesktopVisualSnapshotHarness {
         }
 
         controller.invalidate()
-        NSApp.setActivationPolicy(.prohibited)
         // Full shell Pass only when sidebar composites (not whiteout).
         return !sidebarWhiteout
     }
@@ -731,8 +732,13 @@ struct DesktopVisualSnapshotHarness {
         // Region capture is forbidden here: another app can occlude these coordinates,
         // producing a plausible nonblank image of the wrong window. Window ID preserves ownership.
         fputs("INFO trying screencapture -l window ID\n", stderr)
-        if let sc = captureWindowViaScreencapture(window: window), !cgImageIsBlank(sc) {
-            return sc
+        for attempt in 0..<3 {
+            if let sc = captureWindowViaScreencapture(window: window), !cgImageIsBlank(sc) {
+                return sc
+            }
+            if attempt < 2 {
+                RunLoop.current.run(until: Date(timeIntervalSinceNow: 0.15))
+            }
         }
         fputs("WARN screencapture -l failed — trying CGWindow\n", stderr)
         if let cg = captureFullWindowCGImage(window: window), !cgImageIsBlank(cg) {

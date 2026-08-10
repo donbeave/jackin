@@ -18,8 +18,6 @@ public struct UsageWindowRoot: View {
         self.store = store
     }
 
-    private static let overviewId = "__overview__"
-
     private var model: UsageWindowModel {
         UsageWindowModel(
             glanceRows: store.providerGlanceRows,
@@ -32,22 +30,28 @@ public struct UsageWindowRoot: View {
     public var body: some View {
         let model = self.model
         NavigationSplitView {
-            List(selection: selectionBinding) {
+            List {
                 // HTML `.side` · Browse / Overview (All accounts)
                 Section {
-                    Label {
-                        VStack(alignment: .leading, spacing: 1) {
-                            Text("Overview")
-                                .font(.body.weight(.semibold))
-                            Text("All accounts")
-                                .font(.caption)
-                                .foregroundStyle(.tertiary)
+                    Button {
+                        store.selectUsageSurface(nil)
+                    } label: {
+                        Label {
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text("Overview")
+                                    .font(.body.weight(.semibold))
+                                Text("All accounts")
+                                    .font(.caption)
+                                    .foregroundStyle(.tertiary)
+                            }
+                        } icon: {
+                            sidebarLogoPlate(systemImage: "square.grid.2x2", tint: Color.jackinPhosphor)
                         }
-                    } icon: {
-                        sidebarLogoPlate(systemImage: "square.grid.2x2", tint: Color.jackinPhosphor)
                     }
-                    .tag(Self.overviewId)
+                    .buttonStyle(.plain)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                     .listRowInsets(EdgeInsets(top: 6, leading: 8, bottom: 6, trailing: 8))
+                    .listRowBackground(providerRowBackground(selected: store.usageSelection == nil))
                 } header: {
                     Text("Browse")
                         .font(.caption.weight(.semibold))
@@ -58,8 +62,13 @@ public struct UsageWindowRoot: View {
                 Section {
                     ForEach(model.sidebar) { row in
                         // Provider = identity only (no glance % — lives on account rows).
-                        providerSidebarRow(row)
-                            .tag(row.surfaceId)
+                        Button {
+                            store.selectUsageSurface(row.surfaceId)
+                        } label: {
+                            providerSidebarRow(row)
+                        }
+                            .buttonStyle(.plain)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                             .listRowInsets(EdgeInsets(top: 4, leading: 8, bottom: 4, trailing: 8))
                             .listRowBackground(providerRowBackground(selected: store.usageSelection == row.surfaceId))
                             .accessibilityLabel(providerAccessibilityLabel(row))
@@ -311,16 +320,4 @@ public struct UsageWindowRoot: View {
         return row.displayLabel
     }
 
-    private var selectionBinding: Binding<String?> {
-        Binding(
-            get: { store.usageSelection ?? Self.overviewId },
-            set: { newValue in
-                if newValue == Self.overviewId || newValue == nil {
-                    store.selectUsageSurface(nil)
-                } else {
-                    store.selectUsageSurface(newValue)
-                }
-            }
-        )
-    }
 }

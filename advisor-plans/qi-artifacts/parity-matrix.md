@@ -4,8 +4,8 @@
 
 ## High residual craft
 
-Product structure has no known High residual. Active full-window visual parity
-remains blocked: Dark/Light window-ID captures are structurally valid but inactive.
+No known High visual residual. Dark/Light Usage window captures are active,
+key/main, window-ID-owned evidence.
 
 ## Scenes
 | Scene | Dark | Light | Verdict |
@@ -17,8 +17,8 @@ remains blocked: Dark/Light window-ID captures are structurally valid but inacti
 | usage-overview | Pass | Pass | one divided per-account inventory |
 | usage-provider-nest | Pass | Pass | 57%/0% |
 | usage-detail-openai | Pass | Pass | Session/Weekly/Spark/LRC |
-| usage-window-openai | Blocked | Blocked | structurally valid; inactive state |
-| usage-toolbar | Pass | Pass | readable inactive window-ID crops |
+| usage-window-openai | Pass | Pass | active key/main full shell |
+| usage-toolbar | Pass | Pass | readable active window-ID crops |
 
 ## Live
 | Scene | Verdict |
@@ -27,4 +27,4 @@ remains blocked: Dark/Light window-ID captures are structurally valid but inacti
 | ctx-menu-live | BLOCKED |
 
 ## Gates
-L1+L2 ALL PASS · component themes byte-distinct · full-window active craft BLOCKED
+L1+L2 ALL PASS · component themes byte-distinct · full-window active craft PASS

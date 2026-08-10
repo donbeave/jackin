@@ -14,8 +14,8 @@ DesktopArchitectureLint ALL PASS
 DesktopSoTParityHarness ALL PASS ×3
 DesktopParityMatrixHarness ALL PASS
 StatusItemChipHarness / ProviderMarks ALL PASS
-usage_window_openai_dark/light: STRUCTURAL_INACTIVE
-usage_toolbar_dark/light: readable inactive window-ID crops
+usage_window_openai_dark/light: ACTIVE_OK
+usage_toolbar_dark/light: readable active window-ID crops
 ```
 
 Log: `qi-artifacts/native/desktop-gates.log`
@@ -32,8 +32,9 @@ Log: `qi-artifacts/native/desktop-gates.log`
 | usage-provider-nest | Pass | Pass | none | 57%/0% |
 | usage-detail-openai | Pass | Pass | none | G-P3 component |
 | usage-toolbar | Pass | Pass | none | readable Refresh D+L |
+| usage-window-openai | Pass | Pass | none | active key/main full shell |
 
-**High residual craft product: none known. Active full-window evidence remains blocked.**
+**High residual craft product: none known. Active full-window evidence passes.**
 
 Re-audit closed false-pass primary-control deltas: Usage “Open usage page” now
 uses oracle’s quiet tint + 0.5 pt hairline instead of solid phosphor; popover
@@ -90,6 +91,12 @@ and fixed monochrome provider plates plus collapsed missing-reset row geometry.
 Dark/Light full-shell captures are retained as structurally valid inactive
 evidence, not active craft proof.
 
+Active-window re-audit fixed that evidence limit through a bounded AppKit modal
+event loop. Key/main captures then exposed a real solid-blue system List selection
+that inactive screenshots hid. Sidebar navigation now uses plain row buttons plus
+the oracle phosphor selection well. Dark/Light full-shell captures are active,
+window-ID-owned, and visually aligned.
+
 Popover detail re-audit found another false-pass: three-provider fixture data,
 percentage-bearing account chips, horizontal metadata, uniform phosphor strip
 meters, and clipped terminal sections. The harness now uses the canonical seven
@@ -99,4 +106,4 @@ and full-height detail plates. HTML claims now stay within Rust-backed data.
 ## Live
 popover-live / ctx-menu **BLOCKED** — SoTParity proves focus/menu.
 
-Agent sign-off: G-P3 Pass; multi-limit Pass; active full-window craft BLOCKED.
+Agent sign-off: G-P3 Pass; multi-limit Pass; active full-window craft Pass.
