@@ -24,18 +24,29 @@ final class StatusPopoverFocusTests: XCTestCase {
     }
 
     func testSurfaceIdMapLookup() {
-        let a = ObjectIdentifier(NSObject())
-        let b = ObjectIdentifier(NSObject())
+        // Retain NSObject for ObjectIdentifier lifetime (avoids free/reuse alias flake).
+        let buttonA = NSObject()
+        let buttonB = NSObject()
+        let a = ObjectIdentifier(buttonA)
+        let b = ObjectIdentifier(buttonB)
         let map = ["codex": a, "claude": b]
         XCTAssertEqual(
             StatusPopoverFocus.surfaceId(matchingButtonIdentity: b, providerButtonIdentities: map),
             "claude"
         )
+        XCTAssertEqual(
+            StatusPopoverFocus.surfaceId(matchingButtonIdentity: a, providerButtonIdentities: map),
+            "codex"
+        )
+        let other = NSObject()
         XCTAssertNil(
             StatusPopoverFocus.surfaceId(
-                matchingButtonIdentity: ObjectIdentifier(NSObject()),
+                matchingButtonIdentity: ObjectIdentifier(other),
                 providerButtonIdentities: map
             )
         )
+        withExtendedLifetime(buttonA) {}
+        withExtendedLifetime(buttonB) {}
+        withExtendedLifetime(other) {}
     }
 }

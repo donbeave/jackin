@@ -38,15 +38,32 @@ struct DesktopSoTParityHarness {
             "empty surface → overview",
             StatusPopoverFocus.outcome(surfaceId: "", isFallbackItem: false) == .overview
         )
-        let idA = ObjectIdentifier(NSObject())
-        let idB = ObjectIdentifier(NSObject())
+        // Retain NSObject instances for the assertion — bare ObjectIdentifier(NSObject())
+        // can free immediately and alias under allocator reuse (flaky FAIL).
+        let buttonA = NSObject()
+        let buttonB = NSObject()
+        let buttonOther = NSObject()
+        let idA = ObjectIdentifier(buttonA)
+        let idB = ObjectIdentifier(buttonB)
+        let idOther = ObjectIdentifier(buttonOther)
+        let map = ["codex": idA, "claude": idB]
         check(
             "button identity map",
-            StatusPopoverFocus.surfaceId(
-                matchingButtonIdentity: idB,
-                providerButtonIdentities: ["codex": idA, "claude": idB]
-            ) == "claude"
+            StatusPopoverFocus.surfaceId(matchingButtonIdentity: idB, providerButtonIdentities: map)
+                == "claude"
+                && StatusPopoverFocus.surfaceId(
+                    matchingButtonIdentity: idA,
+                    providerButtonIdentities: map
+                ) == "codex"
+                && StatusPopoverFocus.surfaceId(
+                    matchingButtonIdentity: idOther,
+                    providerButtonIdentities: map
+                ) == nil
         )
+        // Keep strong refs live through the check (and past any optimizer elision).
+        withExtendedLifetime(buttonA) {}
+        withExtendedLifetime(buttonB) {}
+        withExtendedLifetime(buttonOther) {}
 
         // --- OverviewInventory (shipped) ---
         let glances = [
