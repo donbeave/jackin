@@ -27,7 +27,8 @@ def main() -> int:
     need('id="usage-win"' in html, "usage-win root missing")
     need("data-lg-sidebar" in html, "Liquid Glass sidebar marker missing")
     need(
-        re.search(
+        "var(--lg-blur)" in html
+        or re.search(
             r"\.win\s+\.side\s*\{[^}]*backdrop-filter:\s*blur\(([5-9]\d|\d{3,})",
             html,
             re.S,
@@ -36,6 +37,8 @@ def main() -> int:
         "sidebar blur too weak (<50px) or missing",
     )
     need("--lg-side" in html, "--lg-side glass token missing")
+    need("side-well" in html, "floating side-well (Telegram panel-in-panel) missing")
+    need("--lg-specular" in html, "multi-layer specular token missing")
     need(
         re.search(r"\.win\s*\{[^}]*background:\s*transparent", html, re.S) is not None,
         "window shell must be transparent for stage bleed under glass",

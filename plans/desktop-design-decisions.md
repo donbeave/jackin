@@ -634,6 +634,8 @@ jackin = soul   (j❯, phosphor accent, mono metrics, deep canvas tint, optional
 | FB1-46 | Usage window keeps jackin law: phosphor selection/j❯, 3-level status only, credential source only, limits only (no spend/trends) | CONFIRMED |
 | FB1-47 | **Usage sidebar = Liquid Glass nav** (Finder/Tahoe): translucent fill + strong blur/saturate + hairline/specular; window shell transparent so stage bleeds under sidebar; **content pane solid** for contrast | CONFIRMED |
 | FB1-48 | **Provider vs account are distinct systems:** provider = primary glass capsule + brand plate + mini meter; account = nested quiet rail + left phosphor accent + denser mono (selection chrome must not match provider) | CONFIRMED |
+| FB1-49 | **Multi-layer Liquid Glass chrome** (Telegram + Finder/Tahoe patterns): specular top wash + translucent fill + hairline + ambient bleed; floating inner list well (`.side-well`); capsule glass toolbar controls; solid content contrast preserved | CONFIRMED |
+| FB1-50 | Reference map for LG app patterns lives in `plans/previews/desktop-ui/LIQUID_GLASS_REFERENCES.md` — craft guidance, not a third-party pixel clone | CONFIRMED |
 
 ### One-by-one queue (after FB-1)
 
