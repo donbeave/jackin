@@ -1,0 +1,51 @@
+=== ProviderMarksHarness ===
+Building for production...
+[0/2] Write swift-version--58304C5D6DBC2206.txt
+Build of product 'ProviderMarksHarness' complete! (0.07s)
+ProviderMarksHarness: 7 Desktop keys
+PASS  codex hasMark=true markSize=(18.0, 18.0) statusTemplate=true
+PASS  claude hasMark=true markSize=(18.0, 18.0) statusTemplate=true
+PASS  amp hasMark=true markSize=(18.0, 18.0) statusTemplate=true
+PASS  grok hasMark=true markSize=(18.0, 18.0) statusTemplate=true
+PASS  zai hasMark=true markSize=(18.0, 18.0) statusTemplate=true
+PASS  kimi hasMark=true markSize=(18.0, 18.0) statusTemplate=true
+PASS  minimax hasMark=true markSize=(18.0, 18.0) statusTemplate=true
+PASS  unknown key hasMark=false
+PASS  codex mark maxA=244 (need ≥200)
+PASS  claude mark maxA=249 (need ≥200)
+PASS  amp mark maxA=255 (need ≥200)
+PASS  grok mark maxA=242 (need ≥200)
+PASS  zai mark maxA=234 (need ≥200)
+PASS  kimi mark maxA=231 (need ≥200)
+PASS  minimax mark maxA=244 (need ≥200)
+ProviderMarksHarness: ALL PASS (7/7 official marks)
+=== DesktopArchitectureLint ===
+Building for production...
+[0/2] Write swift-version--58304C5D6DBC2206.txt
+Build of product 'DesktopArchitectureLint' complete! (0.07s)
+PASS  PresentationStore.swift serializes all bridge access via RefreshScheduler
+PASS  glassEffect / #available(macOS 26 only in GlassFallbacks
+PASS  UsageWindowController NSToolbar hosting
+PASS  status left-click popover focus wiring
+PASS  SettingsView.swift (preference chrome allowlist)
+PASS  SettingsView.swift
+PASS  OverviewListView.swift
+PASS  UsageAccountNestView.swift
+PASS  UsageWindowRoot.swift
+PASS  ProviderCardView.swift
+PASS  GlassPopoverHostingController.swift
+PASS  PopoverRoot.swift
+PASS  ProviderMarks.swift
+PASS  UsageWindowController.swift
+PASS  PopoverTabGrid.swift
+PASS  PopoverProviderTab.swift
+PASS  PopoverFooter.swift
+PASS  PopoverOverviewTab.swift
+PASS  AppMainMenu.swift
+PASS  DesktopAppDelegate.swift
+PASS  StatusItemLabel.swift
+PASS  StatusItemMenu.swift
+PASS  GlassFallbacks.swift
+---
+DesktopArchitectureLint: scanned 18 files, 18 clean
+DesktopArchitectureLint: ALL PASS

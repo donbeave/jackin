@@ -74,6 +74,13 @@ struct DesktopVisualSnapshotHarness {
             path: "\(out)/popover-anthropic-dark.png",
             appearance: .darkAqua
         )
+        capturePopover(
+            fixture: fixture,
+            selection: "amp",
+            size: NSSize(width: 430, height: 900),
+            path: "\(out)/popover-amp-dark.png",
+            appearance: .darkAqua
+        )
 
         // Usage detail / overview / nest — shipped detail surfaces
         render(
@@ -162,6 +169,13 @@ struct DesktopVisualSnapshotHarness {
             selection: "claude",
             size: NSSize(width: 430, height: 900),
             path: "\(out)/popover-anthropic-light.png",
+            appearance: .aqua
+        )
+        capturePopover(
+            fixture: fixture,
+            selection: "amp",
+            size: NSSize(width: 430, height: 900),
+            path: "\(out)/popover-amp-light.png",
             appearance: .aqua
         )
         render(

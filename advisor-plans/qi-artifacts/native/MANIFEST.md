@@ -1,10 +1,15 @@
-# DesktopVisualSnapshotHarness manifest (craft artifacts)
-
-status: StatusItemRendering dual-stack + template icons on menu-bar stage
-popover: PopoverRoot (TabGrid + body + Footer) via applyQIFixture
-usage_detail / overview / nest: shipped SwiftUI roots via NSHostingView
-usage_window / toolbar: UsageWindowController — prefer CGWindow non-blank;
-  harness rejects pure-black CGImage; falls back to screencapture -l then view bitmap
-  (view bitmap may white-out glass sidebar — prefer CGWindow craft when available)
-
-Pixel proof (agent): usage-toolbar + usage-window dark/light non-blank; status light non-blank.
+# DesktopVisualSnapshotHarness manifest
+out: /var/folders/8p/h376l_nn3375kyj72czdq2x80000gn/T/grok-goal-8e6f1f627b74/implementer/qi-logos
+popover: PopoverRoot (TabGrid + ProviderTab + Footer) via PresentationStore.applyQIFixture
+status: StatusItemRendering.icon + StatusItemRendering.title (AppKit bitmap)
+status_live_nsstatusitem: prefer live screencapture when JackinDesktop is running (see VISUAL_QA_LOG)
+usage_window: UsageWindowController CGWindow full (sidebar nest + detail) — not blank NSHostingView split
+usage_detail: ProviderCardView (+ window detail column)
+usage_overview: OverviewListView (+ window overview)
+usage_nest: UsageAccountNestView (+ window sidebar when CGWindow OK)
+usage_window_openai_dark: OK
+usage_window_overview_dark: OK
+usage_window_openai_light: OK
+usage_window_overview_light: OK
+usage_toolbar_dark: UsageWindowController titlebar crop
+usage_toolbar_light: UsageWindowController titlebar crop
