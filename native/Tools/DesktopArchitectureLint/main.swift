@@ -38,6 +38,7 @@ struct DesktopArchitectureLint {
         checkGlassGate(desktopRoot: desktop)
         checkUsageWindowToolbarHost(desktopRoot: desktop)
         checkStatusPopoverFocusWiring(desktopRoot: desktop)
+        checkStatusContextMenuCraft(desktopRoot: desktop)
         checkPrimaryControlCraft(desktopRoot: desktop)
         checkUsageOverviewGrouping(desktopRoot: desktop)
         checkUsageDetailGrouping(desktopRoot: desktop)
@@ -133,6 +134,24 @@ struct DesktopArchitectureLint {
             print("PASS  status left-click popover focus wiring")
         } else {
             print("DesktopArchitectureLint: status-focus FAILURE")
+            exit(1)
+        }
+    }
+
+    /// G-S3: shipped right-click menu retains HTML grouping before destructive Quit.
+    static func checkStatusContextMenuCraft(desktopRoot: URL) {
+        let path = desktopRoot.appendingPathComponent("StatusItemMenu.swift")
+        guard let text = try? String(contentsOf: path, encoding: .utf8) else {
+            fputs("FAIL  StatusItemMenu.swift missing\n", stderr)
+            exit(2)
+        }
+        if text.contains("row.action == .quit")
+            && text.contains("menu.addItem(.separator())")
+            && text.contains("item.isEnabled = true")
+        {
+            print("PASS  status context menu retains enabled rows and Quit separator")
+        } else {
+            print("FAIL  status context menu must separate Quit from enabled usage actions")
             exit(1)
         }
     }

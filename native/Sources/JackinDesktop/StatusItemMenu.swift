@@ -15,13 +15,16 @@ import JackinUsageBridge
 public final class StatusItemMenu: NSObject {
     private let router: StatusItemMenuRouter
     /// Owned menu; items target `self`.
-    let menu: NSMenu
+    private let menu: NSMenu
 
-    init(router: StatusItemMenuRouter) {
+    public init(router: StatusItemMenuRouter) {
         self.router = router
         self.menu = NSMenu()
         super.init()
         for (index, row) in StatusItemMenuModel.rows.enumerated() {
+            if row.action == .quit, index > 0 {
+                menu.addItem(.separator())
+            }
             let item = NSMenuItem(
                 title: row.title,
                 action: #selector(handle(_:)),
@@ -32,6 +35,14 @@ public final class StatusItemMenu: NSObject {
             item.isEnabled = true
             menu.addItem(item)
         }
+    }
+
+    public func popUp(positioning item: NSMenuItem?, at location: NSPoint, in view: NSView?) {
+        menu.popUp(positioning: item, at: location, in: view)
+    }
+
+    public func cancelTracking() {
+        menu.cancelTracking()
     }
 
     @objc private func handle(_ sender: NSMenuItem) {

@@ -1,1 +1,1 @@
-Live ctx-menu BLOCKED (a11y); rows proven StatusItemMenuModel + SoT harness.
+Physical right-click walkthrough BLOCKED (Accessibility unavailable). Shipped StatusItemMenu pixels captured separately in ctx-menu-dark.png.

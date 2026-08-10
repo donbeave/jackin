@@ -25,6 +25,7 @@ Log: `qi-artifacts/native/desktop-gates.log`
 | Scene | Dark | Light | High residual | Verdict |
 |-------|------|-------|---------------|---------|
 | status-desktop | Pass | Pass | none | dual-stack mono |
+| ctx-menu | Pass | N/A | none | shipped AppKit menu window |
 | popover-openai | Pass | Pass | none | G-P3 meter-last |
 | popover-anthropic | Pass | Pass | none | multi-limit + G-P3 |
 | popover-overview | Pass | Pass | none | inventory |
@@ -102,6 +103,11 @@ percentage-bearing account chips, horizontal metadata, uniform phosphor strip
 meters, and clipped terminal sections. The harness now uses the canonical seven
 providers, severity colors, label-only chips, stacked metadata, credential accent,
 and full-height detail plates. HTML claims now stay within Rust-backed data.
+
+Context-menu re-audit captured the shipped `StatusItemMenu` as a real AppKit
+menu window without Accessibility automation. Pixels exposed a missing separator
+before Quit; native now matches HTML grouping while retaining all three enabled
+actions and ⌘R / ⌘Q equivalents. Physical right-click remains an operator flow.
 
 ## Live
 popover-live / ctx-menu **BLOCKED** — SoTParity proves focus/menu.

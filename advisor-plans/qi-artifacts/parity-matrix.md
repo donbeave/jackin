@@ -11,6 +11,7 @@ key/main, window-ID-owned evidence.
 | Scene | Dark | Light | Verdict |
 |-------|------|-------|---------|
 | status-desktop | Pass | Pass | dual-stack template mono |
+| ctx-menu | Pass | N/A | shipped AppKit menu; HTML grouping |
 | popover-openai | Pass | Pass | G-P3 hero→pace→reset→meter |
 | popover-anthropic | Pass | Pass | multi-limit + G-P3 |
 | popover-overview | Pass | Pass | inventory |

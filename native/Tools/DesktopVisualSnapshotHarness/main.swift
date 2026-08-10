@@ -55,6 +55,11 @@ struct DesktopVisualSnapshotHarness {
         // (not SF Symbol primary when assets are present). SB-6 / LG-1.
         assertOfficialProviderMarksBundled()
 
+        if CommandLine.arguments.contains("--menu-only") {
+            captureContextMenu(path: "\(out)/ctx-menu-dark.png", appearance: .darkAqua)
+            return
+        }
+
         let fixture = QIFixture.make()
 
         // ── Dark: full PopoverRoot shell (tab grid + body + footer) ──
@@ -144,6 +149,10 @@ struct DesktopVisualSnapshotHarness {
         captureStatusItemRendering(
             fixture: fixture,
             path: "\(out)/status-desktop-dark.png",
+            appearance: .darkAqua
+        )
+        captureContextMenu(
+            path: "\(out)/ctx-menu-dark.png",
             appearance: .darkAqua
         )
 
@@ -755,7 +764,11 @@ struct DesktopVisualSnapshotHarness {
     /// macOS `screencapture -l <windowID>` — captures real window pixels.
     @MainActor
     private static func captureWindowViaScreencapture(window: NSWindow) -> CGImage? {
-        let windowId = window.windowNumber
+        captureWindowViaScreencapture(windowId: window.windowNumber)
+    }
+
+    @MainActor
+    private static func captureWindowViaScreencapture(windowId: Int) -> CGImage? {
         guard windowId > 0 else { return nil }
         let tmp = FileManager.default.temporaryDirectory
             .appendingPathComponent("jackin-qi-win-\(windowId).png")
@@ -777,6 +790,87 @@ struct DesktopVisualSnapshotHarness {
         }
         try? FileManager.default.removeItem(at: tmp)
         return cg
+    }
+
+    /// Shipped `StatusItemMenu` rendered by AppKit. No AX automation or mock menu.
+    @MainActor
+    private static func captureContextMenu(path: String, appearance: NSAppearance.Name) {
+        NSApp.appearance = NSAppearance(named: appearance)
+        NSApp.setActivationPolicy(.regular)
+
+        let anchor = NSWindow(
+            contentRect: NSRect(x: 240, y: 240, width: 24, height: 24),
+            styleMask: [.borderless],
+            backing: .buffered,
+            defer: false
+        )
+        anchor.isOpaque = false
+        anchor.backgroundColor = .clear
+        anchor.appearance = NSAppearance(named: appearance)
+        anchor.orderFrontRegardless()
+        anchor.makeKeyAndOrderFront(nil)
+        NSRunningApplication.current.activate(options: [.activateAllWindows])
+        NSApp.activate(ignoringOtherApps: true)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+            NSApp.stopModal()
+        }
+        NSApp.runModal(for: anchor)
+        let host = anchor.contentView ?? NSView(frame: anchor.contentRect(forFrameRect: anchor.frame))
+        anchor.contentView = host
+
+        let router = StatusItemMenuRouter(
+            openUsageWindow: { _ in },
+            refresh: {},
+            quit: {}
+        )
+        let statusMenu = StatusItemMenu(router: router)
+        var captured = false
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+            let ownerPID = Int32(ProcessInfo.processInfo.processIdentifier)
+            let info = CGWindowListCopyWindowInfo(.optionOnScreenOnly, kCGNullWindowID)
+                as? [[String: Any]] ?? []
+            let candidates = info.compactMap { row -> (CGWindowID, Int, CGRect)? in
+                guard let pid = row[kCGWindowOwnerPID as String] as? Int,
+                    pid == Int(ownerPID),
+                    let number = row[kCGWindowNumber as String] as? Int,
+                    let layer = row[kCGWindowLayer as String] as? Int,
+                    layer > 0,
+                    let rawBounds = row[kCGWindowBounds as String] as? [String: Any],
+                    let bounds = CGRect(dictionaryRepresentation: rawBounds as CFDictionary),
+                    bounds.width >= 140,
+                    bounds.width <= 620,
+                    bounds.height >= 60,
+                    bounds.height <= 520
+                else { return nil }
+                return (CGWindowID(number), layer, bounds)
+            }
+            .sorted { lhs, rhs in lhs.1 > rhs.1 }
+
+            for candidate in candidates {
+                guard let image = CGWindowListCreateImage(
+                    .null,
+                    .optionIncludingWindow,
+                    candidate.0,
+                    [.boundsIgnoreFraming, .bestResolution]
+                ), !cgImageIsBlank(image)
+                else { continue }
+                if writeCGImagePNG(image, path: path, requireNonBlank: true) {
+                    captured = true
+                    break
+                }
+            }
+            statusMenu.cancelTracking()
+        }
+
+        statusMenu.popUp(positioning: nil, at: NSPoint(x: 0, y: host.bounds.maxY), in: host)
+        anchor.close()
+        if captured {
+            print("WROTE \(path) [shipped StatusItemMenu AppKit window]")
+        } else {
+            writeBlockedPlaceholder(path: path, reason: "StatusItemMenu window not found or blank")
+            print("BLOCKED \(path) [StatusItemMenu window unavailable]")
+        }
     }
 
     /// Left ~28% of content (below titlebar) is solid near-white — Liquid Glass sidebar whiteout.

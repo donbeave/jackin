@@ -164,7 +164,7 @@ public final class StatusBarController: NSObject {
     @objc private func handleClick(_ sender: NSStatusBarButton) {
         // Right-click shows the static context menu; left-click toggles the popover.
         if NSApp.currentEvent?.type == .rightMouseUp {
-            statusItemMenu.menu.popUp(
+            statusItemMenu.popUp(
                 positioning: nil,
                 at: NSPoint(x: 0, y: sender.bounds.height + 4),
                 in: sender

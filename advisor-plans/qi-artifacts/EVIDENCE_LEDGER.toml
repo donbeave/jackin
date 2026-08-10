@@ -154,6 +154,15 @@ notes = "Active key/main window-ID capture. Custom phosphor selection well avoid
 # Interaction / live tiers — not craft Pass without files
 
 [[scene]]
+id = "ctx-menu"
+theme = "dark"
+html_path = ""
+native_path = "advisor-plans/qi-artifacts/native/ctx-menu-dark.png"
+capture_tier = "harness"
+verdict = "pass"
+notes = "Shipped StatusItemMenu rendered as a real AppKit menu window: three enabled actions, key equivalents, separator before Quit. HTML oracle source: index.html #flow-ctx."
+
+[[scene]]
 id = "popover-live-click"
 theme = "dark"
 html_path = ""
@@ -170,7 +179,7 @@ html_path = ""
 native_path = ""
 capture_tier = "blocked"
 verdict = "blocked"
-blocked_reason = "Live right-click NSMenu BLOCKED (no Accessibility). Rows=StatusItemMenuModel+SoT (Open Usage/Refresh/Quit). No live PNG craft Pass."
+blocked_reason = "Live physical right-click walkthrough BLOCKED (no Accessibility). Shipped NSMenu craft is captured separately as ctx-menu-dark.png."
 blocked_note_path = "advisor-plans/qi-artifacts/native/ctx-menu-live-dark.BLOCKED.txt"
 
 # Optional live status extras (file exists on disk; dual-stack API remains harness)
