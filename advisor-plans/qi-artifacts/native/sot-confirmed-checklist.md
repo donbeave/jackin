@@ -1,6 +1,6 @@
 # SoT CONFIRMED checklist — status / popover / Usage
 
-**Tip:** plan/desktop-visual @ 3b2db3d2 (this evidence pack; code SB bar @ b97f2a4c)
+**Tip:** plan/desktop-visual @ 301ca6b9 (this evidence pack; code SB bar @ b97f2a4c)
 **SoT:** decisions §0 → HTML index/popover → AGENT_HANDOFF
 
 | ID | Surface | Status | Evidence |
