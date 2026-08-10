@@ -188,7 +188,7 @@ public struct PopoverProviderTab: View {
         } label: {
             Label(ProviderUsageLinks.openUsagePageTitle, systemImage: "safari")
                 .font(.caption.weight(.semibold))
-                .foregroundStyle(Color.accentColor)
+                .foregroundStyle(Color.jackinPhosphor)
         }
         .buttonStyle(.plain)
         .accessibilityLabel(ProviderUsageLinks.openUsagePageTitle)
@@ -207,7 +207,7 @@ public struct PopoverProviderTab: View {
                                 .font(.caption2.monospaced().weight(account.selected ? .semibold : .medium))
                                 .lineLimit(1)
                             if let pct = account.remainingPercent {
-                                Text("\(pct)%")
+                                Text(statusItemPercentToken(remainingPercent: pct))
                                     .font(.caption2.monospacedDigit().weight(.semibold))
                             }
                         }
@@ -217,7 +217,7 @@ public struct PopoverProviderTab: View {
                             Capsule(style: .continuous)
                                 .fill(
                                     account.selected
-                                        ? Color.accentColor.opacity(0.92)
+                                        ? Color.jackinPhosphor.opacity(0.92)
                                         : Color.secondary.opacity(0.22)
                                 )
                                 .overlay {

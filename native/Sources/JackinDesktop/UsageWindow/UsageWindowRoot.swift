@@ -44,7 +44,7 @@ public struct UsageWindowRoot: View {
                                 .foregroundStyle(.tertiary)
                         }
                     } icon: {
-                        sidebarLogoPlate(systemImage: "square.grid.2x2", tint: Color.accentColor)
+                        sidebarLogoPlate(systemImage: "square.grid.2x2", tint: Color.jackinPhosphor)
                     }
                     .tag(Self.overviewId)
                     .listRowInsets(EdgeInsets(top: 6, leading: 8, bottom: 6, trailing: 8))
@@ -189,7 +189,7 @@ public struct UsageWindowRoot: View {
     private func providerRowBackground(selected: Bool) -> some View {
         if selected {
             RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(Color.accentColor.opacity(0.14))
+                .fill(Color.jackinPhosphor.opacity(0.14))
         } else {
             Color.clear
         }
@@ -203,7 +203,7 @@ public struct UsageWindowRoot: View {
 
     private func sidebarProviderLogo(iconKey: String) -> some View {
         let symbol = desktopProviderSystemImage(iconKey: iconKey) ?? "circle.grid.cross"
-        return sidebarLogoPlate(systemImage: symbol, tint: Color.accentColor)
+        return sidebarLogoPlate(systemImage: symbol, tint: Color.jackinPhosphor)
     }
 
     private func sidebarLogoPlate(systemImage: String, tint: Color) -> some View {
@@ -232,7 +232,7 @@ public struct UsageWindowRoot: View {
                 if multi {
                     Image(systemName: account.selected ? "circle.inset.filled" : "circle")
                         .font(.caption2)
-                        .foregroundStyle(account.selected ? Color.accentColor : .secondary)
+                        .foregroundStyle(account.selected ? Color.jackinPhosphor : .secondary)
                         .frame(width: 12)
                 }
                 VStack(alignment: .leading, spacing: 1) {
@@ -251,7 +251,8 @@ public struct UsageWindowRoot: View {
                 // Glance progress on account (HTML SoT): % + mini meter; 0% empty.
                 if let pct = account.remainingPercent {
                     VStack(alignment: .trailing, spacing: 3) {
-                        Text("\(pct)%")
+                        // Rust UInt8 remaining only — format without banned helpers.
+                        Text(verbatim: String(pct) + "%")
                             .font(.caption.monospacedDigit().weight(.semibold))
                             .foregroundStyle(.secondary)
                         UsageAccountMiniMeter(percent: pct)
@@ -284,7 +285,7 @@ public struct UsageWindowRoot: View {
             Spacer(minLength: 4)
             if let pct = row.glanceRemainingPercent {
                 VStack(alignment: .trailing, spacing: 3) {
-                    Text(row.barLabel.isEmpty ? "\(pct)%" : row.barLabel)
+                    Text(row.barLabel.isEmpty ? String(pct) + "%" : row.barLabel)
                         .font(.caption.monospacedDigit().weight(.semibold))
                         .foregroundStyle(.secondary)
                     UsageAccountMiniMeter(percent: pct)

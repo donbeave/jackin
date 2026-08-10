@@ -4,11 +4,14 @@
 import SwiftUI
 
 /// Pure mapping: Rust severity string → tint (no arithmetic, no probes).
+///
+/// Healthy/default → product phosphor (HTML `--status-high` / LG-A9), never system
+/// `Color.accentColor` (host blue). Warn/danger stay system orange/red.
 public func severityTint(_ severity: String) -> Color {
     switch severity {
     case "danger": return .red
     case "warn": return .orange
-    default: return .accentColor
+    default: return .jackinPhosphor
     }
 }
 

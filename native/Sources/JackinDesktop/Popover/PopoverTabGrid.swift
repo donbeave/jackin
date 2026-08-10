@@ -40,10 +40,10 @@ public struct PopoverTabGrid: View {
 
     private var brandLine: some View {
         HStack(spacing: 8) {
-            // j❯ mark — brand moment only (VS-13).
+            // j❯ mark — brand moment only (VS-13); phosphor, not system accent.
             ZStack {
                 RoundedRectangle(cornerRadius: 7, style: .continuous)
-                    .fill(Color.accentColor.opacity(0.92))
+                    .fill(Color.jackinPhosphor.opacity(0.92))
                     .frame(width: 22, height: 22)
                 Text("j❯")
                     .font(.system(size: 10, weight: .bold, design: .rounded))
@@ -54,7 +54,7 @@ public struct PopoverTabGrid: View {
                     .font(.subheadline.weight(.semibold))
                 Text("❯")
                     .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(Color.accentColor)
+                    .foregroundStyle(Color.jackinPhosphor)
                 Text(" desktop")
                     .font(.subheadline.weight(.medium))
                     .foregroundStyle(.secondary)
@@ -140,10 +140,10 @@ public struct PopoverTabGrid: View {
             .background {
                 if on {
                     RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .fill(Color.accentColor.opacity(0.14))
+                        .fill(Color.jackinPhosphor.opacity(0.14))
                         .overlay {
                             RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                .strokeBorder(Color.accentColor.opacity(0.30), lineWidth: 1)
+                                .strokeBorder(Color.jackinPhosphor.opacity(0.30), lineWidth: 1)
                         }
                 }
             }
@@ -190,11 +190,12 @@ public struct PopoverTabGrid: View {
         case "minimax":
             return Color(red: 0.90, green: 0.55, blue: 0.20)
         default:
-            return Color.accentColor
+            return Color.jackinPhosphor
         }
     }
 
     /// Meter geometry only — nil remaining = empty track (FB1-5).
+    /// Healthy fill = phosphor (`--status-high`), not system accent blue.
     @ViewBuilder
     private func meter(_ remaining: UInt8?) -> some View {
         GeometryReader { geometry in
@@ -202,7 +203,7 @@ public struct PopoverTabGrid: View {
                 Capsule().fill(Color.secondary.opacity(0.25))
                 if let remaining, remaining > 0 {
                     Capsule()
-                        .fill(Color.accentColor)
+                        .fill(Color.jackinPhosphor)
                         .frame(width: geometry.size.width * CGFloat(remaining) / 100.0)
                 }
             }

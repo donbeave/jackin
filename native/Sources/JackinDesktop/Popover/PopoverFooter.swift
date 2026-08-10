@@ -45,7 +45,7 @@ public struct PopoverFooter: View {
                         cornerRadius: GlassFallbacks.chromeTileCornerRadius,
                         style: .continuous
                     )
-                    .strokeBorder(Color.accentColor.opacity(0.45), lineWidth: 1)
+                    .strokeBorder(Color.jackinPhosphor.opacity(0.45), lineWidth: 1)
                 }
         }
         .clipShape(

@@ -161,9 +161,23 @@ final class ArchitectureTests: XCTestCase {
     func testSeverityAndStatusBadgeMappings() {
         XCTAssertEqual(severityTint("danger"), Color.red)
         XCTAssertEqual(severityTint("warn"), Color.orange)
+        // Healthy/default = product phosphor, never host system accent blue (LG-A9).
+        XCTAssertEqual(severityTint("ok"), Color.jackinPhosphor)
+        XCTAssertEqual(severityTint("normal"), Color.jackinPhosphor)
+        XCTAssertEqual(severityTint(""), Color.jackinPhosphor)
+        XCTAssertNotEqual(severityTint("ok"), Color.accentColor)
         XCTAssertEqual(statusBadgeSymbol("error"), "exclamationmark.triangle")
         XCTAssertEqual(statusBadgeSymbol("stale"), "clock")
         XCTAssertNil(statusBadgeSymbol("fresh"))
+    }
+
+    func testJackinPhosphorTokensMatchHTMLSoT() {
+        XCTAssertEqual(JackinBrand.phosphorDarkSRGB.r, 0x5C / 255.0, accuracy: 0.0001)
+        XCTAssertEqual(JackinBrand.phosphorDarkSRGB.g, 0xF0 / 255.0, accuracy: 0.0001)
+        XCTAssertEqual(JackinBrand.phosphorDarkSRGB.b, 0x7A / 255.0, accuracy: 0.0001)
+        XCTAssertEqual(JackinBrand.phosphorLightSRGB.r, 0x0B / 255.0, accuracy: 0.0001)
+        XCTAssertEqual(JackinBrand.phosphorLightSRGB.g, 0x77 / 255.0, accuracy: 0.0001)
+        XCTAssertEqual(JackinBrand.phosphorLightSRGB.b, 0x4E / 255.0, accuracy: 0.0001)
     }
 
     func testStatusItemChipHelpers() {

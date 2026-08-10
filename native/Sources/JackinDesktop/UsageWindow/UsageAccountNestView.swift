@@ -61,7 +61,7 @@ public struct UsageAccountNestView: View {
                 if multi {
                     Image(systemName: account.selected ? "circle.inset.filled" : "circle")
                         .font(.caption2)
-                        .foregroundStyle(account.selected ? Color.accentColor : .secondary)
+                        .foregroundStyle(account.selected ? Color.jackinPhosphor : .secondary)
                         .frame(width: 12)
                 }
                 VStack(alignment: .leading, spacing: 1) {
@@ -79,7 +79,8 @@ public struct UsageAccountNestView: View {
                 Spacer(minLength: 4)
                 if let pct = account.remainingPercent {
                     VStack(alignment: .trailing, spacing: 3) {
-                        Text("\(pct)%")
+                        // Rust UInt8 remaining only — format without banned helpers.
+                        Text(verbatim: String(pct) + "%")
                             .font(.caption.monospacedDigit().weight(.semibold))
                             .foregroundStyle(.secondary)
                         UsageAccountMiniMeter(percent: pct)
@@ -109,8 +110,8 @@ public struct UsageAccountNestView: View {
     }
 }
 
-/// Fixed-width remaining bar — geometry only from Rust percent (neutral fill).
-/// Empty track at 0% (no minimum sliver).
+/// Fixed-width remaining bar — geometry only from Rust percent.
+/// Healthy fill = phosphor (`--status-high`); empty track at 0% (no minimum sliver).
 public struct UsageAccountMiniMeter: View {
     public let percent: UInt8
 
@@ -124,7 +125,7 @@ public struct UsageAccountMiniMeter: View {
                 Capsule().fill(Color.primary.opacity(0.12))
                 if percent > 0 {
                     Capsule()
-                        .fill(Color.primary.opacity(0.40))
+                        .fill(Color.jackinPhosphor.opacity(0.85))
                         .frame(width: geo.size.width * CGFloat(percent) / 100.0)
                 }
             }

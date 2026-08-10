@@ -1,11 +1,18 @@
 # QI delta: usage-toolbar · dark + light
 
 ## Oracle
-- HTML: usage-toolbar-*.png
+- System unified titlebar + Refresh (HTML paints fake  only as reference — N/A)
 
 ## Candidate
-- Native: usage-toolbar-*.png (UsageWindowController real titlebar)
-- Dual-image: traffic lights + jackin❯ desktop + Refresh icon (unified NSToolbar)
+- Native: advisor-plans/qi-artifacts/native/usage-toolbar-{dark,light}.png
+- UsageWindowController titlebar crop: traffic lights + jackin❯ desktop + sidebar/refresh
+
+| Dimension | Score | Notes |
+|-----------|-------|-------|
+| IA / hierarchy | Pass | Unified toolbar |
+| Chrome roles | Pass | System chrome only |
+| Color | N/A | System controls |
+| Affordances | Pass | Refresh icon |
 
 ## Verdict
 Verdict: Pass

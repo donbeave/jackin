@@ -163,7 +163,7 @@ public enum GlassFallbacks {
     @ViewBuilder
     public static func selectedControlFill() -> some View {
         RoundedRectangle(cornerRadius: 10, style: .continuous)
-            .fill(Color.accentColor.opacity(0.90))
+            .fill(Color.jackinPhosphor.opacity(0.90))
     }
 
     @ViewBuilder

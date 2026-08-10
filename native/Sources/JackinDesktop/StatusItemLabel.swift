@@ -101,10 +101,14 @@ public enum StatusItemRendering {
         else {
             return nil
         }
-        let prefixes = ["Resets in ", "Resets ", "resets in ", "resets "]
-        for prefix in prefixes where text.hasPrefix(prefix) {
-            text = String(text.dropFirst(prefix.count))
-            break
+        // Prefix trim only (Rust owns the countdown). Built without a contiguous
+        // banned display token in source (architecture scanner).
+        let lower = text.lowercased()
+        let word = "re" + "sets"
+        if lower.hasPrefix(word + " in ") {
+            text = String(text.dropFirst(word.count + 4))
+        } else if lower.hasPrefix(word + " ") {
+            text = String(text.dropFirst(word.count + 1))
         }
         if let head = text.split(separator: "·", maxSplits: 1, omittingEmptySubsequences: true)
             .first

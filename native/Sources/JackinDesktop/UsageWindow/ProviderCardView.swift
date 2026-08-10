@@ -116,7 +116,7 @@ public struct ProviderCardView: View {
             .padding(.vertical, 9)
             .background {
                 Capsule(style: .continuous)
-                    .fill(Color.accentColor.opacity(0.92))
+                    .fill(Color.jackinPhosphor.opacity(0.92))
             }
         }
         .buttonStyle(.plain)
@@ -183,15 +183,15 @@ public struct ProviderCardView: View {
     private func providerLogoPlate(iconKey: String?, size: CGFloat) -> some View {
         ZStack {
             RoundedRectangle(cornerRadius: size * 0.28, style: .continuous)
-                .fill(Color.accentColor.opacity(0.18))
+                .fill(Color.jackinPhosphor.opacity(0.18))
             if let iconKey, let symbol = desktopProviderSystemImage(iconKey: iconKey) {
                 Image(systemName: symbol)
                     .font(.system(size: size * 0.42, weight: .semibold))
-                    .foregroundStyle(Color.accentColor)
+                    .foregroundStyle(Color.jackinPhosphor)
             } else {
                 Image(systemName: "circle.grid.cross")
                     .font(.system(size: size * 0.42, weight: .semibold))
-                    .foregroundStyle(Color.accentColor)
+                    .foregroundStyle(Color.jackinPhosphor)
             }
         }
         .frame(width: size, height: size)
