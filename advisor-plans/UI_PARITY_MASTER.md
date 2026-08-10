@@ -115,18 +115,18 @@ Executor must re-open HTML + native and fill this table before coding more. Seve
 | G-S1 | `index.html` `.system-menubar` + `.sb-item` dual stack | Status extras: icon + compact reset top + `bar_label` bottom; template mono; no chip fill | High |
 | G-S2 | Hub left-click → `popover.html?provider=` | Clicked status item focuses that provider tab/body | High (landed — re-verify) |
 | G-S3 | Right-click glass menu | Three enabled actions, retained target | High (landed — re-verify) |
-| G-P1 | `popover.html` sticky chrome + provider strip | Overview + providers with selection chrome matching SoT density (meters on strip optional per glance %) | High |
-| G-P2 | Left account strip under provider | Secondary chips/radio; multi only; remaining % when known | High |
-| G-P3 | Bucket heroes + pace + reset separation | Detail presentation layout_lines; reset trailing where Rust marks it; 0% empty meter | High |
-| G-P4 | Footer glass CTA | Single Refresh dock; glass via Fallbacks; ⌘R | Med |
+| G-P1 | `popover.html` sticky chrome + provider strip | Overview + providers with selection chrome matching SoT density (meters on strip optional per glance %) | High (**landed** — brand · Overview\|Providers · pstrip; visual QA) |
+| G-P2 | Left account strip under provider | Secondary chips/radio; multi only; remaining % when known | High (**landed** — visual QA) |
+| G-P3 | Bucket heroes + pace + reset separation | Detail presentation layout_lines; reset trailing where Rust marks it; 0% empty meter | High (**landed** — visual QA) |
+| G-P4 | Footer glass CTA | Single Refresh dock; glass via Fallbacks; ⌘R | Med (**landed** — Refresh dock; not HTML Open Usage Window) |
 | G-P5 | Shell translucency | Clear NSPopover host; regular glass; soft edges | High (landed — re-verify light/dark) |
 | G-P6 | Open usage / Open Usage window | Browser link + header open full Usage | Med (landed — re-verify) |
-| G-U1 | Unified titlebar first line | Real NSToolbar; centered brand title; icon-only Refresh | High (landed — visual QA) |
-| G-U2 | Floating glass sidebar over content | Not hard 3-pane walls; LG sidebar; soft scroll | High |
-| G-U3 | Provider row identity only | Name + multi-account caption; **no** provider %/meter | High |
-| G-U4 | Account nest under selected provider | Radio multi; % + mini meter; inset well polish if HTML shows well | High |
-| G-U5 | Overview one row per account | Inventory titles `Provider · account`; meters 1:1 | High (logic landed — visual QA) |
-| G-U6 | Detail limit-list + meta group | Single story; no dupe plan/account; Limit Reset structured | High |
+| G-U1 | Unified titlebar first line | Real NSToolbar; centered brand title; icon-only Refresh | High (landed — visual QA; title leading is system unified) |
+| G-U2 | Floating glass sidebar over content | Not hard 3-pane walls; LG sidebar; soft scroll | High (**landed** — Browse/logos/selection well; CGWindow QA) |
+| G-U3 | Provider row identity only | Name + multi-account caption; **no** provider %/meter | High (**landed** — visual QA) |
+| G-U4 | Account nest under selected provider | Radio multi; % + mini meter; inset well polish if HTML shows well | High (**landed** — 0% empty; visual QA) |
+| G-U5 | Overview one row per account | Inventory titles `Provider · account`; meters 1:1 | High (**landed** — visual QA) |
+| G-U6 | Detail limit-list + meta group | Single story; no dupe plan/account; Limit Reset structured | High (**landed** — detail head + Limit Reset; visual QA) |
 | G-U7 | Open usage page | All seven surface ids | Med |
 | G-A1 | Accessory vs regular | Menu bar app menus only when window key; status extras remain | Med |
 | G-L1 | LG-A1–A12 | Glass nav only; content solid; no glass-on-glass | High |

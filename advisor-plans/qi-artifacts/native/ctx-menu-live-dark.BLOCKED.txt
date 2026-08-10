@@ -1,1 +1,2 @@
-BLOCKED live right-click CGEvent menu (Accessibility). Rows: Open Usage Window / Refresh / Quit via StatusItemMenuModel + SoT harness.
+BLOCKED: live right-click NSMenu CGEvent capture not reliable without Accessibility trust.
+Shipped rows: Open Usage Window / Refresh / Quit jackin❯ desktop via StatusItemMenuModel + DesktopSoTParityHarness.

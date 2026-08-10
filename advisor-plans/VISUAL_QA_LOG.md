@@ -1,55 +1,62 @@
 # VISUAL_QA_LOG — jackin❯ desktop HTML SoT parity
 
 **Date:** 2026-08-10  
-**Branch:** plan/desktop-visual  
-**Toolchain:** Xcode 26.6  
+**Branch:** `plan/desktop-visual` · tip includes `d51f48ba` craft  
+**Toolchain:** Xcode 26.6 (`xcode-select` → Xcode.app)  
 **Oracle:** `plans/previews/desktop-ui/`  
 
-## Craft fixes this round (skeptic Highs)
+## Skeptic rebuttal (prior false-Pass claims)
 
-| ID | Fix |
-|----|-----|
-| G-P1 | `PopoverTabGrid`: brand · **Overview\|Providers** segment · provider strip only in Providers mode |
-| G-U2 | Usage sidebar: Browse/All accounts · logo plates · selection well · nest well · Limits only footer |
-| Detail head | `ProviderCardView`: logo + name + account·plan above Open usage |
-| ctx-menu live PNG | Honest **BLOCKED** (blank discarded); rows via StatusItemMenuModel + SoT harness |
+| Skeptic claim | Current evidence (post-craft) |
+|---------------|-------------------------------|
+| G-P1 flat peer TabGrid | **Closed.** `PopoverTabGrid`: brand · Overview\|Providers segment · provider strip only in Providers mode. PNG: `native/popover-openai-dark.png` shows all three layers. |
+| G-U2 plain text sidebar | **Closed.** Browse / All accounts · logo plates · selection well · nest under OpenAI · Limits only footer. PNG: `native/usage-window-openai-dark.png`. |
+| No detail identity head | **Closed.** `ProviderCardView.detailHead` logo + OpenAI + account·plan above Open usage. PNG: `native/usage-detail-openai-dark.png` + window detail column. |
+| Blank ctx-menu PNG | **Honest BLOCKED.** Blank PNG deleted; `ctx-menu-live-dark.BLOCKED.txt`. Rows: `StatusItemMenuModel` + DesktopSoTParityHarness. |
 
-## Dual-image matrix
+## Dual-image matrix (HTML baseline ↔ native shipped path)
 
-| Scene | HTML | Native (post-craft) | Verdict |
-|-------|------|---------------------|---------|
-| status-desktop | yes | live + StatusItemRendering | **Verdict: Pass** |
-| popover-openai | yes | PopoverRoot G-P1 chrome | **Verdict: Pass** |
-| popover-anthropic | yes | same chrome, Anthropic focus | **Verdict: Pass** |
-| usage-overview | yes | list + CGWindow shell | **Verdict: Pass** |
-| usage-provider-nest | yes | unit + window sidebar nest | **Verdict: Pass** |
-| usage-detail-openai | yes | detail head + card + window | **Verdict: Pass** |
-| usage-toolbar | yes | real NSToolbar crop | **Verdict: Pass** |
-| ctx-menu | mock | model/harness; live PNG BLOCKED | **Pass (rows) / live BLOCKED** |
+| Scene | HTML | Native | Dual-image notes | Verdict |
+|-------|------|--------|------------------|---------|
+| status-desktop | html/status-desktop-*.png | live + StatusItemRendering | dual-stack template mono; no glass chips | **Verdict: Pass** |
+| popover-openai | html/popover-openai-*.png | PopoverRoot G-P1 chrome | brand · mode · strip · heroes 63/57 · chips · Refresh | **Verdict: Pass** |
+| popover-anthropic | html/popover-anthropic-*.png | same chrome | Anthropic focus; heroes | **Verdict: Pass** |
+| usage-overview | html/usage-overview-*.png | OverviewListView + window | inventory 12/57/0/100; Browse chrome | **Verdict: Pass** |
+| usage-provider-nest | html/usage-provider-nest-*.png | nest unit + window sidebar | OpenAI identity; 57% + **0% empty** | **Verdict: Pass** |
+| usage-detail-openai | html/usage-detail-openai-*.png | detail head + card + window | identity head; Open usage; Limit Reset | **Verdict: Pass** |
+| usage-toolbar | html/usage-toolbar-*.png | UsageWindowController crop | real unified toolbar | **Verdict: Pass** |
+| ctx-menu | hub mock | model/harness only | live PNG **BLOCKED** | Pass rows / live BLOCKED |
 
-## High residual
-
-**None remaining** for G-P1 / G-U2 / detail-head after craft.  
-Live ctx-menu screenshot remains **BLOCKED** (not claimed as PNG Pass). Med only: system accent vs phosphor; Refresh footer vs HTML Open Usage Window (product law FB1/LG-A8).
+Delta files: `advisor-plans/qi-artifacts/deltas/2026-08-10-<scene>.md` each end with `Verdict: Pass` (ctx-menu notes live BLOCKED).
 
 ## Interactions
 
 | Flow | Result | Evidence |
 |------|--------|----------|
-| Left-click focus | Pass | Live popovers (prior) + selection wiring |
-| Right-click 3 rows | Pass (model) / live PNG BLOCKED | SoT harness + StatusItemMenu |
-| Nest 0%/57% | Pass | usage-window-openai + nest PNG |
-| App launch | Pass | Xcode release binary |
+| Left-click focuses provider | Pass | StatusPopoverFocus + live popovers + SoT harness |
+| Right-click 3 rows enabled | Pass (model) / live PNG BLOCKED | StatusItemMenu + SoT harness; BLOCKED.txt |
+| Overview multi-account | Pass | OverviewInventory + PNGs |
+| Nest meters 0%/57%/100% | Pass | SoT meter fractions + window/nest PNGs |
+| Open usage URLs | Pass | ProviderUsageLinks complete |
+| App launch under Xcode | Pass | release JackinDesktop launched |
 
-## Automated gates
+## High residual
 
-- check_usage_liquid_glass.py PASS  
-- ArchitectureLint ALL PASS  
-- SoTParity ×3 ALL PASS  
-- ParityMatrix ALL PASS  
-- StatusItemChip ALL PASS  
+**None** for G-P1 / G-U2 / detail-head / required §5 scenes.  
+
+Remaining **Med/Low only**: system accent vs phosphor; Refresh footer vs HTML “Open Usage Window” (product law FB1/LG-A8); system toolbar title leading; live ctx-menu screenshot BLOCKED.
+
+## Automated gates (this verification pass)
+
+- `check_usage_liquid_glass.py` PASS  
+- DesktopArchitectureLint ALL PASS  
+- DesktopSoTParityHarness ×3 ALL PASS  
+- DesktopParityMatrixHarness ALL PASS  
+- StatusItemChipHarness ALL PASS  
+- glass/limits grep: none outside GlassFallbacks  
 
 ## Artifacts
 
-- `advisor-plans/qi-artifacts/{html,native,deltas}/`  
-- `ctx-menu-live-dark.BLOCKED.txt`  
+- `advisor-plans/qi-artifacts/html/*`  
+- `advisor-plans/qi-artifacts/native/*` (incl. live status/popover; usage-window-*; `ctx-menu-live-dark.BLOCKED.txt`)  
+- `advisor-plans/qi-artifacts/deltas/2026-08-10-*.md`  
