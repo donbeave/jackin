@@ -1,7 +1,7 @@
 # VISUAL_QA_LOG — jackin❯ desktop HTML SoT parity
 
 **Date:** 2026-08-10  
-**Tip:** `4be5df01`  
+**Tip:** `144ec22e`  
 **Branch:** plan/desktop-visual  
 **Authority:** UI_PARITY_MASTER §6 + QI_VERIFICATION L1–L4  
 **Artifacts:** `advisor-plans/qi-artifacts/`
@@ -47,6 +47,6 @@ Log: `qi-artifacts/native/desktop-gates.log`
 
 ## Multimodal
 
-Scene deltas: `deltas/2026-08-10-*.md`. Anthropic multi-limit Fail→Pass: `deltas/2026-08-10-popover-anthropic.md`.
+Scene deltas: `deltas/2026-08-10-*.md`. Anthropic multi-limit: `deltas/2026-08-10-popover-anthropic.md` Verdict Pass.
 
 Agent sign-off: QI L1–L4 craft closed; Dark toolbar BLOCKED (§12); Anthropic multi-limit density Pass.
