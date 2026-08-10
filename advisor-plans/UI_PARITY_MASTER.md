@@ -368,11 +368,11 @@ Stop and report instead of improvising if:
 
 ## 13. Definition of done (program)
 
-- [ ] §5 residual table has no High **Fail** remaining (or operator waived with reason)  
-- [ ] §6 matrix Dark+Light all Pass (or N/A system chrome only)  
-- [ ] §7 automated gates green on CI/local  
+- [x] §5 residual table has no High **Fail** remaining (or operator waived with reason)
+- [x] §6 matrix Dark+Light all Pass (or N/A system chrome only)
+- [x] §7 automated gates green on CI/local
 - [ ] VISUAL_QA_LOG operator sign-off  
-- [ ] No glass outside GlassFallbacks; limits-only intact  
-- [ ] DATA_CONTRACT consistency holds for fixtures used in demos  
+- [x] No glass outside GlassFallbacks; limits-only intact
+- [x] DATA_CONTRACT consistency holds for fixtures used in demos
 
 **Until those boxes are checked under a deliberate implementation effort, the UI parity program is not finished — regardless of earlier structural commits.**

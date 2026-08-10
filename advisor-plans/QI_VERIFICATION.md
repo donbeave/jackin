@@ -365,17 +365,17 @@ Honest `manual-launch.txt` / blocked L4 is correct when GUI is missing. **Do not
 
 **Per phase (B/C/D):**
 
-- [ ] All Gap IDs in that phase High = Pass  
-- [ ] L1 + L2 green  
-- [ ] At least one HTML + one native capture per primary scene (or explicit blocked)  
-- [ ] Multimodal delta file with Verdict Pass  
+- [x] All Gap IDs in that phase High = Pass
+- [x] L1 + L2 green
+- [x] At least one HTML + one native capture per primary scene (or explicit blocked)
+- [x] Multimodal delta file with Verdict Pass
 
 **Program:**
 
-- [ ] All of §5 scenes addressed  
-- [ ] VISUAL_QA_LOG sign-off (agent + operator if available)  
-- [ ] No High residual in master residual table  
-- [ ] Harnesses green  
+- [x] All of §5 scenes addressed
+- [x] VISUAL_QA_LOG sign-off (agent + operator if available)
+- [x] No High residual in master residual table
+- [x] Harnesses green
 
 ---
 

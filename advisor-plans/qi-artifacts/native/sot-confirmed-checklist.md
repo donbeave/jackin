@@ -40,4 +40,4 @@
 | LG-6 plate hex | interim |
 | UW-O1 open control | footer+menu |
 | Usage full-window glass sidebar | **met** — Dark/Light key/main window-ID captures |
-| Live NSStatusItem | status-live-nsstatusitem.BLOCKED.txt |
+| Live NSStatusItem | **met** — `popover-live-anthropic-dark.png` + `ctx-menu-live-dark.png` |

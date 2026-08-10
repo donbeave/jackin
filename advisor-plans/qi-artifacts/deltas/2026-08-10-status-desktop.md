@@ -21,7 +21,7 @@
 |----------|---------|-------|
 | Low | Framing | Native = isolated extras; HTML = full desktop + system /clock |
 | Low | System chrome |  / Control Center / clock **N/A** (system) |
-| Med | Live NSStatusItem | harness craft Pass; live BLOCKED without Screen Recording |
+| Low | Live NSStatusItem | real status-item left/right-click flows Pass; dual-stack pixels remain deterministic harness evidence |
 
 ## Verdict
 **Verdict: Pass** (Dark + Light)

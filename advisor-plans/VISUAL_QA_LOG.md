@@ -1,7 +1,7 @@
 # VISUAL_QA_LOG — jackin❯ desktop HTML SoT parity
 
 **Date:** 2026-08-10  
-**Tip:** `1025b5b5`  
+**Tip:** `549f9351`
 **Branch:** plan/desktop-visual  
 **Authority:** UI_PARITY_MASTER §6 + QI_VERIFICATION L1–L4  
 
@@ -108,7 +108,8 @@ and full-height detail plates. HTML claims now stay within Rust-backed data.
 Context-menu re-audit captured the shipped `StatusItemMenu` as a real AppKit
 menu window without Accessibility automation. Pixels exposed a missing separator
 before Quit; native now matches HTML grouping while retaining all three enabled
-actions and ⌘R / ⌘Q equivalents. Physical right-click remains an operator flow.
+actions and ⌘R / ⌘Q equivalents. A trusted physical right-click capture now
+proves the real status-item dispatch path too.
 
 Real-host popover re-audit bypassed root-view snapshots and captured the shipped
 `NSPopover` plus `GlassPopoverHostingController`. This exposed a zero-height quota
