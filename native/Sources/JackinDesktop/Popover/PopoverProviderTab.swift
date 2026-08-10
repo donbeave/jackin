@@ -126,6 +126,12 @@ public struct PopoverProviderTab: View {
                         .textSelection(.enabled)
                 }
                 .padding(.top, 2)
+                .padding(.leading, 12)
+                .overlay(alignment: .leading) {
+                    Rectangle()
+                        .fill(Color.jackinPhosphor)
+                        .frame(width: 2)
+                }
             }
         }
         .padding(14)
@@ -150,23 +156,24 @@ public struct PopoverProviderTab: View {
     }
 
     private func metaRow(label: String, value: String) -> some View {
-        HStack(alignment: .firstTextBaseline, spacing: 8) {
+        VStack(alignment: .leading, spacing: 2) {
             Text(label)
                 .font(.caption2.weight(.semibold))
                 .foregroundStyle(.secondary)
-                .frame(width: 72, alignment: .leading)
             Text(value)
                 .font(.caption)
                 .foregroundStyle(.secondary)
-                .frame(maxWidth: .infinity, alignment: .leading)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     /// Codex · OpenAI · Updated just now (Rust labels only).
     private var headerMetaLine: String {
         var parts: [String] = []
-        if !provider.accountLabel.isEmpty { parts.append(provider.accountLabel) }
-        if let plan = provider.planLabel, !plan.isEmpty { parts.append(plan) }
+        if let role = desktopProviderOverviewRole(iconKey: provider.iconKey) {
+            parts.append(role)
+        }
+        parts.append(provider.displayLabel)
         if !provider.updatedLabel.isEmpty {
             let u = provider.updatedLabel
             parts.append(u.lowercased().hasPrefix("updated") ? u : "Updated \(u)")
@@ -221,15 +228,9 @@ public struct PopoverProviderTab: View {
                     Button {
                         onSelectAccount(provider.surfaceId, account.accountKey)
                     } label: {
-                        HStack(spacing: 4) {
-                            Text(account.accountLabel)
-                                .font(.caption2.monospaced().weight(account.selected ? .semibold : .medium))
-                                .lineLimit(1)
-                            if let pct = account.remainingPercent {
-                                Text(statusItemPercentToken(remainingPercent: pct))
-                                    .font(.caption2.monospacedDigit().weight(.semibold))
-                            }
-                        }
+                        Text(account.accountLabel)
+                            .font(.caption2.monospaced().weight(account.selected ? .semibold : .medium))
+                            .lineLimit(1)
                         .padding(.horizontal, 10)
                         .padding(.vertical, 5)
                         .background {
@@ -325,8 +326,10 @@ public struct PopoverProviderTab: View {
 
     private func limitResetBlock(_ row: UsageDetailRow) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(row.label)
-                .font(.caption.weight(.semibold))
+            Text(row.label.uppercased())
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .tracking(0.4)
             let lines = row.layoutLines.isEmpty
                 ? row.displayLabel.split(separator: " · ").map(String.init)
                 : row.layoutLines.compactMap { $0.leading ?? $0.trailing }

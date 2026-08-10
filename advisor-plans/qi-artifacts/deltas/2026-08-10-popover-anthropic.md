@@ -10,6 +10,7 @@
 |-------|---------------|-----|
 | Fail | Sparse mini-card (Session+Weekly only) | QIFixture multi-limit expand |
 | Fail | G-P3 meter under hero | detailBucketBlock meter last |
+| Fail | False pass: three-provider fixture, percentage chips, horizontal metadata, clipped Extra usage | canonical seven-provider strip; label-only chips; stacked metadata; full-height plate |
 | Pass | Full multi-limit + hero→pace→reset→meter | dual-image re-read |
 
 ## Dual-image
@@ -17,7 +18,8 @@
 | Check | HTML | Native | Match |
 |-------|------|--------|-------|
 | Multi-limit density | Session…Extra usage | 74/12/28/35/28/100 + Extra | Yes |
-| Personal/Work chips | yes | yes | Yes |
+| Account chips | provider-backed labels only | same | Yes |
+| Provider strip | seven canonical providers; severity fills | same source order and severity roles | Yes |
 | Session order | 74% → pace → reset → meter | same | **Yes** |
 | Weekly order | 12% danger → reserve → reset → meter | same | **Yes** |
 | All models / Sonnet / Fable / Daily | full plate | same | Yes |
@@ -28,7 +30,6 @@
 
 | Severity | Element | Notes |
 |----------|---------|-------|
-| Low | Strip count | QI 3 vs HTML 5+ |
 | Low | Credential line | optional on native surface |
 
 ## Verdict

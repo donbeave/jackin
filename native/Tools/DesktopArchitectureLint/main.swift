@@ -147,11 +147,14 @@ struct DesktopArchitectureLint {
             .appendingPathComponent("Popover/PopoverProviderTab.swift")
         let popoverRefresh = desktopRoot
             .appendingPathComponent("Popover/PopoverRefreshButton.swift")
+        let popoverTabs = desktopRoot
+            .appendingPathComponent("Popover/PopoverTabGrid.swift")
         guard
             let providerText = try? String(contentsOf: providerCard, encoding: .utf8),
             let footerText = try? String(contentsOf: popoverFooter, encoding: .utf8),
             let popoverProviderText = try? String(contentsOf: popoverProvider, encoding: .utf8),
-            let popoverRefreshText = try? String(contentsOf: popoverRefresh, encoding: .utf8)
+            let popoverRefreshText = try? String(contentsOf: popoverRefresh, encoding: .utf8),
+            let popoverTabsText = try? String(contentsOf: popoverTabs, encoding: .utf8)
         else {
             fputs("FAIL  primary control sources missing\n", stderr)
             exit(2)
@@ -197,10 +200,24 @@ struct DesktopArchitectureLint {
             print("FAIL  popover account selection must use dual-theme HTML tokens")
             ok = false
         }
+        if !popoverProviderText.contains("desktopProviderOverviewRole(iconKey: provider.iconKey)")
+            || popoverProviderText.contains("statusItemPercentToken(remainingPercent: pct)")
+            || !popoverProviderText.contains("private func metaRow(label: String, value: String) -> some View {\n        VStack")
+            || !popoverProviderText.contains(".padding(.leading, 12)")
+        {
+            print("FAIL  popover detail identity/account anatomy must retain HTML roles")
+            ok = false
+        }
         if !popoverProviderText.contains("size: 32, weight: .semibold, design: .monospaced")
             || !popoverProviderText.contains("GlassFallbacks.popoverContentCardBackground()")
         {
             print("FAIL  popover metric type/card geometry must match HTML 32/14 tokens")
+            ok = false
+        }
+        if !popoverTabsText.contains("meter(provider.glanceRemainingPercent, severity: provider.severity)")
+            || !popoverTabsText.contains(".fill(severityTint(severity))")
+        {
+            print("FAIL  provider strip meters must retain per-provider severity")
             ok = false
         }
         let overviewPath = desktopRoot.appendingPathComponent("Popover/PopoverOverviewTab.swift")

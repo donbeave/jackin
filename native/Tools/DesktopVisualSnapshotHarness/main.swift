@@ -64,7 +64,7 @@ struct DesktopVisualSnapshotHarness {
         capturePopover(
             fixture: fixture,
             selection: "codex",
-            size: NSSize(width: 430, height: 1100),
+            size: NSSize(width: 430, height: 1300),
             path: "\(out)/popover-openai-dark.png",
             appearance: .darkAqua
         )
@@ -72,7 +72,7 @@ struct DesktopVisualSnapshotHarness {
         capturePopover(
             fixture: fixture,
             selection: "claude",
-            size: NSSize(width: 430, height: 1400),
+            size: NSSize(width: 430, height: 1550),
             path: "\(out)/popover-anthropic-dark.png",
             appearance: .darkAqua
         )
@@ -173,14 +173,14 @@ struct DesktopVisualSnapshotHarness {
         capturePopover(
             fixture: fixture,
             selection: "codex",
-            size: NSSize(width: 430, height: 1100),
+            size: NSSize(width: 430, height: 1300),
             path: "\(out)/popover-openai-light.png",
             appearance: .aqua
         )
         capturePopover(
             fixture: fixture,
             selection: "claude",
-            size: NSSize(width: 430, height: 1400),
+            size: NSSize(width: 430, height: 1550),
             path: "\(out)/popover-anthropic-light.png",
             appearance: .aqua
         )
@@ -1161,6 +1161,62 @@ private struct QIFixture {
             dimmed: false
         )
 
+        func catalogGlance(
+            surfaceId: String,
+            iconKey: String,
+            displayLabel: String,
+            remaining: UInt8,
+            severity: String
+        ) -> PresentationStore.GlanceProviderRow {
+            PresentationStore.GlanceProviderRow(
+                surfaceId: surfaceId,
+                iconKey: iconKey,
+                displayLabel: displayLabel,
+                accountLabel: "",
+                planLabel: nil,
+                glanceRemainingPercent: remaining,
+                barLabel: "\(remaining)%",
+                headline: "\(remaining)% left",
+                resetLabel: nil,
+                exactReset: nil,
+                statusWord: "fresh",
+                isRefreshing: false,
+                statusLabel: "fresh",
+                severity: severity,
+                updatedLabel: "",
+                lastError: nil,
+                dimmed: false
+            )
+        }
+        let grokGlance = catalogGlance(
+            surfaceId: "grok",
+            iconKey: "grok",
+            displayLabel: "xAI",
+            remaining: 72,
+            severity: "normal"
+        )
+        let zaiGlance = catalogGlance(
+            surfaceId: "zai",
+            iconKey: "zai",
+            displayLabel: "Z.AI",
+            remaining: 81,
+            severity: "normal"
+        )
+        let kimiGlance = catalogGlance(
+            surfaceId: "kimi",
+            iconKey: "kimi",
+            displayLabel: "Kimi",
+            remaining: 45,
+            severity: "warn"
+        )
+        let minimaxGlance = catalogGlance(
+            surfaceId: "minimax",
+            iconKey: "minimax",
+            displayLabel: "MiniMax",
+            remaining: 33,
+            severity: "warn"
+        )
+
         func bucket(
             id: String,
             label: String,
@@ -1405,7 +1461,10 @@ private struct QIFixture {
             openaiAccounts: openaiAccounts,
             anthropicAccount: anthropicAccount,
             allAccounts: openaiAccounts + [anthropicAccount, ampAccount],
-            glanceRows: [openaiGlance, anthropicGlance, ampGlance],
+            glanceRows: [
+                openaiGlance, anthropicGlance, ampGlance, grokGlance,
+                zaiGlance, kimiGlance, minimaxGlance,
+            ],
             statusGlanceRows: [anthropicGlance, openaiGlance, ampGlance],
             surfaces: [openaiSurface, anthropicSurface, ampSurface],
             openaiDetail: openaiDetail

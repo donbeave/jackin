@@ -90,6 +90,12 @@ and fixed monochrome provider plates plus collapsed missing-reset row geometry.
 Dark/Light full-shell captures are retained as structurally valid inactive
 evidence, not active craft proof.
 
+Popover detail re-audit found another false-pass: three-provider fixture data,
+percentage-bearing account chips, horizontal metadata, uniform phosphor strip
+meters, and clipped terminal sections. The harness now uses the canonical seven
+providers, severity colors, label-only chips, stacked metadata, credential accent,
+and full-height detail plates. HTML claims now stay within Rust-backed data.
+
 ## Live
 popover-live / ctx-menu **BLOCKED** — SoTParity proves focus/menu.
 

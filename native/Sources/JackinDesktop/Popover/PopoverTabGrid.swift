@@ -131,7 +131,7 @@ public struct PopoverTabGrid: View {
                 Text(provider.displayLabel)
                     .font(.caption2.weight(on ? .semibold : .medium))
                     .lineLimit(1)
-                meter(provider.glanceRemainingPercent)
+                meter(provider.glanceRemainingPercent, severity: provider.severity)
             }
             .frame(minWidth: 56)
             .opacity(provider.dimmed ? 0.55 : 1)
@@ -185,13 +185,13 @@ public struct PopoverTabGrid: View {
     /// Meter geometry only — nil remaining = empty track (FB1-5).
     /// Healthy fill = phosphor (`--status-high`), not system accent blue.
     @ViewBuilder
-    private func meter(_ remaining: UInt8?) -> some View {
+    private func meter(_ remaining: UInt8?, severity: String) -> some View {
         GeometryReader { geometry in
             ZStack(alignment: .leading) {
                 Capsule().fill(Color.secondary.opacity(0.25))
                 if let remaining, remaining > 0 {
                     Capsule()
-                        .fill(Color.jackinPhosphor)
+                        .fill(severityTint(severity))
                         .frame(width: geometry.size.width * CGFloat(remaining) / 100.0)
                 }
             }
