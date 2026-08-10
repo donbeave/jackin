@@ -81,6 +81,14 @@ struct DesktopVisualSnapshotHarness {
             path: "\(out)/popover-amp-dark.png",
             appearance: .darkAqua
         )
+        // Overview inventory (selection nil) — OV-3…OV-10 / HTML mode-overview
+        capturePopover(
+            fixture: fixture,
+            selection: nil,
+            size: NSSize(width: 430, height: 900),
+            path: "\(out)/popover-overview-dark.png",
+            appearance: .darkAqua
+        )
 
         // Usage detail / overview / nest — shipped detail surfaces
         render(
@@ -176,6 +184,13 @@ struct DesktopVisualSnapshotHarness {
             selection: "amp",
             size: NSSize(width: 430, height: 900),
             path: "\(out)/popover-amp-light.png",
+            appearance: .aqua
+        )
+        capturePopover(
+            fixture: fixture,
+            selection: nil,
+            size: NSSize(width: 430, height: 900),
+            path: "\(out)/popover-overview-light.png",
             appearance: .aqua
         )
         render(
@@ -289,11 +304,12 @@ struct DesktopVisualSnapshotHarness {
     @MainActor
     private static func capturePopover(
         fixture: QIFixture,
-        selection: String,
+        selection: String?,
         size: NSSize,
         path: String,
         appearance: NSAppearance.Name
     ) {
+        // nil selection = Overview inventory (HTML mode-overview).
         let store = makeStore(fixture: fixture, popover: selection, usage: selection)
         // Stage color matches appearance so Light chrome never sits on black void.
         let stage =

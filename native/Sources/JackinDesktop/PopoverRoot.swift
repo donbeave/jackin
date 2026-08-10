@@ -106,9 +106,17 @@ public struct PopoverRoot: View {
         } else if store.providerGlanceRows.isEmpty {
             emptyState
         } else {
+            // Overview inventory: per-account rows + official marks (OV-3…OV-10 / HTML mode-overview).
             PopoverOverviewTab(
                 providers: store.providerGlanceRows,
-                selection: $store.popoverSelection
+                accounts: store.accounts,
+                selection: $store.popoverSelection,
+                onRefreshSurface: { surfaceId in
+                    store.refresh(surfaceId: surfaceId)
+                },
+                onSelectAccount: { surfaceId, accountKey in
+                    store.setSelectedAccount(surfaceId: surfaceId, accountKey: accountKey)
+                }
             )
         }
     }
