@@ -632,6 +632,8 @@ jackin = soul   (j❯, phosphor accent, mono metrics, deep canvas tint, optional
 | FB1-44 | Popover layout = sticky **chrome** (brand+seg[+provider strip]) + flex scroller + sticky **footer dock** — content scrolls between glass layers | CONFIRMED |
 | FB1-45 | **Usage window craft:** native macOS utility shell (quality bar set by apps like **Surge Dashboard**): unified glass titlebar + traffic lights, glass sidebar with section labels + trailing %, solid content, **metric tile row**, Settings-style inset groups, soft scroll edges. Not a flat web split-pane. | CONFIRMED direction |
 | FB1-46 | Usage window keeps jackin law: phosphor selection/j❯, 3-level status only, credential source only, limits only (no spend/trends) | CONFIRMED |
+| FB1-47 | **Usage sidebar = Liquid Glass nav** (Finder/Tahoe): translucent fill + strong blur/saturate + hairline/specular; window shell transparent so stage bleeds under sidebar; **content pane solid** for contrast | CONFIRMED |
+| FB1-48 | **Provider vs account are distinct systems:** provider = primary glass capsule + brand plate + mini meter; account = nested quiet rail + left phosphor accent + denser mono (selection chrome must not match provider) | CONFIRMED |
 
 ### One-by-one queue (after FB-1)
 

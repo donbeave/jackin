@@ -24,18 +24,21 @@ HTML alone without tokens becomes “generic SaaS.” Tokens alone without a com
 | [`popover.html`](./popover.html) | **Glance popover SoT** (Overview + all 7 providers, Liquid Glass chrome). Status left-click uses `?embed=1&mode=providers&provider=…` |
 | [`index.html`](./index.html) | Hub: status interactions (iframe → popover.html), **Usage window** (native shell: titlebar + glass sidebar + metric tiles + Settings groups), Liquid Glass check |
 
-### Usage window (FB1-45)
+### Usage window (FB1-45 / FB1-47 / FB1-48)
 
-Quality bar = high-end native macOS utilities (e.g. Surge Dashboard), not generic web admin UI.
+Quality bar = Finder/Tahoe Liquid Glass + high-end native macOS utilities (e.g. Surge Dashboard), not generic web admin UI.
 
 | Layer | Material | Notes |
 |---|---|---|
-| Unified titlebar | Glass | Traffic lights over sidebar column; glass action capsules |
-| Sidebar | Glass | Section labels, nested accounts, trailing status % |
-| Content | Solid / inset | Metric tile row → Settings groups → full buckets |
+| Window shell | Transparent | Stage bleeds under glass sidebar (blur has something to refract) |
+| Titlebar-side + sidebar | Liquid Glass | Low-opacity fill, blur ≥50px, saturate, hairline + specular |
+| Titlebar-main + content | Solid | Readable data layer — not glass |
+| Provider row | Primary nav | Glass capsule selection, brand plate, name weight 650, mini meter + % |
+| Account row | Secondary | Nested `.acct-rail`, left phosphor bar selection, quiet mono, no logo plate |
 | Scroll | Soft edges | Same dissolve rule as popover |
 
-**Do not** ship a flat two-column web panel without window chrome.
+**Do not** ship a flat two-column web panel without window chrome.  
+**Do not** use the same selection chrome for provider and account rows.
 | CSS custom properties | Named tokens agents must map to Swift |
 | [`README.md`](./README.md) | Operator + implementer rules |
 | This file | Predictable agent process |

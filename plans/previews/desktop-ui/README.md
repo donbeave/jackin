@@ -50,6 +50,8 @@ Decisions are recorded in [`../../desktop-design-decisions.md`](../../desktop-de
 |---|---|
 | SF Pro | `-apple-system, BlinkMacSystemFont` |
 | Liquid glass | `backdrop-filter: blur() saturate()` + translucent fill + hairline border |
+| Usage sidebar | Finder-style LG: transparent shell, low-opacity blur nav, solid content contrast |
+| Provider vs account | Provider capsule+plate+meter · account rail+left accent (FB1-48) |
 | Scroll edges | Soft dissolve at scroller top/bottom + H-strip L/R (native `scrollEdgeEffect(.soft)`) |
 | Footer CTA | Glass capsule + phosphor tint — not solid fill slab |
 | Semantic text | label / secondary / tertiary opacities |

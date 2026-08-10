@@ -198,38 +198,48 @@
 
     /* —— Usage window —— */
     /*
-      Usage window — Surge-class native macOS shell (Liquid Glass ready).
-      Borrowed patterns: unified titlebar, traffic lights, glass sidebar,
-      metric tile row, Settings-style inset groups, soft materials depth.
-      jackin DNA: phosphor selection, j❯ monogram, 3-level status meters.
+      Usage window — Finder/Tahoe Liquid Glass nav + solid content.
+      Shell is transparent so stage bleeds under glass sidebar/titlebar.
+      Provider (primary nav) ≠ account (secondary nest) — separate systems.
     */
     .win {
       --win-r: 14px;
-      --side-w: 236px;
-      width: min(960px, 100%);
-      height: 600px;
+      --side-w: 248px;
+      /* Liquid Glass material tokens (nav only) */
+      --lg-side: color-mix(in srgb, var(--glass) 42%, transparent);
+      --lg-side-strong: color-mix(in srgb, var(--glass-strong) 55%, transparent);
+      --lg-specular: rgba(255, 255, 255, 0.14);
+      --lg-hairline: color-mix(in srgb, var(--glass-border) 85%, transparent);
+      width: min(980px, 100%);
+      height: 620px;
       margin: 0 auto;
       display: grid;
-      grid-template-rows: 48px 1fr;
+      grid-template-rows: 52px 1fr;
       grid-template-columns: var(--side-w) 1fr;
       border-radius: var(--win-r);
       overflow: hidden;
       position: relative;
-      background: var(--content-bg);
-      border: 0.5px solid var(--glass-border);
+      /* transparent shell — glass refracts stage; content pane is solid */
+      background: transparent;
+      border: 0.5px solid var(--lg-hairline);
       box-shadow:
-        0 0 0 0.5px rgba(0,0,0,0.2),
-        0 30px 80px rgba(0,0,0,0.5),
-        0 8px 24px rgba(0,0,0,0.25);
+        0 0 0 0.5px rgba(0,0,0,0.18),
+        0 32px 90px rgba(0,0,0,0.52),
+        0 10px 28px rgba(0,0,0,0.28),
+        inset 0 1px 0 var(--lg-specular);
     }
     [data-theme="light"] .win {
+      --lg-side: color-mix(in srgb, var(--glass) 55%, transparent);
+      --lg-side-strong: color-mix(in srgb, var(--glass-strong) 72%, transparent);
+      --lg-specular: rgba(255, 255, 255, 0.65);
       box-shadow:
         0 0 0 0.5px rgba(0,0,0,0.06),
-        0 24px 60px rgba(0,0,0,0.14),
-        0 4px 12px rgba(0,0,0,0.06);
+        0 28px 70px rgba(0,0,0,0.16),
+        0 6px 16px rgba(0,0,0,0.08),
+        inset 0 1px 0 var(--lg-specular);
     }
 
-    /* Unified titlebar — full width glass (traffic lights over sidebar) */
+    /* Unified titlebar — glass continuous with sidebar (Finder-style) */
     .win .titlebar {
       grid-column: 1 / -1;
       grid-row: 1;
@@ -237,22 +247,24 @@
       grid-template-columns: var(--side-w) 1fr;
       align-items: stretch;
       z-index: 5;
-      background: color-mix(in srgb, var(--glass) 92%, transparent);
-      backdrop-filter: blur(48px) saturate(1.5);
-      -webkit-backdrop-filter: blur(48px) saturate(1.5);
-      border-bottom: 0.5px solid color-mix(in srgb, var(--glass-border) 70%, transparent);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+      /* no single solid fill — each half paints its own glass/content */
+      background: transparent;
     }
     .win .titlebar-side {
-      display: flex; align-items: center; gap: 8px;
+      display: flex; align-items: center; gap: 9px;
       padding: 0 12px 0 14px;
+      background: var(--lg-side);
+      backdrop-filter: blur(56px) saturate(1.75);
+      -webkit-backdrop-filter: blur(56px) saturate(1.75);
+      border-bottom: 0.5px solid color-mix(in srgb, var(--lg-hairline) 55%, transparent);
+      box-shadow: inset 0 1px 0 var(--lg-specular);
     }
     .win .traffic {
       display: flex; gap: 7px; align-items: center; flex-shrink: 0;
     }
     .win .traffic i {
       width: 12px; height: 12px; border-radius: 50%;
-      box-shadow: inset 0 0 0 0.5px rgba(0,0,0,0.18);
+      box-shadow: inset 0 0 0 0.5px rgba(0,0,0,0.22);
     }
     .win .traffic .c { background: #ff5f57; }
     .win .traffic .y { background: #febc2e; }
@@ -264,8 +276,14 @@
     .win .titlebar-side .app-name b { color: var(--jk); font-weight: 700; }
     .win .titlebar-main {
       display: flex; align-items: center; justify-content: space-between;
-      gap: 12px; padding: 0 14px 0 16px;
-      border-left: 0.5px solid color-mix(in srgb, var(--separator) 55%, transparent);
+      gap: 12px; padding: 0 14px 0 18px;
+      /* titlebar over solid content — slightly denser glass strip */
+      background: color-mix(in srgb, var(--content-bg) 88%, var(--glass));
+      backdrop-filter: blur(28px) saturate(1.3);
+      -webkit-backdrop-filter: blur(28px) saturate(1.3);
+      border-bottom: 0.5px solid color-mix(in srgb, var(--separator) 80%, transparent);
+      border-left: 0.5px solid color-mix(in srgb, var(--separator) 50%, transparent);
+      box-shadow: inset 0 1px 0 color-mix(in srgb, var(--lg-specular) 50%, transparent);
     }
     .win .titlebar-main .page-title {
       font-size: 13px; font-weight: 600; color: var(--label);
@@ -280,100 +298,224 @@
       height: 28px; min-width: 28px; padding: 0 11px;
       border-radius: 8px; cursor: pointer; font: inherit; font-size: 12px; font-weight: 560;
       color: var(--label);
-      background: color-mix(in srgb, var(--fill) 70%, transparent);
-      border: 0.5px solid color-mix(in srgb, var(--glass-border) 80%, transparent);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
-      backdrop-filter: blur(12px);
+      background: color-mix(in srgb, var(--fill) 55%, transparent);
+      border: 0.5px solid color-mix(in srgb, var(--glass-border) 70%, transparent);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.1);
+      backdrop-filter: blur(16px) saturate(1.3);
+      -webkit-backdrop-filter: blur(16px) saturate(1.3);
     }
     .win .tb-btn.primary {
       color: var(--jk);
-      background: color-mix(in srgb, var(--jk) 14%, transparent);
-      border-color: color-mix(in srgb, var(--jk) 32%, var(--glass-border));
+      background: color-mix(in srgb, var(--jk) 12%, transparent);
+      border-color: color-mix(in srgb, var(--jk) 30%, var(--glass-border));
     }
     .win .tb-btn:hover {
-      background: color-mix(in srgb, var(--fill) 100%, transparent);
+      background: color-mix(in srgb, var(--fill) 90%, transparent);
     }
     .win .tb-btn.primary:hover {
-      background: color-mix(in srgb, var(--jk) 22%, transparent);
+      background: color-mix(in srgb, var(--jk) 20%, transparent);
     }
     .win .tb-btn svg { width: 13px; height: 13px; fill: currentColor; opacity: 0.9; }
 
-    /* Glass sidebar — nav layer (Surge / Settings quality) */
+    /*
+      Liquid Glass sidebar — Finder/Tahoe nav layer.
+      Low-opacity fill + heavy blur so stage wallpaper peeks through.
+    */
     .win .side {
       grid-column: 1;
       grid-row: 2;
       display: flex; flex-direction: column;
       min-height: 0;
-      padding: 8px 8px 0;
+      padding: 6px 8px 0;
       background:
-        linear-gradient(180deg, color-mix(in srgb, var(--jk) 4%, transparent) 0%, transparent 48px),
-        color-mix(in srgb, var(--glass) 88%, transparent);
-      backdrop-filter: blur(40px) saturate(1.4);
-      -webkit-backdrop-filter: blur(40px) saturate(1.4);
-      border-right: 0.5px solid color-mix(in srgb, var(--separator) 70%, transparent);
+        linear-gradient(
+          165deg,
+          color-mix(in srgb, var(--jk) 6%, transparent) 0%,
+          transparent 42%
+        ),
+        var(--lg-side);
+      backdrop-filter: blur(56px) saturate(1.8);
+      -webkit-backdrop-filter: blur(56px) saturate(1.8);
+      border-right: 0.5px solid color-mix(in srgb, var(--lg-hairline) 75%, transparent);
+      box-shadow:
+        inset -1px 0 0 color-mix(in srgb, var(--lg-specular) 25%, transparent),
+        inset 0 1px 0 color-mix(in srgb, var(--lg-specular) 35%, transparent);
     }
     .win .side-scroll {
       flex: 1; min-height: 0; overflow: auto;
-      padding-bottom: 8px;
+      padding: 2px 2px 10px;
       scrollbar-width: thin;
-      scrollbar-color: color-mix(in srgb, var(--label) 16%, transparent) transparent;
+      scrollbar-color: color-mix(in srgb, var(--label) 14%, transparent) transparent;
     }
     .win .side .lab {
       font-size: 11px; font-weight: 620; color: var(--tertiary);
-      letter-spacing: 0.02em; padding: 10px 10px 5px;
+      letter-spacing: 0.03em; padding: 12px 10px 6px;
+      text-transform: none;
     }
-    .win .side-item {
+
+    /* —— Primary: Overview / Provider rows (nav-provider) —— */
+    .win .nav-overview,
+    .win .nav-provider {
       display: flex; align-items: center; gap: 10px;
-      padding: 8px 10px; border-radius: 9px; margin-bottom: 1px; cursor: pointer;
-      border: 0; background: transparent; width: 100%; text-align: left; color: var(--label); font: inherit;
-      transition: background 0.12s ease;
+      width: 100%; text-align: left; cursor: pointer; font: inherit; color: var(--label);
+      border: 0; margin: 0 0 3px;
+      padding: 9px 10px;
+      border-radius: 11px;
+      background: transparent;
+      transition: background 0.12s ease, box-shadow 0.12s ease;
     }
-    .win .side-item:hover { background: rgba(128,128,128,0.12); }
-    .win .side-item.on {
-      background: color-mix(in srgb, var(--jk) 15%, transparent);
-      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--jk) 26%, transparent);
+    .win .nav-overview:hover,
+    .win .nav-provider:hover {
+      background: color-mix(in srgb, var(--label) 7%, transparent);
     }
-    .win .side-item .ic {
-      width: 26px; height: 26px; border-radius: 7px; flex-shrink: 0;
+    /* Selected provider = glass capsule + phosphor ring (primary selection) */
+    .win .nav-overview.on,
+    .win .nav-provider.on {
+      background:
+        linear-gradient(
+          180deg,
+          color-mix(in srgb, var(--jk) 18%, transparent) 0%,
+          color-mix(in srgb, var(--jk) 10%, transparent) 100%
+        );
+      box-shadow:
+        inset 0 0 0 1px color-mix(in srgb, var(--jk) 38%, transparent),
+        inset 0 1px 0 rgba(255,255,255,0.12),
+        0 1px 3px rgba(0,0,0,0.12);
+      backdrop-filter: blur(12px);
+    }
+    .win .nav-provider .p-ic {
+      width: 30px; height: 30px; border-radius: 8px; flex-shrink: 0;
       display: grid; place-items: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.18);
     }
-    .win .side-item .ic .plogo.sm { width: 26px; height: 26px; border-radius: 7px; font-size: 10px; }
-    .win .side-item .t { font-size: 13px; font-weight: 560; letter-spacing: -0.1px; }
-    .win .side-item .s {
-      font-size: 11px; color: var(--secondary); margin-top: 1px;
-      font-family: var(--mono); font-variant-numeric: tabular-nums;
+    .win .nav-provider .p-ic .plogo.sm,
+    .win .nav-overview .p-ic .jmark {
+      width: 30px; height: 30px; border-radius: 8px; font-size: 11px;
     }
-    .win .side-item .trail {
-      margin-left: auto; font-family: var(--mono); font-size: 11px; font-weight: 600;
+    .win .nav-overview .p-ic { width: 30px; height: 30px; flex-shrink: 0; }
+    .win .nav-provider .p-body,
+    .win .nav-overview .p-body { flex: 1; min-width: 0; }
+    .win .nav-provider .p-name,
+    .win .nav-overview .p-name {
+      font-size: 13.5px; font-weight: 650; letter-spacing: -0.2px;
+      line-height: 1.2;
+    }
+    .win .nav-provider .p-meta,
+    .win .nav-overview .p-meta {
+      margin-top: 2px; font-size: 11px; color: var(--tertiary);
+      font-weight: 500;
+    }
+    .win .nav-provider .p-trail {
+      display: flex; flex-direction: column; align-items: flex-end; gap: 4px;
+      flex-shrink: 0; min-width: 36px;
+    }
+    .win .nav-provider .p-pct {
+      font-family: var(--mono); font-size: 12px; font-weight: 700;
       font-variant-numeric: tabular-nums; color: var(--secondary);
+      letter-spacing: -0.3px;
     }
-    .win .side-item.on .trail.high { color: var(--status-high); }
-    .win .side-item .trail.mid { color: var(--status-mid); }
-    .win .side-item .trail.low { color: var(--status-low); }
-    .win .acct-nest {
-      margin: 0 0 4px 14px; padding: 2px 0 2px 10px;
-      border-left: 1.5px solid color-mix(in srgb, var(--jk) 22%, transparent);
+    .win .nav-provider .p-pct.high { color: var(--status-high); }
+    .win .nav-provider .p-pct.mid { color: var(--status-mid); }
+    .win .nav-provider .p-pct.low { color: var(--status-low); }
+    .win .nav-provider .p-meter {
+      width: 36px; height: 3px; border-radius: 99px;
+      background: var(--meter-track); overflow: hidden;
     }
-    .win .acct-nest .side-item { padding: 6px 8px; border-radius: 7px; }
-    .win .acct-nest .t { font-size: 12px; font-weight: 500; }
+    .win .nav-provider .p-meter > i {
+      display: block; height: 100%; border-radius: inherit; background: var(--status-high);
+    }
+    .win .nav-provider .p-meter.mid > i { background: var(--status-mid); }
+    .win .nav-provider .p-meter.low > i { background: var(--status-low); }
+
+    /*
+      Secondary: accounts under provider — different system entirely.
+      Quiet rail, no brand plate, left accent selection, denser mono type.
+    */
+    .win .acct-rail {
+      margin: 0 0 8px 12px;
+      padding: 4px 0 4px 0;
+      border-radius: 12px;
+      background: color-mix(in srgb, var(--label) 4%, transparent);
+      border: 0.5px solid color-mix(in srgb, var(--lg-hairline) 50%, transparent);
+      box-shadow: inset 0 1px 0 color-mix(in srgb, var(--lg-specular) 20%, transparent);
+      overflow: hidden;
+    }
+    .win .acct-rail.hidden { display: none !important; }
+    .win .nav-acct {
+      display: flex; align-items: center; gap: 8px;
+      width: 100%; text-align: left; cursor: pointer; font: inherit; color: var(--label);
+      border: 0; margin: 0;
+      padding: 7px 10px 7px 8px;
+      border-radius: 0;
+      background: transparent;
+      border-left: 2.5px solid transparent;
+      transition: background 0.1s ease, border-color 0.1s ease;
+    }
+    .win .nav-acct + .nav-acct {
+      border-top: 0.5px solid color-mix(in srgb, var(--separator) 55%, transparent);
+    }
+    .win .nav-acct:hover {
+      background: color-mix(in srgb, var(--label) 6%, transparent);
+    }
+    /* Selected account = left phosphor bar + soft fill (NOT provider capsule) */
+    .win .nav-acct.on {
+      background: color-mix(in srgb, var(--jk) 9%, transparent);
+      border-left-color: var(--jk);
+      box-shadow: none;
+    }
+    .win .nav-acct .a-dot {
+      width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
+      background: color-mix(in srgb, var(--tertiary) 80%, transparent);
+      margin-left: 4px;
+    }
+    .win .nav-acct.on .a-dot {
+      background: var(--jk);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--jk) 22%, transparent);
+    }
+    .win .nav-acct .a-body { flex: 1; min-width: 0; }
+    .win .nav-acct .a-name {
+      font-size: 11.5px; font-weight: 500; letter-spacing: -0.05px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      color: var(--secondary);
+    }
+    .win .nav-acct.on .a-name { color: var(--label); font-weight: 560; }
+    .win .nav-acct .a-plan {
+      margin-top: 1px; font-size: 10px; color: var(--tertiary); font-weight: 500;
+    }
+    .win .nav-acct .a-pct {
+      font-family: var(--mono); font-size: 11px; font-weight: 600;
+      font-variant-numeric: tabular-nums; color: var(--tertiary);
+      flex-shrink: 0;
+    }
+    .win .nav-acct .a-pct.high { color: var(--status-high); }
+    .win .nav-acct .a-pct.mid { color: var(--status-mid); }
+    .win .nav-acct .a-pct.low { color: var(--status-low); }
+    .win .nav-acct.on .a-pct { opacity: 1; }
+
     .win .side-foot {
       flex-shrink: 0;
       padding: 10px 12px 12px;
       font-size: 11px; color: var(--tertiary); line-height: 1.35;
-      border-top: 0.5px solid color-mix(in srgb, var(--separator) 70%, transparent);
-      background: linear-gradient(to top, color-mix(in srgb, var(--glass) 90%, transparent), transparent);
+      border-top: 0.5px solid color-mix(in srgb, var(--lg-hairline) 60%, transparent);
+      background: linear-gradient(
+        to top,
+        color-mix(in srgb, var(--lg-side-strong) 90%, transparent),
+        transparent
+      );
+      backdrop-filter: blur(20px);
     }
     .win .side-foot strong { color: var(--secondary); font-weight: 560; }
 
-    /* Content — solid elevated layer (not glass) */
+    /* Content — solid elevated layer (NOT Liquid Glass) */
     .win .main {
       grid-column: 2;
       grid-row: 2;
       min-height: 0;
       display: flex; flex-direction: column;
       background:
-        radial-gradient(ellipse 80% 40% at 100% 0%, color-mix(in srgb, var(--jk) 5%, transparent), transparent 55%),
+        radial-gradient(ellipse 70% 36% at 100% 0%, color-mix(in srgb, var(--jk) 4%, transparent), transparent 55%),
         var(--content-bg);
+      border-left: 0.5px solid color-mix(in srgb, var(--separator) 40%, transparent);
     }
     .win .main-scroll {
       flex: 1; min-height: 0;
@@ -622,10 +764,10 @@
     <section class="panel" id="usage">
       <h2 class="st">Usage window</h2>
       <p class="sl">
-        Reference quality: native macOS utility shell (inspired by apps like
-        <a href="https://nssurge.com/" style="color:var(--jk)">Surge</a> Dashboard) + Apple Liquid Glass.
-        Unified titlebar · glass sidebar · solid content · metric tiles · Settings groups.
-        jackin DNA kept (phosphor, j❯, 3-level meters, credential source only).
+        Finder/Tahoe Liquid Glass sidebar (stage bleeds under blur) · solid content pane.
+        <strong>Provider</strong> = primary capsule + logo + mini meter ·
+        <strong>Account</strong> = nested rail + left accent (never same as provider).
+        jackin DNA: phosphor selection, j❯, 3-level meters, credential source only, limits only.
       </p>
       <div class="stage" style="padding: 20px 16px 28px;">
         <div class="win" id="usage-win">
@@ -649,65 +791,92 @@
             </div>
           </div>
 
-          <!-- Glass sidebar -->
-          <aside class="side">
+          <!-- Liquid Glass sidebar (Finder/Tahoe nav) -->
+          <aside class="side" data-lg-sidebar>
             <div class="side-scroll">
               <div class="lab">Browse</div>
-              <button type="button" class="side-item" data-nav="overview">
-                <div class="ic"><div class="jmark"><span class="j">j</span><span class="ch">❯</span></div></div>
-                <div><div class="t">Overview</div><div class="s">All accounts</div></div>
+              <button type="button" class="nav-overview" data-nav="overview">
+                <div class="p-ic"><div class="jmark"><span class="j">j</span><span class="ch">❯</span></div></div>
+                <div class="p-body">
+                  <div class="p-name">Overview</div>
+                  <div class="p-meta">All accounts · weekly-first</div>
+                </div>
               </button>
 
               <div class="lab">Providers</div>
-              <button type="button" class="side-item on" data-nav="openai">
-                <div class="ic"><span class="plogo sm openai">O</span></div>
-                <div><div class="t">OpenAI</div><div class="s">2 accounts</div></div>
-                <span class="trail mid">57%</span>
+              <!-- Primary nav: provider (logo plate + name + mini meter) -->
+              <button type="button" class="nav-provider on" data-nav="openai">
+                <div class="p-ic"><span class="plogo sm openai">O</span></div>
+                <div class="p-body">
+                  <div class="p-name">OpenAI</div>
+                  <div class="p-meta">2 accounts</div>
+                </div>
+                <div class="p-trail">
+                  <span class="p-pct mid">57%</span>
+                  <div class="p-meter mid"><i style="width:57%"></i></div>
+                </div>
               </button>
-              <div class="acct-nest" data-for="openai">
-                <button type="button" class="side-item on" data-acct="a1">
-                  <div>
-                    <div class="t">alexey@chainargos.com</div>
-                    <div class="s">Pro 20×</div>
+              <!-- Secondary: accounts in quiet rail (distinct from provider) -->
+              <div class="acct-rail" data-for="openai">
+                <button type="button" class="nav-acct on" data-acct="a1">
+                  <span class="a-dot" aria-hidden="true"></span>
+                  <div class="a-body">
+                    <div class="a-name">alexey@chainargos.com</div>
+                    <div class="a-plan">Pro 20×</div>
                   </div>
-                  <span class="trail mid">57%</span>
+                  <span class="a-pct mid">57%</span>
                 </button>
-                <button type="button" class="side-item" data-acct="a2">
-                  <div>
-                    <div class="t">alexey@zhokhov.com</div>
-                    <div class="s">Plus</div>
+                <button type="button" class="nav-acct" data-acct="a2">
+                  <span class="a-dot" aria-hidden="true"></span>
+                  <div class="a-body">
+                    <div class="a-name">alexey@zhokhov.com</div>
+                    <div class="a-plan">Plus · fully used</div>
                   </div>
-                  <span class="trail">0%</span>
-                </button>
-              </div>
-
-              <button type="button" class="side-item" data-nav="anthropic">
-                <div class="ic"><span class="plogo sm anthropic">A</span></div>
-                <div><div class="t">Anthropic</div><div class="s">1 account</div></div>
-                <span class="trail low">12%</span>
-              </button>
-              <div class="acct-nest hidden" data-for="anthropic">
-                <button type="button" class="side-item on" data-acct="p1">
-                  <div>
-                    <div class="t">Personal</div>
-                    <div class="s">Max 20×</div>
-                  </div>
-                  <span class="trail low">12%</span>
+                  <span class="a-pct">0%</span>
                 </button>
               </div>
 
-              <button type="button" class="side-item" data-nav="amp">
-                <div class="ic"><span class="plogo sm amp">A</span></div>
-                <div><div class="t">Amp</div><div class="s">1 account</div></div>
-                <span class="trail high">100%</span>
+              <button type="button" class="nav-provider" data-nav="anthropic">
+                <div class="p-ic"><span class="plogo sm anthropic">A</span></div>
+                <div class="p-body">
+                  <div class="p-name">Anthropic</div>
+                  <div class="p-meta">1 account</div>
+                </div>
+                <div class="p-trail">
+                  <span class="p-pct low">12%</span>
+                  <div class="p-meter low"><i style="width:12%"></i></div>
+                </div>
               </button>
-              <div class="acct-nest hidden" data-for="amp">
-                <button type="button" class="side-item on" data-acct="f1">
-                  <div>
-                    <div class="t">Free</div>
-                    <div class="s">Daily</div>
+              <div class="acct-rail hidden" data-for="anthropic">
+                <button type="button" class="nav-acct on" data-acct="p1">
+                  <span class="a-dot" aria-hidden="true"></span>
+                  <div class="a-body">
+                    <div class="a-name">Personal</div>
+                    <div class="a-plan">Max 20×</div>
                   </div>
-                  <span class="trail high">100%</span>
+                  <span class="a-pct low">12%</span>
+                </button>
+              </div>
+
+              <button type="button" class="nav-provider" data-nav="amp">
+                <div class="p-ic"><span class="plogo sm amp">A</span></div>
+                <div class="p-body">
+                  <div class="p-name">Amp</div>
+                  <div class="p-meta">1 account</div>
+                </div>
+                <div class="p-trail">
+                  <span class="p-pct high">100%</span>
+                  <div class="p-meter"><i style="width:100%"></i></div>
+                </div>
+              </button>
+              <div class="acct-rail hidden" data-for="amp">
+                <button type="button" class="nav-acct on" data-acct="f1">
+                  <span class="a-dot" aria-hidden="true"></span>
+                  <div class="a-body">
+                    <div class="a-name">Free</div>
+                    <div class="a-plan">Daily</div>
+                  </div>
+                  <span class="a-pct high">100%</span>
                 </button>
               </div>
             </div>
@@ -728,7 +897,7 @@
         </div>
       </div>
       <p class="flow-caption">
-        Verify: traffic lights + unified titlebar · glass sidebar with trailing % · metric tiles · Settings rows · soft scroll.
+        Verify: glass sidebar translucency vs solid main · provider capsule ≠ account rail selection · dark+light.
         <code>LIKE usage window</code>
       </p>
     </section>
@@ -744,17 +913,22 @@
         <div class="lg-card ok">
           <h3>✓ Glass (navigation)</h3>
           Popover shell · sticky chrome · footer dock · context menu<br />
-          Usage: unified titlebar + glass sidebar (Surge-class window chrome)
+          Usage: Finder-style Liquid Glass sidebar + titlebar-side (stage bleeds under blur)
         </div>
         <div class="lg-card ok">
           <h3>✓ Solid (content)</h3>
           Metric tiles · Settings groups · buckets · meters/text<br />
-          HIG: Liquid Glass is not for the content layer.
+          HIG: Liquid Glass is not for the content layer — <code>.main</code> is solid.
+        </div>
+        <div class="lg-card ok">
+          <h3>✓ Provider ≠ account selection</h3>
+          Provider = glass capsule + logo plate + mini meter.<br />
+          Account = nested rail + left phosphor bar + quiet mono (never same chrome).
         </div>
         <div class="lg-card ok">
           <h3>✓ Usage window quality</h3>
-          Traffic lights · titlebar actions as glass capsules · trailing sidebar % · soft content scroll.
-          Pattern ref: high-end macOS utility (e.g. Surge Dashboard), not web dashboard.
+          Transparent shell · glass nav · solid content contrast · soft scroll.
+          Pattern: Finder/Tahoe Liquid Glass + high-end macOS utility, not web admin.
         </div>
         <div class="lg-card ok">
           <h3>✓ Soft scroll edges</h3>
@@ -1133,27 +1307,35 @@
       requestAnimationFrame(updateUsageScrollEdge);
     }
 
-    document.querySelectorAll("#usage-win .side-item[data-nav]").forEach((btn) => {
+    document.querySelectorAll("#usage-win [data-nav]").forEach((btn) => {
       btn.addEventListener("click", () => {
         const nav = btn.dataset.nav;
-        document.querySelectorAll("#usage-win .side-item[data-nav]").forEach((b) =>
+        document.querySelectorAll("#usage-win .nav-overview, #usage-win .nav-provider").forEach((b) =>
           b.classList.toggle("on", b === btn)
         );
-        document.querySelectorAll("#usage-win .acct-nest").forEach((n) => {
+        document.querySelectorAll("#usage-win .acct-rail").forEach((n) => {
           n.classList.toggle("hidden", n.dataset.for !== nav);
         });
         if (nav !== "overview") {
-          const nest = document.querySelector(`#usage-win .acct-nest[data-for="${nav}"]`);
-          nest?.querySelectorAll(".side-item").forEach((a, i) => a.classList.toggle("on", i === 0));
+          const rail = document.querySelector(`#usage-win .acct-rail[data-for="${nav}"]`);
+          rail?.querySelectorAll(".nav-acct").forEach((a, i) => a.classList.toggle("on", i === 0));
         }
         showUsage(nav);
       });
     });
-    document.querySelectorAll("#usage-win .side-item[data-acct]").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const nest = btn.closest(".acct-nest");
-        nest?.querySelectorAll(".side-item").forEach((b) => b.classList.toggle("on", b === btn));
-        // demo keeps same provider detail templates for now
+    document.querySelectorAll("#usage-win .nav-acct").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const rail = btn.closest(".acct-rail");
+        rail?.querySelectorAll(".nav-acct").forEach((b) => b.classList.toggle("on", b === btn));
+        // ensure parent provider stays selected when picking account
+        const forId = rail?.dataset.for;
+        if (forId) {
+          document.querySelectorAll("#usage-win .nav-overview, #usage-win .nav-provider").forEach((b) =>
+            b.classList.toggle("on", b.dataset.nav === forId)
+          );
+          showUsage(forId);
+        }
       });
     });
     if (usageScroll) {
