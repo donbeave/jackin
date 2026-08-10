@@ -626,6 +626,7 @@ jackin = soul   (j❯, phosphor accent, mono metrics, deep canvas tint, optional
 | FB1-38 | **Status right-click** → glass context menu: Open Usage Window · Refresh · Quit (enabled) | CONFIRMED |
 | FB1-39 | **Usage window** design track open: glass **sidebar + toolbar**; solid content; multi-account nest; same tokens as popover | CONFIRMED direction |
 | FB1-40 | Design must stay **Liquid Glass–consistent** (glass = nav only; solid content; transparent menu bar items) | CONFIRMED re-verify |
+| FB1-41 | **One popover artifact:** status interaction and standalone craft use the **same** `popover.html` (embed via `?embed=1&mode=providers&provider=…`). No mini-pop reimplementation in hub or native | CONFIRMED |
 
 ### One-by-one queue (after FB-1)
 

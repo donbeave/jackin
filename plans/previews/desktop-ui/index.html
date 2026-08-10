@@ -98,6 +98,7 @@
         radial-gradient(ellipse 50% 40% at 90% 80%, rgba(40,60,100,0.35), transparent 50%),
         var(--stage-bg);
       position: relative;
+      overflow: hidden; /* clip pop-host to stage */
     }
 
     /* —— Shared atoms —— */
@@ -126,7 +127,7 @@
     .pct.low { color: var(--status-low); }
     .pct.zero { color: var(--tertiary); }
 
-    /* —— Menu bar —— */
+    /* —— Menu bar (transparent status · matches popover.html) —— */
     .menubar {
       height: 24px; display: flex; align-items: center; justify-content: flex-end; gap: 12px;
       padding: 0 16px; border-radius: 6px 6px 0 0;
@@ -140,15 +141,26 @@
     }
     .sb-item:hover { background: rgba(128,128,128,0.2); }
     .sb-item.active-click { background: rgba(128,128,128,0.28); }
-    .sb-item .stack { display: flex; flex-direction: column; line-height: 1.02; font-family: var(--mono); }
-    .sb-item .t { font-size: 8px; color: var(--secondary); }
+    /* Template mono logos on the bar (not brand plates) */
+    .sb-item .plogo.sm {
+      background: transparent !important;
+      width: 14px; height: 14px; border-radius: 0;
+      display: grid; place-items: center;
+    }
+    .sb-item .plogo.sm svg { fill: var(--label); width: 100%; height: 100%; }
+    .sb-item .stack {
+      display: flex; flex-direction: column; line-height: 1.02;
+      font-family: var(--mono); font-variant-numeric: tabular-nums;
+    }
+    .sb-item .t { font-size: 8px; color: var(--secondary); font-weight: 500; }
     .sb-item .p { font-size: 9px; font-weight: 600; color: var(--label); }
 
-    /* Context menu — system glass menu */
+    /* Context menu — system glass (right-click only) */
     .ctx-menu {
       position: absolute; min-width: 220px; padding: 4px;
       background: var(--glass-strong);
       backdrop-filter: blur(40px) saturate(1.5);
+      -webkit-backdrop-filter: blur(40px) saturate(1.5);
       border-radius: 10px;
       box-shadow: 0 0 0 0.5px var(--glass-border), 0 12px 40px rgba(0,0,0,0.4);
       z-index: 30;
@@ -162,50 +174,22 @@
     .ctx-menu button .ke { color: var(--tertiary); font-size: 12px; }
     .ctx-menu .sep { height: 1px; margin: 4px 8px; background: var(--separator); }
 
-    /* Mini popover for click demo */
-    .mini-pop {
-      position: absolute; width: 360px;
-      background: var(--glass);
-      backdrop-filter: blur(48px) saturate(1.4);
-      border-radius: 18px;
-      box-shadow: 0 0 0 0.5px var(--glass-border), 0 24px 60px rgba(0,0,0,0.5);
-      overflow: hidden; z-index: 20;
+    /*
+      Status left-click hosts the REAL popover.html (no mini reimplementation).
+      iframe src = popover.html?embed=1&mode=providers&provider=…
+    */
+    .pop-host {
+      position: absolute;
+      top: 40px;
+      right: 12px;
+      width: 424px;
+      height: 640px;
+      z-index: 20;
+      border: 0;
+      background: transparent;
+      border-radius: 14px;
     }
-    .mini-pop .inner { padding: 10px 12px 12px; }
-    .mini-pop .brand {
-      display: flex; align-items: center; gap: 6px; margin-bottom: 8px; font-size: 11px; color: var(--secondary);
-    }
-    .mini-pop .brand b { color: var(--jk); }
-    .mini-pop .pstrip {
-      display: flex; justify-content: center; gap: 4px; margin-bottom: 10px;
-    }
-    .mini-pop .ptab {
-      min-width: 56px; padding: 6px 4px; border-radius: 10px; text-align: center;
-      font-size: 9px; color: var(--secondary); border: 0; background: transparent; cursor: default;
-    }
-    .mini-pop .ptab.on {
-      background: color-mix(in srgb, var(--jk) 14%, transparent);
-      color: var(--label);
-      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--jk) 30%, transparent);
-    }
-    .mini-pop .ptab .track {
-      margin-top: 4px; height: 3px; border-radius: 99px; background: var(--meter-track); overflow: hidden;
-    }
-    .mini-pop .ptab .track > i { display: block; height: 100%; background: var(--status-mid); }
-    .mini-pop .ptab.on .track > i { background: var(--status-low); }
-    .mini-pop .callout {
-      font-size: 11px; color: var(--secondary); line-height: 1.4;
-      padding: 8px 10px; border-radius: 10px;
-      background: color-mix(in srgb, var(--jk) 10%, transparent);
-      border: 0.5px solid color-mix(in srgb, var(--jk) 25%, transparent);
-      margin-bottom: 10px;
-    }
-    .mini-pop .hero { font-family: var(--mono); font-size: 28px; font-weight: 650; color: var(--status-low); }
-    .mini-pop .reset { font-size: 12px; color: var(--secondary); margin: 4px 0 8px; }
-    .mini-pop .auth {
-      font-family: var(--mono); font-size: 11px; color: var(--secondary);
-      padding: 8px; border-left: 2px solid var(--jk); margin-top: 8px;
-    }
+    .pop-host.hidden { display: none !important; }
 
     .flow-caption {
       margin-top: 12px; font-size: 12px; color: var(--tertiary); line-height: 1.45;
@@ -343,64 +327,65 @@
     <div class="banner">
       <h2>Focus track</h2>
       <p>
-        <strong>Left-click</strong> status item → glance popover on that <strong>provider + account</strong> (not Overview).<br />
-        <strong>Right-click</strong> → system context menu (Open Usage / Refresh / Quit).<br />
+        <strong>Left-click</strong> status item → <strong>exact</strong> glance popover from
+        <a href="./popover.html">popover.html</a> (Providers mode, focused provider — not Overview).<br />
+        <strong>Right-click</strong> → system glass context menu (Open Usage / Refresh / Quit).<br />
         <strong>Usage window</strong> → glass sidebar + solid content; multi-account; same tokens as popover.
       </p>
     </div>
-    <p class="links">Full popover templates (all 7 providers): <a href="./popover.html">popover.html</a> · Agent procedure: <a href="./AGENT_HANDOFF.md">AGENT_HANDOFF.md</a></p>
+    <p class="links">
+      Full popover (standalone): <a href="./popover.html">popover.html</a> ·
+      Agent procedure: <a href="./AGENT_HANDOFF.md">AGENT_HANDOFF.md</a>
+    </p>
 
     <!-- ========== FLOW ========== -->
     <section class="panel active" id="flow">
       <h2 class="st">Status bar interactions</h2>
       <p class="sl">
-        Click a status item (left) to open the provider-focused popover. Right-click for the context menu.
-        This is the burn-first path: bar shows Anthropic 12% / 1h → popover lands on Anthropic, not Overview.
+        Left-click opens the <strong>same</strong> Liquid Glass popover as
+        <code>popover.html</code> (iframe embed — no mini reimplementation).
+        Burn-first path: bar shows Anthropic 12% / 1h → popover lands on Anthropic Providers detail.
       </p>
-      <div class="stage" id="flow-stage" style="min-height: 420px; padding-top: 8px;">
+      <div class="stage" id="flow-stage" style="min-height: 700px; padding-top: 8px;">
         <div class="menubar" id="flow-bar">
-          <div class="sb-item" data-provider="anthropic" data-account="Personal" data-pct="12" data-time="1h" title="Left: popover · Right: menu">
-            <span class="plogo sm anthropic">A</span>
+          <div class="sb-item" data-provider="anthropic" data-account="Personal" title="Left: popover · Right: menu">
+            <span class="plogo sm anthropic" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M12 2l1.2 6.2L18 6l-2.8 4.2L22 12l-6.8 1.8L18 18l-4.8-2.2L12 22l-1.2-6.2L6 18l2.8-4.2L2 12l6.8-1.8L6 6l4.8 2.2L12 2z"/></svg>
+            </span>
             <div class="stack"><span class="t">1h</span><span class="p">12%</span></div>
           </div>
-          <div class="sb-item" data-provider="openai" data-account="alexey@chainargos.com" data-pct="57" data-time="3d" title="Left: popover · Right: menu">
-            <span class="plogo sm openai">O</span>
+          <div class="sb-item" data-provider="openai" data-account="a1" title="Left: popover · Right: menu">
+            <span class="plogo sm openai" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M22.3 10.5a5.4 5.4 0 0 0-.7-5.1 5.5 5.5 0 0 0-5.9-2.6A5.5 5.5 0 0 0 12 .8a5.5 5.5 0 0 0-3.7 1.9 5.5 5.5 0 0 0-5.9 2.6 5.4 5.4 0 0 0-.7 5.1A5.4 5.4 0 0 0 .3 14.7a5.5 5.5 0 0 0 2.1 5.6 5.5 5.5 0 0 0 5.9 1.1A5.5 5.5 0 0 0 12 23.2a5.5 5.5 0 0 0 3.7-1.8 5.5 5.5 0 0 0 5.9-1.1 5.5 5.5 0 0 0 2.1-5.6 5.4 5.4 0 0 0-1.4-4.2z"/></svg>
+            </span>
             <div class="stack"><span class="t">3d</span><span class="p">57%</span></div>
           </div>
-          <div class="sb-item" data-provider="amp" data-account="Free" data-pct="100" data-time="18h" title="Left: popover · Right: menu">
-            <span class="plogo sm amp">A</span>
+          <div class="sb-item" data-provider="amp" data-account="Free" title="Left: popover · Right: menu">
+            <span class="plogo sm amp" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M4 16c2-6 4-10 8-10s6 4 8 10h-3c-1.2-3.5-2.5-5.5-5-5.5S8.2 12.5 7 16H4zm4.5 2a3.5 3.5 0 107 0h-7z"/></svg>
+            </span>
             <div class="stack"><span class="t">18h</span><span class="p">100%</span></div>
           </div>
         </div>
 
-        <div class="mini-pop hidden" id="flow-pop" style="top: 48px; right: 24px;">
-          <div class="inner">
-            <div class="brand">
-              <div class="jmark"><span class="j">j</span><span class="ch">❯</span></div>
-              <span>jackin<b>❯</b> <span style="color:var(--desktop-word)">desktop</span></span>
-            </div>
-            <div class="callout" id="flow-callout">
-              Opened from status bar → <strong>Providers</strong> mode, focused on this item (not Overview).
-            </div>
-            <div class="pstrip" id="flow-pstrip">
-              <!-- filled by JS -->
-            </div>
-            <div id="flow-detail">
-              <!-- filled by JS -->
-            </div>
-          </div>
-        </div>
+        <!-- Real popover.html — not a simplified mini-pop -->
+        <iframe
+          class="pop-host hidden"
+          id="flow-pop"
+          title="jackin❯ desktop glance popover"
+          sandbox="allow-scripts allow-same-origin"
+        ></iframe>
 
         <div class="ctx-menu hidden" id="flow-ctx">
-          <button type="button"><span>Open Usage Window</span></button>
+          <button type="button" data-action="usage"><span>Open Usage Window</span></button>
           <button type="button"><span>Refresh</span><span class="ke">⌘R</span></button>
           <div class="sep"></div>
           <button type="button"><span>Quit jackin❯ desktop</span><span class="ke">⌘Q</span></button>
         </div>
       </div>
       <p class="flow-caption">
-        Verify: left-click Anthropic → strip highlights Anthropic + account Personal + low status color.
-        Right-click → glass context menu (not the popover).
+        Verify: left-click Anthropic → <code>popover.html?embed=1&amp;mode=providers&amp;provider=anthropic</code>
+        (full strip, buckets, credential source, glass chrome). Right-click → glass menu only.
         <code>LIKE status flow</code>
       </p>
     </section>
@@ -530,34 +515,35 @@
       <div class="lg-grid">
         <div class="lg-card ok">
           <h3>✓ Glass (navigation)</h3>
-          Glance popover shell · status context menu · Usage sidebar · Usage toolbar<br />
-          Matches: bars, popovers, sidebars, menus on Tahoe.
+          Glance <code>popover.html</code> shell · status context menu · Usage sidebar · Usage toolbar<br />
+          Matches Tahoe: bars, popovers, sidebars, menus.
         </div>
         <div class="lg-card ok">
           <h3>✓ Solid (content)</h3>
-          Account cards · bucket bodies · Usage detail pane · meters/text<br />
-          Matches: “don’t use Liquid Glass in the content layer.”
+          Inset cards / buckets inside popover · Usage detail pane · meters/text<br />
+          HIG: do not put Liquid Glass on the content layer.
         </div>
         <div class="lg-card ok">
           <h3>✓ Transparent menu bar</h3>
-          Status items are template-style, no chip chrome — correct for transparent Tahoe menu bar.
+          Template mono logos + dual stack — no chip fill (matches popover status lock).
         </div>
         <div class="lg-card ok">
           <h3>✓ jackin accent without fighting glass</h3>
-          Phosphor only on selection rings, CTAs, high-status metrics, j❯ — not full green glass.
+          Phosphor only on selection rings, CTAs, high-status metrics, j❯ — never full green glass.
+        </div>
+        <div class="lg-card ok">
+          <h3>✓ One popover artifact</h3>
+          Status left-click loads <code>popover.html?embed=1</code> — same craft as the standalone template.
         </div>
         <div class="lg-card warn">
           <h3>⚠ Watch</h3>
-          Busy wallpapers under popover: keep hairline border + blur. Reduce Transparency → ultraThinMaterial fallback (GlassFallbacks).
-        </div>
-        <div class="lg-card warn">
-          <h3>⚠ Optional rain whisper</h3>
-          Keep opacity ≤ ~4% and only on chrome; off when Reduce Motion / Reduce Transparency.
+          Busy wallpapers: hairline + blur. Reduce Transparency → <code>GlassFallbacks</code> ultraThinMaterial.
+          Rain whisper ≤ ~4% chrome only; off with Reduce Motion / Transparency.
         </div>
       </div>
       <p class="flow-caption">
-        Verdict: approved popover + Usage split is <strong>Liquid Glass–consistent</strong>.
-        Implement only via <code>GlassFallbacks</code>.
+        Verdict: approved popover + Usage nav/content split is <strong>Liquid Glass–consistent</strong>.
+        Native implement only via <code>GlassFallbacks</code>.
       </p>
     </section>
   </div>
@@ -566,10 +552,17 @@
     const root = document.documentElement;
     const darkBtn = document.getElementById("theme-dark");
     const lightBtn = document.getElementById("theme-light");
+    let theme = "dark";
     function setTheme(t) {
+      theme = t;
       root.setAttribute("data-theme", t);
       darkBtn.classList.toggle("on", t === "dark");
       lightBtn.classList.toggle("on", t === "light");
+      // keep open embed in sync
+      const host = document.getElementById("flow-pop");
+      if (host && !host.classList.contains("hidden") && host.dataset.provider) {
+        loadRealPopover(host.dataset.provider, host.dataset.account || "");
+      }
     }
     darkBtn.onclick = () => setTheme("dark");
     lightBtn.onclick = () => setTheme("light");
@@ -583,84 +576,71 @@
       });
     });
 
-    // Status flow
+    // Status flow — real popover.html only
     const stage = document.getElementById("flow-stage");
     const pop = document.getElementById("flow-pop");
     const ctx = document.getElementById("flow-ctx");
-    const pstrip = document.getElementById("flow-pstrip");
-    const detail = document.getElementById("flow-detail");
-    const callout = document.getElementById("flow-callout");
 
-    const providers = [
-      { id: "anthropic", name: "Anthropic", cls: "anthropic", letter: "A", pct: 12, level: "low" },
-      { id: "openai", name: "OpenAI", cls: "openai", letter: "O", pct: 57, level: "mid" },
-      { id: "amp", name: "Amp", cls: "amp", letter: "A", pct: 100, level: "high" },
-    ];
+    function loadRealPopover(provider, account) {
+      const params = new URLSearchParams({
+        embed: "1",
+        mode: "providers",
+        provider: provider,
+        theme: theme,
+      });
+      if (provider === "openai" && account) params.set("account", account);
+      pop.dataset.provider = provider;
+      pop.dataset.account = account || "";
+      pop.src = `./popover.html?${params.toString()}`;
+      pop.classList.remove("hidden");
+    }
 
     function showPopover(item) {
       ctx.classList.add("hidden");
-      document.querySelectorAll(".sb-item").forEach((el) => el.classList.remove("active-click"));
+      document.querySelectorAll("#flow-bar .sb-item").forEach((el) => el.classList.remove("active-click"));
       item.classList.add("active-click");
-      const id = item.dataset.provider;
-      const account = item.dataset.account;
-      const pct = item.dataset.pct;
-      const time = item.dataset.time;
-      const level = pct >= 40 ? "high" : pct >= 15 ? "mid" : "low";
-      const color = level === "high" ? "var(--status-high)" : level === "mid" ? "var(--status-mid)" : "var(--status-low)";
+      loadRealPopover(item.dataset.provider, item.dataset.account || "");
+    }
 
-      callout.innerHTML = `Opened from status bar chip → <strong>Providers</strong> focused on <strong>${item.dataset.provider === "openai" ? "OpenAI" : item.dataset.provider === "anthropic" ? "Anthropic" : "Amp"}</strong> · account <strong>${account}</strong> (not Overview).`;
-
-      pstrip.innerHTML = providers.map((p) => `
-        <div class="ptab ${p.id === id ? "on" : ""}">
-          <div class="plogo sm ${p.cls}" style="margin:0 auto 2px">${p.letter}</div>
-          ${p.name}
-          <div class="track"><i style="width:${p.pct}%;background:var(--status-${p.level})"></i></div>
-        </div>`).join("");
-
-      const cred = id === "openai" ? "OAuth · ~/.codex/auth.json"
-        : id === "anthropic" ? "OAuth · macOS Keychain (Claude Code-credentials)"
-        : "API key · env AMP_API_KEY";
-
-      detail.innerHTML = `
-        <div style="font-size:15px;font-weight:600;margin-bottom:4px">${id === "openai" ? "OpenAI" : id === "anthropic" ? "Anthropic" : "Amp"}</div>
-        <div style="font-size:12px;color:var(--secondary);margin-bottom:8px">${account}</div>
-        <div class="hero" style="color:${color}">${pct}% left</div>
-        <div class="reset">Resets in ${time}${time.includes("d") || time.includes("h") ? "" : ""} · exact clock when known</div>
-        <div class="meter ${level}" style="height:6px;margin-bottom:8px"><i style="width:${pct}%"></i></div>
-        <div class="auth">Credential source<br /><strong style="color:var(--label)">${cred}</strong></div>
-      `;
-
-      pop.classList.remove("hidden");
-      // position under right side of bar
-      pop.style.top = "48px";
-      pop.style.right = "16px";
+    function hidePopover() {
+      pop.classList.add("hidden");
+      pop.removeAttribute("src");
+      delete pop.dataset.provider;
+      delete pop.dataset.account;
     }
 
     function showCtx(e, item) {
       e.preventDefault();
-      pop.classList.add("hidden");
-      document.querySelectorAll(".sb-item").forEach((el) => el.classList.remove("active-click"));
+      hidePopover();
+      document.querySelectorAll("#flow-bar .sb-item").forEach((el) => el.classList.remove("active-click"));
       item.classList.add("active-click");
       const rect = item.getBoundingClientRect();
       const stageRect = stage.getBoundingClientRect();
       ctx.classList.remove("hidden");
-      ctx.style.left = (rect.left - stageRect.left) + "px";
+      ctx.style.left = Math.min(rect.left - stageRect.left, stageRect.width - 230) + "px";
       ctx.style.top = (rect.bottom - stageRect.top + 6) + "px";
     }
 
     document.querySelectorAll("#flow-bar .sb-item").forEach((item) => {
       item.addEventListener("click", (e) => {
+        e.stopPropagation();
         if (e.button === 0) showPopover(item);
       });
       item.addEventListener("contextmenu", (e) => showCtx(e, item));
     });
 
     stage.addEventListener("click", (e) => {
-      if (!e.target.closest(".sb-item") && !e.target.closest(".mini-pop") && !e.target.closest(".ctx-menu")) {
-        pop.classList.add("hidden");
+      if (!e.target.closest(".sb-item") && !e.target.closest(".pop-host") && !e.target.closest(".ctx-menu")) {
+        hidePopover();
         ctx.classList.add("hidden");
-        document.querySelectorAll(".sb-item").forEach((el) => el.classList.remove("active-click"));
+        document.querySelectorAll("#flow-bar .sb-item").forEach((el) => el.classList.remove("active-click"));
       }
+    });
+
+    // Context menu → Usage panel
+    ctx.querySelector('[data-action="usage"]')?.addEventListener("click", () => {
+      ctx.classList.add("hidden");
+      document.querySelector('.toolbar button[data-panel="usage"]')?.click();
     });
 
     // Usage sidebar

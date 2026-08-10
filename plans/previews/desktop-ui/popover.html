@@ -225,34 +225,38 @@
     .sb-item .t { font-size: 8px; color: var(--secondary); font-weight: 500; }
     .sb-item .p { font-size: 9px; color: var(--label); font-weight: 600; }
 
-    /* Popover liquid glass */
+    /* Popover liquid glass — chrome only (HIG navigation layer) */
     .pop {
       width: 400px; position: relative;
       background: var(--glass);
-      backdrop-filter: blur(50px) saturate(1.4);
-      -webkit-backdrop-filter: blur(50px) saturate(1.4);
+      backdrop-filter: blur(50px) saturate(1.55);
+      -webkit-backdrop-filter: blur(50px) saturate(1.55);
       border-radius: 20px;
       box-shadow:
         0 0 0 0.5px var(--glass-border),
         0 28px 80px rgba(0,0,0,0.45),
-        inset 0 1px 0 rgba(255,255,255,0.1);
+        inset 0 1px 0 rgba(255,255,255,0.12);
       overflow: hidden;
     }
     [data-theme="light"] .pop {
       box-shadow:
         0 0 0 0.5px var(--glass-border),
         0 20px 50px rgba(0,0,0,0.12),
-        inset 0 1px 0 rgba(255,255,255,0.8);
+        inset 0 1px 0 rgba(255,255,255,0.85);
     }
+    /* Rain whisper: chrome only, ≤4%; native must gate on Reduce Motion/Transparency */
     .pop .rain {
-      pointer-events: none; position: absolute; inset: 0; opacity: 0.035;
+      pointer-events: none; position: absolute; inset: 0; opacity: 0.032;
       background-image: repeating-linear-gradient(
         0deg, transparent, transparent 4px, rgba(0,255,65,0.3) 4px, rgba(0,255,65,0.3) 5px
       );
       background-size: 14px 36px;
-      mask-image: linear-gradient(to bottom, #000, transparent 36%);
+      mask-image: linear-gradient(to bottom, #000, transparent 32%);
     }
-    [data-theme="light"] .pop .rain { opacity: 0.02; }
+    [data-theme="light"] .pop .rain { opacity: 0.018; }
+    @media (prefers-reduced-motion: reduce) {
+      .pop .rain { display: none; }
+    }
     .pop .inner { position: relative; z-index: 1; }
 
     .seg {
@@ -322,10 +326,11 @@
 
     .ov-scroll, .detail-scroll { padding: 0 12px 12px; max-height: 480px; overflow: auto; }
 
+    /* Content layer = solid/inset fills (not Liquid Glass) */
     .group {
       background: var(--glass-inset);
       border-radius: 14px; margin-bottom: 10px;
-      border: 0.5px solid color-mix(in srgb, var(--jk) 8%, transparent);
+      border: 0.5px solid var(--separator);
       overflow: hidden;
     }
     .group-head {
@@ -369,8 +374,10 @@
     .acct-switch button.on { background: var(--jk); color: var(--jk-ink); }
 
     .block {
+      /* solid content surface — never full glass chrome */
       background: var(--glass-inset);
       border-radius: 14px; padding: 14px; margin-bottom: 10px;
+      border: 0.5px solid color-mix(in srgb, var(--separator) 70%, transparent);
     }
     .block h5 {
       margin: 0 0 10px; font-size: 11px; font-weight: 600;
@@ -408,6 +415,54 @@
     }
     .ref-notes h3 { margin: 0 0 8px; font-size: 13px; color: var(--label); }
     .ref-notes code { font-family: var(--mono); font-size: 11px; color: var(--jk); }
+
+    /*
+      embed=1 — status-bar interaction host (index.html iframe).
+      Same .pop craft only; hide doc chrome. Stage paint stays so backdrop-filter
+      liquid glass still reads (blur does not cross iframe boundaries).
+    */
+    html.embed, html.embed body {
+      background: transparent;
+      margin: 0;
+      min-height: 0;
+    }
+    html.embed .page {
+      max-width: none; margin: 0; padding: 0;
+    }
+    html.embed .page > h1,
+    html.embed .page > .lead,
+    html.embed .page > .toolbar,
+    html.embed .page > .banner,
+    html.embed .grid > .card:not(.card-popover),
+    html.embed .card-popover > .tag,
+    html.embed .card-popover > h3,
+    html.embed .card-popover > .why,
+    html.embed .card-popover > .pick {
+      display: none !important;
+    }
+    html.embed .grid { display: block; gap: 0; }
+    html.embed .card-popover {
+      background: transparent; border: 0; padding: 0; border-radius: 0;
+    }
+    html.embed .stage {
+      min-height: 0;
+      padding: 10px;
+      border-radius: 14px;
+      /* paint under glass so Liquid Glass blur has something to refract */
+      background:
+        radial-gradient(ellipse 70% 45% at 25% 15%, var(--stage-1) 0%, transparent 55%),
+        radial-gradient(ellipse 50% 40% at 85% 75%, var(--stage-2) 0%, transparent 50%),
+        var(--stage-bg);
+    }
+    html.embed .pop {
+      margin: 0 auto;
+      /* slightly tighter for menu-bar attachment feel */
+      max-height: calc(100vh - 20px);
+    }
+    html.embed .ov-scroll,
+    html.embed .detail-scroll {
+      max-height: min(480px, calc(100vh - 200px));
+    }
   </style>
 </head>
 <body>
@@ -434,8 +489,8 @@
     </div>
 
     <div class="grid">
-      <!-- POPOVER -->
-      <div class="card">
+      <!-- POPOVER — single source of truth for glance popover craft -->
+      <div class="card card-popover">
         <div class="tag">Popover · interactive</div>
         <h3>Overview / Providers</h3>
         <p class="why">Toggle theme above · switch Overview ↔ Providers · OpenAI account pills</p>
@@ -1024,39 +1079,51 @@
     const lightBtn = document.getElementById("theme-light");
     function setTheme(t) {
       root.setAttribute("data-theme", t);
-      darkBtn.classList.toggle("on", t === "dark");
-      lightBtn.classList.toggle("on", t === "light");
+      if (darkBtn) darkBtn.classList.toggle("on", t === "dark");
+      if (lightBtn) lightBtn.classList.toggle("on", t === "light");
     }
-    darkBtn.addEventListener("click", () => setTheme("dark"));
-    lightBtn.addEventListener("click", () => setTheme("light"));
+    if (darkBtn) darkBtn.addEventListener("click", () => setTheme("dark"));
+    if (lightBtn) lightBtn.addEventListener("click", () => setTheme("light"));
 
     // Modes
     const modeOverview = document.getElementById("mode-overview");
     const modeProviders = document.getElementById("mode-providers");
+    function setMode(mode) {
+      document.querySelectorAll("#seg button").forEach((b) =>
+        b.classList.toggle("on", b.dataset.mode === mode)
+      );
+      modeOverview.classList.toggle("hidden", mode !== "overview");
+      modeProviders.classList.toggle("hidden", mode !== "providers");
+    }
     document.querySelectorAll("#seg button").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        document.querySelectorAll("#seg button").forEach((b) => b.classList.toggle("on", b === btn));
-        const mode = btn.dataset.mode;
-        modeOverview.classList.toggle("hidden", mode !== "overview");
-        modeProviders.classList.toggle("hidden", mode !== "providers");
-      });
+      btn.addEventListener("click", () => setMode(btn.dataset.mode));
     });
 
     // Provider tabs
+    function setProvider(id) {
+      if (!id) return;
+      const tab = document.querySelector(`#pstrip .ptab[data-provider="${id}"]`);
+      if (!tab) return;
+      document.querySelectorAll("#pstrip .ptab").forEach((t) => t.classList.toggle("on", t === tab));
+      document.querySelectorAll(".pdetail").forEach((d) =>
+        d.classList.toggle("hidden", d.dataset.provider !== id)
+      );
+      // scroll focused tab into view (centered strip, many providers)
+      try { tab.scrollIntoView({ inline: "center", block: "nearest", behavior: "auto" }); } catch (_) {}
+    }
     document.querySelectorAll("#pstrip .ptab").forEach((tab) => {
-      tab.addEventListener("click", () => {
-        const id = tab.dataset.provider;
-        document.querySelectorAll("#pstrip .ptab").forEach((t) => t.classList.toggle("on", t === tab));
-        document.querySelectorAll(".pdetail").forEach((d) =>
-          d.classList.toggle("hidden", d.dataset.provider !== id)
-        );
-      });
+      tab.addEventListener("click", () => setProvider(tab.dataset.provider));
+    });
+    // default: only openai detail visible
+    document.querySelectorAll(".pdetail").forEach((d, i) => {
+      if (d.dataset.provider !== "openai") d.classList.add("hidden");
     });
 
     // Accounts
     document.querySelectorAll('[data-accounts="openai"] button').forEach((btn) => {
       btn.addEventListener("click", () => {
         const id = btn.dataset.acct;
+        if (!id) return;
         document.querySelectorAll('[data-accounts="openai"] button').forEach((b) =>
           b.classList.toggle("on", b === btn)
         );
@@ -1065,6 +1132,29 @@
         );
       });
     });
+
+    // URL params: ?embed=1&mode=providers&provider=anthropic&theme=dark&account=a1
+    // Used by index.html status left-click so interaction demos the REAL popover.
+    (function applyParams() {
+      const q = new URLSearchParams(location.search);
+      if (q.get("embed") === "1") root.classList.add("embed");
+      const theme = q.get("theme");
+      if (theme === "light" || theme === "dark") setTheme(theme);
+      const mode = q.get("mode");
+      if (mode === "overview" || mode === "providers") setMode(mode);
+      const provider = q.get("provider");
+      if (provider) {
+        if (mode !== "overview") setMode("providers");
+        setProvider(provider);
+      }
+      const account = q.get("account");
+      if (account && provider === "openai") {
+        const acctBtn = document.querySelector(
+          `[data-accounts="openai"] button[data-acct="${account}"]`
+        );
+        if (acctBtn) acctBtn.click();
+      }
+    })();
   </script>
 </body>
 </html>

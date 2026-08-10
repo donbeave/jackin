@@ -4,11 +4,21 @@
 
 | File | Contents |
 |---|---|
-| [`index.html`](./index.html) | **Hub:** status left-click → focused popover, right-click context menu, **Usage window**, Liquid Glass check |
-| [`popover.html`](./popover.html) | Full popover: Overview + all 7 provider templates |
+| [`index.html`](./index.html) | **Hub:** status left-click → **real** `popover.html` embed, right-click glass menu, **Usage window**, Liquid Glass check |
+| [`popover.html`](./popover.html) | **Single** glance-popover craft SoT: Overview + all 7 providers. Status interaction loads this file (`?embed=1&mode=providers&provider=…`) |
 | [`AGENT_HANDOFF.md`](./AGENT_HANDOFF.md) | Agent procedure |
 
 Open in Safari/Chrome. Toggle **Dark / Light**.
+
+### Status interaction (do not reimplement mini-pops)
+
+Left-click a status chip on the hub → iframe loads:
+
+```
+popover.html?embed=1&mode=providers&provider=anthropic&theme=dark
+```
+
+That is the **same** Liquid Glass popover as the standalone template. Never ship a simplified “mini-pop” for demos or native.
 
 ## For operators
 

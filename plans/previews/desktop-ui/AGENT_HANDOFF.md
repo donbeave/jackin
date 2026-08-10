@@ -21,11 +21,14 @@ HTML alone without tokens becomes “generic SaaS.” Tokens alone without a com
 
 | Artifact | Role |
 |---|---|
-| [`index.html`](./index.html) | Composed screens: status bar, Overview, Providers (all 7 templates), light/dark |
+| [`popover.html`](./popover.html) | **Glance popover SoT** (Overview + all 7 providers, Liquid Glass chrome). Status left-click uses `?embed=1&mode=providers&provider=…` |
+| [`index.html`](./index.html) | Hub: status interactions (iframe → popover.html), Usage window, Liquid Glass check |
 | CSS custom properties | Named tokens agents must map to Swift |
 | [`README.md`](./README.md) | Operator + implementer rules |
 | This file | Predictable agent process |
 | [`../../desktop-design-decisions.md`](../../desktop-design-decisions.md) | Product law (CONFIRMED IDs) |
+
+**Hard rule (FB1-41):** never reimplement a simplified mini-pop for status click. Native and HTML both open the full popover craft.
 
 ## How to get predictable agent output
 
