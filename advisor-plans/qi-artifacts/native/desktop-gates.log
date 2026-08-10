@@ -1,10 +1,12 @@
-=== tip dea28418 2026-08-10T10:03Z ===
-=== tip dea28418 2026-08-10T10:02Z ===
+=== tip b88cd811 2026-08-10T10:13Z mission QI ===
+=== tip b88cd811 2026-08-10T10:12Z ===
 PASS: Usage Liquid Glass + provider≠account structural checks
 PASS: QI evidence ledger — 16 pass rows, 3 blocked, prose PNG refs consistent
 
-=== L2 ===
+=== L2 (SoT×3 + suite) ===
 DesktopArchitectureLint: ALL PASS
+DesktopSoTParityHarness: ALL PASS (18/18 checks)
+DesktopSoTParityHarness: ALL PASS (18/18 checks)
 DesktopSoTParityHarness: ALL PASS (18/18 checks)
 DesktopParityMatrixHarness: ALL PASS
 Matrix: 8/8 providers displayable · dual-bucket · depleted · limits-only
