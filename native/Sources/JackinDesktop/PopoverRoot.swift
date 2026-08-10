@@ -40,9 +40,9 @@ public struct PopoverRoot: View {
 
             GlassFallbacks.glassSeparator()
 
-            // Glass control dock (LG-A8 single refresh group).
-            PopoverFooter(refreshInProgress: store.refreshInProgress) {
-                store.refreshAll()
+            // Sticky glass footer dock — Open Usage Window (FB1-43 / LG-A8 one CTA).
+            PopoverFooter {
+                onOpenUsage?(store.popoverSelection)
             }
             .padding(.horizontal, 10)
             .padding(.vertical, 8)
@@ -59,6 +59,15 @@ public struct PopoverRoot: View {
         )
         .shadow(color: .black.opacity(0.28), radius: 32, y: 14)
         .padding(2)
+        // ⌘R refresh without a second glass footer CTA (OV-9 / FB1-43: one Open Usage dock).
+        .background {
+            Button("Refresh") { store.refreshAll() }
+                .keyboardShortcut("r", modifiers: [.command])
+                .opacity(0)
+                .frame(width: 0, height: 0)
+                .allowsHitTesting(false)
+                .accessibilityHidden(true)
+        }
     }
 
     @ViewBuilder
