@@ -1,7 +1,7 @@
 # VISUAL_QA_LOG — jackin❯ desktop HTML SoT parity
 
 **Date:** 2026-08-10  
-**Tip:** `962fa829`  
+**Tip:** `ac389c68`+ (re-verify this session)  
 **Branch:** plan/desktop-visual  
 **Authority:** UI_PARITY_MASTER §6 + QI_VERIFICATION L1–L4  
 **Artifacts:** `advisor-plans/qi-artifacts/`
@@ -18,7 +18,7 @@ StatusItemChipHarness ALL PASS
 ProviderMarksHarness ALL PASS (7/7 maxA)
 ```
 
-Log: `qi-artifacts/native/desktop-gates.log` · scratch `qi-parity-gates.log`
+Log: `qi-artifacts/native/desktop-gates.log`
 
 ## §6 matrix — Dark / Light (no High fails)
 

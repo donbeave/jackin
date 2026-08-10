@@ -2,8 +2,7 @@
 PASS: Usage Liquid Glass + provider≠account structural checks
 === L1 ledger ===
 PASS: QI evidence ledger — 15 pass rows, 2 blocked, prose PNG refs consistent
-=== L2 gates ===
-PASS  StatusItemLabel.swift
+=== L2 ===
 PASS  StatusItemMenu.swift
 PASS  GlassFallbacks.swift
 ---

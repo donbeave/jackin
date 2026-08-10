@@ -161,3 +161,18 @@ native_path = "advisor-plans/qi-artifacts/native/status-desktop-live-dark.png"
 capture_tier = "live"
 verdict = "pass"
 notes = "Optional AX-geometry status extras strip; primary dual-stack API = status-desktop harness"
+
+[[scene]]
+id = "popover-overview"
+theme = "dark"
+native_path = "advisor-plans/qi-artifacts/native/popover-overview-dark.png"
+capture_tier = "harness"
+verdict = "pass"
+notes = "Overview inventory; no separate HTML PNG"
+
+[[scene]]
+id = "popover-overview"
+theme = "light"
+native_path = "advisor-plans/qi-artifacts/native/popover-overview-light.png"
+capture_tier = "harness"
+verdict = "pass"
