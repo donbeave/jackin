@@ -51,13 +51,7 @@ public struct ProviderCardView: View {
                     }
                 }
 
-                ForEach(content.detail.rows.filter { $0.kind == .bucket }) { row in
-                    if row.label == "Limit Reset Credits" {
-                        limitResetCreditsCard(row)
-                    } else {
-                        bucketCard(row)
-                    }
-                }
+                limitList
             }
             .padding(20)
         }
@@ -128,8 +122,29 @@ public struct ProviderCardView: View {
         .accessibilityLabel(ProviderUsageLinks.openUsagePageTitle)
     }
 
+    /// One inset list owns all limit rows, matching HTML `.limit-list` structure.
+    private var limitList: some View {
+        let bucketRows = content.detail.rows.filter { $0.kind == .bucket }
+
+        return VStack(alignment: .leading, spacing: 0) {
+            ForEach(Array(bucketRows.enumerated()), id: \.element.id) { index, row in
+                if index > 0 {
+                    Divider().opacity(0.55)
+                }
+                if row.label == "Limit Reset Credits" {
+                    limitResetCreditsRow(row)
+                } else {
+                    bucketRow(row)
+                }
+            }
+        }
+        .background {
+            GlassFallbacks.contentCardBackground()
+        }
+    }
+
     /// Bound bucket: show every Rust layout line as labeled detail (count, next expiry, …).
-    private func limitResetCreditsCard(_ row: UsageDetailRow) -> some View {
+    private func limitResetCreditsRow(_ row: UsageDetailRow) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             Text(row.label)
                 .font(.subheadline.weight(.semibold))
@@ -160,9 +175,6 @@ public struct ProviderCardView: View {
         }
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background {
-            GlassFallbacks.contentCardBackground()
-        }
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(row.label) \(row.displayLabel)")
     }
@@ -226,7 +238,7 @@ public struct ProviderCardView: View {
 
     /// Limit card — label + hero remaining (primary), pace/reset secondary, meter last
     /// (matches `index.html` Usage `.limit` anatomy / VS-11).
-    private func bucketCard(_ row: UsageDetailRow) -> some View {
+    private func bucketRow(_ row: UsageDetailRow) -> some View {
         let hero = row.layoutLines.compactMap(\.leading).first
         let secondaryLeadings = Array(row.layoutLines.dropFirst().compactMap(\.leading))
         let resetTrailings = row.layoutLines.compactMap(\.trailing)
@@ -274,10 +286,6 @@ public struct ProviderCardView: View {
         }
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background {
-            // Content layer — standard material only (LG-A2 / HIG).
-            GlassFallbacks.contentCardBackground()
-        }
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(row.label) \(row.displayLabel)")
     }

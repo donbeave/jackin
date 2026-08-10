@@ -39,6 +39,7 @@ struct DesktopArchitectureLint {
         checkUsageWindowToolbarHost(desktopRoot: desktop)
         checkStatusPopoverFocusWiring(desktopRoot: desktop)
         checkPrimaryControlCraft(desktopRoot: desktop)
+        checkUsageDetailGrouping(desktopRoot: desktop)
         run(desktopRoot: desktop)
     }
 
@@ -194,6 +195,30 @@ struct DesktopArchitectureLint {
             print("PASS  primary controls avoid solid phosphor slabs")
         } else {
             print("DesktopArchitectureLint: primary-control FAILURE")
+            exit(1)
+        }
+    }
+
+    /// G-U6: limit rows share one list container; row helpers cannot create cards.
+    static func checkUsageDetailGrouping(desktopRoot: URL) {
+        let path = desktopRoot.appendingPathComponent("UsageWindow/ProviderCardView.swift")
+        guard let text = try? String(contentsOf: path, encoding: .utf8) else {
+            fputs("FAIL  ProviderCardView.swift missing\n", stderr)
+            exit(2)
+        }
+        let required = [
+            "private var limitList: some View",
+            "ForEach(Array(bucketRows.enumerated())",
+            "if index > 0 {",
+            "private func bucketRow",
+            "private func limitResetCreditsRow",
+        ]
+        let forbidden = ["private func bucketCard", "private func limitResetCreditsCard"]
+        let ok = required.allSatisfy(text.contains) && forbidden.allSatisfy { !text.contains($0) }
+        if ok {
+            print("PASS  Usage detail groups limit rows in one list")
+        } else {
+            print("FAIL  Usage detail must retain one limit-list container with divided rows")
             exit(1)
         }
     }

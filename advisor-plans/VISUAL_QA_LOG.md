@@ -55,6 +55,11 @@ Popover geometry re-audit replaced generic 12 pt cards / 28 pt rounded heroes
 with HTML’s 14 pt content-card geometry and 32 pt monospaced metrics. Overview
 groups and every provider block now share those named tokens.
 
+Usage-detail re-audit corrected a structural false-pass: repeated Rust buckets
+no longer create separate floating cards. One inset limit-list now owns all
+quota rows and full-width dividers, including structured Limit Reset Credits,
+matching the HTML oracle in deterministic dark/light component captures.
+
 ## Live
 popover-live / ctx-menu **BLOCKED** — SoTParity proves focus/menu.
 
