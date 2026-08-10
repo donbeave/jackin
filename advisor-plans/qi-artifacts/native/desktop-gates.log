@@ -1,3 +1,5 @@
+=== tip e6157d0d 2026-08-10T09:04Z ===
+
 === L1 HTML glass ===
 PASS: Usage Liquid Glass + provider≠account structural checks
 
@@ -5,27 +7,6 @@ PASS: Usage Liquid Glass + provider≠account structural checks
 PASS: QI evidence ledger — 17 pass rows, 2 blocked, prose PNG refs consistent
 
 === DesktopArchitectureLint ===
-Another instance of SwiftPM (PID: 11797) is already running using '/Users/donbeave/Projects/jackin-project/test/jackin/native/.build', waiting until that process has finished execution...Building for production...
-[0/2] Write swift-version--58304C5D6DBC2206.txt
-Build of product 'DesktopArchitectureLint' complete! (0.08s)
-PASS  PresentationStore.swift serializes all bridge access via RefreshScheduler
-PASS  glassEffect / #available(macOS 26 only in GlassFallbacks
-PASS  UsageWindowController NSToolbar hosting
-PASS  status left-click popover focus wiring
-PASS  SettingsView.swift (preference chrome allowlist)
-PASS  SettingsView.swift
-PASS  OverviewListView.swift
-PASS  UsageAccountNestView.swift
-PASS  UsageWindowRoot.swift
-PASS  ProviderCardView.swift
-PASS  GlassPopoverHostingController.swift
-PASS  PopoverRoot.swift
-PASS  ProviderMarks.swift
-PASS  UsageWindowController.swift
-PASS  PopoverTabGrid.swift
-PASS  PopoverProviderTab.swift
-PASS  PopoverFooter.swift
-PASS  PopoverOverviewTab.swift
 PASS  AppMainMenu.swift
 PASS  DesktopAppDelegate.swift
 PASS  StatusItemLabel.swift
@@ -36,22 +17,6 @@ DesktopArchitectureLint: scanned 18 files, 18 clean
 DesktopArchitectureLint: ALL PASS
 
 === DesktopSoTParityHarness ===
-Building for production...
-[0/2] Write swift-version--58304C5D6DBC2206.txt
-Build of product 'DesktopSoTParityHarness' complete! (0.07s)
-PASS  provider click → provider selection
-PASS  fallback item → overview
-PASS  empty surface → overview
-PASS  button identity map
-PASS  multi-account inventory order + titles
-PASS  OV-5 selected inventory includes exactReset calendar
-PASS  OV-5 unselected multi-account reset nil without Account DTO
-PASS  empty accounts falls back to glance rows
-PASS  OV-5 glance fallback composes exactReset
-PASS  desktop provider URLs complete
-PASS  open usage title fixed
-PASS  unknown surface has no URL
-PASS  0% meter fraction empty
 PASS  100% meter fraction full
 PASS  57% meter fraction
 PASS  status context menu three rows
@@ -59,13 +24,6 @@ PASS  status context menu three rows
 DesktopSoTParityHarness: ALL PASS (18/18 checks)
 
 === DesktopParityMatrixHarness ===
-PASS  ProviderCard bucket identity is Rust rowId, not label
-PASS  Usage detail meter/severity are geometry+style only (no visible text)
-PASS  Usage window drives sidebar/detail from UsageWindowModel
-PASS  Usage empty state is the fixed hint (no invented fallback copy)
-PASS  Overview uses per-account inventory helper (HTML SoT)
-PASS  Usage account nest has mini meter geometry
-PASS  Usage window NSToolbar host
 PASS  Status left-click focuses provider via StatusPopoverFocus
 PASS  Popover prefers detailPresentation buckets
 PASS  ProviderUsageLinks desktop map complete
@@ -76,26 +34,11 @@ DesktopParityMatrixHarness: ALL PASS
 Matrix: 8/8 providers displayable · dual-bucket · depleted · limits-only
 
 === StatusItemChipHarness ===
-PASS  overview numeric cap keeps four windows
-PASS  account pill with remaining
-PASS  status_slot session is machine
-PASS  status_slot weekly is machine
-PASS  status_slot spend is machine
-PASS  gauge secondary drops bare 100%
-PASS  gauge secondary keeps money limit
 PASS  dual depleted a11y keeps weekly
 ---
 StatusItemChipHarness: ALL PASS
 
 === ProviderMarksHarness ===
-Another instance of SwiftPM (PID: 12001) is already running using '/Users/donbeave/Projects/jackin-project/test/jackin/native/.build', waiting until that process has finished execution...Building for production...
-[0/2] Write swift-version--58304C5D6DBC2206.txt
-Build of product 'ProviderMarksHarness' complete! (0.07s)
-ProviderMarksHarness: 7 Desktop keys
-PASS  codex hasMark=true markSize=(18.0, 18.0) statusTemplate=true
-PASS  claude hasMark=true markSize=(18.0, 18.0) statusTemplate=true
-PASS  amp hasMark=true markSize=(18.0, 18.0) statusTemplate=true
-PASS  grok hasMark=true markSize=(18.0, 18.0) statusTemplate=true
 PASS  zai hasMark=true markSize=(18.0, 18.0) statusTemplate=true
 PASS  kimi hasMark=true markSize=(18.0, 18.0) statusTemplate=true
 PASS  minimax hasMark=true markSize=(18.0, 18.0) statusTemplate=true
@@ -110,31 +53,6 @@ PASS  minimax mark maxA=244 (need ≥200)
 ProviderMarksHarness: ALL PASS (7/7 official marks)
 
 === DesktopVisualSnapshotHarness ===
-WARN CGWindow blank/unavailable — trying screencapture -l
-could not create image from window
-WARN screencapture -l failed — trying view bitmap
-WARN CGWindow blank/unavailable — trying screencapture -l
-could not create image from window
-WARN screencapture -l failed — trying view bitmap
-WARN CGWindow blank/unavailable — trying screencapture -l
-could not create image from window
-WARN screencapture -l failed — trying view bitmap
-WARN CGWindow blank/unavailable — trying screencapture -l
-could not create image from window
-WARN screencapture -l failed — trying view bitmap
-WROTE ../advisor-plans/qi-artifacts/native/popover-openai-dark.png
-WROTE ../advisor-plans/qi-artifacts/native/popover-anthropic-dark.png
-WROTE ../advisor-plans/qi-artifacts/native/popover-amp-dark.png
-WROTE ../advisor-plans/qi-artifacts/native/popover-overview-dark.png
-WROTE ../advisor-plans/qi-artifacts/native/usage-detail-openai-dark.png
-WROTE ../advisor-plans/qi-artifacts/native/usage-overview-dark.png
-WROTE ../advisor-plans/qi-artifacts/native/usage-provider-nest-dark.png
-WROTE ../advisor-plans/qi-artifacts/native/status-desktop-dark.png [StatusItemRendering]
-WROTE ../advisor-plans/qi-artifacts/native/usage-window-openai-dark.png [UsageWindowController window capture]
-WROTE ../advisor-plans/qi-artifacts/native/usage-toolbar-dark.png [UsageWindowController titlebar crop]
-WROTE ../advisor-plans/qi-artifacts/native/usage-window-overview-dark.png [UsageWindowController window capture]
-WROTE ../advisor-plans/qi-artifacts/native/popover-openai-light.png
-WROTE ../advisor-plans/qi-artifacts/native/popover-anthropic-light.png
 WROTE ../advisor-plans/qi-artifacts/native/popover-amp-light.png
 WROTE ../advisor-plans/qi-artifacts/native/popover-overview-light.png
 WROTE ../advisor-plans/qi-artifacts/native/usage-detail-openai-light.png
@@ -161,5 +79,5 @@ usage_toolbar_dark: UsageWindowController titlebar crop
 usage_toolbar_light: UsageWindowController titlebar crop
 DesktopVisualSnapshotHarness: wrote snapshots to ../advisor-plans/qi-artifacts/native
 
-tip: 7df4d841
-date: 2026-08-10T09:00Z
+=== PNG hash vs HEAD (craft) ===
+status/popover/nest/detail/toolbar: SAME (byte-identical recapture)
