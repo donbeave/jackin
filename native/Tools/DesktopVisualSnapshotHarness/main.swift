@@ -276,6 +276,11 @@ struct DesktopVisualSnapshotHarness {
     }
 
     /// Bitmap dual-stack extras using **only** StatusItemRendering APIs.
+    ///
+    /// QI stage paints a **menu-bar-like solid** under the strip so Light
+    /// `labelColor` (near-black) is readable (clear fill → blank PNG). Template
+    /// icons are tinted with label color (same as NSStatusItem template path).
+    /// Cell width is measured from dual-stack title so `100%` stays one line.
     @MainActor
     private static func captureStatusItemRendering(
         fixture: QIFixture,
@@ -283,20 +288,61 @@ struct DesktopVisualSnapshotHarness {
         appearance: NSAppearance.Name
     ) {
         let rows = fixture.glanceRows
-        let iconSize: CGFloat = 16
-        let cellW: CGFloat = 52
-        let height: CGFloat = 36
-        let width = CGFloat(rows.count) * cellW + 16
-        let size = NSSize(width: width, height: height)
+        let iconSize: CGFloat = 14
+        let height: CGFloat = 28
+        let padX: CGFloat = 8
+        let gapIconText: CGFloat = 3
+        let cellPad: CGFloat = 6
+
+        // Measure cells under the target appearance (fonts + title metrics).
+        var cellWidths: [CGFloat] = []
+        if let nsApp = NSAppearance(named: appearance) {
+            nsApp.performAsCurrentDrawingAppearance {
+                cellWidths = rows.map { row in
+                    let title = StatusItemRendering.title(
+                        barLabel: row.barLabel,
+                        resetLabel: row.resetLabel
+                    )
+                    // Cap height so dual-stack doesn't claim infinite width; measure natural size.
+                    let textSize = title.boundingRect(
+                        with: NSSize(width: 120, height: height),
+                        options: [.usesLineFragmentOrigin, .usesFontLeading]
+                    ).size
+                    // One-line tokens like `100%` need full monospaced width (not 32pt clip).
+                    return max(iconSize + gapIconText + ceil(textSize.width) + cellPad, 56)
+                }
+            }
+        } else {
+            cellWidths = Array(repeating: 64, count: rows.count)
+        }
+
+        let stripW = cellWidths.reduce(0, +) + padX * 2
+        let size = NSSize(width: stripW, height: height)
 
         let image = NSImage(size: size)
         image.lockFocus()
         if let nsApp = NSAppearance(named: appearance) {
             nsApp.performAsCurrentDrawingAppearance {
-                drawStatusStrip(rows: rows, iconSize: iconSize, cellW: cellW, height: height)
+                drawStatusStrip(
+                    rows: rows,
+                    cellWidths: cellWidths,
+                    iconSize: iconSize,
+                    height: height,
+                    padX: padX,
+                    gapIconText: gapIconText,
+                    appearance: appearance
+                )
             }
         } else {
-            drawStatusStrip(rows: rows, iconSize: iconSize, cellW: cellW, height: height)
+            drawStatusStrip(
+                rows: rows,
+                cellWidths: cellWidths,
+                iconSize: iconSize,
+                height: height,
+                padX: padX,
+                gapIconText: gapIconText,
+                appearance: appearance
+            )
         }
         image.unlockFocus()
 
@@ -319,39 +365,69 @@ struct DesktopVisualSnapshotHarness {
     @MainActor
     private static func drawStatusStrip(
         rows: [PresentationStore.GlanceProviderRow],
+        cellWidths: [CGFloat],
         iconSize: CGFloat,
-        cellW: CGFloat,
-        height: CGFloat
+        height: CGFloat,
+        padX: CGFloat,
+        gapIconText: CGFloat,
+        appearance: NSAppearance.Name
     ) {
-        NSColor.clear.setFill()
-        NSRect(x: 0, y: 0, width: CGFloat(rows.count) * cellW + 16, height: height).fill()
+        let stripW = cellWidths.reduce(0, +) + padX * 2
+        let bounds = NSRect(x: 0, y: 0, width: stripW, height: height)
+        // Menu-bar stage — not clear. Light labelColor is near-black; clear → blank PNG.
+        let stage =
+            appearance == .darkAqua
+            ? NSColor(calibratedWhite: 0.14, alpha: 1)
+            : NSColor(calibratedWhite: 0.90, alpha: 1)
+        stage.setFill()
+        bounds.fill()
 
-        var x: CGFloat = 8
-        for row in rows {
+        let label = NSColor.labelColor
+        var x: CGFloat = padX
+        for (index, row) in rows.enumerated() {
+            let cellW = index < cellWidths.count ? cellWidths[index] : 64
             let icon = StatusItemRendering.icon(forIconKey: row.iconKey)
-            let iconRect = NSRect(x: x, y: (height - iconSize) / 2, width: iconSize, height: iconSize)
-            icon.draw(
-                in: iconRect,
-                from: .zero,
-                operation: .sourceOver,
-                fraction: 1.0,
-                respectFlipped: true,
-                hints: [.interpolation: NSImageInterpolation.high]
+            let iconRect = NSRect(
+                x: x,
+                y: (height - iconSize) / 2,
+                width: iconSize,
+                height: iconSize
             )
+            drawTemplateIcon(icon, in: iconRect, tint: label)
 
             let title = StatusItemRendering.title(
                 barLabel: row.barLabel,
                 resetLabel: row.resetLabel
             )
             let textRect = NSRect(
-                x: x + iconSize + 2,
-                y: 2,
-                width: cellW - iconSize - 4,
-                height: height - 4
+                x: x + iconSize + gapIconText,
+                y: 1,
+                width: max(cellW - iconSize - gapIconText - 2, 24),
+                height: height - 2
             )
             title.draw(in: textRect)
             x += cellW
         }
+    }
+
+    /// Draw SF Symbol / template `NSImage` as a solid silhouette (menu-bar style).
+    @MainActor
+    private static func drawTemplateIcon(_ image: NSImage, in rect: NSRect, tint: NSColor) {
+        guard rect.width > 0, rect.height > 0 else { return }
+        let tinted = NSImage(size: rect.size, flipped: false) { drawRect in
+            image.draw(
+                in: drawRect,
+                from: .zero,
+                operation: .sourceOver,
+                fraction: 1.0,
+                respectFlipped: true,
+                hints: [.interpolation: NSImageInterpolation.high]
+            )
+            tint.set()
+            drawRect.fill(using: .sourceAtop)
+            return true
+        }
+        tinted.draw(in: rect)
     }
 
     /// Real `UsageWindowController` NSWindow via CGWindow (sidebar + detail + toolbar).

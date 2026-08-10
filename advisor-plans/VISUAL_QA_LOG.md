@@ -1,7 +1,7 @@
 # VISUAL_QA_LOG — jackin❯ desktop HTML SoT parity
 
 **Date:** 2026-08-10  
-**Verification:** 2026-08-10 goal re-run — L1/L2 green · dual-image §5 Pass (nest mid orange dark+light) · live BLOCKED honest · app RUNNING · 44 unit PASS
+**Verification:** 2026-08-10 status strip fix — Light not blank · icons + dual-stack readable · L1/L2 green · live BLOCKED
 **Branch:** plan/desktop-visual  
 **Toolchain:** Xcode 26.6 (17F113) · Swift 6.3.3  
 **Last full verification re-run:** 2026-08-10 (L1/L2 green · dual-image §5 Pass · live BLOCKED honest)
@@ -13,13 +13,14 @@
 |-----|------------|
 | Healthy severity / CTAs system blue | Phosphor `#5CF07A` / `#0B774E` via `JackinBrand` / `severityTint` default |
 | Nest 57% greenwash | `UsageAccountMiniMeter(percent:severity:)` + a-pct → **warn orange** for mid 57% |
+| status-desktop Light blank | Menu-bar **stage fill** + template icon tint; measured cellW so `100%` one line |
 | Footer / brand / Open Usage | Phosphor chrome (FB1-43 / VS-13 / LG-A9) |
 
 ## Dual-image matrix — required §5 scenes (personal read)
 
 | Scene | Dark | Light | High residual | Color / craft note | Verdict |
 |-------|------|-------|---------------|--------------------|---------|
-| status-desktop | yes | yes | none | template mono dual-stack (FB1-6) | **Pass** (harness) |
+| status-desktop | yes | yes | none | template mono dual-stack + icons; Light stage not blank; `100%` one line | **Pass** (harness) |
 | popover-openai | yes | yes | none | G-P1 full shell; phosphor brand/CTA; ACCOUNT; Open Usage Window | **Pass** (harness) |
 | popover-anthropic | yes | yes | none | same IA; 74% phosphor session | **Pass** (harness) |
 | usage-overview | yes | yes | none | 12% red · 57% orange · 0% empty · 100% phosphor | **Pass** (harness) |

@@ -18,7 +18,7 @@ html_path = "advisor-plans/qi-artifacts/html/status-desktop-dark.png"
 native_path = "advisor-plans/qi-artifacts/native/status-desktop-dark.png"
 capture_tier = "harness"
 verdict = "pass"
-notes = "StatusItemRendering dual-stack bitmap; optional live extras also on disk"
+notes = "StatusItemRendering dual-stack + template icons on menu-bar stage (light not blank; measured cellW for 100%)"
 
 [[scene]]
 id = "status-desktop"
