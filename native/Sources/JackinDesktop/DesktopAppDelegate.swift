@@ -37,6 +37,7 @@ public final class StatusBarController: NSObject {
         super.init()
         popover.behavior = .transient
         popover.animates = true
+        popover.contentSize = PopoverRoot.liveContentSize
         // Liquid Glass popover: clear NSPopover chrome so panel glass refracts
         // the desktop (LG-A1). Host must stay GlassPopoverHostingController.
         let root = PopoverRoot(store: store) { [weak self] surfaceId in

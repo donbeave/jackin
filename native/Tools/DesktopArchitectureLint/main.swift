@@ -39,6 +39,7 @@ struct DesktopArchitectureLint {
         checkUsageWindowToolbarHost(desktopRoot: desktop)
         checkStatusPopoverFocusWiring(desktopRoot: desktop)
         checkStatusContextMenuCraft(desktopRoot: desktop)
+        checkPopoverLiveHeight(desktopRoot: desktop)
         checkPrimaryControlCraft(desktopRoot: desktop)
         checkUsageOverviewGrouping(desktopRoot: desktop)
         checkUsageDetailGrouping(desktopRoot: desktop)
@@ -152,6 +153,26 @@ struct DesktopArchitectureLint {
             print("PASS  status context menu retains enabled rows and Quit separator")
         } else {
             print("FAIL  status context menu must separate Quit from enabled usage actions")
+            exit(1)
+        }
+    }
+
+    /// G-P1/G-P3: live NSPopover must allocate a real scroll viewport.
+    static func checkPopoverLiveHeight(desktopRoot: URL) {
+        let path = desktopRoot.appendingPathComponent("PopoverRoot.swift")
+        guard let text = try? String(contentsOf: path, encoding: .utf8) else {
+            fputs("FAIL  PopoverRoot.swift missing\n", stderr)
+            exit(2)
+        }
+        let controllerPath = desktopRoot.appendingPathComponent("DesktopAppDelegate.swift")
+        let controllerText = try? String(contentsOf: controllerPath, encoding: .utf8)
+        if text.contains("idealHeight: qiFullPlate ? 1600 : 640")
+            && text.contains("liveContentSize = CGSize(width: 416, height: 644)")
+            && controllerText?.contains("popover.contentSize = PopoverRoot.liveContentSize") == true
+        {
+            print("PASS  live popover retains 640 pt quota viewport")
+        } else {
+            print("FAIL  live popover must not collapse quota scroll content")
             exit(1)
         }
     }

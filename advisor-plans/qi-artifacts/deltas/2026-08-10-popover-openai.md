@@ -10,6 +10,7 @@
 |-------|---------------|-----|
 | Fail | G-P3 order hero→**meter**→pace→reset | `PopoverProviderTab.detailBucketBlock` meter before pace |
 | Fail | False pass: three-provider fixture, percentage chips, horizontal metadata, clipped LRC | seven-provider fixture; label-only chips; stacked metadata; full-height plate |
+| Fail | Real NSPopover collapsed quota ScrollView to zero height | controller owns shared 416×644 live content size |
 | Pass | hero→pace→reset→**meter** matches HTML | recapture dual-image |
 
 ## Dual-image
@@ -23,6 +24,7 @@
 | Account selection | Dark bright accent + dark ink; Light deep accent + white ink | same dual-theme token roles | Yes |
 | Metric geometry | 32 pt mono hero; 14 pt padding/radius | same named popover tokens | Yes |
 | Footer CTA | centered phosphor glyph + label | same; no trailing chevron | Yes |
+| Live host viewport | 640 pt bounded scroll shell | shipped NSPopover shows account + quota content | Yes |
 | Session order | 63% → On pace → Resets 2h 14m → meter | same | **Yes** |
 | Weekly order | 57% → 13% deficit → Runs out 2d 17h → Resets 3d → meter | same Rust-backed atomic lines | **Yes** |
 | Spark / LRC | full plate; provider-backed reset-credit text only | same | Yes |

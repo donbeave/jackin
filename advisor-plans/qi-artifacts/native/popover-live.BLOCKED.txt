@@ -1,1 +1,1 @@
-Live popover click BLOCKED on CLT; craft=harness PopoverRoot snaps.
+Physical status-item left-click walkthrough BLOCKED by empty probe/Keychain. Real shipped NSPopover host craft passes in popover-host-openai-{dark,light}.png.

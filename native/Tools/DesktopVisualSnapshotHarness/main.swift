@@ -54,13 +54,21 @@ struct DesktopVisualSnapshotHarness {
         // Fail closed: seven Desktop providers must load official bundled marks
         // (not SF Symbol primary when assets are present). SB-6 / LG-1.
         assertOfficialProviderMarksBundled()
+        let fixture = QIFixture.make()
 
         if CommandLine.arguments.contains("--menu-only") {
             captureContextMenu(path: "\(out)/ctx-menu-dark.png", appearance: .darkAqua)
             return
         }
-
-        let fixture = QIFixture.make()
+        if CommandLine.arguments.contains("--popover-host-only") {
+            captureHostedPopover(
+                fixture: fixture,
+                selection: "codex",
+                path: "\(out)/popover-host-openai-dark.png",
+                appearance: .darkAqua
+            )
+            return
+        }
 
         // ── Dark: full PopoverRoot shell (tab grid + body + footer) ──
         NSApp.appearance = NSAppearance(named: .darkAqua)
@@ -96,7 +104,6 @@ struct DesktopVisualSnapshotHarness {
             path: "\(out)/popover-overview-dark.png",
             appearance: .darkAqua
         )
-
         // Usage detail / overview / nest — shipped detail surfaces
         render(
             ProviderCardView(
@@ -155,6 +162,12 @@ struct DesktopVisualSnapshotHarness {
             path: "\(out)/ctx-menu-dark.png",
             appearance: .darkAqua
         )
+        captureHostedPopover(
+            fixture: fixture,
+            selection: "codex",
+            path: "\(out)/popover-host-openai-dark.png",
+            appearance: .darkAqua
+        )
 
         // Real NSWindow (toolbar + sidebar nest + detail) via UsageWindowController.
         // Prefer CGWindow full-window over NSHostingView NavigationSplitView (sidebar blank offscreen).
@@ -205,6 +218,12 @@ struct DesktopVisualSnapshotHarness {
             selection: nil,
             size: NSSize(width: 430, height: 900),
             path: "\(out)/popover-overview-light.png",
+            appearance: .aqua
+        )
+        captureHostedPopover(
+            fixture: fixture,
+            selection: "codex",
+            path: "\(out)/popover-host-openai-light.png",
             appearance: .aqua
         )
         render(
@@ -309,13 +328,22 @@ struct DesktopVisualSnapshotHarness {
                 ? "STRUCTURAL_INACTIVE"
                 : "ACTIVE_OK"
         }
+        func captureEvidenceLabel(path: String) -> String {
+            let blocked = path.replacingOccurrences(of: ".png", with: ".BLOCKED.txt")
+            return FileManager.default.fileExists(atPath: path)
+                && !FileManager.default.fileExists(atPath: blocked)
+                ? "PASS" : "BLOCKED"
+        }
 
         // Manifest for VISUAL_QA_LOG honesty
         let manifest = """
         # DesktopVisualSnapshotHarness manifest
         out: \(out)
         popover: PopoverRoot (TabGrid + ProviderTab + Footer) via PresentationStore.applyQIFixture
+        popover_host_openai_dark: \(captureEvidenceLabel(path: "\(out)/popover-host-openai-dark.png"))
+        popover_host_openai_light: \(captureEvidenceLabel(path: "\(out)/popover-host-openai-light.png"))
         status: StatusItemRendering.icon + StatusItemRendering.title (AppKit bitmap)
+        ctx_menu_dark: \(captureEvidenceLabel(path: "\(out)/ctx-menu-dark.png"))
         status_live_nsstatusitem: prefer live screencapture when JackinDesktop is running (see VISUAL_QA_LOG)
         usage_window: UsageWindowController CGWindow full (sidebar nest + detail) — not blank NSHostingView split
         usage_detail: ProviderCardView (+ window detail column)
@@ -384,6 +412,89 @@ struct DesktopVisualSnapshotHarness {
             path: path,
             appearance: appearance
         )
+    }
+
+    /// Real transient `NSPopover` using shipped clear hosting controller.
+    @MainActor
+    private static func captureHostedPopover(
+        fixture: QIFixture,
+        selection: String?,
+        path: String,
+        appearance: NSAppearance.Name
+    ) {
+        NSApp.appearance = NSAppearance(named: appearance)
+        NSApp.setActivationPolicy(.regular)
+        let anchor = NSWindow(
+            contentRect: NSRect(x: 360, y: 700, width: 32, height: 24),
+            styleMask: [.borderless],
+            backing: .buffered,
+            defer: false
+        )
+        anchor.isOpaque = false
+        anchor.backgroundColor = .clear
+        anchor.appearance = NSAppearance(named: appearance)
+        let button = NSButton(frame: anchor.contentView?.bounds ?? NSRect(x: 0, y: 0, width: 32, height: 24))
+        button.isBordered = false
+        button.title = ""
+        button.wantsLayer = true
+        button.layer?.backgroundColor = NSColor.clear.cgColor
+        anchor.contentView = button
+        anchor.orderFrontRegardless()
+        anchor.makeKeyAndOrderFront(nil)
+        NSRunningApplication.current.activate(options: [.activateAllWindows])
+        NSApp.activate(ignoringOtherApps: true)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { NSApp.stopModal() }
+        NSApp.runModal(for: anchor)
+
+        let store = makeStore(fixture: fixture, popover: selection, usage: selection)
+        let popover = NSPopover()
+        popover.behavior = .transient
+        popover.animates = false
+        popover.contentSize = PopoverRoot.liveContentSize
+        popover.contentViewController = GlassPopoverHostingController(rootView: PopoverRoot(store: store))
+        popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
+        RunLoop.current.run(until: Date(timeIntervalSinceNow: 0.5))
+
+        guard let window = popover.contentViewController?.view.window else {
+            writeBlockedPlaceholder(path: path, reason: "NSPopover host window missing")
+            popover.performClose(nil)
+            anchor.close()
+            return
+        }
+        window.appearance = NSAppearance(named: appearance)
+        window.isOpaque = false
+        window.backgroundColor = .clear
+        window.hasShadow = false
+        window.layoutIfNeeded()
+        let active = window.isKeyWindow
+        var captured = false
+        for attempt in 0..<3 {
+            if let image = captureWindowViaScreencapture(window: window),
+                !cgImageIsBlank(image),
+                writeCGImagePNG(image, path: path, requireNonBlank: true)
+            {
+                captured = true
+                break
+            }
+            if attempt < 2 {
+                RunLoop.current.run(until: Date(timeIntervalSinceNow: 0.15))
+            }
+        }
+        if !captured, let image = captureFullWindowCGImage(window: window),
+            !cgImageIsBlank(image)
+        {
+            captured = writeCGImagePNG(image, path: path, requireNonBlank: true)
+        }
+        popover.performClose(nil)
+        anchor.close()
+        if captured {
+            let sidecar = path.replacingOccurrences(of: ".png", with: ".BLOCKED.txt")
+            try? FileManager.default.removeItem(atPath: sidecar)
+            print("WROTE \(path) [shipped NSPopover host key=\(active)]")
+        } else {
+            writeBlockedPlaceholder(path: path, reason: "NSPopover window capture failed")
+            print("BLOCKED \(path) [NSPopover window unavailable]")
+        }
     }
 
     /// Bitmap dual-stack extras using **only** StatusItemRendering APIs.
@@ -866,6 +977,8 @@ struct DesktopVisualSnapshotHarness {
         statusMenu.popUp(positioning: nil, at: NSPoint(x: 0, y: host.bounds.maxY), in: host)
         anchor.close()
         if captured {
+            let sidecar = path.replacingOccurrences(of: ".png", with: ".BLOCKED.txt")
+            try? FileManager.default.removeItem(atPath: sidecar)
             print("WROTE \(path) [shipped StatusItemMenu AppKit window]")
         } else {
             writeBlockedPlaceholder(path: path, reason: "StatusItemMenu window not found or blank")

@@ -26,6 +26,8 @@ extension EnvironmentValues {
 }
 
 public struct PopoverRoot: View {
+    public static let liveContentSize = CGSize(width: 416, height: 644)
+
     @ObservedObject public var store: PresentationStore
     public var onOpenUsage: ((String?) -> Void)?
     @Environment(\.popoverQIFullPlate) private var qiFullPlate
@@ -67,7 +69,11 @@ public struct PopoverRoot: View {
         // Craft width aligns with popover.html (~424). Live menu-bar uses a
         // bounded max height + scroll; QI full-plate expands for multi-limit IA.
         .frame(width: 412)
-        .frame(minHeight: 220, maxHeight: qiFullPlate ? 1600 : 640)
+        .frame(
+            minHeight: 220,
+            idealHeight: qiFullPlate ? 1600 : 640,
+            maxHeight: qiFullPlate ? 1600 : 640
+        )
         // Liquid Glass panel — must sit on a clear NSPopover window.
         .background {
             GlassFallbacks.panelSurfaceBackground()

@@ -163,13 +163,31 @@ verdict = "pass"
 notes = "Shipped StatusItemMenu rendered as a real AppKit menu window: three enabled actions, key equivalents, separator before Quit. HTML oracle source: index.html #flow-ctx."
 
 [[scene]]
+id = "popover-host-openai"
+theme = "dark"
+html_path = "advisor-plans/qi-artifacts/html/popover-openai-dark.png"
+native_path = "advisor-plans/qi-artifacts/native/popover-host-openai-dark.png"
+capture_tier = "harness"
+verdict = "pass"
+notes = "Real shipped NSPopover + GlassPopoverHostingController at 416×644; quota scroll viewport visible."
+
+[[scene]]
+id = "popover-host-openai"
+theme = "light"
+html_path = "advisor-plans/qi-artifacts/html/popover-openai-light.png"
+native_path = "advisor-plans/qi-artifacts/native/popover-host-openai-light.png"
+capture_tier = "harness"
+verdict = "pass"
+notes = "Real shipped NSPopover + GlassPopoverHostingController at 416×644; quota scroll viewport visible."
+
+[[scene]]
 id = "popover-live-click"
 theme = "dark"
 html_path = ""
 native_path = ""
 capture_tier = "blocked"
 verdict = "blocked"
-blocked_reason = "Live left-click craft BLOCKED (empty probe/keychain). Fixture harness popover-*-{dark,light} is craft Pass (Session meter CAPSULE_OK tip 30879f31). Focus=StatusPopoverFocus+SoT."
+blocked_reason = "Physical status-item left-click walkthrough BLOCKED (empty probe/keychain). Real NSPopover host craft passes Dark/Light separately; focus wiring passes SoT harness."
 blocked_note_path = "advisor-plans/qi-artifacts/native/popover-live.BLOCKED.txt"
 
 [[scene]]

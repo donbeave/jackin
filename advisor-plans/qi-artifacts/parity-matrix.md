@@ -13,6 +13,7 @@ key/main, window-ID-owned evidence.
 | status-desktop | Pass | Pass | dual-stack template mono |
 | ctx-menu | Pass | N/A | shipped AppKit menu; HTML grouping |
 | popover-openai | Pass | Pass | G-P3 hero→pace→reset→meter |
+| popover-host-openai | Pass | Pass | shipped NSPopover 416×644 viewport |
 | popover-anthropic | Pass | Pass | multi-limit + G-P3 |
 | popover-overview | Pass | Pass | inventory |
 | usage-overview | Pass | Pass | one divided per-account inventory |

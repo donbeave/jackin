@@ -27,6 +27,7 @@ Log: `qi-artifacts/native/desktop-gates.log`
 | status-desktop | Pass | Pass | none | dual-stack mono |
 | ctx-menu | Pass | N/A | none | shipped AppKit menu window |
 | popover-openai | Pass | Pass | none | G-P3 meter-last |
+| popover-host-openai | Pass | Pass | none | shipped NSPopover viewport |
 | popover-anthropic | Pass | Pass | none | multi-limit + G-P3 |
 | popover-overview | Pass | Pass | none | inventory |
 | usage-overview | Pass | Pass | none | component |
@@ -108,6 +109,13 @@ Context-menu re-audit captured the shipped `StatusItemMenu` as a real AppKit
 menu window without Accessibility automation. Pixels exposed a missing separator
 before Quit; native now matches HTML grouping while retaining all three enabled
 actions and ⌘R / ⌘Q equivalents. Physical right-click remains an operator flow.
+
+Real-host popover re-audit bypassed root-view snapshots and captured the shipped
+`NSPopover` plus `GlassPopoverHostingController`. This exposed a zero-height quota
+ScrollView hidden by full-plate fixtures: only chrome and footer were visible.
+`StatusBarController` now owns a shared 416×644 content size. Dark/Light hosted
+captures show the bounded account and quota viewport; physical left-click remains
+an operator flow.
 
 ## Live
 popover-live / ctx-menu **BLOCKED** — SoTParity proves focus/menu.
