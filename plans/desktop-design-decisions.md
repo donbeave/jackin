@@ -648,6 +648,7 @@ jackin = soul   (j❯, phosphor accent, mono metrics, deep canvas tint, optional
 | FB1-25 | % + progress meters: **only 3 colors by status level** (high / medium / low remaining) — **not** per-provider brand colors | CONFIRMED |
 | FB1-26 | Popover craft **almost final** — logos OK; next surface after freeze = **Usage window** | CONFIRMED sequencing |
 | FB1-27 | Status color bands (implementation default until tuned): **high ≥ 40%**, **medium 15–39%**, **low &lt; 15%**, **0% depleted** (grey) | PROPOSED — confirm if needed |
+| FB1-62 | **Meter geometry is 1:1 with Rust `meter_percent`:** fill fraction = percent/100; **0% = empty track** (Apple ProgressView / HIG determinate bar). Never invent a minimum visible sliver when label says `0% left` — that was prototype slop and is forbidden | CONFIRMED |
 | FB1-28 | **Provider strip** stays **centered** (+ horizontal scroll when many) | CONFIRMED |
 | FB1-29 | **Account chips** stick **left** (not centered); horizontal scroll when many | CONFIRMED |
 | FB1-30 | Providers detail must follow **real Rust bucket templates** per surface (OpenAI, Anthropic, Amp, xAI, Kimi, Z.ai, MiniMax) from `usage_bucket_order` / probes — full Capsule-parity fields | CONFIRMED |

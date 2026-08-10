@@ -130,6 +130,20 @@ def main() -> int:
         "Session" in html and "Codex Spark 5-hour" in html and "Codex Spark Weekly" in html,
         "Codex full bucket order incomplete in fixture",
     )
+    # 0% must be empty track — no fake minimum fill (Apple ProgressView).
+    need(
+        "width: 3% !important" not in html and "width:3% !important" not in html,
+        "depleted meters must not force a 3% fake fill sliver",
+    )
+    need(
+        re.search(r"depleted[^>]*>\s*<i[^>]*width:\s*3%", html) is None
+        and 'style="width:3%"' not in html,
+        "inline depleted meter width must be 0%, not 3%",
+    )
+    need(
+        "width: 0% !important" in html or 'width:0%"' in html or "width:0%" in html,
+        "0% empty-track meter mapping missing from prototype",
+    )
 
     usage = html.split('id="usage"', 1)[-1].split('id="glass"', 1)[0]
     for bad in ("$/token", "spend chart", "sparkline", "cost-of-session"):

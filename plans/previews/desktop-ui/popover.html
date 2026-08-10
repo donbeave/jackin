@@ -186,7 +186,8 @@
     }
     .meter.mid > i { background: var(--status-mid); box-shadow: none; }
     .meter.low > i { background: var(--status-low); box-shadow: none; }
-    .meter.depleted > i { background: var(--status-depleted); width: 3% !important; box-shadow: none; }
+    /* 0% = empty track (Apple ProgressView). Never force a fake sliver. */
+    .meter.depleted > i { background: var(--status-depleted); width: 0% !important; box-shadow: none; }
 
     .pct.high, .hero.high { color: var(--status-high); }
     .pct.mid, .hero.mid { color: var(--status-mid); }
@@ -761,7 +762,7 @@
                         <div class="pct zero">0%</div>
                         <button class="btn-icon" type="button">↻</button>
                       </div>
-                      <div class="meter depleted"><i style="width:3%"></i></div>
+                      <div class="meter depleted"><i style="width:0%"></i></div>
                     </div>
                   </div>
                   <div class="group">
@@ -935,14 +936,14 @@
                         <div class="hero" style="color:var(--tertiary)">0% left</div>
                         <div class="hint-pace">Fully used</div>
                         <div class="hint-reset">Resets in 5h · Today, 22:00</div>
-                        <div class="meter depleted" style="height:8px"><i style="width:3%"></i></div>
+                        <div class="meter depleted" style="height:8px"><i style="width:0%"></i></div>
                       </div>
                       <div class="block">
                         <h5>Weekly</h5>
                         <div class="hero" style="color:var(--tertiary)">0% left</div>
                         <div class="hint-pace">Fully used</div>
                         <div class="hint-reset">Resets in 5 days · 17 Aug 2026, 09:00</div>
-                        <div class="meter depleted" style="height:8px"><i style="width:3%"></i></div>
+                        <div class="meter depleted" style="height:8px"><i style="width:0%"></i></div>
                       </div>
                       <div class="block">
                         <h5>Limit Reset Credits</h5>

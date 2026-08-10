@@ -121,7 +121,8 @@
     .meter > i { display: block; height: 100%; border-radius: inherit; background: var(--status-high); }
     .meter.mid > i { background: var(--status-mid); }
     .meter.low > i { background: var(--status-low); }
-    .meter.depleted > i { background: var(--status-depleted); width: 3% !important; }
+    /* 0% = empty track (Apple ProgressView). Never force a fake sliver. */
+    .meter.depleted > i { background: var(--status-depleted); width: 0% !important; }
     .pct { font-family: var(--mono); font-weight: 600; font-variant-numeric: tabular-nums; }
     .pct.high { color: var(--status-high); }
     .pct.mid { color: var(--status-mid); }
@@ -493,7 +494,7 @@
     .win .nav-acct .a-meter.low > i { background: var(--status-low); }
     .win .nav-acct .a-meter.depleted > i {
       background: color-mix(in srgb, var(--label) 28%, transparent);
-      width: 3% !important; min-width: 3px;
+      width: 0% !important;
     }
 
     .win .side-foot {
@@ -807,7 +808,7 @@
                     </div>
                     <div class="a-trail">
                       <span class="a-pct">0%</span>
-                      <div class="a-meter depleted"><i style="width:3%"></i></div>
+                      <div class="a-meter depleted"><i style="width:0%"></i></div>
                     </div>
                   </button>
                 </div>
@@ -1080,7 +1081,7 @@
           <div class="limit">
             <div class="limit-top"><span class="limit-name">OpenAI · alexey@zhokhov.com</span><span class="limit-pct" style="color:var(--tertiary)">0%</span></div>
             <div class="limit-reset">Weekly · Resets in 5d · (17 Aug 2026)</div>
-            <div class="meter depleted"><i style="width:3%"></i></div>
+            <div class="meter depleted"><i style="width:0%"></i></div>
           </div>
           <div class="limit">
             <div class="limit-top"><span class="limit-name">Amp · Free</span><span class="limit-pct high">100%</span></div>
@@ -1151,23 +1152,23 @@
             <div class="limit-top"><span class="limit-name">Session</span><span class="limit-pct" style="color:var(--tertiary)">0% left</span></div>
             <div class="limit-pace">Fully used</div>
             <div class="limit-reset">Resets in 5h</div>
-            <div class="meter depleted"><i style="width:3%"></i></div>
+            <div class="meter depleted"><i style="width:0%"></i></div>
           </div>
           <div class="limit">
             <div class="limit-top"><span class="limit-name">Weekly</span><span class="limit-pct" style="color:var(--tertiary)">0% left</span></div>
             <div class="limit-pace">Fully used</div>
             <div class="limit-reset">Resets in 5d</div>
-            <div class="meter depleted"><i style="width:3%"></i></div>
+            <div class="meter depleted"><i style="width:0%"></i></div>
           </div>
           <div class="limit">
             <div class="limit-top"><span class="limit-name">Codex Spark 5-hour</span><span class="limit-pct" style="color:var(--tertiary)">0% left</span></div>
             <div class="limit-reset">Resets in 5h</div>
-            <div class="meter depleted"><i style="width:3%"></i></div>
+            <div class="meter depleted"><i style="width:0%"></i></div>
           </div>
           <div class="limit">
             <div class="limit-top"><span class="limit-name">Codex Spark Weekly</span><span class="limit-pct" style="color:var(--tertiary)">0% left</span></div>
             <div class="limit-reset">Resets in 5d</div>
-            <div class="meter depleted"><i style="width:3%"></i></div>
+            <div class="meter depleted"><i style="width:0%"></i></div>
           </div>
           <div class="limit bound">
             <div class="limit-top"><span class="limit-name">Limit Reset Credits</span><span class="limit-pct">0 manual resets available</span></div>

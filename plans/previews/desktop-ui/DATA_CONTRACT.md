@@ -53,7 +53,7 @@ not re-derive %.
 | Pace lines | Flattened pace segments (`" · "` split) |
 | Reset line | `reset_label` alone (trailing) |
 | Bound-only row | e.g. Amp Credits `$4.76`, Limit Reset Credits text — **no glance %** |
-| Meter | `meter_percent` from `usage_bucket_presentation` |
+| Meter | `meter_percent` from `usage_bucket_presentation` | **1:1 geometry** — fill fraction = `meter_percent / 100`. **0% = empty track** (Apple ProgressView / HIG determinate bar). Never invent a minimum sliver when text says `0% left`. |
 
 ### Codex bucket order (labels)
 

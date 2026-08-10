@@ -75,14 +75,17 @@ struct ProviderCardView: View {
             Text(row.label)
                 .font(.subheadline.weight(.semibold))
             if let meter = row.meterPercent {
-                // Geometry from Rust only; color from severity (3 status levels).
+                // Geometry from Rust only (1:1). 0% = empty track (Apple ProgressView),
+                // never a fake minimum sliver — that fights "0% left" copy.
                 let frac = Double(meter) / 100.0
                 GeometryReader { geo in
                     ZStack(alignment: .leading) {
                         Capsule().fill(Color.primary.opacity(0.10))
-                        Capsule()
-                            .fill(severityTint(row.severity))
-                            .frame(width: max(3, geo.size.width * frac))
+                        if frac > 0 {
+                            Capsule()
+                                .fill(severityTint(row.severity))
+                                .frame(width: geo.size.width * frac)
+                        }
                     }
                 }
                 .frame(height: 5)
