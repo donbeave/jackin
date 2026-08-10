@@ -1,8 +1,9 @@
 # Master plan: jackin❯ desktop UI parity with HTML design SoT
 
-**Mode:** planning only (this document). Implementation starts only after operator freezes this plan.  
-**Planned at:** commit `f4ec1247` (`plan/desktop-visual`), 2026-08-10.  
-**Product:** jackin❯ desktop — native macOS menu-bar app under `native/`.
+**Mode:** planning only until operator freezes this plan + QI playbook.  
+**Planned at:** commit `f4ec1247` (foundations); plan docs advanced for QI on 2026-08-10.  
+**Product:** jackin❯ desktop — native macOS menu-bar app under `native/`.  
+**QI playbook (required reading):** [QI_VERIFICATION.md](./QI_VERIFICATION.md) — screenshots, multimodal compare, `/goal` loop.
 
 ---
 
@@ -17,9 +18,16 @@ Ship a **native** status bar + glance popover + Usage window whose **look, feel,
 | **Right-click** | Enabled menu: Open Usage Window · Refresh · Quit jackin❯ desktop |
 | **Usage window** | Real unified NSToolbar; floating glass sidebar; provider = identity; accounts nest with progress; detail = full Rust presentation; Open usage page; structured Limit Reset Credits |
 
-**Success definition:** side-by-side review (HTML hub in Safari + running app on macOS Tahoe) passes the **Visual acceptance matrix** (§6). Automated gates (§7) stay green. No limits-only violations. Glass only via `GlassFallbacks`.
+**Success definition:**
 
-**Not success:** “code paths exist” while popover/Usage still look generic vs HTML; structural harness green without operator visual QA when a Mac with Xcode is available.
+1. **QI complete** per [QI_VERIFICATION.md](./QI_VERIFICATION.md) (L1–L4): HTML baselines + native captures + structured multimodal deltas + interaction walkthroughs.  
+2. **Visual acceptance matrix** (§6) Dark+Light has no High fails.  
+3. **Automated gates** (§7) stay green.  
+4. Limits-only + GlassFallbacks-only glass hold.
+
+**Not success:** harness green without screenshot/multimodal parity work when a GUI Mac is available; “code paths exist” while popover/Usage still look generic vs HTML.
+
+**Primary consumer of this plan:** a `/goal` agent that implements **and** self-verifies design fidelity using the QI playbook — not a human-only review process.
 
 ---
 
@@ -38,16 +46,22 @@ Read top-down. Later rows refine earlier ones; they do not override CONFIRMED pr
 | 7 | `plans/previews/desktop-ui/OFFICIAL_USAGE_URLS.md` | Browser “Open usage page” URLs |
 | 8 | `plans/previews/desktop-ui/AGENT_HANDOFF.md` | Token map CSS → Swift + agent checklist |
 | 9 | `plans/previews/desktop-ui/check_usage_liquid_glass.py` | Structural invariants (must stay PASS) |
+| 10 | [QI_VERIFICATION.md](./QI_VERIFICATION.md) | **How agents prove** look/feel parity (QI) |
 
-### How an implementer uses HTML as “How To Check”
+### How an implementer / `/goal` agent uses HTML as “How To Check”
 
 1. Open `index.html` in Safari (Dark + Light). Toggle panels: **Status interactions** · **Usage window** · **Liquid Glass check**.  
 2. Open `popover.html` standalone and via hub left-click embed.  
-3. Build and run **JackinDesktop.app** on the same machine when possible.  
-4. For each row in §6, mark **Pass / Fail / N/A (system chrome)** with a short note. Fail = remaining plan work.  
-5. Re-run automated gates (§7) after every code change (**build → check → fix → build**).
+3. **Capture HTML baselines** for scenes in QI §5 (Playwright or `screencapture`) — these are the visual oracle images.  
+4. Build and run **JackinDesktop.app** when Xcode/GUI allows; capture native scenes.  
+5. **Multimodal compare** (agent vision on both PNGs) → structured delta file mapped to Gap IDs.  
+6. Implement only those deltas; re-capture native; deltas must shrink.  
+7. After each code change: **L1+L2 automated gates** (§7) before more visual work.  
+8. Fill **VISUAL_QA_LOG** + delta trail until §6 matrix Pass.
 
-**System chrome honesty:** The real menu bar (, Control Center, clock) is owned by macOS. HTML mocks it for layout education. Native **must not** draw a fake in-window system menu bar. Parity means correct *use* of NSStatusItem + activation policy, not cloning  pixels.
+Full capture recipes, scene catalog, anti-patterns, and the **build → check → fix** loop: **[QI_VERIFICATION.md](./QI_VERIFICATION.md)**.
+
+**System chrome honesty:** The real menu bar (, Control Center, clock) is owned by macOS. HTML mocks it for layout education. Native **must not** draw a fake in-window system menu bar. Parity means correct *use* of NSStatusItem + activation policy, not cloning  pixels. QI marks those elements **N/A (system)**.
 
 ---
 
@@ -191,64 +205,72 @@ swift run -c release StatusItemChipHarness
 
 ---
 
-## 8. Implementation phases (ordered — design parity loop)
+## 8. Implementation phases (ordered — design parity + QI loop)
 
-Each phase ends only when: automated gates green **and** relevant §6 checks Pass (or N/A with reason).
+Each phase ends only when: **QI L1–L4** for that phase’s scenes pass (see QI_VERIFICATION §2, §9) **and** relevant §6 checks Pass (or N/A with reason). Harness-only green is **not** phase exit.
 
 ### Phase A — Freeze & re-baseline (no product redesign)
 
-1. Confirm HEAD and open HTML hub + popover (dark/light).  
-2. Fill residual gap table §5 with **Pass / Fail** against current app if runnable; else mark Fail as “code review only.”  
-3. Update this master plan’s §4/§5 if reality drifted — do not invent new product direction.
+1. Confirm HEAD; open HTML hub + popover (dark/light).  
+2. Capture **HTML baselines** for QI scene catalog (QI §5–§6).  
+3. Fill residual gap table §5 with **Pass / Fail** against current app if runnable; else “code review only.”  
+4. Operator freezes this plan + QI playbook for `/goal`.
 
-**Exit:** Written gap table; operator agrees which Fails are in scope for next sprint.
+**Exit:** Baselines exist; gap table written; freeze ack.
 
 ### Phase B — Status bar & interactions (feel first)
 
-**Oracle:** `index.html` status desktop + `MACOS_CHROME_REFERENCES.md`.
+**Oracle:** `index.html` status desktop + `MACOS_CHROME_REFERENCES.md`.  
+**QI scenes:** `status-desktop`, `ctx-menu`, popover focus flows.
 
 1. Dual-stack density vs HTML (font size, spacing, template).  
-2. Left-click focus (re-verify G-S2).  
-3. Right-click menu (G-S3).  
-4. Accessory-only: no custom app menus required when no windows.
+2. Left-click focus (re-verify G-S2) + multimodal if popover opens.  
+3. Right-click menu (G-S3) + capture.  
+4. Accessory-only behavior.  
+5. **QI loop** until §6.1 Pass (capture → multimodal → fix).
 
-**Exit:** §6.1 all Pass.
+**Exit:** §6.1 all Pass + delta files Verdict Pass.
 
 ### Phase C — Glance popover craft = `popover.html`
 
-**Oracle:** `popover.html` end-to-end.
+**Oracle:** `popover.html` end-to-end.  
+**QI scenes:** `popover-overview`, `popover-openai`, `popover-anthropic`, `popover-multi-acct`.
 
 1. Shell translucency + soft edges + single shadow.  
 2. Sticky / top chrome + provider strip selection craft.  
 3. Account secondary system.  
 4. Bucket presentation (detailPresentation), Limit Reset, meters 0% empty.  
 5. Footer glass Refresh.  
-6. Open usage page + Open Usage window.
+6. Open usage page + Open Usage window.  
+7. **QI loop** per scene dark+light (HTML baseline ↔ native or hosted SwiftUI snapshot).
 
-**Exit:** §6.2 all Pass on dark + light.
+**Exit:** §6.2 all Pass on dark + light + QI artifacts.
 
 ### Phase D — Usage window craft = `index.html` Usage
 
-**Oracle:** Usage panel in `index.html`.
+**Oracle:** Usage panel in `index.html`.  
+**QI scenes:** `usage-overview`, `usage-provider-nest`, `usage-detail-openai`, `usage-toolbar`.
 
 1. Unified NSToolbar visual (title, Refresh placement).  
 2. Floating glass sidebar vs content.  
 3. Provider identity / account nest / meters.  
 4. Overview inventory cards.  
 5. Detail limit-list + meta + Open usage + Limit Reset.  
-6. Regular activation + main menu presence.
+6. Regular activation + main menu presence.  
+7. **QI loop** per scene dark+light.
 
-**Exit:** §6.3 all Pass on dark + light.
+**Exit:** §6.3 all Pass on dark + light + QI artifacts.
 
 ### Phase E — Cross-cutting polish & lock
 
 1. Token map audit (AGENT_HANDOFF) — phosphor only on selection/CTA/high metrics/j❯.  
 2. DATA_CONTRACT fixture consistency.  
 3. Harness extensions only for **regressions that broke §6** (no harness-only design).  
-4. VISUAL_QA_LOG filled Pass across matrix.  
-5. Optional: screenshots attached to PR (not required for freeze).
+4. Full VISUAL_QA_LOG + all High deltas closed.  
+5. Optional: Playwright HTML baseline suite + SwiftUI snapshot tests committed for regression.  
+6. Operator and/or agent sign-off.
 
-**Exit:** Operator signs off “HTML SoT parity achieved” for the three surfaces.
+**Exit:** “HTML SoT parity achieved” for the three surfaces with evidence trail.
 
 ---
 
@@ -281,7 +303,9 @@ Each phase ends only when: automated gates green **and** relevant §6 checks Pas
 
 ---
 
-## 10. VISUAL_QA_LOG template (create when implementing)
+## 10. VISUAL_QA_LOG + `/goal` launch
+
+### 10.1 VISUAL_QA_LOG template (create when implementing)
 
 File: `advisor-plans/VISUAL_QA_LOG.md`
 
@@ -289,13 +313,52 @@ File: `advisor-plans/VISUAL_QA_LOG.md`
 # Visual QA log — jackin❯ desktop vs HTML SoT
 
 Date: YYYY-MM-DD · App build: <commit> · macOS: <version> · Themes: Dark / Light
+QI artifacts: advisor-plans/qi-artifacts/ or goal scratch path
 
-| ID | Check | Dark | Light | Notes |
-|----|-------|------|-------|-------|
-| G-S1 | … | Pass/Fail | Pass/Fail | |
-…
+## Matrix
+| ID | Check | Dark | Light | Evidence (png/delta) | Notes |
+|----|-------|------|-------|----------------------|-------|
+| G-S1 | … | Pass/Fail | Pass/Fail | … | |
 
-Operator sign-off: ____________________
+## Interactions
+| Flow | Result | Notes |
+|------|--------|-------|
+| Status left-click focus | Pass/Fail | |
+
+## Multimodal deltas closed
+- path/to/delta.md → Verdict Pass
+
+Agent sign-off: ____________________
+Operator sign-off (if available): ____________________
+```
+
+### 10.2 Ready-to-paste `/goal` prompt
+
+```
+Implement jackin❯ desktop UI parity.
+
+Program of record:
+- advisor-plans/UI_PARITY_MASTER.md
+- advisor-plans/QI_VERIFICATION.md   ← mandatory QI (screenshots + multimodal)
+
+Oracle (visual + IA):
+- plans/previews/desktop-ui/index.html
+- plans/previews/desktop-ui/popover.html
+- plans/desktop-design-decisions.md (CONFIRMED FB1/LG-A)
+
+Method:
+1. Capture HTML baselines for QI scene catalog (dark+light).
+2. Phase B → C → D: smallest fixes toward Gap IDs.
+3. After every change: L1 HTML structural check + native harnesses.
+4. Capture native (or SwiftUI snapshot); read_file both images; write structured delta.
+5. Fix until High deltas are gone; mark VISUAL_QA_LOG Pass.
+6. Phase E: lock harnesses + sign-off.
+
+Do NOT: invent design; invert oracle (HTML→match bad native); glass chips on status bar;
+fake system  bar; invent usage %; skip QI when GUI Mac is available.
+
+Evidence: qi-artifacts (html/, native/, deltas/), harness logs, VISUAL_QA_LOG.md.
+Brand: jackin❯ desktop. Glass only GlassFallbacks. Limits only.
 ```
 
 ---

@@ -10,9 +10,12 @@ Advisor-produced plans and decision records for jackin❯ (improve skill).
 | [previews/desktop-ui/popover.html](./previews/desktop-ui/popover.html) | Full popover + bar craft reference | Active |
 | [previews/desktop-ui/AGENT_HANDOFF.md](./previews/desktop-ui/AGENT_HANDOFF.md) | How implementer agents use HTML + tokens for predictable native Swift | Active |
 
-**UI parity program (design-first):** [`../advisor-plans/UI_PARITY_MASTER.md`](../advisor-plans/UI_PARITY_MASTER.md)  
-Index: [`../advisor-plans/README.md`](../advisor-plans/README.md).  
-HTML + decisions in this tree remain the visual/product SoT — do not replace them with code-only plans.
+**UI parity program (design-first):**  
+- Master: [`../advisor-plans/UI_PARITY_MASTER.md`](../advisor-plans/UI_PARITY_MASTER.md)  
+- **QI verification (screenshots / multimodal / `/goal` loop):** [`../advisor-plans/QI_VERIFICATION.md`](../advisor-plans/QI_VERIFICATION.md)  
+- Index: [`../advisor-plans/README.md`](../advisor-plans/README.md)  
+
+HTML + decisions in this tree remain the visual/product SoT — agents implement toward them and **prove** parity with QI, not harness-only.
 
 ### `/goal` / implementer agents
 

@@ -1,20 +1,22 @@
 # Plans — jackin❯ desktop UI parity (design-first)
 
 **Active program of record:** **[UI_PARITY_MASTER.md](./UI_PARITY_MASTER.md)**  
-Stamp: planned against **`f4ec1247`**. Focus: **look / feel / IA / interactions** vs HTML SoT.
+**QI (how agents prove parity):** **[QI_VERIFICATION.md](./QI_VERIFICATION.md)**  
+Stamp: foundations **`f4ec1247`**; plan+QI docs current on branch. Focus: **look / feel / IA / interactions** vs HTML SoT.
 
-> **Do not start large implementation until the operator freezes `UI_PARITY_MASTER.md`.**  
-> Foundations already in the tree (status focus, popover path, Usage nest, harnesses) are a baseline — not the end of visual parity.
+> **Do not start large implementation until the operator freezes the master plan + QI playbook.**  
+> Foundations in the tree are a baseline — **visual parity requires the QI loop** (baselines, screenshots, multimodal deltas), not harness-only green.
 
 ---
 
-## Read order (implementer / reviewer)
+## Read order (implementer / `/goal` agent / reviewer)
 
-1. [UI_PARITY_MASTER.md](./UI_PARITY_MASTER.md) — goal, oracle hierarchy, residual gaps, visual matrix, phases  
-2. HTML: `plans/previews/desktop-ui/index.html` + `popover.html` (Dark + Light)  
-3. `plans/previews/desktop-ui/MACOS_CHROME_REFERENCES.md`  
-4. `plans/desktop-design-decisions.md` (CONFIRMED FB1 / LG-A)  
-5. Micro-plans 001–005 below only if a **foundation regresses**
+1. [UI_PARITY_MASTER.md](./UI_PARITY_MASTER.md) — goal, oracle, residual gaps, matrix, phases, `/goal` paste  
+2. [QI_VERIFICATION.md](./QI_VERIFICATION.md) — **detailed integration verification** (pyramid, capture, multimodal, anti-patterns)  
+3. HTML: `plans/previews/desktop-ui/index.html` + `popover.html` (Dark + Light)  
+4. `plans/previews/desktop-ui/MACOS_CHROME_REFERENCES.md`  
+5. `plans/desktop-design-decisions.md` (CONFIRMED FB1 / LG-A)  
+6. Micro-plans 001–005 only if a **foundation regresses**
 
 ---
 
