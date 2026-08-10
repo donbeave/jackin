@@ -1,28 +1,28 @@
-# Parity matrix — plan/desktop-visual (2026-08-10 verification re-run)
+# Parity matrix — plan/desktop-visual (goal re-verify)
 
-## Criteria 1 — status / popover / menu
+## C1 status/popover/menu
 | Item | Status | Evidence |
 |------|--------|----------|
-| Template mono dual-stack | Pass | status-desktop harness PNG + StatusItemChipHarness |
-| Full G-P1 popover | Pass | popover-openai/anthropic dual-image (brand·mode·strip·ACCOUNT·SESSION·Open Usage Window) |
-| Left-click focus | Pass | StatusPopoverFocus + DesktopSoTParityHarness |
-| Right-click 3 rows | Pass | SoT ×3; live PNG BLOCKED |
-| Live multi-provider / live popover PNG | BLOCKED | popover-live.BLOCKED.txt |
+| Template mono dual-stack | Pass | status-desktop harness |
+| Full G-P1 popover | Pass | popover-openai/anthropic dual-image |
+| Left-click focus | Pass | StatusPopoverFocus + SoT |
+| Right-click 3 rows | Pass | SoT; live PNG BLOCKED |
+| Live popover/ctx | BLOCKED | *.BLOCKED.txt empty probe/A11y |
 
-## Criteria 2 — Usage window
+## C2 Usage
 | Item | Status | Evidence |
 |------|--------|----------|
-| Real NSToolbar | Pass | usage-toolbar + usage-window CGWindow |
-| Provider ≠ account nest | Pass | nest dual-image; 57% mid orange |
+| NSToolbar host | Pass | usage-toolbar + usage-window CGWindow |
+| Provider≠account nest | Pass | nest 57% mid orange dual-image |
 | Meter 1:1 / 0% empty | Pass | SoT + PNGs |
-| Open usage + Limit Reset | Pass | usage-detail dual-image |
+| Open usage + Limit Reset | Pass | usage-detail |
 
-## Criteria 3 — product / glass / color
+## C3 product/glass/color
 | Item | Status | Evidence |
 |------|--------|----------|
-| glassEffect only GlassFallbacks | Pass | ArchLint + glass-and-limits-grep |
-| Limits only | Pass | no spend/sparkline strings |
-| Phosphor healthy / mid orange 57% | Pass | BrandColors + nest severity dual-image |
+| glass only GlassFallbacks | Pass | ArchLint + grep |
+| Limits only | Pass | no spend strings |
+| Phosphor healthy / mid orange | Pass | BrandColors + nest severity |
 
 ## High residual
-None on required §5 harness craft. Live popover/ctx honest BLOCKED.
+None on §5 harness craft. Live interaction PNGs honest BLOCKED.

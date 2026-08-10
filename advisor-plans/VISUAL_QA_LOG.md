@@ -1,6 +1,7 @@
 # VISUAL_QA_LOG — jackin❯ desktop HTML SoT parity
 
 **Date:** 2026-08-10  
+**Verification:** 2026-08-10 goal re-run — L1/L2 green · dual-image §5 Pass (nest mid orange dark+light) · live BLOCKED honest · app RUNNING · 44 unit PASS
 **Branch:** plan/desktop-visual  
 **Toolchain:** Xcode 26.6 (17F113) · Swift 6.3.3  
 **Last full verification re-run:** 2026-08-10 (L1/L2 green · dual-image §5 Pass · live BLOCKED honest)
