@@ -119,7 +119,7 @@ html_path = "advisor-plans/qi-artifacts/html/usage-toolbar-dark.png"
 native_path = "advisor-plans/qi-artifacts/native/usage-toolbar-dark.png"
 capture_tier = "harness"
 verdict = "pass"
-notes = "UsageWindowController CGWindow titlebar crop"
+notes = "UsageWindowController real NSToolbar titlebar crop; harness rejects blank CGWindow"
 
 [[scene]]
 id = "usage-toolbar"

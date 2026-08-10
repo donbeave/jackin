@@ -1,7 +1,7 @@
 # VISUAL_QA_LOG — jackin❯ desktop HTML SoT parity
 
 **Date:** 2026-08-10  
-**Verification:** 2026-08-10 status strip fix — Light not blank · icons + dual-stack readable · L1/L2 green · live BLOCKED
+**Verification:** 2026-08-10 window/toolbar non-blank gate — usage-window + toolbar pixel-proof OK · status strip OK · live BLOCKED
 **Branch:** plan/desktop-visual  
 **Toolchain:** Xcode 26.6 (17F113) · Swift 6.3.3  
 **Last full verification re-run:** 2026-08-10 (L1/L2 green · dual-image §5 Pass · live BLOCKED honest)
@@ -14,6 +14,7 @@
 | Healthy severity / CTAs system blue | Phosphor `#5CF07A` / `#0B774E` via `JackinBrand` / `severityTint` default |
 | Nest 57% greenwash | `UsageAccountMiniMeter(percent:severity:)` + a-pct → **warn orange** for mid 57% |
 | status-desktop Light blank | Menu-bar **stage fill** + template icon tint; measured cellW so `100%` one line |
+| usage-toolbar/window pure black | CGWindow blank rejected; cascade + restore non-blank CGWindow craft PNGs |
 | Footer / brand / Open Usage | Phosphor chrome (FB1-43 / VS-13 / LG-A9) |
 
 ## Dual-image matrix — required §5 scenes (personal read)

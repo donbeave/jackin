@@ -459,57 +459,119 @@ struct DesktopVisualSnapshotHarness {
             return false
         }
 
+        // Accessory→regular so titlebar/toolbar composites (matches live app path).
+        NSApp.setActivationPolicy(.regular)
         window.setFrame(NSRect(x: 80, y: 80, width: 920, height: 620), display: true)
         window.orderFrontRegardless()
         window.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
         window.layoutIfNeeded()
         window.contentViewController?.view.layoutSubtreeIfNeeded()
-        // Allow NavigationSplitView + toolbar to materialize before CGWindow grab.
-        RunLoop.current.run(until: Date(timeIntervalSinceNow: 0.45))
+        // Allow NavigationSplitView + toolbar to materialize before capture.
+        RunLoop.current.run(until: Date(timeIntervalSinceNow: 0.65))
+        window.contentViewController?.view.layoutSubtreeIfNeeded()
+        RunLoop.current.run(until: Date(timeIntervalSinceNow: 0.15))
 
-        guard let full = captureFullWindowImage(window: window) else {
+        guard let full = captureWindowImageNonBlank(window: window) else {
             writeBlockedPlaceholder(
                 path: fullPath,
-                reason: "CGWindow full-window capture unavailable"
+                reason: "window capture blank or unavailable (CGWindow/view bitmap)"
             )
             if let toolbarPath {
                 writeBlockedPlaceholder(
                     path: toolbarPath,
-                    reason: "CGWindow full-window capture unavailable"
+                    reason: "window capture blank or unavailable (CGWindow/view bitmap)"
                 )
             }
-            print("BLOCKED \(fullPath) [CGWindow]")
+            print("BLOCKED \(fullPath) [blank-or-missing window capture]")
             controller.invalidate()
+            NSApp.setActivationPolicy(.prohibited)
             return false
         }
 
-        // Full window PNG
-        if !writeCGImagePNG(full, path: fullPath) {
+        // Full window PNG — reject all-black before write.
+        if !writeCGImagePNG(full, path: fullPath, requireNonBlank: true) {
+            writeBlockedPlaceholder(path: fullPath, reason: "full window PNG encode/blank")
+            if let toolbarPath {
+                writeBlockedPlaceholder(path: toolbarPath, reason: "full window PNG encode/blank")
+            }
             controller.invalidate()
+            NSApp.setActivationPolicy(.prohibited)
             return false
         }
-        print("WROTE \(fullPath) [UsageWindowController full CGWindow]")
+        print("WROTE \(fullPath) [UsageWindowController window capture]")
 
-        // Titlebar/toolbar band crop
+        // Titlebar/toolbar band crop (CGImage y=0 is top in this bitmap path).
         if let toolbarPath {
             let scale = CGFloat(full.width) / max(window.frame.width, 1)
             let bandPx = max(1, Int((56 * scale).rounded()))
             let cropH = min(bandPx, full.height)
             if let band = full.cropping(to: CGRect(x: 0, y: 0, width: full.width, height: cropH)),
-                writeCGImagePNG(band, path: toolbarPath)
+                writeCGImagePNG(band, path: toolbarPath, requireNonBlank: true)
             {
                 print("WROTE \(toolbarPath) [UsageWindowController titlebar crop]")
             } else {
-                writeBlockedPlaceholder(path: toolbarPath, reason: "titlebar crop failed")
+                writeBlockedPlaceholder(
+                    path: toolbarPath,
+                    reason: "titlebar crop blank or failed"
+                )
             }
         }
 
         controller.invalidate()
+        NSApp.setActivationPolicy(.prohibited)
         return true
     }
 
+    /// Prefer CGWindow; reject pure-black buffers (Screen Recording denial).
+    /// Next: `screencapture -l` (often works when CGWindow returns black).
+    /// Last: theme-frame `cacheDisplay` (may blank Liquid Glass sidebar — only if non-blank overall).
     @MainActor
-    private static func captureFullWindowImage(window: NSWindow) -> CGImage? {
+    private static func captureWindowImageNonBlank(window: NSWindow) -> CGImage? {
+        if let cg = captureFullWindowCGImage(window: window), !cgImageIsBlank(cg) {
+            return cg
+        }
+        fputs("WARN CGWindow blank/unavailable — trying screencapture -l\n", stderr)
+        if let sc = captureWindowViaScreencapture(window: window), !cgImageIsBlank(sc) {
+            return sc
+        }
+        fputs("WARN screencapture -l failed — trying view bitmap\n", stderr)
+        if let viewImg = captureWindowViaViewBitmap(window: window), !cgImageIsBlank(viewImg) {
+            // View bitmap can white-out glass sidebar; still better than pure black.
+            return viewImg
+        }
+        return nil
+    }
+
+    /// macOS `screencapture -l <windowID>` — captures real window pixels.
+    @MainActor
+    private static func captureWindowViaScreencapture(window: NSWindow) -> CGImage? {
+        let windowId = window.windowNumber
+        guard windowId > 0 else { return nil }
+        let tmp = FileManager.default.temporaryDirectory
+            .appendingPathComponent("jackin-qi-win-\(windowId).png")
+        let proc = Process()
+        proc.executableURL = URL(fileURLWithPath: "/usr/sbin/screencapture")
+        proc.arguments = ["-x", "-l", String(windowId), tmp.path]
+        do {
+            try proc.run()
+            proc.waitUntilExit()
+        } catch {
+            return nil
+        }
+        guard proc.terminationStatus == 0,
+              let img = NSImage(contentsOf: tmp),
+              let cg = img.cgImage(forProposedRect: nil, context: nil, hints: nil)
+        else {
+            try? FileManager.default.removeItem(at: tmp)
+            return nil
+        }
+        try? FileManager.default.removeItem(at: tmp)
+        return cg
+    }
+
+    @MainActor
+    private static func captureFullWindowCGImage(window: NSWindow) -> CGImage? {
         let windowId = CGWindowID(window.windowNumber)
         guard windowId != 0 else { return nil }
         return CGWindowListCreateImage(
@@ -520,7 +582,74 @@ struct DesktopVisualSnapshotHarness {
         )
     }
 
-    private static func writeCGImagePNG(_ image: CGImage, path: String) -> Bool {
+    /// Bitmap the window's theme frame (titlebar + content) without Screen Recording.
+    @MainActor
+    private static func captureWindowViaViewBitmap(window: NSWindow) -> CGImage? {
+        // Walk to NSThemeFrame when present so the unified toolbar is included.
+        var view: NSView? = window.contentView
+        while let superview = view?.superview {
+            view = superview
+        }
+        guard let root = view ?? window.contentView else { return nil }
+        root.layoutSubtreeIfNeeded()
+        let bounds = root.bounds
+        guard bounds.width > 1, bounds.height > 1 else { return nil }
+        guard let rep = root.bitmapImageRepForCachingDisplay(in: bounds) else { return nil }
+        root.cacheDisplay(in: bounds, to: rep)
+        return rep.cgImage
+    }
+
+    /// True when nearly all samples are near-black (failed CGWindow permission).
+    private static func cgImageIsBlank(_ image: CGImage, sampleStep: Int = 8) -> Bool {
+        let w = image.width
+        let h = image.height
+        guard w > 0, h > 0 else { return true }
+        let bytesPerPixel = 4
+        let bytesPerRow = w * bytesPerPixel
+        var data = [UInt8](repeating: 0, count: h * bytesPerRow)
+        guard let ctx = CGContext(
+            data: &data,
+            width: w,
+            height: h,
+            bitsPerComponent: 8,
+            bytesPerRow: bytesPerRow,
+            space: CGColorSpaceCreateDeviceRGB(),
+            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+        ) else {
+            return true
+        }
+        ctx.draw(image, in: CGRect(x: 0, y: 0, width: w, height: h))
+        var bright = 0
+        var total = 0
+        let step = max(1, sampleStep)
+        var y = 0
+        while y < h {
+            var x = 0
+            while x < w {
+                let i = y * bytesPerRow + x * bytesPerPixel
+                let r = data[i]
+                let g = data[i + 1]
+                let b = data[i + 2]
+                total += 1
+                if max(r, g, b) > 12 { bright += 1 }
+                x += step
+            }
+            y += step
+        }
+        guard total > 0 else { return true }
+        // Blank if fewer than 0.5% of samples exceed near-black.
+        return Double(bright) / Double(total) < 0.005
+    }
+
+    private static func writeCGImagePNG(
+        _ image: CGImage,
+        path: String,
+        requireNonBlank: Bool = false
+    ) -> Bool {
+        if requireNonBlank, cgImageIsBlank(image) {
+            fputs("FAIL blank CGImage rejected for \(path)\n", stderr)
+            return false
+        }
         let rep = NSBitmapImageRep(cgImage: image)
         guard let png = rep.representation(using: .png, properties: [:]) else {
             fputs("FAIL png encode \(path)\n", stderr)
