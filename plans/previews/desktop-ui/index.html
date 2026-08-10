@@ -130,39 +130,101 @@
     .pct.zero { color: var(--tertiary); }
 
     /*
-      System menu-bar status items — native NSStatusItem craft (FB1-6).
-      Full-width strip, template mono, no glass chips / brand plates / fake panels.
-      Dual stack = compact reset (top) + barLabel % (bottom).
+      Full desktop scene — system menu bar is EDGE of the display, not a window chrome.
+      HIG: Apple menu (leading) · app menus (when .regular) · extras trailing
+      (status items → Control Center → clock). Tahoe: transparent menu bar over wallpaper.
+      Refs: developer.apple.com/design/human-interface-guidelines/the-menu-bar
     */
-    .menubar {
+    .desktop {
+      position: relative;
+      width: min(980px, 100%);
+      margin: 0 auto;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 0.5px solid color-mix(in srgb, var(--separator) 80%, transparent);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+      background: var(--stage-bg);
+    }
+    .desktop-wall {
+      position: relative;
+      min-height: 560px;
+      padding: 28px 20px 36px;
+      background:
+        radial-gradient(ellipse 70% 50% at 20% 20%, color-mix(in srgb, var(--jk) 16%, transparent), transparent 55%),
+        radial-gradient(ellipse 50% 40% at 90% 80%, rgba(40,60,100,0.32), transparent 50%),
+        var(--stage-bg);
+    }
+    .desktop-wall.usage-wall {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding-top: 36px;
+      min-height: 680px;
+    }
+
+    /* System menu bar — full width of desktop, 24pt, transparent LG material */
+    .system-menubar {
       height: 24px;
-      display: flex; align-items: center; justify-content: flex-end; gap: 2px;
-      padding: 0 10px 0 12px;
-      border-radius: 0;
-      /* System menu bar material — not an app panel */
-      background: color-mix(in srgb, var(--menubar) 92%, transparent);
-      backdrop-filter: blur(40px) saturate(1.8);
-      -webkit-backdrop-filter: blur(40px) saturate(1.8);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 12px 0 14px;
+      gap: 12px;
+      background: color-mix(in srgb, var(--label) 6%, transparent);
+      backdrop-filter: blur(50px) saturate(1.9);
+      -webkit-backdrop-filter: blur(50px) saturate(1.9);
       border: 0;
-      border-bottom: 0.5px solid color-mix(in srgb, var(--separator) 70%, transparent);
-      box-shadow: none;
+      border-bottom: 0.5px solid color-mix(in srgb, var(--label) 8%, transparent);
+      user-select: none;
     }
-    .menubar .mb-clock {
-      margin-right: auto;
-      font-size: 12px; font-weight: 500; color: var(--label);
+    .smb-leading {
+      display: flex; align-items: center; gap: 14px;
+      min-width: 0; flex: 1;
+      font-size: 13px; font-weight: 500; color: var(--label);
+    }
+    .smb-apple {
+      font-size: 14px; line-height: 1; opacity: 0.95;
+      width: 16px; text-align: center;
+    }
+    .smb-app {
+      font-weight: 700; letter-spacing: -0.2px;
+    }
+    .smb-app b { color: var(--jk); font-weight: 700; }
+    .smb-menu {
+      font-weight: 500; color: var(--label); opacity: 0.92;
+    }
+    .smb-trailing {
+      display: flex; align-items: center; gap: 1px;
+      flex-shrink: 0;
+    }
+    /* System extras after app status items (HIG trailing end) */
+    .smb-sys {
+      display: inline-flex; align-items: center; justify-content: center;
+      height: 22px; min-width: 22px; padding: 0 5px;
+      color: var(--label); opacity: 0.88;
+      font-size: 11px;
+    }
+    .smb-sys svg { width: 13px; height: 13px; fill: currentColor; }
+    .smb-clock {
+      font-size: 12px; font-weight: 500;
       font-variant-numeric: tabular-nums;
-      opacity: 0.85;
-      pointer-events: none;
+      padding: 0 4px 0 6px;
+      color: var(--label); opacity: 0.92;
+      white-space: nowrap;
     }
+    .smb-hint {
+      display: none; /* screen-reader / caption only via data attributes */
+    }
+
+    /* NSStatusItem — template mono dual stack (FB1-6), variable length */
     .sb-item {
       display: flex; align-items: center; gap: 4px; cursor: pointer;
       background: transparent; border: 0;
-      height: 22px; padding: 0 6px; border-radius: 4px;
+      height: 22px; padding: 0 5px; border-radius: 4px;
       color: var(--label);
     }
     .sb-item:hover { background: rgba(128,128,128,0.18); }
     .sb-item.active-click { background: rgba(128,128,128,0.28); }
-    /* Template mono logos (isTemplate) */
     .sb-item .plogo.sm {
       background: transparent !important;
       width: 13px; height: 13px; border-radius: 0;
@@ -184,9 +246,10 @@
       letter-spacing: -0.15px;
     }
 
-    /* Context menu — system glass (right-click only) */
+    /* Context menu — system glass (right-click only); anchors under status extra */
     .ctx-menu {
       position: absolute; min-width: 220px; padding: 4px;
+      top: 8px; right: 100px;
       background: var(--glass-strong);
       backdrop-filter: blur(40px) saturate(1.5);
       -webkit-backdrop-filter: blur(40px) saturate(1.5);
@@ -207,16 +270,21 @@
       Status left-click hosts the REAL popover.html (no mini reimplementation).
       iframe src = popover.html?embed=1&mode=providers&provider=…
     */
+    /* Popover hangs from menu-bar extra (below trailing status items) */
     .pop-host {
       position: absolute;
-      top: 40px;
-      right: 12px;
+      top: 8px;
+      right: 48px;
       width: 424px;
-      height: 640px;
+      height: 620px;
       z-index: 20;
       border: 0;
       background: transparent;
       border-radius: 14px;
+    }
+    .desktop-wall .ctx-menu {
+      top: 8px;
+      right: 120px;
     }
     .pop-host.hidden { display: none !important; }
 
@@ -232,32 +300,6 @@
       De-slop: complete continuous strokes (never one-sided borders),
       no multi-shadow gradient pills, 8pt rhythm, SF-like hierarchy.
     */
-    /* System menu bar mock (visible when Usage is open → .regular activation). */
-    .sys-menubar {
-      width: min(980px, 100%);
-      margin: 0 auto 8px;
-      height: 24px;
-      display: flex; align-items: center; gap: 14px;
-      padding: 0 12px;
-      border-radius: 8px;
-      font-size: 12px; font-weight: 500;
-      color: var(--label);
-      background: color-mix(in srgb, var(--glass) 55%, transparent);
-      border: 0.5px solid color-mix(in srgb, var(--separator) 55%, transparent);
-      backdrop-filter: blur(20px) saturate(1.4);
-      -webkit-backdrop-filter: blur(20px) saturate(1.4);
-    }
-    .sys-menubar .apple {
-      font-size: 13px; line-height: 1; opacity: 0.9;
-    }
-    .sys-menubar .app-menu {
-      font-weight: 700; color: var(--label);
-    }
-    .sys-menubar .app-menu b { color: var(--jk); font-weight: 700; }
-    .sys-menubar .m { color: var(--secondary); font-weight: 500; }
-    .sys-menubar .hint {
-      margin-left: auto; font-size: 10px; color: var(--tertiary); font-weight: 500;
-    }
     .win {
       --win-r: 14px;
       --side-w: 228px;
@@ -763,56 +805,66 @@
 
     <!-- ========== FLOW ========== -->
     <section class="panel active" id="flow">
-      <h2 class="st">Status bar interactions</h2>
+      <h2 class="st">Status interactions (system menu bar)</h2>
       <p class="sl">
-        <strong>Native menu-bar toolbar</strong> (NSStatusItem): full-width system strip,
-        template mono dual stack — not glass chips.
-        Glance = Weekly remaining for OpenAI/Anthropic, Daily for Amp
-        (<code>HostProviderGlanceRow.glance_remaining_percent</code>).
-        Left-click → same <code>popover.html</code> artifact (Providers, focused provider).
+        Real macOS layout (HIG
+        <a href="https://developer.apple.com/design/human-interface-guidelines/the-menu-bar" style="color:var(--jk)">The menu bar</a>):
+        <strong>leading</strong>  · <strong>trailing</strong> menu bar extras (our
+        <code>NSStatusItem</code>s) → Control Center → clock.
+        Accessory mode: no app menus / no Dock. Popover hangs under the extra.
+        Template mono dual stack — never glass chips on the bar.
       </p>
-      <div class="stage" id="flow-stage" style="min-height: 700px; padding-top: 8px;">
-        <div class="menubar" id="flow-bar" data-status-toolbar title="System menu bar — NSStatusItem strip (template mono)">
-          <span class="mb-clock" aria-hidden="true">Mon 10:42</span>
-          <!-- Worst-first strip: template dual-stack status items (not chips) -->
-          <div class="sb-item" data-provider="anthropic" data-account="Personal" data-glance="12" data-reset="1h" title="Claude · Weekly glance">
-            <span class="plogo sm anthropic" aria-hidden="true">
-              <svg viewBox="0 0 24 24"><path d="M12 2l1.2 6.2L18 6l-2.8 4.2L22 12l-6.8 1.8L18 18l-4.8-2.2L12 22l-1.2-6.2L6 18l2.8-4.2L2 12l6.8-1.8L6 6l4.8 2.2L12 2z"/></svg>
-            </span>
-            <div class="stack"><span class="t">1h</span><span class="p">12%</span></div>
+      <div class="desktop" id="flow-stage" data-desktop-scene data-activation="accessory">
+        <div class="system-menubar" id="flow-bar" data-status-toolbar data-sys-menubar>
+          <div class="smb-leading">
+            <span class="smb-apple" title="Apple menu" aria-label="Apple menu"></span>
+            <!-- accessory: no app menu titles (agent is not frontmost) -->
           </div>
-          <div class="sb-item" data-provider="openai" data-account="a1" data-glance="57" data-reset="3d" title="Codex · Weekly glance">
-            <span class="plogo sm openai" aria-hidden="true">
-              <svg viewBox="0 0 24 24"><path d="M22.3 10.5a5.4 5.4 0 0 0-.7-5.1 5.5 5.5 0 0 0-5.9-2.6A5.5 5.5 0 0 0 12 .8a5.5 5.5 0 0 0-3.7 1.9 5.5 5.5 0 0 0-5.9 2.6 5.4 5.4 0 0 0-.7 5.1A5.4 5.4 0 0 0 .3 14.7a5.5 5.5 0 0 0 2.1 5.6 5.5 5.5 0 0 0 5.9 1.1A5.5 5.5 0 0 0 12 23.2a5.5 5.5 0 0 0 3.7-1.8 5.5 5.5 0 0 0 5.9-1.1 5.5 5.5 0 0 0 2.1-5.6 5.4 5.4 0 0 0-1.4-4.2z"/></svg>
+          <div class="smb-trailing">
+            <!-- App menu bar extras (worst-first sample) -->
+            <div class="sb-item" data-provider="anthropic" data-account="Personal" data-glance="12" data-reset="1h" title="Claude · Weekly glance">
+              <span class="plogo sm anthropic" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M12 2l1.2 6.2L18 6l-2.8 4.2L22 12l-6.8 1.8L18 18l-4.8-2.2L12 22l-1.2-6.2L6 18l2.8-4.2L2 12l6.8-1.8L6 6l4.8 2.2L12 2z"/></svg>
+              </span>
+              <div class="stack"><span class="t">1h</span><span class="p">12%</span></div>
+            </div>
+            <div class="sb-item" data-provider="openai" data-account="a1" data-glance="57" data-reset="3d" title="Codex · Weekly glance">
+              <span class="plogo sm openai" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M22.3 10.5a5.4 5.4 0 0 0-.7-5.1 5.5 5.5 0 0 0-5.9-2.6A5.5 5.5 0 0 0 12 .8a5.5 5.5 0 0 0-3.7 1.9 5.5 5.5 0 0 0-5.9 2.6 5.4 5.4 0 0 0-.7 5.1A5.4 5.4 0 0 0 .3 14.7a5.5 5.5 0 0 0 2.1 5.6 5.5 5.5 0 0 0 5.9 1.1A5.5 5.5 0 0 0 12 23.2a5.5 5.5 0 0 0 3.7-1.8 5.5 5.5 0 0 0 5.9-1.1 5.5 5.5 0 0 0 2.1-5.6 5.4 5.4 0 0 0-1.4-4.2z"/></svg>
+              </span>
+              <div class="stack"><span class="t">3d</span><span class="p">57%</span></div>
+            </div>
+            <div class="sb-item" data-provider="amp" data-account="Free" data-glance="100" data-reset="18h" title="Amp · Daily glance">
+              <span class="plogo sm amp" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M4 16c2-6 4-10 8-10s6 4 8 10h-3c-1.2-3.5-2.5-5.5-5-5.5S8.2 12.5 7 16H4zm4.5 2a3.5 3.5 0 107 0h-7z"/></svg>
+              </span>
+              <div class="stack"><span class="t">18h</span><span class="p">100%</span></div>
+            </div>
+            <!-- System trailing extras (not ours — reference layout only) -->
+            <span class="smb-sys" title="Control Center" aria-label="Control Center">
+              <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 3.5h5v4H2v-4zm7 0h5v2H9v-2zM9 7h5v5.5H9V7zM2 9h5v3.5H2V9z"/></svg>
             </span>
-            <div class="stack"><span class="t">3d</span><span class="p">57%</span></div>
-          </div>
-          <div class="sb-item" data-provider="amp" data-account="Free" data-glance="100" data-reset="18h" title="Amp · Daily glance">
-            <span class="plogo sm amp" aria-hidden="true">
-              <svg viewBox="0 0 24 24"><path d="M4 16c2-6 4-10 8-10s6 4 8 10h-3c-1.2-3.5-2.5-5.5-5-5.5S8.2 12.5 7 16H4zm4.5 2a3.5 3.5 0 107 0h-7z"/></svg>
-            </span>
-            <div class="stack"><span class="t">18h</span><span class="p">100%</span></div>
+            <span class="smb-clock" aria-hidden="true">Mon 10:42</span>
           </div>
         </div>
-
-        <!-- Real popover.html — not a simplified mini-pop -->
-        <iframe
-          class="pop-host hidden"
-          id="flow-pop"
-          title="jackin❯ desktop glance popover"
-          sandbox="allow-scripts allow-same-origin"
-        ></iframe>
-
-        <div class="ctx-menu hidden" id="flow-ctx">
-          <button type="button" data-action="usage"><span>Open Usage Window</span></button>
-          <button type="button"><span>Refresh</span><span class="ke">⌘R</span></button>
-          <div class="sep"></div>
-          <button type="button"><span>Quit jackin❯ desktop</span><span class="ke">⌘Q</span></button>
+        <div class="desktop-wall" id="flow-wall">
+          <iframe
+            class="pop-host hidden"
+            id="flow-pop"
+            title="jackin❯ desktop glance popover"
+            sandbox="allow-scripts allow-same-origin"
+          ></iframe>
+          <div class="ctx-menu hidden" id="flow-ctx">
+            <button type="button" data-action="usage"><span>Open Usage Window</span></button>
+            <button type="button"><span>Refresh</span><span class="ke">⌘R</span></button>
+            <div class="sep"></div>
+            <button type="button"><span>Quit jackin❯ desktop</span><span class="ke">⌘Q</span></button>
+          </div>
         </div>
       </div>
       <p class="flow-caption">
-        Fixture: Anthropic Weekly <strong>12%</strong> / OpenAI Weekly <strong>57%</strong> / Amp Daily <strong>100%</strong>
-        — identical glance values in sidebar + Usage window Weekly/Daily rows.
+        Leading  · trailing extras (status → Control Center → clock). Accessory mode (no app menus).
+        Fixture: Anthropic Weekly <strong>12%</strong> / OpenAI Weekly <strong>57%</strong> / Amp Daily <strong>100%</strong>.
       </p>
     </section>
 
@@ -820,21 +872,33 @@
     <section class="panel" id="usage">
       <h2 class="st">Usage window</h2>
       <p class="sl">
-        <strong>Native unified titlebar + NSToolbar</strong> as the first full-width line
-        (traffic · centered title · trailing Refresh icon) — not a floating capsule strip.
-        Content + glass sidebar below. Provider = identity; accounts nest with glance progress.
-        Detail = <code>usage_detail_presentation</code>. See <code>DATA_CONTRACT.md</code>.
+        When Usage is open: activation <code>.regular</code> → system menu bar shows
+        <strong> · jackin❯ desktop · Edit · View · Window</strong> (leading) and status extras stay trailing.
+        Window itself: unified <strong>NSToolbar</strong> titlebar (traffic · title · Refresh).
+        Not a fake menubar pill above the window. See
+        <a href="./MACOS_CHROME_REFERENCES.md" style="color:var(--jk)">MACOS_CHROME_REFERENCES.md</a>.
       </p>
-      <div class="stage" style="padding: 20px 16px 28px;">
-        <!-- System menu bar (native: AppMainMenu when Usage opens → .regular) -->
-        <div class="sys-menubar" data-sys-menubar title="System menu bar while Usage is open">
-          <span class="apple" aria-hidden="true"></span>
-          <span class="app-menu">jackin<b>❯</b> desktop</span>
-          <span class="m">Edit</span>
-          <span class="m">View</span>
-          <span class="m">Window</span>
-          <span class="hint">About · Settings… · Quit · Refresh ⌘R</span>
+      <div class="desktop" data-desktop-scene data-activation="regular">
+        <div class="system-menubar" data-sys-menubar data-status-toolbar>
+          <div class="smb-leading">
+            <span class="smb-apple" title="Apple menu"></span>
+            <span class="smb-app">jackin<b>❯</b> desktop</span>
+            <span class="smb-menu">Edit</span>
+            <span class="smb-menu">View</span>
+            <span class="smb-menu">Window</span>
+          </div>
+          <div class="smb-trailing">
+            <div class="sb-item" title="Status extras remain while regular" aria-hidden="true">
+              <span class="plogo sm anthropic"><svg viewBox="0 0 24 24"><path d="M12 2l1.2 6.2L18 6l-2.8 4.2L22 12l-6.8 1.8L18 18l-4.8-2.2L12 22l-1.2-6.2L6 18l2.8-4.2L2 12l6.8-1.8L6 6l4.8 2.2L12 2z"/></svg></span>
+              <div class="stack"><span class="t">1h</span><span class="p">12%</span></div>
+            </div>
+            <span class="smb-sys" title="Control Center" aria-hidden="true">
+              <svg viewBox="0 0 16 16"><path d="M2 3.5h5v4H2v-4zm7 0h5v2H9v-2zM9 7h5v5.5H9V7zM2 9h5v3.5H2V9z"/></svg>
+            </span>
+            <span class="smb-clock">Mon 10:42</span>
+          </div>
         </div>
+        <div class="desktop-wall usage-wall">
         <div class="win" id="usage-win">
           <!-- Edge-to-edge content first (sidebar floats above it) -->
           <main class="main">
@@ -945,10 +1009,11 @@
             </button>
           </div>
         </div>
-      </div>
+        </div><!-- /.desktop-wall -->
+      </div><!-- /.desktop -->
       <p class="flow-caption">
-        Provider = name only · accounts nest under selection with glance progress ·
-        multi-account radio · detail buckets only (no chip strip dupe).
+        Regular activation: app menus leading · status extras still trailing ·
+        window unified NSToolbar. Provider = name only · accounts nest with glance progress.
       </p>
     </section>
 

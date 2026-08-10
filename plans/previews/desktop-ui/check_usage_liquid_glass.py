@@ -27,12 +27,20 @@ def main() -> int:
     need('id="usage-win"' in html, "usage-win root missing")
     need("data-lg-sidebar" in html, "Liquid Glass sidebar marker missing")
     need(
-        "data-sys-menubar" in html and "sys-menubar" in html,
-        "system menu bar mock ( + app menus) missing above Usage",
+        "data-sys-menubar" in html and "system-menubar" in html,
+        "system menu bar (full desktop edge) missing",
     )
     need(
-        "Quit" in html and "Settings" in html,
-        "system menu bar must surface Quit + Settings",
+        "data-desktop-scene" in html and 'data-activation="regular"' in html,
+        "Usage must sit in a desktop scene with regular activation",
+    )
+    need(
+        "smb-apple" in html and "Control Center" in html and "smb-clock" in html,
+        "menu bar must show  + Control Center + clock references (HIG trailing layout)",
+    )
+    need(
+        "smb-app" in html and "jackin" in html,
+        "regular mode must show app menu title jackin❯ desktop",
     )
     need(
         "var(--lg-blur)" in html
@@ -124,6 +132,14 @@ def main() -> int:
     need(
         'data-status-toolbar' in html or 'id="flow-bar"' in html,
         "status bar (menu-bar toolbar) craft marker missing",
+    )
+    need(
+        'data-activation="accessory"' in html,
+        "status interactions desktop must mark accessory activation",
+    )
+    need(
+        "MACOS_CHROME_REFERENCES.md" in html,
+        "Usage section must link MACOS_CHROME_REFERENCES.md",
     )
     need(
         "page-title" not in html.split('id="usage"', 1)[-1].split('id="glass"', 1)[0],

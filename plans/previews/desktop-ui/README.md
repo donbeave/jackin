@@ -10,6 +10,7 @@
 | [`AGENT_HANDOFF.md`](./AGENT_HANDOFF.md) | Agent procedure |
 | [`DATA_CONTRACT.md`](./DATA_CONTRACT.md) | Fixture numbers ↔ `jackin-usage` host APIs |
 | [`OFFICIAL_USAGE_URLS.md`](./OFFICIAL_USAGE_URLS.md) | “Open usage page” browser links per provider |
+| [`MACOS_CHROME_REFERENCES.md`](./MACOS_CHROME_REFERENCES.md) | Real menu bar / window / LG interaction SoT |
 
 Open in Safari/Chrome. Toggle **Dark / Light**.
 
