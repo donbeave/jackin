@@ -1,97 +1,197 @@
 // SPDX-FileCopyrightText: 2026 Alexey Zhokhov
 // SPDX-License-Identifier: Apache-2.0
 
+import AppKit
 import JackinUsageBridge
 import SwiftUI
 
-/// Horizontal tab strip: a static Overview tab then one tab per Rust glance row
-/// in canonical order (no sort/filter in Swift). Each provider tab shows the
-/// Rust `displayLabel`, the icon selected from `iconKey`, and thin geometry from
-/// `glanceRemainingPercent`; the Rust `barLabel` is the accessibility value.
-struct PopoverTabGrid: View {
-    let providers: [PresentationStore.GlanceProviderRow]
-    @Binding var selection: String?
+/// Sticky popover chrome matching `popover.html`: brand line · **Overview | Providers**
+/// segmented mode · provider strip (icons + glance meters) only in Providers mode.
+///
+/// Selection: `nil` = Overview mode; non-nil surface id = Providers mode focused on that row.
+public struct PopoverTabGrid: View {
+    public let providers: [PresentationStore.GlanceProviderRow]
+    @Binding public var selection: String?
 
-    var body: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 6) {
-                tab(
-                    id: nil,
-                    label: "Overview",
-                    iconKey: nil,
-                    barLabel: "Overview",
-                    remaining: nil,
-                    dimmed: false
-                )
-                ForEach(providers) { provider in
-                    tab(
-                        id: provider.surfaceId,
-                        label: provider.displayLabel,
-                        iconKey: provider.iconKey,
-                        barLabel: provider.barLabel,
-                        remaining: provider.glanceRemainingPercent,
-                        dimmed: provider.dimmed
-                    )
-                }
+    public init(
+        providers: [PresentationStore.GlanceProviderRow],
+        selection: Binding<String?>
+    ) {
+        self.providers = providers
+        self._selection = selection
+    }
+
+    private var isOverviewMode: Bool { selection == nil }
+
+    public var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            brandLine
+            modeSegment
+            if !isOverviewMode {
+                providerStrip
             }
-            .padding(.horizontal, 8)
-            .padding(.vertical, 6)
+        }
+        .padding(.horizontal, 10)
+        .padding(.top, 4)
+        .padding(.bottom, 2)
+    }
+
+    // MARK: - Brand (popover.html `.brand-line`)
+
+    private var brandLine: some View {
+        HStack(spacing: 8) {
+            // j❯ mark — brand moment only (VS-13); phosphor, not system accent.
+            ZStack {
+                RoundedRectangle(cornerRadius: 7, style: .continuous)
+                    .fill(Color.jackinPhosphor.opacity(0.92))
+                    .frame(width: 22, height: 22)
+                Text("j❯")
+                    .font(.system(size: 10, weight: .bold, design: .rounded))
+                    .foregroundStyle(Color.white)
+            }
+            HStack(spacing: 0) {
+                Text("jackin")
+                    .font(.subheadline.weight(.semibold))
+                Text("❯")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(Color.jackinPhosphor)
+                Text(" desktop")
+                    .font(.subheadline.weight(.medium))
+                    .foregroundStyle(.secondary)
+            }
+            Spacer(minLength: 0)
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("jackin❯ desktop")
+    }
+
+    // MARK: - Mode segment (Overview | Providers)
+
+    private var modeSegment: some View {
+        HStack(spacing: 0) {
+            modeButton(title: "Overview", overview: true)
+            modeButton(title: "Providers", overview: false)
+        }
+        .padding(3)
+        .background {
+            // Use secondary system fill — readable in Light + Dark (not pure primary ink).
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(Color(nsColor: .quaternaryLabelColor).opacity(0.35))
         }
     }
 
-    @ViewBuilder
-    private func tab(
-        id: String?,
-        label: String,
-        iconKey: String?,
-        barLabel: String,
-        remaining: UInt8?,
-        dimmed: Bool
-    ) -> some View {
-        Button {
-            selection = id
-        } label: {
-            VStack(spacing: 3) {
-                icon(iconKey)
-                    .frame(width: 16, height: 16)
-                Text(label)
-                    .font(.caption2)
-                    .lineLimit(1)
-                meter(remaining)
+    private func modeButton(title: String, overview: Bool) -> some View {
+        let on = overview ? isOverviewMode : !isOverviewMode
+        return Button {
+            if overview {
+                selection = nil
+            } else if selection == nil {
+                // Enter Providers mode on first available surface (canonical order).
+                selection = providers.first?.surfaceId
             }
-            .frame(minWidth: 52)
-            .opacity(dimmed ? 0.55 : 1)
-            .padding(.vertical, 4)
-            .padding(.horizontal, 6)
+        } label: {
+            Text(title)
+                .font(.caption.weight(.semibold))
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 7)
+                .background {
+                    if on {
+                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            .fill(Color(nsColor: .controlBackgroundColor))
+                            .shadow(color: .black.opacity(0.08), radius: 1, y: 0.5)
+                    }
+                }
+                .foregroundStyle(on ? Color.primary : Color.secondary)
         }
         .buttonStyle(.plain)
-        .background(
-            RoundedRectangle(cornerRadius: 6)
-                .fill(selection == id ? Color.accentColor.opacity(0.18) : Color.clear)
-        )
-        .accessibilityLabel(label)
-        .accessibilityValue(barLabel)
+        .accessibilityAddTraits(on ? .isSelected : [])
     }
 
-    @ViewBuilder
-    private func icon(_ iconKey: String?) -> some View {
-        if let iconKey, let symbol = desktopProviderSystemImage(iconKey: iconKey) {
-            Image(systemName: symbol)
-        } else {
-            Image(systemName: "square.grid.2x2")
+    // MARK: - Provider strip (only in Providers mode)
+
+    private var providerStrip: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 6) {
+                ForEach(providers) { provider in
+                    providerTab(provider)
+                }
+            }
+            .padding(.vertical, 2)
         }
     }
 
-    /// Meter geometry only — `nil` remaining shows the empty track (Rust dash /
-    /// segments remain the visible truth elsewhere).
+    private func providerTab(_ provider: PresentationStore.GlanceProviderRow) -> some View {
+        let on = selection == provider.surfaceId
+        return Button {
+            selection = provider.surfaceId
+        } label: {
+            VStack(spacing: 5) {
+                // HTML `.plogo` role — rounded brand plate (SF Symbol; system accent tint).
+                brandPlate(iconKey: provider.iconKey, selected: on)
+                Text(provider.displayLabel)
+                    .font(.caption2.weight(on ? .semibold : .medium))
+                    .lineLimit(1)
+                meter(provider.glanceRemainingPercent, severity: provider.severity)
+            }
+            .frame(minWidth: 56)
+            .opacity(provider.dimmed ? 0.55 : 1)
+            .padding(.vertical, 6)
+            .padding(.horizontal, 8)
+            .background {
+                if on {
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .fill(Color.jackinPhosphor.opacity(0.14))
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                .strokeBorder(Color.jackinPhosphor.opacity(0.30), lineWidth: 1)
+                        }
+                }
+            }
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(provider.displayLabel)
+        .accessibilityValue(provider.barLabel)
+        .accessibilityAddTraits(on ? .isSelected : [])
+    }
+
+    /// Provider identity plate (popover.html `.plogo` density + per-provider chrome tint).
+    /// Official logomark on brand plate when bundled; SF Symbol fallback only if missing.
+    /// Colors are decorative chrome only — not usage/severity data.
+    private func brandPlate(iconKey: String?, selected: Bool) -> some View {
+        let brand = desktopProviderBrandChrome(iconKey: iconKey)
+        return ZStack {
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .fill(selected ? brand.opacity(0.95) : brand.opacity(0.78))
+            if let iconKey, let mark = ProviderMarks.swiftUIImage(forIconKey: iconKey) {
+                // Official mark: black-on-transparent template → white glyph on brand plate.
+                mark
+                    .resizable()
+                    .interpolation(.high)
+                    .scaledToFit()
+                    .frame(width: 15, height: 15)
+                    .colorInvert() // black silhouette → white on colored plate
+                    .opacity(0.98)
+            } else {
+                let symbol = iconKey.flatMap { desktopProviderSystemImage(iconKey: $0) } ?? "circle.grid.cross"
+                Image(systemName: symbol)
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(Color.white.opacity(0.95))
+            }
+        }
+        .frame(width: 30, height: 30)
+        .shadow(color: brand.opacity(selected ? 0.35 : 0.15), radius: selected ? 4 : 1, y: 1)
+    }
+
+    /// Meter geometry only — nil remaining = empty track (FB1-5).
+    /// Healthy fill = phosphor (`--status-high`), not system accent blue.
     @ViewBuilder
-    private func meter(_ remaining: UInt8?) -> some View {
+    private func meter(_ remaining: UInt8?, severity: String) -> some View {
         GeometryReader { geometry in
             ZStack(alignment: .leading) {
                 Capsule().fill(Color.secondary.opacity(0.25))
-                if let remaining {
+                if let remaining, remaining > 0 {
                     Capsule()
-                        .fill(Color.accentColor)
+                        .fill(severityTint(severity))
                         .frame(width: geometry.size.width * CGFloat(remaining) / 100.0)
                 }
             }

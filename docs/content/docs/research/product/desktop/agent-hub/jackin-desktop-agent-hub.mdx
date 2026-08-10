@@ -1,5 +1,5 @@
 ---
-title: "jackin❯ Desktop Agent Hub"
+title: "jackin❯ desktop Agent Hub"
 ---
 
 
@@ -15,7 +15,7 @@ review, and what agent accounts are close to exhaustion without forcing the
 operator to keep every terminal tab in view.
 
 The desired experience is not a replacement for Claude Code, Codex, or Amp. The
-agent UI remains the agent's own TUI. jackin❯ Desktop should be the Mac-native
+agent UI remains the agent's own TUI. jackin❯ desktop should be the Mac-native
 control surface around those agents: start workspaces, see active containers,
 jump to pull requests, monitor token/account state, and receive attention
 prompts when an agent is blocked or finished.
@@ -76,7 +76,7 @@ Implementation details worth borrowing selectively:
 
 What not to copy:
 
-- OpenUsage is a generic AI subscription tracker. jackin❯ Desktop should not become a catalog of every AI provider; it should start with the runtimes jackin❯ launches and accounts the operator explicitly wires into jackin❯. Provider adapter shape and host-mutation policy live in the telemetry roadmap.
+- OpenUsage is a generic AI subscription tracker. jackin❯ desktop should not become a catalog of every AI provider; it should start with the runtimes jackin❯ launches and accounts the operator explicitly wires into jackin❯. Provider adapter shape and host-mutation policy live in the telemetry roadmap.
 
 ### CodexBar
 
@@ -155,7 +155,7 @@ Implementation details worth borrowing selectively:
   reference for bounded local git status collection, dirty-file summaries, and
   ahead/behind detection.
 - `Sources/RepoBar/Support/LocalRepoManager.swift` adds TTL caches and security
-  scoped folder access. jackin❯ Desktop can avoid broad project scanning by using
+  scoped folder access. jackin❯ desktop can avoid broad project scanning by using
   jackin❯ saved workspaces and mounted paths, but the cache approach is still
   useful.
 - RepoBar's PR/issues/actions submenus are close to the desired "jump straight
@@ -163,7 +163,7 @@ Implementation details worth borrowing selectively:
 
 What not to copy:
 
-- RepoBar is centered on GitHub account/repository management. jackin❯ Desktop is
+- RepoBar is centered on GitHub account/repository management. jackin❯ desktop is
   centered on active jackin❯ workspaces and agent sessions; GitHub is a secondary
   integration for PR links and status.
 - RepoBar scans a configured projects folder. jackin❯ should default to the
@@ -273,7 +273,7 @@ Every workspace row should be a small hierarchy:
    - Copy remote URL / branch name.
 
 This solves the "I cannot currently see those repositories" pain directly:
-jackin❯ Desktop should only show repositories that belong to jackin❯ workspaces
+jackin❯ desktop should only show repositories that belong to jackin❯ workspaces
 or running sessions, not the entire disk and not every GitHub repository the
 account can access.
 

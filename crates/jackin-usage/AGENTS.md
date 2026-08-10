@@ -6,7 +6,7 @@ Usage probes, host runtime, snapshot store, and Capsule/Desktop view shaping.
 
 - Capsule and usage telemetry emits through the shared `jackin-telemetry` governed facade and direct providers in `jackin-diagnostics`; do not introduce generic macros, raw OpenTelemetry construction, local telemetry files, or another sink.
 - Borrow, don't clone, usage views: account materialization serializes from borrowed views/iterators, not full clones.
-- **Limits only — never token price or historical usage trend.** This crate feeds Capsule and jackin❯ Desktop. Ship **quota / limit windows only**: remaining or used percent, reset times, pace/status honesty, plan labels, multi-account identity, and provider-supplied **limit** money windows when they are a hard cap (e.g. monthly budget remaining). **Do not** add or expose for product UI:
+- **Limits only — never token price or historical usage trend.** This crate feeds Capsule and jackin❯ desktop. Ship **quota / limit windows only**: remaining or used percent, reset times, pace/status honesty, plan labels, multi-account identity, and provider-supplied **limit** money windows when they are a hard cap (e.g. monthly budget remaining). **Do not** add or expose for product UI:
   - token unit pricing ($/token, $/MTok, model price tables used as product surfaces)
   - session/period **cost** totals framed as “how much you spent on tokens”
   - historical usage **trends** (sparklines, time-series charts, Today / Yesterday / 30 Days spend or token graphs)

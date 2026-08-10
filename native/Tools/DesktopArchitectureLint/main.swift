@@ -35,7 +35,334 @@ struct DesktopArchitectureLint {
         let bridgeRoot = desktop.deletingLastPathComponent()
             .appendingPathComponent("JackinUsageBridge")
         checkBridgeSerialization(bridgeRoot: bridgeRoot)
+        checkGlassGate(desktopRoot: desktop)
+        checkUsageWindowToolbarHost(desktopRoot: desktop)
+        checkStatusPopoverFocusWiring(desktopRoot: desktop)
+        checkStatusContextMenuCraft(desktopRoot: desktop)
+        checkPopoverLiveHeight(desktopRoot: desktop)
+        checkPrimaryControlCraft(desktopRoot: desktop)
+        checkUsageOverviewGrouping(desktopRoot: desktop)
+        checkUsageDetailGrouping(desktopRoot: desktop)
+        checkUsageAccountRail(desktopRoot: desktop)
         run(desktopRoot: desktop)
+    }
+
+    /// LG-A / AR-4: no freestyle glass outside GlassFallbacks.
+    static func checkGlassGate(desktopRoot: URL) {
+        var failures = 0
+        if let enumerator = FileManager.default.enumerator(
+            at: desktopRoot,
+            includingPropertiesForKeys: nil
+        ) {
+            while let url = enumerator.nextObject() as? URL {
+                guard url.pathExtension == "swift" else { continue }
+                let name = url.lastPathComponent
+                if name == "GlassFallbacks.swift" { continue }
+                guard let text = try? String(contentsOf: url, encoding: .utf8) else { continue }
+                if text.contains("glassEffect") || text.contains("#available(macOS 26") {
+                    failures += 1
+                    print("FAIL  \(name) contains glassEffect or #available(macOS 26 outside GlassFallbacks")
+                }
+            }
+        }
+        if failures == 0 {
+            print("PASS  glassEffect / #available(macOS 26 only in GlassFallbacks")
+        } else {
+            print("DesktopArchitectureLint: glass-gate FAILURE")
+            exit(1)
+        }
+    }
+
+    /// FB1-65: Usage window must host via NSHostingController + unified toolbar.
+    static func checkUsageWindowToolbarHost(desktopRoot: URL) {
+        let path = desktopRoot.appendingPathComponent("UsageWindowController.swift")
+        guard let text = try? String(contentsOf: path, encoding: .utf8) else {
+            fputs("FAIL  UsageWindowController.swift missing\n", stderr)
+            exit(2)
+        }
+        var ok = true
+        if !text.contains("NSHostingController") {
+            print("FAIL  UsageWindowController must use NSHostingController for NSToolbar")
+            ok = false
+        }
+        if !text.contains("contentViewController") {
+            print("FAIL  UsageWindowController must set contentViewController")
+            ok = false
+        }
+        if !text.contains("toolbarStyle = .unified") {
+            print("FAIL  UsageWindowController must set toolbarStyle = .unified")
+            ok = false
+        }
+        if text.contains("contentView = NSHostingView") {
+            print("FAIL  UsageWindowController must not assign contentView = NSHostingView (toolbar dies)")
+            ok = false
+        }
+        if !text.contains("titleVisibility = .hidden") {
+            print("FAIL  UsageWindowController must hide duplicate leading NSWindow title")
+            ok = false
+        }
+        let rootPath = desktopRoot.appendingPathComponent("UsageWindow/UsageWindowRoot.swift")
+        let rootText = try? String(contentsOf: rootPath, encoding: .utf8)
+        if rootText?.contains("ToolbarItem(placement: .principal)") != true {
+            print("FAIL  Usage toolbar must center brand in a principal item")
+            ok = false
+        }
+        if ok {
+            print("PASS  UsageWindowController NSToolbar hosting")
+        } else {
+            print("DesktopArchitectureLint: toolbar-host FAILURE")
+            exit(1)
+        }
+    }
+
+    /// Status left-click must focus provider (StatusPopoverFocus + popoverSelection).
+    static func checkStatusPopoverFocusWiring(desktopRoot: URL) {
+        let path = desktopRoot.appendingPathComponent("DesktopAppDelegate.swift")
+        guard let text = try? String(contentsOf: path, encoding: .utf8) else {
+            fputs("FAIL  DesktopAppDelegate.swift missing\n", stderr)
+            exit(2)
+        }
+        var ok = true
+        if !text.contains("StatusPopoverFocus") {
+            print("FAIL  DesktopAppDelegate must use StatusPopoverFocus for left-click focus")
+            ok = false
+        }
+        if !text.contains("popoverSelection") {
+            print("FAIL  DesktopAppDelegate must set store.popoverSelection on left-click")
+            ok = false
+        }
+        if !text.contains("NSEvent.addLocalMonitorForEvents(matching: .rightMouseUp)")
+            || !text.contains("button.bounds.contains(button.convert(event.locationInWindow, from: nil))")
+            || text.contains("NSApp.currentEvent?.type == .rightMouseUp")
+            || text.contains("[.leftMouseUp, .rightMouseUp]")
+        {
+            print("FAIL  status right-click must use a button-scoped local event monitor")
+            ok = false
+        }
+        if ok {
+            print("PASS  status left-click popover focus wiring")
+        } else {
+            print("DesktopArchitectureLint: status-focus FAILURE")
+            exit(1)
+        }
+    }
+
+    /// G-S3: shipped right-click menu retains HTML grouping before destructive Quit.
+    static func checkStatusContextMenuCraft(desktopRoot: URL) {
+        let path = desktopRoot.appendingPathComponent("StatusItemMenu.swift")
+        guard let text = try? String(contentsOf: path, encoding: .utf8) else {
+            fputs("FAIL  StatusItemMenu.swift missing\n", stderr)
+            exit(2)
+        }
+        if text.contains("row.action == .quit")
+            && text.contains("menu.addItem(.separator())")
+            && text.contains("item.isEnabled = true")
+        {
+            print("PASS  status context menu retains enabled rows and Quit separator")
+        } else {
+            print("FAIL  status context menu must separate Quit from enabled usage actions")
+            exit(1)
+        }
+    }
+
+    /// G-P1/G-P3: live NSPopover must allocate a real scroll viewport.
+    static func checkPopoverLiveHeight(desktopRoot: URL) {
+        let path = desktopRoot.appendingPathComponent("PopoverRoot.swift")
+        guard let text = try? String(contentsOf: path, encoding: .utf8) else {
+            fputs("FAIL  PopoverRoot.swift missing\n", stderr)
+            exit(2)
+        }
+        let controllerPath = desktopRoot.appendingPathComponent("DesktopAppDelegate.swift")
+        let controllerText = try? String(contentsOf: controllerPath, encoding: .utf8)
+        if text.contains("idealHeight: qiFullPlate ? 1600 : 640")
+            && text.contains("liveContentSize = CGSize(width: 416, height: 644)")
+            && controllerText?.contains("popover.contentSize = PopoverRoot.liveContentSize") == true
+        {
+            print("PASS  live popover retains 640 pt quota viewport")
+        } else {
+            print("FAIL  live popover must not collapse quota scroll content")
+            exit(1)
+        }
+    }
+
+    /// LG-A9: primary actions use selective tint, never solid phosphor slabs.
+    static func checkPrimaryControlCraft(desktopRoot: URL) {
+        let providerCard = desktopRoot
+            .appendingPathComponent("UsageWindow/ProviderCardView.swift")
+        let popoverFooter = desktopRoot
+            .appendingPathComponent("Popover/PopoverFooter.swift")
+        let popoverProvider = desktopRoot
+            .appendingPathComponent("Popover/PopoverProviderTab.swift")
+        let popoverRefresh = desktopRoot
+            .appendingPathComponent("Popover/PopoverRefreshButton.swift")
+        let popoverTabs = desktopRoot
+            .appendingPathComponent("Popover/PopoverTabGrid.swift")
+        guard
+            let providerText = try? String(contentsOf: providerCard, encoding: .utf8),
+            let footerText = try? String(contentsOf: popoverFooter, encoding: .utf8),
+            let popoverProviderText = try? String(contentsOf: popoverProvider, encoding: .utf8),
+            let popoverRefreshText = try? String(contentsOf: popoverRefresh, encoding: .utf8),
+            let popoverTabsText = try? String(contentsOf: popoverTabs, encoding: .utf8)
+        else {
+            fputs("FAIL  primary control sources missing\n", stderr)
+            exit(2)
+        }
+
+        var ok = true
+        if providerText.contains(".fill(Color.jackinPhosphor.opacity(0.92))") {
+            print("FAIL  Open usage page must not use a solid phosphor slab")
+            ok = false
+        }
+        if !providerText.contains(".strokeBorder(Color.jackinPhosphor.opacity(0.32)") {
+            print("FAIL  Open usage page must retain the HTML accent hairline")
+            ok = false
+        }
+        if !footerText.contains(".frame(maxWidth: .infinity, alignment: .center)")
+            || !footerText.contains(".foregroundStyle(Color.jackinPhosphor)")
+        {
+            print("FAIL  popover Open Usage Window must stay centered and accent-tinted")
+            ok = false
+        }
+        if !popoverProviderText.contains("providerLogoPlate")
+            || !popoverProviderText.contains("onRefreshProvider(provider.surfaceId)")
+        {
+            print("FAIL  popover provider header must retain logo plate + local refresh")
+            ok = false
+        }
+        if !popoverProviderText.contains("PopoverRefreshButton(")
+            || !popoverRefreshText.contains(".frame(width: 28, height: 28)")
+            || !popoverRefreshText.contains(".strokeBorder(Color.jackinPhosphor.opacity(0.28)")
+        {
+            print("FAIL  popover refresh controls must share HTML 28 pt phosphor craft")
+            ok = false
+        }
+        if popoverProviderText.contains("systemImage: \"safari\"")
+            || !popoverProviderText.contains("Image(systemName: \"arrow.up.right\")")
+        {
+            print("FAIL  popover usage link must use the HTML external-link affordance")
+            ok = false
+        }
+        if !popoverProviderText.contains("JackinBrand.accountSelectionFill")
+            || !popoverProviderText.contains("JackinBrand.accountSelectionInk")
+        {
+            print("FAIL  popover account selection must use dual-theme HTML tokens")
+            ok = false
+        }
+        if !popoverProviderText.contains("desktopProviderOverviewRole(iconKey: provider.iconKey)")
+            || popoverProviderText.contains("statusItemPercentToken(remainingPercent: pct)")
+            || !popoverProviderText.contains("private func metaRow(label: String, value: String) -> some View {\n        VStack")
+            || !popoverProviderText.contains(".padding(.leading, 12)")
+        {
+            print("FAIL  popover detail identity/account anatomy must retain HTML roles")
+            ok = false
+        }
+        if !popoverProviderText.contains("size: 32, weight: .semibold, design: .monospaced")
+            || !popoverProviderText.contains("GlassFallbacks.popoverContentCardBackground()")
+        {
+            print("FAIL  popover metric type/card geometry must match HTML 32/14 tokens")
+            ok = false
+        }
+        if !popoverTabsText.contains("meter(provider.glanceRemainingPercent, severity: provider.severity)")
+            || !popoverTabsText.contains(".fill(severityTint(severity))")
+        {
+            print("FAIL  provider strip meters must retain per-provider severity")
+            ok = false
+        }
+        let overviewPath = desktopRoot.appendingPathComponent("Popover/PopoverOverviewTab.swift")
+        let overviewText = try? String(contentsOf: overviewPath, encoding: .utf8)
+        if overviewText?.contains("desktopProviderOverviewRole(iconKey: glance.iconKey)") != true
+            || overviewText?.contains("if let plan = glance.planLabel") == true
+            || overviewText?.contains("ForEach(Array(rows.enumerated())") != true
+            || overviewText?.contains("Divider().opacity(0.55)") != true
+            || overviewText?.contains("size: 22, weight: .semibold, design: .monospaced") != true
+            || overviewText?.contains("PopoverRefreshButton(label:") != true
+        {
+            print("FAIL  popover Overview must retain horizontal role header + divided accounts")
+            ok = false
+        }
+        if ok {
+            print("PASS  primary controls avoid solid phosphor slabs")
+        } else {
+            print("DesktopArchitectureLint: primary-control FAILURE")
+            exit(1)
+        }
+    }
+
+    /// G-U5: Overview owns one page head and one divided account inventory.
+    static func checkUsageOverviewGrouping(desktopRoot: URL) {
+        let path = desktopRoot.appendingPathComponent("UsageWindow/OverviewListView.swift")
+        guard let text = try? String(contentsOf: path, encoding: .utf8) else {
+            fputs("FAIL  OverviewListView.swift missing\n", stderr)
+            exit(2)
+        }
+        let required = [
+            "private var overviewHead: some View",
+            "private var inventoryList: some View",
+            "ForEach(Array(inventory.enumerated())",
+            "if index > 0 {",
+            "private func inventoryRow",
+            "Color.clear",
+            ".frame(height: 14)",
+        ]
+        let forbidden = ["private func inventoryCard"]
+        if required.allSatisfy(text.contains) && forbidden.allSatisfy({ !text.contains($0) }) {
+            print("PASS  Usage Overview groups account rows in one inventory list")
+        } else {
+            print("FAIL  Usage Overview must retain page head and one divided inventory list")
+            exit(1)
+        }
+    }
+
+    /// G-U6: limit rows share one list container; row helpers cannot create cards.
+    static func checkUsageDetailGrouping(desktopRoot: URL) {
+        let path = desktopRoot.appendingPathComponent("UsageWindow/ProviderCardView.swift")
+        guard let text = try? String(contentsOf: path, encoding: .utf8) else {
+            fputs("FAIL  ProviderCardView.swift missing\n", stderr)
+            exit(2)
+        }
+        let required = [
+            "private var limitList: some View",
+            "ForEach(Array(bucketRows.enumerated())",
+            "if index > 0 {",
+            "private func bucketRow",
+            "private func limitResetCreditsRow",
+            "if let count = lines.first",
+            "let tint = desktopProviderBrandChrome(iconKey: iconKey)",
+        ]
+        let forbidden = ["private func bucketCard", "private func limitResetCreditsCard"]
+        let ok = required.allSatisfy(text.contains) && forbidden.allSatisfy { !text.contains($0) }
+        if ok {
+            print("PASS  Usage detail groups limit rows in one list")
+        } else {
+            print("FAIL  Usage detail must retain one limit-list container with divided rows")
+            exit(1)
+        }
+    }
+
+    /// G-U4: account rows share one inset rail; list rows cannot each own a well.
+    static func checkUsageAccountRail(desktopRoot: URL) {
+        let path = desktopRoot.appendingPathComponent("UsageWindow/UsageWindowRoot.swift")
+        guard let text = try? String(contentsOf: path, encoding: .utf8) else {
+            fputs("FAIL  UsageWindowRoot.swift missing\n", stderr)
+            exit(2)
+        }
+        let required = [
+            "UsageAccountRailView(accounts: accts)",
+            ".listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 8, trailing: -12))",
+            "desktopProviderBrandChrome(iconKey: iconKey)",
+            "store.selectUsageSurface(row.surfaceId)",
+            ".listRowBackground(providerRowBackground(selected:",
+        ]
+        if required.allSatisfy(text.contains)
+            && !text.contains("listRowBackground(accountNestWellBackground)")
+            && !text.contains("private func accountSidebarRow")
+            && !text.contains("List(selection:")
+        {
+            print("PASS  Usage account rows share one inset rail without system selection fill")
+        } else {
+            print("FAIL  Usage sidebar must retain custom selection well and one labeled account rail")
+            exit(1)
+        }
     }
 
     /// Plan 002 Step 5: every `UsageMenuBarBridge` access must be serialized off
@@ -77,7 +404,9 @@ struct DesktopArchitectureLint {
     static func run(desktopRoot: URL) {
         let usageStringTokens = ["% left", "% used", "resets "]
         let alwaysBanned = ["String(format:"]
+        // Preference chrome may label pickers; StatusItemLabel parses Rust reset prefixes.
         let preferenceChromeFiles: Set<String> = ["SettingsView.swift"]
+        let resetParserFiles: Set<String> = ["StatusItemLabel.swift"]
 
         var files: [URL] = []
         if let enumerator = FileManager.default.enumerator(
@@ -114,7 +443,16 @@ struct DesktopArchitectureLint {
                 continue
             }
             for token in usageStringTokens {
-                if text.contains(token) {
+                if resetParserFiles.contains(name), token == "resets " {
+                    continue
+                }
+                // Strip // comments so doc examples don't trip product-string bans.
+                let codeOnly = text.split(separator: "\n").map { line -> String in
+                    let s = String(line)
+                    if let r = s.range(of: "//") { return String(s[..<r.lowerBound]) }
+                    return s
+                }.joined(separator: "\n")
+                if codeOnly.contains(token) {
                     failures += 1
                     print("FAIL  \(name) contains banned usage-string token \(token)")
                 }
@@ -134,8 +472,14 @@ struct DesktopArchitectureLint {
                 bad = true
             }
             if !preferenceChromeFiles.contains(name) {
-                for token in usageStringTokens where text.contains(token) {
-                    bad = true
+                let codeOnly = text.split(separator: "\n").map { line -> String in
+                    let s = String(line)
+                    if let r = s.range(of: "//") { return String(s[..<r.lowerBound]) }
+                    return s
+                }.joined(separator: "\n")
+                for token in usageStringTokens {
+                    if resetParserFiles.contains(name), token == "resets " { continue }
+                    if codeOnly.contains(token) { bad = true }
                 }
             }
             if !bad {

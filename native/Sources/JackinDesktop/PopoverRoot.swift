@@ -4,40 +4,94 @@
 import JackinUsageBridge
 import SwiftUI
 
-/// Glance popover composition root: a tab grid over the Rust-owned glance rows,
-/// then the selected Overview or provider tab, then a Refresh-only footer.
+/// Glance popover composition root — **Liquid Glass navigation chrome**.
 ///
-/// Display-only — every provider, order, label, number, and segment comes from
-/// the Rust `providerGlanceRows` / bucket presentation. `onOpenUsage` is an
-/// optional seam plan 007 binds to the Usage window; it is `nil` here so the
-/// header click is inert.
-struct PopoverRoot: View {
-    @ObservedObject var store: PresentationStore
-    var onOpenUsage: ((String?) -> Void)?
+/// Shell is translucent (`GlassFallbacks.panelSurfaceBackground`) so wallpaper
+/// peeks through (LG-A1). Tab strip + footer sit on glass; scroll body is still
+/// content (standard fills on rows only — LG-A2). Data remains Rust-owned.
+///
+/// **QI full-plate capture:** set `\.popoverQIFullPlate` so multi-limit heroes
+/// (Session + Weekly + …) fit without a hollow clipped header-only plate.
+private enum PopoverQIFullPlateKey: EnvironmentKey {
+    static let defaultValue = false
+}
 
-    init(store: PresentationStore, onOpenUsage: ((String?) -> Void)? = nil) {
+extension EnvironmentValues {
+    /// When true, popover max height expands so harness/QI snapshots can show
+    /// every limit bucket (fill+track), not just the first hero in a scroll fold.
+    public var popoverQIFullPlate: Bool {
+        get { self[PopoverQIFullPlateKey.self] }
+        set { self[PopoverQIFullPlateKey.self] = newValue }
+    }
+}
+
+public struct PopoverRoot: View {
+    public static let liveContentSize = CGSize(width: 416, height: 644)
+
+    @ObservedObject public var store: PresentationStore
+    public var onOpenUsage: ((String?) -> Void)?
+    @Environment(\.popoverQIFullPlate) private var qiFullPlate
+
+    public init(store: PresentationStore, onOpenUsage: ((String?) -> Void)? = nil) {
         self.store = store
         self.onOpenUsage = onOpenUsage
     }
 
-    var body: some View {
+    public var body: some View {
         VStack(spacing: 0) {
+            // Nav chrome: provider strip (glass selection, not content cards).
             PopoverTabGrid(
                 providers: store.providerGlanceRows,
                 selection: $store.popoverSelection
             )
-            Divider()
+            .padding(.top, 8)
+
+            GlassFallbacks.glassSeparator()
+                .padding(.top, 2)
+
+            // Content scrolls under glass chrome (LG-A7 soft edges).
             ScrollView {
                 content
                     .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 4)
             }
-            Divider()
-            PopoverFooter(refreshInProgress: store.refreshInProgress) {
-                store.refreshAll()
+            .modifier(GlassFallbacks.SoftScrollEdges())
+
+            GlassFallbacks.glassSeparator()
+
+            // Sticky glass footer dock — Open Usage Window (FB1-43 / LG-A8 one CTA).
+            PopoverFooter {
+                onOpenUsage?(store.popoverSelection)
             }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 8)
         }
-        .frame(width: 320)
-        .frame(minHeight: 200, maxHeight: 480)
+        // Craft width aligns with popover.html (~424). Live menu-bar uses a
+        // bounded max height + scroll; QI full-plate expands for multi-limit IA.
+        .frame(width: 412)
+        .frame(
+            minHeight: 220,
+            idealHeight: qiFullPlate ? 1600 : 640,
+            maxHeight: qiFullPlate ? 1600 : 640
+        )
+        // Liquid Glass panel — must sit on a clear NSPopover window.
+        .background {
+            GlassFallbacks.panelSurfaceBackground()
+        }
+        .clipShape(
+            RoundedRectangle(cornerRadius: GlassFallbacks.panelCornerRadius, style: .continuous)
+        )
+        .shadow(color: .black.opacity(0.28), radius: 32, y: 14)
+        .padding(2)
+        // ⌘R refresh without a second glass footer CTA (OV-9 / FB1-43: one Open Usage dock).
+        .background {
+            Button("Refresh") { store.refreshAll() }
+                .keyboardShortcut("r", modifiers: [.command])
+                .opacity(0)
+                .frame(width: 0, height: 0)
+                .allowsHitTesting(false)
+                .accessibilityHidden(true)
+        }
     }
 
     @ViewBuilder
@@ -53,14 +107,24 @@ struct PopoverRoot: View {
                 onSelectAccount: { surfaceId, accountKey in
                     store.setSelectedAccount(surfaceId: surfaceId, accountKey: accountKey)
                 },
-                onOpenUsageWindow: { id in onOpenUsage?(id) }
+                onRefreshProvider: { surfaceId in
+                    store.refresh(surfaceId: surfaceId)
+                }
             )
         } else if store.providerGlanceRows.isEmpty {
             emptyState
         } else {
+            // Overview inventory: per-account rows + official marks (OV-3…OV-10 / HTML mode-overview).
             PopoverOverviewTab(
                 providers: store.providerGlanceRows,
-                selection: $store.popoverSelection
+                accounts: store.accounts,
+                selection: $store.popoverSelection,
+                onRefreshSurface: { surfaceId in
+                    store.refresh(surfaceId: surfaceId)
+                },
+                onSelectAccount: { surfaceId, accountKey in
+                    store.setSelectedAccount(surfaceId: surfaceId, accountKey: accountKey)
+                }
             )
         }
     }

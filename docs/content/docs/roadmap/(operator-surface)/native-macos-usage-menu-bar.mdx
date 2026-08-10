@@ -1,10 +1,10 @@
 ---
-title: "jackin❯ Desktop — native macOS usage status bar"
+title: "jackin❯ desktop — native macOS usage status bar"
 ---
 
 **Status**: Partially implemented
 
-**Current state**: jackin❯ Desktop ships one native status item per auto-detected provider, the tab-grid Agent Usage preview, the Capsule-parity Usage window, host-global snapshot coordination, and secret-free release validation. Public notarized distribution and production acceptance remain unfinished, so this item cannot retire yet.
+**Current state**: jackin❯ desktop ships one native status item per auto-detected provider, a focused usage popover, the Capsule-parity Usage window, host-global snapshot coordination, and secret-free release validation. This implementation is deliberately accepted as a functional baseline, not as visual parity: its native composition and feel remain materially short of the canonical HTML design. Visual alignment continues in a follow-up pull request. Public notarized distribution and production acceptance also remain unfinished, so this item cannot retire yet.
 
 ## Shipped baseline
 
@@ -20,7 +20,7 @@ Operator behavior lives in [macOS agent-usage menu bar](/guides/macos-usage-menu
 
 ### Production activation and proof
 
-As of 2026-08-09, the `release-macos` environment has none of the five required Apple secrets, the repository has neither required signing variable, no jackin❯ Desktop release asset exists, and the Homebrew tap has no `jackin-desktop` cask. Secret-free validation passing does not satisfy these production requirements.
+As of 2026-08-09, the `release-macos` environment has none of the five required Apple secrets, the repository has neither required signing variable, no jackin❯ desktop release asset exists, and the Homebrew tap has no `jackin-desktop` cask. Secret-free validation passing does not satisfy these production requirements.
 
 1. Provision the Developer ID Application certificate, App Store Connect notarization key, team id, and pinned certificate fingerprint through the documented operator path. Credentials must remain confined to the GitHub-hosted macOS release environment and be deleted before supply-chain tooling runs.
 2. Cut the first non-development release from `main`; run publish mode; sign, notarize, staple, and Gatekeeper-validate `JackinDesktop.app`; then publish the immutable ZIP, SHA-256 sidecar, Sigstore bundle, SBOM, and GitHub attestation. Verify the downloaded artifact with `cargo xtask release-verify`.
@@ -30,12 +30,14 @@ As of 2026-08-09, the `release-macos` environment has none of the five required 
 
 ### Native interaction and visual acceptance
 
-Structural tests, full-Xcode tests, pure Swift harnesses, build verification, and ephemeral launch smokes exist. They do not replace the live matrix required by the superseded plan corpus.
+The durable design oracle is `plans/previews/desktop-ui/index.html`, `popover.html`, and their adjacent `SPECIFICATION.md`. Historical implementation plans, progress screenshots, and visual-diff journals were removed because they described a process, not the desired product. Structural tests, full-Xcode tests, pure Swift harnesses, build verification, and ephemeral launch smokes do not prove visual parity.
+
+- Continue direct HTML-to-running-app alignment in the next pull request. Treat the current native UI as a baseline to improve, never as the visual source of truth.
 
 - Run real Apple Silicon acceptance on macOS 14 fallback materials and macOS 26 Liquid Glass, covering light/dark appearance, Increase Contrast, Reduce Transparency, mouse, keyboard-only navigation, VoiceOver, and screen-sharing privacy transitions.
 - Exercise no providers, one provider, all detected providers, dual and many-window quotas, multi-account selection, very long labels, refreshing, fresh, stale-last-good, depleted-with-reset, needs-login, unsupported, and provider-error states at minimum and large window sizes. Include remembered sizing, repeated open/close, and simultaneous popover/Usage-window behavior.
-- Compare jackin❯ Desktop, Capsule, and `jackin usage` from the same serialized snapshots; every quota/account string and ordering decision must agree. Retain redacted evidence.
-- Capture redacted screenshots for status items, Overview/provider popover tabs, the Usage window, and every state family. Add deterministic rendered-surface snapshots on a stable macOS 26 lane. Current source-confinement and presentation harnesses prove ownership and structure, not pixel output.
+- Compare jackin❯ desktop, Capsule, and `jackin usage` from the same serialized snapshots; every quota/account string and ordering decision must agree. Retain redacted evidence.
+- Compare the running native status items, Overview/provider popover tabs, Usage window, and state families directly with the HTML oracle. Temporary local captures may assist review, but progress screenshots and visual-diff artifacts do not belong in the repository. Current source-confinement and presentation harnesses prove ownership and structure, not pixel output.
 
 ### Capture-gated provider work
 
@@ -52,7 +54,7 @@ These came from the superseded screen roadmap and remain ideas, not part of the 
 
 ## Superseded plan work
 
-The old native program's main-actor bridge, shared-snapshot authority, Rust-owned presentation, CI, compact-glance, state, terminology, and Usage-detail defects were resolved by the shipped jackin❯ Desktop program. Its single-item/Settings screen contract was deliberately replaced. Only production activation/proof, live visual acceptance, capture-gated Amp work, and the explicitly deferred candidates above remain.
+The old native program's main-actor bridge, shared-snapshot authority, Rust-owned presentation, CI, compact-glance, state, terminology, and Usage-detail defects were resolved by the shipped jackin❯ desktop program. Its single-item/Settings screen contract was deliberately replaced. Only production activation/proof, live visual acceptance, capture-gated Amp work, and the explicitly deferred candidates above remain.
 
 ## Completion gate
 

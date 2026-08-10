@@ -5,13 +5,13 @@ import JackinUsageBridge
 import ServiceManagement
 import SwiftUI
 
-struct SettingsView: View {
+public struct SettingsView: View {
     @ObservedObject var store: PresentationStore
     @State private var floorMinutes: Double = 5
     @State private var launchAtLogin: Bool = false
     @State private var launchAtLoginNote: String?
 
-    var body: some View {
+    public var body: some View {
         Form {
             Section("Menu bar") {
                 Picker("Display", selection: $store.displayMode) {
@@ -40,11 +40,12 @@ struct SettingsView: View {
 
                 if store.displayMode == .strip {
                     Picker("Max providers in menu bar", selection: $store.stripMax) {
-                        ForEach(1...8, id: \.self) { n in
-                            Text(n == 8 ? "8 (all)" : "\(n)").tag(n)
+                        // SB-3: burn-first bar never exceeds three chips.
+                        ForEach(1...3, id: \.self) { n in
+                            Text("\(n)").tag(n)
                         }
                     }
-                    .accessibilityLabel("Maximum providers shown in menu bar strip")
+                    .accessibilityLabel("Maximum providers shown in menu bar strip (1–3)")
                 }
 
                 Picker("Percent style", selection: $store.percentStyle) {

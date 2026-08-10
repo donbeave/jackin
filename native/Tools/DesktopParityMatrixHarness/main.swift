@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Alexey Zhokhov
 // SPDX-License-Identifier: Apache-2.0
 
-/// OpenUsage / CodexBar **limits-only** parity matrix for jackin❯ Desktop.
+/// OpenUsage / CodexBar **limits-only** parity matrix for jackin❯ desktop.
 ///
 /// Drives shipped pure presentation builders (no XCTest, no AppKit window) to
 /// prove multi-provider strip + dual-bucket + depleted + full catalog display
@@ -49,6 +49,12 @@ struct DesktopParityMatrixHarness {
             "catalog order matches HostSurfaceId::ALL",
             frozenHostSurfaceIds == [
                 "claude", "codex", "amp", "grok", "zai", "kimi", "minimax", "opencode",
+            ]
+        )
+        check(
+            "desktop Overview roles match HTML provider identity",
+            desktopProviderIconKeys.compactMap(desktopProviderOverviewRole) == [
+                "Codex", "Claude", "Daily", "Grok", "GLM", "Kimi Code", "MiniMax",
             ]
         )
         check(
@@ -100,10 +106,11 @@ struct DesktopParityMatrixHarness {
             percentStyle: "left",
             includeAllEnabled: true
         )
-        check("strip shows all 8 providers", strip.count == 8, "count=\(strip.count)")
+        // SB-3: burn-first hard-caps at 3 even when maxCount asks for 8.
+        check("strip hard-caps at 3 (SB-3)", strip.count == 3, "count=\(strip.count)")
         check(
-            "strip ids catalog order",
-            strip.map(\.surfaceId) == frozenHostSurfaceIds,
+            "strip ids catalog order prefix",
+            strip.map(\.surfaceId) == Array(frozenHostSurfaceIds.prefix(3)),
             "ids=\(strip.map(\.surfaceId))"
         )
         for chip in strip {
@@ -242,7 +249,8 @@ struct DesktopParityMatrixHarness {
             percentStyle: "left",
             includeAllEnabled: true
         )
-        check("mixed strip still 8 chips", mixedChips.count == 8)
+        check("mixed strip hard-caps at 3 (SB-3)", mixedChips.count == 3)
+        // Amp is third in frozen catalog — empty data still shows honest "—" when in cap.
         check(
             "amp empty shows placeholder not invented percent",
             mixedChips.first(where: { $0.surfaceId == "amp" })?.percentLines == ["—"]
@@ -270,10 +278,12 @@ struct DesktopParityMatrixHarness {
             )) ?? ""
         }
         let statusItem = read("StatusItemLabel.swift")
+        let statusBar = read("DesktopAppDelegate.swift")
         let popover = read("PopoverRoot.swift")
         let popoverProviderTab = read("Popover/PopoverProviderTab.swift")
         let provider = read("UsageWindow/ProviderCardView.swift")
         let overview = read("UsageWindow/OverviewListView.swift")
+        let usageController = read("UsageWindowController.swift")
         check(
             "StatusItemRendering displays the Rust bar label verbatim",
             statusItem.contains("StatusItemRendering")
@@ -343,7 +353,8 @@ struct DesktopParityMatrixHarness {
         )
         check(
             "ProviderCard bucket identity is Rust rowId, not label",
-            provider.contains("ForEach(content.detail.rows)")
+            provider.contains("content.detail.rows")
+                && provider.contains("ForEach")
                 && !provider.contains("ForEach(surface.buckets)")
         )
         check(
@@ -362,6 +373,33 @@ struct DesktopParityMatrixHarness {
             "Usage empty state is the fixed hint (no invented fallback copy)",
             overview.contains("UsageWindowModel.emptyHint")
                 && !overview.contains("\"No enabled surfaces\"")
+        )
+        check(
+            "Overview uses per-account inventory helper (HTML SoT)",
+            overview.contains("OverviewInventory")
+        )
+        check(
+            "Usage account nest has mini meter geometry",
+            usageRoot.contains("UsageAccountMiniMeter")
+                || usageRoot.contains("accountMiniMeter")
+        )
+        check(
+            "Usage window NSToolbar host",
+            usageController.contains("NSHostingController")
+                && usageController.contains("toolbarStyle = .unified")
+        )
+        check(
+            "Status left-click focuses provider via StatusPopoverFocus",
+            statusBar.contains("StatusPopoverFocus") && statusBar.contains("popoverSelection")
+        )
+        check(
+            "Popover prefers detailPresentation buckets",
+            popoverProviderTab.contains("detailPresentation")
+                && popoverProviderTab.contains("ProviderUsageLinks")
+        )
+        check(
+            "ProviderUsageLinks desktop map complete",
+            ProviderUsageLinks.desktopProviderURLsComplete
         )
         check(
             "no sparkline/donut/trend product UI in status item",

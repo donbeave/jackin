@@ -110,7 +110,7 @@ enum Command {
     /// Use as `cargo xtask construct <subcommand>`.
     #[command(subcommand)]
     Construct(construct::ConstructCommand),
-    /// jackin❯ Desktop (native macOS usage menu bar) build, verify, and release.
+    /// jackin❯ desktop (native macOS usage menu bar) build, verify, and release.
     ///
     /// Use as `cargo xtask desktop build|verify|run|…`.
     /// Prefer mise: `mise run desktop-build`, `mise run desktop-verify`, `mise run desktop-run`.

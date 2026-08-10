@@ -665,8 +665,8 @@ public protocol UsageMenuBarBridgeProtocol: AnyObject, Sendable {
     
     /**
      * Selected-account-aware provider glance rows in the canonical Desktop
-     * order (status bar / popover / Usage window). Rust owns detection,
-     * ordering, and every display string.
+     * order (popover / Usage inventory). Full detected set — includes 0%.
+     * Rust owns detection, ordering, and every display string.
      */
     func providerGlanceRows() throws  -> [ProviderGlanceRowDto]
     
@@ -722,6 +722,14 @@ public protocol UsageMenuBarBridgeProtocol: AnyObject, Sendable {
      * Compact bar label for one surface.
      */
     func statusBarLabel(surfaceId: String) throws  -> String?
+    
+    /**
+     * Burn-first **status bar** glance rows only (SB-3/14/17/19).
+     *
+     * Filters 0%, ranks soonest-then-remaining, hard-caps at 3. `max` is
+     * clamped into `1…3`. Popover/Usage keep using [`Self::provider_glance_rows`].
+     */
+    func statusBarProviderGlanceRows(max: UInt32) throws  -> [ProviderGlanceRowDto]
     
 }
 /**
@@ -933,8 +941,8 @@ open func panicProbe()throws   {try rustCallWithError(FfiConverterTypeUsageBridg
     
     /**
      * Selected-account-aware provider glance rows in the canonical Desktop
-     * order (status bar / popover / Usage window). Rust owns detection,
-     * ordering, and every display string.
+     * order (popover / Usage inventory). Full detected set — includes 0%.
+     * Rust owns detection, ordering, and every display string.
      */
 open func providerGlanceRows()throws  -> [ProviderGlanceRowDto]  {
     return try  FfiConverterSequenceTypeProviderGlanceRowDto.lift(try rustCallWithError(FfiConverterTypeUsageBridgeError_lift) {
@@ -1068,6 +1076,22 @@ open func statusBarLabel(surfaceId: String)throws  -> String?  {
     uniffi_jackin_usage_ffi_fn_method_usagemenubarbridge_status_bar_label(
             self.uniffiCloneHandle(),
         FfiConverterString.lower(surfaceId),uniffiCallStatus
+    )
+})
+}
+    
+    /**
+     * Burn-first **status bar** glance rows only (SB-3/14/17/19).
+     *
+     * Filters 0%, ranks soonest-then-remaining, hard-caps at 3. `max` is
+     * clamped into `1…3`. Popover/Usage keep using [`Self::provider_glance_rows`].
+     */
+open func statusBarProviderGlanceRows(max: UInt32)throws  -> [ProviderGlanceRowDto]  {
+    return try  FfiConverterSequenceTypeProviderGlanceRowDto.lift(try rustCallWithError(FfiConverterTypeUsageBridgeError_lift) {
+        uniffiCallStatus in
+    uniffi_jackin_usage_ffi_fn_method_usagemenubarbridge_status_bar_provider_glance_rows(
+            self.uniffiCloneHandle(),
+        FfiConverterUInt32.lower(max),uniffiCallStatus
     )
 })
 }
@@ -2762,7 +2786,7 @@ private let initializationResult: InitializationResult = {
     if (uniffi_jackin_usage_ffi_checksum_method_usagemenubarbridge_panic_probe() != 5364) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_jackin_usage_ffi_checksum_method_usagemenubarbridge_provider_glance_rows() != 13899) {
+    if (uniffi_jackin_usage_ffi_checksum_method_usagemenubarbridge_provider_glance_rows() != 13328) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_jackin_usage_ffi_checksum_method_usagemenubarbridge_refresh() != 32155) {
@@ -2793,6 +2817,9 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_jackin_usage_ffi_checksum_method_usagemenubarbridge_status_bar_label() != 38813) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_jackin_usage_ffi_checksum_method_usagemenubarbridge_status_bar_provider_glance_rows() != 55990) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_jackin_usage_ffi_checksum_constructor_usagemenubarbridge_create() != 13398) {

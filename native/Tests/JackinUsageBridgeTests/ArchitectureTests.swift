@@ -161,9 +161,43 @@ final class ArchitectureTests: XCTestCase {
     func testSeverityAndStatusBadgeMappings() {
         XCTAssertEqual(severityTint("danger"), Color.red)
         XCTAssertEqual(severityTint("warn"), Color.orange)
+        // Healthy/default = product phosphor, never host system accent blue (LG-A9).
+        XCTAssertEqual(severityTint("ok"), Color.jackinPhosphor)
+        XCTAssertEqual(severityTint("normal"), Color.jackinPhosphor)
+        XCTAssertEqual(severityTint(""), Color.jackinPhosphor)
+        XCTAssertNotEqual(severityTint("ok"), Color.accentColor)
         XCTAssertEqual(statusBadgeSymbol("error"), "exclamationmark.triangle")
         XCTAssertEqual(statusBadgeSymbol("stale"), "clock")
         XCTAssertNil(statusBadgeSymbol("fresh"))
+    }
+
+    // ProviderMarks live in JackinDesktopUI — covered by DesktopSoT / visual harness.
+
+    func testJackinPhosphorTokensMatchHTMLSoT() {
+        XCTAssertEqual(JackinBrand.phosphorDarkSRGB.r, 0x5C / 255.0, accuracy: 0.0001)
+        XCTAssertEqual(JackinBrand.phosphorDarkSRGB.g, 0xF0 / 255.0, accuracy: 0.0001)
+        XCTAssertEqual(JackinBrand.phosphorDarkSRGB.b, 0x7A / 255.0, accuracy: 0.0001)
+        XCTAssertEqual(JackinBrand.phosphorLightSRGB.r, 0x0B / 255.0, accuracy: 0.0001)
+        XCTAssertEqual(JackinBrand.phosphorLightSRGB.g, 0x77 / 255.0, accuracy: 0.0001)
+        XCTAssertEqual(JackinBrand.phosphorLightSRGB.b, 0x4E / 255.0, accuracy: 0.0001)
+    }
+
+    func testRemainingPercentMeterSeverityMatchesHTMLNestBands() {
+        // index.html nest fixture: 100 high, 57 mid, 12 low, 0 depleted.
+        XCTAssertEqual(remainingPercentMeterSeverity(100), "normal")
+        XCTAssertEqual(remainingPercentMeterSeverity(61), "normal")
+        XCTAssertEqual(remainingPercentMeterSeverity(60), "warn")
+        XCTAssertEqual(remainingPercentMeterSeverity(57), "warn")
+        XCTAssertEqual(remainingPercentMeterSeverity(21), "warn")
+        XCTAssertEqual(remainingPercentMeterSeverity(20), "danger")
+        XCTAssertEqual(remainingPercentMeterSeverity(12), "danger")
+        XCTAssertEqual(remainingPercentMeterSeverity(0), "normal")
+        XCTAssertEqual(accountMeterSeverity(severity: "mid", remainingPercent: 57), "warn")
+        XCTAssertEqual(accountMeterSeverity(severity: "low", remainingPercent: 12), "danger")
+        XCTAssertEqual(accountMeterSeverity(severity: "high", remainingPercent: 100), "normal")
+        XCTAssertEqual(accountMeterSeverity(severity: nil, remainingPercent: 57), "warn")
+        XCTAssertEqual(severityTint("warn"), Color.orange)
+        XCTAssertEqual(severityTint("danger"), Color.red)
     }
 
     func testStatusItemChipHelpers() {
@@ -324,14 +358,14 @@ final class ArchitectureTests: XCTestCase {
         )
         XCTAssertTrue(chips[0].percentLines.contains("79%"))
 
-        let worstFirst = buildStatusItemChips(
+        let higherRemFirst = buildStatusItemChips(
             surfaces: surfaces,
             maxCount: 1,
             preferWorstFirst: true,
             percentStyle: "left"
         )
-        // Claude min remaining 79 < Codex 84 → Claude worst.
-        XCTAssertEqual(worstFirst.map(\.surfaceId), ["claude"])
+        // No reset epochs: SB-17 tie-break = higher remaining (Codex 84 > Claude 79).
+        XCTAssertEqual(higherRemFirst.map(\.surfaceId), ["codex"])
 
         // Used style flips stacked lines only; remainings stay Rust-owned.
         let usedChips = buildStatusItemChips(
@@ -361,13 +395,18 @@ final class ArchitectureTests: XCTestCase {
             preferWorstFirst: false,
             percentStyle: "left"
         )
-        XCTAssertEqual(dep.count, 1)
-        XCTAssertEqual(dep[0].percentLines, ["resets 1h 21m"])
-        XCTAssertTrue(statusItemCompactIsResetCountdown(dep[0].compactLabel))
+        // SB-19: pure 0% remaining is out of burn-first chip membership.
+        XCTAssertEqual(dep.count, 0)
+        // Display helpers still format depleted countdown when chip is built manually.
         XCTAssertEqual(
-            statusItemAccessibilityLabel(chips: dep),
-            "jackin Desktop Cl resets 1h 21m"
+            statusItemChipDisplayLines(
+                remainings: [0],
+                compactLabel: "Cl resets 1h 21m",
+                percentStyle: "left"
+            ),
+            ["resets 1h 21m"]
         )
+        XCTAssertTrue(statusItemCompactIsResetCountdown("Cl resets 1h 21m"))
 
         // Dual-bucket depleted session + healthy weekly must keep 79%.
         XCTAssertEqual(
@@ -493,6 +532,102 @@ final class ArchitectureTests: XCTestCase {
         XCTAssertEqual(chips.map(\.surfaceId), ["s0", "s1", "s2"])
     }
 
+    /// OV-11: Overview has no orphan Overview-level ProgressView / loading bar —
+    /// only per-account meters. Source under native/Sources (shipped path).
+    func testOverviewHasNoOrphanOverviewLevelProgress() throws {
+        let overview = sourcesRoot
+            .appendingPathComponent("JackinDesktop/Popover/PopoverOverviewTab.swift")
+        let text = try String(contentsOf: overview, encoding: .utf8)
+        XCTAssertFalse(
+            text.contains("ProgressView"),
+            "OV-11: Overview must not ship ProgressView as Overview-level chrome"
+        )
+        XCTAssertFalse(
+            text.contains("LinearProgress"),
+            "OV-11: no LinearProgress Overview-level chrome"
+        )
+        // Per-account meters remain (account-tied, not Overview-wide).
+        XCTAssertTrue(
+            text.contains("overviewMeter") || text.contains("Capsule"),
+            "per-account meter geometry still present"
+        )
+    }
+
+    /// SB-5 vs FB1-6: bar stays template mono (no severity tint). Urgency color
+    /// on chip chrome is SB-P4 OPEN — not silently met as full SB-5.
+    func testStatusBarIsTemplateMonoWithoutSeverityTint() throws {
+        let label = sourcesRoot
+            .appendingPathComponent("JackinDesktop/StatusItemLabel.swift")
+        let text = try String(contentsOf: label, encoding: .utf8)
+        XCTAssertTrue(
+            text.contains("isTemplate = true") || text.contains("isTemplate=true"),
+            "status icons must be template mono (FB1-6)"
+        )
+        XCTAssertTrue(
+            text.contains("no severity tint") || text.contains("FB1-6"),
+            "StatusItemLabel must document FB1-6 / no severity tint on bar"
+        )
+    }
+
+    /// SB-13: ranked id order change forces status-item rebuild.
+    func testStatusBarOrderRequiresRebuildOnRankChange() {
+        XCTAssertFalse(
+            statusBarOrderRequiresRebuild(
+                previous: ["codex", "claude", "amp"],
+                next: ["codex", "claude", "amp"]
+            )
+        )
+        XCTAssertTrue(
+            statusBarOrderRequiresRebuild(
+                previous: ["codex", "claude", "amp"],
+                next: ["claude", "codex", "amp"]
+            ),
+            "SB-13: swap of rank 1/2 must rebuild visual bar order"
+        )
+        XCTAssertTrue(
+            statusBarOrderRequiresRebuild(
+                previous: ["codex", "claude"],
+                next: ["codex", "claude", "amp"]
+            )
+        )
+    }
+
+    /// SB-3/19 fixture filter for status-bar membership (QI / defensive path).
+    func testSelectStatusBarGlanceRowsHidesZeroAndCapsThree() {
+        func row(id: String, pct: UInt8?) -> PresentationStore.GlanceProviderRow {
+            PresentationStore.GlanceProviderRow(
+                surfaceId: id,
+                iconKey: id,
+                displayLabel: id,
+                accountLabel: "",
+                planLabel: nil,
+                glanceRemainingPercent: pct,
+                barLabel: pct.map { "\($0)%" } ?? "–",
+                headline: pct.map { "\($0)% left" } ?? "–",
+                resetLabel: nil,
+                exactReset: nil,
+                statusWord: "fresh",
+                isRefreshing: false,
+                statusLabel: "fresh",
+                severity: "normal",
+                updatedLabel: "now",
+                lastError: nil,
+                dimmed: false
+            )
+        }
+        let inventory = [
+            row(id: "claude", pct: 12),
+            row(id: "codex", pct: 0),
+            row(id: "amp", pct: 100),
+            row(id: "grok", pct: 72),
+            row(id: "kimi", pct: 45),
+        ]
+        let bar = selectStatusBarGlanceRows(from: inventory, maxCount: 8)
+        XCTAssertEqual(bar.count, 3)
+        XCTAssertEqual(bar.map(\.surfaceId), ["claude", "amp", "grok"])
+        XCTAssertFalse(bar.contains(where: { $0.surfaceId == "codex" }))
+    }
+
     /// OpenUsage/CodexBar matrix: all 8 frozen hosts displayable with icons + remaining %.
     func testFullFrozenCatalogStripDisplayable() {
         XCTAssertEqual(frozenHostSurfaceIds.count, 8)
@@ -516,7 +651,9 @@ final class ArchitectureTests: XCTestCase {
             percentStyle: "left",
             includeAllEnabled: true
         )
-        XCTAssertEqual(chips.map(\.surfaceId), frozenHostSurfaceIds)
+        // SB-3: hard-cap 3 even when maxCount asks for 8.
+        XCTAssertEqual(chips.count, 3)
+        XCTAssertEqual(chips.map(\.surfaceId), Array(frozenHostSurfaceIds.prefix(3)))
         for chip in chips {
             XCTAssertNotNil(chip.systemImage, "\(chip.surfaceId) needs SF Symbol")
             XCTAssertFalse(chip.percentLines.isEmpty, "\(chip.surfaceId) needs displayable %")

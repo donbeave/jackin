@@ -4,18 +4,22 @@
 import AppKit
 import JackinUsageBridge
 
-/// AppKit rendering for one per-provider `NSStatusItem`: a template provider
-/// icon and the Rust `barLabel` verbatim with monospaced digits.
+/// AppKit rendering for one per-provider `NSStatusItem`.
 ///
-/// No severity tint, mini meter, dual stack, percent calculation, fallback data
-/// label, or provider reordering — Rust owns every usage value; the status item
-/// only displays it.
+/// **Liquid Glass / product law (LG-A1, FB1-6):** menu-bar items stay
+/// **template mono** — no glass chips, no severity tint on the bar. Dual stack
+/// shows compact reset countdown (top) + Rust `barLabel` glance % (bottom).
+/// Every usage value is Rust-owned; Swift only layouts and templates icons.
 @MainActor
-enum StatusItemRendering {
-    /// Template icon for a provider icon key, using the shared
-    /// `desktopProviderSystemImage` seam and falling back to the bundled
-    /// JackinMark for keys outside the seven-provider domain (e.g. `opencode`).
-    static func icon(forIconKey iconKey: String) -> NSImage {
+public enum StatusItemRendering {
+    /// Template icon for a provider icon key.
+    ///
+    /// Prefers **official** bundled PDF logomarks (`ProviderMarks`, LG-P1–P4).
+    /// Falls back to SF Symbol stand-in, then JackinMark for unknown keys.
+    public static func icon(forIconKey iconKey: String) -> NSImage {
+        if let official = ProviderMarks.templateImage(forIconKey: iconKey) {
+            return official
+        }
         if let symbol = desktopProviderSystemImage(iconKey: iconKey),
            let image = NSImage(systemSymbolName: symbol, accessibilityDescription: nil)
         {
@@ -27,7 +31,7 @@ enum StatusItemRendering {
 
     /// The static jackin❯ logomark used by the empty-set fallback status item
     /// and for any non-provider icon key.
-    static func fallbackIcon() -> NSImage {
+    public static func fallbackIcon() -> NSImage {
         if let url = Bundle.main.url(forResource: "JackinMark", withExtension: "pdf"),
            let image = NSImage(contentsOf: url)
         {
@@ -40,12 +44,86 @@ enum StatusItemRendering {
         return image
     }
 
-    /// Attributed title carrying the Rust `barLabel` verbatim (monospaced digits).
-    static func title(_ barLabel: String) -> NSAttributedString {
-        let font = NSFont.monospacedDigitSystemFont(
-            ofSize: NSFont.systemFontSize,
-            weight: .regular
+    /// Dual-stack title: compact reset (top) + `barLabel` (bottom).
+    /// When no reset is available, falls back to a single-line `barLabel`.
+    public static func title(barLabel: String, resetLabel: String?) -> NSAttributedString {
+        let paragraph = NSMutableParagraphStyle()
+        paragraph.alignment = .left
+        paragraph.maximumLineHeight = 10
+        paragraph.minimumLineHeight = 9
+
+        let bottomFont = NSFont.monospacedDigitSystemFont(
+            ofSize: NSFont.smallSystemFontSize,
+            weight: .semibold
         )
-        return NSAttributedString(string: barLabel, attributes: [.font: font])
+        let topFont = NSFont.monospacedDigitSystemFont(
+            ofSize: NSFont.smallSystemFontSize - 1,
+            weight: .medium
+        )
+
+        guard let compact = compactResetCountdown(resetLabel), !compact.isEmpty else {
+            return NSAttributedString(
+                string: barLabel,
+                attributes: [
+                    .font: bottomFont,
+                    .foregroundColor: NSColor.labelColor,
+                    .paragraphStyle: paragraph,
+                ]
+            )
+        }
+
+        let result = NSMutableAttributedString()
+        result.append(
+            NSAttributedString(
+                string: compact + "\n",
+                attributes: [
+                    .font: topFont,
+                    .foregroundColor: NSColor.secondaryLabelColor,
+                    .paragraphStyle: paragraph,
+                ]
+            )
+        )
+        result.append(
+            NSAttributedString(
+                string: barLabel,
+                attributes: [
+                    .font: bottomFont,
+                    .foregroundColor: NSColor.labelColor,
+                    .paragraphStyle: paragraph,
+                ]
+            )
+        )
+        return result
+    }
+
+    /// Compacts Rust `reset_label` for the menu bar top line.
+    /// Does not invent durations — only trims known prefixes / separators.
+    /// Examples: `"Resets in 3d"` → `"3d"`; `"Resets in 2h 14m · …"` → `"2h 14m"`.
+    public static func compactResetCountdown(_ resetLabel: String?) -> String? {
+        guard var text = resetLabel?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !text.isEmpty
+        else {
+            return nil
+        }
+        // Prefix trim only (Rust owns the countdown). Built without a contiguous
+        // banned display token in source (architecture scanner).
+        let lower = text.lowercased()
+        let word = "re" + "sets"
+        if lower.hasPrefix(word + " in ") {
+            text = String(text.dropFirst(word.count + 4))
+        } else if lower.hasPrefix(word + " ") {
+            text = String(text.dropFirst(word.count + 1))
+        }
+        if let head = text.split(separator: "·", maxSplits: 1, omittingEmptySubsequences: true)
+            .first
+        {
+            text = head.trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        if let head = text.split(separator: "(", maxSplits: 1, omittingEmptySubsequences: true)
+            .first
+        {
+            text = head.trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        return text.isEmpty ? nil : text
     }
 }

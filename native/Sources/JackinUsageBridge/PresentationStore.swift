@@ -42,7 +42,8 @@ public func statusItemTextSelection(
         }
         return .pinned(surfaceId: id)
     case .strip:
-        let cap = UInt32(max(1, min(8, stripMax)))
+        // SB-3 hard-caps burn-first strip at 3.
+        let cap = UInt32(max(1, min(statusBarMaxChips, stripMax)))
         return .strip(max: cap)
     }
 }
@@ -67,6 +68,38 @@ public final class PresentationStore: ObservableObject {
         /// Rust-owned Capsule-parity provider-detail card. The Usage window
         /// renders these rows verbatim; other surfaces ignore it.
         public var detailPresentation: UsageDetailPresentation
+
+        public init(
+            id: String,
+            label: String,
+            enabled: Bool,
+            statusBarLabel: String,
+            status: String,
+            accountLabel: String,
+            username: String?,
+            planLabel: String?,
+            credentialOrigin: String?,
+            estimateCaption: String?,
+            buckets: [BucketRow],
+            updatedLabel: String,
+            lastError: String?,
+            detailPresentation: UsageDetailPresentation
+        ) {
+            self.id = id
+            self.label = label
+            self.enabled = enabled
+            self.statusBarLabel = statusBarLabel
+            self.status = status
+            self.accountLabel = accountLabel
+            self.username = username
+            self.planLabel = planLabel
+            self.credentialOrigin = credentialOrigin
+            self.estimateCaption = estimateCaption
+            self.buckets = buckets
+            self.updatedLabel = updatedLabel
+            self.lastError = lastError
+            self.detailPresentation = detailPresentation
+        }
     }
 
     public struct BucketRow: Identifiable, Sendable, Equatable {
@@ -111,6 +144,44 @@ public final class PresentationStore: ObservableObject {
         public let updatedLabel: String
         public let lastError: String?
         public let dimmed: Bool
+
+        public init(
+            surfaceId: String,
+            iconKey: String,
+            displayLabel: String,
+            accountLabel: String,
+            planLabel: String?,
+            glanceRemainingPercent: UInt8?,
+            barLabel: String,
+            headline: String,
+            resetLabel: String?,
+            exactReset: String?,
+            statusWord: String,
+            isRefreshing: Bool,
+            statusLabel: String,
+            severity: String,
+            updatedLabel: String,
+            lastError: String?,
+            dimmed: Bool
+        ) {
+            self.surfaceId = surfaceId
+            self.iconKey = iconKey
+            self.displayLabel = displayLabel
+            self.accountLabel = accountLabel
+            self.planLabel = planLabel
+            self.glanceRemainingPercent = glanceRemainingPercent
+            self.barLabel = barLabel
+            self.headline = headline
+            self.resetLabel = resetLabel
+            self.exactReset = exactReset
+            self.statusWord = statusWord
+            self.isRefreshing = isRefreshing
+            self.statusLabel = statusLabel
+            self.severity = severity
+            self.updatedLabel = updatedLabel
+            self.lastError = lastError
+            self.dimmed = dimmed
+        }
     }
 
     public struct OverviewRow: Identifiable, Sendable, Equatable {
@@ -134,6 +205,34 @@ public final class PresentationStore: ObservableObject {
         public let selected: Bool
         public let remainingPercent: UInt8?
         public let statusWord: String
+        /// Optional presentation severity (`normal`/`warn`/`danger` or HTML mid/low/high).
+        /// Empty → derived from remaining via ``accountMeterSeverity``.
+        public let severity: String
+
+        public init(
+            surfaceId: String,
+            accountKey: String,
+            accountLabel: String,
+            planLabel: String?,
+            selected: Bool,
+            remainingPercent: UInt8?,
+            statusWord: String,
+            severity: String = ""
+        ) {
+            self.surfaceId = surfaceId
+            self.accountKey = accountKey
+            self.accountLabel = accountLabel
+            self.planLabel = planLabel
+            self.selected = selected
+            self.remainingPercent = remainingPercent
+            self.statusWord = statusWord
+            self.severity = severity
+        }
+
+        /// Resolved meter severity for nest/overview (explicit or remaining band).
+        public var meterSeverity: String {
+            accountMeterSeverity(severity: severity, remainingPercent: remainingPercent)
+        }
     }
 
     @Published public private(set) var mergedBarLabel: String = "jackin❯ usage"
@@ -146,8 +245,12 @@ public final class PresentationStore: ObservableObject {
     /// Footer / window next-refresh string from Rust.
     @Published public private(set) var nextRefreshLabel: String = ""
     @Published public private(set) var surfaces: [SurfaceRow] = []
-    /// Rust-owned seven-provider glance rows (auto-detected, canonical order).
+    /// Rust-owned seven-provider glance rows (auto-detected, catalog order).
+    /// Full inventory for popover / Usage — **includes** 0% (OV-7).
     @Published public private(set) var providerGlanceRows: [GlanceProviderRow] = []
+    /// Burn-first **status bar** chips only (SB-3/14/17/19): hide 0%, soonest-
+    /// then-remaining, hard-cap ≤3. Popover never uses this list.
+    @Published public private(set) var statusBarGlanceRows: [GlanceProviderRow] = []
     /// Presentation-only privacy flag: `false` hides the Rust status-bar values
     /// during screen sharing (it may hide a Rust label, never replace it).
     @Published public private(set) var statusBarShowsValues = true
@@ -187,7 +290,8 @@ public final class PresentationStore: ObservableObject {
 
     @Published public var stripMax: Int {
         didSet {
-            let clamped = max(1, min(8, stripMax))
+            // SB-3: never more than three burn-first chips.
+            let clamped = max(1, min(statusBarMaxChips, stripMax))
             if clamped != stripMax {
                 stripMax = clamped
                 return
@@ -266,13 +370,13 @@ public final class PresentationStore: ObservableObject {
                 : .iconOnly
             defaults.removeObject(forKey: "jackin.desktop.showPercent")
         } else {
-            // OpenUsage-like multi-metric strip by default (worst-first, cap stripMax).
+            // Burn-first multi-chip strip by default (SB-3 ≤3).
             self.displayMode = .strip
         }
         self.pinnedSurfaceId = defaults.string(forKey: Self.pinnedSurfaceKey) ?? ""
-        // Default cap 8 = full frozen host catalog (OpenUsage: every enabled provider).
-        let strip = defaults.object(forKey: Self.stripMaxKey) as? Int ?? 8
-        self.stripMax = max(1, min(8, strip))
+        // SB-3 hard-caps at 3; migrate older UserDefaults >3 down.
+        let strip = defaults.object(forKey: Self.stripMaxKey) as? Int ?? statusBarMaxChips
+        self.stripMax = max(1, min(statusBarMaxChips, strip))
         let percent = defaults.string(forKey: Self.percentStyleKey) ?? "left"
         self.percentStyle = (percent == "used") ? "used" : "left"
         let reset = defaults.string(forKey: Self.resetStyleKey) ?? "countdown"
@@ -440,6 +544,36 @@ public final class PresentationStore: ObservableObject {
         accounts.filter { $0.surfaceId == surfaceId }
     }
 
+    /// Inject frozen DATA_CONTRACT / QI presentation without a live bridge poll.
+    ///
+    /// Used by `DesktopVisualSnapshotHarness` so hosted snapshots drive the
+    /// **same** ``PresentationStore`` + SwiftUI surfaces as the running app.
+    /// Does not invent strings — caller supplies Rust-shaped fixtures.
+    public func applyQIFixture(
+        glanceRows: [GlanceProviderRow],
+        surfaces: [SurfaceRow],
+        accounts: [AccountRow],
+        popoverSelection: String?,
+        usageSelection: String?,
+        nextRefreshLabel: String = "next update 4m"
+    ) {
+        self.providerGlanceRows = glanceRows
+        // QI fixtures lack bridge ranking epochs — apply SB-3/19 filter only.
+        self.statusBarGlanceRows = selectStatusBarGlanceRows(
+            from: glanceRows,
+            maxCount: min(3, stripMax)
+        )
+        self.surfaces = surfaces
+        self.accounts = accounts
+        self.popoverSelection = popoverSelection
+        self.usageSelection = usageSelection
+        self.nextRefreshLabel = nextRefreshLabel
+        self.refreshInProgress = false
+        self.isOpen = true
+        self.isOpening = false
+        self.lastError = nil
+    }
+
     public func setRefreshFloorSecs(_ secs: UInt64) {
         Task { [weak self] in
             guard let self else { return }
@@ -558,6 +692,8 @@ public final class PresentationStore: ObservableObject {
 
     private func applySnapshots() async {
         let projection: BridgeProjection
+        // Capture off MainActor before the Sendable bridge batch (SB-3 ≤3).
+        let barMax = UInt32(max(1, min(statusBarMaxChips, stripMax)))
         do {
             projection = try await scheduler.run { handle -> BridgeProjection in
                 let merged = try handle.mergedStatusBarLabel()
@@ -578,6 +714,8 @@ public final class PresentationStore: ObservableObject {
                 let overview = try handle.overviewRows()
                 let accounts = (try? handle.listAccounts(surfaceId: nil)) ?? []
                 let glanceRows = (try? handle.providerGlanceRows()) ?? []
+                let statusBarRows =
+                    (try? handle.statusBarProviderGlanceRows(max: barMax)) ?? []
                 return BridgeProjection(
                     mergedBarLabel: merged,
                     compactBarLabel: compact,
@@ -585,7 +723,8 @@ public final class PresentationStore: ObservableObject {
                     surfaces: surfaces,
                     overviewRows: overview,
                     accounts: accounts,
-                    glanceRows: glanceRows
+                    glanceRows: glanceRows,
+                    statusBarGlanceRows: statusBarRows
                 )
             }
         } catch {
@@ -691,33 +830,38 @@ public final class PresentationStore: ObservableObject {
                 planLabel: row.planLabel,
                 selected: row.selected,
                 remainingPercent: row.remainingPercent,
-                statusWord: row.statusWord
+                statusWord: row.statusWord,
+                // Account DTO has no severity yet — band from Rust remaining %.
+                severity: row.remainingPercent.map { remainingPercentMeterSeverity($0) } ?? "normal"
             )
         }
         // Rust owns detection, ordering, and every string — project verbatim.
-        providerGlanceRows = projection.glanceRows.map { row in
-            GlanceProviderRow(
-                surfaceId: row.surfaceId,
-                iconKey: row.iconKey,
-                displayLabel: row.displayLabel,
-                accountLabel: row.accountLabel,
-                planLabel: row.planLabel,
-                glanceRemainingPercent: row.glanceRemainingPercent,
-                barLabel: row.barLabel,
-                headline: row.headline,
-                resetLabel: row.resetLabel,
-                exactReset: row.exactReset,
-                statusWord: row.statusWord,
-                isRefreshing: row.isRefreshing,
-                statusLabel: row.statusLabel,
-                severity: row.severity,
-                updatedLabel: row.updatedLabel,
-                lastError: row.lastError,
-                dimmed: row.dimmed
-            )
-        }
+        providerGlanceRows = projection.glanceRows.map(Self.mapGlanceDto)
+        statusBarGlanceRows = projection.statusBarGlanceRows.map(Self.mapGlanceDto)
         lastError = nil
         await applyStatusItemText()
+    }
+
+    private static func mapGlanceDto(_ row: ProviderGlanceRowDto) -> GlanceProviderRow {
+        GlanceProviderRow(
+            surfaceId: row.surfaceId,
+            iconKey: row.iconKey,
+            displayLabel: row.displayLabel,
+            accountLabel: row.accountLabel,
+            planLabel: row.planLabel,
+            glanceRemainingPercent: row.glanceRemainingPercent,
+            barLabel: row.barLabel,
+            headline: row.headline,
+            resetLabel: row.resetLabel,
+            exactReset: row.exactReset,
+            statusWord: row.statusWord,
+            isRefreshing: row.isRefreshing,
+            statusLabel: row.statusLabel,
+            severity: row.severity,
+            updatedLabel: row.updatedLabel,
+            lastError: row.lastError,
+            dimmed: row.dimmed
+        )
     }
 
     /// Open the Usage window on Overview or a specific surface.
@@ -902,4 +1046,5 @@ private struct BridgeProjection: Sendable {
     let overviewRows: [OverviewRowDto]
     let accounts: [AccountDescriptorDto]
     let glanceRows: [ProviderGlanceRowDto]
+    let statusBarGlanceRows: [ProviderGlanceRowDto]
 }

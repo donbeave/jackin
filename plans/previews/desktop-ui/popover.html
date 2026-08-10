@@ -1,0 +1,1443 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>jackin❯ desktop — visual reference (light/dark)</title>
+  <style>
+    /*
+      Visual reference for jackin❯ desktop (popover + status bar).
+      Design tokens dual-theme.
+      Metrics = 3 status levels only (high / medium / low) — not per-provider colors.
+      Logos = brand color plates + SVG stand-ins (official kits later).
+      Strips = centered + horizontal scroll when overflow.
+    */
+    :root, [data-theme="dark"] {
+      --bg-page: #050506;
+      --label: #f5f5f7;
+      --secondary: rgba(235, 235, 245, 0.58);
+      --tertiary: rgba(235, 235, 245, 0.34);
+      --separator: rgba(84, 84, 88, 0.55);
+      --fill: rgba(120, 120, 128, 0.28);
+      /* More translucent = Liquid Glass read (wallpaper peeks through) */
+      --glass: rgba(28, 28, 30, 0.52);
+      --glass-strong: rgba(40, 40, 44, 0.62);
+      --glass-inset: rgba(255, 255, 255, 0.055);
+      --glass-border: rgba(255, 255, 255, 0.16);
+      --stage-1: #143028;
+      --stage-2: #182030;
+      --stage-bg: linear-gradient(165deg, #0a100e, #0a0c12 60%, #080808);
+      --menubar: linear-gradient(to bottom, rgba(40,40,42,0.35), rgba(20,20,22,0.22));
+      --jk: #5cf07a;
+      --jk-ink: #0a0a0a;
+      --jk-rain: #00ff41;
+      --desktop-word: #f5f5f7; /* primary label white/off-white */
+      --meter-track: rgba(255, 255, 255, 0.1);
+      /* 3 status levels only */
+      --status-high: #5cf07a;   /* healthy / high remaining */
+      --status-mid: #ff9f0a;    /* medium */
+      --status-low: #ff453a;    /* low / critical */
+      --status-depleted: rgba(235, 235, 245, 0.28);
+      --openai: #10a37f;
+      --anthropic: #d4a27f;
+      --amp: #7c6af7;
+      --card: #111113;
+      --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", system-ui, sans-serif;
+      --mono: ui-monospace, "SF Mono", Menlo, monospace;
+    }
+
+    [data-theme="light"] {
+      --bg-page: #e8eaee;
+      --label: #1c1c1e;
+      --secondary: rgba(60, 60, 67, 0.68);
+      --tertiary: rgba(60, 60, 67, 0.4);
+      --separator: rgba(60, 60, 67, 0.18);
+      --fill: rgba(120, 120, 128, 0.16);
+      --glass: rgba(255, 255, 255, 0.58);
+      --glass-strong: rgba(255, 255, 255, 0.72);
+      --glass-inset: rgba(0, 0, 0, 0.035);
+      --glass-border: rgba(0, 0, 0, 0.10);
+      --stage-1: #c8ddd0;
+      --stage-2: #c5d0e0;
+      --stage-bg: linear-gradient(165deg, #dfe8e4, #e4e8f0 55%, #e8eaee);
+      --menubar: linear-gradient(to bottom, rgba(255,255,255,0.55), rgba(240,240,245,0.4));
+      --jk: #0b774e; /* AA-friendly on light */
+      --jk-ink: #ffffff;
+      --jk-rain: #00c853;
+      --desktop-word: #1c1c1e;
+      --meter-track: rgba(0, 0, 0, 0.08);
+      --status-high: #0b774e;
+      --status-mid: #c93400;
+      --status-low: #d70015;
+      --status-depleted: rgba(60, 60, 67, 0.25);
+      --card: #ffffff;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; font-family: var(--font); background: var(--bg-page); color: var(--label);
+      -webkit-font-smoothing: antialiased; transition: background 0.2s ease, color 0.2s ease;
+    }
+    .page { max-width: 1100px; margin: 0 auto; padding: 24px 20px 72px; }
+    h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.3px; margin: 0 0 6px; }
+    .lead { color: var(--secondary); font-size: 13px; line-height: 1.5; margin: 0 0 14px; max-width: 720px; }
+
+    .toolbar {
+      display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+      margin-bottom: 14px;
+    }
+    .toolbar button, .seg-top button {
+      border: 0; cursor: pointer; font: inherit; font-size: 13px; font-weight: 500;
+      padding: 8px 14px; border-radius: 980px; background: var(--fill); color: var(--label);
+    }
+    .toolbar button.on, .seg-top button.on {
+      background: var(--jk); color: var(--jk-ink);
+    }
+
+    .banner {
+      padding: 14px 16px; border-radius: 14px; margin-bottom: 14px;
+      background: color-mix(in srgb, var(--jk) 10%, transparent);
+      border: 1px solid color-mix(in srgb, var(--jk) 30%, transparent);
+    }
+    .banner h2 { margin: 0 0 6px; font-size: 14px; color: var(--jk); }
+    .banner p { margin: 0; font-size: 12px; color: var(--secondary); line-height: 1.45; }
+
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media (max-width: 940px) { .grid { grid-template-columns: 1fr; } }
+
+    .card {
+      background: var(--card); border: 1px solid var(--separator);
+      border-radius: 16px; padding: 14px;
+    }
+    .tag { font-size: 10px; font-weight: 600; color: var(--jk); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px; }
+    .card h3 { margin: 0 0 4px; font-size: 14px; font-weight: 600; }
+    .why { font-size: 12px; color: var(--tertiary); margin: 0 0 12px; line-height: 1.4; }
+    .pick { margin-top: 10px; font-size: 11px; color: var(--tertiary); }
+    .pick code { color: var(--jk); font-family: var(--mono); font-size: 11px; }
+
+    .stage {
+      border-radius: 14px; padding: 22px 12px 26px; min-height: 420px;
+      background:
+        radial-gradient(ellipse 70% 45% at 25% 15%, var(--stage-1) 0%, transparent 55%),
+        radial-gradient(ellipse 50% 40% at 85% 75%, var(--stage-2) 0%, transparent 50%),
+        var(--stage-bg);
+      display: flex; justify-content: center; align-items: flex-start;
+    }
+    .stage.bar { min-height: 90px; align-items: center; padding: 18px; }
+
+    /* j❯ monogram — brand geometry */
+    .jmark {
+      width: 22px; height: 22px; flex-shrink: 0;
+      background: var(--jk-rain);
+      border-radius: 2px;
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--mono); font-weight: 800; font-size: 11px; line-height: 1;
+      letter-spacing: -0.6px;
+    }
+    .jmark .j { color: #0a0a0a; }
+    .jmark .ch { color: #ffffff; }
+    [data-theme="light"] .jmark { background: #00c853; }
+
+    /* Brand wordmark line */
+    .brand-line {
+      display: flex; align-items: center; gap: 8px;
+      padding: 12px 16px 4px;
+    }
+    .brand-text {
+      font-size: 12px; font-weight: 500; letter-spacing: 0.01em;
+      display: flex; align-items: baseline; gap: 0;
+    }
+    .brand-text .word { color: var(--label); font-weight: 500; }
+    .brand-text .chev { color: var(--jk); font-weight: 700; }
+    .brand-text .desktop {
+      color: var(--desktop-word);
+      font-weight: 400;
+      opacity: 0.88;
+      margin-left: 0.28em;
+    }
+
+    /* Provider logo SVG plates — brand color ONLY here */
+    .plogo {
+      width: 28px; height: 28px; border-radius: 8px; flex-shrink: 0;
+      display: grid; place-items: center;
+    }
+    .plogo.sm { width: 18px; height: 18px; border-radius: 5px; }
+    .plogo svg { width: 60%; height: 60%; display: block; }
+    .plogo.openai { background: #10a37f; }
+    .plogo.openai svg { fill: #fff; }
+    .plogo.anthropic { background: #d4a27f; }
+    .plogo.anthropic svg { fill: #1a1a1a; }
+    .plogo.amp { background: #7c6af7; }
+    .plogo.amp svg { fill: #fff; }
+    [data-theme="light"] .plogo.anthropic { background: #c4895f; }
+
+    /* Meters — 3 status levels only (never provider brand colors) */
+    .meter {
+      height: 5px; border-radius: 100px; background: var(--meter-track); overflow: hidden;
+    }
+    .meter > i {
+      display: block; height: 100%; border-radius: inherit;
+      background: var(--status-high);
+      box-shadow: 0 0 8px color-mix(in srgb, var(--status-high) 35%, transparent);
+    }
+    .meter.high > i {
+      background: var(--status-high);
+      box-shadow: 0 0 8px color-mix(in srgb, var(--status-high) 35%, transparent);
+    }
+    .meter.mid > i { background: var(--status-mid); box-shadow: none; }
+    .meter.low > i { background: var(--status-low); box-shadow: none; }
+    /* 0% = empty track (Apple ProgressView). Never force a fake sliver. */
+    .meter.depleted > i { background: var(--status-depleted); width: 0% !important; box-shadow: none; }
+
+    .pct.high, .hero.high { color: var(--status-high); }
+    .pct.mid, .hero.mid { color: var(--status-mid); }
+    .pct.low, .hero.low { color: var(--status-low); }
+    .pct.zero { color: var(--tertiary); }
+    .pct:not(.mid):not(.low):not(.zero) { color: var(--status-high); }
+    .hero:not(.mid):not(.low) { color: var(--status-high); }
+
+    .btn-icon {
+      width: 28px; height: 28px; border-radius: 8px; cursor: pointer;
+      border: 0.5px solid color-mix(in srgb, var(--jk) 28%, var(--glass-border));
+      background: color-mix(in srgb, var(--jk) 12%, transparent);
+      color: var(--jk); display: grid; place-items: center; flex-shrink: 0;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+      backdrop-filter: blur(12px);
+    }
+    .btn-icon:hover {
+      background: color-mix(in srgb, var(--jk) 20%, transparent);
+    }
+
+    /* Transparent status */
+    .menubar {
+      height: 24px; width: 100%; max-width: 420px; margin: 0 auto;
+      display: flex; align-items: center; justify-content: flex-end; gap: 12px;
+      padding: 0 14px; border-radius: 6px;
+      background: var(--menubar);
+      backdrop-filter: blur(18px);
+      border: 0.5px solid var(--glass-border);
+    }
+    .sb-item {
+      display: flex; align-items: center; gap: 4px;
+      background: transparent; border: 0; padding: 0;
+    }
+    .sb-item .plogo.sm {
+      background: transparent !important;
+      /* template: monochrome */
+      filter: none;
+      width: 14px; height: 14px;
+    }
+    .sb-item .plogo.sm svg { fill: var(--label); width: 100%; height: 100%; }
+    .sb-item .stack {
+      display: flex; flex-direction: column; line-height: 1.02;
+      font-family: var(--mono); font-variant-numeric: tabular-nums;
+    }
+    .sb-item .t { font-size: 8px; color: var(--secondary); font-weight: 500; }
+    .sb-item .p { font-size: 9px; color: var(--label); font-weight: 600; }
+
+    /*
+      Glance popover — Liquid Glass chrome (LG-A1 / A10).
+      Lower fill opacity + stronger blur so stage/wallpaper refracts through.
+      Content cards stay --glass-inset (not full glass).
+    */
+    .pop {
+      width: 400px; position: relative;
+      display: flex; flex-direction: column;
+      max-height: min(640px, 88vh);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.08), transparent 42%),
+        var(--glass);
+      backdrop-filter: blur(64px) saturate(1.85);
+      -webkit-backdrop-filter: blur(64px) saturate(1.85);
+      border-radius: 20px;
+      box-shadow:
+        0 0 0 0.5px var(--glass-border),
+        0 32px 90px rgba(0,0,0,0.48),
+        inset 0 1px 0 rgba(255,255,255,0.16),
+        inset 0 0 0 0.5px rgba(255,255,255,0.06);
+      overflow: hidden;
+    }
+    [data-theme="light"] .pop {
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.55), transparent 50%),
+        var(--glass);
+      box-shadow:
+        0 0 0 0.5px var(--glass-border),
+        0 24px 60px rgba(0,0,0,0.14),
+        inset 0 1px 0 rgba(255,255,255,0.9);
+    }
+    /* Rain whisper: chrome only, ≤4%; native must gate on Reduce Motion/Transparency */
+    .pop .rain {
+      pointer-events: none; position: absolute; inset: 0; opacity: 0.032;
+      background-image: repeating-linear-gradient(
+        0deg, transparent, transparent 4px, rgba(0,255,65,0.3) 4px, rgba(0,255,65,0.3) 5px
+      );
+      background-size: 14px 36px;
+      mask-image: linear-gradient(to bottom, #000, transparent 32%);
+    }
+    [data-theme="light"] .pop .rain { opacity: 0.018; }
+    @media (prefers-reduced-motion: reduce) {
+      .pop .rain { display: none; }
+    }
+    .pop .inner {
+      position: relative; z-index: 1;
+      display: flex; flex-direction: column;
+      flex: 1; min-height: 0;
+    }
+
+    /* Sticky glass chrome — brand + mode (does not scroll away) */
+    .chrome { flex-shrink: 0; }
+
+    .seg {
+      margin: 8px 16px 10px; display: flex; padding: 3px;
+      background: color-mix(in srgb, var(--fill) 88%, transparent);
+      border-radius: 10px;
+      border: 0.5px solid color-mix(in srgb, var(--glass-border) 70%, transparent);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+    }
+    .seg button {
+      flex: 1; border: 0; background: transparent; color: var(--secondary);
+      font: inherit; font-size: 12px; font-weight: 560; padding: 7px; border-radius: 8px; cursor: pointer;
+    }
+    .seg button.on {
+      background: color-mix(in srgb, var(--label) 12%, transparent);
+      color: var(--label);
+      box-shadow: 0 1px 2px rgba(0,0,0,0.12), inset 0 0.5px 0 rgba(255,255,255,0.12);
+    }
+    [data-theme="dark"] .seg button.on { background: rgba(255,255,255,0.14); }
+
+    /* Mode bodies fill remaining height; content scrolls under chrome + footer */
+    #mode-overview, #mode-providers {
+      display: flex; flex-direction: column;
+      flex: 1; min-height: 0;
+    }
+    #mode-overview.hidden, #mode-providers.hidden { display: none !important; }
+
+    /*
+      Provider strip — sticky nav chrome.
+      Horizontal soft edge dissolve (Apple scroll-edge proxy) so tabs never
+      look hard-clipped mid-glyph. Native: edge-to-edge under glass + soft fade.
+    */
+    .pstrip-shell {
+      flex-shrink: 0;
+      position: relative;
+      padding: 0 0 4px;
+    }
+    .pstrip-wrap {
+      padding: 0 4px 10px;
+      overflow-x: auto;
+      overflow-y: hidden;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none; /* edge fades signal more content */
+      overscroll-behavior-x: contain;
+      /* default: no edge fade until JS measures overflow */
+      --fade-l: 0px;
+      --fade-r: 0px;
+      mask-image: linear-gradient(
+        to right,
+        transparent 0,
+        #000 var(--fade-l),
+        #000 calc(100% - var(--fade-r)),
+        transparent 100%
+      );
+      -webkit-mask-image: linear-gradient(
+        to right,
+        transparent 0,
+        #000 var(--fade-l),
+        #000 calc(100% - var(--fade-r)),
+        transparent 100%
+      );
+    }
+    .pstrip-wrap::-webkit-scrollbar { display: none; height: 0; }
+    .pstrip {
+      display: flex; justify-content: safe center; gap: 6px;
+      width: max-content; min-width: 100%;
+      margin: 0 auto; padding: 0 14px; /* inset so first/last not flush cut */
+    }
+    .pstrip .ptab {
+      flex: 0 0 auto;
+      min-width: 72px; padding: 8px 8px 6px; border-radius: 12px;
+      text-align: center; cursor: pointer; color: var(--secondary);
+      font-size: 10px; font-weight: 500; border: 0; background: transparent;
+      font-family: inherit;
+      transition: background 0.12s ease, color 0.12s ease, box-shadow 0.12s ease;
+    }
+    .pstrip .ptab.on {
+      background: color-mix(in srgb, var(--jk) 14%, transparent);
+      color: var(--label);
+      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--jk) 32%, transparent);
+    }
+    .pstrip .ptab .ic { display: flex; justify-content: center; margin-bottom: 4px; }
+    .pstrip .track {
+      margin-top: 5px; height: 3px; border-radius: 100px;
+      background: var(--meter-track); overflow: hidden;
+    }
+    .pstrip .track > i {
+      display: block; height: 100%; border-radius: inherit;
+      background: var(--status-high);
+    }
+    .pstrip .track.mid > i { background: var(--status-mid); }
+    .pstrip .track.low > i { background: var(--status-low); }
+
+    /* Account pills: LEFT + H-scroll with soft edge dissolve */
+    .acct-switch-wrap {
+      overflow-x: auto; overflow-y: hidden;
+      -webkit-overflow-scrolling: touch;
+      margin: 0 -2px 12px;
+      padding: 0 2px 2px;
+      scrollbar-width: none;
+      --fade-l: 0px;
+      --fade-r: 0px;
+      mask-image: linear-gradient(
+        to right,
+        transparent 0,
+        #000 var(--fade-l),
+        #000 calc(100% - var(--fade-r)),
+        transparent 100%
+      );
+      -webkit-mask-image: linear-gradient(
+        to right,
+        transparent 0,
+        #000 var(--fade-l),
+        #000 calc(100% - var(--fade-r)),
+        transparent 100%
+      );
+    }
+    .acct-switch-wrap::-webkit-scrollbar { display: none; height: 0; }
+    .acct-switch {
+      display: flex; justify-content: flex-start; gap: 6px;
+      width: max-content; min-width: 100%;
+      margin: 0; padding: 0 2px;
+    }
+
+    /*
+      Vertical scroller + soft scroll-edge effect (WWDC25 / HIG).
+      Content dissolves under chrome/footer instead of hard clip.
+      Native: scrollEdgeEffect(.soft) under glass bars.
+    */
+    .scroll-shell {
+      position: relative;
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+    }
+    .ov-scroll, .detail-scroll {
+      flex: 1;
+      min-height: 0;
+      padding: 2px 12px 10px;
+      overflow: auto;
+      overscroll-behavior: contain;
+      scrollbar-width: thin;
+      scrollbar-color: color-mix(in srgb, var(--label) 22%, transparent) transparent;
+      --fade-t: 0px;
+      --fade-b: 0px;
+      mask-image: linear-gradient(
+        to bottom,
+        transparent 0,
+        #000 var(--fade-t),
+        #000 calc(100% - var(--fade-b)),
+        transparent 100%
+      );
+      -webkit-mask-image: linear-gradient(
+        to bottom,
+        transparent 0,
+        #000 var(--fade-t),
+        #000 calc(100% - var(--fade-b)),
+        transparent 100%
+      );
+    }
+    .ov-scroll::-webkit-scrollbar,
+    .detail-scroll::-webkit-scrollbar { width: 7px; }
+    .ov-scroll::-webkit-scrollbar-thumb,
+    .detail-scroll::-webkit-scrollbar-thumb {
+      background: color-mix(in srgb, var(--label) 18%, transparent);
+      border-radius: 99px;
+      border: 2px solid transparent;
+      background-clip: padding-box;
+    }
+    .ov-scroll::-webkit-scrollbar-track,
+    .detail-scroll::-webkit-scrollbar-track { background: transparent; }
+
+    /* Content layer = solid/inset fills (not Liquid Glass) */
+    .group {
+      background: var(--glass-inset);
+      border-radius: 14px; margin-bottom: 10px;
+      border: 0.5px solid var(--separator);
+      overflow: hidden;
+    }
+    .group:last-child { margin-bottom: 4px; }
+    .group-head {
+      display: flex; align-items: center; gap: 10px;
+      padding: 12px 14px 8px;
+    }
+    .group-head .name { font-size: 15px; font-weight: 600; letter-spacing: -0.2px; }
+    .group-head .prod { margin-left: auto; font-size: 11px; color: var(--tertiary); }
+
+    .account { padding: 10px 14px 12px; border-top: 0.5px solid var(--separator); }
+    .account-top { display: flex; align-items: flex-start; gap: 10px; }
+    .account-top .meta { flex: 1; min-width: 0; }
+    .account-label { font-size: 13px; font-weight: 500; margin-bottom: 3px; }
+    .account-reset { font-size: 12px; color: var(--secondary); line-height: 1.35; }
+    .pct {
+      font-family: var(--mono); font-size: 22px; font-weight: 600;
+      font-variant-numeric: tabular-nums; line-height: 1;
+    }
+    .account .meter { margin-top: 10px; }
+
+    /*
+      Footer dock — glass control layer (not solid green slab).
+      Content peeks/dissolves above; CTA is Liquid Glass capsule + phosphor accent.
+    */
+    .footer-dock {
+      flex-shrink: 0;
+      position: relative;
+      padding: 8px 14px 14px;
+      /* soft top dissolve into dock (scroll-edge hard-style under floating control) */
+      background: linear-gradient(
+        to bottom,
+        transparent 0,
+        color-mix(in srgb, var(--glass) 55%, transparent) 28%,
+        color-mix(in srgb, var(--glass) 88%, transparent) 100%
+      );
+      border-top: 0.5px solid color-mix(in srgb, var(--glass-border) 55%, transparent);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
+    }
+    [data-theme="light"] .footer-dock {
+      background: linear-gradient(
+        to bottom,
+        transparent 0,
+        color-mix(in srgb, var(--glass) 40%, transparent) 30%,
+        color-mix(in srgb, var(--glass) 92%, transparent) 100%
+      );
+    }
+    .cta-btn {
+      width: 100%;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      border: 0.5px solid color-mix(in srgb, var(--jk) 38%, var(--glass-border));
+      cursor: pointer;
+      font: inherit; font-size: 13px; font-weight: 600;
+      letter-spacing: -0.1px;
+      padding: 11px 16px;
+      border-radius: 12px;
+      color: var(--jk);
+      background:
+        linear-gradient(
+          180deg,
+          color-mix(in srgb, var(--jk) 18%, transparent) 0%,
+          color-mix(in srgb, var(--jk) 10%, transparent) 100%
+        );
+      backdrop-filter: blur(24px) saturate(1.45);
+      -webkit-backdrop-filter: blur(24px) saturate(1.45);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.14),
+        0 1px 2px rgba(0,0,0,0.08),
+        0 6px 18px color-mix(in srgb, var(--jk) 12%, transparent);
+      transition: background 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
+    }
+    [data-theme="light"] .cta-btn {
+      color: var(--jk);
+      background:
+        linear-gradient(
+          180deg,
+          color-mix(in srgb, var(--jk) 14%, #fff) 0%,
+          color-mix(in srgb, var(--jk) 8%, #fff) 100%
+        );
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.9),
+        0 1px 2px rgba(0,0,0,0.06),
+        0 6px 16px color-mix(in srgb, var(--jk) 10%, transparent);
+    }
+    .cta-btn:hover {
+      background:
+        linear-gradient(
+          180deg,
+          color-mix(in srgb, var(--jk) 28%, transparent) 0%,
+          color-mix(in srgb, var(--jk) 16%, transparent) 100%
+        );
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.16),
+        0 2px 4px rgba(0,0,0,0.1),
+        0 8px 22px color-mix(in srgb, var(--jk) 18%, transparent);
+    }
+    .cta-btn:active { transform: scale(0.985); }
+    .cta-btn .glyph {
+      width: 14px; height: 14px; opacity: 0.9; flex-shrink: 0;
+    }
+    .cta-btn .glyph svg { width: 100%; height: 100%; fill: currentColor; }
+
+    .detail-head {
+      display: flex; align-items: flex-start; gap: 12px; margin-bottom: 14px;
+    }
+    .detail-head h4 { margin: 0; font-size: 18px; font-weight: 650; letter-spacing: -0.3px; }
+    .detail-head .sub { margin-top: 3px; font-size: 12px; color: var(--secondary); line-height: 1.35; }
+
+    .acct-switch button {
+      flex: 0 0 auto;
+      border: 0; cursor: pointer; font: inherit; font-size: 11px; font-weight: 500;
+      padding: 7px 11px; border-radius: 980px;
+      background: var(--fill); color: var(--secondary);
+      white-space: nowrap;
+      transition: background 0.12s ease, color 0.12s ease;
+    }
+    .acct-switch button.on {
+      background: color-mix(in srgb, var(--jk) 88%, var(--label));
+      color: var(--jk-ink);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.2);
+    }
+    [data-theme="light"] .acct-switch button.on {
+      background: var(--jk);
+      color: #fff;
+    }
+
+    .block {
+      /* solid content surface — never full glass chrome */
+      background: var(--glass-inset);
+      border-radius: 14px; padding: 14px; margin-bottom: 10px;
+      border: 0.5px solid color-mix(in srgb, var(--separator) 70%, transparent);
+    }
+    .block:last-child { margin-bottom: 4px; }
+    .block h5 {
+      margin: 0 0 10px; font-size: 11px; font-weight: 600;
+      color: var(--secondary); text-transform: uppercase; letter-spacing: 0.04em;
+    }
+    .hero {
+      font-family: var(--mono); font-size: 32px; font-weight: 650;
+      letter-spacing: -0.8px; line-height: 1.05; margin-bottom: 4px;
+    }
+    .hint { font-size: 13px; color: var(--secondary); line-height: 1.4; margin-bottom: 10px; }
+    .hint-pace { font-size: 13px; color: var(--secondary); line-height: 1.4; margin-bottom: 4px; }
+    .hint-reset {
+      font-size: 13px; color: var(--secondary); line-height: 1.35; margin-bottom: 10px;
+      font-variant-numeric: tabular-nums;
+    }
+    .auth-block {
+      border-left: 2px solid color-mix(in srgb, var(--jk) 55%, transparent);
+      padding-left: 12px; margin-top: 8px;
+    }
+    .auth-block .v { font-family: var(--mono); font-size: 12px; word-break: break-all; }
+
+    .row-stack { margin-top: 10px; }
+    .row-stack .k { font-size: 11px; color: var(--tertiary); margin-bottom: 2px; }
+    .row-stack .v { font-size: 14px; font-weight: 500; line-height: 1.3; }
+    .row-stack .v.dim { color: var(--secondary); font-weight: 400; font-size: 13px; }
+    .two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px; }
+    .two .row-stack { margin-top: 0; }
+
+    .hidden { display: none !important; }
+
+    .ref-notes {
+      margin-top: 20px; padding: 14px 16px; border-radius: 12px;
+      background: var(--card); border: 1px solid var(--separator);
+      font-size: 12px; color: var(--secondary); line-height: 1.5;
+    }
+    .ref-notes h3 { margin: 0 0 8px; font-size: 13px; color: var(--label); }
+    .ref-notes code { font-family: var(--mono); font-size: 11px; color: var(--jk); }
+
+    /*
+      embed=1 — status-bar interaction host (index.html iframe).
+      Same .pop craft only; hide doc chrome. Stage paint stays so backdrop-filter
+      liquid glass still reads (blur does not cross iframe boundaries).
+    */
+    html.embed, html.embed body {
+      background: transparent;
+      margin: 0;
+      min-height: 0;
+    }
+    html.embed .page {
+      max-width: none; margin: 0; padding: 0;
+    }
+    html.embed .page > h1,
+    html.embed .page > .lead,
+    html.embed .page > .toolbar,
+    html.embed .page > .banner,
+    html.embed .grid > .card:not(.card-popover),
+    html.embed .card-popover > .tag,
+    html.embed .card-popover > h3,
+    html.embed .card-popover > .why,
+    html.embed .card-popover > .pick {
+      display: none !important;
+    }
+    html.embed .grid { display: block; gap: 0; }
+    html.embed .card-popover {
+      background: transparent; border: 0; padding: 0; border-radius: 0;
+    }
+    html.embed .stage {
+      min-height: 0;
+      padding: 10px;
+      border-radius: 14px;
+      /* paint under glass so Liquid Glass blur has something to refract */
+      background:
+        radial-gradient(ellipse 70% 45% at 25% 15%, var(--stage-1) 0%, transparent 55%),
+        radial-gradient(ellipse 50% 40% at 85% 75%, var(--stage-2) 0%, transparent 50%),
+        var(--stage-bg);
+    }
+    html.embed .pop {
+      margin: 0 auto;
+      /* slightly tighter for menu-bar attachment feel */
+      max-height: calc(100vh - 20px);
+    }
+    html.embed .pop {
+      max-height: min(620px, calc(100vh - 16px));
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <h1>jackin❯ desktop — visual reference</h1>
+    <p class="lead">
+      Finalizing craft reference: light/dark, centered provider strip, jackin 2-color metrics,
+      brand-colored logos only, corrected monogram, dual-tone product title.
+    </p>
+
+    <div class="toolbar">
+      <button type="button" class="on" id="theme-dark">Dark</button>
+      <button type="button" id="theme-light">Light</button>
+    </div>
+
+    <div class="banner">
+      <h2>Popover — provider templates + left accounts</h2>
+      <p>
+        ✓ Status transparent · ✓ Overview inventory · ✓ Providers strip + full detail<br />
+        ✓ <strong>3 status colors</strong> for % + meters (high / mid / low) — logos keep brand color<br />
+        ✓ Soft scroll edges (no hard mid-card cut) · glass footer CTA · sticky chrome<br />
+        Next after you confirm: Usage window craft
+      </p>
+    </div>
+
+    <div class="grid">
+      <!-- POPOVER — single source of truth for glance popover craft -->
+      <div class="card card-popover">
+        <div class="tag">Popover · interactive</div>
+        <h3>Overview / Providers</h3>
+        <p class="why">Toggle theme above · switch Overview ↔ Providers · OpenAI account pills</p>
+        <div class="stage">
+          <div class="pop" id="app">
+            <div class="rain" aria-hidden="true"></div>
+            <div class="inner">
+              <div class="chrome">
+                <div class="brand-line">
+                  <div class="jmark" aria-label="j❯"><span class="j">j</span><span class="ch">❯</span></div>
+                  <div class="brand-text">
+                    <span class="word">jackin</span><span class="chev">❯</span><span class="desktop">desktop</span>
+                  </div>
+                </div>
+
+                <div class="seg" id="seg">
+                  <button type="button" class="on" data-mode="overview">Overview</button>
+                  <button type="button" data-mode="providers">Providers</button>
+                </div>
+              </div>
+
+              <!-- OVERVIEW -->
+              <div id="mode-overview">
+                <div class="scroll-shell">
+                <div class="ov-scroll" data-vscroll>
+                  <div class="group">
+                    <div class="group-head">
+                      <div class="plogo openai" aria-hidden="true">
+                        <!-- OpenAI-style blossom stand-in -->
+                        <svg viewBox="0 0 24 24"><path d="M22.3 10.5a5.4 5.4 0 0 0-.7-5.1 5.5 5.5 0 0 0-5.9-2.6A5.5 5.5 0 0 0 12 .8a5.5 5.5 0 0 0-3.7 1.9 5.5 5.5 0 0 0-5.9 2.6 5.4 5.4 0 0 0-.7 5.1A5.4 5.4 0 0 0 .3 14.7a5.5 5.5 0 0 0 2.1 5.6 5.5 5.5 0 0 0 5.9 1.1A5.5 5.5 0 0 0 12 23.2a5.5 5.5 0 0 0 3.7-1.8 5.5 5.5 0 0 0 5.9-1.1 5.5 5.5 0 0 0 2.1-5.6 5.4 5.4 0 0 0-1.4-4.2zM12 21.4a4 4 0 0 1-2.6-1l.1-.3 3.4-5.9v-.1l.1-.1h.1l4 2.3.1.1a4 4 0 0 1-5.2 5zm8.1-3.1a4 4 0 0 1-2.7 1.2v-.1l-.1-.1-4-2.3h-.1v-.1l.1-.1 3.4-5.9.1-.1.1.1a4 4 0 0 1 3.2 7.3zM9.7 7.5v-.1l-3.4-5.9a4 4 0 0 1 6.7-.1h.1l.1.1 3.4 5.9v.1h-.1l-4 2.3h-.1l-.1-.1-2.6-1.5zm-1.5.9-2.6 1.5-4-2.3a4 4 0 0 1 3.2-7.3l.1-.1h.1l3.4 5.9v.1l-.1.1h-.1zm-1.3 5.5-3.4 5.9-.1.1a4 4 0 0 1-3.2-7.3l.1-.1 4 2.3h.1l.1.1zm2.1-.4 2.6-1.5 2.6 1.5v3l-2.6 1.5-2.6-1.5v-3z"/></svg>
+                      </div>
+                      <div class="name">OpenAI</div>
+                      <div class="prod">Codex</div>
+                    </div>
+                    <div class="account">
+                      <div class="account-top">
+                        <div class="meta">
+                          <div class="account-label">alexey@chainargos.com</div>
+                          <div class="account-reset">Weekly · Resets in 3 days<br />15 Aug 2026, 17:02</div>
+                        </div>
+                        <div class="pct mid">57%</div>
+                        <button class="btn-icon" type="button">↻</button>
+                      </div>
+                      <div class="meter mid"><i style="width:57%"></i></div>
+                    </div>
+                    <div class="account">
+                      <div class="account-top">
+                        <div class="meta">
+                          <div class="account-label">alexey@zhokhov.com</div>
+                          <div class="account-reset">Fully used · Resets 17 Aug 2026</div>
+                        </div>
+                        <div class="pct zero">0%</div>
+                        <button class="btn-icon" type="button">↻</button>
+                      </div>
+                      <div class="meter depleted"><i style="width:0%"></i></div>
+                    </div>
+                  </div>
+                  <div class="group">
+                    <div class="group-head">
+                      <div class="plogo anthropic" aria-hidden="true">
+                        <!-- Anthropic spark stand-in -->
+                        <svg viewBox="0 0 24 24"><path d="M12 2l1.2 6.2L18 6l-2.8 4.2L22 12l-6.8 1.8L18 18l-4.8-2.2L12 22l-1.2-6.2L6 18l2.8-4.2L2 12l6.8-1.8L6 6l4.8 2.2L12 2z"/></svg>
+                      </div>
+                      <div class="name">Anthropic</div>
+                      <div class="prod">Claude</div>
+                    </div>
+                    <div class="account">
+                      <div class="account-top">
+                        <div class="meta">
+                          <div class="account-label">Personal</div>
+                          <div class="account-reset">Weekly · Resets in 1 hour<br />Today, 18:40</div>
+                        </div>
+                        <div class="pct low">12%</div>
+                        <button class="btn-icon" type="button">↻</button>
+                      </div>
+                      <div class="meter low"><i style="width:12%"></i></div>
+                    </div>
+                  </div>
+                  <div class="group">
+                    <div class="group-head">
+                      <div class="plogo amp" aria-hidden="true">
+                        <svg viewBox="0 0 24 24"><path d="M4 16c2-6 4-10 8-10s6 4 8 10h-3c-1.2-3.5-2.5-5.5-5-5.5S8.2 12.5 7 16H4zm4.5 2a3.5 3.5 0 107 0h-7z"/></svg>
+                      </div>
+                      <div class="name">Amp</div>
+                      <div class="prod">Daily</div>
+                    </div>
+                    <div class="account">
+                      <div class="account-top">
+                        <div class="meta">
+                          <div class="account-label">Free</div>
+                          <div class="account-reset">Daily · Resets in 18 hours<br />Tomorrow, 08:00</div>
+                        </div>
+                        <div class="pct high">100%</div>
+                        <button class="btn-icon" type="button">↻</button>
+                      </div>
+                      <div class="meter high"><i style="width:100%"></i></div>
+                    </div>
+                  </div>
+                </div>
+                </div>
+              </div>
+
+              <!-- PROVIDERS: strip centered+scroll; accounts LEFT; full real templates -->
+              <div id="mode-providers" class="hidden">
+                <div class="pstrip-shell">
+                <div class="pstrip-wrap" data-hscroll>
+                <div class="pstrip" id="pstrip">
+                  <button type="button" class="ptab on" data-provider="openai">
+                    <div class="ic"><div class="plogo sm openai"><svg viewBox="0 0 24 24"><path d="M22.3 10.5a5.4 5.4 0 0 0-.7-5.1 5.5 5.5 0 0 0-5.9-2.6A5.5 5.5 0 0 0 12 .8a5.5 5.5 0 0 0-3.7 1.9 5.5 5.5 0 0 0-5.9 2.6 5.4 5.4 0 0 0-.7 5.1A5.4 5.4 0 0 0 .3 14.7a5.5 5.5 0 0 0 2.1 5.6 5.5 5.5 0 0 0 5.9 1.1A5.5 5.5 0 0 0 12 23.2a5.5 5.5 0 0 0 3.7-1.8 5.5 5.5 0 0 0 5.9-1.1 5.5 5.5 0 0 0 2.1-5.6 5.4 5.4 0 0 0-1.4-4.2z"/></svg></div></div>
+                    OpenAI
+                    <div class="track mid"><i style="width:57%"></i></div>
+                  </button>
+                  <button type="button" class="ptab" data-provider="anthropic">
+                    <div class="ic"><div class="plogo sm anthropic"><svg viewBox="0 0 24 24"><path d="M12 2l1.2 6.2L18 6l-2.8 4.2L22 12l-6.8 1.8L18 18l-4.8-2.2L12 22l-1.2-6.2L6 18l2.8-4.2L2 12l6.8-1.8L6 6l4.8 2.2L12 2z"/></svg></div></div>
+                    Anthropic
+                    <div class="track low"><i style="width:12%"></i></div>
+                  </button>
+                  <button type="button" class="ptab" data-provider="amp">
+                    <div class="ic"><div class="plogo sm amp"><svg viewBox="0 0 24 24"><path d="M4 16c2-6 4-10 8-10s6 4 8 10h-3c-1.2-3.5-2.5-5.5-5-5.5S8.2 12.5 7 16H4zm4.5 2a3.5 3.5 0 107 0h-7z"/></svg></div></div>
+                    Amp
+                    <div class="track high"><i style="width:100%"></i></div>
+                  </button>
+                  <button type="button" class="ptab" data-provider="xai">
+                    <div class="ic"><div class="plogo sm" style="background:#1a1a1a;width:18px;height:18px;border-radius:5px;display:grid;place-items:center;color:#fff;font-size:8px;font-weight:700">X</div></div>
+                    xAI
+                    <div class="track high"><i style="width:72%"></i></div>
+                  </button>
+                  <button type="button" class="ptab" data-provider="zai">
+                    <div class="ic"><div class="plogo sm" style="background:#2563eb;width:18px;height:18px;border-radius:5px;display:grid;place-items:center;color:#fff;font-size:7px;font-weight:700">Z</div></div>
+                    Z.AI
+                    <div class="track high"><i style="width:81%"></i></div>
+                  </button>
+                  <button type="button" class="ptab" data-provider="kimi">
+                    <div class="ic"><div class="plogo sm" style="background:#1a1a1a;width:18px;height:18px;border-radius:5px;display:grid;place-items:center;color:#fff;font-size:7px;font-weight:700">Ki</div></div>
+                    Kimi
+                    <div class="track mid"><i style="width:45%"></i></div>
+                  </button>
+                  <button type="button" class="ptab" data-provider="minimax">
+                    <div class="ic"><div class="plogo sm" style="background:#111;width:18px;height:18px;border-radius:5px;display:grid;place-items:center;color:#fff;font-size:6px;font-weight:700">MM</div></div>
+                    MiniMax
+                    <div class="track mid"><i style="width:33%"></i></div>
+                  </button>
+                </div>
+                </div>
+                </div>
+
+                <div class="scroll-shell">
+                <div class="detail-scroll" data-vscroll>
+                  <!-- OPENAI / CODEX — bucket order: Session, Weekly, Spark 5h, Spark Weekly, Limit Reset Credits -->
+                  <div class="pdetail" data-provider="openai">
+                    <div class="detail-head">
+                      <div class="plogo openai"><svg viewBox="0 0 24 24"><path d="M22.3 10.5a5.4 5.4 0 0 0-.7-5.1 5.5 5.5 0 0 0-5.9-2.6A5.5 5.5 0 0 0 12 .8a5.5 5.5 0 0 0-3.7 1.9 5.5 5.5 0 0 0-5.9 2.6 5.4 5.4 0 0 0-.7 5.1A5.4 5.4 0 0 0 .3 14.7a5.5 5.5 0 0 0 2.1 5.6 5.5 5.5 0 0 0 5.9 1.1A5.5 5.5 0 0 0 12 23.2a5.5 5.5 0 0 0 3.7-1.8 5.5 5.5 0 0 0 5.9-1.1 5.5 5.5 0 0 0 2.1-5.6 5.4 5.4 0 0 0-1.4-4.2z"/></svg></div>
+                      <div style="flex:1">
+                        <h4>OpenAI</h4>
+                        <div class="sub">Codex · OpenAI · Updated just now</div>
+                      </div>
+                      <button class="btn-icon" type="button">↻</button>
+                    </div>
+                    <div class="acct-switch-wrap" data-hscroll>
+                      <div class="acct-switch" data-accounts="openai">
+                        <button type="button" class="on" data-acct="a1">alexey@chainargos.com</button>
+                        <button type="button" data-acct="a2">alexey@zhokhov.com</button>
+                      </div>
+                    </div>
+                    <div data-acct-panel="a1">
+                      <div class="block">
+                        <h5>Account</h5>
+                        <div class="two">
+                          <div class="row-stack"><div class="k">Account</div><div class="v">alexey@chainargos.com</div></div>
+                          <div class="row-stack"><div class="k">Plan</div><div class="v">Pro 20×</div></div>
+                        </div>
+                        <div class="row-stack"><div class="k">Status</div><div class="v dim">fresh</div></div>
+                        <div class="row-stack"><div class="k">Updated</div><div class="v dim">Just now</div></div>
+                        <div class="auth-block">
+                          <div class="row-stack"><div class="k">Credential source</div><div class="v">OAuth · ~/.codex/auth.json</div></div>
+                        </div>
+                      </div>
+                      <div class="block">
+                        <h5>Session</h5>
+                        <div class="hero high">63% left</div>
+                        <div class="hint-pace">On pace</div>
+                        <div class="hint-reset">Resets in 2h 14m</div>
+                        <div class="meter high" style="height:8px"><i style="width:63%"></i></div>
+                      </div>
+                      <div class="block">
+                        <h5>Weekly</h5>
+                        <div class="hero mid">57% left</div>
+                        <div class="hint-pace">13% in deficit</div>
+                        <div class="hint-pace">Runs out in 2d 17h</div>
+                        <div class="hint-reset">Resets in 3d</div>
+                        <div class="meter mid" style="height:8px"><i style="width:57%"></i></div>
+                      </div>
+                      <div class="block">
+                        <h5>Codex Spark 5-hour</h5>
+                        <div class="hero high">88% left</div>
+                        <div class="hint-pace">On pace</div>
+                        <div class="hint-reset">Resets in 4h 02m</div>
+                        <div class="meter high" style="height:6px"><i style="width:88%"></i></div>
+                      </div>
+                      <div class="block">
+                        <h5>Codex Spark Weekly</h5>
+                        <div class="hero high">100% left</div>
+                        <div class="hint-pace">On pace</div>
+                        <div class="hint-reset">Resets in 7d</div>
+                        <div class="meter high" style="height:6px"><i style="width:100%"></i></div>
+                      </div>
+                      <div class="block">
+                        <h5>Limit Reset Credits</h5>
+                        <div class="hint">3 manual resets available</div>
+                        <div class="hint">Next expires in 3d 4h</div>
+                      </div>
+                    </div>
+                    <div data-acct-panel="a2" class="hidden">
+                      <div class="block">
+                        <h5>Account</h5>
+                        <div class="two">
+                          <div class="row-stack"><div class="k">Account</div><div class="v">alexey@zhokhov.com</div></div>
+                          <div class="row-stack"><div class="k">Plan</div><div class="v">Plus</div></div>
+                        </div>
+                        <div class="row-stack"><div class="k">Updated</div><div class="v dim">4 min ago</div></div>
+                      </div>
+                      <div class="block">
+                        <h5>Session</h5>
+                        <div class="hero" style="color:var(--tertiary)">0% left</div>
+                        <div class="hint-pace">Fully used</div>
+                        <div class="hint-reset">Resets in 5h · Today, 22:00</div>
+                        <div class="meter depleted" style="height:8px"><i style="width:0%"></i></div>
+                      </div>
+                      <div class="block">
+                        <h5>Weekly</h5>
+                        <div class="hero" style="color:var(--tertiary)">0% left</div>
+                        <div class="hint-pace">Fully used</div>
+                        <div class="hint-reset">Resets in 5 days · 17 Aug 2026, 09:00</div>
+                        <div class="meter depleted" style="height:8px"><i style="width:0%"></i></div>
+                      </div>
+                      <div class="block">
+                        <h5>Limit Reset Credits</h5>
+                        <div class="row-stack"><div class="k">Available</div><div class="v">0 manual resets</div></div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- ANTHROPIC / CLAUDE — Session, Weekly, All models, Sonnet, Daily Routines, Extra usage, Fable -->
+                  <div class="pdetail hidden" data-provider="anthropic">
+                    <div class="detail-head">
+                      <div class="plogo anthropic"><svg viewBox="0 0 24 24"><path d="M12 2l1.2 6.2L18 6l-2.8 4.2L22 12l-6.8 1.8L18 18l-4.8-2.2L12 22l-1.2-6.2L6 18l2.8-4.2L2 12l6.8-1.8L6 6l4.8 2.2L12 2z"/></svg></div>
+                      <div style="flex:1">
+                        <h4>Anthropic</h4>
+                        <div class="sub">Claude · Anthropic · Updated 2 min ago</div>
+                      </div>
+                      <button class="btn-icon" type="button">↻</button>
+                    </div>
+                    <div class="acct-switch-wrap" data-hscroll>
+                      <div class="acct-switch">
+                        <button type="button" class="on">Personal</button>
+                      </div>
+                    </div>
+                    <div class="block">
+                      <h5>Account</h5>
+                      <div class="two">
+                        <div class="row-stack"><div class="k">Account</div><div class="v">Personal</div></div>
+                        <div class="row-stack"><div class="k">Plan</div><div class="v">Max 20×</div></div>
+                      </div>
+                      <div class="row-stack"><div class="k">Status</div><div class="v dim">fresh</div></div>
+                      <div class="row-stack"><div class="k">Updated</div><div class="v dim">2 min ago</div></div>
+                      <div class="auth-block">
+                        <div class="row-stack"><div class="k">Credential source</div><div class="v">OAuth · macOS Keychain (Claude Code-credentials)</div></div>
+                      </div>
+                    </div>
+                    <div class="block">
+                      <h5>Session</h5>
+                      <div class="hero high">74% left</div>
+                      <div class="hint-pace">12% in deficit</div>
+                      <div class="hint-reset">Resets in 4h 19m</div>
+                      <div class="meter high" style="height:8px"><i style="width:74%"></i></div>
+                    </div>
+                    <div class="block">
+                      <h5>Weekly</h5>
+                      <div class="hero low">12% left</div>
+                      <div class="hint-pace">52% in reserve</div>
+                      <div class="hint-reset">Resets in 1h</div>
+                      <div class="meter low" style="height:8px"><i style="width:12%"></i></div>
+                    </div>
+                    <div class="block">
+                      <h5>All models</h5>
+                      <div class="hero mid" style="font-size:26px">28% left</div>
+                      <div class="hint">Weekly all-models window · Resets with weekly</div>
+                      <div class="meter mid" style="height:6px"><i style="width:28%"></i></div>
+                    </div>
+                    <div class="block">
+                      <h5>Sonnet</h5>
+                      <div class="hero mid" style="font-size:24px">35% left</div>
+                      <div class="hint-pace">Model-scoped</div>
+                      <div class="hint-pace">paced</div>
+                      <div class="hint-reset">Resets in 6d 12h</div>
+                      <div class="meter mid" style="height:5px"><i style="width:35%"></i></div>
+                    </div>
+                    <div class="block">
+                      <h5>Fable only</h5>
+                      <div class="hero mid" style="font-size:24px">28% left</div>
+                      <div class="hint-reset">Resets in 12h 19m</div>
+                      <div class="meter mid" style="height:5px"><i style="width:28%"></i></div>
+                    </div>
+                    <div class="block">
+                      <h5>Daily Routines</h5>
+                      <div class="hero high" style="font-size:24px">100% left</div>
+                      <div class="hint">No reset timestamp from provider</div>
+                      <div class="meter high" style="height:5px"><i style="width:100%"></i></div>
+                    </div>
+                    <div class="block">
+                      <h5>Extra usage</h5>
+                      <div class="row-stack"><div class="k">Spend bound</div><div class="v dim">Quota-bound money / spend slot (limits only)</div></div>
+                    </div>
+                  </div>
+
+                  <!-- AMP — Daily + Credits -->
+                  <div class="pdetail hidden" data-provider="amp">
+                    <div class="detail-head">
+                      <div class="plogo amp"><svg viewBox="0 0 24 24"><path d="M4 16c2-6 4-10 8-10s6 4 8 10h-3c-1.2-3.5-2.5-5.5-5-5.5S8.2 12.5 7 16H4zm4.5 2a3.5 3.5 0 107 0h-7z"/></svg></div>
+                      <div style="flex:1">
+                        <h4>Amp</h4>
+                        <div class="sub">Amp Free · Updated 1 min ago</div>
+                      </div>
+                      <button class="btn-icon" type="button">↻</button>
+                    </div>
+                    <div class="acct-switch-wrap" data-hscroll>
+                      <div class="acct-switch"><button type="button" class="on">Free</button></div>
+                    </div>
+                    <div class="block">
+                      <h5>Account</h5>
+                      <div class="two">
+                        <div class="row-stack"><div class="k">Plan</div><div class="v">Free</div></div>
+                        <div class="row-stack"><div class="k">Status</div><div class="v dim">fresh</div></div>
+                      </div>
+                      <div class="row-stack"><div class="k">Updated</div><div class="v dim">1 min ago</div></div>
+                      <div class="auth-block">
+                        <div class="row-stack"><div class="k">Credential source</div><div class="v">API key · env AMP_API_KEY</div></div>
+                      </div>
+                    </div>
+                    <div class="block">
+                      <h5>Daily</h5>
+                      <div class="hero high">61% left</div>
+                      <div class="hint-pace">Remaining today</div>
+                      <div class="hint-reset">Resets daily</div>
+                      <div class="meter high" style="height:8px"><i style="width:61%"></i></div>
+                    </div>
+                    <div class="block">
+                      <h5>Credits</h5>
+                      <div class="row-stack"><div class="k">Individual credits</div><div class="v dim">$4.76 remaining (limit bound)</div></div>
+                      <div class="row-stack"><div class="k">Workspace</div><div class="v dim">Detail-only · not glance %</div></div>
+                    </div>
+                  </div>
+
+                  <!-- xAI / GROK — Weekly + Extra usage credits -->
+                  <div class="pdetail hidden" data-provider="xai">
+                    <div class="detail-head">
+                      <div class="plogo" style="background:#111;width:28px;height:28px;border-radius:8px;display:grid;place-items:center;color:#fff;font-weight:700;font-size:11px">X</div>
+                      <div style="flex:1">
+                        <h4>xAI</h4>
+                        <div class="sub">Grok · SuperGrok · Updated 3 min ago</div>
+                      </div>
+                      <button class="btn-icon" type="button">↻</button>
+                    </div>
+                    <div class="acct-switch-wrap" data-hscroll>
+                      <div class="acct-switch"><button type="button" class="on">Primary</button></div>
+                    </div>
+                    <div class="block">
+                      <h5>Account</h5>
+                      <div class="two">
+                        <div class="row-stack"><div class="k">Plan</div><div class="v">SuperGrok</div></div>
+                        <div class="row-stack"><div class="k">Status</div><div class="v dim">fresh</div></div>
+                      </div>
+                      <div class="auth-block">
+                        <div class="row-stack"><div class="k">Credential source</div><div class="v">OAuth · ~/.grok/auth.json</div></div>
+                      </div>
+                    </div>
+                    <div class="block">
+                      <h5>Weekly</h5>
+                      <div class="hero high">72% left</div>
+                      <div class="hint-pace">On pace</div>
+                      <div class="hint-reset">Resets in 3 days · 13 Aug 2026, 12:00</div>
+                      <div class="meter high" style="height:8px"><i style="width:72%"></i></div>
+                    </div>
+                    <div class="block">
+                      <h5>Extra usage credits</h5>
+                      <div class="row-stack"><div class="k">Prepaid / on-demand bound</div><div class="v dim">$25.00 remaining (limit only · not price table)</div></div>
+                    </div>
+                  </div>
+
+                  <!-- KIMI — Rate Limit, Weekly -->
+                  <div class="pdetail hidden" data-provider="kimi">
+                    <div class="detail-head">
+                      <div class="plogo" style="background:#1a1a1a;width:28px;height:28px;border-radius:8px;display:grid;place-items:center;color:#fff;font-weight:700;font-size:10px">Ki</div>
+                      <div style="flex:1">
+                        <h4>Kimi</h4>
+                        <div class="sub">Kimi Code · Moonshot · Updated 5 min ago</div>
+                      </div>
+                      <button class="btn-icon" type="button">↻</button>
+                    </div>
+                    <div class="acct-switch-wrap" data-hscroll>
+                      <div class="acct-switch"><button type="button" class="on">Default</button></div>
+                    </div>
+                    <div class="block">
+                      <h5>Account</h5>
+                      <div class="auth-block">
+                        <div class="row-stack"><div class="k">Credential source</div><div class="v">API token · env KIMI_CODE_API_KEY</div></div>
+                      </div>
+                      <div class="row-stack"><div class="k">Updated</div><div class="v dim">5 min ago</div></div>
+                    </div>
+                    <div class="block">
+                      <h5>Rate Limit</h5>
+                      <div class="hero mid">45% left</div>
+                      <div class="hint-pace">30% in reserve · short active window</div>
+                      <div class="hint-reset">Resets in 42m · Today, 15:52</div>
+                      <div class="meter mid" style="height:8px"><i style="width:45%"></i></div>
+                    </div>
+                    <div class="block">
+                      <h5>Weekly</h5>
+                      <div class="hero high">70% left</div>
+                      <div class="hint-reset">Resets in 4d 6h · 14 Aug 2026, 18:00</div>
+                      <div class="meter high" style="height:8px"><i style="width:70%"></i></div>
+                    </div>
+                  </div>
+
+                  <!-- Z.AI — 5-hour, Tokens, MCP -->
+                  <div class="pdetail hidden" data-provider="zai">
+                    <div class="detail-head">
+                      <div class="plogo" style="background:#2563eb;width:28px;height:28px;border-radius:8px;display:grid;place-items:center;color:#fff;font-weight:700;font-size:11px">Z</div>
+                      <div style="flex:1">
+                        <h4>Z.ai</h4>
+                        <div class="sub">GLM · Updated 8 min ago</div>
+                      </div>
+                      <button class="btn-icon" type="button">↻</button>
+                    </div>
+                    <div class="acct-switch-wrap" data-hscroll>
+                      <div class="acct-switch"><button type="button" class="on">API key</button></div>
+                    </div>
+                    <div class="block">
+                      <h5>Account</h5>
+                      <div class="auth-block">
+                        <div class="row-stack"><div class="k">Credential source</div><div class="v">API token · env ZAI_API_KEY</div></div>
+                      </div>
+                      <div class="row-stack"><div class="k">Updated</div><div class="v dim">8 min ago</div></div>
+                    </div>
+                    <div class="block">
+                      <h5>5-hour</h5>
+                      <div class="hero high">81% left</div>
+                      <div class="hint-pace">Short / active window</div>
+                      <div class="hint-reset">Resets in 3h 12m · Today, 19:00</div>
+                      <div class="meter high" style="height:8px"><i style="width:81%"></i></div>
+                    </div>
+                    <div class="block">
+                      <h5>Tokens</h5>
+                      <div class="hero mid" style="font-size:26px">54% left</div>
+                      <div class="hint">Token quota window</div>
+                      <div class="meter mid" style="height:6px"><i style="width:54%"></i></div>
+                    </div>
+                    <div class="block">
+                      <h5>MCP</h5>
+                      <div class="hero high" style="font-size:26px">90% left</div>
+                      <div class="hint">MCP quota window</div>
+                      <div class="meter high" style="height:6px"><i style="width:90%"></i></div>
+                    </div>
+                  </div>
+
+                  <!-- MINIMAX — General 5h, General Weekly, Video -->
+                  <div class="pdetail hidden" data-provider="minimax">
+                    <div class="detail-head">
+                      <div class="plogo" style="background:#111;width:28px;height:28px;border-radius:8px;display:grid;place-items:center;color:#fff;font-weight:700;font-size:9px">MM</div>
+                      <div style="flex:1">
+                        <h4>MiniMax</h4>
+                        <div class="sub">Updated 10 min ago</div>
+                      </div>
+                      <button class="btn-icon" type="button">↻</button>
+                    </div>
+                    <div class="acct-switch-wrap" data-hscroll>
+                      <div class="acct-switch"><button type="button" class="on">API key</button></div>
+                    </div>
+                    <div class="block">
+                      <h5>Account</h5>
+                      <div class="auth-block">
+                        <div class="row-stack"><div class="k">Credential source</div><div class="v">API token · env MINIMAX_API_KEY</div></div>
+                      </div>
+                      <div class="row-stack"><div class="k">Updated</div><div class="v dim">10 min ago</div></div>
+                    </div>
+                    <div class="block">
+                      <h5>General · 5h</h5>
+                      <div class="hero mid">33% left</div>
+                      <div class="hint-reset">Resets in 1h 45m · Today, 18:15</div>
+                      <div class="meter mid" style="height:8px"><i style="width:33%"></i></div>
+                    </div>
+                    <div class="block">
+                      <h5>General · Weekly</h5>
+                      <div class="hero high" style="font-size:26px">66% left</div>
+                      <div class="hint-reset">Resets in 5 days · 15 Aug 2026, 00:00</div>
+                      <div class="meter high" style="height:6px"><i style="width:66%"></i></div>
+                    </div>
+                    <div class="block">
+                      <h5>Video</h5>
+                      <div class="hero high" style="font-size:26px">90% left</div>
+                      <div class="hint">Video modality window</div>
+                      <div class="meter high" style="height:6px"><i style="width:90%"></i></div>
+                    </div>
+                  </div>
+                </div>
+                </div>
+              </div>
+
+              <!-- Shared glass footer dock (outside scrollers — no hard cut under CTA) -->
+              <div class="footer-dock">
+                <button type="button" class="cta-btn">
+                  <span class="glyph" aria-hidden="true">
+                    <svg viewBox="0 0 16 16"><path d="M3 2.5A1.5 1.5 0 0 1 4.5 1h7A1.5 1.5 0 0 1 13 2.5v11a1.5 1.5 0 0 1-1.5 1.5h-7A1.5 1.5 0 0 1 3 13.5v-11zM4.5 2a.5.5 0 0 0-.5.5V4h8V2.5a.5.5 0 0 0-.5-.5h-7zM4 5v8.5a.5.5 0 0 0 .5.5h7a.5.5 0 0 0 .5-.5V5H4z"/></svg>
+                  </span>
+                  Open Usage Window
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="pick">
+          Visual reference · toggle Dark/Light above · fixture matches <code>jackin-usage</code> glance + detail APIs.
+        </div>
+      </div>
+
+      <!-- STATUS + NOTES -->
+      <div class="card">
+        <div class="tag">Status bar · locked transparent</div>
+        <h3>Template mono logos + dual stack</h3>
+        <p class="why">No chip fill. Logos monochrome on the bar (system style). Official SVGs later as NSImage template.</p>
+        <div class="stage bar">
+          <div class="menubar">
+            <div class="sb-item" title="Anthropic">
+              <div class="plogo sm anthropic"><svg viewBox="0 0 24 24"><path d="M12 2l1.2 6.2L18 6l-2.8 4.2L22 12l-6.8 1.8L18 18l-4.8-2.2L12 22l-1.2-6.2L6 18l2.8-4.2L2 12l6.8-1.8L6 6l4.8 2.2L12 2z"/></svg></div>
+              <div class="stack"><span class="t">1h</span><span class="p">12%</span></div>
+            </div>
+            <div class="sb-item" title="OpenAI">
+              <div class="plogo sm openai"><svg viewBox="0 0 24 24"><path d="M22.3 10.5a5.4 5.4 0 0 0-.7-5.1 5.5 5.5 0 0 0-5.9-2.6A5.5 5.5 0 0 0 12 .8a5.5 5.5 0 0 0-3.7 1.9 5.5 5.5 0 0 0-5.9 2.6 5.4 5.4 0 0 0-.7 5.1A5.4 5.4 0 0 0 .3 14.7a5.5 5.5 0 0 0 2.1 5.6 5.5 5.5 0 0 0 5.9 1.1A5.5 5.5 0 0 0 12 23.2a5.5 5.5 0 0 0 3.7-1.8 5.5 5.5 0 0 0 5.9-1.1 5.5 5.5 0 0 0 2.1-5.6 5.4 5.4 0 0 0-1.4-4.2z"/></svg></div>
+              <div class="stack"><span class="t">3d</span><span class="p">57%</span></div>
+            </div>
+            <div class="sb-item" title="Amp">
+              <div class="plogo sm amp"><svg viewBox="0 0 24 24"><path d="M4 16c2-6 4-10 8-10s6 4 8 10h-3c-1.2-3.5-2.5-5.5-5-5.5S8.2 12.5 7 16H4zm4.5 2a3.5 3.5 0 107 0h-7z"/></svg></div>
+              <div class="stack"><span class="t">18h</span><span class="p">100%</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="ref-notes">
+          <h3>Agent handoff — how to match this look</h3>
+          <p>
+            <strong>1. Tokens:</strong> CSS variables in this file under <code>[data-theme=dark|light]</code>
+            map to Swift: SF Pro, semantic Label/Secondary/Tertiary, phosphor
+            <code>#5CF07A</code> dark / <code>#0B774E</code> light.
+          </p>
+          <p>
+            <strong>2. Materials:</strong> Popover = liquid glass chrome (<code>GlassFallbacks</code>);
+            content cards = solid/inset fills. Footer dock = glass control layer.
+            Sidebar glass in Usage window later.
+          </p>
+          <p>
+            <strong>2b. Scroll edges (critical craft):</strong> never hard-clip content mid-card.
+            Use soft scroll-edge dissolve under sticky chrome / above footer.
+            Native: <code>scrollEdgeEffect(.soft)</code> (WWDC25 / HIG Materials).
+            H-scroll strips use the same soft left/right dissolve — no mid-tab cut.
+          </p>
+          <p>
+            <strong>2c. Open Usage CTA:</strong> glass capsule + phosphor tint (not solid green slab).
+            Sits in sticky footer dock outside scrollers.
+          </p>
+          <p>
+            <strong>3. Metrics:</strong> <strong>3 status levels only</strong> (high / mid / low + depleted).
+            Default bands ≥40 / 15–39 / &lt;15. Never brand-color meters.
+            Brand color only on logo plates (template mono on menu bar).
+          </p>
+          <p>
+            <strong>3b. Strips:</strong> providers centered + H-scroll with edge fade; accounts <strong>left</strong> + H-scroll with edge fade.
+          </p>
+          <p>
+            <strong>3c. Detail templates:</strong> OpenAI, Anthropic, Amp, xAI, Kimi, Z.ai, MiniMax
+            bucket order from Rust <code>usage_bucket_order</code> / probes.
+          </p>
+          <p>
+            <strong>4. Logos:</strong> Official PDFs from brand kits → template for status bar,
+            optional original for in-popover plates. Preview SVGs are <em>stand-ins</em>.
+          </p>
+          <p>
+            <strong>5. Title:</strong> <code>jackin</code> + phosphor <code>❯</code> +
+            <code>desktop</code> in primary label color (not phosphor).
+          </p>
+          <p>
+            <strong>6. For implementers:</strong> open this HTML in dark + light; screenshot both;
+            match spacing (8pt), type steps, stack pattern (label → value → meter).
+          </p>
+        </div>
+        <div class="pick" style="margin-top:12px">
+          Status bar = transparent dual stack · meters = 3 status levels only · strips centered (providers) / left (accounts).
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Theme
+    const root = document.documentElement;
+    const darkBtn = document.getElementById("theme-dark");
+    const lightBtn = document.getElementById("theme-light");
+    function setTheme(t) {
+      root.setAttribute("data-theme", t);
+      if (darkBtn) darkBtn.classList.toggle("on", t === "dark");
+      if (lightBtn) lightBtn.classList.toggle("on", t === "light");
+    }
+    if (darkBtn) darkBtn.addEventListener("click", () => setTheme("dark"));
+    if (lightBtn) lightBtn.addEventListener("click", () => setTheme("light"));
+
+    // Modes
+    const modeOverview = document.getElementById("mode-overview");
+    const modeProviders = document.getElementById("mode-providers");
+    function setMode(mode) {
+      document.querySelectorAll("#seg button").forEach((b) =>
+        b.classList.toggle("on", b.dataset.mode === mode)
+      );
+      modeOverview.classList.toggle("hidden", mode !== "overview");
+      modeProviders.classList.toggle("hidden", mode !== "providers");
+      // reset detail scroll to top when switching modes
+      requestAnimationFrame(() => {
+        document.querySelectorAll("[data-vscroll]").forEach((el) => { el.scrollTop = 0; });
+        updateAllEdges();
+      });
+    }
+    document.querySelectorAll("#seg button").forEach((btn) => {
+      btn.addEventListener("click", () => setMode(btn.dataset.mode));
+    });
+
+    // Provider tabs
+    function setProvider(id) {
+      if (!id) return;
+      const tab = document.querySelector(`#pstrip .ptab[data-provider="${id}"]`);
+      if (!tab) return;
+      document.querySelectorAll("#pstrip .ptab").forEach((t) => t.classList.toggle("on", t === tab));
+      document.querySelectorAll(".pdetail").forEach((d) =>
+        d.classList.toggle("hidden", d.dataset.provider !== id)
+      );
+      const detail = document.querySelector(".detail-scroll");
+      if (detail) detail.scrollTop = 0;
+      // scroll focused tab into view (centered strip, many providers)
+      try { tab.scrollIntoView({ inline: "center", block: "nearest", behavior: "auto" }); } catch (_) {}
+      requestAnimationFrame(updateAllEdges);
+    }
+    document.querySelectorAll("#pstrip .ptab").forEach((tab) => {
+      tab.addEventListener("click", () => setProvider(tab.dataset.provider));
+    });
+    // default: only openai detail visible
+    document.querySelectorAll(".pdetail").forEach((d) => {
+      if (d.dataset.provider !== "openai") d.classList.add("hidden");
+    });
+
+    // Accounts
+    document.querySelectorAll('[data-accounts="openai"] button').forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const id = btn.dataset.acct;
+        if (!id) return;
+        document.querySelectorAll('[data-accounts="openai"] button').forEach((b) =>
+          b.classList.toggle("on", b === btn)
+        );
+        document.querySelectorAll('.pdetail[data-provider="openai"] [data-acct-panel]').forEach((p) =>
+          p.classList.toggle("hidden", p.dataset.acctPanel !== id)
+        );
+        requestAnimationFrame(updateAllEdges);
+      });
+    });
+
+    /*
+      Soft scroll-edge dissolves (Apple Liquid Glass companion).
+      Content fades at edges instead of hard-clipping mid-card / mid-tab.
+      Native: scrollEdgeEffect(.soft) under glass chrome + footer.
+    */
+    const FADE = 22; // px soft edge
+    function updateVScroll(el) {
+      if (!el) return;
+      const max = el.scrollHeight - el.clientHeight;
+      const top = el.scrollTop;
+      const atTop = top <= 1;
+      const atBot = max <= 1 || top >= max - 1;
+      el.style.setProperty("--fade-t", atTop ? "0px" : FADE + "px");
+      el.style.setProperty("--fade-b", atBot ? "0px" : FADE + "px");
+    }
+    function updateHScroll(el) {
+      if (!el) return;
+      const max = el.scrollWidth - el.clientWidth;
+      const left = el.scrollLeft;
+      const atL = left <= 1;
+      const atR = max <= 1 || left >= max - 1;
+      el.style.setProperty("--fade-l", atL ? "0px" : FADE + "px");
+      el.style.setProperty("--fade-r", atR ? "0px" : FADE + "px");
+    }
+    function updateAllEdges() {
+      document.querySelectorAll("[data-vscroll]").forEach(updateVScroll);
+      document.querySelectorAll("[data-hscroll]").forEach(updateHScroll);
+    }
+    document.querySelectorAll("[data-vscroll]").forEach((el) => {
+      el.addEventListener("scroll", () => updateVScroll(el), { passive: true });
+    });
+    document.querySelectorAll("[data-hscroll]").forEach((el) => {
+      el.addEventListener("scroll", () => updateHScroll(el), { passive: true });
+    });
+    window.addEventListener("resize", updateAllEdges);
+
+    // URL params: ?embed=1&mode=providers&provider=anthropic&theme=dark&account=a1
+    // Used by index.html status left-click so interaction demos the REAL popover.
+    (function applyParams() {
+      const q = new URLSearchParams(location.search);
+      if (q.get("embed") === "1") root.classList.add("embed");
+      const theme = q.get("theme");
+      if (theme === "light" || theme === "dark") setTheme(theme);
+      const mode = q.get("mode");
+      if (mode === "overview" || mode === "providers") setMode(mode);
+      const provider = q.get("provider");
+      if (provider) {
+        if (mode !== "overview") setMode("providers");
+        setProvider(provider);
+      }
+      const account = q.get("account");
+      if (account && provider === "openai") {
+        const acctBtn = document.querySelector(
+          `[data-accounts="openai"] button[data-acct="${account}"]`
+        );
+        if (acctBtn) acctBtn.click();
+      }
+      requestAnimationFrame(updateAllEdges);
+    })();
+  </script>
+</body>
+</html>

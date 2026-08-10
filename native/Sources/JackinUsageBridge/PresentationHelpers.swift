@@ -4,12 +4,47 @@
 import SwiftUI
 
 /// Pure mapping: Rust severity string → tint (no arithmetic, no probes).
+///
+/// Healthy/default → product phosphor (HTML `--status-high` / LG-A9), never system
+/// `Color.accentColor` (host blue). Warn/danger stay system orange/red
+/// (HTML `--status-mid` / `--status-low`).
 public func severityTint(_ severity: String) -> Color {
     switch severity {
     case "danger": return .red
     case "warn": return .orange
-    default: return .accentColor
+    default: return .jackinPhosphor
     }
+}
+
+/// HTML nest/overview `a-meter` band from Rust remaining % when account DTO
+/// has no severity field (`high` / `mid` / `low` / depleted).
+///
+/// Bands match DATA_CONTRACT fixture + index.html: 100→high, 57→mid, 12→low,
+/// 0→depleted (empty track). Maps to Rust severity keys for ``severityTint``.
+/// Geometry only — does not invent a remaining percent.
+public func remainingPercentMeterSeverity(_ remaining: UInt8) -> String {
+    if remaining == 0 { return "normal" } // depleted: no fill; color unused
+    if remaining <= 20 { return "danger" } // HTML `low`
+    if remaining <= 60 { return "warn" } // HTML `mid`
+    return "normal" // HTML `high`
+}
+
+/// Resolve account meter severity: explicit Rust/fixture key, else remaining band.
+public func accountMeterSeverity(severity: String?, remainingPercent: UInt8?) -> String {
+    if let raw = severity?.trimmingCharacters(in: .whitespacesAndNewlines), !raw.isEmpty {
+        switch raw {
+        case "danger", "warn", "normal", "ok", "high", "mid", "low":
+            // HTML a-meter class aliases → severityTint keys.
+            if raw == "high" || raw == "ok" { return "normal" }
+            if raw == "mid" { return "warn" }
+            if raw == "low" { return "danger" }
+            return raw
+        default:
+            break
+        }
+    }
+    guard let remaining = remainingPercent else { return "normal" }
+    return remainingPercentMeterSeverity(remaining)
 }
 
 /// Pure mapping: Rust status → optional SF Symbol badge name.
@@ -140,6 +175,51 @@ public func statusItemSystemImage(surfaceId: String) -> String? {
 public let desktopProviderIconKeys = [
     "codex", "claude", "amp", "grok", "zai", "kimi", "minimax",
 ]
+
+/// Frozen product/limit role shown in popover Overview group headers.
+/// Subscription plan belongs to account rows; it is not provider identity.
+public func desktopProviderOverviewRole(iconKey: String) -> String? {
+    switch iconKey {
+    case "codex": return "Codex"
+    case "claude": return "Claude"
+    case "amp": return "Daily"
+    case "grok": return "Grok"
+    case "zai": return "GLM"
+    case "kimi": return "Kimi Code"
+    case "minimax": return "MiniMax"
+    default: return nil
+    }
+}
+
+/// SB-3 / SB-14 hard cap for burn-first status-bar chips.
+public let statusBarMaxChips = 3
+
+/// Defensive / QI filter for status-bar membership when Rust ranking is not
+/// available (fixture inject): **hide 0%** (SB-19), hard-cap ≤3 (SB-3).
+///
+/// Live Desktop path uses Rust `statusBarProviderGlanceRows` (SB-17 soonest-
+/// then-remaining). This helper never invents order beyond filtering zeros and
+/// preserving input order for the remaining prefix.
+public func selectStatusBarGlanceRows(
+    from rows: [PresentationStore.GlanceProviderRow],
+    maxCount: Int = statusBarMaxChips
+) -> [PresentationStore.GlanceProviderRow] {
+    let cap = min(statusBarMaxChips, max(1, maxCount))
+    return Array(
+        rows
+            .filter { row in
+                guard let rem = row.glanceRemainingPercent else { return false }
+                return rem > 0
+            }
+            .prefix(cap)
+    )
+}
+
+/// SB-13: status-item **visual** order follows creation order. When ranked
+/// surface ids change, `StatusBarController` must remove+recreate items.
+public func statusBarOrderRequiresRebuild(previous: [String], next: [String]) -> Bool {
+    previous != next
+}
 
 /// SF Symbol name for a Desktop provider status item. Rejects any key outside
 /// `desktopProviderIconKeys` (so `opencode` and unknown keys return `nil`),
@@ -531,13 +611,16 @@ public func statusItemChipDisplayLines(
 /// Build OpenUsage/CodexBar-style per-provider chips from pure snapshots (unit-testable).
 ///
 /// - Catalog order when `preferWorstFirst` is false.
-/// - Lowest remaining first when true (focus mode).
-/// - `includeAllEnabled`: strip mode shows **every enabled** host surface (icon always),
-///   with remaining % when Rust supplies it; empty data shows `—` (never invents %).
+/// - When true: **higher remaining first** (SB-17 time-unknown tie-break). Live
+///   Desktop multi-item bar ranks via Rust `statusBarProviderGlanceRows` (soonest
+///   reset first). Name is historical; do not reintroduce scarcity-first.
+/// - `includeAllEnabled`: strip mode shows enabled hosts (icon always), with
+///   remaining % when Rust supplies it; empty data shows `—` (never invents %).
 /// - Otherwise hides surfaces without preview data.
+/// - **SB-3:** hard-cap ≤3 chips. **SB-19:** pure 0% remaining excluded.
 /// - `percentStyle` (`left`/`used`) shapes stacked percent lines to match
 ///   Rust compact labels (OpenUsage remaining default).
-/// - Depleted + reset countdown prefers Rust compact over bare `0%`.
+/// - Dual-bucket depleted session + healthy weekly keeps the positive window.
 public func buildStatusItemChips(
     surfaces: [StatusItemSurfaceSnapshot],
     maxCount: Int,
@@ -545,17 +628,31 @@ public func buildStatusItemChips(
     percentStyle: String = "left",
     includeAllEnabled: Bool = false
 ) -> [StatusItemChip] {
-    let cap = max(1, min(8, maxCount))
+    // SB-3 hard-caps chip strip at 3; preferWorstFirst is legacy — live Desktop
+    // multi-item bar uses Rust statusBarProviderGlanceRows (SB-17).
+    let cap = max(1, min(statusBarMaxChips, maxCount))
     var candidates = surfaces.filter { surface in
         guard surface.enabled else { return false }
+        // SB-19: hide depleted (every remaining window is 0). Dual-bucket
+        // Session 0 + Weekly 79 still qualifies via max remaining > 0.
+        // Empty remainings (no data yet) are not "depleted" — includeAllEnabled
+        // may still show a honest "—" placeholder for enabled surfaces.
+        let positive = surface.remainings.contains { $0 > 0 }
+            || (surface.remainings.isEmpty
+                && (surface.drivingRemaining ?? 0) > 0)
+        let depleted = !surface.remainings.isEmpty
+            && surface.remainings.allSatisfy { $0 == 0 }
+            && (surface.drivingRemaining ?? 0) == 0
+        if depleted { return false }
         if includeAllEnabled { return true }
-        return surface.hasPreviewData
+        return surface.hasPreviewData || positive
     }
     if preferWorstFirst {
+        // Prefer higher remaining when times unknown (SB-17 tie-break only).
         candidates.sort { lhs, rhs in
-            let l = lhs.drivingRemaining ?? 100
-            let r = rhs.drivingRemaining ?? 100
-            if l != r { return l < r }
+            let l = lhs.drivingRemaining ?? 0
+            let r = rhs.drivingRemaining ?? 0
+            if l != r { return l > r }
             return false
         }
     }

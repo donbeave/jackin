@@ -172,19 +172,40 @@ fn merged_bar_skips_disabled_surfaces() {
 }
 
 fn inject_remaining(runtime: &mut HostUsageRuntime, surface_id: &str, remaining: u8) {
+    inject_remaining_at(runtime, surface_id, remaining, None);
+}
+
+/// Inject Weekly (or Daily for Amp) glance bucket with optional reset epoch.
+fn inject_remaining_at(
+    runtime: &mut HostUsageRuntime,
+    surface_id: &str,
+    remaining: u8,
+    resets_at: Option<i64>,
+) {
     let mut view = FocusedUsageView::unavailable("seed", 1);
     view.status = UsageSnapshotStatus::Fresh;
     view.source = UsageSource::ProviderApi;
     view.confidence = UsageConfidence::Authoritative;
     view.status_bar_label = format!("{remaining}% left");
+    // Amp glance is Daily; all other Desktop surfaces use Weekly (SB-20/21).
+    let slot = if surface_id == "amp" {
+        StatusSlot::Daily
+    } else {
+        StatusSlot::Weekly
+    };
+    let label = if surface_id == "amp" {
+        "Daily"
+    } else {
+        "Weekly"
+    };
     view.buckets = vec![QuotaBucketView {
-        label: "Session".to_owned(),
+        label: label.to_owned(),
         used_label: Some(format!("{}% used", 100u8.saturating_sub(remaining))),
         limit_label: Some("100%".to_owned()),
         remaining_percent: Some(remaining),
         reset_label: None,
-        resets_at: None,
-        status_slot: Some(StatusSlot::Session),
+        resets_at,
+        status_slot: Some(slot),
         pace_label: None,
         status: UsageSnapshotStatus::Fresh,
         used_money: None,
@@ -459,7 +480,7 @@ fn compact_status_bar_label_for_pinned_known_and_disabled() {
 }
 
 #[test]
-fn compact_status_bar_strip_worst_first_cap_and_separator() {
+fn compact_status_bar_strip_soonest_then_remaining_cap_and_separator() {
     let dir = tempfile::tempdir().expect("tempdir");
     let mut runtime = open_runtime(dir.path());
     for surface in HostSurfaceId::ALL {
@@ -469,51 +490,100 @@ fn compact_status_bar_strip_worst_first_cap_and_separator() {
         );
         runtime.set_enabled(surface.id(), on).expect("enable set");
     }
-    inject_remaining(&mut runtime, "claude", 37); // 37% left — worst remaining
-    inject_remaining(&mut runtime, "codex", 59); // 59% left
-    inject_remaining(&mut runtime, "zai", 88); // 88% left
-    // Worst-first by remaining: Claude, Codex, Z.AI.
+    // No resets_at → SB-17 time key ties; higher remaining ranks first.
+    inject_remaining(&mut runtime, "claude", 37);
+    inject_remaining(&mut runtime, "codex", 59);
+    inject_remaining(&mut runtime, "zai", 88);
     assert_eq!(
         runtime.compact_status_bar_strip(3).expect("strip"),
-        "Cl 37% · Cx 59% · ZA 88%"
+        "ZA 88% · Cx 59% · Cl 37%"
     );
-    assert_eq!(runtime.compact_status_bar_strip(1).expect("cap1"), "Cl 37%");
+    assert_eq!(runtime.compact_status_bar_strip(1).expect("cap1"), "ZA 88%");
 }
 
-/// Multi-provider strip: every enabled surface with numeric data contributes a token.
+/// Multi-provider strip: SB-3 hard-caps at 3; 0% excluded (SB-19).
 #[test]
-fn compact_status_bar_strip_all_enabled_host_surfaces_with_data() {
+fn compact_status_bar_strip_hard_cap_three_and_hides_zero() {
     let dir = tempfile::tempdir().expect("tempdir");
     let mut runtime = open_runtime(dir.path());
-    // Enable the full frozen catalog.
     for surface in HostSurfaceId::ALL {
         runtime.set_enabled(surface.id(), true).expect("enable set");
     }
-    // Inject distinct remainings for five surfaces; leave others empty (hidden).
     inject_remaining(&mut runtime, "claude", 50);
     inject_remaining(&mut runtime, "codex", 40);
     inject_remaining(&mut runtime, "amp", 30);
     inject_remaining(&mut runtime, "grok", 20);
     inject_remaining(&mut runtime, "kimi", 10);
+    inject_remaining(&mut runtime, "zai", 0); // SB-19: out
+    // max=8 still hard-capped to 3 (SB-3).
     let strip = runtime.compact_status_bar_strip(8).expect("strip");
-    // Worst-first: lowest remaining first → Kimi, Grok, Amp, Codex, Claude.
-    assert!(
-        strip.contains("Ki ") && strip.contains("Gr ") && strip.contains("Am "),
-        "strip should include per-provider compact tokens: {strip}"
-    );
-    assert!(
-        strip.contains(" · "),
-        "multi-provider strip joins with middle-dot separator: {strip}"
-    );
     let parts: Vec<_> = strip.split(" · ").collect();
+    assert_eq!(parts.len(), 3, "SB-3 hard cap 3, got {strip}");
     assert!(
-        parts.len() >= 5,
-        "expected ≥5 provider tokens, got {}: {strip}",
-        parts.len()
+        !strip.contains("ZA "),
+        "0% Z.AI must not appear on burn-first bar: {strip}"
     );
-    // Cap still applies.
+    // No reset epochs → higher remaining first among the five non-zero.
+    assert_eq!(
+        parts[0], "Cl 50%",
+        "highest remaining first when times tie: {strip}"
+    );
     let capped = runtime.compact_status_bar_strip(2).expect("cap2");
     assert_eq!(capped.split(" · ").count(), 2, "cap2 strip: {capped}");
+}
+
+/// SB-17: soonest reset ranks above higher remaining.
+#[test]
+fn compact_status_bar_strip_soonest_reset_beats_higher_remaining() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let mut runtime = open_runtime(dir.path());
+    for surface in HostSurfaceId::ALL {
+        let on = matches!(*surface, HostSurfaceId::Claude | HostSurfaceId::Codex);
+        runtime.set_enabled(surface.id(), on).expect("enable set");
+    }
+    let soon = 1_700_000_000_i64;
+    let later = soon + 86_400;
+    inject_remaining_at(&mut runtime, "claude", 90, Some(later)); // high rem, later reset
+    inject_remaining_at(&mut runtime, "codex", 40, Some(soon)); // lower rem, sooner reset
+    let strip = runtime.compact_status_bar_strip(3).expect("strip");
+    assert!(
+        strip.starts_with("Cx "),
+        "soonest reset (Codex) ranks first: {strip}"
+    );
+    assert!(strip.contains("Cl "), "Claude still second: {strip}");
+}
+
+/// Status-bar glance rows: hide 0%, cap 3, soonest-then-remaining (not catalog order).
+#[test]
+fn status_bar_provider_glance_rows_sb3_sb17_sb19() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let mut runtime = open_runtime(dir.path());
+    for surface in HostSurfaceId::DESKTOP_PROVIDER_ORDER {
+        runtime.set_enabled(surface.id(), true).expect("enable set");
+    }
+    let soon = 1_700_000_100_i64;
+    inject_remaining_at(&mut runtime, "claude", 12, Some(soon + 10_000));
+    inject_remaining_at(&mut runtime, "codex", 57, Some(soon)); // soonest
+    inject_remaining_at(&mut runtime, "amp", 100, Some(soon + 20_000));
+    inject_remaining_at(&mut runtime, "grok", 72, Some(soon + 5_000));
+    inject_remaining(&mut runtime, "kimi", 0); // hidden
+    // Full inventory still includes 0% Kimi for popover.
+    let inventory = runtime.provider_glance_rows().expect("inventory");
+    assert!(
+        inventory.iter().any(|r| r.surface_id == "kimi"),
+        "popover inventory keeps 0% rows"
+    );
+    let bar = runtime.status_bar_provider_glance_rows(8).expect("bar");
+    assert_eq!(bar.len(), 3, "SB-3 hard cap");
+    assert_eq!(bar[0].surface_id, "codex", "soonest reset first");
+    assert!(
+        bar.iter().all(|r| r.surface_id != "kimi"),
+        "SB-19: no 0% on bar"
+    );
+    assert!(
+        bar.iter().all(|r| r.glance_remaining_percent != Some(0)),
+        "no zero remaining on bar"
+    );
 }
 
 /// Dual-bucket surface still exposes both remainings via snapshot (Desktop chip stack).
@@ -685,7 +755,7 @@ fn overview_rows_numeric_and_status_word() {
     );
 }
 
-/// OpenUsage/CodexBar-style: every frozen host surface can contribute a strip token.
+/// Burn-first strip hard-caps at 3 even when all eight surfaces have data (SB-3).
 #[test]
 fn compact_status_bar_strip_all_eight_host_surfaces() {
     let dir = tempfile::tempdir().expect("tempdir");
@@ -693,31 +763,26 @@ fn compact_status_bar_strip_all_eight_host_surfaces() {
     for surface in HostSurfaceId::ALL {
         runtime.set_enabled(surface.id(), true).expect("enable set");
     }
-    // Distinct remainings so each surface has numeric data.
+    // Distinct remainings so each surface has numeric data (no resets → higher rem first).
     let remainings = [90u8, 80, 70, 60, 50, 40, 30, 20];
     for (surface, rem) in HostSurfaceId::ALL.iter().zip(remainings.iter().copied()) {
         inject_remaining(&mut runtime, surface.id(), rem);
     }
     let strip = runtime.compact_status_bar_strip(8).expect("strip");
-    // Remaining % default (Left): worst-first → lowest remaining first.
     assert!(
         strip.contains(" · "),
         "multi-provider strip separator: {strip}"
     );
     let parts: Vec<_> = strip.split(" · ").collect();
-    assert_eq!(parts.len(), 8, "expected 8 provider tokens: {strip}");
-    // Every compact prefix present.
-    for surface in HostSurfaceId::ALL {
-        let prefix = surface.compact_prefix();
-        assert!(
-            strip.contains(&format!("{prefix} ")),
-            "missing {prefix} in strip: {strip}"
-        );
-    }
-    // Worst-first: OpenCode 20% is first (lowest remaining).
+    assert_eq!(
+        parts.len(),
+        3,
+        "SB-3 hard-caps burn-first strip at 3: {strip}"
+    );
+    // No reset epochs → highest remaining among ALL ranks first (Claude 90%).
     assert!(
-        parts[0].starts_with("OC 20%"),
-        "worst-first remaining, got {}",
+        parts[0].starts_with("Cl 90%"),
+        "SB-17 higher-remaining first when times tie, got {}",
         parts[0]
     );
 }
