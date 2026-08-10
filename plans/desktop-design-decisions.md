@@ -681,6 +681,7 @@ jackin = soul   (j❯, phosphor accent, mono metrics, deep canvas tint, optional
 | FB1-58 | **Glance popover is translucent Liquid Glass:** clear `NSPopover` window + `GlassFallbacks.panelSurfaceBackground` (regular glass / ultraThinMaterial fallback); soft separators; glass refresh dock; content rows stay standard fills — wallpaper must peek through the shell | CONFIRMED |
 | FB1-59 | **Usage window is one continuous surface** — content fills the window; glass sidebar + toolbar **float on top** (Apple LG / Telegram macOS), not a hard header+sidebar+content three-pane split. Native: floating `NavigationSplitView` sidebar + `backgroundExtensionEffect` under detail | CONFIRMED |
 | FB1-60 | **De-slop craft rules:** no one-sided borders (always full continuous stroke or none); no multi-layer gradient “AI pill” stacks on every control; no orphan left accent bars; prefer fill + complete capsule/rect stroke; 8pt rhythm; hierarchy via type, not decorative chrome | CONFIRMED |
+| FB1-61 | **Liquid Glass craft target = latest stable macOS only (Tahoe 26)** — verify Usage + status popover + bar against LG-A1–A12 on Tahoe; pre-26 paths are Reduce Transparency / compile fallbacks only, not a second design. Soft scroll edges + no stacked system+custom glass on sidebar | CONFIRMED |
 
 ### One-by-one queue (after FB-1)
 

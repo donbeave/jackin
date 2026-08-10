@@ -467,6 +467,23 @@
         calc(var(--float-inset) + var(--side-w) + 18px);
       scrollbar-width: thin;
       scrollbar-color: color-mix(in srgb, var(--label) 16%, transparent) transparent;
+      /* LG-A7 soft scroll-edge dissolve under floating chrome */
+      --fade-t: 12px;
+      --fade-b: 16px;
+      mask-image: linear-gradient(
+        to bottom,
+        transparent 0,
+        #000 var(--fade-t),
+        #000 calc(100% - var(--fade-b)),
+        transparent 100%
+      );
+      -webkit-mask-image: linear-gradient(
+        to bottom,
+        transparent 0,
+        #000 var(--fade-t),
+        #000 calc(100% - var(--fade-b)),
+        transparent 100%
+      );
     }
 
     /* Single page identity — not repeated in titlebar crumb */
@@ -795,65 +812,71 @@
     <section class="panel" id="glass">
       <h2 class="st">Liquid Glass consistency check</h2>
       <p class="sl">
-        Per Apple
+        <strong>Target: latest stable macOS (Tahoe 26)</strong> only for craft verification.
+        Apple
         <a href="https://developer.apple.com/documentation/technologyoverviews/adopting-liquid-glass" style="color:var(--jk)">Adopting Liquid Glass</a>
-        +
+        ·
         <a href="https://developer.apple.com/documentation/technologyoverviews/liquid-glass" style="color:var(--jk)">Liquid Glass</a>
-        +
-        <a href="https://developer.apple.com/documentation/technologyoverviews/swiftui" style="color:var(--jk)">SwiftUI</a>:
-        glass = topmost <strong>navigation layer</strong>; content stays standard materials.
-        Native: SwiftUI + <code>GlassFallbacks</code> only (decisions §6.0 LG-A1–A12).
+        ·
+        <a href="https://developer.apple.com/documentation/technologyoverviews/swiftui" style="color:var(--jk)">SwiftUI</a>.
+        Native: SwiftUI + <code>GlassFallbacks</code> (LG-A1–A12).
       </p>
       <div class="lg-grid">
         <div class="lg-card ok">
-          <h3>✓ LG-A1 Navigation glass</h3>
-          Popover shell · continuous Usage titlebar · floating sidebar · context menu · footer CTA
+          <h3>✓ LG-A1 Nav glass</h3>
+          <strong>Status:</strong> context menu glass · items template (not chips)<br />
+          <strong>Popover:</strong> translucent panel shell + glass Refresh dock<br />
+          <strong>Usage:</strong> floating glass sidebar · system glass toolbar
         </div>
         <div class="lg-card ok">
           <h3>✓ LG-A2 Content not glass</h3>
-          Limit list + details · meters/text · solid <code>.main</code>
+          <strong>Usage/Popover:</strong> limit lists, meters, credential rows = solid/inset only · no <code>glassEffect</code> on data
         </div>
         <div class="lg-card ok">
-          <h3>✓ LG-A3 Clear hierarchy</h3>
-          Provider capsule ≠ account rail · Overview vs Providers · sidebar vs detail
+          <h3>✓ LG-A3 Hierarchy</h3>
+          Provider full-fill selection ≠ account full-stroke pills · Overview vs Providers · nav vs detail
         </div>
         <div class="lg-card ok">
-          <h3>✓ LG-A4 / A5 Sparing glass</h3>
-          No glass-on-glass · no glass data tables · custom glass only on chrome
+          <h3>✓ LG-A4 / A5 Sparing · no stack</h3>
+          Custom glass only via <code>GlassFallbacks</code> · Tahoe system sidebar not double-glassed · one chrome layer
         </div>
         <div class="lg-card ok">
-          <h3>✓ LG-A6 Floating sidebar</h3>
-          Soft depth over solid content · ambient stage bleed under glass
+          <h3>✓ LG-A6 Float over content</h3>
+          <strong>Usage HTML:</strong> one canvas · absolute floating sidebar<br />
+          <strong>Native:</strong> <code>NavigationSplitView</code> + <code>backgroundExtensionEffect</code>
         </div>
         <div class="lg-card ok">
-          <h3>✓ LG-A7 Scroll edges</h3>
-          Soft dissolve under chrome / strips — native scroll edge effects
+          <h3>✓ LG-A7 Soft scroll edges</h3>
+          HTML main-scroll mask fades · native <code>SoftScrollEdges</code> on Usage + popover scrolls
         </div>
         <div class="lg-card ok">
-          <h3>✓ LG-A8 Toolbar grouping</h3>
-          Single Refresh group on glass titlebar
+          <h3>✓ LG-A8 Toolbar group</h3>
+          Single Refresh action group (Usage toolbar · popover footer) — not scattered CTAs
         </div>
         <div class="lg-card ok">
           <h3>✓ LG-A9 Selective tint</h3>
-          Phosphor on selection / CTA / high metrics / j❯ only
+          Phosphor / accent on selection + primary Refresh + high metrics + j❯ only
         </div>
         <div class="lg-card ok">
-          <h3>✓ LG-A12 SwiftUI path</h3>
-          <code>NavigationSplitView</code> + toolbar + <code>GlassFallbacks</code> only
+          <h3>✓ LG-A10 Regular glass</h3>
+          Popover uses <code>glassEffect(.regular)</code> · fallback ultraThin for Reduce Transparency only
         </div>
         <div class="lg-card ok">
-          <h3>✓ Transparent menu bar</h3>
-          Template mono dual stack — not glass chips (FB1-6)
+          <h3>✓ LG-A11 Latest SDK</h3>
+          Craft verified for <strong>macOS 26 Tahoe</strong> · release builds require macOS 26 SDK
         </div>
-        <div class="lg-card warn">
-          <h3>⚠ LG-A10 / A11</h3>
-          Reduce Transparency → ultraThinMaterial in <code>GlassFallbacks</code>.
-          Release SDK macOS 26 for Tahoe LG.
+        <div class="lg-card ok">
+          <h3>✓ LG-A12 SwiftUI only</h3>
+          <code>NavigationSplitView</code> · toolbar · list sidebar · UniFFI data · no UIKit chrome path
+        </div>
+        <div class="lg-card ok">
+          <h3>✓ FB1-60 De-slop</h3>
+          Full continuous strokes only · no one-sided borders · no multi-shadow AI pills
         </div>
       </div>
       <p class="flow-caption">
-        Map: <a href="./LIQUID_GLASS_REFERENCES.md" style="color:var(--jk)">LIQUID_GLASS_REFERENCES.md</a>
-        · decisions §6.0
+        Surface map: <a href="./LIQUID_GLASS_REFERENCES.md" style="color:var(--jk)">LIQUID_GLASS_REFERENCES.md</a>
+        · decisions §6.0 LG-A1–A12 · FB1-55–61
       </p>
     </section>
   </div>

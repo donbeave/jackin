@@ -32,6 +32,7 @@ struct OverviewListView: View {
             }
             .padding(16)
         }
+        .modifier(GlassFallbacks.SoftScrollEdges())
     }
 
     private func overviewCard(_ row: PresentationStore.GlanceProviderRow) -> some View {

@@ -46,9 +46,8 @@ struct UsageWindowRoot: View {
             }
             .listStyle(.sidebar)
             .navigationSplitViewColumnWidth(min: 200, ideal: 236, max: 300)
-            .background {
-                GlassFallbacks.sidebarBackground()
-            }
+            // LG-A5: system sidebar already Liquid Glass on Tahoe — clear, do not stack.
+            .background { GlassFallbacks.sidebarBackground() }
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 Text(store.nextRefreshLabel)
                     .font(.caption2)
@@ -56,12 +55,10 @@ struct UsageWindowRoot: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 14)
                     .padding(.vertical, 10)
-                    .background {
-                        GlassFallbacks.footerBarBackground()
-                    }
+                    .background { GlassFallbacks.footerBarBackground() }
             }
         } detail: {
-            // Content fills the window under floating glass chrome.
+            // LG-A2 content layer under floating glass nav (LG-A6).
             Group {
                 if let content = model.content {
                     ProviderCardView(
@@ -80,15 +77,13 @@ struct UsageWindowRoot: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background {
-                GlassFallbacks.windowContentBackground()
-            }
-            // Edge-to-edge under floating sidebar (macOS 26 LG).
+            .background { GlassFallbacks.windowContentBackground() }
             .modifier(GlassFallbacks.ContentBackgroundExtension())
         }
         .navigationSplitViewStyle(.balanced)
         .navigationTitle("Usage")
         .toolbar {
+            // LG-A8: single primary action group on system glass toolbar.
             ToolbarItemGroup(placement: .primaryAction) {
                 Button {
                     store.refreshAll()

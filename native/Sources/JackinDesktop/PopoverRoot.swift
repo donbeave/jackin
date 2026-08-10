@@ -30,12 +30,13 @@ struct PopoverRoot: View {
             GlassFallbacks.glassSeparator()
                 .padding(.top, 2)
 
-            // Content scrolls under chrome; soft edge feel via transparent host.
+            // Content scrolls under glass chrome (LG-A7 soft edges).
             ScrollView {
                 content
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 4)
             }
+            .modifier(GlassFallbacks.SoftScrollEdges())
 
             GlassFallbacks.glassSeparator()
 

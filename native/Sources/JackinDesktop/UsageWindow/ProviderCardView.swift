@@ -48,6 +48,8 @@ struct ProviderCardView: View {
             }
             .padding(20)
         }
+        // LG-A7: soft edges under floating glass chrome (Tahoe).
+        .modifier(GlassFallbacks.SoftScrollEdges())
         .accessibilityElement(children: .contain)
     }
 

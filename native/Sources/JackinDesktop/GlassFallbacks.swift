@@ -1,35 +1,36 @@
 // SPDX-FileCopyrightText: 2026 Alexey Zhokhov
 // SPDX-License-Identifier: Apache-2.0
 //
-// Centralized macOS 26 Liquid Glass availability gates.
+// Centralized Liquid Glass surface — **latest stable macOS (Tahoe 26) craft target**.
 //
-// Apple docs (binding):
+// Apple (binding):
 // - https://developer.apple.com/documentation/technologyoverviews/liquid-glass
 // - https://developer.apple.com/documentation/technologyoverviews/adopting-liquid-glass
 // - https://developer.apple.com/documentation/technologyoverviews/swiftui
-// - HIG Materials: Liquid Glass = nav layer; never content layer.
+// - HIG Materials: LG = navigation layer only; never content layer.
 //
-// jackin❯ decisions: LG-A1–LG-A12, AR-4/AR-5, VS-1.
+// Decisions: LG-A1–LG-A12, AR-4/AR-5/AR-6, VS-1, FB1-55–61.
 // No other source file may contain `#available(macOS 26` or `glassEffect`.
+//
+// Pre-26 / Reduce Transparency: system materials only (not a second design lane).
 
 import AppKit
 import SwiftUI
 
 enum GlassFallbacks {
-    // MARK: - Corner radii (continuous / concentric family)
+    // MARK: - Corner radii (continuous / concentric)
 
-    /// Floating glance panel (popover) outer radius.
+    /// Glance popover outer radius.
     static let panelCornerRadius: CGFloat = 20
-    /// Inset chrome tiles / control islands inside the panel.
+    /// Floating control islands / chrome tiles.
     static let chromeTileCornerRadius: CGFloat = 12
-    /// Content-layer cards (standard materials only — not glass).
+    /// Content-layer cards (standard materials — not glass).
     static let contentCardCornerRadius: CGFloat = 12
-    /// Status-item chip capsule.
     static let chipCornerRadius: CGFloat = 8
 
-    // MARK: - Chrome / navigation layer (Liquid Glass on 26+)
+    // MARK: - LG-A1 Navigation glass (Tahoe)
 
-    /// Chrome-only background (footer bar, chips). Never place behind card body text.
+    /// Inset chrome control (footer island, toolbar-adjacent tiles).
     @ViewBuilder
     static func chromeBackground<Content: View>(@ViewBuilder content: () -> Content) -> some View {
         if #available(macOS 26, *) {
@@ -44,6 +45,7 @@ enum GlassFallbacks {
         }
     }
 
+    /// Sidebar accessory footer strip (nav chrome).
     @ViewBuilder
     static func footerBarBackground() -> some View {
         if #available(macOS 26, *) {
@@ -53,53 +55,29 @@ enum GlassFallbacks {
         }
     }
 
-    /// Plan / status pill (subtle fill — content-adjacent chrome).
-    @ViewBuilder
-    static func statusChipBackground(tint: Color) -> some View {
-        if #available(macOS 26, *) {
-            Capsule().fill(tint.opacity(0.16))
-        } else {
-            Capsule().fill(tint.opacity(0.14))
-        }
-    }
-
-    /// Usage-window sidebar chrome (glass on 26, system sidebar material earlier).
-    /// Liquid Glass sidebars float above content; content should not use glass.
+    /// Usage sidebar: on Tahoe, system `List`/`.sidebar` already supplies Liquid Glass.
+    /// Returning clear avoids **glass-on-glass** (LG-A5). Older OS gets ultraThin only.
     @ViewBuilder
     static func sidebarBackground() -> some View {
         if #available(macOS 26, *) {
-            Rectangle().fill(.clear).glassEffect(.regular, in: .rect)
+            Color.clear
         } else {
             Rectangle().fill(.ultraThinMaterial)
         }
     }
 
-    /// Usage-window detail pane background — **standard material only** (content layer).
-    @ViewBuilder
-    static func windowContentBackground() -> some View {
-        // HIG: no Liquid Glass in the content layer.
-        Rectangle().fill(Color(nsColor: .windowBackgroundColor).opacity(0.92))
-    }
-
-    /// Detached floating-panel surface for the glance popover (chrome only).
-    ///
-    /// Liquid Glass (LG-A1 / A10): translucent regular glass so desktop
-    /// wallpaper / stage bleeds through. Pair with a **clear** `NSPopover`
-    /// window (`GlassPopoverHostingController`) or the material looks solid.
+    /// Glance popover shell — regular glass (LG-A1 / A10). Requires clear NSPopover host.
     @ViewBuilder
     static func panelSurfaceBackground() -> some View {
-        // Shadow applied by caller (after clip) so it is not clipped away.
         if #available(macOS 26, *) {
             RoundedRectangle(cornerRadius: panelCornerRadius, style: .continuous)
                 .fill(.clear)
                 .glassEffect(.regular, in: .rect(cornerRadius: panelCornerRadius))
                 .overlay {
-                    // Hairline + specular read as glass edge, not opaque card.
                     RoundedRectangle(cornerRadius: panelCornerRadius, style: .continuous)
                         .strokeBorder(Color.primary.opacity(0.12), lineWidth: 0.5)
                 }
         } else {
-            // Pre-26: ultra-thin material = most translucent system fill.
             RoundedRectangle(cornerRadius: panelCornerRadius, style: .continuous)
                 .fill(.ultraThinMaterial)
                 .overlay {
@@ -109,16 +87,7 @@ enum GlassFallbacks {
         }
     }
 
-    /// Soft separator for glass chrome (avoids hard opaque Divider walls).
-    @ViewBuilder
-    static func glassSeparator() -> some View {
-        Rectangle()
-            .fill(Color.primary.opacity(0.10))
-            .frame(height: 0.5)
-            .padding(.horizontal, 10)
-    }
-
-    /// Floating control island behind agent tile grids / toolbar groups.
+    /// Floating control island (popover Refresh dock, chrome groups).
     @ViewBuilder
     static func floatingChromeIsland() -> some View {
         if #available(macOS 26, *) {
@@ -131,53 +100,37 @@ enum GlassFallbacks {
         }
     }
 
-    /// Selected agent tile fill (interactive control — glass-capable).
+    /// Soft hairline between glass chrome regions (not a solid pane wall).
     @ViewBuilder
-    static func selectedControlFill() -> some View {
-        if #available(macOS 26, *) {
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(Color.accentColor.opacity(0.92))
-        } else {
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(Color.accentColor)
-        }
+    static func glassSeparator() -> some View {
+        Rectangle()
+            .fill(Color.primary.opacity(0.10))
+            .frame(height: 0.5)
+            .padding(.horizontal, 10)
     }
 
-    /// Unselected agent tile fill (subtle elevated control).
+    // MARK: - LG-A2 Content (never glass)
+
+    /// Detail / window content fill — standard materials only.
     @ViewBuilder
-    static func idleControlFill(enabled: Bool) -> some View {
-        RoundedRectangle(cornerRadius: 10, style: .continuous)
-            .fill(Color.primary.opacity(enabled ? 0.07 : 0.03))
+    static func windowContentBackground() -> some View {
+        Rectangle().fill(Color(nsColor: .windowBackgroundColor).opacity(0.94))
     }
 
-    /// Deprecated for menu-bar items: FB1-6 / LG-A1 require **transparent template**
-    /// status items (no glass chips). Prefer `StatusItemRendering` dual-stack only.
-    /// Kept for any non-bar capsule chrome that still needs a severity outline.
-    @ViewBuilder
-    static func statusItemChipBackground(severity: Color) -> some View {
-        // Not Liquid Glass — solid/subtle fill only so we do not put glass on the menu bar.
-        Capsule(style: .continuous)
-            .fill(Color.primary.opacity(0.06))
-            .overlay {
-                Capsule(style: .continuous)
-                    .strokeBorder(severity.opacity(0.18), lineWidth: 0.5)
-            }
-    }
-
-    /// Content-layer card fill (standard materials only — HIG content layer).
+    /// Content card — full continuous stroke (FB1-60 de-slop).
     @ViewBuilder
     static func contentCardBackground() -> some View {
         RoundedRectangle(cornerRadius: contentCardCornerRadius, style: .continuous)
             .fill(.background.secondary)
-            // Complete continuous stroke (de-slop: never one-sided borders).
             .overlay {
                 RoundedRectangle(cornerRadius: contentCardCornerRadius, style: .continuous)
                     .strokeBorder(Color.primary.opacity(0.08), lineWidth: 0.5)
             }
     }
 
-    /// Extends detail content under a floating Liquid Glass sidebar (macOS 26+).
-    /// Without this, the window reads as a hard three-pane split instead of one surface.
+    // MARK: - LG-A6 / A7 Edge extension + scroll edges (Tahoe)
+
+    /// Extend detail content under floating glass sidebar.
     struct ContentBackgroundExtension: ViewModifier {
         func body(content: Content) -> some View {
             if #available(macOS 26, *) {
@@ -186,5 +139,49 @@ enum GlassFallbacks {
                 content
             }
         }
+    }
+
+    /// Soft scroll-edge dissolve under floating glass chrome (LG-A7).
+    struct SoftScrollEdges: ViewModifier {
+        func body(content: Content) -> some View {
+            if #available(macOS 26, *) {
+                content
+                    .scrollEdgeEffectStyle(.soft, for: .top)
+                    .scrollEdgeEffectStyle(.soft, for: .bottom)
+            } else {
+                content
+            }
+        }
+    }
+
+    // MARK: - Selection / idle fills (not glass)
+
+    @ViewBuilder
+    static func selectedControlFill() -> some View {
+        RoundedRectangle(cornerRadius: 10, style: .continuous)
+            .fill(Color.accentColor.opacity(0.90))
+    }
+
+    @ViewBuilder
+    static func idleControlFill(enabled: Bool) -> some View {
+        RoundedRectangle(cornerRadius: 10, style: .continuous)
+            .fill(Color.primary.opacity(enabled ? 0.07 : 0.03))
+    }
+
+    /// Plan/status pill — content-adjacent, not glass.
+    @ViewBuilder
+    static func statusChipBackground(tint: Color) -> some View {
+        Capsule().fill(tint.opacity(0.16))
+    }
+
+    /// Not for menu bar (FB1-6). Subtle non-glass capsule if needed elsewhere.
+    @ViewBuilder
+    static func statusItemChipBackground(severity: Color) -> some View {
+        Capsule(style: .continuous)
+            .fill(Color.primary.opacity(0.06))
+            .overlay {
+                Capsule(style: .continuous)
+                    .strokeBorder(severity.opacity(0.18), lineWidth: 0.5)
+            }
     }
 }
