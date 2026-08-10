@@ -592,6 +592,10 @@ struct DesktopVisualSnapshotHarness {
         } else {
             let side = fullPath.replacingOccurrences(of: ".png", with: ".BLOCKED.txt")
             try? FileManager.default.removeItem(atPath: side)
+            // Clear shared whiteout marker when this window composite is honest.
+            let shared = (fullPath as NSString).deletingLastPathComponent
+                + "/usage-window-sidebar.BLOCKED.txt"
+            try? FileManager.default.removeItem(atPath: shared)
             print("WROTE \(fullPath) [UsageWindowController window capture]")
         }
 

@@ -1,6 +1,6 @@
 # QI delta: popover-openai · Dark + Light (G-P3 bucket anatomy)
 
-**Date:** 2026-08-10 · **Tip:** G-P3 meter-last fix  
+**Date:** 2026-08-10 · **Tip:** G-P3 meter-last hold + dual-image re-verify  
 **Oracle HTML:** `html/popover-openai-{dark,light}.png`  
 **Native:** `native/popover-openai-{dark,light}.png`
 

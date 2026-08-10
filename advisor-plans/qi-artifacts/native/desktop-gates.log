@@ -1,22 +1,13 @@
-=== tip bc09f784 G-P3+whiteout 2026-08-10T11:08Z ===
-=== tip bc09f784 G-P3+whiteout 2026-08-10T11:08Z ===
+=== tip 1025b5b5 G-P3 hold + toolbar Dark Pass 2026-08-10T11:17Z ===
 PASS: Usage Liquid Glass + provider≠account structural checks
-PASS: QI evidence ledger — 16 pass rows, 3 blocked, prose PNG refs consistent
+PASS: QI evidence ledger — 17 pass rows, 2 blocked, prose PNG refs consistent
 DesktopArchitectureLint: ALL PASS
 DesktopSoTParityHarness: ALL PASS (18/18 checks)
-DesktopSoTParityHarness: ALL PASS (18/18 checks)
-DesktopSoTParityHarness: ALL PASS (18/18 checks)
 DesktopParityMatrixHarness: ALL PASS
-Matrix: 8/8 providers displayable · dual-bucket · depleted · limits-only
-StatusItemChipHarness: ALL PASS
-BLOCKED ../advisor-plans/qi-artifacts/native/usage-window-openai-dark.png [sidebar whiteout — not full-shell Pass]
-BLOCKED ../advisor-plans/qi-artifacts/native/usage-toolbar-dark.png [dark toolbar icons unreadable — white blobs]
-usage_window: UsageWindowController CGWindow full (sidebar nest + detail) — not blank NSHostingView split
-usage_window_openai_dark: BLOCKED
-usage_window_overview_dark: OK
-usage_window_openai_light: OK
-usage_window_overview_light: OK
-usage_toolbar_dark: BLOCKED
-usage_toolbar_light: UsageWindowController titlebar crop
-G-P3: hero→pace→reset→meter Pass dual-image
-usage_window_openai_dark: BLOCKED (sidebar whiteout honest)
+G-P3 dual-image: hero→pace→reset→meter Pass
+usage_toolbar dark+light: Pass (readable Refresh)
+usage_window_openai_dark: OK (sidebar nest visible, not whiteout)
+=== product law ===
+glass outside Fallbacks: (none)
+price/trend: (none)
+brand: jackin❯ desktop present

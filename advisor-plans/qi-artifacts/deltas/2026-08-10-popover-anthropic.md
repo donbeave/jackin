@@ -1,6 +1,6 @@
 # QI delta: popover-anthropic · Dark + Light (multi-limit + G-P3)
 
-**Date:** 2026-08-10 · **Tip:** G-P3 meter-last fix  
+**Date:** 2026-08-10 · **Tip:** G-P3 meter-last hold + dual-image re-verify  
 **Oracle HTML:** `html/popover-anthropic-{dark,light}.png`  
 **Native:** `native/popover-anthropic-{dark,light}.png`
 
