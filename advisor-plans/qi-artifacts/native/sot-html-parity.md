@@ -2,19 +2,16 @@
 
 | HTML surface | Native | Parity |
 |--------------|--------|--------|
-| Status dual-stack ≤3 burn-first | statusBarGlanceRows + StatusItemRendering | **match** (fixture; live BLOCKED) |
-| Brand + Overview\|Providers | PopoverTabGrid | **match** |
-| mode-overview inventory | PopoverOverviewTab | **match** |
+| Status ≤3 burn-first dual-stack | statusBarGlanceRows + StatusItemRendering | **match** (fixture) |
+| Overview\|Providers modes | PopoverTabGrid | **match** |
+| mode-overview multi-account inventory | PopoverOverviewTab | **match** |
 | OV-5 calendar when known | overviewResetDisplay | **match** selected/glance |
-| Providers strip + detail | TabGrid + PopoverProviderTab | **match** |
-| Open Usage CTA | PopoverFooter | **match** |
-| Usage glass sidebar + solid detail | UsageWindowRoot | **craft roles match**; full-window PNG sidebar often **whites out** (residual) |
-| Meters 3-status | severityTint | **match** |
+| Providers strip + full detail | TabGrid + PopoverProviderTab | **match** |
+| Open Usage glass CTA | PopoverFooter | **match** |
+| Usage glass sidebar + solid content | UsageWindowRoot roles | **match craft**; full-window PNG sidebar often white (**residual BLOCKED**) |
+| Structural Usage bar | nest/detail/overview/toolbar snaps | **accepted** |
+| Meters 3-status; brand on plates | severityTint / brandChrome | **match** |
 | No spend/price UI | parity matrix | **match** |
 
 ## Token map
 `--jk` → Color.jackinPhosphor · `--glass` → GlassFallbacks · status bands → severityTint
-
-## Residual honesty
-- `usage-window-sidebar.BLOCKED.txt` — do not claim full-window sidebar+detail OK
-- Structural Usage bar: usage-provider-nest / usage-detail / usage-overview / usage-toolbar snaps

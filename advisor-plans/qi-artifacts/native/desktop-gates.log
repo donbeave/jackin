@@ -1,20 +1,17 @@
-=== cargo host tests ===
-test host::tests::provider_glance_rows_show_three_weekly_labels ... ok
-test host::tests::provider_glance_rows_select_amp_daily ... ok
-test host::tests::provider_glance_rows_show_dash_before_first_success ... ok
-test host::tests::provider_glance_rows_marks_canonical_placeholder_refreshing ... ok
-test host::tests::provider_glance_rows_show_dash_for_paid_only_amp ... ok
-test host::tests::unavailable_and_refreshing_never_invent_percent ... ok
+=== cargo host::tests ===
+test host::tests::provider_glance_rows_redetect_new_credentials ... ok
 test host::tests::provider_glance_rows_use_exact_seven_provider_order ... ok
+test host::tests::provider_glance_rows_show_dash_before_first_success ... ok
+test host::tests::unavailable_and_refreshing_never_invent_percent ... ok
 test host::tests::status_bar_provider_glance_rows_sb3_sb17_sb19 ... ok
 test host::tests::next_events_resync_flag_not_error ... ok
 test host::tests::multi_account_list_select_and_snapshot ... ok
 test host::tests::refresh_floor_skips_non_forced_calls ... ok
 test host::tests::next_refresh_label_due_and_countdown ... ok
 
-test result: ok. 42 passed; 0 failed; 0 ignored; 0 measured; 200 filtered out; finished in 35.03s
+test result: ok. 42 passed; 0 failed; 0 ignored; 0 measured; 200 filtered out; finished in 35.04s
 
-=== cargo ffi ===
+=== cargo jackin-usage-ffi ===
 test bridge::tests::overview_rows_and_format_prefs_round_trip ... ok
 
 test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
@@ -25,23 +22,21 @@ running 0 tests
 
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
-=== swift tests ===
+=== swift JackinUsageBridgeTests ===
 Test Case '-[JackinUsageBridgeTests.UsageWindowModelTests testStaleDetailAndLastGoodBucketCoexist]' started.
 Test Case '-[JackinUsageBridgeTests.UsageWindowModelTests testStaleDetailAndLastGoodBucketCoexist]' passed (0.000 seconds).
-Test Suite 'UsageWindowModelTests' passed at 2026-08-10 15:12:55.826.
+Test Suite 'UsageWindowModelTests' passed at 2026-08-10 15:21:42.744.
 	 Executed 9 tests, with 0 failures (0 unexpected) in 0.001 (0.001) seconds
-Test Suite 'JackinDesktopPackageTests.xctest' passed at 2026-08-10 15:12:55.826.
-	 Executed 48 tests, with 0 failures (0 unexpected) in 0.104 (0.106) seconds
-Test Suite 'Selected tests' passed at 2026-08-10 15:12:55.826.
-	 Executed 48 tests, with 0 failures (0 unexpected) in 0.104 (0.107) seconds
+Test Suite 'JackinDesktopPackageTests.xctest' passed at 2026-08-10 15:21:42.744.
+	 Executed 48 tests, with 0 failures (0 unexpected) in 0.101 (0.103) seconds
+Test Suite 'Selected tests' passed at 2026-08-10 15:21:42.744.
+	 Executed 48 tests, with 0 failures (0 unexpected) in 0.101 (0.104) seconds
 ◇ Test run started.
 ↳ Testing Library Version: 1902
 ↳ Target Platform: arm64e-apple-macos14.0
 ✔ Test run with 0 tests in 0 suites passed after 0.001 seconds.
 === ProviderMarksHarness ===
-[4/6] Write Objects.LinkFileList
-[5/6] Linking ProviderMarksHarness
-Build of product 'ProviderMarksHarness' complete! (3.43s)
+Build of product 'ProviderMarksHarness' complete! (0.11s)
 ProviderMarksHarness: 7 Desktop keys
 PASS  codex hasMark=true markSize=(18.0, 18.0) statusTemplate=true
 PASS  claude hasMark=true markSize=(18.0, 18.0) statusTemplate=true
@@ -81,9 +76,6 @@ PASS  status context menu three rows
 ---
 DesktopSoTParityHarness: ALL PASS (18/18 checks)
 === DesktopParityMatrixHarness ===
-PASS  ProviderCard bucket identity is Rust rowId, not label
-PASS  Usage detail meter/severity are geometry+style only (no visible text)
-PASS  Usage window drives sidebar/detail from UsageWindowModel
 PASS  Usage empty state is the fixed hint (no invented fallback copy)
 PASS  Overview uses per-account inventory helper (HTML SoT)
 PASS  Usage account nest has mini meter geometry
@@ -97,8 +89,6 @@ PASS  no sparkline/donut in popover
 DesktopParityMatrixHarness: ALL PASS
 Matrix: 8/8 providers displayable · dual-bucket · depleted · limits-only
 === DesktopArchitectureLint ===
-PASS  PopoverFooter.swift
-PASS  PopoverOverviewTab.swift
 PASS  AppMainMenu.swift
 PASS  DesktopAppDelegate.swift
 PASS  StatusItemLabel.swift
@@ -107,3 +97,9 @@ PASS  GlassFallbacks.swift
 ---
 DesktopArchitectureLint: scanned 18 files, 18 clean
 DesktopArchitectureLint: ALL PASS
+=== product-law static ===
+(none spend/trend)
+(glassEffect only GlassFallbacks)
+49:        store.$statusBarGlanceRows
+58:        apply(rows: store.statusBarGlanceRows)
+126:        for row in store.statusBarGlanceRows {
