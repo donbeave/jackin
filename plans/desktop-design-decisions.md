@@ -678,6 +678,7 @@ jackin = soul   (j❯, phosphor accent, mono metrics, deep canvas tint, optional
 | FB1-55 | **Official Apple Liquid Glass + SwiftUI stack is binding:** §6.0 **LG-A1–LG-A12**, **AR-5**, **AR-6**, **VS-1 CONFIRMED**. Craft HTML must illustrate those principles; native must implement via SwiftUI + `GlassFallbacks` only | CONFIRMED |
 | FB1-56 | **Status bar dual stack shipped:** top = compact form of Rust `reset_label` (no invented durations); bottom = Rust `bar_label` glance %; **template mono icons**, no glass chips (LG-A1 + FB1-6) | CONFIRMED |
 | FB1-57 | **Usage window native layout:** `NavigationSplitView` glass sidebar + solid detail; provider rows show trailing `barLabel` (matches bar); account switcher left H-scroll pills in content; buckets/metadata as content cards only (LG-A2/A3/A8) | CONFIRMED |
+| FB1-58 | **Glance popover is translucent Liquid Glass:** clear `NSPopover` window + `GlassFallbacks.panelSurfaceBackground` (regular glass / ultraThinMaterial fallback); soft separators; glass refresh dock; content rows stay standard fills — wallpaper must peek through the shell | CONFIRMED |
 
 ### One-by-one queue (after FB-1)
 

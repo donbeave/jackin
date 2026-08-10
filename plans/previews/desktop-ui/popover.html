@@ -19,9 +19,11 @@
       --tertiary: rgba(235, 235, 245, 0.34);
       --separator: rgba(84, 84, 88, 0.55);
       --fill: rgba(120, 120, 128, 0.28);
-      --glass: rgba(28, 28, 30, 0.72);
-      --glass-inset: rgba(255, 255, 255, 0.045);
-      --glass-border: rgba(255, 255, 255, 0.14);
+      /* More translucent = Liquid Glass read (wallpaper peeks through) */
+      --glass: rgba(28, 28, 30, 0.52);
+      --glass-strong: rgba(40, 40, 44, 0.62);
+      --glass-inset: rgba(255, 255, 255, 0.055);
+      --glass-border: rgba(255, 255, 255, 0.16);
       --stage-1: #143028;
       --stage-2: #182030;
       --stage-bg: linear-gradient(165deg, #0a100e, #0a0c12 60%, #080808);
@@ -51,9 +53,10 @@
       --tertiary: rgba(60, 60, 67, 0.4);
       --separator: rgba(60, 60, 67, 0.18);
       --fill: rgba(120, 120, 128, 0.16);
-      --glass: rgba(255, 255, 255, 0.78);
-      --glass-inset: rgba(0, 0, 0, 0.03);
-      --glass-border: rgba(0, 0, 0, 0.08);
+      --glass: rgba(255, 255, 255, 0.58);
+      --glass-strong: rgba(255, 255, 255, 0.72);
+      --glass-inset: rgba(0, 0, 0, 0.035);
+      --glass-border: rgba(0, 0, 0, 0.10);
       --stage-1: #c8ddd0;
       --stage-2: #c5d0e0;
       --stage-bg: linear-gradient(165deg, #dfe8e4, #e4e8f0 55%, #e8eaee);
@@ -231,26 +234,36 @@
     .sb-item .t { font-size: 8px; color: var(--secondary); font-weight: 500; }
     .sb-item .p { font-size: 9px; color: var(--label); font-weight: 600; }
 
-    /* Popover liquid glass — chrome only (HIG navigation layer) */
+    /*
+      Glance popover — Liquid Glass chrome (LG-A1 / A10).
+      Lower fill opacity + stronger blur so stage/wallpaper refracts through.
+      Content cards stay --glass-inset (not full glass).
+    */
     .pop {
       width: 400px; position: relative;
       display: flex; flex-direction: column;
       max-height: min(640px, 88vh);
-      background: var(--glass);
-      backdrop-filter: blur(50px) saturate(1.55);
-      -webkit-backdrop-filter: blur(50px) saturate(1.55);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.08), transparent 42%),
+        var(--glass);
+      backdrop-filter: blur(64px) saturate(1.85);
+      -webkit-backdrop-filter: blur(64px) saturate(1.85);
       border-radius: 20px;
       box-shadow:
         0 0 0 0.5px var(--glass-border),
-        0 28px 80px rgba(0,0,0,0.45),
-        inset 0 1px 0 rgba(255,255,255,0.12);
+        0 32px 90px rgba(0,0,0,0.48),
+        inset 0 1px 0 rgba(255,255,255,0.16),
+        inset 0 0 0 0.5px rgba(255,255,255,0.06);
       overflow: hidden;
     }
     [data-theme="light"] .pop {
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.55), transparent 50%),
+        var(--glass);
       box-shadow:
         0 0 0 0.5px var(--glass-border),
-        0 20px 50px rgba(0,0,0,0.12),
-        inset 0 1px 0 rgba(255,255,255,0.85);
+        0 24px 60px rgba(0,0,0,0.14),
+        inset 0 1px 0 rgba(255,255,255,0.9);
     }
     /* Rain whisper: chrome only, ≤4%; native must gate on Reduce Motion/Transparency */
     .pop .rain {

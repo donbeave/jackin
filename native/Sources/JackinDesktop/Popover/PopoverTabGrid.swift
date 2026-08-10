@@ -65,10 +65,17 @@ struct PopoverTabGrid: View {
             .padding(.horizontal, 6)
         }
         .buttonStyle(.plain)
-        .background(
-            RoundedRectangle(cornerRadius: 6)
-                .fill(selection == id ? Color.accentColor.opacity(0.18) : Color.clear)
-        )
+        // Selected tab: phosphor-tinted glass island (LG-A9 selective tint), not solid slab.
+        .background {
+            if selection == id {
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .fill(Color.accentColor.opacity(0.16))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            .strokeBorder(Color.accentColor.opacity(0.32), lineWidth: 1)
+                    }
+            }
+        }
         .accessibilityLabel(label)
         .accessibilityValue(barLabel)
     }

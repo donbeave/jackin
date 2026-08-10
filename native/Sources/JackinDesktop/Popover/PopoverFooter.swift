@@ -3,8 +3,8 @@
 
 import SwiftUI
 
-/// Popover footer: exactly one Refresh button (⌘R). The spinner reflects
-/// `refreshInProgress`. No other action, caption, or row.
+/// Popover footer: one Refresh control on a **glass** capsule (LG-A8).
+/// Spinner reflects `refreshInProgress`. No other actions.
 struct PopoverFooter: View {
     let refreshInProgress: Bool
     let onRefresh: () -> Void
@@ -19,13 +19,20 @@ struct PopoverFooter: View {
                 }
                 Text("Refresh")
                 Spacer()
-                Text("⌘R").foregroundStyle(.secondary)
+                Text("⌘R")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
             .contentShape(Rectangle())
-            .padding(.horizontal, 8)
-            .padding(.vertical, 6)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
         }
         .buttonStyle(.plain)
         .keyboardShortcut("r", modifiers: [.command])
+        .background {
+            // Glass control island — chrome only, not a content card.
+            GlassFallbacks.floatingChromeIsland()
+        }
+        .clipShape(RoundedRectangle(cornerRadius: GlassFallbacks.chromeTileCornerRadius, style: .continuous))
     }
 }

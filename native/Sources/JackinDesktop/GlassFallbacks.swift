@@ -82,19 +82,40 @@ enum GlassFallbacks {
     }
 
     /// Detached floating-panel surface for the glance popover (chrome only).
-    /// Large continuous radius + glass so the panel reads as Tahoe menu chrome.
+    ///
+    /// Liquid Glass (LG-A1 / A10): translucent regular glass so desktop
+    /// wallpaper / stage bleeds through. Pair with a **clear** `NSPopover`
+    /// window (`GlassPopoverHostingController`) or the material looks solid.
     @ViewBuilder
     static func panelSurfaceBackground() -> some View {
+        // Shadow applied by caller (after clip) so it is not clipped away.
         if #available(macOS 26, *) {
             RoundedRectangle(cornerRadius: panelCornerRadius, style: .continuous)
                 .fill(.clear)
                 .glassEffect(.regular, in: .rect(cornerRadius: panelCornerRadius))
-                .shadow(color: .black.opacity(0.22), radius: 28, y: 12)
+                .overlay {
+                    // Hairline + specular read as glass edge, not opaque card.
+                    RoundedRectangle(cornerRadius: panelCornerRadius, style: .continuous)
+                        .strokeBorder(Color.primary.opacity(0.12), lineWidth: 0.5)
+                }
         } else {
+            // Pre-26: ultra-thin material = most translucent system fill.
             RoundedRectangle(cornerRadius: panelCornerRadius, style: .continuous)
                 .fill(.ultraThinMaterial)
-                .shadow(color: .black.opacity(0.18), radius: 24, y: 10)
+                .overlay {
+                    RoundedRectangle(cornerRadius: panelCornerRadius, style: .continuous)
+                        .strokeBorder(Color.primary.opacity(0.10), lineWidth: 0.5)
+                }
         }
+    }
+
+    /// Soft separator for glass chrome (avoids hard opaque Divider walls).
+    @ViewBuilder
+    static func glassSeparator() -> some View {
+        Rectangle()
+            .fill(Color.primary.opacity(0.10))
+            .frame(height: 0.5)
+            .padding(.horizontal, 10)
     }
 
     /// Floating control island behind agent tile grids / toolbar groups.

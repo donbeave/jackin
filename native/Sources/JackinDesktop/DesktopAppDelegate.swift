@@ -35,15 +35,15 @@ final class StatusBarController: NSObject {
         self.statusItemMenu = StatusItemMenu(router: menuRouter)
         super.init()
         popover.behavior = .transient
-        // Provider-header click opens the Usage window focused on that provider
-        // and dismisses the popover (plan 007 binds the seam plan 006 exposed).
-        popover.contentViewController = NSHostingController(
-            rootView: PopoverRoot(store: store) { [weak self] surfaceId in
-                self?.popover.performClose(nil)
-                self?.anchoredButton = nil
-                self?.onOpenUsage(surfaceId)
-            }
-        )
+        popover.animates = true
+        // Liquid Glass popover: clear NSPopover chrome so panel glass refracts
+        // the desktop (LG-A1). Host must stay GlassPopoverHostingController.
+        let root = PopoverRoot(store: store) { [weak self] surfaceId in
+            self?.popover.performClose(nil)
+            self?.anchoredButton = nil
+            self?.onOpenUsage(surfaceId)
+        }
+        popover.contentViewController = GlassPopoverHostingController(rootView: root)
 
         store.$providerGlanceRows
             .receive(on: RunLoop.main)
@@ -179,6 +179,13 @@ final class StatusBarController: NSObject {
         }
         anchoredButton = sender
         popover.show(relativeTo: sender.bounds, of: sender, preferredEdge: .minY)
+        // Re-assert clear chrome after the popover window materializes (LG translucency).
+        if let window = popover.contentViewController?.view.window {
+            window.isOpaque = false
+            window.backgroundColor = .clear
+            window.hasShadow = false
+        }
+        popover.contentViewController?.view.layer?.backgroundColor = NSColor.clear.cgColor
     }
 
     /// Cancel subscriptions, close the popover, and remove every status item.

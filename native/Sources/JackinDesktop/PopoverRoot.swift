@@ -4,13 +4,11 @@
 import JackinUsageBridge
 import SwiftUI
 
-/// Glance popover composition root: a tab grid over the Rust-owned glance rows,
-/// then the selected Overview or provider tab, then a Refresh-only footer.
+/// Glance popover composition root — **Liquid Glass navigation chrome**.
 ///
-/// Display-only — every provider, order, label, number, and segment comes from
-/// the Rust `providerGlanceRows` / bucket presentation. `onOpenUsage` is an
-/// optional seam plan 007 binds to the Usage window; it is `nil` here so the
-/// header click is inert.
+/// Shell is translucent (`GlassFallbacks.panelSurfaceBackground`) so wallpaper
+/// peeks through (LG-A1). Tab strip + footer sit on glass; scroll body is still
+/// content (standard fills on rows only — LG-A2). Data remains Rust-owned.
 struct PopoverRoot: View {
     @ObservedObject var store: PresentationStore
     var onOpenUsage: ((String?) -> Void)?
@@ -22,22 +20,43 @@ struct PopoverRoot: View {
 
     var body: some View {
         VStack(spacing: 0) {
+            // Nav chrome: provider strip (glass selection, not content cards).
             PopoverTabGrid(
                 providers: store.providerGlanceRows,
                 selection: $store.popoverSelection
             )
-            Divider()
+            .padding(.top, 8)
+
+            GlassFallbacks.glassSeparator()
+                .padding(.top, 2)
+
+            // Content scrolls under chrome; soft edge feel via transparent host.
             ScrollView {
                 content
                     .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 4)
             }
-            Divider()
+
+            GlassFallbacks.glassSeparator()
+
+            // Glass control dock (LG-A8 single refresh group).
             PopoverFooter(refreshInProgress: store.refreshInProgress) {
                 store.refreshAll()
             }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 8)
         }
-        .frame(width: 320)
+        .frame(width: 340)
         .frame(minHeight: 200, maxHeight: 480)
+        // Liquid Glass panel — must sit on a clear NSPopover window.
+        .background {
+            GlassFallbacks.panelSurfaceBackground()
+        }
+        .clipShape(
+            RoundedRectangle(cornerRadius: GlassFallbacks.panelCornerRadius, style: .continuous)
+        )
+        .shadow(color: .black.opacity(0.28), radius: 32, y: 14)
+        .padding(2)
     }
 
     @ViewBuilder
