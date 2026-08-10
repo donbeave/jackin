@@ -35,55 +35,47 @@ struct OverviewListView: View {
     }
 
     private func overviewCard(_ row: PresentationStore.GlanceProviderRow) -> some View {
-        HStack(alignment: .center, spacing: 12) {
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .fill(severityTint(row.severity).opacity(0.9))
-                .frame(width: 10, height: 44)
-                .accessibilityHidden(true)
+        // Full continuous card — no one-sided accent bars (de-slop).
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(row.displayLabel)
+                    .font(.headline)
+                Spacer(minLength: 8)
+                if !row.barLabel.isEmpty {
+                    Text(row.barLabel)
+                        .font(.title3.weight(.semibold).monospacedDigit())
+                        .foregroundStyle(severityTint(row.severity))
+                }
+            }
 
-            VStack(alignment: .leading, spacing: 4) {
-                HStack(alignment: .firstTextBaseline) {
-                    Text(row.displayLabel)
-                        .font(.headline)
-                    Spacer(minLength: 8)
-                    // Primary glance — same as status-bar barLabel.
-                    if !row.barLabel.isEmpty {
-                        Text(row.barLabel)
-                            .font(.title3.weight(.semibold).monospacedDigit())
-                            .foregroundStyle(severityTint(row.severity))
-                    }
-                }
+            if !row.accountLabel.isEmpty {
+                Text(row.accountLabel)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
 
-                if !row.accountLabel.isEmpty {
-                    Text(row.accountLabel)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                }
+            if let plan = row.planLabel, !plan.isEmpty {
+                Text(plan)
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(.tertiary)
+            }
 
-                if let plan = row.planLabel, !plan.isEmpty {
-                    Text(plan)
-                        .font(.caption.weight(.medium))
-                        .foregroundStyle(.tertiary)
-                }
-
-                // Reset on its own line (FB1-31) — not jammed with %.
-                if let reset = row.resetLabel, !reset.isEmpty {
-                    Text(reset)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .monospacedDigit()
-                }
-                if let exact = row.exactReset, !exact.isEmpty {
-                    Text(exact)
-                        .font(.caption2)
-                        .foregroundStyle(.tertiary)
-                }
-                if let error = row.lastError, !error.isEmpty {
-                    Text(error)
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                }
+            if let reset = row.resetLabel, !reset.isEmpty {
+                Text(reset)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .monospacedDigit()
+            }
+            if let exact = row.exactReset, !exact.isEmpty {
+                Text(exact)
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+            }
+            if let error = row.lastError, !error.isEmpty {
+                Text(error)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
             }
         }
         .padding(14)

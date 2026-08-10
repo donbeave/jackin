@@ -56,10 +56,17 @@ def main() -> int:
     need("nav-acct" in html, "account nav system missing")
     need("acct-rail" in html, "account rail container missing")
     need("p-meter" in html, "provider mini-meter missing")
+    # Account selection uses full continuous stroke (de-slop), not left-only border.
     need(
-        "border-left-color: var(--jk)" in html or "border-left-color:var(--jk)" in html,
-        "account left phosphor accent selection missing",
+        "nav-acct.on" in html and "border-color:" in html,
+        "account full-perimeter selection stroke missing",
     )
+    need(
+        "border-left: 2.5px solid transparent" not in html,
+        "AI-slop one-sided account border still present",
+    )
+    need("chrome-float" in html or "side" in html and "position: absolute" in html,
+         "floating sidebar layout missing")
     need(".nav-provider.on" in html, "provider selection rule missing")
     need(".nav-acct.on" in html, "account selection rule missing")
     # Same selection chrome for both would re-use one class; require distinct classes

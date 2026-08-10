@@ -127,7 +127,7 @@ struct ProviderCardView: View {
         .frame(maxWidth: .infinity, alignment: line.leading == nil ? .trailing : .leading)
     }
 
-    /// Left-aligned account pills (not provider chrome; not glass — LG-A5).
+    /// Left-aligned account pills — full continuous capsule stroke (de-slop).
     private var accountSwitcher: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
@@ -147,6 +147,15 @@ struct ProviderCardView: View {
                                             ? Color.accentColor.opacity(0.90)
                                             : Color.primary.opacity(0.06)
                                     )
+                                    .overlay {
+                                        Capsule(style: .continuous)
+                                            .strokeBorder(
+                                                account.selected
+                                                    ? Color.accentColor.opacity(0.5)
+                                                    : Color.primary.opacity(0.10),
+                                                lineWidth: 0.5
+                                            )
+                                    }
                             }
                             .foregroundStyle(account.selected ? Color.white : Color.primary)
                     }

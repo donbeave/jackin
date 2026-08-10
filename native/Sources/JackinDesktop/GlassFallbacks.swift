@@ -169,5 +169,22 @@ enum GlassFallbacks {
     static func contentCardBackground() -> some View {
         RoundedRectangle(cornerRadius: contentCardCornerRadius, style: .continuous)
             .fill(.background.secondary)
+            // Complete continuous stroke (de-slop: never one-sided borders).
+            .overlay {
+                RoundedRectangle(cornerRadius: contentCardCornerRadius, style: .continuous)
+                    .strokeBorder(Color.primary.opacity(0.08), lineWidth: 0.5)
+            }
+    }
+
+    /// Extends detail content under a floating Liquid Glass sidebar (macOS 26+).
+    /// Without this, the window reads as a hard three-pane split instead of one surface.
+    struct ContentBackgroundExtension: ViewModifier {
+        func body(content: Content) -> some View {
+            if #available(macOS 26, *) {
+                content.backgroundExtensionEffect()
+            } else {
+                content
+            }
+        }
     }
 }

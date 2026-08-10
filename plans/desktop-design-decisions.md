@@ -679,6 +679,8 @@ jackin = soul   (j❯, phosphor accent, mono metrics, deep canvas tint, optional
 | FB1-56 | **Status bar dual stack shipped:** top = compact form of Rust `reset_label` (no invented durations); bottom = Rust `bar_label` glance %; **template mono icons**, no glass chips (LG-A1 + FB1-6) | CONFIRMED |
 | FB1-57 | **Usage window native layout:** `NavigationSplitView` glass sidebar + solid detail; provider rows show trailing `barLabel` (matches bar); account switcher left H-scroll pills in content; buckets/metadata as content cards only (LG-A2/A3/A8) | CONFIRMED |
 | FB1-58 | **Glance popover is translucent Liquid Glass:** clear `NSPopover` window + `GlassFallbacks.panelSurfaceBackground` (regular glass / ultraThinMaterial fallback); soft separators; glass refresh dock; content rows stay standard fills — wallpaper must peek through the shell | CONFIRMED |
+| FB1-59 | **Usage window is one continuous surface** — content fills the window; glass sidebar + toolbar **float on top** (Apple LG / Telegram macOS), not a hard header+sidebar+content three-pane split. Native: floating `NavigationSplitView` sidebar + `backgroundExtensionEffect` under detail | CONFIRMED |
+| FB1-60 | **De-slop craft rules:** no one-sided borders (always full continuous stroke or none); no multi-layer gradient “AI pill” stacks on every control; no orphan left accent bars; prefer fill + complete capsule/rect stroke; 8pt rhythm; hierarchy via type, not decorative chrome | CONFIRMED |
 
 ### One-by-one queue (after FB-1)
 

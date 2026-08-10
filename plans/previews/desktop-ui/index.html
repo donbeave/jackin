@@ -203,264 +203,186 @@
 
     /* —— Usage window —— */
     /*
-      Usage window — Apple LG-A1–A12:
-      continuous glass titlebar + floating glass sidebar (nav);
-      solid content (limit list); no glass-on-glass; soft scroll edges;
-      selective phosphor tint; transparent shell for ambient under glass.
+      ONE continuous surface (Telegram/Apple LG):
+      content fills the window; glass sidebar + toolbar FLOAT ON TOP.
+      De-slop: complete continuous strokes (never one-sided borders),
+      no multi-shadow gradient pills, 8pt rhythm, SF-like hierarchy.
     */
     .win {
-      --win-r: 16px; /* Tahoe-ish continuous corner */
-      --side-w: 252px;
-      /* Multi-layer Liquid Glass tokens (nav / control only) */
-      --lg-side: color-mix(in srgb, var(--glass) 34%, transparent);
-      --lg-side-mid: color-mix(in srgb, var(--glass) 48%, transparent);
-      --lg-side-strong: color-mix(in srgb, var(--glass-strong) 58%, transparent);
-      --lg-specular: rgba(255, 255, 255, 0.16);
-      --lg-specular-soft: rgba(255, 255, 255, 0.07);
-      --lg-hairline: color-mix(in srgb, var(--glass-border) 90%, transparent);
-      --lg-blur: blur(60px) saturate(1.85);
-      --lg-blur-ctrl: blur(20px) saturate(1.5);
+      --win-r: 14px;
+      --side-w: 228px;
+      --float-inset: 10px;
+      --chrome-h: 40px;
+      --lg-side: color-mix(in srgb, var(--glass) 42%, transparent);
+      --lg-specular: rgba(255, 255, 255, 0.14);
+      --lg-hairline: color-mix(in srgb, var(--glass-border) 85%, transparent);
+      --lg-blur: blur(56px) saturate(1.7);
       width: min(980px, 100%);
       height: 620px;
       margin: 0 auto;
-      display: flex;
-      flex-direction: column;
+      position: relative;
       border-radius: var(--win-r);
       overflow: hidden;
-      position: relative;
-      background: transparent;
+      /* Single app canvas — not three chrome panes */
+      background: var(--content-bg);
       border: 0.5px solid var(--lg-hairline);
       box-shadow:
-        0 0 0 0.5px rgba(0,0,0,0.2),
-        0 36px 100px rgba(0,0,0,0.55),
-        0 12px 32px rgba(0,0,0,0.3),
-        inset 0 1px 0 var(--lg-specular),
-        inset 0 0 0 0.5px var(--lg-specular-soft);
+        0 0 0 0.5px rgba(0,0,0,0.18),
+        0 28px 80px rgba(0,0,0,0.45);
     }
     [data-theme="light"] .win {
-      --lg-side: color-mix(in srgb, var(--glass) 48%, transparent);
-      --lg-side-mid: color-mix(in srgb, var(--glass) 62%, transparent);
-      --lg-side-strong: color-mix(in srgb, var(--glass-strong) 78%, transparent);
-      --lg-specular: rgba(255, 255, 255, 0.78);
-      --lg-specular-soft: rgba(255, 255, 255, 0.4);
+      --lg-side: color-mix(in srgb, var(--glass) 62%, transparent);
+      --lg-specular: rgba(255, 255, 255, 0.72);
       box-shadow:
         0 0 0 0.5px rgba(0,0,0,0.06),
-        0 30px 80px rgba(0,0,0,0.14),
-        0 8px 20px rgba(0,0,0,0.08),
-        inset 0 1px 0 var(--lg-specular),
-        inset 0 0 0 0.5px rgba(255,255,255,0.5);
+        0 22px 56px rgba(0,0,0,0.12);
     }
 
-    /*
-      Safari-style continuous chrome: ONE glass strip across the window.
-      No split between “jackin desktop” | “Usage | Refresh” panes.
-    */
-    .win .titlebar {
-      flex-shrink: 0;
-      height: 48px;
+    /* Traffic + brand + title + refresh float as ONE overlay strip (no full bar wall) */
+    .win .chrome-float {
+      position: absolute;
+      z-index: 5;
+      top: 0; left: 0; right: 0;
+      height: calc(var(--chrome-h) + var(--float-inset));
       display: flex;
       align-items: center;
-      gap: 12px;
-      padding: 0 14px 0 14px;
-      z-index: 6;
-      background:
-        linear-gradient(180deg, var(--lg-specular-soft), transparent 70%),
-        var(--lg-side);
-      backdrop-filter: var(--lg-blur);
-      -webkit-backdrop-filter: var(--lg-blur);
-      /* soft dissolve into body — not a hard rule */
-      box-shadow:
-        inset 0 1px 0 var(--lg-specular),
-        0 12px 28px -18px rgba(0,0,0,0.35);
-      border-bottom: 0;
+      gap: 10px;
+      padding: var(--float-inset) var(--float-inset) 0;
+      pointer-events: none; /* only controls receive hits */
     }
-    .win .titlebar .traffic {
+    .win .chrome-float > * { pointer-events: auto; }
+    .win .traffic {
       display: flex; gap: 7px; align-items: center; flex-shrink: 0;
+      padding-left: 4px;
     }
-    .win .titlebar .traffic i {
+    .win .traffic i {
       width: 12px; height: 12px; border-radius: 50%;
-      box-shadow: inset 0 0 0 0.5px rgba(0,0,0,0.22);
+      box-shadow: inset 0 0 0 0.5px rgba(0,0,0,0.2);
     }
-    .win .titlebar .traffic .c { background: #ff5f57; }
-    .win .titlebar .traffic .y { background: #febc2e; }
-    .win .titlebar .traffic .g { background: #28c840; }
-    .win .titlebar .app-name {
-      font-size: 12px; font-weight: 560; color: var(--secondary);
+    .win .traffic .c { background: #ff5f57; }
+    .win .traffic .y { background: #febc2e; }
+    .win .traffic .g { background: #28c840; }
+    .win .app-name {
+      font-size: 12px; font-weight: 500; color: var(--secondary);
       letter-spacing: -0.1px; white-space: nowrap;
     }
-    .win .titlebar .app-name b { color: var(--jk); font-weight: 700; }
-    .win .titlebar .tb-spacer { flex: 1; }
-    .win .titlebar .page-title {
+    .win .app-name b { color: var(--jk); font-weight: 700; }
+    .win .chrome-float .tb-spacer { flex: 1; }
+    .win .page-title {
       font-size: 13px; font-weight: 600; color: var(--label);
-      letter-spacing: -0.15px;
-      margin-right: 4px;
+      letter-spacing: -0.2px;
+      margin-right: 2px;
     }
-    .win .tb-actions { display: flex; align-items: center; gap: 6px; }
-
-    /* Body: floating glass sidebar over solid content (no 4-pane grid lines) */
-    .win .body {
-      flex: 1;
-      min-height: 0;
-      display: grid;
-      grid-template-columns: var(--side-w) 1fr;
-      position: relative;
-    }
-    /* Floating glass capsules (Telegram control chrome) */
+    /* De-slop control: full continuous capsule stroke (all sides), no gradient stack */
     .win .tb-btn {
-      display: inline-flex; align-items: center; justify-content: center; gap: 5px;
-      height: 30px; min-width: 30px; padding: 0 12px;
-      border-radius: 980px; /* liquid capsule */
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      height: 28px; padding: 0 12px;
+      border-radius: 980px;
       cursor: pointer; font: inherit; font-size: 12px; font-weight: 560;
       color: var(--label);
-      background:
-        linear-gradient(180deg, color-mix(in srgb, var(--lg-specular) 55%, transparent), transparent 70%),
-        color-mix(in srgb, var(--fill) 45%, transparent);
-      border: 0.5px solid color-mix(in srgb, var(--glass-border) 80%, transparent);
-      box-shadow:
-        inset 0 1px 0 rgba(255,255,255,0.14),
-        0 1px 2px rgba(0,0,0,0.08);
-      backdrop-filter: var(--lg-blur-ctrl);
-      -webkit-backdrop-filter: var(--lg-blur-ctrl);
-      transition: background 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
+      background: color-mix(in srgb, var(--fill) 70%, transparent);
+      border: 0.5px solid var(--lg-hairline); /* full perimeter */
+      backdrop-filter: blur(20px) saturate(1.4);
+      -webkit-backdrop-filter: blur(20px) saturate(1.4);
     }
     .win .tb-btn.primary {
-      color: var(--jk);
-      background:
-        linear-gradient(180deg, color-mix(in srgb, var(--jk) 22%, transparent), color-mix(in srgb, var(--jk) 10%, transparent));
-      border-color: color-mix(in srgb, var(--jk) 34%, var(--glass-border));
-      box-shadow:
-        inset 0 1px 0 rgba(255,255,255,0.16),
-        0 2px 10px color-mix(in srgb, var(--jk) 14%, transparent);
+      color: var(--jk-ink);
+      background: var(--jk);
+      border-color: color-mix(in srgb, var(--jk) 70%, transparent);
     }
-    .win .tb-btn:hover {
-      background:
-        linear-gradient(180deg, color-mix(in srgb, var(--lg-specular) 70%, transparent), transparent 70%),
-        color-mix(in srgb, var(--fill) 70%, transparent);
-    }
-    .win .tb-btn.primary:hover {
-      background:
-        linear-gradient(180deg, color-mix(in srgb, var(--jk) 30%, transparent), color-mix(in srgb, var(--jk) 14%, transparent));
-      box-shadow:
-        inset 0 1px 0 rgba(255,255,255,0.2),
-        0 4px 16px color-mix(in srgb, var(--jk) 22%, transparent);
-    }
-    .win .tb-btn:active { transform: scale(0.97); }
-    .win .tb-btn svg { width: 13px; height: 13px; fill: currentColor; opacity: 0.9; }
+    .win .tb-btn:hover { filter: brightness(1.06); }
+    .win .tb-btn:active { transform: scale(0.98); }
+    .win .tb-btn svg { width: 12px; height: 12px; fill: currentColor; }
 
     /*
-      Sidebar floats over content — soft depth only, no hard vertical rule
-      (Safari: chrome blends; sidebar is the one elevated glass surface).
+      Floating glass sidebar ON TOP of content (Telegram / Apple LG).
+      Inset all around — complete rounded glass panel, not a column split.
     */
     .win .side {
-      grid-column: 1;
-      display: flex; flex-direction: column;
+      position: absolute;
+      z-index: 4;
+      left: var(--float-inset);
+      top: calc(var(--chrome-h) + 4px);
+      bottom: var(--float-inset);
+      width: var(--side-w);
+      display: flex;
+      flex-direction: column;
       min-height: 0;
-      z-index: 2;
-      padding: 4px 6px 0 8px;
-      background:
-        radial-gradient(ellipse 90% 50% at 20% 0%, color-mix(in srgb, var(--jk) 8%, transparent), transparent 55%),
-        linear-gradient(180deg, var(--lg-specular-soft), transparent 35%),
-        var(--lg-side);
+      padding: 8px 6px 8px;
+      border-radius: 14px;
+      background: var(--lg-side);
       backdrop-filter: var(--lg-blur);
       -webkit-backdrop-filter: var(--lg-blur);
-      border-right: 0;
+      /* Full continuous stroke — never one-sided borders */
+      border: 0.5px solid var(--lg-hairline);
       box-shadow:
-        10px 0 28px -16px rgba(0,0,0,0.45),
-        inset 0 1px 0 color-mix(in srgb, var(--lg-specular) 30%, transparent);
+        0 8px 28px rgba(0,0,0,0.22),
+        inset 0 1px 0 var(--lg-specular);
     }
     .win .side-scroll {
       flex: 1; min-height: 0; overflow: auto;
-      padding: 4px 2px 10px;
+      padding: 2px 4px;
       scrollbar-width: thin;
-      scrollbar-color: color-mix(in srgb, var(--label) 12%, transparent) transparent;
+      scrollbar-color: color-mix(in srgb, var(--label) 14%, transparent) transparent;
     }
-    /* Quiet list inset — no extra framed “box inside box” */
-    .win .side-well {
-      margin: 0;
-      padding: 2px 2px 6px;
-      border-radius: 12px;
-      background: transparent;
-      border: 0;
-      box-shadow: none;
-      backdrop-filter: none;
-    }
+    .win .side-well { padding: 0; border: 0; background: transparent; }
     .win .side .lab {
-      font-size: 11px; font-weight: 620; color: var(--tertiary);
-      letter-spacing: 0.03em; padding: 10px 10px 6px;
-      text-transform: none;
+      font-size: 11px; font-weight: 600; color: var(--tertiary);
+      letter-spacing: 0.02em; padding: 10px 8px 5px;
     }
 
-    /* —— Primary: Overview / Provider rows (nav-provider) —— */
+    /* Provider = full-fill selection (complete rounded rect, no partial border) */
     .win .nav-overview,
     .win .nav-provider {
-      display: flex; align-items: center; gap: 10px;
+      display: flex; align-items: center; gap: 8px;
       width: 100%; text-align: left; cursor: pointer; font: inherit; color: var(--label);
-      border: 0; margin: 0 0 3px;
-      padding: 9px 10px;
-      border-radius: 12px;
+      border: 0.5px solid transparent; /* keep box model stable */
+      margin: 0 0 2px;
+      padding: 8px;
+      border-radius: 10px;
       background: transparent;
-      transition: background 0.14s ease, box-shadow 0.14s ease, transform 0.1s ease;
     }
     .win .nav-overview:hover,
     .win .nav-provider:hover {
-      background: color-mix(in srgb, var(--label) 8%, transparent);
-      box-shadow: inset 0 1px 0 color-mix(in srgb, var(--lg-specular) 40%, transparent);
+      background: color-mix(in srgb, var(--label) 7%, transparent);
     }
-    /* Selected provider = luminous glass pill (Telegram selected row + phosphor) */
     .win .nav-overview.on,
     .win .nav-provider.on {
-      background:
-        linear-gradient(
-          165deg,
-          color-mix(in srgb, var(--jk) 26%, transparent) 0%,
-          color-mix(in srgb, var(--jk) 12%, transparent) 48%,
-          color-mix(in srgb, var(--label) 8%, transparent) 100%
-        );
-      box-shadow:
-        inset 0 0 0 1px color-mix(in srgb, var(--jk) 42%, transparent),
-        inset 0 1px 0 rgba(255,255,255,0.18),
-        0 0 0 0.5px color-mix(in srgb, var(--jk) 18%, transparent),
-        0 4px 16px color-mix(in srgb, var(--jk) 16%, transparent),
-        0 1px 3px rgba(0,0,0,0.14);
-      backdrop-filter: blur(16px) saturate(1.35);
-      -webkit-backdrop-filter: blur(16px) saturate(1.35);
+      background: color-mix(in srgb, var(--jk) 16%, transparent);
+      border-color: color-mix(in srgb, var(--jk) 36%, transparent); /* all 4 sides */
     }
-    .win .nav-provider .p-ic {
-      width: 30px; height: 30px; border-radius: 8px; flex-shrink: 0;
+    .win .nav-provider .p-ic,
+    .win .nav-overview .p-ic {
+      width: 28px; height: 28px; border-radius: 7px; flex-shrink: 0;
       display: grid; place-items: center;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.18);
     }
     .win .nav-provider .p-ic .plogo.sm,
     .win .nav-overview .p-ic .jmark {
-      width: 30px; height: 30px; border-radius: 8px; font-size: 11px;
+      width: 28px; height: 28px; border-radius: 7px; font-size: 11px;
     }
-    .win .nav-overview .p-ic { width: 30px; height: 30px; flex-shrink: 0; }
     .win .nav-provider .p-body,
     .win .nav-overview .p-body { flex: 1; min-width: 0; }
     .win .nav-provider .p-name,
     .win .nav-overview .p-name {
-      font-size: 13.5px; font-weight: 650; letter-spacing: -0.2px;
-      line-height: 1.2;
+      font-size: 13px; font-weight: 600; letter-spacing: -0.15px; line-height: 1.2;
     }
     .win .nav-provider .p-meta,
     .win .nav-overview .p-meta {
-      margin-top: 2px; font-size: 11px; color: var(--tertiary);
-      font-weight: 500;
+      margin-top: 2px; font-size: 11px; color: var(--tertiary); font-weight: 500;
     }
     .win .nav-provider .p-trail {
-      display: flex; flex-direction: column; align-items: flex-end; gap: 4px;
-      flex-shrink: 0; min-width: 36px;
+      display: flex; flex-direction: column; align-items: flex-end; gap: 3px;
+      flex-shrink: 0; min-width: 34px;
     }
     .win .nav-provider .p-pct {
-      font-family: var(--mono); font-size: 12px; font-weight: 700;
+      font-family: var(--mono); font-size: 12px; font-weight: 650;
       font-variant-numeric: tabular-nums; color: var(--secondary);
-      letter-spacing: -0.3px;
     }
     .win .nav-provider .p-pct.high { color: var(--status-high); }
     .win .nav-provider .p-pct.mid { color: var(--status-mid); }
     .win .nav-provider .p-pct.low { color: var(--status-low); }
     .win .nav-provider .p-meter {
-      width: 36px; height: 3px; border-radius: 99px;
+      width: 34px; height: 3px; border-radius: 99px;
       background: var(--meter-track); overflow: hidden;
     }
     .win .nav-provider .p-meter > i {
@@ -469,123 +391,82 @@
     .win .nav-provider .p-meter.mid > i { background: var(--status-mid); }
     .win .nav-provider .p-meter.low > i { background: var(--status-low); }
 
-    /*
-      Secondary: accounts under provider — different system entirely.
-      Nested frosted rail (Telegram nested list), left accent, no brand plate.
-    */
+    /* Accounts: indented list, full-fill selection — NO left-only border (de-slop) */
     .win .acct-rail {
-      margin: 1px 0 8px 10px;
-      padding: 3px;
-      border-radius: 12px;
-      background:
-        linear-gradient(180deg, var(--lg-specular-soft), transparent 55%),
-        color-mix(in srgb, var(--label) 5%, transparent);
-      border: 0.5px solid color-mix(in srgb, var(--lg-hairline) 55%, transparent);
-      box-shadow:
-        inset 0 1px 0 color-mix(in srgb, var(--lg-specular) 35%, transparent),
-        0 2px 10px rgba(0,0,0,0.08);
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
-      overflow: hidden;
+      margin: 0 0 6px 6px;
+      padding: 2px 0 2px 8px;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      box-shadow: none;
     }
     .win .acct-rail.hidden { display: none !important; }
     .win .nav-acct {
       display: flex; align-items: center; gap: 8px;
       width: 100%; text-align: left; cursor: pointer; font: inherit; color: var(--label);
-      border: 0; margin: 0;
-      padding: 7px 10px 7px 8px;
-      border-radius: 9px;
+      border: 0.5px solid transparent;
+      margin: 0 0 2px;
+      padding: 6px 8px;
+      border-radius: 8px;
       background: transparent;
-      border-left: 2.5px solid transparent;
-      transition: background 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
-    }
-    .win .nav-acct + .nav-acct {
-      margin-top: 1px;
     }
     .win .nav-acct:hover {
-      background: color-mix(in srgb, var(--label) 7%, transparent);
+      background: color-mix(in srgb, var(--label) 6%, transparent);
     }
-    /* Selected account = left phosphor bar + soft glass fill (NOT provider capsule) */
     .win .nav-acct.on {
-      background:
-        linear-gradient(90deg, color-mix(in srgb, var(--jk) 14%, transparent), color-mix(in srgb, var(--jk) 5%, transparent));
-      border-left-color: var(--jk);
-      box-shadow: inset 0 1px 0 color-mix(in srgb, var(--lg-specular) 40%, transparent);
+      background: color-mix(in srgb, var(--jk) 12%, transparent);
+      border-color: color-mix(in srgb, var(--jk) 30%, transparent); /* full box */
     }
-    .win .nav-acct .a-dot {
-      width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
-      background: color-mix(in srgb, var(--tertiary) 80%, transparent);
-      margin-left: 4px;
-    }
-    .win .nav-acct.on .a-dot {
-      background: var(--jk);
-      box-shadow: 0 0 0 3px color-mix(in srgb, var(--jk) 22%, transparent);
-    }
+    .win .nav-acct .a-dot { display: none; } /* remove AI-ish ring dots */
     .win .nav-acct .a-body { flex: 1; min-width: 0; }
     .win .nav-acct .a-name {
-      font-size: 11.5px; font-weight: 500; letter-spacing: -0.05px;
+      font-size: 11.5px; font-weight: 500;
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
       color: var(--secondary);
     }
     .win .nav-acct.on .a-name { color: var(--label); font-weight: 560; }
     .win .nav-acct .a-plan {
-      margin-top: 1px; font-size: 10px; color: var(--tertiary); font-weight: 500;
+      margin-top: 1px; font-size: 10px; color: var(--tertiary);
     }
     .win .nav-acct .a-pct {
       font-family: var(--mono); font-size: 11px; font-weight: 600;
       font-variant-numeric: tabular-nums; color: var(--tertiary);
-      flex-shrink: 0;
     }
     .win .nav-acct .a-pct.high { color: var(--status-high); }
     .win .nav-acct .a-pct.mid { color: var(--status-mid); }
     .win .nav-acct .a-pct.low { color: var(--status-low); }
-    .win .nav-acct.on .a-pct { opacity: 1; }
 
     .win .side-foot {
       flex-shrink: 0;
-      padding: 10px 12px 12px;
+      padding: 8px 10px 4px;
       font-size: 11px; color: var(--tertiary); line-height: 1.35;
-      border-top: 0;
-      background: linear-gradient(
-        to top,
-        color-mix(in srgb, var(--lg-side-strong) 80%, transparent),
-        transparent
-      );
+      border: 0;
+      background: transparent;
     }
     .win .side-foot strong { color: var(--secondary); font-weight: 560; }
 
-    /* Content — solid, seamless under continuous titlebar */
+    /* Content fills entire window under floating glass chrome */
     .win .main {
-      grid-column: 2;
-      min-height: 0;
-      display: flex; flex-direction: column;
+      position: absolute;
+      inset: 0;
       z-index: 1;
-      background: var(--content-bg);
-      box-shadow: none;
+      display: flex;
+      flex-direction: column;
+      background: transparent; /* same canvas as .win */
       border: 0;
+      box-shadow: none;
     }
     .win .main-scroll {
       flex: 1; min-height: 0;
       overflow: auto;
-      padding: 18px 22px 28px;
+      /* leave room for floating sidebar + top chrome */
+      padding:
+        calc(var(--chrome-h) + 12px)
+        22px
+        24px
+        calc(var(--float-inset) + var(--side-w) + 18px);
       scrollbar-width: thin;
-      scrollbar-color: color-mix(in srgb, var(--label) 18%, transparent) transparent;
-      --fade-t: 0px;
-      --fade-b: 0px;
-      mask-image: linear-gradient(
-        to bottom,
-        transparent 0,
-        #000 var(--fade-t),
-        #000 calc(100% - var(--fade-b)),
-        transparent 100%
-      );
-      -webkit-mask-image: linear-gradient(
-        to bottom,
-        transparent 0,
-        #000 var(--fade-t),
-        #000 calc(100% - var(--fade-b)),
-        transparent 100%
-      );
+      scrollbar-color: color-mix(in srgb, var(--label) 16%, transparent) transparent;
     }
 
     /* Single page identity — not repeated in titlebar crumb */
@@ -610,9 +491,10 @@
     */
     .win .limit-list {
       margin: 0 0 16px;
-      border-radius: 14px;
-      background: var(--glass-inset);
-      border: 0.5px solid color-mix(in srgb, var(--separator) 55%, transparent);
+      border-radius: 12px;
+      background: color-mix(in srgb, var(--label) 4%, transparent);
+      /* Full continuous stroke — de-slop incomplete borders */
+      border: 0.5px solid color-mix(in srgb, var(--separator) 65%, transparent);
       overflow: hidden;
     }
     .win .limit {
@@ -651,8 +533,8 @@
     .win .group {
       margin-bottom: 12px;
       border-radius: 12px;
-      background: var(--glass-inset);
-      border: 0.5px solid color-mix(in srgb, var(--separator) 55%, transparent);
+      background: color-mix(in srgb, var(--label) 4%, transparent);
+      border: 0.5px solid color-mix(in srgb, var(--separator) 65%, transparent);
       overflow: hidden;
     }
     .win .group > .ghead {
@@ -789,43 +671,33 @@
     <section class="panel" id="usage">
       <h2 class="st">Usage window</h2>
       <p class="sl">
-        Continuous glass titlebar · floating glass sidebar · solid content.
-        Content rows follow <code>usage_detail_presentation</code> (metadata + all buckets).
-        Sidebar trailing % = same glance as the status bar. Full bucket set is only here.
+        <strong>One surface:</strong> content fills the window; glass sidebar + chrome float <em>on top</em>
+        (Apple LG / Telegram macOS). Not a 3-pane split. Controls use full continuous strokes (de-slop).
+        Data = <code>usage_detail_presentation</code>; glance % matches the status bar.
       </p>
       <div class="stage" style="padding: 20px 16px 28px;">
         <div class="win" id="usage-win">
-          <!-- ONE continuous glass titlebar (Safari-style — no 4-pane chrome split) -->
-          <div class="titlebar">
-            <div class="traffic" aria-hidden="true"><i class="c"></i><i class="y"></i><i class="g"></i></div>
-            <div class="app-name">jackin<b>❯</b> desktop</div>
-            <div class="tb-spacer"></div>
-            <div class="page-title">Usage</div>
-            <div class="tb-actions">
-              <button type="button" class="tb-btn primary" title="Refresh" aria-label="Refresh">
-                <svg viewBox="0 0 16 16"><path d="M13.5 8a5.5 5.5 0 1 1-1.4-3.6l.7.7A4.5 4.5 0 1 0 12.5 8h1zM8 2.5V1l2.2 2.2L8 5.5V4a4 4 0 0 0-3.5 6.1l-.9.5A5 5 0 0 1 8 2.5z"/></svg>
-                Refresh
-              </button>
+          <!-- Edge-to-edge content first (sidebar floats above it) -->
+          <main class="main">
+            <div class="main-scroll" id="usage-scroll">
+              <div id="usage-detail"></div>
             </div>
-          </div>
+          </main>
 
-          <div class="body">
-          <!-- Floating glass sidebar over solid content -->
+          <!-- Floating glass nav (not a column that splits the window) -->
           <aside class="side" data-lg-sidebar>
             <div class="side-scroll">
-              <!-- Floating frosted well (Telegram panel-in-panel / Finder list depth) -->
               <div class="side-well">
                 <div class="lab">Browse</div>
                 <button type="button" class="nav-overview" data-nav="overview">
                   <div class="p-ic"><div class="jmark"><span class="j">j</span><span class="ch">❯</span></div></div>
                   <div class="p-body">
                     <div class="p-name">Overview</div>
-                    <div class="p-meta">All accounts · weekly-first</div>
+                    <div class="p-meta">All accounts</div>
                   </div>
                 </button>
 
                 <div class="lab">Providers</div>
-                <!-- Primary: provider capsule + plate + mini meter -->
                 <button type="button" class="nav-provider on" data-nav="openai">
                   <div class="p-ic"><span class="plogo sm openai">O</span></div>
                   <div class="p-body">
@@ -837,10 +709,8 @@
                     <div class="p-meter mid"><i style="width:57%"></i></div>
                   </div>
                 </button>
-                <!-- Secondary: nested frosted account rail -->
                 <div class="acct-rail" data-for="openai">
                   <button type="button" class="nav-acct on" data-acct="a1">
-                    <span class="a-dot" aria-hidden="true"></span>
                     <div class="a-body">
                       <div class="a-name">alexey@chainargos.com</div>
                       <div class="a-plan">Pro 20×</div>
@@ -848,7 +718,6 @@
                     <span class="a-pct mid">57%</span>
                   </button>
                   <button type="button" class="nav-acct" data-acct="a2">
-                    <span class="a-dot" aria-hidden="true"></span>
                     <div class="a-body">
                       <div class="a-name">alexey@zhokhov.com</div>
                       <div class="a-plan">Plus</div>
@@ -870,7 +739,6 @@
                 </button>
                 <div class="acct-rail hidden" data-for="anthropic">
                   <button type="button" class="nav-acct on" data-acct="p1">
-                    <span class="a-dot" aria-hidden="true"></span>
                     <div class="a-body">
                       <div class="a-name">Personal</div>
                       <div class="a-plan">Max 20×</div>
@@ -892,7 +760,6 @@
                 </button>
                 <div class="acct-rail hidden" data-for="amp">
                   <button type="button" class="nav-acct on" data-acct="f1">
-                    <span class="a-dot" aria-hidden="true"></span>
                     <div class="a-body">
                       <div class="a-name">Free</div>
                       <div class="a-plan">Amp Free</div>
@@ -905,18 +772,22 @@
             <div class="side-foot"><strong>Limits only</strong> · next update 4m</div>
           </aside>
 
-          <!-- Solid content — one story, no chrome crumbs -->
-          <main class="main">
-            <div class="main-scroll" id="usage-scroll">
-              <div id="usage-detail"></div>
-            </div>
-          </main>
+          <!-- Floating chrome (not a third solid pane) -->
+          <div class="chrome-float">
+            <div class="traffic" aria-hidden="true"><i class="c"></i><i class="y"></i><i class="g"></i></div>
+            <div class="app-name">jackin<b>❯</b> desktop</div>
+            <div class="tb-spacer"></div>
+            <div class="page-title">Usage</div>
+            <button type="button" class="tb-btn primary" title="Refresh" aria-label="Refresh">
+              <svg viewBox="0 0 16 16"><path d="M13.5 8a5.5 5.5 0 1 1-1.4-3.6l.7.7A4.5 4.5 0 1 0 12.5 8h1zM8 2.5V1l2.2 2.2L8 5.5V4a4 4 0 0 0-3.5 6.1l-.9.5A5 5 0 0 1 8 2.5z"/></svg>
+              Refresh
+            </button>
           </div>
         </div>
       </div>
       <p class="flow-caption">
-        OpenAI detail includes Session + Weekly (bar shows Weekly only) + Spark windows + Limit Reset Credits bound.
-        Amp Daily matches bar 100%; Credits bound is detail-only (never a glance %).
+        Floating glass sidebar over full-bleed content · complete control strokes ·
+        API fixture: Weekly/Daily glance matches status bar; Session/Spark/Auth only in detail.
       </p>
     </section>
 
