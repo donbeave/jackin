@@ -114,17 +114,30 @@ public struct UsageWindowModel: Equatable, Sendable {
     /// Selected provider content (nil for Overview / empty).
     public struct Content: Equatable, Sendable {
         public let surfaceId: String
+        /// Provider display name for detail head (from glance / surface — Rust only).
+        public let displayLabel: String
+        /// Icon key for detail-head logo plate (`desktopProviderSystemImage`).
+        public let iconKey: String?
         public let detail: UsageDetailPresentation
         public let accounts: [PresentationStore.AccountRow]
 
         public init(
             surfaceId: String,
+            displayLabel: String,
+            iconKey: String? = nil,
             detail: UsageDetailPresentation,
             accounts: [PresentationStore.AccountRow]
         ) {
             self.surfaceId = surfaceId
+            self.displayLabel = displayLabel
+            self.iconKey = iconKey
             self.detail = detail
             self.accounts = accounts
+        }
+
+        /// Selected account for detail-head subtitle (multi-account); else first.
+        public var headAccount: PresentationStore.AccountRow? {
+            accounts.first(where: \.selected) ?? accounts.first
         }
     }
 
@@ -152,8 +165,11 @@ public struct UsageWindowModel: Equatable, Sendable {
             let surface = surfaces.first(where: { $0.id == surfaceId && $0.enabled })
         {
             selection = .provider(surfaceId)
+            let glance = glanceRows.first(where: { $0.surfaceId == surfaceId })
             content = Content(
                 surfaceId: surfaceId,
+                displayLabel: glance?.displayLabel ?? surface.label,
+                iconKey: glance?.iconKey,
                 detail: surface.detailPresentation,
                 accounts: accounts.filter { $0.surfaceId == surfaceId }
             )

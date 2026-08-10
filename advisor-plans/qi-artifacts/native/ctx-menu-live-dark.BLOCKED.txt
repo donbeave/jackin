@@ -1,0 +1,1 @@
+BLOCKED live right-click CGEvent menu (Accessibility). Rows: Open Usage Window / Refresh / Quit via StatusItemMenuModel + SoT harness.

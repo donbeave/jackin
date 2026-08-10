@@ -33,21 +33,38 @@ public struct UsageWindowRoot: View {
         let model = self.model
         NavigationSplitView {
             List(selection: selectionBinding) {
+                // HTML `.side` · Browse / Overview (All accounts)
                 Section {
-                    Label("Overview", systemImage: "square.grid.2x2")
-                        .font(.body.weight(.semibold))
-                        .tag(Self.overviewId)
+                    Label {
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text("Overview")
+                                .font(.body.weight(.semibold))
+                            Text("All accounts")
+                                .font(.caption)
+                                .foregroundStyle(.tertiary)
+                        }
+                    } icon: {
+                        sidebarLogoPlate(systemImage: "square.grid.2x2", tint: Color.accentColor)
+                    }
+                    .tag(Self.overviewId)
+                    .listRowInsets(EdgeInsets(top: 6, leading: 8, bottom: 6, trailing: 8))
+                } header: {
+                    Text("Browse")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .textCase(nil)
                 }
 
-                Section("Providers") {
+                Section {
                     ForEach(model.sidebar) { row in
                         // Provider = identity only (no glance % — lives on account rows).
                         providerSidebarRow(row)
                             .tag(row.surfaceId)
                             .listRowInsets(EdgeInsets(top: 4, leading: 8, bottom: 4, trailing: 8))
+                            .listRowBackground(providerRowBackground(selected: store.usageSelection == row.surfaceId))
                             .accessibilityLabel(providerAccessibilityLabel(row))
 
-                        // Nest accounts under the selected provider only.
+                        // Nest accounts under the selected provider only — inset well (HTML ACCOUNTS).
                         if store.usageSelection == row.surfaceId {
                             let accts = store.accountsForSurface(row.surfaceId)
                             if !accts.isEmpty {
@@ -56,15 +73,21 @@ public struct UsageWindowRoot: View {
                                         account,
                                         multi: accts.count > 1
                                     )
-                                    .listRowInsets(EdgeInsets(top: 2, leading: 22, bottom: 2, trailing: 8))
+                                    .listRowInsets(EdgeInsets(top: 2, leading: 18, bottom: 2, trailing: 8))
+                                    .listRowBackground(accountNestWellBackground)
                                 }
                             } else if !row.accountLabel.isEmpty {
-                                // Glance-only identity when list_accounts empty but glance has label.
                                 accountFallbackRow(row)
-                                    .listRowInsets(EdgeInsets(top: 2, leading: 22, bottom: 2, trailing: 8))
+                                    .listRowInsets(EdgeInsets(top: 2, leading: 18, bottom: 2, trailing: 8))
+                                    .listRowBackground(accountNestWellBackground)
                             }
                         }
                     }
+                } header: {
+                    Text("Providers")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .textCase(nil)
                 }
             }
             .listStyle(.sidebar)
@@ -72,13 +95,21 @@ public struct UsageWindowRoot: View {
             // LG-A5: system sidebar already Liquid Glass on Tahoe — clear, do not stack.
             .background { GlassFallbacks.sidebarBackground() }
             .safeAreaInset(edge: .bottom, spacing: 0) {
-                Text(store.nextRefreshLabel)
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 10)
-                    .background { GlassFallbacks.footerBarBackground() }
+                HStack(spacing: 6) {
+                    Text("Limits only")
+                        .font(.caption2.weight(.medium))
+                        .foregroundStyle(.tertiary)
+                    Text("·")
+                        .font(.caption2)
+                        .foregroundStyle(.quaternary)
+                    Text(store.nextRefreshLabel)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 10)
+                .background { GlassFallbacks.footerBarBackground() }
             }
         } detail: {
             // LG-A2 content layer under floating glass nav (LG-A6).
@@ -126,22 +157,64 @@ public struct UsageWindowRoot: View {
         .frame(minWidth: 760, minHeight: 500)
     }
 
-    /// Provider nav — logo/name only. Multi-account count in caption; no glance progress.
+    /// Provider nav — logo plate + name; multi-account caption; **no** glance progress (G-U3).
     @ViewBuilder
     private func providerSidebarRow(_ row: PresentationStore.GlanceProviderRow) -> some View {
         let accts = store.accountsForSurface(row.surfaceId)
-        VStack(alignment: .leading, spacing: 2) {
-            Text(row.displayLabel)
-                .font(.body.weight(.semibold))
-                .lineLimit(1)
-            if accts.count > 1 {
-                Text("\(accts.count) accounts")
-                    .font(.caption)
-                    .foregroundStyle(.tertiary)
+        HStack(spacing: 10) {
+            sidebarProviderLogo(iconKey: row.iconKey)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(row.displayLabel)
+                    .font(.body.weight(.semibold))
+                    .lineLimit(1)
+                if accts.count > 1 {
+                    Text("\(accts.count) accounts")
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                } else if !row.accountLabel.isEmpty {
+                    Text(row.accountLabel)
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                        .lineLimit(1)
+                }
             }
+            Spacer(minLength: 0)
         }
-        .padding(.vertical, 3)
+        .padding(.vertical, 4)
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    /// HTML `.nav-provider.on` selection well (accent tint, not glass-on-glass).
+    @ViewBuilder
+    private func providerRowBackground(selected: Bool) -> some View {
+        if selected {
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(Color.accentColor.opacity(0.14))
+        } else {
+            Color.clear
+        }
+    }
+
+    /// Inset nest under selected provider (HTML ACCOUNTS group).
+    private var accountNestWellBackground: some View {
+        RoundedRectangle(cornerRadius: 8, style: .continuous)
+            .fill(Color.primary.opacity(0.05))
+    }
+
+    private func sidebarProviderLogo(iconKey: String) -> some View {
+        let symbol = desktopProviderSystemImage(iconKey: iconKey) ?? "circle.grid.cross"
+        return sidebarLogoPlate(systemImage: symbol, tint: Color.accentColor)
+    }
+
+    private func sidebarLogoPlate(systemImage: String, tint: Color) -> some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 7, style: .continuous)
+                .fill(tint.opacity(0.18))
+            Image(systemName: systemImage)
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(tint)
+        }
+        .frame(width: 26, height: 26)
     }
 
     /// Account row under selected provider — glance % from `list_accounts` / remainingPercent.

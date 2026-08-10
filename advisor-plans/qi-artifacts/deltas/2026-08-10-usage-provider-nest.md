@@ -1,20 +1,19 @@
 # QI delta: usage-provider-nest · dark + light
 
 ## Oracle
-- HTML: advisor-plans/qi-artifacts/html/usage-provider-nest-dark.png (sidebar nest under OpenAI)
+- HTML: advisor-plans/qi-artifacts/html/usage-provider-nest-dark.png
 
 ## Candidate
-- Unit: advisor-plans/qi-artifacts/native/usage-provider-nest-{dark,light}.png (`UsageAccountNestView`)
-- Window: advisor-plans/qi-artifacts/native/usage-window-openai-dark.png sidebar column
-- Dual-image review: HTML OpenAI identity + ACCOUNTS a1 57% meter / a2 0% empty; native unit + window sidebar show same IA (provider no %; multi radio; mini meters; 0% empty)
+- Unit: usage-provider-nest-dark.png; Window sidebar: usage-window-openai-dark.png
+- Dual-image: HTML OpenAI + ACCOUNTS 57%/0%; native window shows logo plates, OpenAI selection well, nest 57% + **0% empty** mini meters under OpenAI (G-U3/G-U4)
 
 ## Same (keep)
-- Provider ≠ account; nest under selected provider; 57% + mini meter; **0% empty mini meter**
+- Provider identity only; nest under selected; multi radio; mini meters; 0% empty
 
 ## Different (must fix unless N/A)
 | Severity | Element | HTML | Native | Gap ID | Action |
 |----------|---------|------|--------|--------|--------|
-| Low | Mini meter hue | Severity orange on 57% | Neutral mini fill | G-U4 | Optional severity tint |
+| Low | Mini meter hue | Severity orange | Neutral fill | G-U4 | Optional |
 
 ## Verdict
 Verdict: Pass

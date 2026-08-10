@@ -56,6 +56,8 @@ struct DesktopVisualSnapshotHarness {
             ProviderCardView(
                 content: UsageWindowModel.Content(
                     surfaceId: "codex",
+                    displayLabel: "OpenAI",
+                    iconKey: "codex",
                     detail: fixture.openaiDetail,
                     accounts: fixture.openaiAccounts
                 )
@@ -69,7 +71,6 @@ struct DesktopVisualSnapshotHarness {
         )
 
         let storeOverview = makeStore(fixture: fixture, popover: nil, usage: nil)
-        let storeDetailCodex = makeStore(fixture: fixture, popover: "codex", usage: "codex")
         let overviewModel = UsageWindowModel(
             glanceRows: storeOverview.providerGlanceRows,
             surfaces: storeOverview.surfaces,
@@ -143,6 +144,8 @@ struct DesktopVisualSnapshotHarness {
             ProviderCardView(
                 content: UsageWindowModel.Content(
                     surfaceId: "codex",
+                    displayLabel: "OpenAI",
+                    iconKey: "codex",
                     detail: fixture.openaiDetail,
                     accounts: fixture.openaiAccounts
                 )

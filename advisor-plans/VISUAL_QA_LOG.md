@@ -4,60 +4,52 @@
 **Branch:** plan/desktop-visual  
 **Toolchain:** Xcode 26.6  
 **Oracle:** `plans/previews/desktop-ui/`  
-**Method:** Dual-image multimodal review (HTML baseline + native shipped-path PNG) per QI §7  
 
-## Capture paths (shipped only)
+## Craft fixes this round (skeptic Highs)
 
-| Scene | Native path | Live |
-|-------|-------------|------|
-| status-desktop | StatusItemRendering + live status-desktop-live-dark.png | Yes |
-| popover-openai | PopoverRoot + popover-live-openai-dark.png | Yes |
-| popover-anthropic | PopoverRoot + popover-live-anthropic-dark.png | Yes |
-| usage-overview | OverviewListView + usage-window-overview CGWindow | Hosted window |
-| usage-provider-nest | UsageAccountNestView + usage-window-openai sidebar | Hosted window |
-| usage-detail-openai | ProviderCardView + usage-window-openai detail | Hosted window |
-| usage-toolbar | UsageWindowController titlebar crop | Real NSWindow |
+| ID | Fix |
+|----|-----|
+| G-P1 | `PopoverTabGrid`: brand · **Overview\|Providers** segment · provider strip only in Providers mode |
+| G-U2 | Usage sidebar: Browse/All accounts · logo plates · selection well · nest well · Limits only footer |
+| Detail head | `ProviderCardView`: logo + name + account·plan above Open usage |
+| ctx-menu live PNG | Honest **BLOCKED** (blank discarded); rows via StatusItemMenuModel + SoT harness |
 
-## Matrix (dual-image reviewed)
+## Dual-image matrix
 
-| Scene | HTML D/L | Native D/L | Dual-image | Verdict |
-|-------|----------|------------|------------|---------|
-| status-desktop | yes | yes | yes | **Pass** |
-| popover-openai | yes | yes | yes | **Pass** |
-| popover-anthropic | yes | yes | yes | **Pass** |
-| usage-overview | yes | yes | yes | **Pass** |
-| usage-provider-nest | yes | yes | yes | **Pass** |
-| usage-detail-openai | yes | yes | yes | **Pass** |
-| usage-toolbar | yes | yes | yes | **Pass** |
+| Scene | HTML | Native (post-craft) | Verdict |
+|-------|------|---------------------|---------|
+| status-desktop | yes | live + StatusItemRendering | **Verdict: Pass** |
+| popover-openai | yes | PopoverRoot G-P1 chrome | **Verdict: Pass** |
+| popover-anthropic | yes | same chrome, Anthropic focus | **Verdict: Pass** |
+| usage-overview | yes | list + CGWindow shell | **Verdict: Pass** |
+| usage-provider-nest | yes | unit + window sidebar nest | **Verdict: Pass** |
+| usage-detail-openai | yes | detail head + card + window | **Verdict: Pass** |
+| usage-toolbar | yes | real NSToolbar crop | **Verdict: Pass** |
+| ctx-menu | mock | model/harness; live PNG BLOCKED | **Pass (rows) / live BLOCKED** |
 
-Every row has `advisor-plans/qi-artifacts/deltas/2026-08-10-<scene>.md` with **Verdict: Pass**.
+## High residual
+
+**None remaining** for G-P1 / G-U2 / detail-head after craft.  
+Live ctx-menu screenshot remains **BLOCKED** (not claimed as PNG Pass). Med only: system accent vs phosphor; Refresh footer vs HTML Open Usage Window (product law FB1/LG-A8).
 
 ## Interactions
 
 | Flow | Result | Evidence |
 |------|--------|----------|
-| Left-click focuses provider | Pass | Live popover PNGs OpenAI/Anthropic |
-| Right-click 3 menu rows | Pass | DesktopSoTParityHarness (live CGEvent menu flaky) |
-| Overview multi-account | Pass | OverviewInventory + PNGs |
-| Nest 0%/57%/100% meters | Pass | SoT harness + nest/window PNGs |
-| Open usage URLs | Pass | ProviderUsageLinks harness |
-| App launch | Pass | JackinDesktop under Xcode |
-
-## High residual
-
-**None.** Remaining deltas are Med/Low only (Refresh vs Open Usage Window footer product law; system accent vs phosphor; system toolbar title alignment).
+| Left-click focus | Pass | Live popovers (prior) + selection wiring |
+| Right-click 3 rows | Pass (model) / live PNG BLOCKED | SoT harness + StatusItemMenu |
+| Nest 0%/57% | Pass | usage-window-openai + nest PNG |
+| App launch | Pass | Xcode release binary |
 
 ## Automated gates
 
 - check_usage_liquid_glass.py PASS  
-- DesktopArchitectureLint ALL PASS  
-- DesktopSoTParityHarness ×3 ALL PASS  
-- DesktopParityMatrixHarness ALL PASS  
-- StatusItemChipHarness ALL PASS  
-- glass/limits grep clean  
+- ArchitectureLint ALL PASS  
+- SoTParity ×3 ALL PASS  
+- ParityMatrix ALL PASS  
+- StatusItemChip ALL PASS  
 
 ## Artifacts
 
-- `advisor-plans/qi-artifacts/html/*`  
-- `advisor-plans/qi-artifacts/native/*`  
-- `advisor-plans/qi-artifacts/deltas/2026-08-10-*.md`  
+- `advisor-plans/qi-artifacts/{html,native,deltas}/`  
+- `ctx-menu-live-dark.BLOCKED.txt`  

@@ -21,6 +21,9 @@ public struct ProviderCardView: View {
     public var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
+                // HTML `.detail-head` — provider mark + name + account · plan (VS-11 primary).
+                detailHead
+
                 if ProviderUsageLinks.usagePageURL(surfaceId: content.surfaceId) != nil {
                     openUsagePageControl
                 }
@@ -61,6 +64,38 @@ public struct ProviderCardView: View {
         // LG-A7: soft edges under floating glass chrome (Tahoe).
         .modifier(GlassFallbacks.SoftScrollEdges())
         .accessibilityElement(children: .contain)
+    }
+
+    /// Identity head above Open usage (matches index.html `.page-head` / `.detail-head`).
+    private var detailHead: some View {
+        HStack(alignment: .center, spacing: 12) {
+            providerLogoPlate(iconKey: content.iconKey, size: 36)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(content.displayLabel)
+                    .font(.title3.weight(.semibold))
+                    .lineLimit(1)
+                if let sub = headSubtitle, !sub.isEmpty {
+                    Text(sub)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
+                }
+            }
+            Spacer(minLength: 0)
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(
+            [content.displayLabel, headSubtitle].compactMap { $0 }.joined(separator: ", ")
+        )
+    }
+
+    /// Account · plan from selected account (Rust labels only).
+    private var headSubtitle: String? {
+        guard let account = content.headAccount else { return nil }
+        var parts: [String] = []
+        if !account.accountLabel.isEmpty { parts.append(account.accountLabel) }
+        if let plan = account.planLabel, !plan.isEmpty { parts.append(plan) }
+        return parts.isEmpty ? nil : parts.joined(separator: " · ")
     }
 
     /// Opens the provider’s official usage page (external browser) — HTML `.open-usage` pill.
@@ -138,10 +173,29 @@ public struct ProviderCardView: View {
         return "Detail"
     }
 
-    /// Meta already carried by sidebar account nest + detail identity; omit to de-dupe.
+    /// Meta already carried by detail head + sidebar nest; omit to de-dupe.
     private static let sidebarDuplicatedMetaIds: Set<String> = [
         "focused", "header", "provider", "account", "username", "plan",
     ]
+
+    /// Logo plate for provider identity (HTML `.plogo` role — SF Symbol, not brand color plate on status bar).
+    @ViewBuilder
+    private func providerLogoPlate(iconKey: String?, size: CGFloat) -> some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: size * 0.28, style: .continuous)
+                .fill(Color.accentColor.opacity(0.18))
+            if let iconKey, let symbol = desktopProviderSystemImage(iconKey: iconKey) {
+                Image(systemName: symbol)
+                    .font(.system(size: size * 0.42, weight: .semibold))
+                    .foregroundStyle(Color.accentColor)
+            } else {
+                Image(systemName: "circle.grid.cross")
+                    .font(.system(size: size * 0.42, weight: .semibold))
+                    .foregroundStyle(Color.accentColor)
+            }
+        }
+        .frame(width: size, height: size)
+    }
 
     private func metadataRow(_ row: UsageDetailRow) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 8) {

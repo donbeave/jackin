@@ -4,10 +4,10 @@
 import JackinUsageBridge
 import SwiftUI
 
-/// Horizontal tab strip: a static Overview tab then one tab per Rust glance row
-/// in canonical order (no sort/filter in Swift). Each provider tab shows the
-/// Rust `displayLabel`, the icon selected from `iconKey`, and thin geometry from
-/// `glanceRemainingPercent`; the Rust `barLabel` is the accessibility value.
+/// Sticky popover chrome matching `popover.html`: brand line · **Overview | Providers**
+/// segmented mode · provider strip (icons + glance meters) only in Providers mode.
+///
+/// Selection: `nil` = Overview mode; non-nil surface id = Providers mode focused on that row.
 public struct PopoverTabGrid: View {
     public let providers: [PresentationStore.GlanceProviderRow]
     @Binding public var selection: String?
@@ -20,91 +20,159 @@ public struct PopoverTabGrid: View {
         self._selection = selection
     }
 
+    private var isOverviewMode: Bool { selection == nil }
+
     public var body: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 6) {
-                tab(
-                    id: nil,
-                    label: "Overview",
-                    iconKey: nil,
-                    barLabel: "Overview",
-                    remaining: nil,
-                    dimmed: false
-                )
-                ForEach(providers) { provider in
-                    tab(
-                        id: provider.surfaceId,
-                        label: provider.displayLabel,
-                        iconKey: provider.iconKey,
-                        barLabel: provider.barLabel,
-                        remaining: provider.glanceRemainingPercent,
-                        dimmed: provider.dimmed
-                    )
-                }
+        VStack(alignment: .leading, spacing: 10) {
+            brandLine
+            modeSegment
+            if !isOverviewMode {
+                providerStrip
             }
-            .padding(.horizontal, 8)
-            .padding(.vertical, 6)
+        }
+        .padding(.horizontal, 10)
+        .padding(.top, 4)
+        .padding(.bottom, 2)
+    }
+
+    // MARK: - Brand (popover.html `.brand-line`)
+
+    private var brandLine: some View {
+        HStack(spacing: 8) {
+            // j❯ mark — brand moment only (VS-13).
+            ZStack {
+                RoundedRectangle(cornerRadius: 7, style: .continuous)
+                    .fill(Color.accentColor.opacity(0.92))
+                    .frame(width: 22, height: 22)
+                Text("j❯")
+                    .font(.system(size: 10, weight: .bold, design: .rounded))
+                    .foregroundStyle(Color.white)
+            }
+            HStack(spacing: 0) {
+                Text("jackin")
+                    .font(.subheadline.weight(.semibold))
+                Text("❯")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(Color.accentColor)
+                Text(" desktop")
+                    .font(.subheadline.weight(.medium))
+                    .foregroundStyle(.secondary)
+            }
+            Spacer(minLength: 0)
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("jackin❯ desktop")
+    }
+
+    // MARK: - Mode segment (Overview | Providers)
+
+    private var modeSegment: some View {
+        HStack(spacing: 0) {
+            modeButton(title: "Overview", overview: true)
+            modeButton(title: "Providers", overview: false)
+        }
+        .padding(3)
+        .background {
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(Color.primary.opacity(0.08))
         }
     }
 
-    @ViewBuilder
-    private func tab(
-        id: String?,
-        label: String,
-        iconKey: String?,
-        barLabel: String,
-        remaining: UInt8?,
-        dimmed: Bool
-    ) -> some View {
-        Button {
-            selection = id
-        } label: {
-            VStack(spacing: 3) {
-                icon(iconKey)
-                    .frame(width: 16, height: 16)
-                Text(label)
-                    .font(.caption2)
-                    .lineLimit(1)
-                meter(remaining)
+    private func modeButton(title: String, overview: Bool) -> some View {
+        let on = overview ? isOverviewMode : !isOverviewMode
+        return Button {
+            if overview {
+                selection = nil
+            } else if selection == nil {
+                // Enter Providers mode on first available surface (canonical order).
+                selection = providers.first?.surfaceId
             }
-            .frame(minWidth: 52)
-            .opacity(dimmed ? 0.55 : 1)
-            .padding(.vertical, 4)
-            .padding(.horizontal, 6)
+        } label: {
+            Text(title)
+                .font(.caption.weight(.semibold))
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 7)
+                .background {
+                    if on {
+                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            .fill(Color.primary.opacity(0.12))
+                            .overlay {
+                                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                    .strokeBorder(Color.primary.opacity(0.10), lineWidth: 0.5)
+                            }
+                    }
+                }
+                .foregroundStyle(on ? Color.primary : Color.secondary)
         }
         .buttonStyle(.plain)
-        // Selected tab: phosphor-tinted glass island (LG-A9 selective tint), not solid slab.
-        .background {
-            if selection == id {
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .fill(Color.accentColor.opacity(0.16))
-                    .overlay {
-                        RoundedRectangle(cornerRadius: 10, style: .continuous)
-                            .strokeBorder(Color.accentColor.opacity(0.32), lineWidth: 1)
-                    }
+        .accessibilityAddTraits(on ? .isSelected : [])
+    }
+
+    // MARK: - Provider strip (only in Providers mode)
+
+    private var providerStrip: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 6) {
+                ForEach(providers) { provider in
+                    providerTab(provider)
+                }
+            }
+            .padding(.vertical, 2)
+        }
+    }
+
+    private func providerTab(_ provider: PresentationStore.GlanceProviderRow) -> some View {
+        let on = selection == provider.surfaceId
+        return Button {
+            selection = provider.surfaceId
+        } label: {
+            VStack(spacing: 4) {
+                icon(provider.iconKey)
+                    .frame(width: 18, height: 18)
+                Text(provider.displayLabel)
+                    .font(.caption2.weight(on ? .semibold : .medium))
+                    .lineLimit(1)
+                meter(provider.glanceRemainingPercent)
+            }
+            .frame(minWidth: 56)
+            .opacity(provider.dimmed ? 0.55 : 1)
+            .padding(.vertical, 6)
+            .padding(.horizontal, 8)
+            .background {
+                if on {
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .fill(Color.accentColor.opacity(0.16))
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                .strokeBorder(Color.accentColor.opacity(0.32), lineWidth: 1)
+                        }
+                }
             }
         }
-        .accessibilityLabel(label)
-        .accessibilityValue(barLabel)
+        .buttonStyle(.plain)
+        .accessibilityLabel(provider.displayLabel)
+        .accessibilityValue(provider.barLabel)
+        .accessibilityAddTraits(on ? .isSelected : [])
     }
 
     @ViewBuilder
     private func icon(_ iconKey: String?) -> some View {
         if let iconKey, let symbol = desktopProviderSystemImage(iconKey: iconKey) {
             Image(systemName: symbol)
+                .font(.system(size: 13, weight: .semibold))
         } else {
             Image(systemName: "square.grid.2x2")
+                .font(.system(size: 13, weight: .semibold))
         }
     }
 
-    /// Meter geometry only — `nil` remaining shows the empty track (Rust dash /
-    /// segments remain the visible truth elsewhere).
+    /// Meter geometry only — nil remaining = empty track (FB1-5).
     @ViewBuilder
     private func meter(_ remaining: UInt8?) -> some View {
         GeometryReader { geometry in
             ZStack(alignment: .leading) {
                 Capsule().fill(Color.secondary.opacity(0.25))
-                if let remaining {
+                if let remaining, remaining > 0 {
                     Capsule()
                         .fill(Color.accentColor)
                         .frame(width: geometry.size.width * CGFloat(remaining) / 100.0)
