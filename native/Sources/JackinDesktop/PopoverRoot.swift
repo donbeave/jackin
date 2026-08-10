@@ -47,8 +47,9 @@ struct PopoverRoot: View {
             .padding(.horizontal, 10)
             .padding(.vertical, 8)
         }
-        .frame(width: 340)
-        .frame(minHeight: 200, maxHeight: 480)
+        // Craft width aligns with popover.html (~424); max height keeps menu-bar usable.
+        .frame(width: 412)
+        .frame(minHeight: 220, maxHeight: 560)
         // Liquid Glass panel — must sit on a clear NSPopover window.
         .background {
             GlassFallbacks.panelSurfaceBackground()

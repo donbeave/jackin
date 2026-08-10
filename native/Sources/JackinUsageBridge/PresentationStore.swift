@@ -111,6 +111,44 @@ public final class PresentationStore: ObservableObject {
         public let updatedLabel: String
         public let lastError: String?
         public let dimmed: Bool
+
+        public init(
+            surfaceId: String,
+            iconKey: String,
+            displayLabel: String,
+            accountLabel: String,
+            planLabel: String?,
+            glanceRemainingPercent: UInt8?,
+            barLabel: String,
+            headline: String,
+            resetLabel: String?,
+            exactReset: String?,
+            statusWord: String,
+            isRefreshing: Bool,
+            statusLabel: String,
+            severity: String,
+            updatedLabel: String,
+            lastError: String?,
+            dimmed: Bool
+        ) {
+            self.surfaceId = surfaceId
+            self.iconKey = iconKey
+            self.displayLabel = displayLabel
+            self.accountLabel = accountLabel
+            self.planLabel = planLabel
+            self.glanceRemainingPercent = glanceRemainingPercent
+            self.barLabel = barLabel
+            self.headline = headline
+            self.resetLabel = resetLabel
+            self.exactReset = exactReset
+            self.statusWord = statusWord
+            self.isRefreshing = isRefreshing
+            self.statusLabel = statusLabel
+            self.severity = severity
+            self.updatedLabel = updatedLabel
+            self.lastError = lastError
+            self.dimmed = dimmed
+        }
     }
 
     public struct OverviewRow: Identifiable, Sendable, Equatable {
@@ -134,6 +172,24 @@ public final class PresentationStore: ObservableObject {
         public let selected: Bool
         public let remainingPercent: UInt8?
         public let statusWord: String
+
+        public init(
+            surfaceId: String,
+            accountKey: String,
+            accountLabel: String,
+            planLabel: String?,
+            selected: Bool,
+            remainingPercent: UInt8?,
+            statusWord: String
+        ) {
+            self.surfaceId = surfaceId
+            self.accountKey = accountKey
+            self.accountLabel = accountLabel
+            self.planLabel = planLabel
+            self.selected = selected
+            self.remainingPercent = remainingPercent
+            self.statusWord = statusWord
+        }
     }
 
     @Published public private(set) var mergedBarLabel: String = "jackin❯ usage"

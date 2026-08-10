@@ -270,10 +270,12 @@ struct DesktopParityMatrixHarness {
             )) ?? ""
         }
         let statusItem = read("StatusItemLabel.swift")
+        let statusBar = read("DesktopAppDelegate.swift")
         let popover = read("PopoverRoot.swift")
         let popoverProviderTab = read("Popover/PopoverProviderTab.swift")
         let provider = read("UsageWindow/ProviderCardView.swift")
         let overview = read("UsageWindow/OverviewListView.swift")
+        let usageController = read("UsageWindowController.swift")
         check(
             "StatusItemRendering displays the Rust bar label verbatim",
             statusItem.contains("StatusItemRendering")
@@ -343,7 +345,8 @@ struct DesktopParityMatrixHarness {
         )
         check(
             "ProviderCard bucket identity is Rust rowId, not label",
-            provider.contains("ForEach(content.detail.rows)")
+            provider.contains("content.detail.rows")
+                && provider.contains("ForEach")
                 && !provider.contains("ForEach(surface.buckets)")
         )
         check(
@@ -362,6 +365,32 @@ struct DesktopParityMatrixHarness {
             "Usage empty state is the fixed hint (no invented fallback copy)",
             overview.contains("UsageWindowModel.emptyHint")
                 && !overview.contains("\"No enabled surfaces\"")
+        )
+        check(
+            "Overview uses per-account inventory helper (HTML SoT)",
+            overview.contains("OverviewInventory")
+        )
+        check(
+            "Usage account nest has mini meter geometry",
+            usageRoot.contains("accountMiniMeter")
+        )
+        check(
+            "Usage window NSToolbar host",
+            usageController.contains("NSHostingController")
+                && usageController.contains("toolbarStyle = .unified")
+        )
+        check(
+            "Status left-click focuses provider via StatusPopoverFocus",
+            statusBar.contains("StatusPopoverFocus") && statusBar.contains("popoverSelection")
+        )
+        check(
+            "Popover prefers detailPresentation buckets",
+            popoverProviderTab.contains("detailPresentation")
+                && popoverProviderTab.contains("ProviderUsageLinks")
+        )
+        check(
+            "ProviderUsageLinks desktop map complete",
+            ProviderUsageLinks.desktopProviderURLsComplete
         )
         check(
             "no sparkline/donut/trend product UI in status item",

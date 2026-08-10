@@ -39,4 +39,19 @@ public enum ProviderUsageLinks {
 
     /// Toolbar / button title (fixed product copy).
     public static let openUsagePageTitle = "Open usage page"
+
+    /// Host surface ids in `DESKTOP_PROVIDER_ORDER` (must each have a URL).
+    public static let desktopProviderOrder: [String] = [
+        "codex", "claude", "amp", "grok", "zai", "kimi", "minimax",
+    ]
+
+    /// True when every desktop provider has a non-empty official usage URL.
+    public static var desktopProviderURLsComplete: Bool {
+        desktopProviderOrder.allSatisfy { id in
+            guard let s = usagePageString(surfaceId: id), !s.isEmpty, URL(string: s) != nil else {
+                return false
+            }
+            return true
+        }
+    }
 }

@@ -82,8 +82,14 @@ struct UsageWindowRoot: View {
                 if let content = model.content {
                     ProviderCardView(content: content)
                 } else {
-                    OverviewListView(model: model) { surfaceId in
+                    OverviewListView(
+                        model: model,
+                        accounts: store.accounts
+                    ) { surfaceId, accountKey in
                         store.selectUsageSurface(surfaceId)
+                        if let accountKey {
+                            store.setSelectedAccount(surfaceId: surfaceId, accountKey: accountKey)
+                        }
                     }
                 }
             }
@@ -167,10 +173,14 @@ struct UsageWindowRoot: View {
                     }
                 }
                 Spacer(minLength: 4)
+                // Glance progress on account (HTML SoT): % + mini meter; 0% empty.
                 if let pct = account.remainingPercent {
-                    Text("\(pct)%")
-                        .font(.caption.monospacedDigit().weight(.semibold))
-                        .foregroundStyle(.secondary)
+                    VStack(alignment: .trailing, spacing: 3) {
+                        Text("\(pct)%")
+                            .font(.caption.monospacedDigit().weight(.semibold))
+                            .foregroundStyle(.secondary)
+                        accountMiniMeter(percent: pct)
+                    }
                 }
             }
             .padding(.vertical, 2)
@@ -180,6 +190,21 @@ struct UsageWindowRoot: View {
         .disabled(!multi)
         .accessibilityLabel(accountSidebarAccessibility(account, multi: multi))
         .accessibilityAddTraits(account.selected || !multi ? .isSelected : [])
+    }
+
+    /// Fixed-width remaining bar — geometry only from Rust percent (neutral fill).
+    private func accountMiniMeter(percent: UInt8) -> some View {
+        GeometryReader { geo in
+            ZStack(alignment: .leading) {
+                Capsule().fill(Color.primary.opacity(0.12))
+                if percent > 0 {
+                    Capsule()
+                        .fill(Color.primary.opacity(0.40))
+                        .frame(width: geo.size.width * CGFloat(percent) / 100.0)
+                }
+            }
+        }
+        .frame(width: 32, height: 3)
     }
 
     @ViewBuilder
@@ -197,7 +222,14 @@ struct UsageWindowRoot: View {
                 }
             }
             Spacer(minLength: 4)
-            if !row.barLabel.isEmpty {
+            if let pct = row.glanceRemainingPercent {
+                VStack(alignment: .trailing, spacing: 3) {
+                    Text(row.barLabel.isEmpty ? "\(pct)%" : row.barLabel)
+                        .font(.caption.monospacedDigit().weight(.semibold))
+                        .foregroundStyle(.secondary)
+                    accountMiniMeter(percent: pct)
+                }
+            } else if !row.barLabel.isEmpty {
                 Text(row.barLabel)
                     .font(.caption.monospacedDigit().weight(.semibold))
                     .foregroundStyle(.secondary)

@@ -4,13 +4,17 @@
 import JackinUsageBridge
 import SwiftUI
 
-/// Overview content — solid cards of Rust glance rows (LG-A2 content layer).
-///
-/// Glance % / reset match the status bar for each provider; selecting opens
-/// full detail (Session, Spark, Auth, …).
+/// Overview content — **per-account inventory** when accounts exist (HTML SoT),
+/// else glance-provider fallback. Content layer only (LG-A2).
 struct OverviewListView: View {
     let model: UsageWindowModel
-    var onSelect: (String) -> Void
+    let accounts: [PresentationStore.AccountRow]
+    /// Select provider surface; optional account key for multi-account focus.
+    var onSelect: (String, String?) -> Void
+
+    private var inventory: [OverviewInventoryRow] {
+        OverviewInventory.rows(accounts: accounts, glanceRows: model.sidebar)
+    }
 
     var body: some View {
         ScrollView {
@@ -20,14 +24,14 @@ struct OverviewListView: View {
                         .foregroundStyle(.secondary)
                         .padding()
                 }
-                ForEach(model.sidebar) { row in
+                ForEach(inventory) { row in
                     Button {
-                        onSelect(row.surfaceId)
+                        onSelect(row.surfaceId, row.accountKey)
                     } label: {
-                        overviewCard(row)
+                        inventoryCard(row)
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel("\(row.displayLabel) \(row.headline)")
+                    .accessibilityLabel("\(row.title) \(row.barLabel)")
                 }
             }
             .padding(16)
@@ -35,25 +39,16 @@ struct OverviewListView: View {
         .modifier(GlassFallbacks.SoftScrollEdges())
     }
 
-    private func overviewCard(_ row: PresentationStore.GlanceProviderRow) -> some View {
-        // Full continuous card — no one-sided accent bars (de-slop).
-        VStack(alignment: .leading, spacing: 4) {
+    private func inventoryCard(_ row: OverviewInventoryRow) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
             HStack(alignment: .firstTextBaseline) {
-                Text(row.displayLabel)
+                Text(row.title)
                     .font(.headline)
+                    .lineLimit(2)
                 Spacer(minLength: 8)
-                if !row.barLabel.isEmpty {
-                    Text(row.barLabel)
-                        .font(.title3.weight(.semibold).monospacedDigit())
-                        .foregroundStyle(severityTint(row.severity))
-                }
-            }
-
-            if !row.accountLabel.isEmpty {
-                Text(row.accountLabel)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
+                Text(row.barLabel)
+                    .font(.title3.weight(.semibold).monospacedDigit())
+                    .foregroundStyle(severityTint(row.severity))
             }
 
             if let plan = row.planLabel, !plan.isEmpty {
@@ -62,21 +57,15 @@ struct OverviewListView: View {
                     .foregroundStyle(.tertiary)
             }
 
+            if let pct = row.remainingPercent {
+                glanceMeter(percent: pct)
+            }
+
             if let reset = row.resetLabel, !reset.isEmpty {
                 Text(reset)
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .monospacedDigit()
-            }
-            if let exact = row.exactReset, !exact.isEmpty {
-                Text(exact)
-                    .font(.caption2)
-                    .foregroundStyle(.tertiary)
-            }
-            if let error = row.lastError, !error.isEmpty {
-                Text(error)
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
             }
         }
         .padding(14)
@@ -84,5 +73,20 @@ struct OverviewListView: View {
         .background {
             GlassFallbacks.contentCardBackground()
         }
+    }
+
+    /// 1:1 remaining fill; 0% empty track.
+    private func glanceMeter(percent: UInt8) -> some View {
+        GeometryReader { geo in
+            ZStack(alignment: .leading) {
+                Capsule().fill(Color.primary.opacity(0.10))
+                if percent > 0 {
+                    Capsule()
+                        .fill(Color.primary.opacity(0.35))
+                        .frame(width: geo.size.width * CGFloat(percent) / 100.0)
+                }
+            }
+        }
+        .frame(height: 4)
     }
 }

@@ -14,6 +14,7 @@ let package = Package(
         .executable(name: "StatusItemChipHarness", targets: ["StatusItemChipHarness"]),
         .executable(name: "DesktopArchitectureLint", targets: ["DesktopArchitectureLint"]),
         .executable(name: "DesktopParityMatrixHarness", targets: ["DesktopParityMatrixHarness"]),
+        .executable(name: "DesktopSoTParityHarness", targets: ["DesktopSoTParityHarness"]),
     ],
     targets: [
         .binaryTarget(
@@ -48,6 +49,12 @@ let package = Package(
             name: "DesktopParityMatrixHarness",
             dependencies: ["JackinUsageBridge"],
             path: "Tools/DesktopParityMatrixHarness"
+        ),
+        // HTML SoT pure helpers (status focus, overview inventory, usage URLs) — CLT, no XCTest.
+        .executableTarget(
+            name: "DesktopSoTParityHarness",
+            dependencies: ["JackinUsageBridge"],
+            path: "Tools/DesktopSoTParityHarness"
         ),
         .testTarget(
             name: "JackinUsageBridgeTests",

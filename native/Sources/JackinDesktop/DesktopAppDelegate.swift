@@ -167,8 +167,29 @@ final class StatusBarController: NSObject {
         togglePopover(sender)
     }
 
+    /// Resolve which provider (or fallback) owns this status button.
+    private func clickTarget(for button: NSStatusBarButton) -> (surfaceId: String?, isFallback: Bool) {
+        let identity = ObjectIdentifier(button)
+        var map: [String: ObjectIdentifier] = [:]
+        for (id, item) in providerItems {
+            if let b = item.button {
+                map[id] = ObjectIdentifier(b)
+            }
+        }
+        if let sid = StatusPopoverFocus.surfaceId(
+            matchingButtonIdentity: identity,
+            providerButtonIdentities: map
+        ) {
+            return (sid, false)
+        }
+        if let fb = fallbackItem?.button, ObjectIdentifier(fb) == identity {
+            return (nil, true)
+        }
+        return (nil, false)
+    }
+
     private func togglePopover(_ sender: NSStatusBarButton) {
-        // Anchored to the same button → toggle closed.
+        // Anchored to the same button → toggle closed (keep last selection).
         if popover.isShown, anchoredButton === sender {
             popover.performClose(sender)
             anchoredButton = nil
@@ -177,6 +198,14 @@ final class StatusBarController: NSObject {
         if popover.isShown {
             popover.performClose(sender)
         }
+        // HTML SoT: left-click focuses that provider (or Overview for fallback).
+        let target = clickTarget(for: sender)
+        let outcome = StatusPopoverFocus.outcome(
+            surfaceId: target.surfaceId,
+            isFallbackItem: target.isFallback
+        )
+        store.popoverSelection = StatusPopoverFocus.popoverSelection(for: outcome)
+
         anchoredButton = sender
         popover.show(relativeTo: sender.bounds, of: sender, preferredEdge: .minY)
         // Re-assert clear chrome after the popover window materializes (LG translucency).

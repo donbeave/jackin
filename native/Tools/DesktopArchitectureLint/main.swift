@@ -35,7 +35,92 @@ struct DesktopArchitectureLint {
         let bridgeRoot = desktop.deletingLastPathComponent()
             .appendingPathComponent("JackinUsageBridge")
         checkBridgeSerialization(bridgeRoot: bridgeRoot)
+        checkGlassGate(desktopRoot: desktop)
+        checkUsageWindowToolbarHost(desktopRoot: desktop)
+        checkStatusPopoverFocusWiring(desktopRoot: desktop)
         run(desktopRoot: desktop)
+    }
+
+    /// LG-A / AR-4: no freestyle glass outside GlassFallbacks.
+    static func checkGlassGate(desktopRoot: URL) {
+        var failures = 0
+        if let enumerator = FileManager.default.enumerator(
+            at: desktopRoot,
+            includingPropertiesForKeys: nil
+        ) {
+            while let url = enumerator.nextObject() as? URL {
+                guard url.pathExtension == "swift" else { continue }
+                let name = url.lastPathComponent
+                if name == "GlassFallbacks.swift" { continue }
+                guard let text = try? String(contentsOf: url, encoding: .utf8) else { continue }
+                if text.contains("glassEffect") || text.contains("#available(macOS 26") {
+                    failures += 1
+                    print("FAIL  \(name) contains glassEffect or #available(macOS 26 outside GlassFallbacks")
+                }
+            }
+        }
+        if failures == 0 {
+            print("PASS  glassEffect / #available(macOS 26 only in GlassFallbacks")
+        } else {
+            print("DesktopArchitectureLint: glass-gate FAILURE")
+            exit(1)
+        }
+    }
+
+    /// FB1-65: Usage window must host via NSHostingController + unified toolbar.
+    static func checkUsageWindowToolbarHost(desktopRoot: URL) {
+        let path = desktopRoot.appendingPathComponent("UsageWindowController.swift")
+        guard let text = try? String(contentsOf: path, encoding: .utf8) else {
+            fputs("FAIL  UsageWindowController.swift missing\n", stderr)
+            exit(2)
+        }
+        var ok = true
+        if !text.contains("NSHostingController") {
+            print("FAIL  UsageWindowController must use NSHostingController for NSToolbar")
+            ok = false
+        }
+        if !text.contains("contentViewController") {
+            print("FAIL  UsageWindowController must set contentViewController")
+            ok = false
+        }
+        if !text.contains("toolbarStyle = .unified") {
+            print("FAIL  UsageWindowController must set toolbarStyle = .unified")
+            ok = false
+        }
+        if text.contains("contentView = NSHostingView") {
+            print("FAIL  UsageWindowController must not assign contentView = NSHostingView (toolbar dies)")
+            ok = false
+        }
+        if ok {
+            print("PASS  UsageWindowController NSToolbar hosting")
+        } else {
+            print("DesktopArchitectureLint: toolbar-host FAILURE")
+            exit(1)
+        }
+    }
+
+    /// Status left-click must focus provider (StatusPopoverFocus + popoverSelection).
+    static func checkStatusPopoverFocusWiring(desktopRoot: URL) {
+        let path = desktopRoot.appendingPathComponent("DesktopAppDelegate.swift")
+        guard let text = try? String(contentsOf: path, encoding: .utf8) else {
+            fputs("FAIL  DesktopAppDelegate.swift missing\n", stderr)
+            exit(2)
+        }
+        var ok = true
+        if !text.contains("StatusPopoverFocus") {
+            print("FAIL  DesktopAppDelegate must use StatusPopoverFocus for left-click focus")
+            ok = false
+        }
+        if !text.contains("popoverSelection") {
+            print("FAIL  DesktopAppDelegate must set store.popoverSelection on left-click")
+            ok = false
+        }
+        if ok {
+            print("PASS  status left-click popover focus wiring")
+        } else {
+            print("DesktopArchitectureLint: status-focus FAILURE")
+            exit(1)
+        }
     }
 
     /// Plan 002 Step 5: every `UsageMenuBarBridge` access must be serialized off
@@ -77,7 +162,9 @@ struct DesktopArchitectureLint {
     static func run(desktopRoot: URL) {
         let usageStringTokens = ["% left", "% used", "resets "]
         let alwaysBanned = ["String(format:"]
+        // Preference chrome may label pickers; StatusItemLabel parses Rust reset prefixes.
         let preferenceChromeFiles: Set<String> = ["SettingsView.swift"]
+        let resetParserFiles: Set<String> = ["StatusItemLabel.swift"]
 
         var files: [URL] = []
         if let enumerator = FileManager.default.enumerator(
@@ -114,7 +201,16 @@ struct DesktopArchitectureLint {
                 continue
             }
             for token in usageStringTokens {
-                if text.contains(token) {
+                if resetParserFiles.contains(name), token == "resets " {
+                    continue
+                }
+                // Strip // comments so doc examples don't trip product-string bans.
+                let codeOnly = text.split(separator: "\n").map { line -> String in
+                    let s = String(line)
+                    if let r = s.range(of: "//") { return String(s[..<r.lowerBound]) }
+                    return s
+                }.joined(separator: "\n")
+                if codeOnly.contains(token) {
                     failures += 1
                     print("FAIL  \(name) contains banned usage-string token \(token)")
                 }
@@ -134,8 +230,14 @@ struct DesktopArchitectureLint {
                 bad = true
             }
             if !preferenceChromeFiles.contains(name) {
-                for token in usageStringTokens where text.contains(token) {
-                    bad = true
+                let codeOnly = text.split(separator: "\n").map { line -> String in
+                    let s = String(line)
+                    if let r = s.range(of: "//") { return String(s[..<r.lowerBound]) }
+                    return s
+                }.joined(separator: "\n")
+                for token in usageStringTokens {
+                    if resetParserFiles.contains(name), token == "resets " { continue }
+                    if codeOnly.contains(token) { bad = true }
                 }
             }
             if !bad {
