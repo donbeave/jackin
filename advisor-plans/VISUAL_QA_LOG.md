@@ -1,8 +1,8 @@
 # VISUAL_QA_LOG — jackin❯ desktop HTML SoT parity
 
 **Date:** 2026-08-10  
-**Tip:** `8cb05e7f`  
-**Verification:** goal f68e9ce22532 · L1/L2 green · ALL_OK · CAPSULE_OK · live 2 BLOCKED · app RUNNING
+**Tip:** (post multi-limit full-plate)  
+**Verification:** Weekly multi-limit full-plate · WEEKLY_AND_HTML_FULL_PLATE_OK · L1/L2 green · live 2 BLOCKED
 
 **Branch:** plan/desktop-visual  
 **Toolchain:** Xcode 26.6 (17F113) · Swift 6.3.3  
@@ -16,15 +16,17 @@
 | Nest 57% greenwash | mid → warn orange |
 | status-desktop Light blank | Menu-bar stage + template tint |
 | usage-toolbar/window pure black | Reject blank CGImage |
-| Popover Session meter missing | track+overlay capsule; taller snap — **CAPSULE_OK y=1110** |
+| Popover Session meter missing | track+overlay capsule |
+| Popover Weekly hollow / multi-limit clip | `popoverQIFullPlate` expand + taller snaps; Weekly fill+track visible |
+| HTML popover mid-SESSION crop | Full-plate recapture (expand max-height CSS for QI) |
 
 ## Dual-image matrix — required §5
 
 | Scene | Dark | Light | High residual | Craft note | Verdict |
 |-------|------|-------|---------------|------------|---------|
 | status-desktop | yes | yes | none | Icons + dual-stack readable | **Pass** |
-| popover-openai | yes | yes | none | G-P1; 63% + **fill+track meter**; pace/reset | **Pass** |
-| popover-anthropic | yes | yes | none | 74% + capsule meter; pace/reset | **Pass** |
+| popover-openai | yes | yes | none | Full plate Session+**Weekly orange**+Spark+LRC fill+track | **Pass** |
+| popover-anthropic | yes | yes | none | Session 74% + **Weekly 12% danger fill+track** (not hollow) | **Pass** |
 | usage-overview | yes | yes | none | 12% red · 57% orange · 0% empty · 100% green | **Pass** |
 | usage-provider-nest | yes | yes | none | 57% mid orange; 0% empty | **Pass** |
 | usage-detail-openai | yes | yes | none | Session green · Weekly orange · Limit Reset | **Pass** |

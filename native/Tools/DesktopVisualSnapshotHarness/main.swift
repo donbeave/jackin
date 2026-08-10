@@ -37,18 +37,18 @@ struct DesktopVisualSnapshotHarness {
         // ── Dark: full PopoverRoot shell (tab grid + body + footer) ──
         NSApp.appearance = NSAppearance(named: .darkAqua)
         // Tall enough for G-P1 chrome (brand + mode + strip) + body + footer.
-        // Tall enough for G-P1 chrome + ACCOUNT + Session hero + meter + pace/reset.
+        // Full multi-limit plate: Session + Weekly (+ Spark/Limit Reset for OpenAI).
         capturePopover(
             fixture: fixture,
             selection: "codex",
-            size: NSSize(width: 430, height: 720),
+            size: NSSize(width: 430, height: 1100),
             path: "\(out)/popover-openai-dark.png",
             appearance: .darkAqua
         )
         capturePopover(
             fixture: fixture,
             selection: "claude",
-            size: NSSize(width: 430, height: 600),
+            size: NSSize(width: 430, height: 900),
             path: "\(out)/popover-anthropic-dark.png",
             appearance: .darkAqua
         )
@@ -131,14 +131,14 @@ struct DesktopVisualSnapshotHarness {
         capturePopover(
             fixture: fixture,
             selection: "codex",
-            size: NSSize(width: 430, height: 720),
+            size: NSSize(width: 430, height: 1100),
             path: "\(out)/popover-openai-light.png",
             appearance: .aqua
         )
         capturePopover(
             fixture: fixture,
             selection: "claude",
-            size: NSSize(width: 430, height: 600),
+            size: NSSize(width: 430, height: 900),
             path: "\(out)/popover-anthropic-light.png",
             appearance: .aqua
         )
@@ -264,10 +264,13 @@ struct DesktopVisualSnapshotHarness {
             appearance == .darkAqua
             ? Color(nsColor: .underPageBackgroundColor)
             : Color(nsColor: .windowBackgroundColor)
+        // QI full-plate: expand maxHeight so Weekly/danger meters are not clipped
+        // to a hollow header-only plate under the scroll fold.
         render(
             ZStack {
                 stage
                 PopoverRoot(store: store)
+                    .environment(\.popoverQIFullPlate, true)
             }
             .frame(width: size.width, height: size.height),
             size: size,

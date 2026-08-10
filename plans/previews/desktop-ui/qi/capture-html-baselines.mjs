@@ -92,7 +92,16 @@ for (const theme of ["dark", "light"]) {
   }
 }
 
-// --- popover standalone ---
+// --- popover standalone (full plate: Session + Weekly meters, not mid-SESSION crop) ---
+// Expand max-height/overflow so multi-limit heroes are in the PNG (live menu-bar still clips+scrolls).
+const expandCss = `
+  html, body { height: auto !important; overflow: visible !important; }
+  .pop, html.embed .pop { max-height: none !important; height: auto !important; overflow: visible !important; }
+  .pop .inner, .scroll-shell, .ov-scroll, .detail-scroll {
+    max-height: none !important; min-height: 0 !important; flex: none !important;
+    overflow: visible !important; mask-image: none !important; -webkit-mask-image: none !important;
+  }
+`;
 for (const theme of ["dark", "light"]) {
   for (const [provider, name] of [
     ["openai", "popover-openai"],
@@ -100,12 +109,14 @@ for (const theme of ["dark", "light"]) {
   ]) {
     const url = `${popoverUrl}?embed=1&mode=providers&provider=${provider}&theme=${theme}`;
     await page.goto(url);
-    await page.waitForTimeout(300);
-    // try popover panel root
-    const root = page.locator(".pop, .popover, [data-popover], .panel-pop, body").first();
-    const panel = page.locator(".shell, .pop-shell, .popover-shell, .glass-panel, .card").first();
-    if (await panel.count()) {
-      await panel.screenshot({ path: path.join(outDir, `${name}-${theme}.png`) });
+    await page.setViewportSize({ width: 520, height: 1800 });
+    await page.addStyleTag({ content: expandCss });
+    await page.waitForTimeout(400);
+    const pop = page.locator("#app.pop, .card-popover .pop, .pop").first();
+    if (await pop.count()) {
+      await pop.screenshot({
+        path: path.join(outDir, `${name}-${theme}.png`),
+      });
     } else {
       await page.screenshot({
         path: path.join(outDir, `${name}-${theme}.png`),

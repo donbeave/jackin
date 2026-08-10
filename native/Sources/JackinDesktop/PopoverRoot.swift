@@ -9,9 +9,26 @@ import SwiftUI
 /// Shell is translucent (`GlassFallbacks.panelSurfaceBackground`) so wallpaper
 /// peeks through (LG-A1). Tab strip + footer sit on glass; scroll body is still
 /// content (standard fills on rows only — LG-A2). Data remains Rust-owned.
+///
+/// **QI full-plate capture:** set `\.popoverQIFullPlate` so multi-limit heroes
+/// (Session + Weekly + …) fit without a hollow clipped header-only plate.
+private enum PopoverQIFullPlateKey: EnvironmentKey {
+    static let defaultValue = false
+}
+
+extension EnvironmentValues {
+    /// When true, popover max height expands so harness/QI snapshots can show
+    /// every limit bucket (fill+track), not just the first hero in a scroll fold.
+    public var popoverQIFullPlate: Bool {
+        get { self[PopoverQIFullPlateKey.self] }
+        set { self[PopoverQIFullPlateKey.self] = newValue }
+    }
+}
+
 public struct PopoverRoot: View {
     @ObservedObject public var store: PresentationStore
     public var onOpenUsage: ((String?) -> Void)?
+    @Environment(\.popoverQIFullPlate) private var qiFullPlate
 
     public init(store: PresentationStore, onOpenUsage: ((String?) -> Void)? = nil) {
         self.store = store
@@ -47,9 +64,10 @@ public struct PopoverRoot: View {
             .padding(.horizontal, 10)
             .padding(.vertical, 8)
         }
-        // Craft width aligns with popover.html (~424); room for Session hero+meter+pace.
+        // Craft width aligns with popover.html (~424). Live menu-bar uses a
+        // bounded max height + scroll; QI full-plate expands for multi-limit IA.
         .frame(width: 412)
-        .frame(minHeight: 220, maxHeight: 640)
+        .frame(minHeight: 220, maxHeight: qiFullPlate ? 1600 : 640)
         // Liquid Glass panel — must sit on a clear NSPopover window.
         .background {
             GlassFallbacks.panelSurfaceBackground()
