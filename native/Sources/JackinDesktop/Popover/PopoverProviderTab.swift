@@ -11,6 +11,7 @@ import SwiftUI
 /// falls back to `surface.buckets` segments when detail is empty.
 /// Account switcher is secondary (tint chips, not solid green slabs).
 public struct PopoverProviderTab: View {
+    @Environment(\.colorScheme) private var colorScheme
     public let provider: PresentationStore.GlanceProviderRow
     public let surface: PresentationStore.SurfaceRow?
     public let accounts: [PresentationStore.AccountRow]
@@ -244,7 +245,7 @@ public struct PopoverProviderTab: View {
                             Capsule(style: .continuous)
                                 .fill(
                                     account.selected
-                                        ? Color.jackinPhosphor.opacity(0.92)
+                                        ? JackinBrand.accountSelectionFill(colorScheme: colorScheme)
                                         : Color.secondary.opacity(0.22)
                                 )
                                 .overlay {
@@ -254,8 +255,11 @@ public struct PopoverProviderTab: View {
                                     }
                                 }
                         }
-                        // Selected: light label on phosphor/accent fill; idle: primary on muted track.
-                        .foregroundStyle(account.selected ? Color.white : Color.primary)
+                        .foregroundStyle(
+                            account.selected
+                                ? JackinBrand.accountSelectionInk(colorScheme: colorScheme)
+                                : Color.primary
+                        )
                     }
                     .buttonStyle(.plain)
                     .accessibilityAddTraits(account.selected ? .isSelected : [])

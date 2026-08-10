@@ -38,6 +38,25 @@ public enum JackinBrand {
         )
     }
 
+    /// Popover selected-account fill from HTML `color-mix(--jk 88%, --label)`.
+    public static func accountSelectionFill(colorScheme: ColorScheme) -> Color {
+        if colorScheme == .dark {
+            let mixed = NSColor(
+                srgbRed: phosphorDarkSRGB.r,
+                green: phosphorDarkSRGB.g,
+                blue: phosphorDarkSRGB.b,
+                alpha: 1
+            ).blended(withFraction: 0.12, of: .labelColor)
+            return Color(nsColor: mixed ?? phosphorNSColor)
+        }
+        return phosphorLight
+    }
+
+    /// HTML `--jk-ink`: dark ink on bright Dark accent; white on Light accent.
+    public static func accountSelectionInk(colorScheme: ColorScheme) -> Color {
+        colorScheme == .dark ? .black : .white
+    }
+
     public static let phosphorNSColor: NSColor = NSColor(
         name: "jackinPhosphor",
         dynamicProvider: { appearance in

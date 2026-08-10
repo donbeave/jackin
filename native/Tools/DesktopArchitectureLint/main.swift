@@ -178,6 +178,12 @@ struct DesktopArchitectureLint {
             print("FAIL  popover usage link must use the HTML external-link affordance")
             ok = false
         }
+        if !popoverProviderText.contains("JackinBrand.accountSelectionFill")
+            || !popoverProviderText.contains("JackinBrand.accountSelectionInk")
+        {
+            print("FAIL  popover account selection must use dual-theme HTML tokens")
+            ok = false
+        }
         if ok {
             print("PASS  primary controls avoid solid phosphor slabs")
         } else {

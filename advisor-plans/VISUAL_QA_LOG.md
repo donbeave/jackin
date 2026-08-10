@@ -47,6 +47,10 @@ Popover detail re-audit removed another false-pass: anonymous text-only header
 and Usage-window chevron replaced by HTML’s official provider plate + local
 refresh control. Official usage link now uses explicit external-link arrow.
 
+Account-strip re-audit mapped HTML `--jk` / `--jk-ink` exactly by theme:
+bright Dark selection uses dark ink; deep Light selection uses white ink. This
+removes the prior white-on-bright-green mismatch.
+
 ## Live
 popover-live / ctx-menu **BLOCKED** — SoTParity proves focus/menu.
 
