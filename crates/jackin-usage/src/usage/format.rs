@@ -209,7 +209,7 @@ pub(super) fn quota_pace_label(
     Some(pace)
 }
 
-/// SB-18 time ladder (48h breakpoint):
+/// Compact time ladder (48-hour threshold):
 /// - **&lt; 1 hour** → compact minutes (`45m`)
 /// - **&lt; 48 hours** → compact hours (`36h`, optional `36h 30m`) — never days
 /// - **≥ 48 hours** → compact days (`2d`, optional `2d 1h`)
