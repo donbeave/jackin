@@ -1,7 +1,7 @@
 # VISUAL_QA_LOG — jackin❯ desktop HTML SoT parity
 
 **Date:** 2026-08-10  
-**Tip:** `ac389c68`+ (re-verify this session)  
+**Tip:** `3ce6eadf`  
 **Branch:** plan/desktop-visual  
 **Authority:** UI_PARITY_MASTER §6 + QI_VERIFICATION L1–L4  
 **Artifacts:** `advisor-plans/qi-artifacts/`
