@@ -1,5 +1,5 @@
 # DesktopVisualSnapshotHarness manifest
-out: /var/folders/8p/h376l_nn3375kyj72czdq2x80000gn/T/grok-goal-d2cbf01be48f/implementer/qi-artifacts/native
+out: /var/folders/8p/h376l_nn3375kyj72czdq2x80000gn/T/grok-goal-0a452b728bc8/implementer/qi-artifacts/native
 popover: PopoverRoot (TabGrid + ProviderTab + Footer) via PresentationStore.applyQIFixture
 status: StatusItemRendering.icon + StatusItemRendering.title (AppKit bitmap)
 status_live_nsstatusitem: prefer live screencapture when JackinDesktop is running (see VISUAL_QA_LOG)
