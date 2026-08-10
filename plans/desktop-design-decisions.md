@@ -636,6 +636,8 @@ jackin = soul   (j❯, phosphor accent, mono metrics, deep canvas tint, optional
 | FB1-48 | **Provider vs account are distinct systems:** provider = primary glass capsule + brand plate + mini meter; account = nested quiet rail + left phosphor accent + denser mono (selection chrome must not match provider) | CONFIRMED |
 | FB1-49 | **Multi-layer Liquid Glass chrome** (Telegram + Finder/Tahoe patterns): specular top wash + translucent fill + hairline + ambient bleed; floating inner list well (`.side-well`); capsule glass toolbar controls; solid content contrast preserved | CONFIRMED |
 | FB1-50 | Reference map for LG app patterns lives in `plans/previews/desktop-ui/LIQUID_GLASS_REFERENCES.md` — craft guidance, not a third-party pixel clone | CONFIRMED |
+| FB1-51 | **Usage IA: no duplicate limits** — each limit appears once (single limit list). No metric tiles + full buckets repeating the same %. Titlebar does not restate the content page title/account. | CONFIRMED |
+| FB1-52 | **Usage chrome is continuous Liquid Glass:** one full-width glass titlebar; sidebar floats with soft depth (no hard vertical pane rule); content solid underneath — Safari-like seamlessness, not a 4-quadrant web split | CONFIRMED |
 
 ### One-by-one queue (after FB-1)
 

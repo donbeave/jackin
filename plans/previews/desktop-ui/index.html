@@ -216,17 +216,15 @@
       --lg-blur: blur(60px) saturate(1.85);
       --lg-blur-ctrl: blur(20px) saturate(1.5);
       width: min(980px, 100%);
-      height: 640px;
+      height: 620px;
       margin: 0 auto;
-      display: grid;
-      grid-template-rows: 52px 1fr;
-      grid-template-columns: var(--side-w) 1fr;
+      display: flex;
+      flex-direction: column;
       border-radius: var(--win-r);
       overflow: hidden;
       position: relative;
       background: transparent;
       border: 0.5px solid var(--lg-hairline);
-      /* outer window glass edge + depth (Telegram-like window lift) */
       box-shadow:
         0 0 0 0.5px rgba(0,0,0,0.2),
         0 36px 100px rgba(0,0,0,0.55),
@@ -248,68 +246,60 @@
         inset 0 0 0 0.5px rgba(255,255,255,0.5);
     }
 
-    /* Unified titlebar — continuous glass strip (Telegram nav bar feel) */
+    /*
+      Safari-style continuous chrome: ONE glass strip across the window.
+      No split between “jackin desktop” | “Usage | Refresh” panes.
+    */
     .win .titlebar {
-      grid-column: 1 / -1;
-      grid-row: 1;
-      display: grid;
-      grid-template-columns: var(--side-w) 1fr;
-      align-items: stretch;
-      z-index: 5;
-      background: transparent;
-    }
-    .win .titlebar-side {
-      display: flex; align-items: center; gap: 9px;
-      padding: 0 12px 0 14px;
-      /* layer 1 + 2 glass */
+      flex-shrink: 0;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 0 14px 0 14px;
+      z-index: 6;
       background:
-        linear-gradient(180deg, var(--lg-specular-soft), transparent 55%),
+        linear-gradient(180deg, var(--lg-specular-soft), transparent 70%),
         var(--lg-side);
       backdrop-filter: var(--lg-blur);
       -webkit-backdrop-filter: var(--lg-blur);
-      border-bottom: 0.5px solid color-mix(in srgb, var(--lg-hairline) 45%, transparent);
+      /* soft dissolve into body — not a hard rule */
       box-shadow:
         inset 0 1px 0 var(--lg-specular),
-        inset 0 -0.5px 0 color-mix(in srgb, var(--label) 6%, transparent);
+        0 12px 28px -18px rgba(0,0,0,0.35);
+      border-bottom: 0;
     }
-    .win .traffic {
+    .win .titlebar .traffic {
       display: flex; gap: 7px; align-items: center; flex-shrink: 0;
     }
-    .win .traffic i {
+    .win .titlebar .traffic i {
       width: 12px; height: 12px; border-radius: 50%;
       box-shadow: inset 0 0 0 0.5px rgba(0,0,0,0.22);
     }
-    .win .traffic .c { background: #ff5f57; }
-    .win .traffic .y { background: #febc2e; }
-    .win .traffic .g { background: #28c840; }
-    .win .titlebar-side .app-name {
+    .win .titlebar .traffic .c { background: #ff5f57; }
+    .win .titlebar .traffic .y { background: #febc2e; }
+    .win .titlebar .traffic .g { background: #28c840; }
+    .win .titlebar .app-name {
       font-size: 12px; font-weight: 560; color: var(--secondary);
-      letter-spacing: -0.1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      letter-spacing: -0.1px; white-space: nowrap;
     }
-    .win .titlebar-side .app-name b { color: var(--jk); font-weight: 700; }
-    .win .titlebar-main {
-      display: flex; align-items: center; justify-content: space-between;
-      gap: 12px; padding: 0 14px 0 18px;
-      /* glass floating over content (Reminders/Music toolbar pattern) */
-      background:
-        linear-gradient(180deg, var(--lg-specular-soft), transparent 60%),
-        color-mix(in srgb, var(--content-bg) 72%, var(--glass));
-      backdrop-filter: blur(40px) saturate(1.45);
-      -webkit-backdrop-filter: blur(40px) saturate(1.45);
-      border-bottom: 0.5px solid color-mix(in srgb, var(--separator) 55%, transparent);
-      border-left: 0.5px solid color-mix(in srgb, var(--lg-hairline) 40%, transparent);
-      box-shadow:
-        inset 0 1px 0 var(--lg-specular),
-        0 1px 0 color-mix(in srgb, var(--label) 4%, transparent);
-    }
-    .win .titlebar-main .page-title {
+    .win .titlebar .app-name b { color: var(--jk); font-weight: 700; }
+    .win .titlebar .tb-spacer { flex: 1; }
+    .win .titlebar .page-title {
       font-size: 13px; font-weight: 600; color: var(--label);
       letter-spacing: -0.15px;
-    }
-    .win .titlebar-main .page-title span {
-      color: var(--tertiary); font-weight: 500; margin-left: 8px;
+      margin-right: 4px;
     }
     .win .tb-actions { display: flex; align-items: center; gap: 6px; }
+
+    /* Body: floating glass sidebar over solid content (no 4-pane grid lines) */
+    .win .body {
+      flex: 1;
+      min-height: 0;
+      display: grid;
+      grid-template-columns: var(--side-w) 1fr;
+      position: relative;
+    }
     /* Floating glass capsules (Telegram control chrome) */
     .win .tb-btn {
       display: inline-flex; align-items: center; justify-content: center; gap: 5px;
@@ -353,46 +343,41 @@
     .win .tb-btn svg { width: 13px; height: 13px; fill: currentColor; opacity: 0.9; }
 
     /*
-      Liquid Glass sidebar — multi-layer (Finder + Telegram frosted panels).
-      Ambient phosphor whisper + stage bleed; not solid column.
+      Sidebar floats over content — soft depth only, no hard vertical rule
+      (Safari: chrome blends; sidebar is the one elevated glass surface).
     */
     .win .side {
       grid-column: 1;
-      grid-row: 2;
       display: flex; flex-direction: column;
       min-height: 0;
-      padding: 8px 8px 0;
+      z-index: 2;
+      padding: 4px 6px 0 8px;
       background:
-        radial-gradient(ellipse 90% 50% at 20% 0%, color-mix(in srgb, var(--jk) 10%, transparent), transparent 55%),
-        linear-gradient(180deg, var(--lg-specular-soft), transparent 40%),
+        radial-gradient(ellipse 90% 50% at 20% 0%, color-mix(in srgb, var(--jk) 8%, transparent), transparent 55%),
+        linear-gradient(180deg, var(--lg-specular-soft), transparent 35%),
         var(--lg-side);
       backdrop-filter: var(--lg-blur);
       -webkit-backdrop-filter: var(--lg-blur);
-      border-right: 0.5px solid color-mix(in srgb, var(--lg-hairline) 70%, transparent);
+      border-right: 0;
       box-shadow:
-        inset -1px 0 0 color-mix(in srgb, var(--lg-specular) 30%, transparent),
-        inset 0 1px 0 color-mix(in srgb, var(--lg-specular) 40%, transparent);
+        10px 0 28px -16px rgba(0,0,0,0.45),
+        inset 0 1px 0 color-mix(in srgb, var(--lg-specular) 30%, transparent);
     }
     .win .side-scroll {
       flex: 1; min-height: 0; overflow: auto;
-      padding: 2px 2px 10px;
+      padding: 4px 2px 10px;
       scrollbar-width: thin;
       scrollbar-color: color-mix(in srgb, var(--label) 12%, transparent) transparent;
     }
-    /* Floating glass well for list (Telegram panel-in-panel) */
+    /* Quiet list inset — no extra framed “box inside box” */
     .win .side-well {
-      margin: 0 2px 8px;
-      padding: 6px 5px 8px;
-      border-radius: 14px;
-      background:
-        linear-gradient(180deg, var(--lg-specular-soft), transparent 50%),
-        var(--lg-side-mid);
-      border: 0.5px solid color-mix(in srgb, var(--lg-hairline) 55%, transparent);
-      box-shadow:
-        inset 0 1px 0 var(--lg-specular),
-        0 4px 18px rgba(0,0,0,0.12);
-      backdrop-filter: blur(24px) saturate(1.4);
-      -webkit-backdrop-filter: blur(24px) saturate(1.4);
+      margin: 0;
+      padding: 2px 2px 6px;
+      border-radius: 12px;
+      background: transparent;
+      border: 0;
+      box-shadow: none;
+      backdrop-filter: none;
     }
     .win .side .lab {
       font-size: 11px; font-weight: 620; color: var(--tertiary);
@@ -555,29 +540,24 @@
       flex-shrink: 0;
       padding: 10px 12px 12px;
       font-size: 11px; color: var(--tertiary); line-height: 1.35;
-      border-top: 0.5px solid color-mix(in srgb, var(--lg-hairline) 50%, transparent);
+      border-top: 0;
       background: linear-gradient(
         to top,
-        color-mix(in srgb, var(--lg-side-strong) 92%, transparent),
+        color-mix(in srgb, var(--lg-side-strong) 80%, transparent),
         transparent
       );
-      backdrop-filter: blur(24px) saturate(1.3);
-      -webkit-backdrop-filter: blur(24px) saturate(1.3);
-      box-shadow: inset 0 1px 0 color-mix(in srgb, var(--lg-specular) 25%, transparent);
     }
     .win .side-foot strong { color: var(--secondary); font-weight: 560; }
 
-    /* Content — solid elevated layer (NOT Liquid Glass — HIG content layer) */
+    /* Content — solid, seamless under continuous titlebar */
     .win .main {
       grid-column: 2;
-      grid-row: 2;
       min-height: 0;
       display: flex; flex-direction: column;
-      background:
-        radial-gradient(ellipse 70% 36% at 100% 0%, color-mix(in srgb, var(--jk) 5%, transparent), transparent 55%),
-        var(--content-bg);
-      /* soft seam vs glass sidebar (scroll edge companion) */
-      box-shadow: inset 8px 0 16px -12px rgba(0,0,0,0.25);
+      z-index: 1;
+      background: var(--content-bg);
+      box-shadow: none;
+      border: 0;
     }
     .win .main-scroll {
       flex: 1; min-height: 0;
@@ -603,130 +583,94 @@
       );
     }
 
+    /* Single page identity — not repeated in titlebar crumb */
     .win .page-head {
-      display: flex; align-items: flex-start; gap: 14px;
-      margin-bottom: 16px;
-    }
-    .win .page-head .plogo {
-      width: 40px; height: 40px; border-radius: 11px; font-size: 15px;
-      box-shadow: 0 4px 14px rgba(0,0,0,0.2);
-    }
-    .win .page-head h2 {
-      margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.5px; line-height: 1.1;
-    }
-    .win .page-head .sub {
-      margin-top: 4px; font-size: 13px; color: var(--secondary); line-height: 1.35;
-    }
-    .win .page-head .badge {
-      margin-top: 6px; display: inline-flex; align-items: center; gap: 5px;
-      font-size: 11px; font-weight: 560; color: var(--secondary);
-      padding: 3px 8px; border-radius: 980px;
-      background: var(--fill);
-    }
-    .win .page-head .badge .dot {
-      width: 6px; height: 6px; border-radius: 50%; background: var(--status-high);
-    }
-
-    /* Metric tiles — elevated content cards with soft specular (not full LG chrome) */
-    .win .metric-row {
-      display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+      display: flex; align-items: center; gap: 12px;
       margin-bottom: 18px;
     }
-    .win .metric {
-      padding: 12px 14px 13px;
-      border-radius: 14px;
-      background:
-        linear-gradient(165deg, color-mix(in srgb, var(--label) 5%, transparent), transparent 50%),
-        var(--glass-inset);
-      border: 0.5px solid color-mix(in srgb, var(--separator) 75%, transparent);
-      box-shadow:
-        inset 0 1px 0 color-mix(in srgb, var(--lg-specular) 35%, transparent),
-        0 2px 10px rgba(0,0,0,0.08);
+    .win .page-head .plogo {
+      width: 36px; height: 36px; border-radius: 10px; font-size: 14px;
+      box-shadow: 0 3px 12px rgba(0,0,0,0.18);
     }
-    .win .metric .mlab {
-      font-size: 11px; font-weight: 600; color: var(--tertiary);
-      text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px;
+    .win .page-head h2 {
+      margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -0.45px; line-height: 1.15;
     }
-    .win .metric .mval {
-      font-family: var(--mono); font-size: 26px; font-weight: 650;
-      letter-spacing: -0.6px; line-height: 1.05; font-variant-numeric: tabular-nums;
+    .win .page-head .sub {
+      margin-top: 3px; font-size: 13px; color: var(--secondary); line-height: 1.35;
     }
-    .win .metric .mval.high { color: var(--status-high); }
-    .win .metric .mval.mid { color: var(--status-mid); }
-    .win .metric .mval.low { color: var(--status-low); }
-    .win .metric .mmeta {
-      margin-top: 4px; font-size: 11px; color: var(--secondary); line-height: 1.3;
-    }
-    .win .metric .mmeter {
-      margin-top: 10px; height: 4px; border-radius: 99px;
-      background: var(--meter-track); overflow: hidden;
-    }
-    .win .metric .mmeter > i {
-      display: block; height: 100%; border-radius: inherit; background: var(--status-high);
-    }
-    .win .metric .mmeter.mid > i { background: var(--status-mid); }
-    .win .metric .mmeter.low > i { background: var(--status-low); }
 
-    /* Settings-style inset group */
+    /*
+      ONE limits list — each limit once (no tiles + buckets).
+      Label · % · reset · meter · optional one-line pace.
+    */
+    .win .limit-list {
+      margin: 0 0 16px;
+      border-radius: 14px;
+      background: var(--glass-inset);
+      border: 0.5px solid color-mix(in srgb, var(--separator) 55%, transparent);
+      overflow: hidden;
+    }
+    .win .limit {
+      padding: 14px 16px;
+      border-top: 0.5px solid color-mix(in srgb, var(--separator) 55%, transparent);
+    }
+    .win .limit:first-child { border-top: 0; }
+    .win .limit-top {
+      display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+      margin-bottom: 4px;
+    }
+    .win .limit-name {
+      font-size: 13px; font-weight: 600; color: var(--label); letter-spacing: -0.1px;
+    }
+    .win .limit-pct {
+      font-family: var(--mono); font-size: 22px; font-weight: 650;
+      letter-spacing: -0.5px; font-variant-numeric: tabular-nums;
+    }
+    .win .limit-pct.high { color: var(--status-high); }
+    .win .limit-pct.mid { color: var(--status-mid); }
+    .win .limit-pct.low { color: var(--status-low); }
+    .win .limit-reset {
+      font-size: 12px; color: var(--secondary); margin-bottom: 4px;
+      font-variant-numeric: tabular-nums;
+    }
+    .win .limit-pace {
+      font-size: 12px; color: var(--tertiary); margin-bottom: 8px;
+    }
+    .win .limit .meter { height: 5px; }
+
+    /* Single quiet details group (plan + credential + extras — once) */
     .win .group {
-      margin-bottom: 16px;
+      margin-bottom: 12px;
       border-radius: 12px;
       background: var(--glass-inset);
-      border: 0.5px solid color-mix(in srgb, var(--separator) 75%, transparent);
+      border: 0.5px solid color-mix(in srgb, var(--separator) 55%, transparent);
       overflow: hidden;
     }
     .win .group > .ghead {
-      padding: 10px 14px 8px;
+      padding: 10px 14px 6px;
       font-size: 11px; font-weight: 620; color: var(--tertiary);
-      text-transform: uppercase; letter-spacing: 0.04em;
+      letter-spacing: 0.03em;
     }
     .win .grow {
-      display: flex; align-items: center; justify-content: space-between; gap: 16px;
-      padding: 11px 14px;
-      border-top: 0.5px solid color-mix(in srgb, var(--separator) 70%, transparent);
-      min-height: 40px;
+      display: flex; align-items: flex-start; justify-content: space-between; gap: 16px;
+      padding: 10px 14px;
+      border-top: 0.5px solid color-mix(in srgb, var(--separator) 55%, transparent);
+      min-height: 36px;
     }
-    .win .grow:first-of-type { border-top: 0; }
-    .win .grow .gl { font-size: 13px; font-weight: 500; color: var(--label); }
+    .win .group .grow:first-of-type { border-top: 0; }
+    .win .grow .gl { font-size: 13px; font-weight: 500; color: var(--secondary); }
     .win .grow .gr {
-      font-size: 13px; color: var(--secondary); text-align: right;
-      font-variant-numeric: tabular-nums;
+      font-size: 13px; color: var(--label); text-align: right; font-weight: 500;
+      font-variant-numeric: tabular-nums; max-width: 62%;
     }
-    .win .grow .gr.mono { font-family: var(--mono); font-size: 12px; word-break: break-all; }
-    .win .grow .gr.emph { color: var(--label); font-weight: 560; }
-
-    /* Full bucket cards under tiles */
-    .win .bucket {
-      margin-bottom: 12px; padding: 14px 16px; border-radius: 12px;
-      background: var(--glass-inset);
-      border: 0.5px solid color-mix(in srgb, var(--separator) 75%, transparent);
+    .win .grow .gr.mono {
+      font-family: var(--mono); font-size: 12px; font-weight: 400;
+      word-break: break-all; color: var(--label);
     }
-    .win .bucket h5 {
-      margin: 0 0 8px; font-size: 11px; font-weight: 620; color: var(--tertiary);
-      text-transform: uppercase; letter-spacing: 0.04em;
-    }
-    .win .bucket .hero {
-      font-family: var(--mono); font-size: 30px; font-weight: 650;
-      letter-spacing: -0.7px; line-height: 1.05; font-variant-numeric: tabular-nums;
-    }
-    .win .bucket .hero.high { color: var(--status-high); }
-    .win .bucket .hero.mid { color: var(--status-mid); }
-    .win .bucket .hero.low { color: var(--status-low); }
-    .win .bucket .hint-pace { font-size: 13px; color: var(--secondary); margin: 4px 0 2px; }
-    .win .bucket .hint-reset {
-      font-size: 13px; color: var(--secondary); margin-bottom: 10px;
-      font-variant-numeric: tabular-nums;
-    }
-    .win .auth-block {
-      border-left: 2px solid color-mix(in srgb, var(--jk) 55%, transparent);
-      padding-left: 12px; margin: 4px 0;
-    }
-    .win .auth-block .gl { font-size: 11px; color: var(--tertiary); margin-bottom: 2px; }
-    .win .auth-block .gr { font-family: var(--mono); font-size: 12px; color: var(--label); word-break: break-all; }
+    .win .grow .gr.dim { color: var(--secondary); font-weight: 400; }
 
     @media (max-width: 720px) {
       .win { --side-w: 200px; height: 560px; }
-      .win .metric-row { grid-template-columns: 1fr; }
     }
 
     .lg-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
@@ -766,7 +710,7 @@
         <strong>Left-click</strong> status item → <strong>exact</strong> glance popover from
         <a href="./popover.html">popover.html</a> (Providers mode, focused provider — not Overview).<br />
         <strong>Right-click</strong> → system glass context menu (Open Usage / Refresh / Quit).<br />
-        <strong>Usage window</strong> → native macOS shell (Surge-class): unified titlebar, glass sidebar, metric tiles, Settings groups.
+        <strong>Usage window</strong> → continuous glass titlebar, floating sidebar, one limits list (no dupes).
       </p>
     </div>
     <p class="links">
@@ -830,35 +774,29 @@
     <section class="panel" id="usage">
       <h2 class="st">Usage window</h2>
       <p class="sl">
-        Multi-layer Liquid Glass (Telegram frosted panels + Finder/Tahoe sidebar):
-        stage bleed · floating <code>side-well</code> · luminous provider capsule · nested account rail ·
-        capsule toolbar · solid content. See
-        <a href="./LIQUID_GLASS_REFERENCES.md" style="color:var(--jk)">LIQUID_GLASS_REFERENCES.md</a>.
-        jackin: phosphor accent only, j❯, 3-level meters, credential source, limits only.
+        Safari-style continuous glass titlebar · floating glass sidebar · solid content.
+        <strong>No duplicate limits</strong> (one list, not tiles + buckets) · no titlebar crumb repeating the page title.
+        Provider ≠ account nav. See
+        <a href="./LIQUID_GLASS_REFERENCES.md" style="color:var(--jk)">LG references</a>.
       </p>
       <div class="stage" style="padding: 20px 16px 28px;">
         <div class="win" id="usage-win">
-          <!-- Unified glass titlebar -->
+          <!-- ONE continuous glass titlebar (Safari-style — no 4-pane chrome split) -->
           <div class="titlebar">
-            <div class="titlebar-side">
-              <div class="traffic" aria-hidden="true"><i class="c"></i><i class="y"></i><i class="g"></i></div>
-              <div class="app-name">jackin<b>❯</b> desktop</div>
-            </div>
-            <div class="titlebar-main">
-              <div class="page-title">Usage <span id="usage-crumb">· OpenAI</span></div>
-              <div class="tb-actions">
-                <button type="button" class="tb-btn" title="Refresh" aria-label="Refresh">
-                  <svg viewBox="0 0 16 16"><path d="M13.5 8a5.5 5.5 0 1 1-1.4-3.6l.7.7A4.5 4.5 0 1 0 12.5 8h1zM8 2.5V1l2.2 2.2L8 5.5V4a4 4 0 0 0-3.5 6.1l-.9.5A5 5 0 0 1 8 2.5z"/></svg>
-                </button>
-                <button type="button" class="tb-btn primary">
-                  <svg viewBox="0 0 16 16"><path d="M8 1.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13zM8 3a5 5 0 1 1 0 10A5 5 0 0 1 8 3zm0 2.2a.75.75 0 0 1 .75.75v1.8h1.8a.75.75 0 0 1 0 1.5H8.75v1.8a.75.75 0 0 1-1.5 0V9.25H5.45a.75.75 0 0 1 0-1.5h1.8V5.95A.75.75 0 0 1 8 5.2z"/></svg>
-                  Refresh all
-                </button>
-              </div>
+            <div class="traffic" aria-hidden="true"><i class="c"></i><i class="y"></i><i class="g"></i></div>
+            <div class="app-name">jackin<b>❯</b> desktop</div>
+            <div class="tb-spacer"></div>
+            <div class="page-title">Usage</div>
+            <div class="tb-actions">
+              <button type="button" class="tb-btn primary" title="Refresh" aria-label="Refresh">
+                <svg viewBox="0 0 16 16"><path d="M13.5 8a5.5 5.5 0 1 1-1.4-3.6l.7.7A4.5 4.5 0 1 0 12.5 8h1zM8 2.5V1l2.2 2.2L8 5.5V4a4 4 0 0 0-3.5 6.1l-.9.5A5 5 0 0 1 8 2.5z"/></svg>
+                Refresh
+              </button>
             </div>
           </div>
 
-          <!-- Liquid Glass sidebar (Finder/Tahoe nav) -->
+          <div class="body">
+          <!-- Floating glass sidebar over solid content -->
           <aside class="side" data-lg-sidebar>
             <div class="side-scroll">
               <!-- Floating frosted well (Telegram panel-in-panel / Finder list depth) -->
@@ -950,24 +888,20 @@
                 </div>
               </div>
             </div>
-            <div class="side-foot">
-              <strong>Limits only</strong> · next update in 4m<br />
-              No spend · no trends
-            </div>
+            <div class="side-foot"><strong>Limits only</strong> · next update 4m</div>
           </aside>
 
-          <!-- Solid content -->
+          <!-- Solid content — one story, no chrome crumbs -->
           <main class="main">
             <div class="main-scroll" id="usage-scroll">
-              <div id="usage-detail">
-                <!-- filled by JS / default OpenAI -->
-              </div>
+              <div id="usage-detail"></div>
             </div>
           </main>
+          </div>
         </div>
       </div>
       <p class="flow-caption">
-        Verify: glass sidebar translucency vs solid main · provider capsule ≠ account rail selection · dark+light.
+        Verify: continuous titlebar · floating sidebar (no hard 4-pane split) · limits listed once · no tile+bucket dupes.
         <code>LIKE usage window</code>
       </p>
     </section>
@@ -982,12 +916,11 @@
       <div class="lg-grid">
         <div class="lg-card ok">
           <h3>✓ Glass (navigation)</h3>
-          Popover shell · sticky chrome · footer dock · context menu<br />
-          Usage: Finder-style Liquid Glass sidebar + titlebar-side (stage bleeds under blur)
+          Popover shell · continuous Usage titlebar · floating glass sidebar · context menu
         </div>
         <div class="lg-card ok">
           <h3>✓ Solid (content)</h3>
-          Metric tiles · Settings groups · buckets · meters/text<br />
+          Single limit list + quiet details · meters/text<br />
           HIG: Liquid Glass is not for the content layer — <code>.main</code> is solid.
         </div>
         <div class="lg-card ok">
@@ -996,9 +929,12 @@
           Account = nested rail + left phosphor bar + quiet mono (never same chrome).
         </div>
         <div class="lg-card ok">
-          <h3>✓ Usage window quality</h3>
-          Transparent shell · glass nav · solid content contrast · soft scroll.
-          Pattern: Finder/Tahoe Liquid Glass + high-end macOS utility, not web admin.
+          <h3>✓ Seamless Usage chrome</h3>
+          No 4-pane hard split · sidebar soft shadow only · no titlebar/content border wall.
+        </div>
+        <div class="lg-card ok">
+          <h3>✓ No duplicate limits</h3>
+          One <code>limit-list</code> — never tiles + buckets restating the same %.
         </div>
         <div class="lg-card ok">
           <h3>✓ Soft scroll edges</h3>
@@ -1121,242 +1057,133 @@
       document.querySelector('.toolbar button[data-panel="usage"]')?.click();
     });
 
-    // Usage window — content + soft scroll edges
+    // Usage window — single-story content (no limit duplication)
     const usageDetail = document.getElementById("usage-detail");
     const usageScroll = document.getElementById("usage-scroll");
-    const usageCrumb = document.getElementById("usage-crumb");
 
     const usageViews = {
-      overview: {
-        crumb: "· Overview",
-        html: `
-          <div class="page-head">
-            <div class="jmark" style="width:40px;height:40px;border-radius:11px;font-size:16px"><span class="j">j</span><span class="ch">❯</span></div>
-            <div>
-              <h2>Overview</h2>
-              <div class="sub">Weekly-first inventory · all providers &amp; accounts</div>
-              <div class="badge"><span class="dot"></span> Limits only</div>
-            </div>
+      overview: `
+        <div class="page-head">
+          <div class="jmark" style="width:36px;height:36px;border-radius:10px;font-size:14px"><span class="j">j</span><span class="ch">❯</span></div>
+          <div>
+            <h2>Overview</h2>
+            <div class="sub">Weekly-first · all accounts</div>
           </div>
-          <div class="metric-row">
-            <div class="metric">
-              <div class="mlab">Burning now</div>
-              <div class="mval low">12%</div>
-              <div class="mmeta">Anthropic · resets 1h</div>
-              <div class="mmeter low"><i style="width:12%"></i></div>
-            </div>
-            <div class="metric">
-              <div class="mlab">Watch</div>
-              <div class="mval mid">57%</div>
-              <div class="mmeta">OpenAI weekly · 3d</div>
-              <div class="mmeter mid"><i style="width:57%"></i></div>
-            </div>
-            <div class="metric">
-              <div class="mlab">Healthy</div>
-              <div class="mval high">100%</div>
-              <div class="mmeta">Amp daily · 18h</div>
-              <div class="mmeter"><i style="width:100%"></i></div>
-            </div>
+        </div>
+        <div class="limit-list">
+          <div class="limit">
+            <div class="limit-top"><span class="limit-name">Anthropic · Personal</span><span class="limit-pct low">12%</span></div>
+            <div class="limit-reset">Weekly · Resets in 1h · Today, 18:40</div>
+            <div class="meter low"><i style="width:12%"></i></div>
           </div>
-          <div class="group">
-            <div class="ghead">Accounts</div>
-            <div class="grow"><span class="gl">OpenAI · alexey@chainargos.com</span><span class="gr emph">57%</span></div>
-            <div class="grow"><span class="gl">OpenAI · alexey@zhokhov.com</span><span class="gr">0%</span></div>
-            <div class="grow"><span class="gl">Anthropic · Personal</span><span class="gr emph" style="color:var(--status-low)">12%</span></div>
-            <div class="grow"><span class="gl">Amp · Free</span><span class="gr emph" style="color:var(--status-high)">100%</span></div>
+          <div class="limit">
+            <div class="limit-top"><span class="limit-name">OpenAI · alexey@chainargos.com</span><span class="limit-pct mid">57%</span></div>
+            <div class="limit-reset">Weekly · Resets in 3 days · 15 Aug 2026, 17:02</div>
+            <div class="meter mid"><i style="width:57%"></i></div>
           </div>
-        `,
-      },
-      openai: {
-        crumb: "· OpenAI",
-        html: `
-          <div class="page-head">
-            <span class="plogo openai">O</span>
-            <div>
-              <h2>OpenAI</h2>
-              <div class="sub">alexey@chainargos.com · Codex</div>
-              <div class="badge"><span class="dot"></span> Fresh · just now</div>
-            </div>
+          <div class="limit">
+            <div class="limit-top"><span class="limit-name">OpenAI · alexey@zhokhov.com</span><span class="limit-pct" style="color:var(--tertiary)">0%</span></div>
+            <div class="limit-reset">Fully used · Resets 17 Aug 2026</div>
+            <div class="meter depleted"><i style="width:3%"></i></div>
           </div>
-          <div class="metric-row">
-            <div class="metric">
-              <div class="mlab">Session</div>
-              <div class="mval high">63%</div>
-              <div class="mmeta">Resets 2h 14m</div>
-              <div class="mmeter"><i style="width:63%"></i></div>
-            </div>
-            <div class="metric">
-              <div class="mlab">Weekly</div>
-              <div class="mval mid">57%</div>
-              <div class="mmeta">Resets 3 days</div>
-              <div class="mmeter mid"><i style="width:57%"></i></div>
-            </div>
-            <div class="metric">
-              <div class="mlab">Spark weekly</div>
-              <div class="mval high">100%</div>
-              <div class="mmeta">Resets 7 days</div>
-              <div class="mmeter"><i style="width:100%"></i></div>
-            </div>
+          <div class="limit">
+            <div class="limit-top"><span class="limit-name">Amp · Free</span><span class="limit-pct high">100%</span></div>
+            <div class="limit-reset">Daily · Resets in 18h · Tomorrow, 08:00</div>
+            <div class="meter high"><i style="width:100%"></i></div>
           </div>
-          <div class="group">
-            <div class="ghead">Account</div>
-            <div class="grow"><span class="gl">Plan</span><span class="gr emph">Pro 20×</span></div>
-            <div class="grow"><span class="gl">Status</span><span class="gr">fresh</span></div>
-            <div class="grow"><span class="gl">Updated</span><span class="gr">Just now</span></div>
+        </div>
+      `,
+      openai: `
+        <div class="page-head">
+          <span class="plogo openai">O</span>
+          <div>
+            <h2>OpenAI</h2>
+            <div class="sub">alexey@chainargos.com · Pro 20× · Codex</div>
           </div>
-          <div class="group">
-            <div class="ghead">Credential source</div>
-            <div class="grow">
-              <div class="auth-block" style="border:0;padding:0;margin:0;width:100%">
-                <div class="gl">Source</div>
-                <div class="gr">OAuth · ~/.codex/auth.json</div>
-              </div>
-            </div>
+        </div>
+        <div class="limit-list">
+          <div class="limit">
+            <div class="limit-top"><span class="limit-name">Session</span><span class="limit-pct high">63%</span></div>
+            <div class="limit-reset">Resets in 2h 14m · Today, 19:30</div>
+            <div class="limit-pace">37% used · On pace</div>
+            <div class="meter high"><i style="width:63%"></i></div>
           </div>
-          <div class="bucket">
-            <h5>Session</h5>
-            <div class="hero high">63% left</div>
-            <div class="hint-pace">37% used · On pace</div>
-            <div class="hint-reset">Resets in 2h 14m · Today, 19:30</div>
-            <div class="meter high" style="height:6px"><i style="width:63%"></i></div>
+          <div class="limit">
+            <div class="limit-top"><span class="limit-name">Weekly</span><span class="limit-pct mid">57%</span></div>
+            <div class="limit-reset">Resets in 3 days · 15 Aug 2026, 17:02</div>
+            <div class="limit-pace">13% in deficit · Runs out in 2d 17h</div>
+            <div class="meter mid"><i style="width:57%"></i></div>
           </div>
-          <div class="bucket">
-            <h5>Weekly</h5>
-            <div class="hero mid">57% left</div>
-            <div class="hint-pace">13% in deficit · Runs out in 2d 17h</div>
-            <div class="hint-reset">Resets in 3 days · 15 Aug 2026, 17:02</div>
-            <div class="meter mid" style="height:6px"><i style="width:57%"></i></div>
+          <div class="limit">
+            <div class="limit-top"><span class="limit-name">Codex Spark 5-hour</span><span class="limit-pct high">88%</span></div>
+            <div class="limit-reset">Resets in 4h 02m · Today, 21:18</div>
+            <div class="meter high"><i style="width:88%"></i></div>
           </div>
-          <div class="bucket">
-            <h5>Codex Spark 5-hour</h5>
-            <div class="hero high" style="font-size:26px">88% left</div>
-            <div class="hint-pace">On pace</div>
-            <div class="hint-reset">Resets in 4h 02m · Today, 21:18</div>
-            <div class="meter high" style="height:5px"><i style="width:88%"></i></div>
+          <div class="limit">
+            <div class="limit-top"><span class="limit-name">Codex Spark Weekly</span><span class="limit-pct high">100%</span></div>
+            <div class="limit-reset">Resets in 7 days · 19 Aug 2026</div>
+            <div class="meter high"><i style="width:100%"></i></div>
           </div>
-          <div class="bucket">
-            <h5>Codex Spark Weekly</h5>
-            <div class="hero high" style="font-size:26px">100% left</div>
-            <div class="hint-pace">On pace</div>
-            <div class="hint-reset">Resets in 7 days · 19 Aug 2026</div>
-            <div class="meter high" style="height:5px"><i style="width:100%"></i></div>
+        </div>
+        <div class="group">
+          <div class="grow"><span class="gl">Credential source</span><span class="gr mono">OAuth · ~/.codex/auth.json</span></div>
+          <div class="grow"><span class="gl">Updated</span><span class="gr dim">Just now</span></div>
+          <div class="grow"><span class="gl">Limit reset credits</span><span class="gr">3 · next 3d 4h</span></div>
+        </div>
+      `,
+      anthropic: `
+        <div class="page-head">
+          <span class="plogo anthropic">A</span>
+          <div>
+            <h2>Anthropic</h2>
+            <div class="sub">Personal · Max 20× · Claude</div>
           </div>
-          <div class="group">
-            <div class="ghead">Limit Reset Credits</div>
-            <div class="grow"><span class="gl">Available</span><span class="gr emph">3 manual resets</span></div>
-            <div class="grow"><span class="gl">Next windows</span><span class="gr">3d 4h · 8d 1h · 19d 22h</span></div>
+        </div>
+        <div class="limit-list">
+          <div class="limit">
+            <div class="limit-top"><span class="limit-name">Weekly</span><span class="limit-pct low">12%</span></div>
+            <div class="limit-reset">Resets in 1 hour · Today, 18:40</div>
+            <div class="limit-pace">52% in reserve · Lasts until reset</div>
+            <div class="meter low"><i style="width:12%"></i></div>
           </div>
-        `,
-      },
-      anthropic: {
-        crumb: "· Anthropic",
-        html: `
-          <div class="page-head">
-            <span class="plogo anthropic">A</span>
-            <div>
-              <h2>Anthropic</h2>
-              <div class="sub">Personal · Claude · Max 20×</div>
-              <div class="badge"><span class="dot" style="background:var(--status-low)"></span> Low · burns first</div>
-            </div>
+          <div class="limit">
+            <div class="limit-top"><span class="limit-name">Session</span><span class="limit-pct high">74%</span></div>
+            <div class="limit-reset">Resets in 4h 19m · Today, 22:00</div>
+            <div class="limit-pace">12% in deficit · Projected empty in 2h</div>
+            <div class="meter high"><i style="width:74%"></i></div>
           </div>
-          <div class="metric-row">
-            <div class="metric">
-              <div class="mlab">Session</div>
-              <div class="mval high">74%</div>
-              <div class="mmeta">Resets 4h 19m</div>
-              <div class="mmeter"><i style="width:74%"></i></div>
-            </div>
-            <div class="metric">
-              <div class="mlab">Weekly</div>
-              <div class="mval low">12%</div>
-              <div class="mmeta">Resets 1 hour</div>
-              <div class="mmeter low"><i style="width:12%"></i></div>
-            </div>
-            <div class="metric">
-              <div class="mlab">All models</div>
-              <div class="mval mid">28%</div>
-              <div class="mmeta">With weekly</div>
-              <div class="mmeter mid"><i style="width:28%"></i></div>
-            </div>
+          <div class="limit">
+            <div class="limit-top"><span class="limit-name">All models</span><span class="limit-pct mid">28%</span></div>
+            <div class="limit-reset">Resets with weekly</div>
+            <div class="meter mid"><i style="width:28%"></i></div>
           </div>
-          <div class="group">
-            <div class="ghead">Account</div>
-            <div class="grow"><span class="gl">Plan</span><span class="gr emph">Max 20×</span></div>
-            <div class="grow"><span class="gl">Status</span><span class="gr">fresh</span></div>
-            <div class="grow"><span class="gl">Updated</span><span class="gr">2 min ago</span></div>
+        </div>
+        <div class="group">
+          <div class="grow"><span class="gl">Credential source</span><span class="gr mono">OAuth · macOS Keychain (Claude Code-credentials)</span></div>
+          <div class="grow"><span class="gl">Updated</span><span class="gr dim">2 min ago</span></div>
+        </div>
+      `,
+      amp: `
+        <div class="page-head">
+          <span class="plogo amp">A</span>
+          <div>
+            <h2>Amp</h2>
+            <div class="sub">Free · Daily</div>
           </div>
-          <div class="group">
-            <div class="ghead">Credential source</div>
-            <div class="grow">
-              <div class="auth-block" style="border:0;padding:0;margin:0;width:100%">
-                <div class="gl">Source</div>
-                <div class="gr">OAuth · macOS Keychain (Claude Code-credentials)</div>
-              </div>
-            </div>
+        </div>
+        <div class="limit-list">
+          <div class="limit">
+            <div class="limit-top"><span class="limit-name">Daily</span><span class="limit-pct high">100%</span></div>
+            <div class="limit-reset">Resets in 18 hours · Tomorrow, 08:00</div>
+            <div class="limit-pace">On pace</div>
+            <div class="meter high"><i style="width:100%"></i></div>
           </div>
-          <div class="bucket">
-            <h5>Weekly</h5>
-            <div class="hero low">12% left</div>
-            <div class="hint-pace">52% in reserve · Lasts until reset</div>
-            <div class="hint-reset">Resets in 1 hour · Today, 18:40</div>
-            <div class="meter low" style="height:6px"><i style="width:12%"></i></div>
-          </div>
-          <div class="bucket">
-            <h5>Session</h5>
-            <div class="hero high">74% left</div>
-            <div class="hint-pace">12% in deficit · Projected empty in 2h</div>
-            <div class="hint-reset">Resets in 4h 19m · Today, 22:00</div>
-            <div class="meter high" style="height:6px"><i style="width:74%"></i></div>
-          </div>
-        `,
-      },
-      amp: {
-        crumb: "· Amp",
-        html: `
-          <div class="page-head">
-            <span class="plogo amp">A</span>
-            <div>
-              <h2>Amp</h2>
-              <div class="sub">Free · Daily</div>
-              <div class="badge"><span class="dot"></span> Healthy</div>
-            </div>
-          </div>
-          <div class="metric-row">
-            <div class="metric">
-              <div class="mlab">Daily</div>
-              <div class="mval high">100%</div>
-              <div class="mmeta">Resets 18h</div>
-              <div class="mmeter"><i style="width:100%"></i></div>
-            </div>
-            <div class="metric">
-              <div class="mlab">Credits</div>
-              <div class="mval high">—</div>
-              <div class="mmeta">No credit cap shown</div>
-            </div>
-            <div class="metric">
-              <div class="mlab">Status</div>
-              <div class="mval high">OK</div>
-              <div class="mmeta">Updated 1 min ago</div>
-            </div>
-          </div>
-          <div class="group">
-            <div class="ghead">Credential source</div>
-            <div class="grow">
-              <div class="auth-block" style="border:0;padding:0;margin:0;width:100%">
-                <div class="gl">Source</div>
-                <div class="gr">API key · env AMP_API_KEY</div>
-              </div>
-            </div>
-          </div>
-          <div class="bucket">
-            <h5>Daily</h5>
-            <div class="hero high">100% left</div>
-            <div class="hint-pace">On pace</div>
-            <div class="hint-reset">Resets in 18 hours · Tomorrow, 08:00</div>
-            <div class="meter high" style="height:6px"><i style="width:100%"></i></div>
-          </div>
-        `,
-      },
+        </div>
+        <div class="group">
+          <div class="grow"><span class="gl">Credential source</span><span class="gr mono">API key · env AMP_API_KEY</span></div>
+          <div class="grow"><span class="gl">Updated</span><span class="gr dim">1 min ago</span></div>
+        </div>
+      `,
     };
 
     function updateUsageScrollEdge() {
@@ -1370,9 +1197,7 @@
     }
 
     function showUsage(nav) {
-      const view = usageViews[nav] || usageViews.openai;
-      usageDetail.innerHTML = view.html;
-      if (usageCrumb) usageCrumb.textContent = view.crumb;
+      usageDetail.innerHTML = usageViews[nav] || usageViews.openai;
       if (usageScroll) usageScroll.scrollTop = 0;
       requestAnimationFrame(updateUsageScrollEdge);
     }

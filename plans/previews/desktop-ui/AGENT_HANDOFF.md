@@ -30,15 +30,17 @@ Quality bar = Finder/Tahoe Liquid Glass + high-end native macOS utilities (e.g. 
 
 | Layer | Material | Notes |
 |---|---|---|
-| Window shell | Transparent | Stage bleeds under glass sidebar (blur has something to refract) |
-| Titlebar-side + sidebar | Liquid Glass | Low-opacity fill, blur ≥50px, saturate, hairline + specular |
-| Titlebar-main + content | Solid | Readable data layer — not glass |
-| Provider row | Primary nav | Glass capsule selection, brand plate, name weight 650, mini meter + % |
-| Account row | Secondary | Nested `.acct-rail`, left phosphor bar selection, quiet mono, no logo plate |
-| Scroll | Soft edges | Same dissolve rule as popover |
+| Window shell | Transparent | Stage bleeds under glass (blur has something to refract) |
+| Titlebar | One continuous glass strip | Safari-like; traffic lights + brand + Usage + Refresh — **no split panes** |
+| Sidebar | Floating glass | Soft shadow only — **no hard vertical rule** between side and content |
+| Content | Solid | Single **limit-list** + one quiet details group — **no tiles+buckets dupes** |
+| Provider row | Primary nav | Glass capsule, brand plate, mini meter + % |
+| Account row | Secondary | Nested `.acct-rail`, left phosphor bar, quiet mono, no logo plate |
+| Scroll | Soft edges | Dissolve under chrome |
 
 **Do not** ship a flat two-column web panel without window chrome.  
-**Do not** use the same selection chrome for provider and account rows.
+**Do not** use the same selection chrome for provider and account rows.  
+**Do not** restate the same limit % in two content components.
 | CSS custom properties | Named tokens agents must map to Swift |
 | [`README.md`](./README.md) | Operator + implementer rules |
 | This file | Predictable agent process |

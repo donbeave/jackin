@@ -37,8 +37,13 @@ def main() -> int:
         "sidebar blur too weak (<50px) or missing",
     )
     need("--lg-side" in html, "--lg-side glass token missing")
-    need("side-well" in html, "floating side-well (Telegram panel-in-panel) missing")
     need("--lg-specular" in html, "multi-layer specular token missing")
+    need("limit-list" in html, "single limit-list (anti-dupe) missing")
+    need("win .body" in html or 'class="body"' in html, "body grid wrapper missing")
+    # Anti-dupe: do not ship both metric-row and bucket heroes in usage views
+    usage = html.split('id="usage"', 1)[-1].split('id="glass"', 1)[0]
+    need("metric-row" not in usage or "bucket" not in usage, "usage still has metric-row + bucket dual story")
+    need("usage-crumb" not in usage, "titlebar crumb re-stating content title must be removed")
     need(
         re.search(r"\.win\s*\{[^}]*background:\s*transparent", html, re.S) is not None,
         "window shell must be transparent for stage bleed under glass",
