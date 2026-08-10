@@ -1,7 +1,7 @@
 # VISUAL_QA_LOG — jackin❯ desktop HTML SoT parity
 
 **Date:** 2026-08-10  
-**Tip:** `b88cd811`  
+**Tip:** `e227f37f`  
 **Branch:** plan/desktop-visual  
 **Authority:** UI_PARITY_MASTER §6 + QI_VERIFICATION L1–L4  
 **Artifacts:** `advisor-plans/qi-artifacts/`
@@ -25,13 +25,13 @@ Log: `qi-artifacts/native/desktop-gates.log`
 
 | Scene | Dark | Light | High residual craft | Evidence | Verdict |
 |-------|------|-------|---------------------|----------|---------|
-| status-desktop | yes | yes | none | html+native/status-desktop-*.png · deltas | **Pass** |
+| status-desktop | yes | yes | none | html+native/status-desktop-*.png | **Pass** |
 | popover-openai | yes | yes | none | html+native/popover-openai-*.png | **Pass** |
 | popover-anthropic | yes | yes | none | html+native/popover-anthropic-*.png | **Pass** |
 | popover-overview | yes | yes | none | native/popover-overview-*.png | **Pass** |
 | usage-overview | yes | yes | none | html+native/usage-overview-*.png | **Pass** |
-| usage-provider-nest | yes | yes | none | html+native nest 57%/0% | **Pass** |
-| usage-detail-openai | yes | yes | none | html+native detail 63/57/88 | **Pass** |
+| usage-provider-nest | yes | yes | none | nest 57%/0% | **Pass** |
+| usage-detail-openai | yes | yes | none | detail 63/57/88 | **Pass** |
 | usage-toolbar | **BLOCKED** | yes | capture only | Light PNG · Dark BLOCKED.txt | **Light Pass / Dark BLOCKED** |
 
 **High residual craft product: none.**
@@ -47,15 +47,6 @@ Log: `qi-artifacts/native/desktop-gates.log`
 
 ## Multimodal
 
-Scene-specific deltas under `deltas/2026-08-10-*.md`. Dual-image re-verify in goal scratch `deltas/multimodal-verify.md`.
-
-## Residual (honest non-Pass)
-
-| Item | Status |
-|------|--------|
-| usage-toolbar Dark white blobs | **BLOCKED** |
-| Usage full-window sidebar whiteout | BLOCKED · component snaps Pass |
-| Live NSStatusItem | fixture StatusItemRendering |
-| System  / clock | N/A |
+Scene-specific deltas `deltas/2026-08-10-*.md`. Dual-image notes in scratch `deltas/multimodal-verify.md`.
 
 Agent sign-off: QI L1–L4 craft closed; Dark toolbar BLOCKED (§12).

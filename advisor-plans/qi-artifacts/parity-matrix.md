@@ -1,6 +1,6 @@
 # Final goal parity matrix — UI_PARITY_MASTER §6
 
-**Tip:** plan/desktop-visual @ b88cd811  
+**Tip:** plan/desktop-visual @ e227f37f  
 **Oracle:** index.html + popover.html Dark+Light  
 **Capture:** DesktopVisualSnapshotHarness + HTML baselines  
 

@@ -1,9 +1,8 @@
-=== tip b88cd811 2026-08-10T10:13Z mission QI ===
-=== tip b88cd811 2026-08-10T10:12Z ===
+=== tip e227f37f 2026-08-10T10:19Z ===
+=== tip e227f37f 2026-08-10T10:18Z ===
 PASS: Usage Liquid Glass + provider≠account structural checks
 PASS: QI evidence ledger — 16 pass rows, 3 blocked, prose PNG refs consistent
 
-=== L2 (SoT×3 + suite) ===
 DesktopArchitectureLint: ALL PASS
 DesktopSoTParityHarness: ALL PASS (18/18 checks)
 DesktopSoTParityHarness: ALL PASS (18/18 checks)
@@ -13,7 +12,6 @@ Matrix: 8/8 providers displayable · dual-bucket · depleted · limits-only
 StatusItemChipHarness: ALL PASS
 ProviderMarksHarness: ALL PASS (7/7 official marks)
 
-=== Snapshot toolbar ===
 BLOCKED ../advisor-plans/qi-artifacts/native/usage-toolbar-dark.png [dark toolbar icons unreadable — white blobs]
 usage_toolbar_dark: BLOCKED
 usage_toolbar_light: UsageWindowController titlebar crop
@@ -32,3 +30,4 @@ native/Sources/JackinDesktop/Popover/PopoverTabGrid.swift:65:        .accessibil
 native/Sources/JackinDesktop/UsageWindowController.swift:47:        window.title = "jackin❯ desktop"
 native/Sources/JackinDesktop/UsageWindow/UsageWindowRoot.swift:136:        .navigationTitle("jackin❯ desktop")
 native/Sources/JackinUsageBridge/StatusItemMenuModel.swift:31:        StatusItemMenuRow(title: "Quit jackin❯ desktop", action: .quit, keyEquivalent: "q"),
+Live: no JackinDesktop GUI in session; popover-live + ctx-menu BLOCKED; SoTParity proves focus/menu.
