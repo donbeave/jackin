@@ -17,6 +17,7 @@ let package = Package(
         .executable(name: "DesktopParityMatrixHarness", targets: ["DesktopParityMatrixHarness"]),
         .executable(name: "DesktopSoTParityHarness", targets: ["DesktopSoTParityHarness"]),
         .executable(name: "DesktopVisualSnapshotHarness", targets: ["DesktopVisualSnapshotHarness"]),
+        .executable(name: "ProviderMarksHarness", targets: ["ProviderMarksHarness"]),
     ],
     targets: [
         .binaryTarget(
@@ -68,6 +69,11 @@ let package = Package(
             name: "DesktopVisualSnapshotHarness",
             dependencies: ["JackinDesktopUI", "JackinUsageBridge"],
             path: "Tools/DesktopVisualSnapshotHarness"
+        ),
+        .executableTarget(
+            name: "ProviderMarksHarness",
+            dependencies: ["JackinDesktopUI", "JackinUsageBridge"],
+            path: "Tools/ProviderMarksHarness"
         ),
         .testTarget(
             name: "JackinUsageBridgeTests",

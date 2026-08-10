@@ -55,3 +55,7 @@
 
 - Trademark use is **referential** (usage monitor identity). Legal review is operator-owned.
 - When a vendor ships a newer primary mark, replace master + rebuild PNGs; code path stays the same.
+
+## Automated gate
+
+`swift run -c release ProviderMarksHarness` — ALL PASS (7/7) via shipped `ProviderMarks` + `StatusItemRendering.icon`.

@@ -17,6 +17,24 @@ import JackinDesktopUI
 import JackinUsageBridge
 import SwiftUI
 
+/// Assert every Desktop provider icon key loads a bundled official mark via the
+/// **shipped** `ProviderMarks` + `StatusItemRendering.icon` path (SB-6 / LG-1).
+@MainActor
+func assertOfficialProviderMarksBundled() {
+    let keys = desktopProviderIconKeys
+    precondition(keys.count == 7, "expected 7 Desktop providers, got \(keys.count)")
+    for key in keys {
+        precondition(
+            ProviderMarks.hasMark(forIconKey: key),
+            "missing official ProviderMark for \(key) — see Resources/ProviderMarks"
+        )
+        let statusIcon = StatusItemRendering.icon(forIconKey: key)
+        precondition(statusIcon.size.width > 0 && statusIcon.size.height > 0)
+        fputs("PASS  ProviderMark+status icon \(key)\n", stderr)
+    }
+    fputs("PASS  ProviderMarks bundled for \(keys.count) Desktop providers\n", stderr)
+}
+
 @main
 struct DesktopVisualSnapshotHarness {
     static func main() {
@@ -31,6 +49,10 @@ struct DesktopVisualSnapshotHarness {
 
         _ = NSApplication.shared
         NSApp.setActivationPolicy(.prohibited)
+
+        // Fail closed: seven Desktop providers must load official bundled marks
+        // (not SF Symbol primary when assets are present). SB-6 / LG-1.
+        assertOfficialProviderMarksBundled()
 
         let fixture = QIFixture.make()
 
