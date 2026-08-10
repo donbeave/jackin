@@ -1,6 +1,6 @@
 # SoT CONFIRMED checklist — status / popover / Usage
 
-**Tip:** plan/desktop-visual @ 8670e5f8 (SB-18 + SB-13 fix; evidence gates log same pack)
+**Tip:** plan/desktop-visual @ 7bac5273 (SB-18 + SB-13 code; docs may be tip+1)
 **SoT:** decisions §0 → HTML index/popover → AGENT_HANDOFF
 
 | ID | Surface | Status | Evidence |
