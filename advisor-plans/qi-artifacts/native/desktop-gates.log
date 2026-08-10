@@ -1,9 +1,9 @@
-=== tip 7b760a7e 2026-08-10T09:23Z ===
-=== tip 7b760a7e 2026-08-10T09:22Z ===
+=== tip a607804f 2026-08-10T09:33Z ===
+=== tip a607804f 2026-08-10T09:32Z ===
 PASS: Usage Liquid Glass + provider≠account structural checks
 PASS: QI evidence ledger — 16 pass rows, 3 blocked, prose PNG refs consistent
 
-=== L2 ALL PASS ===
+=== L2 ===
 DesktopArchitectureLint: ALL PASS
 DesktopSoTParityHarness: ALL PASS (18/18 checks)
 DesktopParityMatrixHarness: ALL PASS
@@ -16,7 +16,6 @@ BLOCKED ../advisor-plans/qi-artifacts/native/usage-toolbar-dark.png [dark toolba
 usage_toolbar_dark: BLOCKED
 usage_toolbar_light: UsageWindowController titlebar crop
 
-=== Law ===
 === glass outside Fallbacks ===
 (none)
 === price/trend ===
