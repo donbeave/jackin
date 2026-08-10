@@ -33,3 +33,7 @@
 
 ## Verdict
 **Verdict: Pass** (Dark + Light) — multi-limit density + G-P3 anatomy.
+
+Re-audit: provider detail head now matches HTML composition with official
+provider plate, identity text, local refresh control, and explicit external-link
+arrow for the official usage page.

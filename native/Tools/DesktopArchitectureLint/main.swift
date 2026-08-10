@@ -140,9 +140,12 @@ struct DesktopArchitectureLint {
             .appendingPathComponent("UsageWindow/ProviderCardView.swift")
         let popoverFooter = desktopRoot
             .appendingPathComponent("Popover/PopoverFooter.swift")
+        let popoverProvider = desktopRoot
+            .appendingPathComponent("Popover/PopoverProviderTab.swift")
         guard
             let providerText = try? String(contentsOf: providerCard, encoding: .utf8),
-            let footerText = try? String(contentsOf: popoverFooter, encoding: .utf8)
+            let footerText = try? String(contentsOf: popoverFooter, encoding: .utf8),
+            let popoverProviderText = try? String(contentsOf: popoverProvider, encoding: .utf8)
         else {
             fputs("FAIL  primary control sources missing\n", stderr)
             exit(2)
@@ -161,6 +164,18 @@ struct DesktopArchitectureLint {
             || !footerText.contains(".foregroundStyle(Color.jackinPhosphor)")
         {
             print("FAIL  popover Open Usage Window must stay centered and accent-tinted")
+            ok = false
+        }
+        if !popoverProviderText.contains("providerLogoPlate")
+            || !popoverProviderText.contains("onRefreshProvider(provider.surfaceId)")
+        {
+            print("FAIL  popover provider header must retain logo plate + local refresh")
+            ok = false
+        }
+        if popoverProviderText.contains("systemImage: \"safari\"")
+            || !popoverProviderText.contains("Image(systemName: \"arrow.up.right\")")
+        {
+            print("FAIL  popover usage link must use the HTML external-link affordance")
             ok = false
         }
         if ok {

@@ -158,7 +158,7 @@ public struct PopoverTabGrid: View {
     /// Official logomark on brand plate when bundled; SF Symbol fallback only if missing.
     /// Colors are decorative chrome only — not usage/severity data.
     private func brandPlate(iconKey: String?, selected: Bool) -> some View {
-        let brand = brandChrome(for: iconKey)
+        let brand = desktopProviderBrandChrome(iconKey: iconKey)
         return ZStack {
             RoundedRectangle(cornerRadius: 8, style: .continuous)
                 .fill(selected ? brand.opacity(0.95) : brand.opacity(0.78))
@@ -180,30 +180,6 @@ public struct PopoverTabGrid: View {
         }
         .frame(width: 30, height: 30)
         .shadow(color: brand.opacity(selected ? 0.35 : 0.15), radius: selected ? 4 : 1, y: 1)
-    }
-
-    /// HTML-adjacent brand plate fills (index/popover CSS plogo family) — UI chrome only.
-    private func brandChrome(for iconKey: String?) -> Color {
-        switch iconKey {
-        case "codex":
-            // OpenAI-adjacent green
-            return Color(red: 0.12, green: 0.72, blue: 0.52)
-        case "claude":
-            // Anthropic-adjacent warm
-            return Color(red: 0.86, green: 0.48, blue: 0.28)
-        case "amp":
-            return Color(red: 0.52, green: 0.38, blue: 0.92)
-        case "grok":
-            return Color(red: 0.35, green: 0.38, blue: 0.42)
-        case "zai":
-            return Color(red: 0.20, green: 0.55, blue: 0.95)
-        case "kimi":
-            return Color(red: 0.75, green: 0.35, blue: 0.55)
-        case "minimax":
-            return Color(red: 0.90, green: 0.55, blue: 0.20)
-        default:
-            return Color.jackinPhosphor
-        }
     }
 
     /// Meter geometry only — nil remaining = empty track (FB1-5).

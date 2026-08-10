@@ -43,6 +43,10 @@ Re-audit also promoted Usage toolbar title placement from false-pass “leading�
 to oracle parity: centered `jackin❯ desktop`, phosphor chevron, native principal
 toolbar item. Dark/light full-window and toolbar captures refreshed.
 
+Popover detail re-audit removed another false-pass: anonymous text-only header
+and Usage-window chevron replaced by HTML’s official provider plate + local
+refresh control. Official usage link now uses explicit external-link arrow.
+
 ## Live
 popover-live / ctx-menu **BLOCKED** — SoTParity proves focus/menu.
 

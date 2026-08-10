@@ -5,6 +5,20 @@ import AppKit
 import JackinUsageBridge
 import SwiftUI
 
+/// Provider identity chrome only. Never use these colors for quota state.
+public func desktopProviderBrandChrome(iconKey: String?) -> Color {
+    switch iconKey {
+    case "codex": Color(red: 0.12, green: 0.72, blue: 0.52)
+    case "claude": Color(red: 0.86, green: 0.48, blue: 0.28)
+    case "amp": Color(red: 0.52, green: 0.38, blue: 0.92)
+    case "grok": Color(red: 0.35, green: 0.38, blue: 0.42)
+    case "zai": Color(red: 0.20, green: 0.55, blue: 0.95)
+    case "kimi": Color(red: 0.75, green: 0.35, blue: 0.55)
+    case "minimax": Color(red: 0.90, green: 0.55, blue: 0.20)
+    default: Color.jackinPhosphor
+    }
+}
+
 /// Official provider logomarks (template PDF) for status bar, popover plates, and Usage chrome.
 ///
 /// **LG-P1–P4 / FB1-6:** status bar uses `NSImage.isTemplate = true` monochrome silhouettes.

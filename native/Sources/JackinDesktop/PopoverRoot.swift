@@ -101,7 +101,9 @@ public struct PopoverRoot: View {
                 onSelectAccount: { surfaceId, accountKey in
                     store.setSelectedAccount(surfaceId: surfaceId, accountKey: accountKey)
                 },
-                onOpenUsageWindow: { id in onOpenUsage?(id) }
+                onRefreshProvider: { surfaceId in
+                    store.refresh(surfaceId: surfaceId)
+                }
             )
         } else if store.providerGlanceRows.isEmpty {
             emptyState

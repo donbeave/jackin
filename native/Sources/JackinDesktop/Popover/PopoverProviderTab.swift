@@ -16,7 +16,7 @@ public struct PopoverProviderTab: View {
     public let accounts: [PresentationStore.AccountRow]
     public let refreshInProgress: Bool
     public let onSelectAccount: (String, String) -> Void
-    public let onOpenUsageWindow: (String) -> Void
+    public let onRefreshProvider: (String) -> Void
 
     public init(
         provider: PresentationStore.GlanceProviderRow,
@@ -24,45 +24,47 @@ public struct PopoverProviderTab: View {
         accounts: [PresentationStore.AccountRow],
         refreshInProgress: Bool,
         onSelectAccount: @escaping (String, String) -> Void,
-        onOpenUsageWindow: @escaping (String) -> Void
+        onRefreshProvider: @escaping (String) -> Void
     ) {
         self.provider = provider
         self.surface = surface
         self.accounts = accounts
         self.refreshInProgress = refreshInProgress
         self.onSelectAccount = onSelectAccount
-        self.onOpenUsageWindow = onOpenUsageWindow
+        self.onRefreshProvider = onRefreshProvider
     }
 
     public var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            // Identity header — open full Usage window (popover.html head + chevron).
-            Button {
-                onOpenUsageWindow(provider.surfaceId)
-            } label: {
-                HStack(alignment: .top, spacing: 10) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(provider.displayLabel)
-                            .font(.title3.weight(.semibold))
-                        Text(headerMetaLine)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(2)
-                    }
-                    Spacer(minLength: 8)
+            // HTML `.detail-head`: provider plate + identity + local refresh.
+            HStack(alignment: .top, spacing: 10) {
+                providerLogoPlate
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(provider.displayLabel)
+                        .font(.title3.weight(.semibold))
+                    Text(headerMetaLine)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
+                }
+                Spacer(minLength: 8)
+                Button {
+                    onRefreshProvider(provider.surfaceId)
+                } label: {
                     if refreshInProgress || provider.isRefreshing {
                         ProgressView().controlSize(.small)
+                    } else {
+                        Image(systemName: "arrow.clockwise")
+                            .font(.caption.weight(.semibold))
                     }
-                    Image(systemName: "chevron.right")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.tertiary)
-                        .padding(.top, 4)
                 }
-                .contentShape(Rectangle())
+                .buttonStyle(.bordered)
+                .buttonBorderShape(.roundedRectangle(radius: 8))
+                .controlSize(.small)
+                .help("Refresh \(provider.displayLabel)")
+                .accessibilityLabel("Refresh \(provider.displayLabel)")
             }
-            .buttonStyle(.plain)
             .opacity(provider.dimmed ? 0.55 : 1)
-            .accessibilityHint("Open Usage window")
 
             if let error = provider.lastError, !error.isEmpty {
                 Text(error).font(.caption2).foregroundStyle(.red)
@@ -186,12 +188,37 @@ public struct PopoverProviderTab: View {
                 NSWorkspace.shared.open(url)
             }
         } label: {
-            Label(ProviderUsageLinks.openUsagePageTitle, systemImage: "safari")
+            HStack(spacing: 5) {
+                Text(ProviderUsageLinks.openUsagePageTitle)
+                Image(systemName: "arrow.up.right")
+                    .font(.caption2.weight(.semibold))
+            }
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(Color.jackinPhosphor)
         }
         .buttonStyle(.plain)
         .accessibilityLabel(ProviderUsageLinks.openUsagePageTitle)
+    }
+
+    private var providerLogoPlate: some View {
+        let brand = desktopProviderBrandChrome(iconKey: provider.iconKey)
+        return ZStack {
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .fill(brand.opacity(0.95))
+            if let mark = ProviderMarks.swiftUIImage(forIconKey: provider.iconKey) {
+                mark
+                    .resizable()
+                    .interpolation(.high)
+                    .scaledToFit()
+                    .frame(width: 16, height: 16)
+                    .colorInvert()
+            } else {
+                Image(systemName: "circle.grid.cross")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(Color.white)
+            }
+        }
+        .frame(width: 30, height: 30)
     }
 
     /// Secondary account chips — selected = phosphor fill (popover.html account rail).
