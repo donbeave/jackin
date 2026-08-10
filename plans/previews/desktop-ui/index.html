@@ -127,20 +127,24 @@
     .pct.low { color: var(--status-low); }
     .pct.zero { color: var(--tertiary); }
 
-    /* —— Menu bar (transparent status · matches popover.html) —— */
+    /*
+      Status bar — LG-A1 / FB1-6: transparent template mono dual stack.
+      NOT Liquid Glass chips (menu bar is system chrome, not app glass layer).
+      Glance % = Weekly/Daily only (HostProviderGlanceRow.barLabel).
+    */
     .menubar {
-      height: 24px; display: flex; align-items: center; justify-content: flex-end; gap: 12px;
+      height: 28px; display: flex; align-items: center; justify-content: flex-end; gap: 14px;
       padding: 0 16px; border-radius: 6px 6px 0 0;
       background: var(--menubar); backdrop-filter: blur(20px);
       border: 0.5px solid var(--glass-border); border-bottom: 0;
     }
     .sb-item {
-      display: flex; align-items: center; gap: 4px; cursor: pointer;
-      background: transparent; border: 0; padding: 2px 4px; border-radius: 4px;
+      display: flex; align-items: center; gap: 5px; cursor: pointer;
+      background: transparent; border: 0; padding: 2px 5px; border-radius: 4px;
       color: var(--label);
     }
-    .sb-item:hover { background: rgba(128,128,128,0.2); }
-    .sb-item.active-click { background: rgba(128,128,128,0.28); }
+    .sb-item:hover { background: rgba(128,128,128,0.18); }
+    .sb-item.active-click { background: rgba(128,128,128,0.26); }
     /* Template mono logos on the bar (not brand plates) */
     .sb-item .plogo.sm {
       background: transparent !important;
@@ -198,10 +202,10 @@
 
     /* —— Usage window —— */
     /*
-      Usage window — multi-layer Liquid Glass (Telegram + Finder/Tahoe patterns).
-      Borrow: layered translucency, floating glass chrome, luminous controls,
-      ambient bleed, solid content contrast. jackin phosphor only as accent.
-      Shell transparent so stage/wallpaper refracts under nav glass.
+      Usage window — Apple LG-A1–A12:
+      continuous glass titlebar + floating glass sidebar (nav);
+      solid content (limit list); no glass-on-glass; soft scroll edges;
+      selective phosphor tint; transparent shell for ambient under glass.
     */
     .win {
       --win-r: 16px; /* Tahoe-ish continuous corner */

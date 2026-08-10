@@ -3,14 +3,14 @@
 //
 // Centralized macOS 26 Liquid Glass availability gates.
 //
-// HIG / Adopting Liquid Glass (Apple):
-// - Liquid Glass is for the **navigation / control layer** that floats above content
-//   (sidebars, toolbars, popovers, menus, floating controls).
-// - Do **not** put Liquid Glass on the content layer (lists of data, provider cards,
-//   long-form text). Content uses standard materials / solid fills so hierarchy stays clear.
-// - Fallbacks use system materials so Reduce Transparency is honored.
+// Apple docs (binding):
+// - https://developer.apple.com/documentation/technologyoverviews/liquid-glass
+// - https://developer.apple.com/documentation/technologyoverviews/adopting-liquid-glass
+// - https://developer.apple.com/documentation/technologyoverviews/swiftui
+// - HIG Materials: Liquid Glass = nav layer; never content layer.
 //
-// No other source file may contain `#available(macOS 26`.
+// jackin❯ decisions: LG-A1–LG-A12, AR-4/AR-5, VS-1.
+// No other source file may contain `#available(macOS 26` or `glassEffect`.
 
 import AppKit
 import SwiftUI
@@ -129,25 +129,18 @@ enum GlassFallbacks {
             .fill(Color.primary.opacity(enabled ? 0.07 : 0.03))
     }
 
-    /// Menu-bar status chip glass capsule (per-provider icon + %).
+    /// Deprecated for menu-bar items: FB1-6 / LG-A1 require **transparent template**
+    /// status items (no glass chips). Prefer `StatusItemRendering` dual-stack only.
+    /// Kept for any non-bar capsule chrome that still needs a severity outline.
     @ViewBuilder
     static func statusItemChipBackground(severity: Color) -> some View {
-        if #available(macOS 26, *) {
-            Capsule(style: .continuous)
-                .fill(.clear)
-                .glassEffect(.regular, in: Capsule(style: .continuous))
-                .overlay {
-                    Capsule(style: .continuous)
-                        .strokeBorder(severity.opacity(0.22), lineWidth: 0.5)
-                }
-        } else {
-            Capsule(style: .continuous)
-                .fill(.ultraThinMaterial)
-                .overlay {
-                    Capsule(style: .continuous)
-                        .strokeBorder(severity.opacity(0.18), lineWidth: 0.5)
-                }
-        }
+        // Not Liquid Glass — solid/subtle fill only so we do not put glass on the menu bar.
+        Capsule(style: .continuous)
+            .fill(Color.primary.opacity(0.06))
+            .overlay {
+                Capsule(style: .continuous)
+                    .strokeBorder(severity.opacity(0.18), lineWidth: 0.5)
+            }
     }
 
     /// Content-layer card fill (standard materials only — HIG content layer).

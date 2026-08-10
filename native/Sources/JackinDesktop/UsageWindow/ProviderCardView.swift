@@ -4,38 +4,51 @@
 import JackinUsageBridge
 import SwiftUI
 
-/// Full Capsule-parity provider card (S4). Every field, string, and order comes
-/// from the Rust ``UsageDetailPresentation``; this view renders the rows and
-/// their leading/trailing lines mechanically and never splits, joins, reorders,
-/// or relabels a usage string (plan 008). `meterPercent` drives bar geometry,
-/// `severity` drives color — neither becomes visible text.
+/// Provider detail — **content layer only** (LG-A2: no Liquid Glass on data).
+///
+/// Renders Rust ``UsageDetailPresentation`` rows mechanically. Account switcher
+/// is a secondary control system (left H-scroll pills — FB1-29 / FB1-48), not a
+/// second glass sidebar.
 struct ProviderCardView: View {
     let content: UsageWindowModel.Content
     var onSelectAccount: ((String) -> Void)?
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 12) {
-                ForEach(content.detail.rows) { row in
-                    detailRow(row)
-                }
+            VStack(alignment: .leading, spacing: 14) {
+                // Accounts first when multi-account (distinct from provider nav).
                 if content.accounts.count > 1 {
                     accountSwitcher
+                }
+
+                // Group metadata then buckets for scan hierarchy (VS-11).
+                let meta = content.detail.rows.filter { $0.kind != .bucket }
+                let buckets = content.detail.rows.filter { $0.kind == .bucket }
+
+                if !meta.isEmpty {
+                    VStack(alignment: .leading, spacing: 0) {
+                        ForEach(Array(meta.enumerated()), id: \.element.id) { index, row in
+                            if index > 0 {
+                                Divider().opacity(0.45)
+                            }
+                            metadataRow(row)
+                                .padding(.vertical, 8)
+                        }
+                    }
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 4)
+                    .background {
+                        GlassFallbacks.contentCardBackground()
+                    }
+                }
+
+                ForEach(buckets) { row in
+                    bucketCard(row)
                 }
             }
             .padding(20)
         }
         .accessibilityElement(children: .contain)
-    }
-
-    @ViewBuilder
-    private func detailRow(_ row: UsageDetailRow) -> some View {
-        switch row.kind {
-        case .bucket:
-            bucketCard(row)
-        default:
-            metadataRow(row)
-        }
     }
 
     private func metadataRow(_ row: UsageDetailRow) -> some View {
@@ -55,11 +68,11 @@ struct ProviderCardView: View {
     }
 
     private func bucketCard(_ row: UsageDetailRow) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 8) {
             Text(row.label)
                 .font(.subheadline.weight(.semibold))
             if let meter = row.meterPercent {
-                // Rust geometry only: fill grows left-to-right; color from severity.
+                // Geometry from Rust only; color from severity (3 status levels).
                 let frac = Double(meter) / 100.0
                 GeometryReader { geo in
                     ZStack(alignment: .leading) {
@@ -69,8 +82,9 @@ struct ProviderCardView: View {
                             .frame(width: max(3, geo.size.width * frac))
                     }
                 }
-                .frame(height: 4)
+                .frame(height: 5)
             }
+            // Leading segments first; reset on its own trailing line (FB1-31).
             ForEach(Array(row.layoutLines.enumerated()), id: \.offset) { _, line in
                 lineView(line, trailingStyle: .secondary, leadingTint: severityTint(row.severity))
             }
@@ -78,14 +92,13 @@ struct ProviderCardView: View {
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background {
-            // Content layer — standard material only (HIG: no Liquid Glass here).
+            // Content layer — standard material only (LG-A2 / HIG).
             GlassFallbacks.contentCardBackground()
         }
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(row.label) \(row.displayLabel)")
     }
 
-    /// One already-grouped Rust line: leading on the left, trailing right-aligned.
     @ViewBuilder
     private func lineView(
         _ line: UsagePresentationLine,
@@ -114,8 +127,7 @@ struct ProviderCardView: View {
         .frame(maxWidth: .infinity, alignment: line.leading == nil ? .trailing : .leading)
     }
 
-    /// Multi-account pills: Rust `accountLabel` + selected styling only. No
-    /// remaining percentage, no local selection, no heading (plan 008 / N1).
+    /// Left-aligned account pills (not provider chrome; not glass — LG-A5).
     private var accountSwitcher: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
@@ -126,13 +138,13 @@ struct ProviderCardView: View {
                         Text(account.accountLabel)
                             .font(.caption.weight(account.selected ? .semibold : .regular))
                             .lineLimit(1)
-                            .padding(.horizontal, 10)
+                            .padding(.horizontal, 11)
                             .padding(.vertical, 7)
                             .background {
                                 Capsule(style: .continuous)
                                     .fill(
                                         account.selected
-                                            ? Color.accentColor.opacity(0.92)
+                                            ? Color.accentColor.opacity(0.90)
                                             : Color.primary.opacity(0.06)
                                     )
                             }
@@ -145,6 +157,7 @@ struct ProviderCardView: View {
                     .accessibilityAddTraits(account.selected ? .isSelected : [])
                 }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 }

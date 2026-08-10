@@ -90,11 +90,20 @@ final class StatusBarController: NSObject {
 
     private func configure(item: NSStatusItem, row: PresentationStore.GlanceProviderRow) {
         guard let button = item.button else { return }
+        // LG-A1 / FB1-6: template icon + dual-stack values — no glass chip chrome.
         button.image = StatusItemRendering.icon(forIconKey: row.iconKey)
+        button.imagePosition = .imageLeading
         button.attributedTitle =
-            store.statusBarShowsValues ? StatusItemRendering.title(row.barLabel) : NSAttributedString(string: "")
+            store.statusBarShowsValues
+            ? StatusItemRendering.title(barLabel: row.barLabel, resetLabel: row.resetLabel)
+            : NSAttributedString(string: "")
         button.appearsDisabled = row.dimmed
-        button.toolTip = row.headline
+        // Tooltip carries full Rust headline + optional exact reset (detail beyond bar).
+        var tip = row.headline
+        if let exact = row.exactReset, !exact.isEmpty {
+            tip = "\(tip) \(exact)"
+        }
+        button.toolTip = tip
         button.setAccessibilityLabel("\(row.displayLabel) \(row.headline)")
     }
 

@@ -4,18 +4,17 @@
 import JackinUsageBridge
 import SwiftUI
 
-/// Full-width overview rows (S2/S3 content for the Overview selection).
+/// Overview content — solid cards of Rust glance rows (LG-A2 content layer).
 ///
-/// Renders the Rust-owned glance rows verbatim — identity, plan, headline,
-/// reset, and status strings all come from Rust; this view synthesizes no usage
-/// text (plan 008). Empty shows the fixed hint.
+/// Glance % / reset match the status bar for each provider; selecting opens
+/// full detail (Session, Spark, Auth, …).
 struct OverviewListView: View {
     let model: UsageWindowModel
     var onSelect: (String) -> Void
 
     var body: some View {
         ScrollView {
-            LazyVStack(alignment: .leading, spacing: 8) {
+            LazyVStack(alignment: .leading, spacing: 10) {
                 if model.isEmpty {
                     Text(UsageWindowModel.emptyHint)
                         .foregroundStyle(.secondary)
@@ -36,34 +35,39 @@ struct OverviewListView: View {
     }
 
     private func overviewCard(_ row: PresentationStore.GlanceProviderRow) -> some View {
-        HStack(alignment: .top, spacing: 10) {
-            Circle()
-                .fill(severityTint(row.severity))
-                .frame(width: 8, height: 8)
-                .padding(.top, 6)
+        HStack(alignment: .center, spacing: 12) {
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .fill(severityTint(row.severity).opacity(0.9))
+                .frame(width: 10, height: 44)
+                .accessibilityHidden(true)
 
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: 4) {
                 HStack(alignment: .firstTextBaseline) {
                     Text(row.displayLabel)
                         .font(.headline)
                     Spacer(minLength: 8)
-                    if let plan = row.planLabel, !plan.isEmpty {
-                        Text(plan)
-                            .font(.caption.weight(.medium))
-                            .foregroundStyle(.secondary)
+                    // Primary glance — same as status-bar barLabel.
+                    if !row.barLabel.isEmpty {
+                        Text(row.barLabel)
+                            .font(.title3.weight(.semibold).monospacedDigit())
+                            .foregroundStyle(severityTint(row.severity))
                     }
                 }
 
-                if !row.headline.isEmpty {
-                    Text(row.headline)
-                        .font(.subheadline)
-                        .monospacedDigit()
-                } else if !row.statusWord.isEmpty {
-                    Text(row.statusWord)
+                if !row.accountLabel.isEmpty {
+                    Text(row.accountLabel)
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
+                        .lineLimit(1)
                 }
 
+                if let plan = row.planLabel, !plan.isEmpty {
+                    Text(plan)
+                        .font(.caption.weight(.medium))
+                        .foregroundStyle(.tertiary)
+                }
+
+                // Reset on its own line (FB1-31) — not jammed with %.
                 if let reset = row.resetLabel, !reset.isEmpty {
                     Text(reset)
                         .font(.caption)
@@ -85,7 +89,6 @@ struct OverviewListView: View {
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background {
-            // Content layer — standard material only (HIG: no Liquid Glass here).
             GlassFallbacks.contentCardBackground()
         }
     }

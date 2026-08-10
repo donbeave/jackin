@@ -4,12 +4,14 @@
 import JackinUsageBridge
 import SwiftUI
 
-/// Liquid Glass Usage window: glass **sidebar + toolbar** chrome above
-/// standard-material **content** (HIG: no Liquid Glass in the content layer).
+/// Usage window — Apple Liquid Glass **navigation** + solid **content**.
 ///
-/// Every provider, order, label, number, and segment comes from Rust via
-/// ``UsageWindowModel``; this view only routes selection actions to the store's
-/// one mutation each and draws the Rust-finished rows (plan 008).
+/// Principles (Adopting Liquid Glass / LG-A1–A12):
+/// - `NavigationSplitView` sidebar + toolbar = glass nav layer (`GlassFallbacks`)
+/// - Detail = standard materials only (no glass data cards)
+/// - Provider rows primary; account switching lives in content (left H-scroll pills)
+/// - Toolbar groups related actions (Refresh)
+/// - SwiftUI only; all % / labels from Rust via ``UsageWindowModel``
 struct UsageWindowRoot: View {
     @ObservedObject var store: PresentationStore
     @Environment(\.dismiss) private var dismiss
@@ -28,42 +30,35 @@ struct UsageWindowRoot: View {
     var body: some View {
         let model = self.model
         NavigationSplitView {
+            // MARK: Navigation layer (Liquid Glass)
             List(selection: selectionBinding) {
                 Section {
-                    Label("Overview", systemImage: "square.grid.2x2")
-                        .tag(Self.overviewId)
-                    // Sidebar rows in the Rust-owned canonical (Capsule tab) order.
+                    Label {
+                        Text("Overview")
+                            .font(.body.weight(.semibold))
+                    } icon: {
+                        Image(systemName: "square.grid.2x2")
+                    }
+                    .tag(Self.overviewId)
+                    .accessibilityLabel("Overview")
+                }
+
+                Section("Providers") {
+                    // Canonical Capsule / DESKTOP_PROVIDER_ORDER from Rust glance rows.
                     ForEach(model.sidebar) { row in
-                        HStack(spacing: 8) {
-                            Circle()
-                                .fill(severityTint(row.severity))
-                                .frame(width: 8, height: 8)
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(row.displayLabel)
-                                    .font(.body.weight(.medium))
-                                if !row.headline.isEmpty {
-                                    Text(row.headline)
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                        .monospacedDigit()
-                                        .lineLimit(1)
-                                        .minimumScaleFactor(0.75)
-                                }
-                            }
-                            Spacer(minLength: 4)
-                        }
-                        .tag(row.surfaceId)
-                        .accessibilityLabel("\(row.displayLabel) \(row.headline)")
+                        providerSidebarRow(row)
+                            .tag(row.surfaceId)
+                            .accessibilityLabel("\(row.displayLabel) \(row.headline)")
                     }
                 }
             }
             .listStyle(.sidebar)
-            .navigationSplitViewColumnWidth(min: 200, ideal: 240, max: 320)
+            .navigationSplitViewColumnWidth(min: 200, ideal: 248, max: 320)
             .background {
-                // Navigation layer — Liquid Glass.
                 GlassFallbacks.sidebarBackground()
             }
             .safeAreaInset(edge: .bottom, spacing: 0) {
+                // Glass footer dock (nav chrome) — limits-only refresh hint.
                 HStack {
                     Text(store.nextRefreshLabel)
                         .font(.caption2)
@@ -78,7 +73,7 @@ struct UsageWindowRoot: View {
                 }
             }
         } detail: {
-            // Content layer — standard window background only (no glass).
+            // MARK: Content layer (standard materials only)
             Group {
                 if let content = model.content {
                     ProviderCardView(
@@ -104,7 +99,8 @@ struct UsageWindowRoot: View {
         .navigationSplitViewStyle(.balanced)
         .navigationTitle("Usage")
         .toolbar {
-            ToolbarItem(placement: .primaryAction) {
+            // LG-A8: single primary action group on the glass toolbar.
+            ToolbarItemGroup(placement: .primaryAction) {
                 Button {
                     store.refreshAll()
                 } label: {
@@ -123,6 +119,47 @@ struct UsageWindowRoot: View {
             }
         }
         .frame(minWidth: 760, minHeight: 500)
+    }
+
+    /// Primary provider nav row: name + glance headline + trailing bar %.
+    /// Distinct from account pills (those live in content — LG-A3 / FB1-48).
+    @ViewBuilder
+    private func providerSidebarRow(_ row: PresentationStore.GlanceProviderRow) -> some View {
+        HStack(spacing: 10) {
+            // Brand plate stand-in via severity for status color (not glass).
+            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                .fill(severityTint(row.severity).opacity(0.85))
+                .frame(width: 8, height: 28)
+                .accessibilityHidden(true)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(row.displayLabel)
+                    .font(.body.weight(.semibold))
+                    .lineLimit(1)
+                if !row.accountLabel.isEmpty {
+                    Text(row.accountLabel)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                } else if !row.headline.isEmpty {
+                    Text(row.headline)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .monospacedDigit()
+                        .lineLimit(1)
+                }
+            }
+
+            Spacer(minLength: 4)
+
+            // Same glance % as the status bar (`barLabel`).
+            if !row.barLabel.isEmpty {
+                Text(row.barLabel)
+                    .font(.caption.weight(.bold).monospacedDigit())
+                    .foregroundStyle(severityTint(row.severity))
+            }
+        }
+        .padding(.vertical, 2)
     }
 
     private var selectionBinding: Binding<String?> {
