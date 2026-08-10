@@ -25,8 +25,8 @@ key/main, window-ID-owned evidence.
 ## Live
 | Scene | Verdict |
 |-------|---------|
-| popover-live | BLOCKED |
-| ctx-menu-live | BLOCKED |
+| popover-live | PASS |
+| ctx-menu-live | PASS |
 
 ## Gates
 L1+L2 ALL PASS · component themes byte-distinct · full-window active craft PASS

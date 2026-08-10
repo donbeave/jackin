@@ -183,22 +183,20 @@ notes = "Real shipped NSPopover + GlassPopoverHostingController at 416×644; quo
 [[scene]]
 id = "popover-live-click"
 theme = "dark"
-html_path = ""
-native_path = ""
-capture_tier = "blocked"
-verdict = "blocked"
-blocked_reason = "Physical status-item left-click walkthrough BLOCKED (empty probe/keychain). Real NSPopover host craft passes Dark/Light separately; focus wiring passes SoT harness."
-blocked_note_path = "advisor-plans/qi-artifacts/native/popover-live.BLOCKED.txt"
+html_path = "advisor-plans/qi-artifacts/html/popover-anthropic-dark.png"
+native_path = "advisor-plans/qi-artifacts/native/popover-live-anthropic-dark.png"
+capture_tier = "live"
+verdict = "pass"
+notes = "Physical AXPress on the Anthropic NSStatusItem opened the shipped NSPopover with Providers and Anthropic selected; privacy-safe crop retains the complete focus proof."
 
 [[scene]]
 id = "ctx-menu-live"
 theme = "dark"
 html_path = ""
-native_path = ""
-capture_tier = "blocked"
-verdict = "blocked"
-blocked_reason = "Live physical right-click walkthrough BLOCKED (no Accessibility). Shipped NSMenu craft is captured separately as ctx-menu-dark.png."
-blocked_note_path = "advisor-plans/qi-artifacts/native/ctx-menu-live-dark.BLOCKED.txt"
+native_path = "advisor-plans/qi-artifacts/native/ctx-menu-live-dark.png"
+capture_tier = "live"
+verdict = "pass"
+notes = "Trusted physical right-click opened the shipped NSMenu from the real Anthropic status item; capture proves all enabled rows and destructive separator."
 
 # Optional live status extras (file exists on disk; dual-stack API remains harness)
 

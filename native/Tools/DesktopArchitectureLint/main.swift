@@ -131,6 +131,14 @@ struct DesktopArchitectureLint {
             print("FAIL  DesktopAppDelegate must set store.popoverSelection on left-click")
             ok = false
         }
+        if !text.contains("NSEvent.addLocalMonitorForEvents(matching: .rightMouseUp)")
+            || !text.contains("button.bounds.contains(button.convert(event.locationInWindow, from: nil))")
+            || text.contains("NSApp.currentEvent?.type == .rightMouseUp")
+            || text.contains("[.leftMouseUp, .rightMouseUp]")
+        {
+            print("FAIL  status right-click must use a button-scoped local event monitor")
+            ok = false
+        }
         if ok {
             print("PASS  status left-click popover focus wiring")
         } else {

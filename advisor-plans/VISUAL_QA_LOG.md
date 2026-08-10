@@ -114,10 +114,10 @@ Real-host popover re-audit bypassed root-view snapshots and captured the shipped
 `NSPopover` plus `GlassPopoverHostingController`. This exposed a zero-height quota
 ScrollView hidden by full-plate fixtures: only chrome and footer were visible.
 `StatusBarController` now owns a shared 416×644 content size. Dark/Light hosted
-captures show the bounded account and quota viewport; physical left-click remains
-an operator flow.
+captures show the bounded account and quota viewport. Physical status-item
+AXPress also opens the expected provider-focused shipped popover.
 
 ## Live
-popover-live / ctx-menu **BLOCKED** — SoTParity proves focus/menu.
+popover-live / ctx-menu **PASS** — real status-item left/right-click captures.
 
 Agent sign-off: G-P3 Pass; multi-limit Pass; active full-window craft Pass.

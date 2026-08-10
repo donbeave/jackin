@@ -141,10 +141,15 @@ def check_prose_png_refs(failures: list[str]) -> None:
                 fail(f"{rel}: references missing PNG {base}", failures)
 
 
-def check_no_orphan_live_craft_files(failures: list[str]) -> None:
+def check_no_orphan_live_craft_files(scenes: list[dict], failures: list[str]) -> None:
     native = ROOT / "advisor-plans" / "qi-artifacts" / "native"
+    ledgered_live_passes = {
+        Path(row.get("native_path", "")).name
+        for row in scenes
+        if row.get("capture_tier") == "live" and row.get("verdict") == "pass"
+    }
     for name in ("popover-live-openai-dark.png", "popover-live-anthropic-dark.png"):
-        if (native / name).is_file():
+        if (native / name).is_file() and name not in ledgered_live_passes:
             fail(
                 f"orphan live craft PNG present ({name}); remove or re-ledger as live pass",
                 failures,
@@ -173,7 +178,7 @@ def main() -> int:
         fail("ledger has zero [[scene]] rows", failures)
     check_ledger_rows(scenes, failures)
     check_prose_png_refs(failures)
-    check_no_orphan_live_craft_files(failures)
+    check_no_orphan_live_craft_files(scenes, failures)
     check_window_capture_ownership(failures)
 
     if failures:

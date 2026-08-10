@@ -27,10 +27,10 @@ Stamp: foundations **`f4ec1247`**; plan+QI docs ready for `/goal` (2026-08-10). 
 | Phase | Focus | Status |
 |-------|--------|--------|
 | **A** | Freeze & re-baseline gaps vs HTML | **DONE** — frozen oracle + Dark/Light baselines |
-| **B** | Status bar + click interactions craft | **PARTIAL** — craft/model pass; live click/menu capture blocked |
+| **B** | Status bar + click interactions craft | **DONE** — craft/model + live click/menu evidence pass |
 | **C** | Popover = `popover.html` craft | **DONE** — Dark/Light full-shell fixture evidence |
 | **D** | Usage window = `index.html` Usage craft | **DONE** — active key/main Dark/Light evidence |
-| **E** | Cross-cut polish + VISUAL_QA_LOG sign-off | **PARTIAL** — gates pass; live interaction/operator sign-off pending |
+| **E** | Cross-cut polish + VISUAL_QA_LOG sign-off | **PARTIAL** — gates and live interactions pass; operator sign-off pending |
 
 Structural foundations (code already landed) are summarized in the master plan §4 — do not treat “code exists” as Phase B–E Pass.
 

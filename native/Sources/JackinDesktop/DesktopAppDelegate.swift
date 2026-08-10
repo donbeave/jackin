@@ -19,6 +19,7 @@ public final class StatusBarController: NSObject {
     private var canonicalOrder: [String] = []
     private let popover = NSPopover()
     private weak var anchoredButton: NSStatusBarButton?
+    private var rightClickMonitors: [ObjectIdentifier: Any] = [:]
     private var cancellables: Set<AnyCancellable> = []
     /// Opens the Usage window focused on a provider (`nil` = Overview).
     private let onOpenUsage: (String?) -> Void
@@ -91,7 +92,8 @@ public final class StatusBarController: NSObject {
         if let button = item.button {
             button.target = self
             button.action = #selector(handleClick(_:))
-            button.sendAction(on: [.leftMouseUp, .rightMouseUp])
+            button.sendAction(on: [.leftMouseUp])
+            installRightClickMonitor(on: button)
         }
         return item
     }
@@ -123,7 +125,8 @@ public final class StatusBarController: NSObject {
             button.image = StatusItemRendering.fallbackIcon()
             button.target = self
             button.action = #selector(handleClick(_:))
-            button.sendAction(on: [.leftMouseUp, .rightMouseUp])
+            button.sendAction(on: [.leftMouseUp])
+            installRightClickMonitor(on: button)
             button.setAccessibilityLabel("jackin❯ desktop usage")
         }
         fallbackItem = item
@@ -139,6 +142,7 @@ public final class StatusBarController: NSObject {
 
     private func removeProviderItem(id: String) {
         guard let item = providerItems.removeValue(forKey: id) else { return }
+        removeRightClickMonitor(from: item.button)
         if anchoredButton === item.button {
             popover.performClose(nil)
             anchoredButton = nil
@@ -154,6 +158,7 @@ public final class StatusBarController: NSObject {
 
     private func removeFallbackItem() {
         guard let item = fallbackItem else { return }
+        removeRightClickMonitor(from: item.button)
         if anchoredButton === item.button {
             popover.performClose(nil)
             anchoredButton = nil
@@ -163,16 +168,39 @@ public final class StatusBarController: NSObject {
     }
 
     @objc private func handleClick(_ sender: NSStatusBarButton) {
-        // Right-click shows the static context menu; left-click toggles the popover.
-        if NSApp.currentEvent?.type == .rightMouseUp {
-            statusItemMenu.popUp(
-                positioning: nil,
-                at: NSPoint(x: 0, y: sender.bounds.height + 4),
-                in: sender
-            )
-            return
-        }
         togglePopover(sender)
+    }
+
+    private func installRightClickMonitor(on button: NSStatusBarButton) {
+        let identity = ObjectIdentifier(button)
+        let monitor = NSEvent.addLocalMonitorForEvents(matching: .rightMouseUp) {
+            [weak self, weak button] event in
+            guard let self, let button,
+                  event.window === button.window,
+                  button.bounds.contains(button.convert(event.locationInWindow, from: nil))
+            else { return event }
+            DispatchQueue.main.async { [weak self, weak button] in
+                guard let self, let button else { return }
+                self.presentContextMenu(from: button)
+            }
+            return nil
+        }
+        rightClickMonitors[identity] = monitor
+    }
+
+    private func removeRightClickMonitor(from button: NSStatusBarButton?) {
+        guard let button,
+              let monitor = rightClickMonitors.removeValue(forKey: ObjectIdentifier(button))
+        else { return }
+        NSEvent.removeMonitor(monitor)
+    }
+
+    private func presentContextMenu(from sender: NSStatusBarButton) {
+        statusItemMenu.popUp(
+            positioning: nil,
+            at: NSPoint(x: 0, y: sender.bounds.height + 4),
+            in: sender
+        )
     }
 
     /// Resolve which provider (or fallback) owns this status button.
