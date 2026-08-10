@@ -1,26 +1,27 @@
-# QI delta: status-desktop · dark + light
+# QI delta: status-desktop · Dark + Light (G-S1)
 
-**Date:** 2026-08-10 · **Tip:** `624b6573` · harness recapture stable
+**Date:** 2026-08-10 · **Tip:** `bd3f3dc9`  
+**Oracle HTML:** `html/status-desktop-{dark,light}.png` (menu-bar strip in desktop mock)  
+**Native:** `native/status-desktop-{dark,light}.png` (StatusItemRendering bitmap)
 
-## Oracle
-- HTML: `qi-artifacts/html/status-desktop-*.png` (menu-bar strip in full desktop scene)
+## Dual-image
 
-## Candidate
-- Native: `qi-artifacts/native/status-desktop-*.png` (StatusItemRendering bitmap)
-
-## Dual-image (re-verify)
-- Dual stack: compact countdown top (1h / 3d / 18h) + % bottom (12% / 57% / 100%)
-- Template mono provider glyphs; no brand color plates; no glass chip fill (FB1-6)
-- Light theme: dark text on light stage; same IA
-- Brand N/A on bar extras (system menu bar)
-- Limits only: no prices/trends
+| Check | HTML | Native | Match |
+|-------|------|--------|-------|
+| Dual stack | countdown top + % bottom | 1h/12% · 3d/57% · 18h/100% | Yes |
+| Template mono | transparent glyphs | no brand color plates | Yes |
+| No glass chips | FB1-6 | no capsule fill | Yes |
+| Fixture % | Anthropic 12 · OpenAI 57 · Amp 100 | same | Yes |
+| Light theme | dark text on light bar | same IA | Yes |
+| Limits only | remaining % only | no prices/trends | Yes |
 
 ## Different (not High)
+
 | Severity | Element | Notes |
 |----------|---------|-------|
-| Low | System chrome |  / Control Center / clock N/A (system) |
-| Low | Capture framing | Native = isolated status extras; HTML = full desktop mock |
-| Med | Live NSStatusItem | BLOCKED without Screen Recording — harness craft Pass |
+| Low | Framing | Native = isolated extras; HTML = full desktop + system /clock |
+| Low | System chrome |  / Control Center / clock **N/A** (system) |
+| Med | Live NSStatusItem | harness craft Pass; live BLOCKED without Screen Recording |
 
 ## Verdict
-Verdict: Pass
+**Verdict: Pass** (Dark + Light)

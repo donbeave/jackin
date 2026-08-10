@@ -1,27 +1,34 @@
-# QI delta: popover-openai · dark + light
+# QI delta: popover-openai · Dark + Light (G-P1–P3)
 
-**Date:** 2026-08-10 · **Tip:** `624b6573` · harness recapture stable
+**Date:** 2026-08-10 · **Tip:** `bd3f3dc9`  
+**Oracle HTML:** `html/popover-openai-{dark,light}.png`  
+**Native:** `native/popover-openai-{dark,light}.png` (PopoverRoot + QI fixture)
 
-## Oracle
-- HTML: `qi-artifacts/html/popover-openai-*.png`
+## Dual-image
 
-## Candidate
-- Native: `qi-artifacts/native/popover-openai-*.png` (DesktopVisualSnapshotHarness)
-
-## Dual-image (re-verify)
-- IA: brand · Overview|Providers · pstrip · account chips · ACCOUNT meta · SESSION/WEEKLY/SPARK heroes · LRC · Open Usage Window footer
-- Numbers: 63% / 57% / 88% / 100% match fixture; Weekly orange deficit fill
-- Meters: 3-status severity; brand on plates only
-- Brand: jackin❯ desktop
-- Limits only: no prices/trends
+| Check | HTML | Native | Match |
+|-------|------|--------|-------|
+| Brand | jackin❯ desktop | same | Yes |
+| Tabs | Overview \| Providers | Providers selected | Yes |
+| Strip | OpenAI selected + meters | OpenAI selected (fixture 3 providers) | Yes |
+| Account chips | multi emails | chainargos 57% · zhokhov 0% | Yes |
+| ACCOUNT | Pro 20× · fresh · OAuth | same | Yes |
+| Session | **63% left** green | same · On pace · Resets 2h 14m | Yes |
+| Weekly | **57% left** orange | same · 13% in deficit · Resets 3d | Yes |
+| Spark 5-hour | **88% left** | same | Yes |
+| Spark Weekly | **100% left** | same | Yes |
+| LRC | 3 manual resets | same | Yes |
+| Footer | Open Usage Window | same | Yes |
+| Light theme | same IA | same | Yes |
+| Limits only | no prices | no prices | Yes |
 
 ## Different (not High)
+
 | Severity | Element | Notes |
 |----------|---------|-------|
-| Low | System chrome |  / clock N/A (system) |
-| Low | Fixture provider strip count | Native QI fixture 3 providers vs HTML 5+ |
-| Low | Exact calendar clock on some heroes | Native compact “Resets in 3d” vs HTML “15 Aug…” — Rust segment only |
-| Low | Account chip % | Native shows remaining on chips; HTML SoT may omit % on chips |
+| Low | Strip count | QI fixture 3 vs HTML 5+ providers |
+| Low | Exact wall-clock | Native compact Rust segments vs HTML “15 Aug…” |
+| Low | Open usage page link | Native shows in-body link + footer Open Usage Window |
 
 ## Verdict
-Verdict: Pass
+**Verdict: Pass** (Dark + Light)
