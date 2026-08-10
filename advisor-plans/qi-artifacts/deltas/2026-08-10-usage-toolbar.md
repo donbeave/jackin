@@ -9,7 +9,7 @@
 | Cycle | High residual | Fix |
 |-------|---------------|-----|
 | Fail | Dark solid white SF Symbol disks | view-bitmap crop |
-| Pass | screencapture composite | readable Refresh + sidebar toggle Dark+Light |
+| Blocked | current Dark view-bitmap | unreadable white symbol disks; no coordinate capture fallback |
 | Fail | Brand title was leading despite centered HTML oracle | hidden duplicate NSWindow title + SwiftUI `.principal` brand item |
 | Pass | Brand centered with phosphor chevron | recaptured full window + toolbar Dark+Light |
 
@@ -18,7 +18,7 @@
 | Check | HTML | Native | Match |
 |-------|------|--------|-------|
 | Brand | centered jackin❯ desktop | centered; phosphor chevron | Yes |
-| Refresh | clockwise glyph | arrow.clockwise readable D+L | Yes |
+| Refresh | clockwise glyph | Light readable; Dark capture blocked | Partial |
 | Sidebar toggle | system | present | Yes |
 | Unified chrome | titlebar | NSToolbar crop | Yes |
 | Limits only | n/a | no prices | Yes |
@@ -27,7 +27,7 @@
 
 | Severity | Element | Notes |
 |----------|---------|-------|
-| Low | Traffic lights | System chrome N/A |
+| High | Dark toolbar capture | Window-ID capture unavailable; view-bitmap symbols whiteout |
 
 ## Verdict
-**Verdict: Pass** (Dark + Light)
+**Verdict: Light Pass; Dark Blocked**

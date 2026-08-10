@@ -235,7 +235,7 @@ public struct UsageWindowRoot: View {
     }
 
     private func sidebarProviderLogo(iconKey: String) -> some View {
-        sidebarLogoPlate(iconKey: iconKey, tint: Color.jackinPhosphor)
+        sidebarLogoPlate(iconKey: iconKey, tint: desktopProviderBrandChrome(iconKey: iconKey))
     }
 
     private func sidebarLogoPlate(

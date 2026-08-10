@@ -48,6 +48,7 @@ struct DesktopVisualSnapshotHarness {
         )
 
         _ = NSApplication.shared
+        NSApp.finishLaunching()
         NSApp.setActivationPolicy(.prohibited)
 
         // Fail closed: seven Desktop providers must load official bundled marks
@@ -292,6 +293,14 @@ struct DesktopVisualSnapshotHarness {
             toolbarOkLight = false
         }
 
+        func windowEvidenceLabel(ok: Bool, path: String) -> String {
+            guard ok else { return "BLOCKED" }
+            let inactive = path.replacingOccurrences(of: ".png", with: ".INACTIVE.txt")
+            return FileManager.default.fileExists(atPath: inactive)
+                ? "STRUCTURAL_INACTIVE"
+                : "ACTIVE_OK"
+        }
+
         // Manifest for VISUAL_QA_LOG honesty
         let manifest = """
         # DesktopVisualSnapshotHarness manifest
@@ -303,10 +312,10 @@ struct DesktopVisualSnapshotHarness {
         usage_detail: ProviderCardView (+ window detail column)
         usage_overview: OverviewListView (+ window overview)
         usage_nest: UsageAccountNestView (+ window sidebar when CGWindow OK)
-        usage_window_openai_dark: \(windowOkDark ? "OK" : "BLOCKED")
-        usage_window_overview_dark: \(overviewOkDark ? "OK" : "BLOCKED")
-        usage_window_openai_light: \(windowOkLight ? "OK" : "BLOCKED")
-        usage_window_overview_light: \(overviewOkLight ? "OK" : "BLOCKED")
+        usage_window_openai_dark: \(windowEvidenceLabel(ok: windowOkDark, path: "\(out)/usage-window-openai-dark.png"))
+        usage_window_overview_dark: \(windowEvidenceLabel(ok: overviewOkDark, path: "\(out)/usage-window-overview-dark.png"))
+        usage_window_openai_light: \(windowEvidenceLabel(ok: windowOkLight, path: "\(out)/usage-window-openai-light.png"))
+        usage_window_overview_light: \(windowEvidenceLabel(ok: overviewOkLight, path: "\(out)/usage-window-overview-light.png"))
         usage_toolbar_dark: \(toolbarOkDark ? "UsageWindowController titlebar crop" : "BLOCKED")
         usage_toolbar_light: \(toolbarOkLight ? "UsageWindowController titlebar crop" : "BLOCKED")
         """
@@ -555,7 +564,7 @@ struct DesktopVisualSnapshotHarness {
 
         // Accessory→regular so titlebar/toolbar composites (matches live app path).
         NSApp.setActivationPolicy(.regular)
-        // On-screen frame so screencapture -R can sample real composite pixels.
+        // On-screen frame so system titlebar and Liquid Glass composite normally.
         if let screen = NSScreen.main {
             let vis = screen.visibleFrame
             let w: CGFloat = 920
@@ -567,6 +576,8 @@ struct DesktopVisualSnapshotHarness {
             window.setFrame(NSRect(x: 80, y: 80, width: 920, height: 620), display: true)
         }
         window.orderFrontRegardless()
+        NSRunningApplication.current.activate(options: [.activateAllWindows])
+        window.makeMain()
         window.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
         window.layoutIfNeeded()
@@ -575,6 +586,8 @@ struct DesktopVisualSnapshotHarness {
         RunLoop.current.run(until: Date(timeIntervalSinceNow: 0.9))
         window.contentViewController?.view.layoutSubtreeIfNeeded()
         RunLoop.current.run(until: Date(timeIntervalSinceNow: 0.25))
+        let activeWindow = window.isKeyWindow && window.isMainWindow
+        fputs("INFO usage window state key=\(window.isKeyWindow) main=\(window.isMainWindow)\n", stderr)
 
         guard let full = captureWindowImageNonBlank(window: window) else {
             writeBlockedPlaceholder(
@@ -628,7 +641,19 @@ struct DesktopVisualSnapshotHarness {
             let shared = (fullPath as NSString).deletingLastPathComponent
                 + "/usage-window-sidebar.BLOCKED.txt"
             try? FileManager.default.removeItem(atPath: shared)
-            print("WROTE \(fullPath) [UsageWindowController window capture]")
+            let inactive = fullPath.replacingOccurrences(of: ".png", with: ".INACTIVE.txt")
+            if activeWindow {
+                try? FileManager.default.removeItem(atPath: inactive)
+                print("WROTE \(fullPath) [active UsageWindowController window capture]")
+            } else {
+                let reason = "Window-ID capture is structurally valid but app was not key/main; active-state color parity remains unproven."
+                try? reason.write(
+                    to: URL(fileURLWithPath: inactive),
+                    atomically: true,
+                    encoding: .utf8
+                )
+                print("WROTE \(fullPath) [structural inactive-window capture]")
+            }
         }
 
         // Titlebar/toolbar band crop (CGImage y=0 is top in this bitmap path).
@@ -699,16 +724,13 @@ struct DesktopVisualSnapshotHarness {
         return true
     }
 
-    /// Prefer live composite: screencapture -R region, then -l, then CGWindow.
+    /// Prefer window-ID capture, then CGWindow.
     /// Last: theme-frame `cacheDisplay` (may blank Liquid Glass sidebar / blow out Dark toolbar icons).
     @MainActor
     private static func captureWindowImageNonBlank(window: NSWindow) -> CGImage? {
-        // Prefer on-screen region capture (Screen Recording often works when CGWindow is black).
-        fputs("INFO trying screencapture -R window frame\n", stderr)
-        if let region = captureWindowViaScreencaptureRegion(window: window), !cgImageIsBlank(region) {
-            return region
-        }
-        fputs("WARN screencapture -R failed — trying screencapture -l\n", stderr)
+        // Region capture is forbidden here: another app can occlude these coordinates,
+        // producing a plausible nonblank image of the wrong window. Window ID preserves ownership.
+        fputs("INFO trying screencapture -l window ID\n", stderr)
         if let sc = captureWindowViaScreencapture(window: window), !cgImageIsBlank(sc) {
             return sc
         }
@@ -722,45 +744,6 @@ struct DesktopVisualSnapshotHarness {
             return viewImg
         }
         return nil
-    }
-
-    /// `screencapture -R x,y,w,h` using Cocoa frame → top-left screen coords.
-    @MainActor
-    private static func captureWindowViaScreencaptureRegion(window: NSWindow) -> CGImage? {
-        let frame = window.frame
-        guard frame.width > 8, frame.height > 8 else { return nil }
-        // Global Cocoa coords: origin bottom-left. screencapture -R: origin top-left of main display.
-        guard let screen = window.screen ?? NSScreen.main else { return nil }
-        let screenFrame = screen.frame
-        // Convert window bottom-left to global top-left pixel coords for -R.
-        // Use primary display height for Y flip when multi-display (screencapture uses global desktop).
-        let globalMaxY = NSScreen.screens.map(\.frame.maxY).max() ?? screenFrame.maxY
-        let x = Int(frame.minX.rounded())
-        let y = Int((globalMaxY - frame.maxY).rounded())
-        let w = Int(frame.width.rounded())
-        let h = Int(frame.height.rounded())
-        guard w > 0, h > 0 else { return nil }
-
-        let tmp = FileManager.default.temporaryDirectory
-            .appendingPathComponent("jackin-qi-region-\(window.windowNumber).png")
-        let proc = Process()
-        proc.executableURL = URL(fileURLWithPath: "/usr/sbin/screencapture")
-        proc.arguments = ["-x", "-R", "\(x),\(y),\(w),\(h)", tmp.path]
-        do {
-            try proc.run()
-            proc.waitUntilExit()
-        } catch {
-            return nil
-        }
-        guard proc.terminationStatus == 0,
-              let img = NSImage(contentsOf: tmp),
-              let cg = img.cgImage(forProposedRect: nil, context: nil, hints: nil)
-        else {
-            try? FileManager.default.removeItem(at: tmp)
-            return nil
-        }
-        try? FileManager.default.removeItem(at: tmp)
-        return cg
     }
 
     /// macOS `screencapture -l <windowID>` — captures real window pixels.

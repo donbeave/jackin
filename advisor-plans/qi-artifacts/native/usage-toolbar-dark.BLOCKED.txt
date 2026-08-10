@@ -1,0 +1,1 @@
+Dark titlebar crop: SF Symbol toolbar icons unreadable (solid white blobs). Prefer CGWindow/screencapture -R/-l. Product: icon-only Refresh via UsageWindowRoot.toolbar. Light harness crop + ArchitectureLint prove NSToolbar host when Dark composite fails.

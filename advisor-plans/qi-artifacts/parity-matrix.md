@@ -1,9 +1,12 @@
 # Final goal parity matrix — UI_PARITY_MASTER §6
 
-**Tip:** plan/desktop-visual @ 427a1439 + audited worktree  
+**Tip:** plan/desktop-visual audited worktree
 
-## High residual craft (product)
-**None.**
+## High residual craft
+
+Product structure has no known High residual. Active full-window visual parity
+remains blocked: Dark fallback cannot composite Liquid Glass sidebar; Light
+window-ID capture is structurally valid but inactive.
 
 ## Scenes
 | Scene | Dark | Light | Verdict |
@@ -12,11 +15,11 @@
 | popover-openai | Pass | Pass | G-P3 hero→pace→reset→meter |
 | popover-anthropic | Pass | Pass | multi-limit + G-P3 |
 | popover-overview | Pass | Pass | inventory |
-| usage-overview | Pass | Pass | per-account cards |
+| usage-overview | Pass | Pass | one divided per-account inventory |
 | usage-provider-nest | Pass | Pass | 57%/0% |
 | usage-detail-openai | Pass | Pass | Session/Weekly/Spark/LRC |
-| usage-window-openai | Pass | Pass | full shell; theme-distinct captures |
-| usage-toolbar | Pass | Pass | readable Refresh both themes |
+| usage-window-openai | Blocked | Blocked | Dark glass whiteout; Light inactive |
+| usage-toolbar | Blocked | Pass | Dark fallback symbol whiteout; Light readable |
 
 ## Live
 | Scene | Verdict |
@@ -25,4 +28,4 @@
 | ctx-menu-live | BLOCKED |
 
 ## Gates
-L1+L2 ALL PASS · MANIFEST Usage full shell + toolbar Dark/Light OK · theme pairs byte-distinct
+L1+L2 ALL PASS · component themes byte-distinct · full-window active craft BLOCKED

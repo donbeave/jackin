@@ -115,6 +115,10 @@ public struct OverviewListView: View {
                     .font(.system(size: 12))
                     .foregroundStyle(.secondary)
                     .monospacedDigit()
+            } else {
+                Color.clear
+                    .frame(height: 14)
+                    .accessibilityHidden(true)
             }
 
             if let pct = row.remainingPercent {

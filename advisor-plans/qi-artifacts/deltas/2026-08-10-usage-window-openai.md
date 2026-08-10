@@ -14,7 +14,7 @@
 | Detail head | identity + external usage action | same | Yes |
 | Meta | one quiet details group | same | Yes |
 | Limits | one inset divided list | same | Yes |
-| Themes | distinct Dark and Light renderings | same | Yes |
+| Themes | active Dark and Light renderings | Dark glass fallback; Light inactive | Blocked |
 
 ## False-pass correction
 
@@ -27,12 +27,17 @@ Second re-audit found live account rows owned separate full-width List
 backgrounds while the isolated QI component used different code. Live sidebar
 and QI host now share one `UsageAccountRailView`, preventing that drift.
 
+Third re-audit found region-based screen capture had accepted pixels from an
+unrelated Telegram window occupying the same coordinates. Region capture is now
+forbidden; evidence uses window ID only. Current Dark fallback whites out the
+Liquid Glass sidebar, while Light is a valid but inactive window capture.
+
 ## Different (not High)
 
 | Severity | Element | Notes |
 |----------|---------|-------|
-| N/A | Traffic lights | System chrome |
+| High | Active full shell | Screen-capture permission / key-window state unavailable in harness |
 
 ## Verdict
 
-**Verdict: Pass** (Dark + Light)
+**Verdict: Blocked** (structure proven; active full-shell pixels unproven)

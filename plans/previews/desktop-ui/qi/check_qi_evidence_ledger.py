@@ -16,6 +16,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[4]
 LEDGER = ROOT / "advisor-plans" / "qi-artifacts" / "EVIDENCE_LEDGER.toml"
+SNAPSHOT_HARNESS = (
+    ROOT / "native" / "Tools" / "DesktopVisualSnapshotHarness" / "main.swift"
+)
 PROSE_GLOBS = [
     ROOT / "advisor-plans" / "VISUAL_QA_LOG.md",
     ROOT / "advisor-plans" / "qi-artifacts" / "parity-matrix.md",
@@ -148,6 +151,18 @@ def check_no_orphan_live_craft_files(failures: list[str]) -> None:
             )
 
 
+def check_window_capture_ownership(failures: list[str]) -> None:
+    """Full-window evidence must target window ID, never screen coordinates."""
+    if not SNAPSHOT_HARNESS.is_file():
+        fail(f"missing snapshot harness {SNAPSHOT_HARNESS}", failures)
+        return
+    text = SNAPSHOT_HARNESS.read_text(encoding="utf-8")
+    if 'proc.arguments = ["-x", "-R"' in text:
+        fail("snapshot harness uses unsafe region capture; another app can occlude evidence", failures)
+    if 'proc.arguments = ["-x", "-l"' not in text:
+        fail("snapshot harness lacks window-ID screencapture", failures)
+
+
 def main() -> int:
     if not LEDGER.is_file():
         print(f"FAIL  missing ledger {LEDGER}")
@@ -159,6 +174,7 @@ def main() -> int:
     check_ledger_rows(scenes, failures)
     check_prose_png_refs(failures)
     check_no_orphan_live_craft_files(failures)
+    check_window_capture_ownership(failures)
 
     if failures:
         print(f"---\nQI evidence ledger: {len(failures)} FAILURE(S)")

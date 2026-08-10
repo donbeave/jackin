@@ -1,0 +1,1 @@
+Full-window capture has whiteout Liquid Glass sidebar (view-bitmap/CLT composite). Not craft Pass for glass nest+detail shell. Use component snaps: usage-provider-nest / usage-detail / usage-overview / usage-toolbar.

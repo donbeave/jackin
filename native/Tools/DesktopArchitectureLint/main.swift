@@ -236,6 +236,8 @@ struct DesktopArchitectureLint {
             "ForEach(Array(inventory.enumerated())",
             "if index > 0 {",
             "private func inventoryRow",
+            "Color.clear",
+            ".frame(height: 14)",
         ]
         let forbidden = ["private func inventoryCard"]
         if required.allSatisfy(text.contains) && forbidden.allSatisfy({ !text.contains($0) }) {
@@ -280,6 +282,7 @@ struct DesktopArchitectureLint {
         let required = [
             "UsageAccountRailView(accounts: accts)",
             ".listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 8, trailing: -12))",
+            "desktopProviderBrandChrome(iconKey: iconKey)",
         ]
         if required.allSatisfy(text.contains)
             && !text.contains("listRowBackground(accountNestWellBackground)")

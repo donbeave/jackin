@@ -7,9 +7,9 @@ usage_window: UsageWindowController CGWindow full (sidebar nest + detail) — no
 usage_detail: ProviderCardView (+ window detail column)
 usage_overview: OverviewListView (+ window overview)
 usage_nest: UsageAccountNestView (+ window sidebar when CGWindow OK)
-usage_window_openai_dark: OK
-usage_window_overview_dark: OK
-usage_window_openai_light: OK
-usage_window_overview_light: OK
-usage_toolbar_dark: UsageWindowController titlebar crop
+usage_window_openai_dark: BLOCKED
+usage_window_overview_dark: BLOCKED
+usage_window_openai_light: STRUCTURAL_INACTIVE
+usage_window_overview_light: STRUCTURAL_INACTIVE
+usage_toolbar_dark: BLOCKED
 usage_toolbar_light: UsageWindowController titlebar crop
