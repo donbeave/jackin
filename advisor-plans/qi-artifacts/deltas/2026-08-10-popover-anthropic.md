@@ -1,21 +1,28 @@
 # QI delta: popover-anthropic · dark + light
 
 ## Oracle
-- HTML: `qi-artifacts/html/popover-anthropic-{dark,light}.png`
+- HTML: qi-artifacts/html/popover-anthropic-{dark,light}.png
 
 ## Candidate
-- Native: `qi-artifacts/native/popover-anthropic-{dark,light}.png`
+- Native: qi-artifacts/native/popover-anthropic-{dark,light}.png
 
 ## Dual-image (personal read)
-- Anthropic selected plate; ACCOUNT Personal / Max 20×; SESSION **74% left** phosphor meter
-- Open usage page + Open Usage Window dock
+- G-P1 shell; Anthropic selected; ACCOUNT Personal/Max 20×
+- SESSION **74% left** + **visible capsule meter** fill+track
+- Pace 12% in deficit · Resets in 4h 19m
+- Open usage page + Open Usage Window
 
 | Dimension | Score | Notes |
 |-----------|-------|-------|
-| IA / hierarchy | Pass | Providers + ACCOUNT + SESSION |
-| Color | Pass | Phosphor healthy metrics |
-| Meters | Pass | 74% session fill |
-| Copy / data | Pass | Fixture |
+| IA | Pass | Full Providers mode shell |
+| Meters | Pass | Session fill+track under hero |
+| Color | Pass | Phosphor healthy |
+| Copy | Pass | Fixture |
+
+## Different (Low)
+| Severity | Notes |
+|----------|-------|
+| Low | WEEKLY section may clip at maxHeight — Session primary SoT complete |
 
 ## Verdict
 Verdict: Pass

@@ -1,10 +1,7 @@
-BLOCKED: live left-click popover craft capture (2026-08-10 re-attempt under Xcode 26.6)
+BLOCKED: live left-click popover craft capture
 
-- App: native/.build/release/JackinDesktop launched accessory (pid recorded in app-launch log).
-- Production probe: empty/keychain glance — not DATA_CONTRACT fixture shell.
-- Live screencapture not usable as QI craft oracle match (empty strip / system chrome contamination).
-- G-P1 craft dual-image Pass uses **fixture harness** only:
-  advisor-plans/qi-artifacts/native/popover-openai-{dark,light}.png
-  advisor-plans/qi-artifacts/native/popover-anthropic-{dark,light}.png
-- Left-click focus wiring: StatusPopoverFocus + DesktopSoTParityHarness (ALL PASS).
-- Toolchain: Xcode 26.6 selected; launch RUNNING then killed after capture attempt.
+- Tip 30879f31+: fixture harness popover shows Session meter fill+track (craft Pass).
+- Live app: accessory RUNNING; production probe empty/keychain — not DATA_CONTRACT G-P1.
+- Live menubar screencapture not craft-usable as fixture dual-image oracle.
+- Craft dual-image Pass: advisor-plans/qi-artifacts/native/popover-*-{dark,light}.png
+- Left-click focus: StatusPopoverFocus + DesktopSoTParityHarness.

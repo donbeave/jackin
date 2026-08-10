@@ -138,7 +138,7 @@ html_path = ""
 native_path = ""
 capture_tier = "blocked"
 verdict = "blocked"
-blocked_reason = "2026-08-10 re-attempt: JackinDesktop accessory RUNNING; production probe empty/keychain — live menubar capture not fixture G-P1 craft. Craft Pass = harness popover-*-{dark,light}. Focus = StatusPopoverFocus + DesktopSoTParityHarness."
+blocked_reason = "Live left-click craft BLOCKED (empty probe/keychain). Fixture harness popover-*-{dark,light} is craft Pass (Session meter CAPSULE_OK tip 30879f31). Focus=StatusPopoverFocus+SoT."
 blocked_note_path = "advisor-plans/qi-artifacts/native/popover-live.BLOCKED.txt"
 
 [[scene]]
@@ -148,7 +148,7 @@ html_path = ""
 native_path = ""
 capture_tier = "blocked"
 verdict = "blocked"
-blocked_reason = "2026-08-10 re-attempt: live right-click NSMenu not capturable without Accessibility trust. Rows = StatusItemMenuModel + DesktopSoTParityHarness (Open Usage / Refresh / Quit). No live PNG craft Pass."
+blocked_reason = "Live right-click NSMenu BLOCKED (no Accessibility). Rows=StatusItemMenuModel+SoT (Open Usage/Refresh/Quit). No live PNG craft Pass."
 blocked_note_path = "advisor-plans/qi-artifacts/native/ctx-menu-live-dark.BLOCKED.txt"
 
 # Optional live status extras (file exists on disk; dual-stack API remains harness)

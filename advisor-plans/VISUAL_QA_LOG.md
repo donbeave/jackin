@@ -1,7 +1,8 @@
 # VISUAL_QA_LOG — jackin❯ desktop HTML SoT parity
 
 **Date:** 2026-08-10  
-**Verification (aaac081e0708):** L1/L2 green · ALL_PIXEL_OK · dual-image critical scenes Pass · app RUNNING · live BLOCKED  
+**Tip:** `30879f31` (+ this docs pass)  
+**Verification:** Session capsule meter CAPSULE_OK · ALL_PIXEL_OK · live 2 rows BLOCKED honest · junk removed  
 **Branch:** plan/desktop-visual  
 **Toolchain:** Xcode 26.6 (17F113) · Swift 6.3.3  
 **Authority:** `qi-artifacts/EVIDENCE_LEDGER.toml` + dual-image §7.2/7.3  
@@ -10,37 +11,35 @@
 
 | Gap | Resolution |
 |-----|------------|
-| Healthy chrome system blue | Phosphor `#5CF07A`/`#0B774E` via `JackinBrand` / `severityTint` |
-| Nest 57% greenwash | mid → warn orange (`account.meterSeverity`) |
-| status-desktop Light blank | Menu-bar stage + template icon tint; measured cellW |
-| usage-toolbar/window pure black | Reject blank CGImage; restore non-blank CGWindow craft |
-| Popover Session meter missing | bucketMeter track+overlay; taller snap; Session fill+track under 63% |
+| Healthy chrome system blue | Phosphor via `JackinBrand` / `severityTint` |
+| Nest 57% greenwash | mid → warn orange |
+| status-desktop Light blank | Menu-bar stage + template tint |
+| usage-toolbar/window pure black | Reject blank CGImage |
+| Popover Session meter missing | track+overlay capsule; taller snap — **CAPSULE_OK y=1110** |
 
-## Dual-image matrix — required §5 (personal read HTML + native)
+## Dual-image matrix — required §5
 
 | Scene | Dark | Light | High residual | Craft note | Verdict |
 |-------|------|-------|---------------|------------|---------|
-| status-desktop | yes | yes | none | Icons + dual-stack 1h/12% · 3d/57% · 18h/100%; Light readable | **Pass** |
-| popover-openai | yes | yes | none | G-P1; ACCOUNT; 63% + **meter fill+track**; pace/reset; Open Usage | **Pass** |
-| popover-anthropic | yes | yes | none | G-P1; 74% session phosphor; Open Usage Window | **Pass** |
+| status-desktop | yes | yes | none | Icons + dual-stack readable | **Pass** |
+| popover-openai | yes | yes | none | G-P1; 63% + **fill+track meter**; pace/reset | **Pass** |
+| popover-anthropic | yes | yes | none | 74% + capsule meter; pace/reset | **Pass** |
 | usage-overview | yes | yes | none | 12% red · 57% orange · 0% empty · 100% green | **Pass** |
-| usage-provider-nest | yes | yes | none | 57% **mid orange** a-pct+meter; 0% empty track | **Pass** |
-| usage-detail-openai | yes | yes | none | Open usage CTA; Session green; Weekly orange; Limit Reset | **Pass** |
-| usage-toolbar | yes | yes | none | Real NSToolbar title + Refresh (**not black**) | **Pass** |
+| usage-provider-nest | yes | yes | none | 57% mid orange; 0% empty | **Pass** |
+| usage-detail-openai | yes | yes | none | Session green · Weekly orange · Limit Reset | **Pass** |
+| usage-toolbar | yes | yes | none | Real NSToolbar (**not black**) | **Pass** |
 
-**High residual craft scenes: none.**
+**High residual craft: none.**
 
-Shell extras: `usage-window-openai` / `usage-window-overview` show nest + detail + toolbar with 57% orange nest.
-
-## Live / interaction (ledger)
+## Live / interaction (ledger — 2 blocked)
 
 | Scene | Verdict | Evidence |
 |-------|---------|----------|
-| popover-live-click | **BLOCKED** | `popover-live.BLOCKED.txt` empty probe |
-| ctx-menu-live | **BLOCKED** | `ctx-menu-live-dark.BLOCKED.txt` A11y |
-| Left-click focus wiring | **Pass** | StatusPopoverFocus + SoT |
+| popover-live-click | **BLOCKED** | `popover-live.BLOCKED.txt` · empty probe; craft=harness |
+| ctx-menu-live | **BLOCKED** | `ctx-menu-live-dark.BLOCKED.txt` · A11y; rows=SoT |
+| Left-click focus | **Pass** | StatusPopoverFocus + SoT |
 | Right-click 3 rows | **Pass** | StatusItemMenuModel + SoT |
-| Nest 0%/57% | **Pass** | SoT + dual-image |
+| Nest 0%/57% | **Pass** | dual-image |
 
 ## Automated gates
 
@@ -51,13 +50,11 @@ DesktopArchitectureLint ALL PASS
 DesktopSoTParityHarness ×3 ALL PASS
 DesktopParityMatrixHarness ALL PASS
 StatusItemChipHarness ALL PASS
-severity/phosphor unit tests PASS
-Pixel proof ALL_PIXEL_OK (no solid-black required PNGs)
-App launch RUNNING then clean kill
+SESSION_CAPSULE_METER_PROOF_OK
 ```
 
 ## Artifacts
 
-- HTML: `advisor-plans/qi-artifacts/html/*`
-- Native: `advisor-plans/qi-artifacts/native/{status,popover,usage}-*.png`
-- Deltas: `advisor-plans/qi-artifacts/deltas/2026-08-10-*.md` — **Verdict: Pass** for craft scenes
+- HTML / native / deltas under `advisor-plans/qi-artifacts/`
+- Deltas craft scenes: **Verdict: Pass**
+- Live: honest BLOCKED only (not craft Pass)
