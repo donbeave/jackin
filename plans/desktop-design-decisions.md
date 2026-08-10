@@ -427,14 +427,47 @@ Visual presentation   = redesign to premium native quality
 
 ---
 
-## 6. Liquid Glass & visual system (PROPOSED / OPEN)
+## 6. Liquid Glass & visual system
+
+**Canonical Apple sources (implementation + craft law):**
+
+| Doc | URL |
+|---|---|
+| Liquid Glass (Technology Overviews) | https://developer.apple.com/documentation/technologyoverviews/liquid-glass |
+| Adopting Liquid Glass | https://developer.apple.com/documentation/technologyoverviews/adopting-liquid-glass |
+| SwiftUI (Technology Overviews) | https://developer.apple.com/documentation/technologyoverviews/swiftui |
+| Applying Liquid Glass to custom views (SwiftUI) | https://developer.apple.com/documentation/SwiftUI/Applying-Liquid-Glass-to-custom-views |
+| HIG Materials | https://developer.apple.com/design/human-interface-guidelines/materials |
+
+**Native UI stack (CONFIRMED):** jackin❯ desktop ships **SwiftUI only** for new/changed surfaces (see Apple *SwiftUI* technology overview). Liquid Glass / materials go through **`GlassFallbacks.swift` only** (`glassEffect`, `#available(macOS 26)`). No freestyle UIKit glass, no second material helper.
 
 | ID | Status | Note |
 |---|---|---|
-| VS-1 | PROPOSED | Liquid Glass on **navigation/control chrome only**; content cards standard materials (Apple HIG + existing `GlassFallbacks` policy). |
-| VS-2 | PROPOSED | One visual system owns radii/glass/meters; all surfaces compose through it (no freestyle panels). |
+| VS-1 | **CONFIRMED** | Liquid Glass on **navigation/control chrome only**; content cards standard materials (Apple *Adopting Liquid Glass* + HIG Materials + `GlassFallbacks`). |
+| VS-2 | **CONFIRMED** | One visual system owns radii/glass/meters; all surfaces compose through it (no freestyle panels). |
 | VS-3 | OPEN | Full award-craft glance/window rebuild scope and phasing (after status bar decisions). |
 | VS-4 | OPEN | Motion / morph language requirements. |
+
+### 6.0 Apple Liquid Glass principles → jackin❯ desktop (CONFIRMED 2026-08-10)
+
+Mapped from Apple *Liquid Glass*, *Adopting Liquid Glass*, HIG *Materials*, and SwiftUI Liquid Glass APIs. HTML previews approximate these; native implements them via SwiftUI + `GlassFallbacks`.
+
+| ID | Apple principle | jackin❯ application |
+|---|---|---|
+| **LG-A1** | LG is the **topmost functional layer** for navigation (sidebars, toolbars, tab bars, menus, popovers) floating above content | Status **context menu**, glance **popover shell**, Usage **sidebar + toolbar/titlebar**, popover **footer CTA** = glass. Status **menu bar items** stay transparent/template (FB1-6) — not glass chips. |
+| **LG-A2** | **Do not use Liquid Glass in the content layer** | Usage detail, Overview inventory, limit rows, provider cards, meters, credential text = **standard materials / solid fills** (`GlassFallbacks.contentCardBackground`, `windowContentBackground`). Never glass the data list itself. |
+| **LG-A3** | **Clear navigation hierarchy** distinct from content | Usage = `NavigationSplitView` (sidebar nav vs detail content). Popover = sticky chrome (brand + Overview/Providers) vs scrollable content. |
+| **LG-A4** | **Use LG sparingly** on custom views; system components pick it up first | Prefer SwiftUI `NavigationSplitView`, `.toolbar`, `List`/sidebar style. Custom glass only via `GlassFallbacks` for popover panel, sidebar bg, toolbar capsules, footer dock — not every control. |
+| **LG-A5** | **Avoid stacking glass on glass** | One glass chrome layer; content under it. No nested glass cards inside glass sidebar. Account rail is soft inset, not a second `glassEffect`. |
+| **LG-A6** | Sidebars/toolbars **float** and refract ambient content / environment | Usage sidebar glass over solid content; HTML: transparent shell + stage bleed. Prefer content that can extend under sidebar edge (edge-to-edge) when implementing SwiftUI. |
+| **LG-A7** | **Scroll edge effects** keep controls legible as content moves under chrome | Soft dissolve under popover chrome/footer and under Usage titlebar (`scrollEdgeEffect` / HTML mask fades). Soft default; hard only when pinned accessories need it (macOS). |
+| **LG-A8** | **Toolbar grouping** — group related actions | Usage toolbar: single primary **Refresh** group (not scattered). Popover: one CTA dock, not multiple competing glass CTAs. |
+| **LG-A9** | Tint **selectively** for functional purpose | Phosphor (`#5CF07A` / light `#0B774E`) only on selection, primary CTA, high-status metrics, j❯ — not full green glass surfaces. |
+| **LG-A10** | **Regular** glass variant for dense text / popovers when legibility matters | Glance popover + menus use regular-style glass proxy; reduce transparency → ultraThinMaterial in `GlassFallbacks`. |
+| **LG-A11** | Build with latest Xcode / macOS 26 SDK for automatic system chrome | Release builds use macOS 26 SDK so Tahoe LG resolves; deploy target may stay lower with fallbacks (repo `native/README.md`). |
+| **LG-A12** | **SwiftUI is the UI framework** for Liquid Glass adoption docs | Desktop windows/popover chrome authored in **SwiftUI**; UniFFI bridge for data; no parallel UIKit redesign path for Usage/glance. |
+
+**Reject (Apple + product law):** glass on limit tables; glass stacked on glass; multi-provider rainbow glass fills; inventing % in Swift; token prices / spend trends.
 
 ### 6.1 CONFIRMED — representation principles (2026-08-10)
 
@@ -579,6 +612,8 @@ jackin = soul   (j❯, phosphor accent, mono metrics, deep canvas tint, optional
 | AR-2 | Rust owns probes, severity, strings, and (when built) **urgency ranking** for bar slots. |
 | AR-3 | Limits-only export and UI (see `native/AGENTS.md`, `jackin-usage` rules). |
 | AR-4 | macOS 26 `#available` / `glassEffect` only via `GlassFallbacks.swift`. |
+| AR-5 | **SwiftUI only** for jackin❯ desktop UI surfaces (Apple *SwiftUI* technology overview). Structure Usage with `NavigationSplitView` + `.toolbar`; glance popover as SwiftUI panel chrome via `GlassFallbacks`. Do not introduce a second UIKit-first chrome stack. |
+| AR-6 | Adopt Liquid Glass per Apple *Adopting Liquid Glass*: nav glass floats above content; content standard materials; scroll edges; toolbar grouping; glass sparingly; test light/dark + Reduce Transparency. |
 
 ---
 
@@ -640,6 +675,7 @@ jackin = soul   (j❯, phosphor accent, mono metrics, deep canvas tint, optional
 | FB1-52 | **Usage chrome is continuous Liquid Glass:** one full-width glass titlebar; sidebar floats with soft depth (no hard vertical pane rule); content solid underneath — Safari-like seamlessness, not a 4-quadrant web split | CONFIRMED |
 | FB1-53 | **Visual HTML package is finished craft SoT** — no LIKE/DISLIKE polls in HTML; craft is shown, not voted. Decisions stay in this markdown file; HTML encodes them visually | CONFIRMED |
 | FB1-54 | **Fixture data must match `jackin-usage` host presentation:** status bar / sidebar glance = Weekly (or Daily for Amp) only; Usage window = full `usage_detail_presentation` buckets + metadata; same account’s glance % identical across bar, sidebar trail, and Weekly/Daily detail row. Map: `plans/previews/desktop-ui/DATA_CONTRACT.md` | CONFIRMED |
+| FB1-55 | **Official Apple Liquid Glass + SwiftUI stack is binding:** §6.0 **LG-A1–LG-A12**, **AR-5**, **AR-6**, **VS-1 CONFIRMED**. Craft HTML must illustrate those principles; native must implement via SwiftUI + `GlassFallbacks` only | CONFIRMED |
 
 ### One-by-one queue (after FB-1)
 

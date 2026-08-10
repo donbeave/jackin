@@ -1,72 +1,79 @@
-# Liquid Glass references → jackin❯ desktop
+# Liquid Glass → jackin❯ desktop (Apple-first)
 
-Research snapshot for Usage window / popover craft. HTML is a **proxy** (blur + layered translucency), not AppKit `glassEffect` physics.
+HTML is a **visual proxy** (blur + translucency). Native implements real Liquid Glass with **SwiftUI** APIs gated in `GlassFallbacks.swift`.
 
-## What Liquid Glass *is* (Apple)
+## Required Apple reading
 
-- **Navigation / control layer** only — bars, sidebars, toolbars, sheets, menus, popovers.  
-- Content stays **solid / readable** so data does not fight refraction.  
-- Material **reflects + refracts** surroundings; adapts light/dark; works with **scroll edge effects**.  
-- Larger chrome (sidebars) picks up **ambient color** from app content + wallpaper.  
-- System auto-applies to Toolbar / Sidebar / Menu bar on macOS Tahoe when built with current SDKs.
-
-Sources: Apple Newsroom WWDC25, HIG Materials, WWDC25 “Meet Liquid Glass”.
-
-## Third-party apps that went Liquid Glass
-
-### Telegram (iOS full LG ~Jan 2026; Android follow-up; custom LG even pre–iOS 26)
-
-| Pattern | What they did | Borrow for jackin❯ |
-|---|---|---|
-| Frosted chrome everywhere that navigates | Nav bars, panels, overlays translucent | Usage **sidebar + titlebar + toolbar capsules** |
-| Panel-in-panel depth | Glass list sitting inside a frosted well | **`.side-well`** floating list container |
-| Luminous selection | Selected row feels lit, soft edge | Provider **glass pill** + soft phosphor glow |
-| Nested secondary lists | Quieter nested chrome vs primary rows | **Account rail** nested, different selection |
-| Capsule controls | Rounded glass buttons | **`.tb-btn`** pill + specular gradient |
-| Optional reduce | Power-saving toggle for effects | Native: Reduce Transparency / Motion via `GlassFallbacks` |
-| Content still primary | Chat content remains readable | **Solid `.main`** content pane |
-
-Telegram is *not* a pixel target — it proves **layered glass chrome + solid content** can feel “liquid” while staying usable.
-
-### Apple first-party (Tahoe / iOS 26)
-
-| App / surface | Pattern | Borrow |
-|---|---|---|
-| **Finder** | Glass sidebar, ambient bleed, solid file content | Sidebar material, traffic lights continuity |
-| **Safari** | Glass toolbar, content scrolls under | Soft scroll edges under titlebar |
-| **Reminders / Music / Photos** | Translucent toolbars over solid lists | Titlebar-main glass strip over content |
-| **Apple TV / system sidebars** | Sidebar refracts environment | Transparent window shell + stage bleed |
-| **Control Center / menus** | Capsule glass controls | Toolbar / CTA capsules |
-
-### Other noted third-party
-
-| App | Note |
+| Document | URL |
 |---|---|
-| **Pixelmator Pro** | Glass toolbars that stay **quiet** so canvas stays primary — same rule: chrome glass, content focus |
-| **Surge Dashboard** (prior craft bar) | Native utility density, metric tiles, split chrome — quality bar for **IA**, not LG physics |
+| **Liquid Glass** | https://developer.apple.com/documentation/technologyoverviews/liquid-glass |
+| **Adopting Liquid Glass** | https://developer.apple.com/documentation/technologyoverviews/adopting-liquid-glass |
+| **SwiftUI** (UI stack) | https://developer.apple.com/documentation/technologyoverviews/swiftui |
+| Applying Liquid Glass to custom views | https://developer.apple.com/documentation/SwiftUI/Applying-Liquid-Glass-to-custom-views |
+| Landmarks sample (LG) | https://developer.apple.com/documentation/SwiftUI/Landmarks-Building-an-app-with-Liquid-Glass |
+| HIG Materials | https://developer.apple.com/design/human-interface-guidelines/materials |
+| WWDC25 Meet Liquid Glass | https://developer.apple.com/videos/play/wwdc2025/219/ |
+| WWDC25 Build a SwiftUI app with the new design | https://developer.apple.com/videos/play/wwdc2025/323/ |
 
-## Patterns we apply in HTML craft
+**Decisions:** `plans/desktop-design-decisions.md` §6.0 **LG-A1–LG-A12**, **AR-5**, **AR-6**, **VS-1**.
 
-1. **Transparent window shell** — stage wallpaper bleeds under glass (blur has something to refract).  
-2. **Multi-layer glass** — specular gradient + mid fill + hairline + outer lift shadow.  
-3. **Floating `.side-well`** — list lives in an inner frosted panel (Telegram depth).  
-4. **Provider ≠ account** — primary luminous capsule vs nested left-accent rail (FB1-48).  
-5. **Solid content pane** — metrics/groups remain content-layer (elevated inset, not full LG).  
-6. **Capsule toolbar actions** — liquid pill controls with hover lift.  
-7. **jackin accent restraint** — phosphor only on selection / high status / j❯, never full green glass.
+## Apple principles (summary)
 
-## Native map (when Swift ships)
+1. **Navigation layer = Liquid Glass** — sidebars, toolbars, menus, popovers, floating controls sit above content and may refract what is underneath.  
+2. **Content layer ≠ Liquid Glass** — lists, cards, meters, long text use standard materials so hierarchy stays clear.  
+3. **Hierarchy over decoration** — separate nav structure from content more clearly than before.  
+4. **Sparing custom glass** — system `NavigationSplitView`, toolbars, lists first; custom `glassEffect` only for essential chrome, always via `GlassFallbacks`.  
+5. **No glass-on-glass stacks** — one chrome glass layer.  
+6. **Scroll edge effects** — content dissolves under floating chrome (soft by default).  
+7. **Edge-to-edge / ambient under sidebar** — content can extend under the glass sidebar so glass has something to refract.  
+8. **Toolbar grouping** — related actions together on the glass toolbar surface.  
+9. **Selective tint** — color for function (jackin phosphor on selection/CTA/high metrics only).  
+10. **Accessibility** — honor Reduce Transparency / Reduce Motion via material fallbacks.
 
-| HTML proxy | Native |
-|---|---|
-| `backdrop-filter: blur() saturate()` | `GlassFallbacks` / system glass materials |
-| Soft scroller mask fades | `scrollEdgeEffect(.soft)` |
-| Transparent shell + solid main | NSSplitView / NavigationSplitView materials |
-| Capsule glass buttons | Glass button styles / `.borderedProminent` careful mapping |
-| Reduce glass | Reduce Transparency → ultraThinMaterial fallback |
+## jackin❯ surface map
 
-## Out of scope / do not copy
+| Surface | Layer | Native (SwiftUI) | HTML proxy |
+|---|---|---|---|
+| Status menu bar items | Template mono (not glass chips) | Transparent status item | Transparent dual stack |
+| Glance popover shell | **Glass nav** | `GlassFallbacks.panelSurfaceBackground` | `.pop` blur + hairline |
+| Popover content / meters | **Content** | Standard fills | `--glass-inset` cards |
+| Popover footer CTA | **Glass control** | Glass capsule via fallbacks | `.cta-btn` |
+| Usage sidebar | **Glass nav** | `NavigationSplitView` + `sidebarBackground()` | Floating `.side` |
+| Usage toolbar / title | **Glass nav** | `.toolbar` + system LG | Continuous `.titlebar` |
+| Usage detail | **Content** | `windowContentBackground` + cards | Solid `.main` + `.limit-list` |
+| Context menu | **Glass nav** | System menu | `.ctx-menu` |
 
-- Telegram AI / chat chrome, bottom tab bars on macOS Usage window.  
-- Spend charts, cost sparklines, glass *on* dense data tables.  
-- Full-window green phosphor glass (fights HIG + legibility).
+## SwiftUI implementation rules
+
+```
+// Allowed glass entry point — only GlassFallbacks.swift
+.glassEffect(.regular, in: …)   // macOS 26+
+// Fallback: .ultraThinMaterial / .thinMaterial / window background
+
+// Structure
+NavigationSplitView { sidebar } detail: { content }
+  .toolbar { ToolbarItemGroup / primary actions }
+// Data: UniFFI / PresentationStore only — no invented %
+```
+
+- **Do not** call `glassEffect` outside `GlassFallbacks.swift` (enforced by architecture tests).  
+- **Do not** put glass behind provider detail text blocks.  
+- **Do** use continuous corner radii consistent with `GlassFallbacks` constants.
+
+## HTML craft rules (visual SoT until native matches)
+
+1. Transparent window shell so ambient stage bleeds under glass.  
+2. Continuous glass titlebar (Safari-like — no hard four-pane chrome).  
+3. Floating glass sidebar (soft depth, no hard vertical wall).  
+4. Solid content + single limit list (no glass data tables, no tile+bucket dupes).  
+5. Provider selection ≠ account selection (LG-A3 hierarchy).  
+6. Soft scroll edge dissolves under chrome.
+
+## Secondary references (inspiration only — not binding)
+
+Telegram / third-party “liquid glass” skins may inspire density, **not** materials policy.  
+When they conflict with Apple docs, **Apple wins**.
+
+## Product law (always)
+
+Limits only · no spend/trends · Rust owns numbers · phosphor accent restraint · brand `jackin❯ desktop`.

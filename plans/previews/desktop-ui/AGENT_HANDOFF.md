@@ -60,7 +60,8 @@ Quality bar = Finder/Tahoe Liquid Glass + high-end native macOS utilities (e.g. 
 6. Use **screenshot compare** after SwiftUI build against HTML (human or vision).  
 7. Keep **GlassFallbacks** as sole glass gate (repo rule).  
 8. Use **soft scroll edge effects** under glass chrome / above footer (FB1-42) — never hard-clip scrolling content.  
-9. Open Usage CTA = **glass capsule** (FB1-43), not a solid green rectangle.
+9. Open Usage CTA = **glass capsule** (FB1-43), not a solid green rectangle.  
+10. Read Apple **Adopting Liquid Glass** + **SwiftUI** technology overviews; apply **LG-A1–LG-A12** / **AR-5** (SwiftUI only).
 
 ### Do not
 
