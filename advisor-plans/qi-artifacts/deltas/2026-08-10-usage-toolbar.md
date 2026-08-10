@@ -10,12 +10,14 @@
 |-------|---------------|-----|
 | Fail | Dark solid white SF Symbol disks | view-bitmap crop |
 | Pass | screencapture composite | readable Refresh + sidebar toggle Dark+Light |
+| Fail | Brand title was leading despite centered HTML oracle | hidden duplicate NSWindow title + SwiftUI `.principal` brand item |
+| Pass | Brand centered with phosphor chevron | recaptured full window + toolbar Dark+Light |
 
 ## Dual-image
 
 | Check | HTML | Native | Match |
 |-------|------|--------|-------|
-| Brand | jackin❯ desktop | leading title | Yes |
+| Brand | centered jackin❯ desktop | centered; phosphor chevron | Yes |
 | Refresh | clockwise glyph | arrow.clockwise readable D+L | Yes |
 | Sidebar toggle | system | present | Yes |
 | Unified chrome | titlebar | NSToolbar crop | Yes |
@@ -25,7 +27,6 @@
 
 | Severity | Element | Notes |
 |----------|---------|-------|
-| Low | Title placement | Native leading vs HTML center |
 | Low | Traffic lights | System chrome N/A |
 
 ## Verdict

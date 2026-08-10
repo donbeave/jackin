@@ -92,6 +92,16 @@ struct DesktopArchitectureLint {
             print("FAIL  UsageWindowController must not assign contentView = NSHostingView (toolbar dies)")
             ok = false
         }
+        if !text.contains("titleVisibility = .hidden") {
+            print("FAIL  UsageWindowController must hide duplicate leading NSWindow title")
+            ok = false
+        }
+        let rootPath = desktopRoot.appendingPathComponent("UsageWindow/UsageWindowRoot.swift")
+        let rootText = try? String(contentsOf: rootPath, encoding: .utf8)
+        if rootText?.contains("ToolbarItem(placement: .principal)") != true {
+            print("FAIL  Usage toolbar must center brand in a principal item")
+            ok = false
+        }
         if ok {
             print("PASS  UsageWindowController NSToolbar hosting")
         } else {

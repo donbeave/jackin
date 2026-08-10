@@ -1,5 +1,5 @@
 # DesktopVisualSnapshotHarness manifest
-out: ../advisor-plans/qi-artifacts/native
+out: ../advisor-plans/qi-artifacts/current
 popover: PopoverRoot (TabGrid + ProviderTab + Footer) via PresentationStore.applyQIFixture
 status: StatusItemRendering.icon + StatusItemRendering.title (AppKit bitmap)
 status_live_nsstatusitem: prefer live screencapture when JackinDesktop is running (see VISUAL_QA_LOG)

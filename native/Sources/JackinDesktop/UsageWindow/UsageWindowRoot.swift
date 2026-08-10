@@ -133,9 +133,20 @@ public struct UsageWindowRoot: View {
             .modifier(GlassFallbacks.ContentBackgroundExtension())
         }
         .navigationSplitViewStyle(.balanced)
-        .navigationTitle("jackin❯ desktop")
         // NSToolbar items (window.toolbarStyle = .unified is set on NSWindow host).
         .toolbar {
+            ToolbarItem(placement: .principal) {
+                HStack(spacing: 0) {
+                    Text("jackin")
+                    Text("❯")
+                        .foregroundStyle(Color.jackinPhosphor)
+                    Text(" desktop")
+                }
+                .font(.subheadline.weight(.semibold))
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("jackin❯ desktop")
+            }
+
             // LG-A8: system toolbar group — icon-only Refresh (standard macOS pattern).
             ToolbarItem(placement: .primaryAction) {
                 Button {

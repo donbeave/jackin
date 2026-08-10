@@ -52,7 +52,9 @@ public final class UsageWindowController: NSObject, NSWindowDelegate {
         // Unified titlebar + toolbar (system NSToolbar — not a custom chrome strip).
         window.toolbarStyle = .unified
         window.titlebarAppearsTransparent = false
-        window.titleVisibility = .visible
+        // Custom SwiftUI `.principal` item owns the centered branded title.
+        // Keep NSWindow title for Window menu/accessibility without duplicating it at leading.
+        window.titleVisibility = .hidden
         window.titlebarSeparatorStyle = .automatic
 
         // Hosting *controller* is required for SwiftUI toolbar → NSToolbar.

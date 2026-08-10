@@ -39,6 +39,10 @@ Re-audit closed false-pass primary-control deltas: Usage “Open usage page” n
 uses oracle’s quiet tint + 0.5 pt hairline instead of solid phosphor; popover
 footer CTA now matches centered phosphor glyph/label composition.
 
+Re-audit also promoted Usage toolbar title placement from false-pass “leading”
+to oracle parity: centered `jackin❯ desktop`, phosphor chevron, native principal
+toolbar item. Dark/light full-window and toolbar captures refreshed.
+
 ## Live
 popover-live / ctx-menu **BLOCKED** — SoTParity proves focus/menu.
 
