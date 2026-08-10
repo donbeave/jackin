@@ -1,8 +1,8 @@
 # VISUAL_QA_LOG — jackin❯ desktop HTML SoT parity
 
 **Date:** 2026-08-10  
-**Tip:** `91852893`  
-**Verification:** FINAL_GOAL_PROMPT re-verify fb2de59cf78a · multi-limit full-plate ALL_OK · live 2 BLOCKED · gates green · app RUNNING
+**Tip:** `03e9a176`  
+**Verification:** FINAL_GOAL_PROMPT f42450be6650 · multi-limit full-plate ALL_OK · live 2 BLOCKED · gates green · app RUNNING
 
 **Branch:** plan/desktop-visual  
 **Toolchain:** Xcode 26.6 (17F113) · Swift 6.3.3  
