@@ -63,26 +63,31 @@ public struct PopoverOverviewTab: View {
         glance: PresentationStore.GlanceProviderRow,
         rows: [OverviewInventoryRow]
     ) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 8) {
                 overviewBrandPlate(iconKey: glance.iconKey)
-                VStack(alignment: .leading, spacing: 1) {
-                    Text(glance.displayLabel)
-                        .font(.subheadline.weight(.semibold))
-                    if let plan = glance.planLabel, !plan.isEmpty {
-                        Text(plan)
-                            .font(.caption2)
-                            .foregroundStyle(.tertiary)
-                    }
+                Text(glance.displayLabel)
+                    .font(.subheadline.weight(.semibold))
+                Spacer(minLength: 8)
+                if let role = desktopProviderOverviewRole(iconKey: glance.iconKey) {
+                    Text(role)
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
                 }
-                Spacer(minLength: 0)
             }
+            .padding(.horizontal, 14)
+            .padding(.top, 12)
+            .padding(.bottom, 8)
 
-            ForEach(rows) { row in
+            Divider().opacity(0.55)
+
+            ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
+                if index > 0 {
+                    Divider().opacity(0.55)
+                }
                 accountRow(row, iconKey: glance.iconKey)
             }
         }
-        .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background {
             GlassFallbacks.popoverContentCardBackground()
@@ -110,13 +115,13 @@ public struct PopoverOverviewTab: View {
                     HStack(alignment: .top, spacing: 8) {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(accountLabel)
-                                .font(.callout.weight(.medium))
+                                .font(.system(size: 13, weight: .medium))
                                 .foregroundStyle(.primary)
                                 .lineLimit(2)
                                 .multilineTextAlignment(.leading)
                             if let reset = row.resetLabel, !reset.isEmpty {
                                 Text(reset)
-                                    .font(.caption2)
+                                    .font(.system(size: 12))
                                     .foregroundStyle(.secondary)
                                     .monospacedDigit()
                                     .fixedSize(horizontal: false, vertical: true)
@@ -128,7 +133,7 @@ public struct PopoverOverviewTab: View {
                         }
                         Spacer(minLength: 4)
                         Text(row.barLabel)
-                            .font(.callout.weight(.semibold).monospacedDigit())
+                            .font(.system(size: 22, weight: .semibold, design: .monospaced))
                             .foregroundStyle(
                                 (row.remainingPercent == 0)
                                     ? Color.secondary
@@ -140,25 +145,17 @@ public struct PopoverOverviewTab: View {
                 .buttonStyle(.plain)
                 .accessibilityLabel("\(row.title) \(row.barLabel)")
 
-                Button {
+                PopoverRefreshButton(label: "Refresh \(row.title)") {
                     onRefreshSurface?(row.surfaceId)
-                } label: {
-                    Image(systemName: "arrow.clockwise")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.secondary)
-                        .frame(width: 28, height: 28)
-                        .contentShape(Rectangle())
                 }
-                .buttonStyle(.plain)
-                .help("Refresh this provider")
-                .accessibilityLabel("Refresh \(row.title)")
             }
 
             if let pct = row.remainingPercent {
                 overviewMeter(percent: pct, severity: row.severity)
             }
         }
-        .padding(.vertical, 2)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
     }
 
     /// Strip `Provider · account` inventory title → account-only label (HTML `.account-label`).
@@ -210,7 +207,7 @@ public struct PopoverOverviewTab: View {
                     .foregroundStyle(Color.white.opacity(0.95))
             }
         }
-        .frame(width: 26, height: 26)
+        .frame(width: 28, height: 28)
     }
 
 }

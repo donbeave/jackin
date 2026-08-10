@@ -144,10 +144,13 @@ struct DesktopArchitectureLint {
             .appendingPathComponent("Popover/PopoverFooter.swift")
         let popoverProvider = desktopRoot
             .appendingPathComponent("Popover/PopoverProviderTab.swift")
+        let popoverRefresh = desktopRoot
+            .appendingPathComponent("Popover/PopoverRefreshButton.swift")
         guard
             let providerText = try? String(contentsOf: providerCard, encoding: .utf8),
             let footerText = try? String(contentsOf: popoverFooter, encoding: .utf8),
-            let popoverProviderText = try? String(contentsOf: popoverProvider, encoding: .utf8)
+            let popoverProviderText = try? String(contentsOf: popoverProvider, encoding: .utf8),
+            let popoverRefreshText = try? String(contentsOf: popoverRefresh, encoding: .utf8)
         else {
             fputs("FAIL  primary control sources missing\n", stderr)
             exit(2)
@@ -174,6 +177,13 @@ struct DesktopArchitectureLint {
             print("FAIL  popover provider header must retain logo plate + local refresh")
             ok = false
         }
+        if !popoverProviderText.contains("PopoverRefreshButton(")
+            || !popoverRefreshText.contains(".frame(width: 28, height: 28)")
+            || !popoverRefreshText.contains(".strokeBorder(Color.jackinPhosphor.opacity(0.28)")
+        {
+            print("FAIL  popover refresh controls must share HTML 28 pt phosphor craft")
+            ok = false
+        }
         if popoverProviderText.contains("systemImage: \"safari\"")
             || !popoverProviderText.contains("Image(systemName: \"arrow.up.right\")")
         {
@@ -190,6 +200,18 @@ struct DesktopArchitectureLint {
             || !popoverProviderText.contains("GlassFallbacks.popoverContentCardBackground()")
         {
             print("FAIL  popover metric type/card geometry must match HTML 32/14 tokens")
+            ok = false
+        }
+        let overviewPath = desktopRoot.appendingPathComponent("Popover/PopoverOverviewTab.swift")
+        let overviewText = try? String(contentsOf: overviewPath, encoding: .utf8)
+        if overviewText?.contains("desktopProviderOverviewRole(iconKey: glance.iconKey)") != true
+            || overviewText?.contains("if let plan = glance.planLabel") == true
+            || overviewText?.contains("ForEach(Array(rows.enumerated())") != true
+            || overviewText?.contains("Divider().opacity(0.55)") != true
+            || overviewText?.contains("size: 22, weight: .semibold, design: .monospaced") != true
+            || overviewText?.contains("PopoverRefreshButton(label:") != true
+        {
+            print("FAIL  popover Overview must retain horizontal role header + divided accounts")
             ok = false
         }
         if ok {

@@ -380,7 +380,7 @@ struct DesktopVisualSnapshotHarness {
         path: String,
         appearance: NSAppearance.Name
     ) {
-        let rows = fixture.glanceRows
+        let rows = fixture.statusGlanceRows
         let iconSize: CGFloat = 14
         let height: CGFloat = 28
         let padX: CGFloat = 8
@@ -1056,7 +1056,10 @@ private struct QIFixture {
     let openaiAccounts: [PresentationStore.AccountRow]
     let anthropicAccount: PresentationStore.AccountRow
     let allAccounts: [PresentationStore.AccountRow]
+    /// Provider catalog order (`DESKTOP_PROVIDER_ORDER`), used by app surfaces.
     let glanceRows: [PresentationStore.GlanceProviderRow]
+    /// Burn-first status order, independent from provider catalog navigation.
+    let statusGlanceRows: [PresentationStore.GlanceProviderRow]
     let surfaces: [PresentationStore.SurfaceRow]
     let openaiDetail: UsageDetailPresentation
 
@@ -1416,8 +1419,9 @@ private struct QIFixture {
             anthropicSurface: anthropicSurface,
             openaiAccounts: openaiAccounts,
             anthropicAccount: anthropicAccount,
-            allAccounts: openaiAccounts + anthropicAccounts + [ampAccount],
-            glanceRows: [anthropicGlance, openaiGlance, ampGlance],
+            allAccounts: openaiAccounts + [anthropicAccount, ampAccount],
+            glanceRows: [openaiGlance, anthropicGlance, ampGlance],
+            statusGlanceRows: [anthropicGlance, openaiGlance, ampGlance],
             surfaces: [openaiSurface, anthropicSurface, ampSurface],
             openaiDetail: openaiDetail
         )

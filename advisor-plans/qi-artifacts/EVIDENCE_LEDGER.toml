@@ -186,14 +186,16 @@ notes = "Optional AX-geometry status extras strip; primary dual-stack API = stat
 [[scene]]
 id = "popover-overview"
 theme = "dark"
+html_path = "advisor-plans/qi-artifacts/html/popover-overview-dark.png"
 native_path = "advisor-plans/qi-artifacts/native/popover-overview-dark.png"
 capture_tier = "harness"
 verdict = "pass"
-notes = "Overview inventory; no separate HTML PNG"
+notes = "Provider catalog order; horizontal role headers; divided account rows; shared 28 pt refresh craft"
 
 [[scene]]
 id = "popover-overview"
 theme = "light"
+html_path = "advisor-plans/qi-artifacts/html/popover-overview-light.png"
 native_path = "advisor-plans/qi-artifacts/native/popover-overview-light.png"
 capture_tier = "harness"
 verdict = "pass"

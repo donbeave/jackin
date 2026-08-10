@@ -103,6 +103,17 @@ const expandCss = `
   }
 `;
 for (const theme of ["dark", "light"]) {
+  const overviewUrl = `${popoverUrl}?embed=1&mode=overview&theme=${theme}`;
+  await page.goto(overviewUrl);
+  await page.setViewportSize({ width: 520, height: 1300 });
+  await page.addStyleTag({ content: expandCss });
+  await page.waitForTimeout(400);
+  const overview = page.locator("#app.pop, .card-popover .pop, .pop").first();
+  await overview.screenshot({
+    path: path.join(outDir, `popover-overview-${theme}.png`),
+  });
+  console.log("WROTE", `popover-overview-${theme}.png`);
+
   for (const [provider, name] of [
     ["openai", "popover-openai"],
     ["anthropic", "popover-anthropic"],

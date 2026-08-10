@@ -49,21 +49,12 @@ public struct PopoverProviderTab: View {
                         .lineLimit(2)
                 }
                 Spacer(minLength: 8)
-                Button {
+                PopoverRefreshButton(
+                    label: "Refresh \(provider.displayLabel)",
+                    inProgress: refreshInProgress || provider.isRefreshing
+                ) {
                     onRefreshProvider(provider.surfaceId)
-                } label: {
-                    if refreshInProgress || provider.isRefreshing {
-                        ProgressView().controlSize(.small)
-                    } else {
-                        Image(systemName: "arrow.clockwise")
-                            .font(.caption.weight(.semibold))
-                    }
                 }
-                .buttonStyle(.bordered)
-                .buttonBorderShape(.roundedRectangle(radius: 8))
-                .controlSize(.small)
-                .help("Refresh \(provider.displayLabel)")
-                .accessibilityLabel("Refresh \(provider.displayLabel)")
             }
             .opacity(provider.dimmed ? 0.55 : 1)
 

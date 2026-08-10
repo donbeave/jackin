@@ -31,7 +31,6 @@ and QI host now share one `UsageAccountRailView`, preventing that drift.
 
 | Severity | Element | Notes |
 |----------|---------|-------|
-| Low | Provider inventory | Fixed QI fixture has three providers; HTML scene has five |
 | N/A | Traffic lights | System chrome |
 
 ## Verdict

@@ -71,6 +71,13 @@ labeled inset rail now owns both accounts, its hairline, and selected-account
 fill in the live sidebar and QI component. This also removes duplicate SwiftUI
 implementations that had allowed product and evidence to drift.
 
+Popover Overview re-audit added its previously missing HTML Dark/Light oracle
+captures and exposed several false passes. Native now follows canonical
+OpenAI/Anthropic/Amp catalog order, shows Codex/Claude/Daily provider roles
+instead of account subscription plans, removes fixture-only Anthropic Work,
+uses horizontal divided group anatomy, 22 pt metrics, and one shared 28 pt
+phosphor refresh control. Status burn-first order remains separate and intact.
+
 ## Live
 popover-live / ctx-menu **BLOCKED** — SoTParity proves focus/menu.
 

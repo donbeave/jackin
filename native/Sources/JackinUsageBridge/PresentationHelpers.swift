@@ -176,6 +176,21 @@ public let desktopProviderIconKeys = [
     "codex", "claude", "amp", "grok", "zai", "kimi", "minimax",
 ]
 
+/// Frozen product/limit role shown in popover Overview group headers.
+/// Subscription plan belongs to account rows; it is not provider identity.
+public func desktopProviderOverviewRole(iconKey: String) -> String? {
+    switch iconKey {
+    case "codex": return "Codex"
+    case "claude": return "Claude"
+    case "amp": return "Daily"
+    case "grok": return "Grok"
+    case "zai": return "GLM"
+    case "kimi": return "Kimi Code"
+    case "minimax": return "MiniMax"
+    default: return nil
+    }
+}
+
 /// SB-3 / SB-14 hard cap for burn-first status-bar chips.
 public let statusBarMaxChips = 3
 

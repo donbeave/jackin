@@ -19,7 +19,12 @@
 | Severity | Element | Notes |
 |----------|---------|-------|
 | Low | Framing | Native component lacks full sidebar chrome (see usage-toolbar Light) |
-| Low | Work row | Native may show Anthropic Work without % (unselected DTO) |
+
+## False-pass correction
+
+QI fixture previously reversed canonical Codex/Claude catalog order and added an
+Anthropic Work account absent from the frozen HTML scene. Fixture now preserves
+`DESKTOP_PROVIDER_ORDER`; status burn ranking has its own array.
 
 ## Verdict
 **Verdict: Pass** (Dark + Light)

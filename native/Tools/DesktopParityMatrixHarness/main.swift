@@ -52,6 +52,12 @@ struct DesktopParityMatrixHarness {
             ]
         )
         check(
+            "desktop Overview roles match HTML provider identity",
+            desktopProviderIconKeys.compactMap(desktopProviderOverviewRole) == [
+                "Codex", "Claude", "Daily", "Grok", "GLM", "Kimi Code", "MiniMax",
+            ]
+        )
+        check(
             "every frozen surface has SF Symbol (displayable icon)",
             allFrozenHostSurfacesHaveSystemImages()
         )
