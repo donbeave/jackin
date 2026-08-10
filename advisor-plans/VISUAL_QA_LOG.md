@@ -1,7 +1,7 @@
 # VISUAL_QA_LOG — jackin❯ desktop HTML SoT parity
 
 **Date:** 2026-08-10  
-**Tip:** `d0fcf5ef`  
+**Tip:** `60582394`  
 **Verification:** re-run L1/L2 green · CAPSULE_OK Session meters · ALL_PIXEL_OK · live 2 BLOCKED · app RUNNING  
 
 **Branch:** plan/desktop-visual  
