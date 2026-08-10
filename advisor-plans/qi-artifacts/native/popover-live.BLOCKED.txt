@@ -1,0 +1,7 @@
+BLOCKED: live left-click popover re-capture after G-P1 rebuild.
+- App launched (single status item; production probe hit keychain + empty glance → "No agent usage detected").
+- Screencapture contaminated by system keychain sheet + desktop chrome — not usable QI craft evidence.
+- G-P1 craft dual-image Pass uses **fixture harness** only:
+  popover-openai-{dark,light}.png · popover-anthropic-{dark,light}.png
+  (full brand · Overview|Providers · provider strip · body · Refresh).
+- Left-click focus wiring still proven by StatusPopoverFocus + DesktopSoTParityHarness.

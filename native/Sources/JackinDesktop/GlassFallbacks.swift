@@ -67,36 +67,40 @@ public enum GlassFallbacks {
     }
 
     /// Glance popover shell — regular glass (LG-A1 / A10). Requires clear NSPopover host.
+    ///
+    /// Always paints an opaque adaptive base under glass so NSHostingView /
+    /// offscreen bitmaps (esp. Light) never collapse to a black void when
+    /// `glassEffect` fails to composite.
     @ViewBuilder
     public static func panelSurfaceBackground() -> some View {
-        if #available(macOS 26, *) {
-            RoundedRectangle(cornerRadius: panelCornerRadius, style: .continuous)
-                .fill(.clear)
-                .glassEffect(.regular, in: .rect(cornerRadius: panelCornerRadius))
-                .overlay {
-                    RoundedRectangle(cornerRadius: panelCornerRadius, style: .continuous)
-                        .strokeBorder(Color.primary.opacity(0.12), lineWidth: 0.5)
-                }
-        } else {
-            RoundedRectangle(cornerRadius: panelCornerRadius, style: .continuous)
-                .fill(.ultraThinMaterial)
-                .overlay {
-                    RoundedRectangle(cornerRadius: panelCornerRadius, style: .continuous)
-                        .strokeBorder(Color.primary.opacity(0.10), lineWidth: 0.5)
-                }
+        let shape = RoundedRectangle(cornerRadius: panelCornerRadius, style: .continuous)
+        ZStack {
+            // Adaptive solid base (Light/Dark) — required for snapshot QI + legible chrome.
+            shape.fill(Color(nsColor: .windowBackgroundColor))
+            if #available(macOS 26, *) {
+                shape
+                    .fill(.clear)
+                    .glassEffect(.regular, in: .rect(cornerRadius: panelCornerRadius))
+            } else {
+                shape.fill(.ultraThinMaterial)
+            }
+            shape.strokeBorder(Color.primary.opacity(0.12), lineWidth: 0.5)
         }
     }
 
     /// Floating control island (popover Refresh dock, chrome groups).
     @ViewBuilder
     public static func floatingChromeIsland() -> some View {
-        if #available(macOS 26, *) {
-            RoundedRectangle(cornerRadius: chromeTileCornerRadius, style: .continuous)
-                .fill(.clear)
-                .glassEffect(.regular, in: .rect(cornerRadius: chromeTileCornerRadius))
-        } else {
-            RoundedRectangle(cornerRadius: chromeTileCornerRadius, style: .continuous)
-                .fill(.thinMaterial)
+        let shape = RoundedRectangle(cornerRadius: chromeTileCornerRadius, style: .continuous)
+        ZStack {
+            shape.fill(Color(nsColor: .controlBackgroundColor).opacity(0.92))
+            if #available(macOS 26, *) {
+                shape
+                    .fill(.clear)
+                    .glassEffect(.regular, in: .rect(cornerRadius: chromeTileCornerRadius))
+            } else {
+                shape.fill(.thinMaterial)
+            }
         }
     }
 

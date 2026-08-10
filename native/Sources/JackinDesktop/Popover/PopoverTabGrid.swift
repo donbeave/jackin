@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Alexey Zhokhov
 // SPDX-License-Identifier: Apache-2.0
 
+import AppKit
 import JackinUsageBridge
 import SwiftUI
 
@@ -73,8 +74,9 @@ public struct PopoverTabGrid: View {
         }
         .padding(3)
         .background {
+            // Use secondary system fill — readable in Light + Dark (not pure primary ink).
             RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(Color.primary.opacity(0.08))
+                .fill(Color(nsColor: .quaternaryLabelColor).opacity(0.35))
         }
     }
 
@@ -95,11 +97,8 @@ public struct PopoverTabGrid: View {
                 .background {
                     if on {
                         RoundedRectangle(cornerRadius: 8, style: .continuous)
-                            .fill(Color.primary.opacity(0.12))
-                            .overlay {
-                                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                    .strokeBorder(Color.primary.opacity(0.10), lineWidth: 0.5)
-                            }
+                            .fill(Color(nsColor: .controlBackgroundColor))
+                            .shadow(color: .black.opacity(0.08), radius: 1, y: 0.5)
                     }
                 }
                 .foregroundStyle(on ? Color.primary : Color.secondary)

@@ -36,17 +36,18 @@ struct DesktopVisualSnapshotHarness {
 
         // ── Dark: full PopoverRoot shell (tab grid + body + footer) ──
         NSApp.appearance = NSAppearance(named: .darkAqua)
+        // Tall enough for G-P1 chrome (brand + mode + strip) + body + footer.
         capturePopover(
             fixture: fixture,
             selection: "codex",
-            size: NSSize(width: 420, height: 580),
+            size: NSSize(width: 430, height: 640),
             path: "\(out)/popover-openai-dark.png",
             appearance: .darkAqua
         )
         capturePopover(
             fixture: fixture,
             selection: "claude",
-            size: NSSize(width: 420, height: 540),
+            size: NSSize(width: 430, height: 600),
             path: "\(out)/popover-anthropic-dark.png",
             appearance: .darkAqua
         )
@@ -129,14 +130,14 @@ struct DesktopVisualSnapshotHarness {
         capturePopover(
             fixture: fixture,
             selection: "codex",
-            size: NSSize(width: 420, height: 580),
+            size: NSSize(width: 430, height: 640),
             path: "\(out)/popover-openai-light.png",
             appearance: .aqua
         )
         capturePopover(
             fixture: fixture,
             selection: "claude",
-            size: NSSize(width: 420, height: 540),
+            size: NSSize(width: 430, height: 600),
             path: "\(out)/popover-anthropic-light.png",
             appearance: .aqua
         )
@@ -257,9 +258,17 @@ struct DesktopVisualSnapshotHarness {
         appearance: NSAppearance.Name
     ) {
         let store = makeStore(fixture: fixture, popover: selection, usage: selection)
+        // Stage color matches appearance so Light chrome never sits on black void.
+        let stage =
+            appearance == .darkAqua
+            ? Color(nsColor: .underPageBackgroundColor)
+            : Color(nsColor: .windowBackgroundColor)
         render(
-            PopoverRoot(store: store)
-                .frame(width: size.width, height: size.height),
+            ZStack {
+                stage
+                PopoverRoot(store: store)
+            }
+            .frame(width: size.width, height: size.height),
             size: size,
             path: path,
             appearance: appearance
@@ -475,15 +484,22 @@ struct DesktopVisualSnapshotHarness {
         path: String,
         appearance: NSAppearance.Name
     ) {
+        let scheme: ColorScheme = appearance == .darkAqua ? .dark : .light
         let root = view
             .frame(width: size.width, height: size.height)
-            .environment(
-                \.colorScheme,
-                appearance == .darkAqua ? .dark : .light
-            )
+            .environment(\.colorScheme, scheme)
+            .preferredColorScheme(scheme)
         let host = NSHostingView(rootView: root)
         host.appearance = NSAppearance(named: appearance)
+        host.wantsLayer = true
+        host.layer?.backgroundColor =
+            (appearance == .darkAqua
+                ? NSColor.underPageBackgroundColor
+                : NSColor.windowBackgroundColor).cgColor
         host.frame = NSRect(origin: .zero, size: size)
+        // Two layout passes: glass/material chrome often needs a second tick.
+        host.layoutSubtreeIfNeeded()
+        RunLoop.current.run(until: Date(timeIntervalSinceNow: 0.05))
         host.layoutSubtreeIfNeeded()
 
         guard let rep = host.bitmapImageRepForCachingDisplay(in: host.bounds) else {

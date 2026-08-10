@@ -1,25 +1,29 @@
 # QI delta: popover-openai · dark + light
 
 ## Oracle
-- HTML: advisor-plans/qi-artifacts/html/popover-openai-dark.png
-- Source: popover.html sticky chrome (brand · Overview|Providers · pstrip)
+- HTML: advisor-plans/qi-artifacts/html/popover-openai-dark.png (+ light)
+- Source: popover.html sticky chrome
 
 ## Candidate
-- Native: advisor-plans/qi-artifacts/native/popover-openai-dark.png
-- Code: `PopoverTabGrid` (mode segment + provider strip) + `PopoverProviderTab` + `PopoverFooter`
-- Dual-image: HTML brand + Overview|Providers seg + provider strip + OpenAI body; native now has **j❯ brand**, **Overview|Providers** segment (Providers on), **provider strip** with meters (OpenAI selected), multi chips, SESSION 63% / WEEKLY 57% heroes, Refresh footer
+- Native Dark: advisor-plans/qi-artifacts/native/popover-openai-dark.png
+- Native Light: advisor-plans/qi-artifacts/native/popover-openai-light.png
+- Code: `PopoverRoot` + `PopoverTabGrid` (G-P1) + `PopoverProviderTab` + `PopoverFooter`
+- Dual-image review (2026-08-10, post light-void fix):
+  - **Dark**: brand j❯ jackin❯ desktop · Overview|Providers (Providers on) · strip OpenAI selected · chips 57%/0% · SESSION 63% · WEEKLY 57% · Refresh
+  - **Light**: same G-P1 chrome on light panel (no black void); full mode segment readable; strip + heroes + Refresh
+- Live left-click PNG: **BLOCKED** (`popover-live.BLOCKED.txt`) — not craft evidence
 
 ## Same (keep)
-- G-P1 sticky chrome roles: brand · mode · provider strip (not flat Overview|provider peers)
-- Full glance shell (not mini-pop); multi-account chips; hero remaining + 1:1 meters; Open usage; glass Refresh
-- DATA_CONTRACT 63/57/88/100 fixture path
+- G-P1 sticky chrome roles on **Dark and Light** harness
+- Full glance shell; multi-account chips; hero remaining 1:1; Open usage; glass Refresh
+- DATA_CONTRACT fixture numbers on harness path
 
 ## Different (must fix unless N/A)
 | Severity | Element | HTML | Native | Gap ID | Action |
 |----------|---------|------|--------|--------|--------|
-| Low | Footer CTA | Open Usage Window green | Refresh dock (FB1/LG-A8) | G-P4 | Product law |
-| Low | Accent | Phosphor green | System accent | VS-13 | Optional brand accent |
-| Low | ACCOUNT meta card | Separate before heroes | Heroes after chips | G-P3 | Optional density |
+| Low | Footer | Open Usage Window | Refresh (product law) | G-P4 | Keep |
+| Low | Accent | Phosphor | System accent | VS-13 | Optional |
+| Med | Live click craft | Live app | Live PNG BLOCKED | G-S2 | Focus wiring harness Pass; craft = harness |
 
 ## Verdict
 Verdict: Pass

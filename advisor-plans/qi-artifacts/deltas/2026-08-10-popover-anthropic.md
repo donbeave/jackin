@@ -1,14 +1,15 @@
 # QI delta: popover-anthropic · dark + light
 
 ## Oracle
-- HTML: advisor-plans/qi-artifacts/html/popover-anthropic-dark.png
+- HTML: advisor-plans/qi-artifacts/html/popover-anthropic-dark.png (+ light)
 
 ## Candidate
-- Native: advisor-plans/qi-artifacts/native/popover-anthropic-dark.png
-- Dual-image: same G-P1 chrome; Anthropic selected on strip; Session/Weekly heroes
+- Native: popover-anthropic-{dark,light}.png
+- Dual-image: Dark + Light full G-P1 chrome; Anthropic selected; Session 74% / Weekly 12% danger; Refresh
+- Live PNG: BLOCKED (see popover-live.BLOCKED.txt)
 
 ## Same (keep)
-- Sticky chrome G-P1; Anthropic focus; heroes + meters; Open usage; Refresh
+- G-P1 chrome Dark+Light; Anthropic focus; heroes + meters
 
 ## Different (must fix unless N/A)
 | Severity | Element | HTML | Native | Gap ID | Action |
