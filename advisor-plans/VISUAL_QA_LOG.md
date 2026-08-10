@@ -1,8 +1,8 @@
 # VISUAL_QA_LOG — jackin❯ desktop HTML SoT parity
 
 **Date:** 2026-08-10  
-**Tip:** `4675b881`  
-**Verification:** goal 4abad3dc20eb · L1/L2 green · ALL_OK · CAPSULE_OK · live 2 BLOCKED · app RUNNING
+**Tip:** `5d0c7e0b`  
+**Verification:** goal e173e96d5752 · L1/L2 green · ALL_OK · CAPSULE_OK · live 2 BLOCKED · app RUNNING
 
 **Branch:** plan/desktop-visual  
 **Toolchain:** Xcode 26.6 (17F113) · Swift 6.3.3  
