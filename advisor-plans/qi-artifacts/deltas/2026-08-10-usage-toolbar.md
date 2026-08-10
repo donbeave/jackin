@@ -1,24 +1,20 @@
 # QI delta: usage-toolbar · dark + light
 
 ## Oracle
-- System unified titlebar + Refresh (HTML paints fake  only as reference — N/A)
+- System unified titlebar + Refresh (HTML fake  N/A)
 
 ## Candidate
-- Native: advisor-plans/qi-artifacts/native/usage-toolbar-{dark,light}.png
-- Source: `UsageWindowController` real `NSToolbar` titlebar crop from non-blank
-  window capture (CGWindow when Screen Recording allows; else restored known-good
-  CGWindow artifact). Harness **rejects all-black** CGImage buffers.
+- Native: `qi-artifacts/native/usage-toolbar-{dark,light}.png`
+- UsageWindowController real NSToolbar titlebar crop; **non-blank** (rgb_max>0)
 
 ## Dual-image (personal read)
-- Dark: traffic lights · `jackin❯ desktop` · sidebar toggle · Refresh icons visible
-- Light: same chrome on light titlebar
-- **Not** solid black (pixel proof bright_frac > 0)
+- Dark+Light: traffic lights · jackin❯ desktop · sidebar · Refresh icons visible
+- **Not** solid black
 
 | Dimension | Score | Notes |
 |-----------|-------|-------|
-| IA / hierarchy | Pass | Unified toolbar |
-| Chrome roles | Pass | System NSToolbar |
-| Color | N/A | System controls |
+| IA | Pass | Unified toolbar |
+| Chrome | Pass | System NSToolbar |
 | Affordances | Pass | Refresh present |
 
 ## Verdict

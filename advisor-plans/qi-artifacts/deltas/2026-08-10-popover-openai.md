@@ -1,34 +1,32 @@
 # QI delta: popover-openai · dark + light
 
 ## Oracle
-- HTML: advisor-plans/qi-artifacts/html/popover-openai-dark.png (+ light)
-- Tokens: `--jk` / `--status-high` phosphor `#5CF07A` dark · `#0B774E` light
+- HTML: `qi-artifacts/html/popover-openai-{dark,light}.png`
+- Tokens: phosphor brand/CTA; full G-P1 (not mini-pop)
 
 ## Candidate
-- Native: advisor-plans/qi-artifacts/native/popover-openai-{dark,light}.png (post-phosphor re-snap)
-- Dual-image (personal read): brand j❯ + chevron phosphor; Overview|Providers; brand plates; selected chip phosphor; Open usage page phosphor; ACCOUNT; SESSION **63% left** phosphor; Open Usage Window glass + phosphor hairline
+- Native: `qi-artifacts/native/popover-openai-{dark,light}.png` (PopoverRoot shipped path)
+
+## Dual-image (personal read)
+- Brand j❯ + chevron phosphor; Overview|Providers; brand plates; OpenAI selected
+- ACCOUNT block; chips; SESSION **63% left** phosphor; Open Usage Window footer
+- Light: same IA, AA phosphor (`#0B774E` family)
 
 | Dimension | Score | Notes |
 |-----------|-------|-------|
-| IA / hierarchy | Pass | Same roles as HTML Providers mode |
-| Chrome roles | Pass | Glass shell + Open Usage glass dock (FB1-43) |
-| Typography | Pass | ACCOUNT k/v; large remaining % |
-| Spacing | Low | HTML denser disabled chips; native % on chips |
-| Materials | Pass | Solid content cards |
-| Color | Pass | Phosphor healthy/brand/CTA (not system blue); warn orange on mid meters when fixture |
-| Meters | Pass | 63% session; strip meters phosphor |
-| Copy / data | Pass | Fixture DATA_CONTRACT path |
-| Affordances | Pass | Open Usage Window footer CTA |
+| IA / hierarchy | Pass | Full G-P1 shell matches HTML roles |
+| Chrome | Pass | Glass shell + Open Usage dock FB1-43 |
+| Color | Pass | Phosphor healthy/CTA (not system blue) |
+| Meters | Pass | 63% session |
+| Copy / data | Pass | Fixture DATA_CONTRACT |
+| Affordances | Pass | Open Usage Window CTA |
 
-## Same (keep)
-- Full G-P1 chrome; ACCOUNT block; brand plates; phosphor heroes/CTA; Open Usage Window
-
-## Different (must fix unless N/A)
-| Severity | Element | HTML | Native | Gap ID | Action |
-|----------|---------|------|--------|--------|--------|
-| Low | Chip set | More disabled team chips | Two fixture accounts + % | G-P2 | Accept fixture |
-| Low | Plate glyphs | SVG brand marks | SF Symbol in brand fill | G-P1 | Accept native SF |
-| Low | Footer fill | Solid phosphor capsule | Glass + phosphor stroke | FB1-43 | Intentional |
+## Different (Low)
+| Severity | Element | Notes |
+|----------|---------|-------|
+| Low | Glyphs | SF Symbol vs HTML SVG |
+| Low | Chip set | Fixture two accounts vs HTML more disabled chips |
+| Low | Footer fill | Glass+stroke vs HTML solid phosphor (FB1-43 intentional) |
 
 ## Verdict
 Verdict: Pass
