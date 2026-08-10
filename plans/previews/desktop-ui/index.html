@@ -632,6 +632,42 @@
       font-size: 13px; font-weight: 560; color: var(--label); font-family: var(--font);
     }
     .win .limit.bound .meter { display: none; }
+    /* Limit Reset Credits — structured detail (Rust segments), not a lonely hero */
+    .win .limit.bound .reset-detail {
+      margin-top: 8px;
+      display: flex; flex-direction: column; gap: 5px;
+    }
+    .win .limit.bound .reset-row {
+      display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+      font-size: 12px;
+    }
+    .win .limit.bound .reset-row .k {
+      color: var(--tertiary); font-weight: 560; flex-shrink: 0;
+    }
+    .win .limit.bound .reset-row .v {
+      color: var(--secondary); font-variant-numeric: tabular-nums; text-align: right;
+    }
+    .win .limit.bound .reset-row .v.strong { color: var(--label); font-weight: 560; }
+
+    /* Official usage page (browser) — content-layer control, not glass slab */
+    .win .open-usage {
+      display: inline-flex; align-items: center; gap: 8px;
+      margin: 0 0 14px;
+      padding: 9px 14px;
+      border-radius: 10px;
+      font: inherit; font-size: 12.5px; font-weight: 600;
+      color: var(--jk);
+      cursor: pointer;
+      text-decoration: none;
+      border: 0.5px solid color-mix(in srgb, var(--jk) 32%, var(--separator));
+      background: color-mix(in srgb, var(--jk) 8%, transparent);
+    }
+    .win .open-usage:hover {
+      background: color-mix(in srgb, var(--jk) 14%, transparent);
+    }
+    .win .open-usage .ext {
+      font-size: 11px; opacity: 0.75;
+    }
 
     /* Single quiet details group (plan + credential + extras — once) */
     .win .group {
@@ -1093,6 +1129,32 @@
       - Auth = credential_origin only
       - Codex bucket labels fixed order from usage/codex.rs
     */
+    /*
+      Official usage pages — surface_id keys (codex/claude/…), verified
+      plans/previews/desktop-ui/OFFICIAL_USAGE_URLS.md
+    */
+    const OFFICIAL_USAGE = {
+      codex: "https://chatgpt.com/codex/settings/usage",
+      claude: "https://claude.ai/settings/usage",
+      amp: "https://ampcode.com/settings",
+      grok: "https://console.x.ai/team/default/usage",
+      zai: "https://z.ai/manage-apikey/coding-plan/personal/usage",
+      kimi: "https://www.kimi.com/membership/subscription?tab=quota",
+      minimax: "https://platform.minimax.io/console/usage",
+    };
+    /** HTML fixture nav id → host surface_id */
+    const NAV_SURFACE = { openai: "codex", anthropic: "claude", amp: "amp" };
+
+    function openUsageLinkHtml(navOrSurface) {
+      const sid = NAV_SURFACE[navOrSurface] || navOrSurface;
+      const href = OFFICIAL_USAGE[sid];
+      if (!href) return "";
+      return (
+        `<a class="open-usage" href="${href}" target="_blank" rel="noopener noreferrer">` +
+        `Open usage page <span class="ext" aria-hidden="true">↗</span></a>`
+      );
+    }
+
     const usageViews = {
       overview: `
         <div class="page-head">
@@ -1133,6 +1195,7 @@
             <div class="sub">alexey@chainargos.com · Pro 20×</div>
           </div>
         </div>
+        __OPEN_USAGE__
         <div class="group">
           <div class="grow"><span class="gl">Status</span><span class="gr dim">fresh</span></div>
           <div class="grow"><span class="gl">Updated</span><span class="gr dim">Just now</span></div>
@@ -1165,7 +1228,12 @@
           </div>
           <div class="limit bound">
             <div class="limit-top"><span class="limit-name">Limit Reset Credits</span><span class="limit-pct">3 manual resets available</span></div>
-            <div class="limit-reset">Next expires in 3d 4h</div>
+            <div class="reset-detail">
+              <div class="reset-row"><span class="k">Available</span><span class="v strong">3 manual resets</span></div>
+              <div class="reset-row"><span class="k">Next expires</span><span class="v">in 3d 4h</span></div>
+              <div class="reset-row"><span class="k">Windows</span><span class="v">3d 4h · 8d 1h · 19d 22h</span></div>
+              <div class="reset-row"><span class="k">Scope</span><span class="v">Session + weekly (Codex)</span></div>
+            </div>
           </div>
         </div>
       `,
@@ -1177,6 +1245,7 @@
             <div class="sub">alexey@zhokhov.com · Plus</div>
           </div>
         </div>
+        __OPEN_USAGE__
         <div class="group">
           <div class="grow"><span class="gl">Status</span><span class="gr dim">fresh</span></div>
           <div class="grow"><span class="gl">Updated</span><span class="gr dim">4 min ago</span></div>
@@ -1207,7 +1276,11 @@
           </div>
           <div class="limit bound">
             <div class="limit-top"><span class="limit-name">Limit Reset Credits</span><span class="limit-pct">0 manual resets available</span></div>
-            <div class="limit-reset">None remaining this window</div>
+            <div class="reset-detail">
+              <div class="reset-row"><span class="k">Available</span><span class="v strong">0 manual resets</span></div>
+              <div class="reset-row"><span class="k">Next expires</span><span class="v">—</span></div>
+              <div class="reset-row"><span class="k">Note</span><span class="v">None remaining this window</span></div>
+            </div>
           </div>
         </div>
       `,
@@ -1219,6 +1292,7 @@
             <div class="sub">Personal · Max 20×</div>
           </div>
         </div>
+        __OPEN_USAGE__
         <div class="group">
           <div class="grow"><span class="gl">Status</span><span class="gr dim">fresh</span></div>
           <div class="grow"><span class="gl">Updated</span><span class="gr dim">2 min ago</span></div>
@@ -1253,6 +1327,7 @@
             <div class="sub">Free</div>
           </div>
         </div>
+        __OPEN_USAGE__
         <div class="group">
           <div class="grow"><span class="gl">Status</span><span class="gr dim">fresh</span></div>
           <div class="grow"><span class="gl">Updated</span><span class="gr dim">1 min ago</span></div>
@@ -1283,7 +1358,15 @@
     }
 
     function showUsage(key) {
-      usageDetail.innerHTML = usageViews[key] || usageViews["openai:a1"];
+      let html = usageViews[key] || usageViews["openai:a1"];
+      const nav =
+        key === "overview"
+          ? null
+          : key.startsWith("openai")
+            ? "openai"
+            : key;
+      html = html.replace("__OPEN_USAGE__", nav ? openUsageLinkHtml(nav) : "");
+      usageDetail.innerHTML = html;
       if (usageScroll) usageScroll.scrollTop = 0;
       requestAnimationFrame(updateUsageScrollEdge);
     }

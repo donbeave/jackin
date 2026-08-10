@@ -8,6 +8,8 @@
 | [`LIQUID_GLASS_REFERENCES.md`](./LIQUID_GLASS_REFERENCES.md) | **Apple-first** LG + SwiftUI adoption map (LG-A1–A12) · HTML proxy rules |
 | [`popover.html`](./popover.html) | **Single** glance-popover craft SoT: Overview + all 7 providers. Status interaction loads this file (`?embed=1&mode=providers&provider=…`) |
 | [`AGENT_HANDOFF.md`](./AGENT_HANDOFF.md) | Agent procedure |
+| [`DATA_CONTRACT.md`](./DATA_CONTRACT.md) | Fixture numbers ↔ `jackin-usage` host APIs |
+| [`OFFICIAL_USAGE_URLS.md`](./OFFICIAL_USAGE_URLS.md) | “Open usage page” browser links per provider |
 
 Open in Safari/Chrome. Toggle **Dark / Light**.
 

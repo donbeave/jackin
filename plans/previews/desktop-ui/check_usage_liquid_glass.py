@@ -152,6 +152,25 @@ def main() -> int:
         "width: 0% !important" in html or 'width:0%"' in html or "width:0%" in html,
         "0% empty-track meter mapping missing from prototype",
     )
+    need(
+        "open-usage" in html and "chatgpt.com/codex/settings/usage" in html,
+        "Open usage page control + OpenAI Codex URL missing",
+    )
+    need(
+        "claude.ai/settings/usage" in html and "ampcode.com/settings" in html,
+        "Claude + Amp official usage URLs missing from fixture map",
+    )
+    need(
+        "Limit Reset Credits" in html and "reset-detail" in html and "Next expires" in html,
+        "Limit Reset Credits must show structured detail (Available / Next expires)",
+    )
+    need(
+        "console.x.ai/team/default/usage" in html
+        and "z.ai/manage-apikey/coding-plan/personal/usage" in html
+        and "kimi.com/membership/subscription" in html
+        and "platform.minimax.io/console/usage" in html,
+        "full DESKTOP_PROVIDER_ORDER usage URL table incomplete in HTML map",
+    )
 
     usage = html.split('id="usage"', 1)[-1].split('id="glass"', 1)[0]
     for bad in ("$/token", "spend chart", "sparkline", "cost-of-session"):

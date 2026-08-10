@@ -66,6 +66,28 @@ Every multi-account Codex fixture must keep this label order (depleted accounts 
 - **Bar / glance:** Daily % only.  
 - **Window also:** Credits / bounds as detail-only (never status-bar %).
 
+## Official usage page (“Open usage page”)
+
+Per-provider browser link from Usage detail. Full table + evidence:
+[`OFFICIAL_USAGE_URLS.md`](./OFFICIAL_USAGE_URLS.md).
+
+| surface_id | URL |
+|---|---|
+| `codex` | https://chatgpt.com/codex/settings/usage |
+| `claude` | https://claude.ai/settings/usage |
+| `amp` | https://ampcode.com/settings |
+| `grok` | https://console.x.ai/team/default/usage |
+| `zai` | https://z.ai/manage-apikey/coding-plan/personal/usage |
+| `kimi` | https://www.kimi.com/membership/subscription?tab=quota |
+| `minimax` | https://platform.minimax.io/console/usage |
+
+Native: `ProviderUsageLinks` + `ProviderCardView` button → `NSWorkspace.open`.
+
+### Limit Reset Credits (Codex)
+
+Rust `CodexResetCredits::detail_label` → e.g. `3 manual resets available · Next expires <rel>`.  
+Desktop bound card must show **Available** + **Next expires** (and any further layout segments). Do not invent reset counts.
+
 ## System menu bar (when Usage / Settings open)
 
 Status-item-only mode uses `.accessory` (no app menu chrome). Opening Usage or
