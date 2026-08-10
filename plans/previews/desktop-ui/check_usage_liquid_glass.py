@@ -67,6 +67,18 @@ def main() -> int:
         "AI-slop one-sided account border still present",
     )
     need("chrome-float" in html, "floating chrome-float overlay missing")
+    need(
+        "tb-btn" in html and "backdrop-filter" in html,
+        "Usage toolbar Refresh must be glass (tb-btn + backdrop-filter)",
+    )
+    need(
+        'class="tb-btn primary"' not in html and ".tb-btn.primary" not in html,
+        "solid primary Refresh slab must be removed (LG glass capsule only)",
+    )
+    need(
+        "page-title" not in html.split('id="usage"', 1)[-1].split('id="glass"', 1)[0],
+        "redundant Usage page-title near Refresh must stay removed",
+    )
     need(".nav-provider.on" in html, "provider selection rule missing")
     need(".nav-acct.on" in html, "account selection rule missing")
     # Same selection chrome for both would re-use one class; require distinct classes

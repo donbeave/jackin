@@ -83,13 +83,15 @@ struct UsageWindowRoot: View {
         .navigationSplitViewStyle(.balanced)
         .navigationTitle("jackin❯ desktop")
         .toolbar {
-            // LG-A8: single primary action group on system glass toolbar.
-            ToolbarItemGroup(placement: .primaryAction) {
+            // LG-A8: one Refresh on system glass toolbar (no redundant "Usage" title chrome).
+            // LG-A4/A9: system toolbar glass; icon-only — not a solid accent slab.
+            ToolbarItem(placement: .primaryAction) {
                 Button {
                     store.refreshAll()
                 } label: {
                     Label("Refresh", systemImage: "arrow.clockwise")
                 }
+                .labelStyle(.iconOnly)
                 .keyboardShortcut("r", modifiers: [.command])
                 .help("Refresh all enabled providers")
             }

@@ -273,26 +273,58 @@
     }
     .win .app-name b { color: var(--jk); font-weight: 700; }
     .win .chrome-float .tb-spacer { flex: 1; }
-    /* De-slop control: full continuous capsule stroke (all sides), no gradient stack */
+    /*
+      Toolbar Refresh — Liquid Glass control (LG-A1/A8/A9), not solid phosphor slab.
+      Regular glass capsule + selective phosphor tint on glyph/label only.
+    */
     .win .tb-btn {
       display: inline-flex; align-items: center; justify-content: center; gap: 6px;
       height: 28px; padding: 0 12px;
       border-radius: 980px;
-      cursor: pointer; font: inherit; font-size: 12px; font-weight: 560;
-      color: var(--label);
-      background: color-mix(in srgb, var(--fill) 70%, transparent);
-      border: 0.5px solid var(--lg-hairline); /* full perimeter */
-      backdrop-filter: blur(20px) saturate(1.4);
-      -webkit-backdrop-filter: blur(20px) saturate(1.4);
+      cursor: pointer; font: inherit; font-size: 12px; font-weight: 600;
+      letter-spacing: -0.1px;
+      color: var(--jk);
+      border: 0.5px solid color-mix(in srgb, var(--jk) 36%, var(--lg-hairline));
+      background:
+        linear-gradient(
+          180deg,
+          color-mix(in srgb, var(--jk) 16%, transparent) 0%,
+          color-mix(in srgb, var(--jk) 8%, transparent) 100%
+        );
+      backdrop-filter: blur(24px) saturate(1.5);
+      -webkit-backdrop-filter: blur(24px) saturate(1.5);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.14),
+        0 1px 2px rgba(0,0,0,0.08),
+        0 4px 14px color-mix(in srgb, var(--jk) 10%, transparent);
+      transition: background 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
     }
-    .win .tb-btn.primary {
-      color: var(--jk-ink);
-      background: var(--jk);
-      border-color: color-mix(in srgb, var(--jk) 70%, transparent);
+    [data-theme="light"] .win .tb-btn {
+      background:
+        linear-gradient(
+          180deg,
+          color-mix(in srgb, var(--jk) 12%, #fff) 0%,
+          color-mix(in srgb, var(--jk) 6%, #fff) 100%
+        );
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.9),
+        0 1px 2px rgba(0,0,0,0.05),
+        0 4px 12px color-mix(in srgb, var(--jk) 8%, transparent);
     }
-    .win .tb-btn:hover { filter: brightness(1.06); }
+    .win .tb-btn:hover {
+      background:
+        linear-gradient(
+          180deg,
+          color-mix(in srgb, var(--jk) 26%, transparent) 0%,
+          color-mix(in srgb, var(--jk) 14%, transparent) 100%
+        );
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.16),
+        0 2px 4px rgba(0,0,0,0.1),
+        0 6px 16px color-mix(in srgb, var(--jk) 16%, transparent);
+    }
     .win .tb-btn:active { transform: scale(0.98); }
-    .win .tb-btn svg { width: 12px; height: 12px; fill: currentColor; }
+    .win .tb-btn svg { width: 12px; height: 12px; fill: currentColor; opacity: 0.95; }
 
     /*
       Floating glass sidebar ON TOP of content (Telegram / Apple LG).
@@ -794,8 +826,8 @@
             <div class="traffic" aria-hidden="true"><i class="c"></i><i class="y"></i><i class="g"></i></div>
             <div class="app-name">jackin<b>❯</b> desktop</div>
             <div class="tb-spacer"></div>
-            <button type="button" class="tb-btn primary" title="Refresh" aria-label="Refresh">
-              <svg viewBox="0 0 16 16"><path d="M13.5 8a5.5 5.5 0 1 1-1.4-3.6l.7.7A4.5 4.5 0 1 0 12.5 8h1zM8 2.5V1l2.2 2.2L8 5.5V4a4 4 0 0 0-3.5 6.1l-.9.5A5 5 0 0 1 8 2.5z"/></svg>
+            <button type="button" class="tb-btn" title="Refresh (⌘R)" aria-label="Refresh">
+              <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 8a5.5 5.5 0 1 1-1.4-3.6l.7.7A4.5 4.5 0 1 0 12.5 8h1zM8 2.5V1l2.2 2.2L8 5.5V4a4 4 0 0 0-3.5 6.1l-.9.5A5 5 0 0 1 8 2.5z"/></svg>
               Refresh
             </button>
           </div>
@@ -854,7 +886,7 @@
         </div>
         <div class="lg-card ok">
           <h3>✓ LG-A9 Selective tint</h3>
-          Phosphor / accent on selection + primary Refresh + high metrics + j❯ only
+          Phosphor on selection + glass Refresh glyph/tint + high metrics + j❯ — never solid green slabs
         </div>
         <div class="lg-card ok">
           <h3>✓ LG-A10 Regular glass</h3>
