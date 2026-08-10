@@ -1,2 +1,2 @@
 Live NSStatusItem Screen Recording blocked on CLT agent host.
-Accepted bar: StatusItemRendering fixture bitmaps (status-desktop-*.png).
+Accepted: status-desktop-*.png fixture StatusItemRendering bitmaps.

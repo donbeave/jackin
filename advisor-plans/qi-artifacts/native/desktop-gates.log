@@ -1,39 +1,75 @@
-=== SB-18 format tests ===
+=== SB-18 compact_duration_sb18 ===
     Finished `test` profile [unoptimized + debuginfo] target(s) in 0.16s
      Running unittests src/lib.rs (target/debug/deps/jackin_usage-975d9835f93b3a54)
 
 running 3 tests
-test usage::format::compact_duration_sb18_tests::at_and_above_forty_eight_hours_uses_days ... ok
 test usage::format::compact_duration_sb18_tests::under_one_hour_is_minutes ... ok
 test usage::format::compact_duration_sb18_tests::under_forty_eight_hours_stays_hours_not_days ... ok
+test usage::format::compact_duration_sb18_tests::at_and_above_forty_eight_hours_uses_days ... ok
 
 test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 242 filtered out; finished in 0.00s
 
 === host::tests ===
-test host::tests::provider_glance_rows_marks_canonical_placeholder_refreshing ... ok
-test host::tests::next_events_resync_flag_not_error ... ok
+test host::tests::provider_glance_rows_select_amp_daily ... ok
+test host::tests::provider_glance_rows_reject_negative_credential_placeholders ... ok
 test host::tests::unavailable_and_refreshing_never_invent_percent ... ok
-test host::tests::status_bar_provider_glance_rows_sb3_sb17_sb19 ... ok
+test host::tests::next_events_resync_flag_not_error ... ok
 test host::tests::multi_account_list_select_and_snapshot ... ok
 test host::tests::refresh_floor_skips_non_forced_calls ... ok
 test host::tests::next_refresh_label_due_and_countdown ... ok
 
-test result: ok. 42 passed; 0 failed; 0 ignored; 0 measured; 203 filtered out; finished in 35.05s
+test result: ok. 42 passed; 0 failed; 0 ignored; 0 measured; 203 filtered out; finished in 35.03s
 
-=== swift full ===
+=== ffi ===
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+   Doc-tests jackin_usage_ffi
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+=== swift JackinUsageBridgeTests ===
 Test Case '-[JackinUsageBridgeTests.UsageWindowModelTests testStaleDetailAndLastGoodBucketCoexist]' started.
 Test Case '-[JackinUsageBridgeTests.UsageWindowModelTests testStaleDetailAndLastGoodBucketCoexist]' passed (0.000 seconds).
-Test Suite 'UsageWindowModelTests' passed at 2026-08-10 15:32:38.385.
+Test Suite 'UsageWindowModelTests' passed at 2026-08-10 15:39:26.113.
 	 Executed 9 tests, with 0 failures (0 unexpected) in 0.001 (0.001) seconds
-Test Suite 'JackinDesktopPackageTests.xctest' passed at 2026-08-10 15:32:38.385.
-	 Executed 49 tests, with 0 failures (0 unexpected) in 0.103 (0.105) seconds
-Test Suite 'Selected tests' passed at 2026-08-10 15:32:38.385.
-	 Executed 49 tests, with 0 failures (0 unexpected) in 0.103 (0.106) seconds
+Test Suite 'JackinDesktopPackageTests.xctest' passed at 2026-08-10 15:39:26.113.
+	 Executed 49 tests, with 0 failures (0 unexpected) in 0.104 (0.105) seconds
+Test Suite 'Selected tests' passed at 2026-08-10 15:39:26.113.
+	 Executed 49 tests, with 0 failures (0 unexpected) in 0.104 (0.106) seconds
 ◇ Test run started.
 ↳ Testing Library Version: 1902
 ↳ Target Platform: arm64e-apple-macos14.0
 ✔ Test run with 0 tests in 0 suites passed after 0.001 seconds.
-=== DesktopSoT + Parity + Arch ===
+=== ProviderMarksHarness ===
+PASS  codex hasMark=true markSize=(18.0, 18.0) statusTemplate=true
+PASS  claude hasMark=true markSize=(18.0, 18.0) statusTemplate=true
+PASS  amp hasMark=true markSize=(18.0, 18.0) statusTemplate=true
+PASS  grok hasMark=true markSize=(18.0, 18.0) statusTemplate=true
+PASS  zai hasMark=true markSize=(18.0, 18.0) statusTemplate=true
+PASS  kimi hasMark=true markSize=(18.0, 18.0) statusTemplate=true
+PASS  minimax hasMark=true markSize=(18.0, 18.0) statusTemplate=true
+PASS  unknown key hasMark=false
+PASS  codex mark maxA=244 (need ≥200)
+PASS  claude mark maxA=249 (need ≥200)
+PASS  amp mark maxA=255 (need ≥200)
+PASS  grok mark maxA=242 (need ≥200)
+PASS  zai mark maxA=234 (need ≥200)
+PASS  kimi mark maxA=231 (need ≥200)
+PASS  minimax mark maxA=244 (need ≥200)
+ProviderMarksHarness: ALL PASS (7/7 official marks)
+=== DesktopSoTParityHarness ===
+PASS  provider click → provider selection
+PASS  fallback item → overview
+PASS  empty surface → overview
+PASS  button identity map
+PASS  multi-account inventory order + titles
+PASS  OV-5 selected inventory includes exactReset calendar
+PASS  OV-5 unselected multi-account reset nil without Account DTO
+PASS  empty accounts falls back to glance rows
+PASS  OV-5 glance fallback composes exactReset
+PASS  desktop provider URLs complete
 PASS  open usage title fixed
 PASS  unknown surface has no URL
 PASS  0% meter fraction empty
@@ -42,14 +78,27 @@ PASS  57% meter fraction
 PASS  status context menu three rows
 ---
 DesktopSoTParityHarness: ALL PASS (18/18 checks)
+=== DesktopParityMatrixHarness ===
+PASS  Status left-click focuses provider via StatusPopoverFocus
+PASS  Popover prefers detailPresentation buckets
 PASS  ProviderUsageLinks desktop map complete
 PASS  no sparkline/donut/trend product UI in status item
 PASS  no sparkline/donut in popover
 ---
 DesktopParityMatrixHarness: ALL PASS
 Matrix: 8/8 providers displayable · dual-bucket · depleted · limits-only
+=== DesktopArchitectureLint ===
+PASS  StatusItemLabel.swift
 PASS  StatusItemMenu.swift
 PASS  GlassFallbacks.swift
 ---
 DesktopArchitectureLint: scanned 18 files, 18 clean
 DesktopArchitectureLint: ALL PASS
+=== product-law static ===
+(none spend/trend)
+(glassEffect only GlassFallbacks)
+Sources/JackinDesktop/DesktopAppDelegate.swift:72:        if statusBarOrderRequiresRebuild(previous: canonicalOrder, next: newOrder) {
+Sources/JackinUsageBridge/PresentationHelpers.swift:205:public func statusBarOrderRequiresRebuild(previous: [String], next: [String]) -> Bool {
+222:    if total_hours >= 48 {
+native/Sources/JackinDesktop/DesktopAppDelegate.swift:72:        if statusBarOrderRequiresRebuild(previous: canonicalOrder, next: newOrder) {
+native/Sources/JackinUsageBridge/PresentationHelpers.swift:205:public func statusBarOrderRequiresRebuild(previous: [String], next: [String]) -> Bool {
