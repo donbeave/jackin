@@ -6,17 +6,27 @@ import SwiftUI
 
 /// Overview content — **per-account inventory** when accounts exist (HTML SoT),
 /// else glance-provider fallback. Content layer only (LG-A2).
-struct OverviewListView: View {
-    let model: UsageWindowModel
-    let accounts: [PresentationStore.AccountRow]
+public struct OverviewListView: View {
+    public let model: UsageWindowModel
+    public let accounts: [PresentationStore.AccountRow]
     /// Select provider surface; optional account key for multi-account focus.
-    var onSelect: (String, String?) -> Void
+    public var onSelect: (String, String?) -> Void
+
+    public init(
+        model: UsageWindowModel,
+        accounts: [PresentationStore.AccountRow],
+        onSelect: @escaping (String, String?) -> Void
+    ) {
+        self.model = model
+        self.accounts = accounts
+        self.onSelect = onSelect
+    }
 
     private var inventory: [OverviewInventoryRow] {
         OverviewInventory.rows(accounts: accounts, glanceRows: model.sidebar)
     }
 
-    var body: some View {
+    public var body: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 10) {
                 if model.isEmpty {
@@ -58,7 +68,7 @@ struct OverviewListView: View {
             }
 
             if let pct = row.remainingPercent {
-                glanceMeter(percent: pct)
+                glanceMeter(percent: pct, severity: row.severity)
             }
 
             if let reset = row.resetLabel, !reset.isEmpty {
@@ -75,14 +85,14 @@ struct OverviewListView: View {
         }
     }
 
-    /// 1:1 remaining fill; 0% empty track.
-    private func glanceMeter(percent: UInt8) -> some View {
+    /// 1:1 remaining fill; 0% empty track; severity color like HTML inventory meters.
+    private func glanceMeter(percent: UInt8, severity: String) -> some View {
         GeometryReader { geo in
             ZStack(alignment: .leading) {
                 Capsule().fill(Color.primary.opacity(0.10))
                 if percent > 0 {
                     Capsule()
-                        .fill(Color.primary.opacity(0.35))
+                        .fill(severityTint(severity))
                         .frame(width: geo.size.width * CGFloat(percent) / 100.0)
                 }
             }

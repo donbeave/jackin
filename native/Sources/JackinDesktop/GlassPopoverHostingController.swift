@@ -9,13 +9,13 @@ import SwiftUI
 ///
 /// Without clearing the `NSPopover` window, system chrome paints opaque and
 /// glass looks like a solid card (fights LG-A1 translucency).
-final class GlassPopoverHostingController<Content: View>: NSHostingController<Content> {
-    override func viewDidLoad() {
+public final class GlassPopoverHostingController<Content: View>: NSHostingController<Content> {
+    public override func viewDidLoad() {
         super.viewDidLoad()
         applyClearChrome()
     }
 
-    override func viewDidAppear() {
+    public override func viewDidAppear() {
         super.viewDidAppear()
         applyClearChrome()
     }

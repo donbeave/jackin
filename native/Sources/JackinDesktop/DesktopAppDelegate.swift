@@ -10,7 +10,7 @@ import SwiftUI
 /// shared transient popover. Rust owns detection, ordering, and every string;
 /// this controller only reconciles items against `store.providerGlanceRows`.
 @MainActor
-final class StatusBarController: NSObject {
+public final class StatusBarController: NSObject {
     private let store: PresentationStore
     private var providerItems: [String: NSStatusItem] = [:]
     private var fallbackItem: NSStatusItem?
@@ -234,7 +234,7 @@ final class StatusBarController: NSObject {
 /// Application delegate for jackin❯ desktop (menu-bar agent). Owns the store,
 /// status-bar controller, main menu, and document windows (Usage / Settings).
 @MainActor
-final class DesktopAppDelegate: NSObject, NSApplicationDelegate {
+public final class DesktopAppDelegate: NSObject, NSApplicationDelegate {
     let store: PresentationStore
     private let launchConfiguration: PresentationStore.LaunchConfiguration
     private var statusBar: StatusBarController?
@@ -242,7 +242,7 @@ final class DesktopAppDelegate: NSObject, NSApplicationDelegate {
     /// Retained: menu item targets point here / AppMainMenu for the process life.
     private var mainMenu: AppMainMenu?
 
-    override init() {
+    public override init() {
         self.launchConfiguration = PresentationStore.LaunchConfiguration.resolve(
             environment: ProcessInfo.processInfo.environment,
             homeDirectory: FileManager.default.homeDirectoryForCurrentUser.path
@@ -251,11 +251,11 @@ final class DesktopAppDelegate: NSObject, NSApplicationDelegate {
         super.init()
     }
 
-    func applicationWillFinishLaunching(_ notification: Notification) {
+    public func applicationWillFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
     }
 
-    func applicationDidFinishLaunching(_ notification: Notification) {
+    public func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
         store.openForLaunch(launchConfiguration)
         let usageWindow = UsageWindowController(store: store)
@@ -277,12 +277,12 @@ final class DesktopAppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
+    public func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
         // Menu-bar agent stays alive after Usage/Settings close.
         false
     }
 
-    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows: Bool) -> Bool {
+    public func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows: Bool) -> Bool {
         // Dock click while regular (or after hide) → bring Usage forward.
         if !hasVisibleWindows {
             usageWindow?.show(focusOn: nil)
@@ -290,7 +290,7 @@ final class DesktopAppDelegate: NSObject, NSApplicationDelegate {
         return true
     }
 
-    func applicationWillTerminate(_ notification: Notification) {
+    public func applicationWillTerminate(_ notification: Notification) {
         statusBar?.invalidate()
         statusBar = nil
         usageWindow?.invalidate()

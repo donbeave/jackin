@@ -9,7 +9,7 @@ import SwiftUI
 /// Shell is translucent (`GlassFallbacks.panelSurfaceBackground`) so wallpaper
 /// peeks through (LG-A1). Tab strip + footer sit on glass; scroll body is still
 /// content (standard fills on rows only — LG-A2). Data remains Rust-owned.
-struct PopoverRoot: View {
+public struct PopoverRoot: View {
     @ObservedObject var store: PresentationStore
     var onOpenUsage: ((String?) -> Void)?
 
@@ -18,7 +18,7 @@ struct PopoverRoot: View {
         self.onOpenUsage = onOpenUsage
     }
 
-    var body: some View {
+    public var body: some View {
         VStack(spacing: 0) {
             // Nav chrome: provider strip (glass selection, not content cards).
             PopoverTabGrid(

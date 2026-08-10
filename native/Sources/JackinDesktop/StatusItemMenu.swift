@@ -12,7 +12,7 @@ import JackinUsageBridge
 /// long as the menu is used. Holding only the `NSMenu` lets this controller
 /// deallocate; AppKit then disables every row (Open Usage / Refresh / Quit).
 @MainActor
-final class StatusItemMenu: NSObject {
+public final class StatusItemMenu: NSObject {
     private let router: StatusItemMenuRouter
     /// Owned menu; items target `self`.
     let menu: NSMenu

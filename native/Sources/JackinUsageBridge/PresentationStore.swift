@@ -67,6 +67,38 @@ public final class PresentationStore: ObservableObject {
         /// Rust-owned Capsule-parity provider-detail card. The Usage window
         /// renders these rows verbatim; other surfaces ignore it.
         public var detailPresentation: UsageDetailPresentation
+
+        public init(
+            id: String,
+            label: String,
+            enabled: Bool,
+            statusBarLabel: String,
+            status: String,
+            accountLabel: String,
+            username: String?,
+            planLabel: String?,
+            credentialOrigin: String?,
+            estimateCaption: String?,
+            buckets: [BucketRow],
+            updatedLabel: String,
+            lastError: String?,
+            detailPresentation: UsageDetailPresentation
+        ) {
+            self.id = id
+            self.label = label
+            self.enabled = enabled
+            self.statusBarLabel = statusBarLabel
+            self.status = status
+            self.accountLabel = accountLabel
+            self.username = username
+            self.planLabel = planLabel
+            self.credentialOrigin = credentialOrigin
+            self.estimateCaption = estimateCaption
+            self.buckets = buckets
+            self.updatedLabel = updatedLabel
+            self.lastError = lastError
+            self.detailPresentation = detailPresentation
+        }
     }
 
     public struct BucketRow: Identifiable, Sendable, Equatable {

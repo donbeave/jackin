@@ -11,10 +11,14 @@ import SwiftUI
 /// Account switching lives in the **sidebar nest** under the selected provider
 /// (FB1-48) — no duplicate chip strip here.
 /// Official usage console: ``ProviderUsageLinks`` (browser escape hatch).
-struct ProviderCardView: View {
-    let content: UsageWindowModel.Content
+public struct ProviderCardView: View {
+    public let content: UsageWindowModel.Content
 
-    var body: some View {
+    public init(content: UsageWindowModel.Content) {
+        self.content = content
+    }
+
+    public var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
                 if ProviderUsageLinks.usagePageURL(surfaceId: content.surfaceId) != nil {
@@ -59,21 +63,26 @@ struct ProviderCardView: View {
         .accessibilityElement(children: .contain)
     }
 
-    /// Opens the provider’s official usage page (external browser).
+    /// Opens the provider’s official usage page (external browser) — HTML `.open-usage` pill.
     private var openUsagePageControl: some View {
         Button {
             if let url = ProviderUsageLinks.usagePageURL(surfaceId: content.surfaceId) {
                 NSWorkspace.shared.open(url)
             }
         } label: {
-            Label(ProviderUsageLinks.openUsagePageTitle, systemImage: "safari")
-                .font(.subheadline.weight(.semibold))
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 10)
-                .background {
-                    GlassFallbacks.contentCardBackground()
-                }
+            HStack(spacing: 6) {
+                Text(ProviderUsageLinks.openUsagePageTitle)
+                    .font(.subheadline.weight(.semibold))
+                Image(systemName: "arrow.up.right")
+                    .font(.caption.weight(.semibold))
+            }
+            .foregroundStyle(Color.white)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 9)
+            .background {
+                Capsule(style: .continuous)
+                    .fill(Color.accentColor.opacity(0.92))
+            }
         }
         .buttonStyle(.plain)
         .help("Open this provider’s official usage page in your browser")
@@ -150,13 +159,40 @@ struct ProviderCardView: View {
         .accessibilityLabel("\(row.label) \(row.displayLabel)")
     }
 
+    /// Limit card — label + hero remaining (primary), pace/reset secondary, meter last
+    /// (matches `index.html` Usage `.limit` anatomy / VS-11).
     private func bucketCard(_ row: UsageDetailRow) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(row.label)
-                .font(.subheadline.weight(.semibold))
+        let hero = row.layoutLines.compactMap(\.leading).first
+        let secondaryLeadings = Array(row.layoutLines.dropFirst().compactMap(\.leading))
+        let resetTrailings = row.layoutLines.compactMap(\.trailing)
+
+        return VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .firstTextBaseline, spacing: 12) {
+                Text(row.label)
+                    .font(.subheadline.weight(.semibold))
+                Spacer(minLength: 8)
+                if let hero {
+                    Text(hero)
+                        .font(.title2.weight(.semibold).monospacedDigit())
+                        .foregroundStyle(severityTint(row.severity))
+                        .multilineTextAlignment(.trailing)
+                }
+            }
+
+            ForEach(Array(secondaryLeadings.enumerated()), id: \.offset) { _, text in
+                Text(text)
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(.secondary)
+            }
+            ForEach(Array(resetTrailings.enumerated()), id: \.offset) { _, text in
+                Text(text)
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+                    .monospacedDigit()
+            }
+
             if let meter = row.meterPercent {
-                // Geometry from Rust only (1:1). 0% = empty track (Apple ProgressView),
-                // never a fake minimum sliver — that fights zero-remaining copy.
+                // Geometry from Rust only (1:1). 0% = empty track — no fake sliver.
                 let frac = Double(meter) / 100.0
                 GeometryReader { geo in
                     ZStack(alignment: .leading) {
@@ -169,10 +205,6 @@ struct ProviderCardView: View {
                     }
                 }
                 .frame(height: 5)
-            }
-            // Leading segments first; reset on its own trailing line (FB1-31).
-            ForEach(Array(row.layoutLines.enumerated()), id: \.offset) { _, line in
-                lineView(line, trailingStyle: .secondary, leadingTint: severityTint(row.severity))
             }
         }
         .padding(14)

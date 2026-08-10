@@ -10,7 +10,7 @@ import SwiftUI
 /// Not a hard three-pane split. `NavigationSplitView` on macOS 26 paints a
 /// floating glass sidebar over detail content; detail uses standard materials
 /// and may extend under the sidebar via `backgroundExtensionEffect`.
-struct UsageWindowRoot: View {
+public struct UsageWindowRoot: View {
     @ObservedObject var store: PresentationStore
     @Environment(\.dismiss) private var dismiss
 
@@ -25,7 +25,7 @@ struct UsageWindowRoot: View {
         )
     }
 
-    var body: some View {
+    public var body: some View {
         let model = self.model
         NavigationSplitView {
             List(selection: selectionBinding) {
@@ -99,9 +99,7 @@ struct UsageWindowRoot: View {
         }
         .navigationSplitViewStyle(.balanced)
         .navigationTitle("jackin❯ desktop")
-        // Real macOS window toolbar (NSToolbar via hosting controller).
-        .windowToolbarStyle(.unified)
-        .toolbarBackground(.visible, for: .windowToolbar)
+        // NSToolbar items (window.toolbarStyle = .unified is set on NSWindow host).
         .toolbar {
             // LG-A8: system toolbar group — icon-only Refresh (standard macOS pattern).
             ToolbarItem(placement: .primaryAction) {
@@ -179,7 +177,7 @@ struct UsageWindowRoot: View {
                         Text("\(pct)%")
                             .font(.caption.monospacedDigit().weight(.semibold))
                             .foregroundStyle(.secondary)
-                        accountMiniMeter(percent: pct)
+                        UsageAccountMiniMeter(percent: pct)
                     }
                 }
             }
@@ -190,21 +188,6 @@ struct UsageWindowRoot: View {
         .disabled(!multi)
         .accessibilityLabel(accountSidebarAccessibility(account, multi: multi))
         .accessibilityAddTraits(account.selected || !multi ? .isSelected : [])
-    }
-
-    /// Fixed-width remaining bar — geometry only from Rust percent (neutral fill).
-    private func accountMiniMeter(percent: UInt8) -> some View {
-        GeometryReader { geo in
-            ZStack(alignment: .leading) {
-                Capsule().fill(Color.primary.opacity(0.12))
-                if percent > 0 {
-                    Capsule()
-                        .fill(Color.primary.opacity(0.40))
-                        .frame(width: geo.size.width * CGFloat(percent) / 100.0)
-                }
-            }
-        }
-        .frame(width: 32, height: 3)
     }
 
     @ViewBuilder
@@ -227,7 +210,7 @@ struct UsageWindowRoot: View {
                     Text(row.barLabel.isEmpty ? "\(pct)%" : row.barLabel)
                         .font(.caption.monospacedDigit().weight(.semibold))
                         .foregroundStyle(.secondary)
-                    accountMiniMeter(percent: pct)
+                    UsageAccountMiniMeter(percent: pct)
                 }
             } else if !row.barLabel.isEmpty {
                 Text(row.barLabel)

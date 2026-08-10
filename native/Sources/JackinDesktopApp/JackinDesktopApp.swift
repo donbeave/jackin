@@ -6,6 +6,7 @@
 // The delegate owns the store, per-provider status items, and the popover.
 
 import AppKit
+import JackinDesktopUI
 
 @main
 enum JackinDesktopMain {

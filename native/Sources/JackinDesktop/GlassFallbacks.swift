@@ -17,22 +17,22 @@
 import AppKit
 import SwiftUI
 
-enum GlassFallbacks {
+public enum GlassFallbacks {
     // MARK: - Corner radii (continuous / concentric)
 
     /// Glance popover outer radius.
-    static let panelCornerRadius: CGFloat = 20
+    public static let panelCornerRadius: CGFloat = 20
     /// Floating control islands / chrome tiles.
-    static let chromeTileCornerRadius: CGFloat = 12
+    public static let chromeTileCornerRadius: CGFloat = 12
     /// Content-layer cards (standard materials — not glass).
-    static let contentCardCornerRadius: CGFloat = 12
-    static let chipCornerRadius: CGFloat = 8
+    public static let contentCardCornerRadius: CGFloat = 12
+    public static let chipCornerRadius: CGFloat = 8
 
     // MARK: - LG-A1 Navigation glass (Tahoe)
 
     /// Inset chrome control (footer island, toolbar-adjacent tiles).
     @ViewBuilder
-    static func chromeBackground<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+    public static func chromeBackground<Content: View>(@ViewBuilder content: () -> Content) -> some View {
         if #available(macOS 26, *) {
             content()
                 .glassEffect(.regular, in: .rect(cornerRadius: chromeTileCornerRadius))
@@ -47,7 +47,7 @@ enum GlassFallbacks {
 
     /// Sidebar accessory footer strip (nav chrome).
     @ViewBuilder
-    static func footerBarBackground() -> some View {
+    public static func footerBarBackground() -> some View {
         if #available(macOS 26, *) {
             Rectangle().fill(.clear).glassEffect(.regular, in: .rect)
         } else {
@@ -58,7 +58,7 @@ enum GlassFallbacks {
     /// Usage sidebar: on Tahoe, system `List`/`.sidebar` already supplies Liquid Glass.
     /// Returning clear avoids **glass-on-glass** (LG-A5). Older OS gets ultraThin only.
     @ViewBuilder
-    static func sidebarBackground() -> some View {
+    public static func sidebarBackground() -> some View {
         if #available(macOS 26, *) {
             Color.clear
         } else {
@@ -68,7 +68,7 @@ enum GlassFallbacks {
 
     /// Glance popover shell — regular glass (LG-A1 / A10). Requires clear NSPopover host.
     @ViewBuilder
-    static func panelSurfaceBackground() -> some View {
+    public static func panelSurfaceBackground() -> some View {
         if #available(macOS 26, *) {
             RoundedRectangle(cornerRadius: panelCornerRadius, style: .continuous)
                 .fill(.clear)
@@ -89,7 +89,7 @@ enum GlassFallbacks {
 
     /// Floating control island (popover Refresh dock, chrome groups).
     @ViewBuilder
-    static func floatingChromeIsland() -> some View {
+    public static func floatingChromeIsland() -> some View {
         if #available(macOS 26, *) {
             RoundedRectangle(cornerRadius: chromeTileCornerRadius, style: .continuous)
                 .fill(.clear)
@@ -102,7 +102,7 @@ enum GlassFallbacks {
 
     /// Soft hairline between glass chrome regions (not a solid pane wall).
     @ViewBuilder
-    static func glassSeparator() -> some View {
+    public static func glassSeparator() -> some View {
         Rectangle()
             .fill(Color.primary.opacity(0.10))
             .frame(height: 0.5)
@@ -113,13 +113,13 @@ enum GlassFallbacks {
 
     /// Detail / window content fill — standard materials only.
     @ViewBuilder
-    static func windowContentBackground() -> some View {
+    public static func windowContentBackground() -> some View {
         Rectangle().fill(Color(nsColor: .windowBackgroundColor).opacity(0.94))
     }
 
     /// Content card — full continuous stroke (FB1-60 de-slop).
     @ViewBuilder
-    static func contentCardBackground() -> some View {
+    public static func contentCardBackground() -> some View {
         RoundedRectangle(cornerRadius: contentCardCornerRadius, style: .continuous)
             .fill(.background.secondary)
             .overlay {
@@ -131,8 +131,8 @@ enum GlassFallbacks {
     // MARK: - LG-A6 / A7 Edge extension + scroll edges (Tahoe)
 
     /// Extend detail content under floating glass sidebar.
-    struct ContentBackgroundExtension: ViewModifier {
-        func body(content: Content) -> some View {
+    public struct ContentBackgroundExtension: ViewModifier {
+        public func body(content: Content) -> some View {
             if #available(macOS 26, *) {
                 content.backgroundExtensionEffect()
             } else {
@@ -142,8 +142,8 @@ enum GlassFallbacks {
     }
 
     /// Soft scroll-edge dissolve under floating glass chrome (LG-A7).
-    struct SoftScrollEdges: ViewModifier {
-        func body(content: Content) -> some View {
+    public struct SoftScrollEdges: ViewModifier {
+        public func body(content: Content) -> some View {
             if #available(macOS 26, *) {
                 content
                     .scrollEdgeEffectStyle(.soft, for: .top)
@@ -157,26 +157,26 @@ enum GlassFallbacks {
     // MARK: - Selection / idle fills (not glass)
 
     @ViewBuilder
-    static func selectedControlFill() -> some View {
+    public static func selectedControlFill() -> some View {
         RoundedRectangle(cornerRadius: 10, style: .continuous)
             .fill(Color.accentColor.opacity(0.90))
     }
 
     @ViewBuilder
-    static func idleControlFill(enabled: Bool) -> some View {
+    public static func idleControlFill(enabled: Bool) -> some View {
         RoundedRectangle(cornerRadius: 10, style: .continuous)
             .fill(Color.primary.opacity(enabled ? 0.07 : 0.03))
     }
 
     /// Plan/status pill — content-adjacent, not glass.
     @ViewBuilder
-    static func statusChipBackground(tint: Color) -> some View {
+    public static func statusChipBackground(tint: Color) -> some View {
         Capsule().fill(tint.opacity(0.16))
     }
 
     /// Not for menu bar (FB1-6). Subtle non-glass capsule if needed elsewhere.
     @ViewBuilder
-    static func statusItemChipBackground(severity: Color) -> some View {
+    public static func statusItemChipBackground(severity: Color) -> some View {
         Capsule(style: .continuous)
             .fill(Color.primary.opacity(0.06))
             .overlay {

@@ -7,11 +7,11 @@ import SwiftUI
 /// Overview tab: exactly one button-row per Rust glance row, in returned order.
 /// Displays the Rust `displayLabel`, `headline`, `resetLabel`, `statusWord`,
 /// severity color, and `dimmed`; a row click changes the popover selection.
-struct PopoverOverviewTab: View {
+public struct PopoverOverviewTab: View {
     let providers: [PresentationStore.GlanceProviderRow]
     @Binding var selection: String?
 
-    var body: some View {
+    public var body: some View {
         VStack(spacing: 2) {
             ForEach(providers) { provider in
                 Button {

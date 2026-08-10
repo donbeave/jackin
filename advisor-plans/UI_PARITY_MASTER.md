@@ -1,7 +1,7 @@
 # Master plan: jackin❯ desktop UI parity with HTML design SoT
 
-**Mode:** planning only until operator freezes this plan + QI playbook.  
-**Planned at:** commit `f4ec1247` (foundations); plan docs advanced for QI on 2026-08-10.  
+**Mode:** plan frozen for `/goal` implementers (use [FINAL_GOAL_PROMPT.md](./FINAL_GOAL_PROMPT.md)).  
+**Planned at:** commit `f4ec1247` (foundations); plan+QI docs ready 2026-08-10.  
 **Product:** jackin❯ desktop — native macOS menu-bar app under `native/`.  
 **QI playbook (required reading):** [QI_VERIFICATION.md](./QI_VERIFICATION.md) — screenshots, multimodal compare, `/goal` loop.
 

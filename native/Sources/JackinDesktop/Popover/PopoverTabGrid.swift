@@ -8,11 +8,11 @@ import SwiftUI
 /// in canonical order (no sort/filter in Swift). Each provider tab shows the
 /// Rust `displayLabel`, the icon selected from `iconKey`, and thin geometry from
 /// `glanceRemainingPercent`; the Rust `barLabel` is the accessibility value.
-struct PopoverTabGrid: View {
+public struct PopoverTabGrid: View {
     let providers: [PresentationStore.GlanceProviderRow]
     @Binding var selection: String?
 
-    var body: some View {
+    public var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 6) {
                 tab(

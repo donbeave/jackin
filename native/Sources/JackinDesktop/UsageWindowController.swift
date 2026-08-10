@@ -17,7 +17,7 @@ import SwiftUI
 /// `.toolbar` installs a real `NSToolbar` (unified titlebar). Plain
 /// `NSHostingView` does **not** attach the window toolbar.
 @MainActor
-final class UsageWindowController: NSObject, NSWindowDelegate {
+public final class UsageWindowController: NSObject, NSWindowDelegate {
     private let store: PresentationStore
     private var window: NSWindow?
     private var hostingController: NSHostingController<UsageWindowRoot>?
@@ -65,7 +65,7 @@ final class UsageWindowController: NSObject, NSWindowDelegate {
         return window
     }
 
-    func windowWillClose(_ notification: Notification) {
+    public func windowWillClose(_ notification: Notification) {
         // Window is still visible during willClose; resign on next run-loop turn.
         DispatchQueue.main.async {
             AppActivation.resignToAccessoryIfNeeded()

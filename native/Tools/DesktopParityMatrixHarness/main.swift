@@ -372,7 +372,8 @@ struct DesktopParityMatrixHarness {
         )
         check(
             "Usage account nest has mini meter geometry",
-            usageRoot.contains("accountMiniMeter")
+            usageRoot.contains("UsageAccountMiniMeter")
+                || usageRoot.contains("accountMiniMeter")
         )
         check(
             "Usage window NSToolbar host",

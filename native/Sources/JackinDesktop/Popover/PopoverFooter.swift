@@ -5,11 +5,11 @@ import SwiftUI
 
 /// Popover footer: one Refresh control on a **glass** capsule (LG-A8).
 /// Spinner reflects `refreshInProgress`. No other actions.
-struct PopoverFooter: View {
+public struct PopoverFooter: View {
     let refreshInProgress: Bool
     let onRefresh: () -> Void
 
-    var body: some View {
+    public var body: some View {
         Button(action: onRefresh) {
             HStack(spacing: 6) {
                 if refreshInProgress {

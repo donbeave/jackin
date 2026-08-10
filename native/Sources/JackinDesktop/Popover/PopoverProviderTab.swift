@@ -10,35 +10,53 @@ import SwiftUI
 /// Prefers Rust ``UsageDetailPresentation`` buckets (same as Usage window);
 /// falls back to `surface.buckets` segments when detail is empty.
 /// Account switcher is secondary (tint chips, not solid green slabs).
-struct PopoverProviderTab: View {
-    let provider: PresentationStore.GlanceProviderRow
-    let surface: PresentationStore.SurfaceRow?
-    let accounts: [PresentationStore.AccountRow]
-    let refreshInProgress: Bool
-    let onSelectAccount: (String, String) -> Void
-    let onOpenUsageWindow: (String) -> Void
+public struct PopoverProviderTab: View {
+    public let provider: PresentationStore.GlanceProviderRow
+    public let surface: PresentationStore.SurfaceRow?
+    public let accounts: [PresentationStore.AccountRow]
+    public let refreshInProgress: Bool
+    public let onSelectAccount: (String, String) -> Void
+    public let onOpenUsageWindow: (String) -> Void
 
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+    public init(
+        provider: PresentationStore.GlanceProviderRow,
+        surface: PresentationStore.SurfaceRow?,
+        accounts: [PresentationStore.AccountRow],
+        refreshInProgress: Bool,
+        onSelectAccount: @escaping (String, String) -> Void,
+        onOpenUsageWindow: @escaping (String) -> Void
+    ) {
+        self.provider = provider
+        self.surface = surface
+        self.accounts = accounts
+        self.refreshInProgress = refreshInProgress
+        self.onSelectAccount = onSelectAccount
+        self.onOpenUsageWindow = onOpenUsageWindow
+    }
+
+    public var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            // Identity header — open full Usage window (popover.html head + chevron).
             Button {
                 onOpenUsageWindow(provider.surfaceId)
             } label: {
-                HStack {
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text(provider.displayLabel).font(.headline)
-                        if !provider.accountLabel.isEmpty {
-                            Text(provider.accountLabel)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
+                HStack(alignment: .top, spacing: 10) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(provider.displayLabel)
+                            .font(.title3.weight(.semibold))
+                        Text(headerMetaLine)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(2)
                     }
-                    Spacer()
+                    Spacer(minLength: 8)
                     if refreshInProgress || provider.isRefreshing {
                         ProgressView().controlSize(.small)
                     }
                     Image(systemName: "chevron.right")
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(.tertiary)
+                        .padding(.top, 4)
                 }
                 .contentShape(Rectangle())
             }
@@ -46,26 +64,12 @@ struct PopoverProviderTab: View {
             .opacity(provider.dimmed ? 0.55 : 1)
             .accessibilityHint("Open Usage window")
 
-            if let plan = provider.planLabel, !plan.isEmpty {
-                Text(plan).font(.caption2).foregroundStyle(.secondary)
-            }
-            Text(provider.updatedLabel).font(.caption2).foregroundStyle(.tertiary)
             if let error = provider.lastError, !error.isEmpty {
                 Text(error).font(.caption2).foregroundStyle(.red)
             }
 
             if ProviderUsageLinks.usagePageURL(surfaceId: provider.surfaceId) != nil {
-                Button {
-                    if let url = ProviderUsageLinks.usagePageURL(surfaceId: provider.surfaceId) {
-                        NSWorkspace.shared.open(url)
-                    }
-                } label: {
-                    Label(ProviderUsageLinks.openUsagePageTitle, systemImage: "safari")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(Color.accentColor)
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(ProviderUsageLinks.openUsagePageTitle)
+                openUsagePageLink
             }
 
             if accounts.count > 1 {
@@ -74,10 +78,37 @@ struct PopoverProviderTab: View {
 
             bucketsSection
         }
-        .padding(10)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
     }
 
-    /// Secondary account chips (left H-stack) — phosphor tint when selected.
+    /// Codex · OpenAI · Updated just now (Rust labels only).
+    private var headerMetaLine: String {
+        var parts: [String] = []
+        if !provider.accountLabel.isEmpty { parts.append(provider.accountLabel) }
+        if let plan = provider.planLabel, !plan.isEmpty { parts.append(plan) }
+        if !provider.updatedLabel.isEmpty {
+            let u = provider.updatedLabel
+            parts.append(u.lowercased().hasPrefix("updated") ? u : "Updated \(u)")
+        }
+        return parts.joined(separator: " · ")
+    }
+
+    private var openUsagePageLink: some View {
+        Button {
+            if let url = ProviderUsageLinks.usagePageURL(surfaceId: provider.surfaceId) {
+                NSWorkspace.shared.open(url)
+            }
+        } label: {
+            Label(ProviderUsageLinks.openUsagePageTitle, systemImage: "safari")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(Color.accentColor)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(ProviderUsageLinks.openUsagePageTitle)
+    }
+
+    /// Secondary account chips — selected = phosphor fill (popover.html account rail).
     private var accountStrip: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 6) {
@@ -92,29 +123,25 @@ struct PopoverProviderTab: View {
                             if let pct = account.remainingPercent {
                                 Text("\(pct)%")
                                     .font(.caption2.monospacedDigit().weight(.semibold))
-                                    .foregroundStyle(account.selected ? Color.accentColor : .secondary)
                             }
                         }
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 5)
                         .background {
                             Capsule(style: .continuous)
                                 .fill(
                                     account.selected
-                                        ? Color.accentColor.opacity(0.14)
-                                        : Color.primary.opacity(0.06)
+                                        ? Color.accentColor.opacity(0.88)
+                                        : Color.primary.opacity(0.08)
                                 )
                                 .overlay {
-                                    Capsule(style: .continuous)
-                                        .strokeBorder(
-                                            account.selected
-                                                ? Color.accentColor.opacity(0.40)
-                                                : Color.primary.opacity(0.10),
-                                            lineWidth: 0.5
-                                        )
+                                    if !account.selected {
+                                        Capsule(style: .continuous)
+                                            .strokeBorder(Color.primary.opacity(0.12), lineWidth: 0.5)
+                                    }
                                 }
                         }
-                        .foregroundStyle(account.selected ? Color.accentColor : Color.primary.opacity(0.85))
+                        .foregroundStyle(account.selected ? Color.white : Color.primary.opacity(0.85))
                     }
                     .buttonStyle(.plain)
                     .accessibilityAddTraits(account.selected ? .isSelected : [])
@@ -142,35 +169,52 @@ struct PopoverProviderTab: View {
         }
     }
 
+    /// Hero remaining (VS-11 primary) + meter + pace/reset — popover.html `.hero` / `.meter`.
     private func detailBucketBlock(_ row: UsageDetailRow) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(row.label)
-                .font(.caption.weight(.semibold))
-            if let meter = row.meterPercent {
-                bucketMeter(meter)
+        let hero = row.layoutLines.compactMap(\.leading).first
+        let paceLines = row.layoutLines.dropFirst().compactMap(\.leading)
+        let resetLines = row.layoutLines.compactMap(\.trailing)
+
+        return VStack(alignment: .leading, spacing: 6) {
+            Text(row.label.uppercased())
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .tracking(0.4)
+
+            if let hero {
+                Text(hero)
+                    .font(.system(size: 28, weight: .semibold, design: .rounded))
+                    .monospacedDigit()
+                    .foregroundStyle(severityTint(row.severity))
+                    .minimumScaleFactor(0.7)
+                    .lineLimit(1)
             }
-            ForEach(Array(row.layoutLines.enumerated()), id: \.offset) { _, line in
-                HStack {
-                    if let leading = line.leading {
-                        Text(leading)
-                            .font(.caption2.monospacedDigit().weight(.semibold))
-                            .foregroundStyle(severityTint(row.severity))
-                    }
-                    Spacer(minLength: 4)
-                    if let trailing = line.trailing {
-                        Text(trailing)
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                            .monospacedDigit()
-                    }
-                }
+
+            if let meter = row.meterPercent {
+                bucketMeter(meter, severity: row.severity, height: 7)
+            }
+
+            ForEach(Array(paceLines.enumerated()), id: \.offset) { _, pace in
+                Text(pace)
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(.secondary)
+            }
+            ForEach(Array(resetLines.enumerated()), id: \.offset) { _, reset in
+                Text(reset)
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+                    .monospacedDigit()
             }
         }
-        .padding(.vertical, 4)
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background {
+            GlassFallbacks.contentCardBackground()
+        }
     }
 
     private func limitResetBlock(_ row: UsageDetailRow) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 6) {
             Text(row.label)
                 .font(.caption.weight(.semibold))
             let lines = row.layoutLines.isEmpty
@@ -182,35 +226,45 @@ struct PopoverProviderTab: View {
                     .foregroundStyle(.secondary)
             }
         }
-        .padding(.vertical, 4)
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background {
+            GlassFallbacks.contentCardBackground()
+        }
     }
 
     private func legacyBucketBlock(_ bucket: PresentationStore.BucketRow) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(bucket.label).font(.caption.weight(.semibold))
+        VStack(alignment: .leading, spacing: 6) {
+            Text(bucket.label.uppercased())
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(.secondary)
             if let meter = bucket.meterPercent {
-                bucketMeter(meter)
+                bucketMeter(meter, severity: "normal", height: 7)
             }
             ForEach(Array(bucket.displaySegments.enumerated()), id: \.offset) { _, segment in
-                Text(segment).font(.caption2)
+                Text(segment).font(.caption)
             }
         }
-        .padding(.vertical, 4)
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background {
+            GlassFallbacks.contentCardBackground()
+        }
     }
 
-    /// Geometry from Rust only — 0% = empty track (no fake sliver).
+    /// Geometry from Rust only — 0% = empty track (no fake sliver); severity colors fill.
     @ViewBuilder
-    private func bucketMeter(_ meterPercent: UInt8) -> some View {
+    private func bucketMeter(_ meterPercent: UInt8, severity: String, height: CGFloat) -> some View {
         GeometryReader { geometry in
             ZStack(alignment: .leading) {
-                Capsule().fill(Color.secondary.opacity(0.22))
+                Capsule().fill(Color.primary.opacity(0.10))
                 if meterPercent > 0 {
                     Capsule()
-                        .fill(Color.accentColor)
+                        .fill(severityTint(severity))
                         .frame(width: geometry.size.width * CGFloat(meterPercent) / 100.0)
                 }
             }
         }
-        .frame(height: 4)
+        .frame(height: height)
     }
 }

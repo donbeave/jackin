@@ -17,7 +17,7 @@ import SwiftUI
 ///
 /// Not now: Help, File, multi-window document model, Services clutter.
 @MainActor
-final class AppMainMenu: NSObject {
+public final class AppMainMenu: NSObject {
     private let store: PresentationStore
     private let openUsage: () -> Void
     private var settingsWindow: NSWindow?
@@ -253,7 +253,7 @@ private final class SettingsWindowCloseProxy: NSObject, NSWindowDelegate {
         super.init()
     }
 
-    func windowWillClose(_ notification: Notification) {
+    public func windowWillClose(_ notification: Notification) {
         DispatchQueue.main.async { [onClose] in
             onClose()
         }
@@ -262,7 +262,7 @@ private final class SettingsWindowCloseProxy: NSObject, NSWindowDelegate {
 
 /// Activation policy bridge: accessory (status bar only) ↔ regular (menu bar + Dock).
 @MainActor
-enum AppActivation {
+public enum AppActivation {
     /// Show system menu bar ( + app menus) and allow Dock focus while windows are open.
     static func presentWindows() {
         if NSApp.activationPolicy() != .regular {

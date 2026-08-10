@@ -10,11 +10,13 @@ let package = Package(
     ],
     products: [
         .library(name: "JackinUsageBridge", targets: ["JackinUsageBridge"]),
+        .library(name: "JackinDesktopUI", targets: ["JackinDesktopUI"]),
         .executable(name: "JackinDesktop", targets: ["JackinDesktop"]),
         .executable(name: "StatusItemChipHarness", targets: ["StatusItemChipHarness"]),
         .executable(name: "DesktopArchitectureLint", targets: ["DesktopArchitectureLint"]),
         .executable(name: "DesktopParityMatrixHarness", targets: ["DesktopParityMatrixHarness"]),
         .executable(name: "DesktopSoTParityHarness", targets: ["DesktopSoTParityHarness"]),
+        .executable(name: "DesktopVisualSnapshotHarness", targets: ["DesktopVisualSnapshotHarness"]),
     ],
     targets: [
         .binaryTarget(
@@ -26,35 +28,42 @@ let package = Package(
             dependencies: ["jackin_usage_ffiFFI"],
             path: "Sources/JackinUsageBridge"
         ),
-        .executableTarget(
-            name: "JackinDesktop",
+        // Hostable UI library (status/popover/Usage) for app + visual snapshots.
+        .target(
+            name: "JackinDesktopUI",
             dependencies: ["JackinUsageBridge"],
             path: "Sources/JackinDesktop",
             resources: [.copy("Resources/JackinMark.pdf")]
         ),
-        // Pure chip builder checks without XCTest (CodexBar/OpenUsage remaining% parity).
+        .executableTarget(
+            name: "JackinDesktop",
+            dependencies: ["JackinDesktopUI", "JackinUsageBridge"],
+            path: "Sources/JackinDesktopApp"
+        ),
         .executableTarget(
             name: "StatusItemChipHarness",
             dependencies: ["JackinUsageBridge"],
             path: "Tools/StatusItemChipHarness"
         ),
-        // Mirrors ArchitectureTests usage-string token ban without XCTest (CLT-safe).
         .executableTarget(
             name: "DesktopArchitectureLint",
             dependencies: [],
             path: "Tools/DesktopArchitectureLint"
         ),
-        // OpenUsage/CodexBar limits-only display matrix (full catalog, dual-bucket).
         .executableTarget(
             name: "DesktopParityMatrixHarness",
             dependencies: ["JackinUsageBridge"],
             path: "Tools/DesktopParityMatrixHarness"
         ),
-        // HTML SoT pure helpers (status focus, overview inventory, usage URLs) — CLT, no XCTest.
         .executableTarget(
             name: "DesktopSoTParityHarness",
             dependencies: ["JackinUsageBridge"],
             path: "Tools/DesktopSoTParityHarness"
+        ),
+        .executableTarget(
+            name: "DesktopVisualSnapshotHarness",
+            dependencies: ["JackinDesktopUI", "JackinUsageBridge"],
+            path: "Tools/DesktopVisualSnapshotHarness"
         ),
         .testTarget(
             name: "JackinUsageBridgeTests",

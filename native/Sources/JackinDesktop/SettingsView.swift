@@ -5,13 +5,13 @@ import JackinUsageBridge
 import ServiceManagement
 import SwiftUI
 
-struct SettingsView: View {
+public struct SettingsView: View {
     @ObservedObject var store: PresentationStore
     @State private var floorMinutes: Double = 5
     @State private var launchAtLogin: Bool = false
     @State private var launchAtLoginNote: String?
 
-    var body: some View {
+    public var body: some View {
         Form {
             Section("Menu bar") {
                 Picker("Display", selection: $store.displayMode) {

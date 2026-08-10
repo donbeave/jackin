@@ -4,9 +4,9 @@
 **QI (how agents prove parity):** **[QI_VERIFICATION.md](./QI_VERIFICATION.md)**  
 **Paste into `/goal` when ready to implement:** **[FINAL_GOAL_PROMPT.md](./FINAL_GOAL_PROMPT.md)**  
 
-Stamp: foundations **`f4ec1247`**; plan+QI docs current on branch. Focus: **look / feel / IA / interactions** vs HTML SoT.
+Stamp: foundations **`f4ec1247`**; plan+QI docs ready for `/goal` (2026-08-10). Focus: **look / feel / IA / interactions** vs HTML SoT.
 
-> **Do not start large implementation until the operator freezes the master plan + QI playbook.**  
+> **Plan package frozen for implementers.** Start via **[FINAL_GOAL_PROMPT.md](./FINAL_GOAL_PROMPT.md)** → paste into `/goal`.  
 > Foundations in the tree are a baseline — **visual parity requires the QI loop** (baselines, screenshots, multimodal deltas), not harness-only green.
 
 ---
