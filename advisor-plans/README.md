@@ -2,6 +2,8 @@
 
 **Active program of record:** **[UI_PARITY_MASTER.md](./UI_PARITY_MASTER.md)**  
 **QI (how agents prove parity):** **[QI_VERIFICATION.md](./QI_VERIFICATION.md)**  
+**Paste into `/goal` when ready to implement:** **[FINAL_GOAL_PROMPT.md](./FINAL_GOAL_PROMPT.md)**  
+
 Stamp: foundations **`f4ec1247`**; plan+QI docs current on branch. Focus: **look / feel / IA / interactions** vs HTML SoT.
 
 > **Do not start large implementation until the operator freezes the master plan + QI playbook.**  

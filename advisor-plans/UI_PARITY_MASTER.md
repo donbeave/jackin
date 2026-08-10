@@ -334,32 +334,12 @@ Operator sign-off (if available): ____________________
 
 ### 10.2 Ready-to-paste `/goal` prompt
 
-```
-Implement jackin❯ desktop UI parity.
+**Use the full freeze prompt** (do not use a shortened version):
 
-Program of record:
-- advisor-plans/UI_PARITY_MASTER.md
-- advisor-plans/QI_VERIFICATION.md   ← mandatory QI (screenshots + multimodal)
+→ **[FINAL_GOAL_PROMPT.md](./FINAL_GOAL_PROMPT.md)**
 
-Oracle (visual + IA):
-- plans/previews/desktop-ui/index.html
-- plans/previews/desktop-ui/popover.html
-- plans/desktop-design-decisions.md (CONFIRMED FB1/LG-A)
-
-Method:
-1. Capture HTML baselines for QI scene catalog (dark+light).
-2. Phase B → C → D: smallest fixes toward Gap IDs.
-3. After every change: L1 HTML structural check + native harnesses.
-4. Capture native (or SwiftUI snapshot); read_file both images; write structured delta.
-5. Fix until High deltas are gone; mark VISUAL_QA_LOG Pass.
-6. Phase E: lock harnesses + sign-off.
-
-Do NOT: invent design; invert oracle (HTML→match bad native); glass chips on status bar;
-fake system  bar; invent usage %; skip QI when GUI Mac is available.
-
-Evidence: qi-artifacts (html/, native/, deltas/), harness logs, VISUAL_QA_LOG.md.
-Brand: jackin❯ desktop. Glass only GlassFallbacks. Limits only.
-```
+That prompt requires screenshot baselines, multimodal HTML↔native compare, and
+forbids stopping on harness-only green until visual evidence is strongest.
 
 ---
 
