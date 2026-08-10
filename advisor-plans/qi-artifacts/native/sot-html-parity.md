@@ -2,18 +2,16 @@
 
 | HTML surface | Native | Parity |
 |--------------|--------|--------|
-| Status dual-stack template logos | StatusItemRendering.icon + title | **match** (fixture bitmap; live NSStatusItem may BLOCK) |
-| Popover brand + Overview\|Providers | PopoverTabGrid | **match** |
-| mode-overview: provider groups, multi-account, %, meter, refresh | PopoverOverviewTab + OverviewInventory | **match** (rewritten; was severity-dot list) |
-| mode-providers: strip + full detail | TabGrid strip + PopoverProviderTab | **match** |
-| Open Usage Window glass CTA | PopoverFooter | **match** |
-| Usage: glass sidebar, solid detail, nest accounts | UsageWindowRoot + nest + ProviderCard | **match** craft role |
-| Meters 3-status not multi-brand | severityTint / phosphor | **match** |
-| Credential = Rust string | PopoverProviderTab credentialOrigin | **match** |
-| No spend/price UI | parity matrix | **match** |
+| Status dual-stack template logos | StatusItemRendering | **match** (fixture) |
+| Overview\|Providers modes | PopoverTabGrid | **match** |
+| mode-overview groups + multi-account + meter + refresh | PopoverOverviewTab + OverviewInventory | **match** |
+| OV-5 relative + calendar | overviewResetDisplay → row.resetLabel dual line | **match** selected/glance (OpenAI: Resets in 3d + 15 Aug 2026, 17:02 in snap) |
+| OV-5 unselected multi-account reset | AccountRow lacks reset DTO | **deferred** data model |
+| Providers strip + detail | TabGrid + PopoverProviderTab | **match** |
+| Open Usage CTA | PopoverFooter | **match** |
+| Usage shell | UsageWindowRoot | **match** craft roles |
 
-## Multimodal (qi-sot/popover-overview-dark.png)
-- Overview selected; Anthropic/OpenAI/Amp groups with official plates
-- Multi-account OpenAI (57% + 0% Fully used)
-- Per-row refresh icons; meters status-colored; Open Usage footer
-- No severity dots
+## Multimodal popover-overview-dark.png
+- OpenAI selected account: "Resets in 3d" + "15 Aug 2026, 17:02"
+- Unselected 0%: "Fully used" only (no invented calendar)
+- Official marks; no severity dots

@@ -68,7 +68,15 @@ struct DesktopSoTParityHarness {
         // --- OverviewInventory (shipped) ---
         let glances = [
             glance(id: "claude", label: "Anthropic", account: "Personal", bar: "12%", pct: 12),
-            glance(id: "codex", label: "OpenAI", account: "a1", bar: "57%", pct: 57),
+            glance(
+                id: "codex",
+                label: "OpenAI",
+                account: "a1",
+                bar: "57%",
+                pct: 57,
+                resetLabel: "Resets in 3d",
+                exactReset: "(15 Aug 2026, 17:02)"
+            ),
         ]
         let accounts = [
             account(surface: "codex", key: "a1", label: "alexey@chainargos.com", pct: 57, selected: true),
@@ -83,10 +91,27 @@ struct DesktopSoTParityHarness {
                 && multi[2].barLabel == "0%"
                 && multi[2].remainingPercent == 0
         )
+        // OV-5: selected glance path composes relative + calendar (QI OpenAI exactReset).
+        let codexSelected = multi.first { $0.id == "codex#a1" }
+        check(
+            "OV-5 selected inventory includes exactReset calendar",
+            codexSelected?.resetLabel == "Resets in 3d\n15 Aug 2026, 17:02"
+                && (codexSelected?.resetLabel?.contains("15 Aug 2026") == true)
+        )
+        // Unselected multi-account: no AccountRow reset DTO — nil (data-model limit).
+        check(
+            "OV-5 unselected multi-account reset nil without Account DTO",
+            multi.first { $0.id == "codex#a2" }?.resetLabel == nil
+        )
         let fallback = OverviewInventory.rows(accounts: [], glanceRows: glances)
         check(
             "empty accounts falls back to glance rows",
             fallback.count == 2 && fallback[0].surfaceId == "claude"
+        )
+        check(
+            "OV-5 glance fallback composes exactReset",
+            fallback.first { $0.surfaceId == "codex" }?.resetLabel
+                == "Resets in 3d\n15 Aug 2026, 17:02"
         )
 
         // --- ProviderUsageLinks (shipped) ---
@@ -128,7 +153,7 @@ struct DesktopSoTParityHarness {
 
     private static func passCount(failures: Int) -> String {
         // fixed suite size for log readability
-        "\(15 - failures)/15"
+        "\(18 - failures)/18"
     }
 
     private static func glance(
@@ -136,7 +161,9 @@ struct DesktopSoTParityHarness {
         label: String,
         account: String,
         bar: String,
-        pct: UInt8
+        pct: UInt8,
+        resetLabel: String = "Resets in 1h",
+        exactReset: String? = nil
     ) -> PresentationStore.GlanceProviderRow {
         PresentationStore.GlanceProviderRow(
             surfaceId: id,
@@ -147,8 +174,8 @@ struct DesktopSoTParityHarness {
             glanceRemainingPercent: pct,
             barLabel: bar,
             headline: bar,
-            resetLabel: "Resets in 1h",
-            exactReset: nil,
+            resetLabel: resetLabel,
+            exactReset: exactReset,
             statusWord: "fresh",
             isRefreshing: false,
             statusLabel: "fresh",
