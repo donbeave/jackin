@@ -22,7 +22,20 @@ HTML alone without tokens becomes “generic SaaS.” Tokens alone without a com
 | Artifact | Role |
 |---|---|
 | [`popover.html`](./popover.html) | **Glance popover SoT** (Overview + all 7 providers, Liquid Glass chrome). Status left-click uses `?embed=1&mode=providers&provider=…` |
-| [`index.html`](./index.html) | Hub: status interactions (iframe → popover.html), Usage window, Liquid Glass check |
+| [`index.html`](./index.html) | Hub: status interactions (iframe → popover.html), **Usage window** (native shell: titlebar + glass sidebar + metric tiles + Settings groups), Liquid Glass check |
+
+### Usage window (FB1-45)
+
+Quality bar = high-end native macOS utilities (e.g. Surge Dashboard), not generic web admin UI.
+
+| Layer | Material | Notes |
+|---|---|---|
+| Unified titlebar | Glass | Traffic lights over sidebar column; glass action capsules |
+| Sidebar | Glass | Section labels, nested accounts, trailing status % |
+| Content | Solid / inset | Metric tile row → Settings groups → full buckets |
+| Scroll | Soft edges | Same dissolve rule as popover |
+
+**Do not** ship a flat two-column web panel without window chrome.
 | CSS custom properties | Named tokens agents must map to Swift |
 | [`README.md`](./README.md) | Operator + implementer rules |
 | This file | Predictable agent process |

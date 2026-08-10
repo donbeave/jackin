@@ -4,7 +4,7 @@
 
 | File | Contents |
 |---|---|
-| [`index.html`](./index.html) | **Hub:** status left-click → **real** `popover.html` embed, right-click glass menu, **Usage window**, Liquid Glass check |
+| [`index.html`](./index.html) | **Hub:** status left-click → **real** `popover.html` embed, right-click glass menu, **Usage window** (Surge-class native shell), Liquid Glass check |
 | [`popover.html`](./popover.html) | **Single** glance-popover craft SoT: Overview + all 7 providers. Status interaction loads this file (`?embed=1&mode=providers&provider=…`) |
 | [`AGENT_HANDOFF.md`](./AGENT_HANDOFF.md) | Agent procedure |
 

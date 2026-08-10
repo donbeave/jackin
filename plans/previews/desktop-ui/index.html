@@ -197,112 +197,329 @@
     .flow-caption code { color: var(--jk); font-family: var(--mono); font-size: 11px; }
 
     /* —— Usage window —— */
+    /*
+      Usage window — Surge-class native macOS shell (Liquid Glass ready).
+      Borrowed patterns: unified titlebar, traffic lights, glass sidebar,
+      metric tile row, Settings-style inset groups, soft materials depth.
+      jackin DNA: phosphor selection, j❯ monogram, 3-level status meters.
+    */
     .win {
-      display: grid; grid-template-columns: 248px 1fr; min-height: 520px; max-width: 920px;
-      margin: 0 auto; border-radius: 12px; overflow: hidden;
-      box-shadow: 0 24px 70px rgba(0,0,0,0.45);
+      --win-r: 14px;
+      --side-w: 236px;
+      width: min(960px, 100%);
+      height: 600px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-rows: 48px 1fr;
+      grid-template-columns: var(--side-w) 1fr;
+      border-radius: var(--win-r);
+      overflow: hidden;
+      position: relative;
       background: var(--content-bg);
+      border: 0.5px solid var(--glass-border);
+      box-shadow:
+        0 0 0 0.5px rgba(0,0,0,0.2),
+        0 30px 80px rgba(0,0,0,0.5),
+        0 8px 24px rgba(0,0,0,0.25);
     }
-    /* Liquid Glass sidebar — navigation layer */
+    [data-theme="light"] .win {
+      box-shadow:
+        0 0 0 0.5px rgba(0,0,0,0.06),
+        0 24px 60px rgba(0,0,0,0.14),
+        0 4px 12px rgba(0,0,0,0.06);
+    }
+
+    /* Unified titlebar — full width glass (traffic lights over sidebar) */
+    .win .titlebar {
+      grid-column: 1 / -1;
+      grid-row: 1;
+      display: grid;
+      grid-template-columns: var(--side-w) 1fr;
+      align-items: stretch;
+      z-index: 5;
+      background: color-mix(in srgb, var(--glass) 92%, transparent);
+      backdrop-filter: blur(48px) saturate(1.5);
+      -webkit-backdrop-filter: blur(48px) saturate(1.5);
+      border-bottom: 0.5px solid color-mix(in srgb, var(--glass-border) 70%, transparent);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+    }
+    .win .titlebar-side {
+      display: flex; align-items: center; gap: 8px;
+      padding: 0 12px 0 14px;
+    }
+    .win .traffic {
+      display: flex; gap: 7px; align-items: center; flex-shrink: 0;
+    }
+    .win .traffic i {
+      width: 12px; height: 12px; border-radius: 50%;
+      box-shadow: inset 0 0 0 0.5px rgba(0,0,0,0.18);
+    }
+    .win .traffic .c { background: #ff5f57; }
+    .win .traffic .y { background: #febc2e; }
+    .win .traffic .g { background: #28c840; }
+    .win .titlebar-side .app-name {
+      font-size: 12px; font-weight: 560; color: var(--secondary);
+      letter-spacing: -0.1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .win .titlebar-side .app-name b { color: var(--jk); font-weight: 700; }
+    .win .titlebar-main {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 12px; padding: 0 14px 0 16px;
+      border-left: 0.5px solid color-mix(in srgb, var(--separator) 55%, transparent);
+    }
+    .win .titlebar-main .page-title {
+      font-size: 13px; font-weight: 600; color: var(--label);
+      letter-spacing: -0.15px;
+    }
+    .win .titlebar-main .page-title span {
+      color: var(--tertiary); font-weight: 500; margin-left: 8px;
+    }
+    .win .tb-actions { display: flex; align-items: center; gap: 6px; }
+    .win .tb-btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+      height: 28px; min-width: 28px; padding: 0 11px;
+      border-radius: 8px; cursor: pointer; font: inherit; font-size: 12px; font-weight: 560;
+      color: var(--label);
+      background: color-mix(in srgb, var(--fill) 70%, transparent);
+      border: 0.5px solid color-mix(in srgb, var(--glass-border) 80%, transparent);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+      backdrop-filter: blur(12px);
+    }
+    .win .tb-btn.primary {
+      color: var(--jk);
+      background: color-mix(in srgb, var(--jk) 14%, transparent);
+      border-color: color-mix(in srgb, var(--jk) 32%, var(--glass-border));
+    }
+    .win .tb-btn:hover {
+      background: color-mix(in srgb, var(--fill) 100%, transparent);
+    }
+    .win .tb-btn.primary:hover {
+      background: color-mix(in srgb, var(--jk) 22%, transparent);
+    }
+    .win .tb-btn svg { width: 13px; height: 13px; fill: currentColor; opacity: 0.9; }
+
+    /* Glass sidebar — nav layer (Surge / Settings quality) */
     .win .side {
-      background: var(--glass);
-      backdrop-filter: blur(48px) saturate(1.4);
-      -webkit-backdrop-filter: blur(48px) saturate(1.4);
-      border-right: 0.5px solid var(--glass-border);
-      padding: 10px 8px 12px;
+      grid-column: 1;
+      grid-row: 2;
       display: flex; flex-direction: column;
+      min-height: 0;
+      padding: 8px 8px 0;
+      background:
+        linear-gradient(180deg, color-mix(in srgb, var(--jk) 4%, transparent) 0%, transparent 48px),
+        color-mix(in srgb, var(--glass) 88%, transparent);
+      backdrop-filter: blur(40px) saturate(1.4);
+      -webkit-backdrop-filter: blur(40px) saturate(1.4);
+      border-right: 0.5px solid color-mix(in srgb, var(--separator) 70%, transparent);
+    }
+    .win .side-scroll {
+      flex: 1; min-height: 0; overflow: auto;
+      padding-bottom: 8px;
+      scrollbar-width: thin;
+      scrollbar-color: color-mix(in srgb, var(--label) 16%, transparent) transparent;
     }
     .win .side .lab {
-      font-size: 11px; font-weight: 600; color: var(--tertiary);
-      text-transform: uppercase; letter-spacing: 0.04em; padding: 8px 10px 6px;
+      font-size: 11px; font-weight: 620; color: var(--tertiary);
+      letter-spacing: 0.02em; padding: 10px 10px 5px;
     }
     .win .side-item {
       display: flex; align-items: center; gap: 10px;
-      padding: 9px 10px; border-radius: 10px; margin-bottom: 2px; cursor: pointer;
+      padding: 8px 10px; border-radius: 9px; margin-bottom: 1px; cursor: pointer;
       border: 0; background: transparent; width: 100%; text-align: left; color: var(--label); font: inherit;
+      transition: background 0.12s ease;
     }
     .win .side-item:hover { background: rgba(128,128,128,0.12); }
     .win .side-item.on {
-      background: color-mix(in srgb, var(--jk) 16%, transparent);
-      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--jk) 28%, transparent);
+      background: color-mix(in srgb, var(--jk) 15%, transparent);
+      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--jk) 26%, transparent);
     }
-    .win .side-item .t { font-size: 13px; font-weight: 560; }
-    .win .side-item .s { font-size: 11px; color: var(--secondary); margin-top: 1px; font-family: var(--mono); }
+    .win .side-item .ic {
+      width: 26px; height: 26px; border-radius: 7px; flex-shrink: 0;
+      display: grid; place-items: center;
+    }
+    .win .side-item .ic .plogo.sm { width: 26px; height: 26px; border-radius: 7px; font-size: 10px; }
+    .win .side-item .t { font-size: 13px; font-weight: 560; letter-spacing: -0.1px; }
+    .win .side-item .s {
+      font-size: 11px; color: var(--secondary); margin-top: 1px;
+      font-family: var(--mono); font-variant-numeric: tabular-nums;
+    }
+    .win .side-item .trail {
+      margin-left: auto; font-family: var(--mono); font-size: 11px; font-weight: 600;
+      font-variant-numeric: tabular-nums; color: var(--secondary);
+    }
+    .win .side-item.on .trail.high { color: var(--status-high); }
+    .win .side-item .trail.mid { color: var(--status-mid); }
+    .win .side-item .trail.low { color: var(--status-low); }
     .win .acct-nest {
-      margin: 0 0 6px 18px; padding-left: 10px;
-      border-left: 1px solid color-mix(in srgb, var(--jk) 22%, transparent);
+      margin: 0 0 4px 14px; padding: 2px 0 2px 10px;
+      border-left: 1.5px solid color-mix(in srgb, var(--jk) 22%, transparent);
     }
-    .win .acct-nest .side-item { padding: 7px 8px; }
+    .win .acct-nest .side-item { padding: 6px 8px; border-radius: 7px; }
     .win .acct-nest .t { font-size: 12px; font-weight: 500; }
     .win .side-foot {
-      margin-top: auto; padding: 10px;
-      font-size: 11px; color: var(--tertiary);
-      border-top: 0.5px solid var(--separator);
-      background: color-mix(in srgb, var(--glass) 80%, transparent);
-      backdrop-filter: blur(20px);
-      border-radius: 0 0 0 0;
+      flex-shrink: 0;
+      padding: 10px 12px 12px;
+      font-size: 11px; color: var(--tertiary); line-height: 1.35;
+      border-top: 0.5px solid color-mix(in srgb, var(--separator) 70%, transparent);
+      background: linear-gradient(to top, color-mix(in srgb, var(--glass) 90%, transparent), transparent);
     }
-    /* Content layer — solid, no glass */
+    .win .side-foot strong { color: var(--secondary); font-weight: 560; }
+
+    /* Content — solid elevated layer (not glass) */
     .win .main {
-      background: var(--content-bg);
-      padding: 18px 22px 24px;
+      grid-column: 2;
+      grid-row: 2;
+      min-height: 0;
+      display: flex; flex-direction: column;
+      background:
+        radial-gradient(ellipse 80% 40% at 100% 0%, color-mix(in srgb, var(--jk) 5%, transparent), transparent 55%),
+        var(--content-bg);
+    }
+    .win .main-scroll {
+      flex: 1; min-height: 0;
       overflow: auto;
+      padding: 18px 22px 28px;
+      scrollbar-width: thin;
+      scrollbar-color: color-mix(in srgb, var(--label) 18%, transparent) transparent;
+      --fade-t: 0px;
+      --fade-b: 0px;
+      mask-image: linear-gradient(
+        to bottom,
+        transparent 0,
+        #000 var(--fade-t),
+        #000 calc(100% - var(--fade-b)),
+        transparent 100%
+      );
+      -webkit-mask-image: linear-gradient(
+        to bottom,
+        transparent 0,
+        #000 var(--fade-t),
+        #000 calc(100% - var(--fade-b)),
+        transparent 100%
+      );
     }
-    /* Toolbar glass strip */
-    .win .toolbar-glass {
-      display: flex; align-items: center; justify-content: space-between; gap: 12px;
-      margin: -18px -22px 16px; padding: 12px 18px;
-      background: var(--glass);
-      backdrop-filter: blur(40px) saturate(1.3);
-      border-bottom: 0.5px solid var(--glass-border);
+
+    .win .page-head {
+      display: flex; align-items: flex-start; gap: 14px;
+      margin-bottom: 16px;
     }
-    .win .toolbar-glass h3 { margin: 0; font-size: 17px; font-weight: 650; }
-    .win .toolbar-glass .actions { display: flex; gap: 8px; }
-    .win .toolbar-glass button {
-      border: 0.5px solid color-mix(in srgb, var(--jk) 30%, var(--glass-border));
-      cursor: pointer; font: inherit; font-size: 12px; font-weight: 560;
-      padding: 6px 12px; border-radius: 980px;
-      background: color-mix(in srgb, var(--jk) 12%, transparent); color: var(--jk);
-      backdrop-filter: blur(16px);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,0.1);
+    .win .page-head .plogo {
+      width: 40px; height: 40px; border-radius: 11px; font-size: 15px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.2);
     }
-    .win .toolbar-glass button:hover {
-      background: color-mix(in srgb, var(--jk) 20%, transparent);
+    .win .page-head h2 {
+      margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.5px; line-height: 1.1;
     }
-    /* Usage main content soft scroll edge under glass toolbar */
-    .win .main {
-      mask-image: linear-gradient(to bottom, transparent 0, #000 14px, #000 100%);
-      -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 14px, #000 100%);
+    .win .page-head .sub {
+      margin-top: 4px; font-size: 13px; color: var(--secondary); line-height: 1.35;
     }
-    .win .main h2 { margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -0.4px; }
-    .win .main .sub { margin-top: 4px; font-size: 13px; color: var(--secondary); }
-    .win .block {
-      margin-top: 14px; padding: 14px 16px; border-radius: 14px;
+    .win .page-head .badge {
+      margin-top: 6px; display: inline-flex; align-items: center; gap: 5px;
+      font-size: 11px; font-weight: 560; color: var(--secondary);
+      padding: 3px 8px; border-radius: 980px;
+      background: var(--fill);
+    }
+    .win .page-head .badge .dot {
+      width: 6px; height: 6px; border-radius: 50%; background: var(--status-high);
+    }
+
+    /* Metric tiles — Surge dashboard density, jackin status colors */
+    .win .metric-row {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+      margin-bottom: 18px;
+    }
+    .win .metric {
+      padding: 12px 14px 13px;
+      border-radius: 12px;
       background: var(--glass-inset);
-      border: 0.5px solid color-mix(in srgb, var(--jk) 6%, transparent);
+      border: 0.5px solid color-mix(in srgb, var(--separator) 80%, transparent);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
     }
-    .win .block h5 {
-      margin: 0 0 10px; font-size: 11px; font-weight: 600; color: var(--secondary);
+    .win .metric .mlab {
+      font-size: 11px; font-weight: 600; color: var(--tertiary);
+      text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px;
+    }
+    .win .metric .mval {
+      font-family: var(--mono); font-size: 26px; font-weight: 650;
+      letter-spacing: -0.6px; line-height: 1.05; font-variant-numeric: tabular-nums;
+    }
+    .win .metric .mval.high { color: var(--status-high); }
+    .win .metric .mval.mid { color: var(--status-mid); }
+    .win .metric .mval.low { color: var(--status-low); }
+    .win .metric .mmeta {
+      margin-top: 4px; font-size: 11px; color: var(--secondary); line-height: 1.3;
+    }
+    .win .metric .mmeter {
+      margin-top: 10px; height: 4px; border-radius: 99px;
+      background: var(--meter-track); overflow: hidden;
+    }
+    .win .metric .mmeter > i {
+      display: block; height: 100%; border-radius: inherit; background: var(--status-high);
+    }
+    .win .metric .mmeter.mid > i { background: var(--status-mid); }
+    .win .metric .mmeter.low > i { background: var(--status-low); }
+
+    /* Settings-style inset group */
+    .win .group {
+      margin-bottom: 16px;
+      border-radius: 12px;
+      background: var(--glass-inset);
+      border: 0.5px solid color-mix(in srgb, var(--separator) 75%, transparent);
+      overflow: hidden;
+    }
+    .win .group > .ghead {
+      padding: 10px 14px 8px;
+      font-size: 11px; font-weight: 620; color: var(--tertiary);
       text-transform: uppercase; letter-spacing: 0.04em;
     }
-    .win .hero {
-      font-family: var(--mono); font-size: 34px; font-weight: 650; letter-spacing: -0.8px; line-height: 1.05;
+    .win .grow {
+      display: flex; align-items: center; justify-content: space-between; gap: 16px;
+      padding: 11px 14px;
+      border-top: 0.5px solid color-mix(in srgb, var(--separator) 70%, transparent);
+      min-height: 40px;
     }
-    .win .hero.high { color: var(--status-high); }
-    .win .hero.mid { color: var(--status-mid); }
-    .win .hero.low { color: var(--status-low); }
-    .win .hint-pace { font-size: 13px; color: var(--secondary); margin: 4px 0 2px; }
-    .win .hint-reset { font-size: 13px; color: var(--secondary); margin-bottom: 10px; font-variant-numeric: tabular-nums; }
+    .win .grow:first-of-type { border-top: 0; }
+    .win .grow .gl { font-size: 13px; font-weight: 500; color: var(--label); }
+    .win .grow .gr {
+      font-size: 13px; color: var(--secondary); text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+    .win .grow .gr.mono { font-family: var(--mono); font-size: 12px; word-break: break-all; }
+    .win .grow .gr.emph { color: var(--label); font-weight: 560; }
+
+    /* Full bucket cards under tiles */
+    .win .bucket {
+      margin-bottom: 12px; padding: 14px 16px; border-radius: 12px;
+      background: var(--glass-inset);
+      border: 0.5px solid color-mix(in srgb, var(--separator) 75%, transparent);
+    }
+    .win .bucket h5 {
+      margin: 0 0 8px; font-size: 11px; font-weight: 620; color: var(--tertiary);
+      text-transform: uppercase; letter-spacing: 0.04em;
+    }
+    .win .bucket .hero {
+      font-family: var(--mono); font-size: 30px; font-weight: 650;
+      letter-spacing: -0.7px; line-height: 1.05; font-variant-numeric: tabular-nums;
+    }
+    .win .bucket .hero.high { color: var(--status-high); }
+    .win .bucket .hero.mid { color: var(--status-mid); }
+    .win .bucket .hero.low { color: var(--status-low); }
+    .win .bucket .hint-pace { font-size: 13px; color: var(--secondary); margin: 4px 0 2px; }
+    .win .bucket .hint-reset {
+      font-size: 13px; color: var(--secondary); margin-bottom: 10px;
+      font-variant-numeric: tabular-nums;
+    }
     .win .auth-block {
       border-left: 2px solid color-mix(in srgb, var(--jk) 55%, transparent);
-      padding-left: 12px; margin-top: 8px;
+      padding-left: 12px; margin: 4px 0;
     }
-    .win .auth-block .v { font-family: var(--mono); font-size: 12px; word-break: break-all; }
-    .win .k { font-size: 11px; color: var(--tertiary); margin-bottom: 2px; }
-    .win .v { font-size: 14px; font-weight: 500; }
-    .win .v.dim { color: var(--secondary); font-weight: 400; font-size: 13px; }
-    .win .two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 8px; }
-    .win .row-stack { margin-top: 8px; }
+    .win .auth-block .gl { font-size: 11px; color: var(--tertiary); margin-bottom: 2px; }
+    .win .auth-block .gr { font-family: var(--mono); font-size: 12px; color: var(--label); word-break: break-all; }
+
+    @media (max-width: 720px) {
+      .win { --side-w: 200px; height: 560px; }
+      .win .metric-row { grid-template-columns: 1fr; }
+    }
 
     .lg-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
     @media (max-width: 800px) { .lg-grid { grid-template-columns: 1fr; } }
@@ -341,7 +558,7 @@
         <strong>Left-click</strong> status item → <strong>exact</strong> glance popover from
         <a href="./popover.html">popover.html</a> (Providers mode, focused provider — not Overview).<br />
         <strong>Right-click</strong> → system glass context menu (Open Usage / Refresh / Quit).<br />
-        <strong>Usage window</strong> → glass sidebar + solid content; multi-account; same tokens as popover.
+        <strong>Usage window</strong> → native macOS shell (Surge-class): unified titlebar, glass sidebar, metric tiles, Settings groups.
       </p>
     </div>
     <p class="links">
@@ -405,115 +622,115 @@
     <section class="panel" id="usage">
       <h2 class="st">Usage window</h2>
       <p class="sl">
-        Liquid Glass on <strong>sidebar + toolbar</strong> (navigation). Content pane solid for readability.
-        Multi-account under each provider. Same status colors, credential source, reset separation as popover.
+        Reference quality: native macOS utility shell (inspired by apps like
+        <a href="https://nssurge.com/" style="color:var(--jk)">Surge</a> Dashboard) + Apple Liquid Glass.
+        Unified titlebar · glass sidebar · solid content · metric tiles · Settings groups.
+        jackin DNA kept (phosphor, j❯, 3-level meters, credential source only).
       </p>
-      <div class="stage" style="padding: 16px;">
+      <div class="stage" style="padding: 20px 16px 28px;">
         <div class="win" id="usage-win">
-          <div class="side">
-            <div class="lab">Browse</div>
-            <button type="button" class="side-item" data-nav="overview">
-              <div class="jmark"><span class="j">j</span><span class="ch">❯</span></div>
-              <div><div class="t">Overview</div></div>
-            </button>
-            <div class="lab">Providers</div>
-            <button type="button" class="side-item on" data-nav="openai">
-              <span class="plogo sm openai">O</span>
-              <div>
-                <div class="t">OpenAI</div>
-                <div class="s">57% · 3d</div>
-              </div>
-            </button>
-            <div class="acct-nest" data-for="openai">
-              <button type="button" class="side-item on" data-acct="a1">
-                <div>
-                  <div class="t">alexey@chainargos.com</div>
-                  <div class="s">57% · selected</div>
-                </div>
-              </button>
-              <button type="button" class="side-item" data-acct="a2">
-                <div>
-                  <div class="t">alexey@zhokhov.com</div>
-                  <div class="s">0% · fully used</div>
-                </div>
-              </button>
+          <!-- Unified glass titlebar -->
+          <div class="titlebar">
+            <div class="titlebar-side">
+              <div class="traffic" aria-hidden="true"><i class="c"></i><i class="y"></i><i class="g"></i></div>
+              <div class="app-name">jackin<b>❯</b> desktop</div>
             </div>
-            <button type="button" class="side-item" data-nav="anthropic">
-              <span class="plogo sm anthropic">A</span>
-              <div>
-                <div class="t">Anthropic</div>
-                <div class="s">12% · 1h</div>
-              </div>
-            </button>
-            <div class="acct-nest hidden" data-for="anthropic">
-              <button type="button" class="side-item on">
-                <div>
-                  <div class="t">Personal</div>
-                  <div class="s">12%</div>
-                </div>
-              </button>
-            </div>
-            <button type="button" class="side-item" data-nav="amp">
-              <span class="plogo sm amp">A</span>
-              <div>
-                <div class="t">Amp</div>
-                <div class="s">100% · 18h</div>
-              </div>
-            </button>
-            <div class="side-foot">Next update in 4m · limits only</div>
-          </div>
-          <div class="main">
-            <div class="toolbar-glass">
-              <h3>Usage</h3>
-              <div class="actions">
-                <button type="button">Refresh</button>
-              </div>
-            </div>
-            <div id="usage-detail">
-              <h2>OpenAI</h2>
-              <div class="sub">alexey@chainargos.com · Codex</div>
-              <div class="block">
-                <h5>Account</h5>
-                <div class="two">
-                  <div class="row-stack"><div class="k">Plan</div><div class="v">Pro 20×</div></div>
-                  <div class="row-stack"><div class="k">Status</div><div class="v dim">fresh</div></div>
-                </div>
-                <div class="row-stack"><div class="k">Updated</div><div class="v dim">Just now</div></div>
-                <div class="auth-block">
-                  <div class="row-stack"><div class="k">Credential source</div><div class="v">OAuth · ~/.codex/auth.json</div></div>
-                </div>
-              </div>
-              <div class="block">
-                <h5>Session</h5>
-                <div class="hero high">63% left</div>
-                <div class="hint-pace">37% used · On pace</div>
-                <div class="hint-reset">Resets in 2h 14m · Today, 19:30</div>
-                <div class="meter high" style="height:8px"><i style="width:63%"></i></div>
-              </div>
-              <div class="block">
-                <h5>Weekly</h5>
-                <div class="hero mid">57% left</div>
-                <div class="hint-pace">13% in deficit · Runs out in 2d 17h</div>
-                <div class="hint-reset">Resets in 3 days · 15 Aug 2026, 17:02</div>
-                <div class="meter mid" style="height:8px"><i style="width:57%"></i></div>
-              </div>
-              <div class="block">
-                <h5>Codex Spark Weekly</h5>
-                <div class="hero high" style="font-size:26px">100% left</div>
-                <div class="hint-pace">On pace</div>
-                <div class="hint-reset">Resets in 7 days · 19 Aug 2026</div>
-                <div class="meter high" style="height:6px"><i style="width:100%"></i></div>
-              </div>
-              <div class="block">
-                <h5>Limit Reset Credits</h5>
-                <div class="row-stack"><div class="k">Available</div><div class="v">3 manual resets</div></div>
-                <div class="row-stack"><div class="k">Next windows</div><div class="v dim">3d 4h · 8d 1h · 19d 22h</div></div>
+            <div class="titlebar-main">
+              <div class="page-title">Usage <span id="usage-crumb">· OpenAI</span></div>
+              <div class="tb-actions">
+                <button type="button" class="tb-btn" title="Refresh" aria-label="Refresh">
+                  <svg viewBox="0 0 16 16"><path d="M13.5 8a5.5 5.5 0 1 1-1.4-3.6l.7.7A4.5 4.5 0 1 0 12.5 8h1zM8 2.5V1l2.2 2.2L8 5.5V4a4 4 0 0 0-3.5 6.1l-.9.5A5 5 0 0 1 8 2.5z"/></svg>
+                </button>
+                <button type="button" class="tb-btn primary">
+                  <svg viewBox="0 0 16 16"><path d="M8 1.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13zM8 3a5 5 0 1 1 0 10A5 5 0 0 1 8 3zm0 2.2a.75.75 0 0 1 .75.75v1.8h1.8a.75.75 0 0 1 0 1.5H8.75v1.8a.75.75 0 0 1-1.5 0V9.25H5.45a.75.75 0 0 1 0-1.5h1.8V5.95A.75.75 0 0 1 8 5.2z"/></svg>
+                  Refresh all
+                </button>
               </div>
             </div>
           </div>
+
+          <!-- Glass sidebar -->
+          <aside class="side">
+            <div class="side-scroll">
+              <div class="lab">Browse</div>
+              <button type="button" class="side-item" data-nav="overview">
+                <div class="ic"><div class="jmark"><span class="j">j</span><span class="ch">❯</span></div></div>
+                <div><div class="t">Overview</div><div class="s">All accounts</div></div>
+              </button>
+
+              <div class="lab">Providers</div>
+              <button type="button" class="side-item on" data-nav="openai">
+                <div class="ic"><span class="plogo sm openai">O</span></div>
+                <div><div class="t">OpenAI</div><div class="s">2 accounts</div></div>
+                <span class="trail mid">57%</span>
+              </button>
+              <div class="acct-nest" data-for="openai">
+                <button type="button" class="side-item on" data-acct="a1">
+                  <div>
+                    <div class="t">alexey@chainargos.com</div>
+                    <div class="s">Pro 20×</div>
+                  </div>
+                  <span class="trail mid">57%</span>
+                </button>
+                <button type="button" class="side-item" data-acct="a2">
+                  <div>
+                    <div class="t">alexey@zhokhov.com</div>
+                    <div class="s">Plus</div>
+                  </div>
+                  <span class="trail">0%</span>
+                </button>
+              </div>
+
+              <button type="button" class="side-item" data-nav="anthropic">
+                <div class="ic"><span class="plogo sm anthropic">A</span></div>
+                <div><div class="t">Anthropic</div><div class="s">1 account</div></div>
+                <span class="trail low">12%</span>
+              </button>
+              <div class="acct-nest hidden" data-for="anthropic">
+                <button type="button" class="side-item on" data-acct="p1">
+                  <div>
+                    <div class="t">Personal</div>
+                    <div class="s">Max 20×</div>
+                  </div>
+                  <span class="trail low">12%</span>
+                </button>
+              </div>
+
+              <button type="button" class="side-item" data-nav="amp">
+                <div class="ic"><span class="plogo sm amp">A</span></div>
+                <div><div class="t">Amp</div><div class="s">1 account</div></div>
+                <span class="trail high">100%</span>
+              </button>
+              <div class="acct-nest hidden" data-for="amp">
+                <button type="button" class="side-item on" data-acct="f1">
+                  <div>
+                    <div class="t">Free</div>
+                    <div class="s">Daily</div>
+                  </div>
+                  <span class="trail high">100%</span>
+                </button>
+              </div>
+            </div>
+            <div class="side-foot">
+              <strong>Limits only</strong> · next update in 4m<br />
+              No spend · no trends
+            </div>
+          </aside>
+
+          <!-- Solid content -->
+          <main class="main">
+            <div class="main-scroll" id="usage-scroll">
+              <div id="usage-detail">
+                <!-- filled by JS / default OpenAI -->
+              </div>
+            </div>
+          </main>
         </div>
       </div>
-      <p class="flow-caption"><code>LIKE usage window</code> · click sidebar providers / accounts</p>
+      <p class="flow-caption">
+        Verify: traffic lights + unified titlebar · glass sidebar with trailing % · metric tiles · Settings rows · soft scroll.
+        <code>LIKE usage window</code>
+      </p>
     </section>
 
     <!-- ========== GLASS ========== -->
@@ -526,13 +743,18 @@
       <div class="lg-grid">
         <div class="lg-card ok">
           <h3>✓ Glass (navigation)</h3>
-          Popover shell · sticky chrome · footer dock · context menu · Usage sidebar/toolbar<br />
-          Matches Tahoe: bars, popovers, sidebars, menus.
+          Popover shell · sticky chrome · footer dock · context menu<br />
+          Usage: unified titlebar + glass sidebar (Surge-class window chrome)
         </div>
         <div class="lg-card ok">
           <h3>✓ Solid (content)</h3>
-          Inset cards / buckets · Usage detail pane · meters/text<br />
+          Metric tiles · Settings groups · buckets · meters/text<br />
           HIG: Liquid Glass is not for the content layer.
+        </div>
+        <div class="lg-card ok">
+          <h3>✓ Usage window quality</h3>
+          Traffic lights · titlebar actions as glass capsules · trailing sidebar % · soft content scroll.
+          Pattern ref: high-end macOS utility (e.g. Surge Dashboard), not web dashboard.
         </div>
         <div class="lg-card ok">
           <h3>✓ Soft scroll edges</h3>
@@ -655,18 +877,290 @@
       document.querySelector('.toolbar button[data-panel="usage"]')?.click();
     });
 
-    // Usage sidebar
+    // Usage window — content + soft scroll edges
+    const usageDetail = document.getElementById("usage-detail");
+    const usageScroll = document.getElementById("usage-scroll");
+    const usageCrumb = document.getElementById("usage-crumb");
+
+    const usageViews = {
+      overview: {
+        crumb: "· Overview",
+        html: `
+          <div class="page-head">
+            <div class="jmark" style="width:40px;height:40px;border-radius:11px;font-size:16px"><span class="j">j</span><span class="ch">❯</span></div>
+            <div>
+              <h2>Overview</h2>
+              <div class="sub">Weekly-first inventory · all providers &amp; accounts</div>
+              <div class="badge"><span class="dot"></span> Limits only</div>
+            </div>
+          </div>
+          <div class="metric-row">
+            <div class="metric">
+              <div class="mlab">Burning now</div>
+              <div class="mval low">12%</div>
+              <div class="mmeta">Anthropic · resets 1h</div>
+              <div class="mmeter low"><i style="width:12%"></i></div>
+            </div>
+            <div class="metric">
+              <div class="mlab">Watch</div>
+              <div class="mval mid">57%</div>
+              <div class="mmeta">OpenAI weekly · 3d</div>
+              <div class="mmeter mid"><i style="width:57%"></i></div>
+            </div>
+            <div class="metric">
+              <div class="mlab">Healthy</div>
+              <div class="mval high">100%</div>
+              <div class="mmeta">Amp daily · 18h</div>
+              <div class="mmeter"><i style="width:100%"></i></div>
+            </div>
+          </div>
+          <div class="group">
+            <div class="ghead">Accounts</div>
+            <div class="grow"><span class="gl">OpenAI · alexey@chainargos.com</span><span class="gr emph">57%</span></div>
+            <div class="grow"><span class="gl">OpenAI · alexey@zhokhov.com</span><span class="gr">0%</span></div>
+            <div class="grow"><span class="gl">Anthropic · Personal</span><span class="gr emph" style="color:var(--status-low)">12%</span></div>
+            <div class="grow"><span class="gl">Amp · Free</span><span class="gr emph" style="color:var(--status-high)">100%</span></div>
+          </div>
+        `,
+      },
+      openai: {
+        crumb: "· OpenAI",
+        html: `
+          <div class="page-head">
+            <span class="plogo openai">O</span>
+            <div>
+              <h2>OpenAI</h2>
+              <div class="sub">alexey@chainargos.com · Codex</div>
+              <div class="badge"><span class="dot"></span> Fresh · just now</div>
+            </div>
+          </div>
+          <div class="metric-row">
+            <div class="metric">
+              <div class="mlab">Session</div>
+              <div class="mval high">63%</div>
+              <div class="mmeta">Resets 2h 14m</div>
+              <div class="mmeter"><i style="width:63%"></i></div>
+            </div>
+            <div class="metric">
+              <div class="mlab">Weekly</div>
+              <div class="mval mid">57%</div>
+              <div class="mmeta">Resets 3 days</div>
+              <div class="mmeter mid"><i style="width:57%"></i></div>
+            </div>
+            <div class="metric">
+              <div class="mlab">Spark weekly</div>
+              <div class="mval high">100%</div>
+              <div class="mmeta">Resets 7 days</div>
+              <div class="mmeter"><i style="width:100%"></i></div>
+            </div>
+          </div>
+          <div class="group">
+            <div class="ghead">Account</div>
+            <div class="grow"><span class="gl">Plan</span><span class="gr emph">Pro 20×</span></div>
+            <div class="grow"><span class="gl">Status</span><span class="gr">fresh</span></div>
+            <div class="grow"><span class="gl">Updated</span><span class="gr">Just now</span></div>
+          </div>
+          <div class="group">
+            <div class="ghead">Credential source</div>
+            <div class="grow">
+              <div class="auth-block" style="border:0;padding:0;margin:0;width:100%">
+                <div class="gl">Source</div>
+                <div class="gr">OAuth · ~/.codex/auth.json</div>
+              </div>
+            </div>
+          </div>
+          <div class="bucket">
+            <h5>Session</h5>
+            <div class="hero high">63% left</div>
+            <div class="hint-pace">37% used · On pace</div>
+            <div class="hint-reset">Resets in 2h 14m · Today, 19:30</div>
+            <div class="meter high" style="height:6px"><i style="width:63%"></i></div>
+          </div>
+          <div class="bucket">
+            <h5>Weekly</h5>
+            <div class="hero mid">57% left</div>
+            <div class="hint-pace">13% in deficit · Runs out in 2d 17h</div>
+            <div class="hint-reset">Resets in 3 days · 15 Aug 2026, 17:02</div>
+            <div class="meter mid" style="height:6px"><i style="width:57%"></i></div>
+          </div>
+          <div class="bucket">
+            <h5>Codex Spark 5-hour</h5>
+            <div class="hero high" style="font-size:26px">88% left</div>
+            <div class="hint-pace">On pace</div>
+            <div class="hint-reset">Resets in 4h 02m · Today, 21:18</div>
+            <div class="meter high" style="height:5px"><i style="width:88%"></i></div>
+          </div>
+          <div class="bucket">
+            <h5>Codex Spark Weekly</h5>
+            <div class="hero high" style="font-size:26px">100% left</div>
+            <div class="hint-pace">On pace</div>
+            <div class="hint-reset">Resets in 7 days · 19 Aug 2026</div>
+            <div class="meter high" style="height:5px"><i style="width:100%"></i></div>
+          </div>
+          <div class="group">
+            <div class="ghead">Limit Reset Credits</div>
+            <div class="grow"><span class="gl">Available</span><span class="gr emph">3 manual resets</span></div>
+            <div class="grow"><span class="gl">Next windows</span><span class="gr">3d 4h · 8d 1h · 19d 22h</span></div>
+          </div>
+        `,
+      },
+      anthropic: {
+        crumb: "· Anthropic",
+        html: `
+          <div class="page-head">
+            <span class="plogo anthropic">A</span>
+            <div>
+              <h2>Anthropic</h2>
+              <div class="sub">Personal · Claude · Max 20×</div>
+              <div class="badge"><span class="dot" style="background:var(--status-low)"></span> Low · burns first</div>
+            </div>
+          </div>
+          <div class="metric-row">
+            <div class="metric">
+              <div class="mlab">Session</div>
+              <div class="mval high">74%</div>
+              <div class="mmeta">Resets 4h 19m</div>
+              <div class="mmeter"><i style="width:74%"></i></div>
+            </div>
+            <div class="metric">
+              <div class="mlab">Weekly</div>
+              <div class="mval low">12%</div>
+              <div class="mmeta">Resets 1 hour</div>
+              <div class="mmeter low"><i style="width:12%"></i></div>
+            </div>
+            <div class="metric">
+              <div class="mlab">All models</div>
+              <div class="mval mid">28%</div>
+              <div class="mmeta">With weekly</div>
+              <div class="mmeter mid"><i style="width:28%"></i></div>
+            </div>
+          </div>
+          <div class="group">
+            <div class="ghead">Account</div>
+            <div class="grow"><span class="gl">Plan</span><span class="gr emph">Max 20×</span></div>
+            <div class="grow"><span class="gl">Status</span><span class="gr">fresh</span></div>
+            <div class="grow"><span class="gl">Updated</span><span class="gr">2 min ago</span></div>
+          </div>
+          <div class="group">
+            <div class="ghead">Credential source</div>
+            <div class="grow">
+              <div class="auth-block" style="border:0;padding:0;margin:0;width:100%">
+                <div class="gl">Source</div>
+                <div class="gr">OAuth · macOS Keychain (Claude Code-credentials)</div>
+              </div>
+            </div>
+          </div>
+          <div class="bucket">
+            <h5>Weekly</h5>
+            <div class="hero low">12% left</div>
+            <div class="hint-pace">52% in reserve · Lasts until reset</div>
+            <div class="hint-reset">Resets in 1 hour · Today, 18:40</div>
+            <div class="meter low" style="height:6px"><i style="width:12%"></i></div>
+          </div>
+          <div class="bucket">
+            <h5>Session</h5>
+            <div class="hero high">74% left</div>
+            <div class="hint-pace">12% in deficit · Projected empty in 2h</div>
+            <div class="hint-reset">Resets in 4h 19m · Today, 22:00</div>
+            <div class="meter high" style="height:6px"><i style="width:74%"></i></div>
+          </div>
+        `,
+      },
+      amp: {
+        crumb: "· Amp",
+        html: `
+          <div class="page-head">
+            <span class="plogo amp">A</span>
+            <div>
+              <h2>Amp</h2>
+              <div class="sub">Free · Daily</div>
+              <div class="badge"><span class="dot"></span> Healthy</div>
+            </div>
+          </div>
+          <div class="metric-row">
+            <div class="metric">
+              <div class="mlab">Daily</div>
+              <div class="mval high">100%</div>
+              <div class="mmeta">Resets 18h</div>
+              <div class="mmeter"><i style="width:100%"></i></div>
+            </div>
+            <div class="metric">
+              <div class="mlab">Credits</div>
+              <div class="mval high">—</div>
+              <div class="mmeta">No credit cap shown</div>
+            </div>
+            <div class="metric">
+              <div class="mlab">Status</div>
+              <div class="mval high">OK</div>
+              <div class="mmeta">Updated 1 min ago</div>
+            </div>
+          </div>
+          <div class="group">
+            <div class="ghead">Credential source</div>
+            <div class="grow">
+              <div class="auth-block" style="border:0;padding:0;margin:0;width:100%">
+                <div class="gl">Source</div>
+                <div class="gr">API key · env AMP_API_KEY</div>
+              </div>
+            </div>
+          </div>
+          <div class="bucket">
+            <h5>Daily</h5>
+            <div class="hero high">100% left</div>
+            <div class="hint-pace">On pace</div>
+            <div class="hint-reset">Resets in 18 hours · Tomorrow, 08:00</div>
+            <div class="meter high" style="height:6px"><i style="width:100%"></i></div>
+          </div>
+        `,
+      },
+    };
+
+    function updateUsageScrollEdge() {
+      if (!usageScroll) return;
+      const max = usageScroll.scrollHeight - usageScroll.clientHeight;
+      const top = usageScroll.scrollTop;
+      const atTop = top <= 1;
+      const atBot = max <= 1 || top >= max - 1;
+      usageScroll.style.setProperty("--fade-t", atTop ? "0px" : "18px");
+      usageScroll.style.setProperty("--fade-b", atBot ? "0px" : "22px");
+    }
+
+    function showUsage(nav) {
+      const view = usageViews[nav] || usageViews.openai;
+      usageDetail.innerHTML = view.html;
+      if (usageCrumb) usageCrumb.textContent = view.crumb;
+      if (usageScroll) usageScroll.scrollTop = 0;
+      requestAnimationFrame(updateUsageScrollEdge);
+    }
+
     document.querySelectorAll("#usage-win .side-item[data-nav]").forEach((btn) => {
       btn.addEventListener("click", () => {
         const nav = btn.dataset.nav;
-        document.querySelectorAll("#usage-win .side > .side-item[data-nav]").forEach((b) =>
+        document.querySelectorAll("#usage-win .side-item[data-nav]").forEach((b) =>
           b.classList.toggle("on", b === btn)
         );
         document.querySelectorAll("#usage-win .acct-nest").forEach((n) => {
           n.classList.toggle("hidden", n.dataset.for !== nav);
         });
+        if (nav !== "overview") {
+          const nest = document.querySelector(`#usage-win .acct-nest[data-for="${nav}"]`);
+          nest?.querySelectorAll(".side-item").forEach((a, i) => a.classList.toggle("on", i === 0));
+        }
+        showUsage(nav);
       });
     });
+    document.querySelectorAll("#usage-win .side-item[data-acct]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const nest = btn.closest(".acct-nest");
+        nest?.querySelectorAll(".side-item").forEach((b) => b.classList.toggle("on", b === btn));
+        // demo keeps same provider detail templates for now
+      });
+    });
+    if (usageScroll) {
+      usageScroll.addEventListener("scroll", updateUsageScrollEdge, { passive: true });
+      window.addEventListener("resize", updateUsageScrollEdge);
+    }
+    showUsage("openai");
   </script>
 </body>
 </html>

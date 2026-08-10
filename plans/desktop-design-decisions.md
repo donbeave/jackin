@@ -630,6 +630,8 @@ jackin = soul   (j❯, phosphor accent, mono metrics, deep canvas tint, optional
 | FB1-42 | **Soft scroll edges:** vertical detail/overview + horizontal provider/account strips dissolve at edges — never hard mid-card / mid-tab clip. Native: `scrollEdgeEffect(.soft)` under glass chrome and above footer dock | CONFIRMED |
 | FB1-43 | **Open Usage Window CTA** = glass capsule + phosphor tint/hairline (not solid green slab); lives in sticky glass **footer dock** outside scrollers | CONFIRMED |
 | FB1-44 | Popover layout = sticky **chrome** (brand+seg[+provider strip]) + flex scroller + sticky **footer dock** — content scrolls between glass layers | CONFIRMED |
+| FB1-45 | **Usage window craft:** native macOS utility shell (quality bar set by apps like **Surge Dashboard**): unified glass titlebar + traffic lights, glass sidebar with section labels + trailing %, solid content, **metric tile row**, Settings-style inset groups, soft scroll edges. Not a flat web split-pane. | CONFIRMED direction |
+| FB1-46 | Usage window keeps jackin law: phosphor selection/j❯, 3-level status only, credential source only, limits only (no spend/trends) | CONFIRMED |
 
 ### One-by-one queue (after FB-1)
 
