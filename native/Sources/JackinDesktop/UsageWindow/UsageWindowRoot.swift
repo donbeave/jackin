@@ -216,10 +216,10 @@ public struct UsageWindowRoot: View {
             if let iconKey, let mark = ProviderMarks.swiftUIImage(forIconKey: iconKey) {
                 mark
                     .resizable()
-                    .renderingMode(.template)
+                    .interpolation(.high)
                     .scaledToFit()
                     .frame(width: 13, height: 13)
-                    .foregroundStyle(tint)
+                    .colorMultiply(tint)
             } else {
                 let symbol = systemImage
                     ?? iconKey.flatMap { desktopProviderSystemImage(iconKey: $0) }

@@ -187,10 +187,10 @@ public struct ProviderCardView: View {
             if let iconKey, let mark = ProviderMarks.swiftUIImage(forIconKey: iconKey) {
                 mark
                     .resizable()
-                    .renderingMode(.template)
+                    .interpolation(.high)
                     .scaledToFit()
                     .frame(width: size * 0.52, height: size * 0.52)
-                    .foregroundStyle(Color.jackinPhosphor)
+                    .colorMultiply(Color.jackinPhosphor)
             } else if let iconKey, let symbol = desktopProviderSystemImage(iconKey: iconKey) {
                 Image(systemName: symbol)
                     .font(.system(size: size * 0.42, weight: .semibold))

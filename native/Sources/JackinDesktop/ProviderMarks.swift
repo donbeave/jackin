@@ -44,40 +44,40 @@ public enum ProviderMarks {
     }
 
     private static func loadPDF(named name: String, template: Bool) -> NSImage? {
-        for url in candidateURLs(named: name) {
+        // Prefer **PNG with alpha** (black glyph, transparent bg) so plates don't
+        // fill solid white from opaque PDF paper. PDF is fallback only.
+        for url in candidateURLs(named: name, extensions: ["png", "pdf"]) {
             guard let image = NSImage(contentsOf: url) else { continue }
-            // Copy so callers can set template without mutating a shared cache.
             let copy = image.copy() as? NSImage ?? image
             copy.isTemplate = template
-            // Optical size for menu bar / plates (~16–18 pt).
             copy.size = NSSize(width: 18, height: 18)
             return copy
         }
         return nil
     }
 
-    private static func candidateURLs(named name: String) -> [URL] {
+    private static func candidateURLs(named name: String, extensions: [String]) -> [URL] {
         var urls: [URL] = []
         let bundles: [Bundle] = [Bundle.module, Bundle.main]
         for bundle in bundles {
-            if let u = bundle.url(
-                forResource: name,
-                withExtension: "pdf",
-                subdirectory: "ProviderMarks"
-            ) {
-                urls.append(u)
+            for ext in extensions {
+                if let u = bundle.url(
+                    forResource: name,
+                    withExtension: ext,
+                    subdirectory: "ProviderMarks"
+                ) {
+                    urls.append(u)
+                }
+                if let u = bundle.url(forResource: name, withExtension: ext) {
+                    urls.append(u)
+                }
+                if let root = bundle.resourceURL {
+                    urls.append(root.appendingPathComponent("ProviderMarks/\(name).\(ext)"))
+                    urls.append(root.appendingPathComponent("\(name).\(ext)"))
+                }
+                urls.append(bundle.bundleURL.appendingPathComponent("ProviderMarks/\(name).\(ext)"))
             }
-            if let u = bundle.url(forResource: name, withExtension: "pdf") {
-                urls.append(u)
-            }
-            // SPM resource bundle layout sometimes nests under resourceURL without subdirectory API.
-            if let root = bundle.resourceURL {
-                urls.append(root.appendingPathComponent("ProviderMarks/\(name).pdf"))
-                urls.append(root.appendingPathComponent("\(name).pdf"))
-            }
-            urls.append(bundle.bundleURL.appendingPathComponent("ProviderMarks/\(name).pdf"))
         }
-        // De-dupe while preserving order.
         var seen = Set<String>()
         return urls.filter { seen.insert($0.path).inserted && FileManager.default.fileExists(atPath: $0.path) }
     }

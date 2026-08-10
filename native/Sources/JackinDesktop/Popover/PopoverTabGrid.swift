@@ -163,12 +163,14 @@ public struct PopoverTabGrid: View {
             RoundedRectangle(cornerRadius: 8, style: .continuous)
                 .fill(selected ? brand.opacity(0.95) : brand.opacity(0.78))
             if let iconKey, let mark = ProviderMarks.swiftUIImage(forIconKey: iconKey) {
+                // Official mark: black-on-transparent template → white glyph on brand plate.
                 mark
                     .resizable()
-                    .renderingMode(.template)
+                    .interpolation(.high)
                     .scaledToFit()
                     .frame(width: 15, height: 15)
-                    .foregroundStyle(Color.white.opacity(0.98))
+                    .colorInvert() // black silhouette → white on colored plate
+                    .opacity(0.98)
             } else {
                 let symbol = iconKey.flatMap { desktopProviderSystemImage(iconKey: $0) } ?? "circle.grid.cross"
                 Image(systemName: symbol)
