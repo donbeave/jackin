@@ -16,6 +16,7 @@
 | Check | HTML | Native | Match |
 |-------|------|--------|-------|
 | Brand | jackin❯ desktop | same | Yes |
+| Footer CTA | centered phosphor glyph + label | same; no trailing chevron | Yes |
 | Session order | 63% → On pace → Resets 2h 14m → meter | same | **Yes** |
 | Weekly order | 57% → 13% deficit → Resets 3d → meter | same | **Yes** |
 | Spark / LRC | multi-limit plate | same | Yes |

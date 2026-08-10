@@ -38,6 +38,7 @@ struct DesktopArchitectureLint {
         checkGlassGate(desktopRoot: desktop)
         checkUsageWindowToolbarHost(desktopRoot: desktop)
         checkStatusPopoverFocusWiring(desktopRoot: desktop)
+        checkPrimaryControlCraft(desktopRoot: desktop)
         run(desktopRoot: desktop)
     }
 
@@ -119,6 +120,43 @@ struct DesktopArchitectureLint {
             print("PASS  status left-click popover focus wiring")
         } else {
             print("DesktopArchitectureLint: status-focus FAILURE")
+            exit(1)
+        }
+    }
+
+    /// LG-A9: primary actions use selective tint, never solid phosphor slabs.
+    static func checkPrimaryControlCraft(desktopRoot: URL) {
+        let providerCard = desktopRoot
+            .appendingPathComponent("UsageWindow/ProviderCardView.swift")
+        let popoverFooter = desktopRoot
+            .appendingPathComponent("Popover/PopoverFooter.swift")
+        guard
+            let providerText = try? String(contentsOf: providerCard, encoding: .utf8),
+            let footerText = try? String(contentsOf: popoverFooter, encoding: .utf8)
+        else {
+            fputs("FAIL  primary control sources missing\n", stderr)
+            exit(2)
+        }
+
+        var ok = true
+        if providerText.contains(".fill(Color.jackinPhosphor.opacity(0.92))") {
+            print("FAIL  Open usage page must not use a solid phosphor slab")
+            ok = false
+        }
+        if !providerText.contains(".strokeBorder(Color.jackinPhosphor.opacity(0.32)") {
+            print("FAIL  Open usage page must retain the HTML accent hairline")
+            ok = false
+        }
+        if !footerText.contains(".frame(maxWidth: .infinity, alignment: .center)")
+            || !footerText.contains(".foregroundStyle(Color.jackinPhosphor)")
+        {
+            print("FAIL  popover Open Usage Window must stay centered and accent-tinted")
+            ok = false
+        }
+        if ok {
+            print("PASS  primary controls avoid solid phosphor slabs")
+        } else {
+            print("DesktopArchitectureLint: primary-control FAILURE")
             exit(1)
         }
     }

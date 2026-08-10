@@ -35,6 +35,10 @@ Log: `qi-artifacts/native/desktop-gates.log`
 
 **High residual craft product: none.**
 
+Re-audit closed false-pass primary-control deltas: Usage “Open usage page” now
+uses oracle’s quiet tint + 0.5 pt hairline instead of solid phosphor; popover
+footer CTA now matches centered phosphor glyph/label composition.
+
 ## Live
 popover-live / ctx-menu **BLOCKED** — SoTParity proves focus/menu.
 

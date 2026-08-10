@@ -9,7 +9,7 @@
 | Check | HTML detail | Native detail | Match |
 |-------|-------------|---------------|-------|
 | Head | OpenAI · account · Pro 20× | same | Yes |
-| Open usage page | CTA + external | green pill + ↗ | Yes |
+| Open usage page | quiet tinted hairline + external | same; no solid phosphor slab | Yes |
 | Meta | Status fresh · Updated · Auth | same | Yes |
 | Session | **63% left** green | same | Yes |
 | Weekly | **57% left** orange · 13% deficit | same | Yes |

@@ -111,12 +111,16 @@ public struct ProviderCardView: View {
                 Image(systemName: "arrow.up.right")
                     .font(.caption.weight(.semibold))
             }
-            .foregroundStyle(Color.white)
+            .foregroundStyle(Color.jackinPhosphor)
             .padding(.horizontal, 14)
             .padding(.vertical, 9)
             .background {
-                Capsule(style: .continuous)
-                    .fill(Color.jackinPhosphor.opacity(0.92))
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .fill(Color.jackinPhosphor.opacity(0.08))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            .strokeBorder(Color.jackinPhosphor.opacity(0.32), lineWidth: 0.5)
+                    }
             }
         }
         .buttonStyle(.plain)
