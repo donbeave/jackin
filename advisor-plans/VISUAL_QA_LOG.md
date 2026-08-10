@@ -1,7 +1,7 @@
 # VISUAL_QA_LOG — jackin❯ desktop HTML SoT parity
 
 **Date:** 2026-08-10  
-**Verification:** Full dual-image §5 Pass + pixel-proof ALL_PIXEL_OK · live popover/ctx BLOCKED  
+**Verification (aaac081e0708):** L1/L2 green · ALL_PIXEL_OK · dual-image critical scenes Pass · app RUNNING · live BLOCKED  
 **Branch:** plan/desktop-visual  
 **Toolchain:** Xcode 26.6 (17F113) · Swift 6.3.3  
 **Authority:** `qi-artifacts/EVIDENCE_LEDGER.toml` + dual-image §7.2/7.3  
@@ -29,7 +29,7 @@
 
 **High residual craft scenes: none.**
 
-Shell extras (not separate §5 ids): `usage-window-openai` / `usage-window-overview` dual-image show nest + detail + toolbar with 57% orange nest — Pass craft support.
+Shell extras: `usage-window-openai` / `usage-window-overview` show nest + detail + toolbar with 57% orange nest.
 
 ## Live / interaction (ledger)
 
@@ -50,7 +50,9 @@ DesktopArchitectureLint ALL PASS
 DesktopSoTParityHarness ×3 ALL PASS
 DesktopParityMatrixHarness ALL PASS
 StatusItemChipHarness ALL PASS
+severity/phosphor unit tests PASS
 Pixel proof ALL_PIXEL_OK (no solid-black required PNGs)
+App launch RUNNING then clean kill
 ```
 
 ## Artifacts
