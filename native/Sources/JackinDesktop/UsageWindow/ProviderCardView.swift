@@ -7,8 +7,8 @@ import SwiftUI
 /// Provider detail — **content layer only** (LG-A2: no Liquid Glass on data).
 ///
 /// Renders Rust ``UsageDetailPresentation`` rows mechanically. Account switcher
-/// is a secondary control system (left H-scroll pills — FB1-29 / FB1-48), not a
-/// second glass sidebar.
+/// is a **secondary** system (left H-scroll chips + radio semantics — FB1-48):
+/// never the same full-fill chrome as sidebar provider rows.
 struct ProviderCardView: View {
     let content: UsageWindowModel.Content
     var onSelectAccount: ((String) -> Void)?
@@ -16,7 +16,7 @@ struct ProviderCardView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
-                // Accounts first when multi-account (distinct from provider nav).
+                // Multi-account only (`list_accounts` length > 1). Single account → no switcher.
                 if content.accounts.count > 1 {
                     accountSwitcher
                 }
@@ -129,7 +129,8 @@ struct ProviderCardView: View {
         .frame(maxWidth: .infinity, alignment: line.leading == nil ? .trailing : .leading)
     }
 
-    /// Left-aligned account pills — full continuous capsule stroke (de-slop).
+    /// Left-aligned secondary chips — phosphor *tint* when selected, never solid green slab.
+    /// Shows Rust `accountLabel` + optional glance `remainingPercent` (same as list_accounts).
     private var accountSwitcher: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
@@ -137,38 +138,60 @@ struct ProviderCardView: View {
                     Button {
                         onSelectAccount?(account.accountKey)
                     } label: {
-                        Text(account.accountLabel)
-                            .font(.caption.weight(account.selected ? .semibold : .regular))
-                            .lineLimit(1)
-                            .padding(.horizontal, 11)
-                            .padding(.vertical, 7)
-                            .background {
-                                Capsule(style: .continuous)
-                                    .fill(
-                                        account.selected
-                                            ? Color.accentColor.opacity(0.90)
-                                            : Color.primary.opacity(0.06)
-                                    )
-                                    .overlay {
-                                        Capsule(style: .continuous)
-                                            .strokeBorder(
-                                                account.selected
-                                                    ? Color.accentColor.opacity(0.5)
-                                                    : Color.primary.opacity(0.10),
-                                                lineWidth: 0.5
-                                            )
-                                    }
+                        HStack(spacing: 6) {
+                            Text(account.accountLabel)
+                                .font(.caption.monospaced().weight(account.selected ? .semibold : .medium))
+                                .lineLimit(1)
+                            if let pct = account.remainingPercent {
+                                // Render Rust remainingPercent only — no severity invention in Swift.
+                                Text("\(pct)%")
+                                    .font(.caption2.monospacedDigit().weight(.semibold))
+                                    .foregroundStyle(account.selected ? Color.accentColor : .secondary)
                             }
-                            .foregroundStyle(account.selected ? Color.white : Color.primary)
+                        }
+                        .padding(.horizontal, 11)
+                        .padding(.vertical, 7)
+                        .background {
+                            Capsule(style: .continuous)
+                                .fill(
+                                    account.selected
+                                        ? Color.accentColor.opacity(0.14)
+                                        : Color.primary.opacity(0.06)
+                                )
+                                .overlay {
+                                    Capsule(style: .continuous)
+                                        .strokeBorder(
+                                            account.selected
+                                                ? Color.accentColor.opacity(0.42)
+                                                : Color.primary.opacity(0.12),
+                                            lineWidth: 0.5
+                                        )
+                                }
+                        }
+                        .foregroundStyle(account.selected ? Color.accentColor : Color.primary.opacity(0.85))
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel(
-                        "\(account.accountLabel)\(account.selected ? ", selected" : "")"
+                        accountAccessibilityLabel(account)
                     )
                     .accessibilityAddTraits(account.selected ? .isSelected : [])
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
+    }
+
+    private func accountAccessibilityLabel(_ account: PresentationStore.AccountRow) -> String {
+        var parts = [account.accountLabel]
+        if let plan = account.planLabel, !plan.isEmpty {
+            parts.append(plan)
+        }
+        if let pct = account.remainingPercent {
+            parts.append("\(pct) percent remaining")
+        }
+        if account.selected {
+            parts.append("selected")
+        }
+        return parts.joined(separator: ", ")
     }
 }

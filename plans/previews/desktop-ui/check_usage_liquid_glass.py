@@ -57,14 +57,27 @@ def main() -> int:
     need("nav-acct" in html, "account nav system missing")
     need("acct-rail" in html, "account rail container missing")
     need("p-meter" in html, "provider mini-meter missing")
-    # Account selection uses full continuous stroke (de-slop), not left-only border.
+    # Account = secondary radio well (not provider full-fill / not one-sided bar).
     need(
-        "nav-acct.on" in html and "border-color:" in html,
-        "account full-perimeter selection stroke missing",
+        "a-radio" in html and ".nav-acct.on .a-radio" in html,
+        "account radio selection indicator missing",
+    )
+    need(
+        "acct-switch" in html and "acct-chip" in html,
+        "detail multi-account chip strip missing",
     )
     need(
         "border-left: 2.5px solid transparent" not in html,
         "AI-slop one-sided account border still present",
+    )
+    need(
+        re.search(
+            r"\.win\s+\.nav-acct\.on\s*\{[^}]*border-color:\s*color-mix\(in srgb,\s*var\(--jk\)",
+            html,
+            re.S,
+        )
+        is None,
+        "account must not use provider-style phosphor full-fill border selection",
     )
     need("chrome-float" in html, "floating chrome-float overlay missing")
     need(
@@ -81,10 +94,30 @@ def main() -> int:
     )
     need(".nav-provider.on" in html, "provider selection rule missing")
     need(".nav-acct.on" in html, "account selection rule missing")
-    # Same selection chrome for both would re-use one class; require distinct classes
+    # Distinct systems: provider class ≠ account class; multi-account fixture present
     need(
         "nav-provider" in html and "nav-acct" in html and "nav-provider" != "nav-acct",
         "provider and account must use distinct classes",
+    )
+    need(
+        'data-acct="a1"' in html and 'data-acct="a2"' in html,
+        "OpenAI multi-account fixture keys a1/a2 missing",
+    )
+    need("57% left" in html, "Weekly remaining fixture '57% left' missing")
+    need("list_accounts" in html, "list_accounts multi-account API mention missing from prototype")
+    # Selected-account glance consistency: a1 Weekly 57%, a2 Weekly 0%
+    need("openai:a1" in html and "openai:a2" in html, "per-account detail fixtures missing")
+    need(
+        re.search(r"openai:a1[\s\S]*?Weekly[\s\S]*?57% left", html) is not None,
+        "a1 Weekly detail must show 57% left (matches glance)",
+    )
+    need(
+        re.search(r"openai:a2[\s\S]*?Weekly[\s\S]*?0% left", html) is not None,
+        "a2 Weekly detail must show 0% left (matches glance)",
+    )
+    need(
+        "Session" in html and "Codex Spark 5-hour" in html and "Codex Spark Weekly" in html,
+        "Codex full bucket order incomplete in fixture",
     )
 
     usage = html.split('id="usage"', 1)[-1].split('id="glass"', 1)[0]

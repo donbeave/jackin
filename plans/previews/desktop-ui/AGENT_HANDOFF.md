@@ -34,8 +34,8 @@ Quality bar = Finder/Tahoe Liquid Glass + high-end native macOS utilities (e.g. 
 | Titlebar | One continuous glass strip | Safari-like; traffic lights + brand + Usage + Refresh — **no split panes** |
 | Sidebar | Floating glass | Soft shadow only — **no hard vertical rule** between side and content |
 | Content | Solid | Single **limit-list** + one quiet details group — **no tiles+buckets dupes** |
-| Provider row | Primary nav | Glass capsule, brand plate, mini meter + % |
-| Account row | Secondary | Nested `.acct-rail`, left phosphor bar, quiet mono, no logo plate |
+| Provider row | Primary nav | Full-fill selection, brand plate, mini meter + % |
+| Account row | Secondary | Soft inset radio well (`.a-radio`) + detail left chips (`.acct-chip`); mono labels; **no** logo plate / mini meter / provider full-fill |
 | Scroll | Soft edges | Dissolve under chrome |
 
 **Do not** ship a flat two-column web panel without window chrome.  
