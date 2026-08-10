@@ -1,20 +1,21 @@
-# QI delta: usage-toolbar
+# QI delta: usage-toolbar · dark + light
 
 ## Oracle
-- HTML: qi-artifacts/html/usage-toolbar-dark.png
+- HTML: advisor-plans/qi-artifacts/html/usage-toolbar-dark.png
 
 ## Candidate
-- Native: qi-artifacts/native/usage-toolbar-dark.png — **UsageWindowController** NSWindow top-band (traffic lights + jackin❯ desktop + Refresh)
+- Native: advisor-plans/qi-artifacts/native/usage-toolbar-{dark,light}.png
+- Source: crop of real `UsageWindowController` CGWindow (unified titlebar + toolbar)
+- Dual-image review: HTML centered jackin❯ desktop + refresh; native real traffic lights + jackin❯ desktop + Refresh icon on unified toolbar (not custom floating strip)
 
 ## Same (keep)
-- Real unified titlebar/toolbar host (not custom floating strip)
-- Brand title + Refresh control
+- Real NSToolbar / unified titlebar host; brand title; Refresh control
 
 ## Different (must fix unless N/A)
 | Severity | Element | HTML | Native | Gap ID | Action |
 |----------|---------|------|--------|--------|--------|
-| Med | Title alignment | Centered | Leading (system unified) | G-U1 | Native OK |
-| Low | Extra chrome | Refresh only | Sidebar toggle + Refresh | G-U1 | System |
+| Med | Title position | Centered | Leading (system unified) | G-U1 | Native OK |
+| Low | Extra controls | Refresh only | Sidebar toggle + Refresh | G-U1 | System NavigationSplitView |
 
 ## Verdict
-**Pass**
+Verdict: Pass

@@ -98,22 +98,6 @@ struct DesktopVisualSnapshotHarness {
             appearance: .darkAqua
         )
 
-        // Full Usage shell — shipped UsageWindowRoot (sidebar nest + detail/overview).
-        render(
-            UsageWindowRoot(store: storeDetailCodex)
-                .frame(width: 920, height: 620),
-            size: NSSize(width: 920, height: 620),
-            path: "\(out)/usage-window-openai-dark.png",
-            appearance: .darkAqua
-        )
-        render(
-            UsageWindowRoot(store: storeOverview)
-                .frame(width: 920, height: 620),
-            size: NSSize(width: 920, height: 620),
-            path: "\(out)/usage-window-overview-dark.png",
-            appearance: .darkAqua
-        )
-
         // Status dual-stack via **StatusItemRendering** (not a hand-rolled layout).
         captureStatusItemRendering(
             fixture: fixture,
@@ -121,12 +105,23 @@ struct DesktopVisualSnapshotHarness {
             appearance: .darkAqua
         )
 
-        // Real unified NSToolbar via UsageWindowController (not fake HStack).
-        let toolbarOkDark = captureUsageToolbar(
+        // Real NSWindow (toolbar + sidebar nest + detail) via UsageWindowController.
+        // Prefer CGWindow full-window over NSHostingView NavigationSplitView (sidebar blank offscreen).
+        let windowOkDark = captureUsageWindow(
             fixture: fixture,
-            path: "\(out)/usage-toolbar-dark.png",
-            appearance: .darkAqua
+            focusSurfaceId: "codex",
+            appearance: .darkAqua,
+            fullPath: "\(out)/usage-window-openai-dark.png",
+            toolbarPath: "\(out)/usage-toolbar-dark.png"
         )
+        let overviewOkDark = captureUsageWindow(
+            fixture: fixture,
+            focusSurfaceId: nil,
+            appearance: .darkAqua,
+            fullPath: "\(out)/usage-window-overview-dark.png",
+            toolbarPath: nil
+        )
+        let toolbarOkDark = windowOkDark
 
         // ── Light ──
         NSApp.appearance = NSAppearance(named: .aqua)
@@ -183,32 +178,26 @@ struct DesktopVisualSnapshotHarness {
             path: "\(out)/usage-provider-nest-light.png",
             appearance: .aqua
         )
-        render(
-            UsageWindowRoot(store: storeDetailCodex)
-                .frame(width: 920, height: 620)
-                .environment(\.colorScheme, .light),
-            size: NSSize(width: 920, height: 620),
-            path: "\(out)/usage-window-openai-light.png",
-            appearance: .aqua
-        )
-        render(
-            UsageWindowRoot(store: storeOverview)
-                .frame(width: 920, height: 620)
-                .environment(\.colorScheme, .light),
-            size: NSSize(width: 920, height: 620),
-            path: "\(out)/usage-window-overview-light.png",
-            appearance: .aqua
-        )
         captureStatusItemRendering(
             fixture: fixture,
             path: "\(out)/status-desktop-light.png",
             appearance: .aqua
         )
-        let toolbarOkLight = captureUsageToolbar(
+        let windowOkLight = captureUsageWindow(
             fixture: fixture,
-            path: "\(out)/usage-toolbar-light.png",
-            appearance: .aqua
+            focusSurfaceId: "codex",
+            appearance: .aqua,
+            fullPath: "\(out)/usage-window-openai-light.png",
+            toolbarPath: "\(out)/usage-toolbar-light.png"
         )
+        let overviewOkLight = captureUsageWindow(
+            fixture: fixture,
+            focusSurfaceId: nil,
+            appearance: .aqua,
+            fullPath: "\(out)/usage-window-overview-light.png",
+            toolbarPath: nil
+        )
+        let toolbarOkLight = windowOkLight
 
         // Manifest for VISUAL_QA_LOG honesty
         let manifest = """
@@ -217,12 +206,16 @@ struct DesktopVisualSnapshotHarness {
         popover: PopoverRoot (TabGrid + ProviderTab + Footer) via PresentationStore.applyQIFixture
         status: StatusItemRendering.icon + StatusItemRendering.title (AppKit bitmap)
         status_live_nsstatusitem: prefer live screencapture when JackinDesktop is running (see VISUAL_QA_LOG)
-        usage_window: UsageWindowRoot full shell @ 920×620
-        usage_detail: ProviderCardView
-        usage_overview: OverviewListView
-        usage_nest: UsageAccountNestView
-        usage_toolbar_dark: \(toolbarOkDark ? "UsageWindowController NSWindow titlebar+toolbar" : "BLOCKED")
-        usage_toolbar_light: \(toolbarOkLight ? "UsageWindowController NSWindow titlebar+toolbar" : "BLOCKED")
+        usage_window: UsageWindowController CGWindow full (sidebar nest + detail) — not blank NSHostingView split
+        usage_detail: ProviderCardView (+ window detail column)
+        usage_overview: OverviewListView (+ window overview)
+        usage_nest: UsageAccountNestView (+ window sidebar when CGWindow OK)
+        usage_window_openai_dark: \(windowOkDark ? "OK" : "BLOCKED")
+        usage_window_overview_dark: \(overviewOkDark ? "OK" : "BLOCKED")
+        usage_window_openai_light: \(windowOkLight ? "OK" : "BLOCKED")
+        usage_window_overview_light: \(overviewOkLight ? "OK" : "BLOCKED")
+        usage_toolbar_dark: \(toolbarOkDark ? "UsageWindowController titlebar crop" : "BLOCKED")
+        usage_toolbar_light: \(toolbarOkLight ? "UsageWindowController titlebar crop" : "BLOCKED")
         """
         try? manifest.write(
             to: URL(fileURLWithPath: "\(out)/MANIFEST.md"),
@@ -349,90 +342,109 @@ struct DesktopVisualSnapshotHarness {
         }
     }
 
-    /// Capture real `UsageWindowController` window titlebar (unified NSToolbar host).
-    /// Returns false when window capture fails (caller must treat as BLOCKED).
+    /// Real `UsageWindowController` NSWindow via CGWindow (sidebar + detail + toolbar).
+    /// Returns false when capture fails — never invents a stand-in window chrome.
     @MainActor
     @discardableResult
-    private static func captureUsageToolbar(
+    private static func captureUsageWindow(
         fixture: QIFixture,
-        path: String,
-        appearance: NSAppearance.Name
+        focusSurfaceId: String?,
+        appearance: NSAppearance.Name,
+        fullPath: String,
+        toolbarPath: String?
     ) -> Bool {
         NSApp.appearance = NSAppearance(named: appearance)
-        let store = makeStore(fixture: fixture, popover: "codex", usage: "codex")
+        let store = makeStore(
+            fixture: fixture,
+            popover: focusSurfaceId,
+            usage: focusSurfaceId
+        )
         let controller = UsageWindowController(store: store)
-        controller.show(focusOn: "codex")
+        controller.show(focusOn: focusSurfaceId)
         guard let window = controller.qiWindow else {
-            fputs("FAIL usage toolbar: no window\n", stderr)
-            writeBlockedPlaceholder(path: path, reason: "UsageWindowController.qiWindow nil")
+            fputs("FAIL usage window: no window for \(fullPath)\n", stderr)
+            writeBlockedPlaceholder(path: fullPath, reason: "UsageWindowController.qiWindow nil")
+            if let toolbarPath {
+                writeBlockedPlaceholder(path: toolbarPath, reason: "UsageWindowController.qiWindow nil")
+            }
             controller.invalidate()
             return false
         }
 
-        // Force layout of hosting controller + toolbar attachment.
+        window.setFrame(NSRect(x: 80, y: 80, width: 920, height: 620), display: true)
+        window.orderFrontRegardless()
+        window.makeKeyAndOrderFront(nil)
         window.layoutIfNeeded()
         window.contentViewController?.view.layoutSubtreeIfNeeded()
-        RunLoop.current.run(until: Date(timeIntervalSinceNow: 0.15))
+        // Allow NavigationSplitView + toolbar to materialize before CGWindow grab.
+        RunLoop.current.run(until: Date(timeIntervalSinceNow: 0.45))
 
-        // Capture full window via CGWindow, then crop the **top** band (titlebar + unified toolbar).
-        // Prior rect math often hit content/footer; crop from bitmap is honest.
-        let titleH: CGFloat = 56
-        if let cgImage = captureWindowTopBand(window: window, bandHeight: titleH) {
-            let rep = NSBitmapImageRep(cgImage: cgImage)
-            if let png = rep.representation(using: .png, properties: [:]) {
-                do {
-                    try png.write(to: URL(fileURLWithPath: path))
-                    print("WROTE \(path) [UsageWindowController window top-band]")
-                    controller.invalidate()
-                    return true
-                } catch {
-                    fputs("FAIL write toolbar \(path): \(error)\n", stderr)
-                }
+        guard let full = captureFullWindowImage(window: window) else {
+            writeBlockedPlaceholder(
+                path: fullPath,
+                reason: "CGWindow full-window capture unavailable"
+            )
+            if let toolbarPath {
+                writeBlockedPlaceholder(
+                    path: toolbarPath,
+                    reason: "CGWindow full-window capture unavailable"
+                )
+            }
+            print("BLOCKED \(fullPath) [CGWindow]")
+            controller.invalidate()
+            return false
+        }
+
+        // Full window PNG
+        if !writeCGImagePNG(full, path: fullPath) {
+            controller.invalidate()
+            return false
+        }
+        print("WROTE \(fullPath) [UsageWindowController full CGWindow]")
+
+        // Titlebar/toolbar band crop
+        if let toolbarPath {
+            let scale = CGFloat(full.width) / max(window.frame.width, 1)
+            let bandPx = max(1, Int((56 * scale).rounded()))
+            let cropH = min(bandPx, full.height)
+            if let band = full.cropping(to: CGRect(x: 0, y: 0, width: full.width, height: cropH)),
+                writeCGImagePNG(band, path: toolbarPath)
+            {
+                print("WROTE \(toolbarPath) [UsageWindowController titlebar crop]")
+            } else {
+                writeBlockedPlaceholder(path: toolbarPath, reason: "titlebar crop failed")
             }
         }
 
-        // Do **not** synthesize a fake toolbar HStack — BLOCKED is the honest outcome.
-        writeBlockedPlaceholder(
-            path: path,
-            reason: "CGWindow full-window top-band capture unavailable (screen recording / offscreen)"
-        )
-        print("BLOCKED \(path) [real toolbar window not capturable on this host]")
         controller.invalidate()
-        return false
+        return true
     }
 
     @MainActor
-    private static func captureWindowTopBand(window: NSWindow, bandHeight: CGFloat) -> CGImage? {
-        window.setFrame(
-            NSRect(x: 80, y: 120, width: 920, height: 620),
-            display: true
-        )
-        window.orderFrontRegardless()
-        window.makeKeyAndOrderFront(nil)
-        RunLoop.current.run(until: Date(timeIntervalSinceNow: 0.25))
-
+    private static func captureFullWindowImage(window: NSWindow) -> CGImage? {
         let windowId = CGWindowID(window.windowNumber)
         guard windowId != 0 else { return nil }
-
-        // Full window image (null rect = window bounds).
-        guard let full = CGWindowListCreateImage(
+        return CGWindowListCreateImage(
             .null,
             .optionIncludingWindow,
             windowId,
             [.boundsIgnoreFraming, .bestResolution]
-        ) else {
-            return nil
-        }
+        )
+    }
 
-        let w = full.width
-        let h = full.height
-        guard w > 0, h > 0 else { return nil }
-        // Image coords: origin top-left. Crop top bandHeight points * scale.
-        let scale = CGFloat(w) / max(window.frame.width, 1)
-        let bandPx = max(1, Int((bandHeight * scale).rounded()))
-        let cropH = min(bandPx, h)
-        let cropRect = CGRect(x: 0, y: 0, width: w, height: cropH)
-        return full.cropping(to: cropRect)
+    private static func writeCGImagePNG(_ image: CGImage, path: String) -> Bool {
+        let rep = NSBitmapImageRep(cgImage: image)
+        guard let png = rep.representation(using: .png, properties: [:]) else {
+            fputs("FAIL png encode \(path)\n", stderr)
+            return false
+        }
+        do {
+            try png.write(to: URL(fileURLWithPath: path))
+            return true
+        } catch {
+            fputs("FAIL write \(path): \(error)\n", stderr)
+            return false
+        }
     }
 
     private static func writeBlockedPlaceholder(path: String, reason: String) {

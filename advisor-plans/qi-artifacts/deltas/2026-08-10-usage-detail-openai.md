@@ -1,21 +1,21 @@
-# QI delta: usage-detail-openai
+# QI delta: usage-detail-openai · dark + light
 
 ## Oracle
-- HTML: qi-artifacts/html/usage-detail-openai-dark.png
+- HTML: advisor-plans/qi-artifacts/html/usage-detail-openai-dark.png
 
 ## Candidate
-- Native: qi-artifacts/native/usage-detail-openai-dark.png (`ProviderCardView`)
-- Full shell: qi-artifacts/native/usage-window-openai-dark.png (`UsageWindowRoot` @ 920×620)
+- Card: advisor-plans/qi-artifacts/native/usage-detail-openai-{dark,light}.png (`ProviderCardView`)
+- Window: advisor-plans/qi-artifacts/native/usage-window-openai-{dark,light}.png detail column
+- Dual-image review: HTML Session 63% / Weekly 57% orange / Spark 88% / Open usage / Status fresh; native matches heroes, meters 1:1, Limit Reset Credits, Open usage pill; window also shows sidebar nest
 
 ## Same (keep)
-- Open usage pill; Status/Updated/Auth meta; Session 63% / Weekly 57% orange / Spark buckets; Limit Reset Credits structured
-- Meters 1:1; 0% empty rule on nest sibling
+- Open usage page CTA; meta group; limit cards with severity; Limit Reset Credits structured; no provider glance meter on detail
 
 ## Different (must fix unless N/A)
 | Severity | Element | HTML | Native | Gap ID | Action |
 |----------|---------|------|--------|--------|--------|
-| Low | Accent | Phosphor | System blue | VS-13 | Optional |
-| Med | Sidebar in detail crop | Present | Separate nest/window captures | G-U2 | usage-window-openai covers shell |
+| Low | Accent | Phosphor healthy | System blue healthy | VS-13 | Optional |
+| Low | Weekly subline | “Runs out in…” sometimes in HTML | Only Rust layout lines | G-D1 | Show only if Rust emits |
 
 ## Verdict
-**Pass**
+Verdict: Pass

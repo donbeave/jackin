@@ -1,21 +1,21 @@
-# QI delta: popover-anthropic · hosted + live
+# QI delta: popover-anthropic · dark + light + live
 
 ## Oracle
-- HTML: qi-artifacts/html/popover-anthropic-dark.png
+- HTML: advisor-plans/qi-artifacts/html/popover-anthropic-dark.png
 
 ## Candidate
-- Hosted: qi-artifacts/native/popover-anthropic-dark.png (`popoverSelection=claude`)
-- Live: qi-artifacts/native/popover-live-anthropic-dark.png (left-click Anthropic status)
+- Hosted: advisor-plans/qi-artifacts/native/popover-anthropic-{dark,light}.png
+- Live: advisor-plans/qi-artifacts/native/popover-live-anthropic-dark.png
+- Dual-image review: hosted selects Anthropic with Session/Weekly heroes; live click focuses Anthropic tab; danger/warn severity on low remaining when fixture 12%
 
 ## Same (keep)
-- Full shell; Anthropic selected; Session/Weekly heroes; Open usage; Refresh footer
-- Live click focuses Anthropic (G-S2 verified)
+- Full shell; Anthropic focus; heroes + meters; Open usage; Refresh footer
 
 ## Different (must fix unless N/A)
 | Severity | Element | HTML | Native | Gap ID | Action |
 |----------|---------|------|--------|--------|--------|
-| Med | Footer CTA | Open Usage Window | Refresh | G-P4 | Product law |
-| Low | Live % | 12% fixture | Live remaining | G-D1 | Expected |
+| Med | Footer | Open Usage Window | Refresh | G-P4 | Product law |
+| Low | Live numbers | Fixture 12% | Live credentials | G-D1 | Expected |
 
 ## Verdict
-**Pass**
+Verdict: Pass

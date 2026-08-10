@@ -3,9 +3,13 @@ out: /var/folders/8p/h376l_nn3375kyj72czdq2x80000gn/T/grok-goal-d2cbf01be48f/imp
 popover: PopoverRoot (TabGrid + ProviderTab + Footer) via PresentationStore.applyQIFixture
 status: StatusItemRendering.icon + StatusItemRendering.title (AppKit bitmap)
 status_live_nsstatusitem: prefer live screencapture when JackinDesktop is running (see VISUAL_QA_LOG)
-usage_window: UsageWindowRoot full shell @ 920×620
-usage_detail: ProviderCardView
-usage_overview: OverviewListView
-usage_nest: UsageAccountNestView
-usage_toolbar_dark: UsageWindowController NSWindow titlebar+toolbar
-usage_toolbar_light: UsageWindowController NSWindow titlebar+toolbar
+usage_window: UsageWindowController CGWindow full (sidebar nest + detail) — not blank NSHostingView split
+usage_detail: ProviderCardView (+ window detail column)
+usage_overview: OverviewListView (+ window overview)
+usage_nest: UsageAccountNestView (+ window sidebar when CGWindow OK)
+usage_window_openai_dark: OK
+usage_window_overview_dark: OK
+usage_window_openai_light: OK
+usage_window_overview_light: OK
+usage_toolbar_dark: UsageWindowController titlebar crop
+usage_toolbar_light: UsageWindowController titlebar crop

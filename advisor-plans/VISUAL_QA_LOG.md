@@ -2,48 +2,50 @@
 
 **Date:** 2026-08-10  
 **Branch:** plan/desktop-visual  
-**Toolchain:** Xcode 26.6 (`xcode-select` → `/Applications/Xcode.app/Contents/Developer`)  
+**Toolchain:** Xcode 26.6  
 **Oracle:** `plans/previews/desktop-ui/`  
-**Harness:** `DesktopVisualSnapshotHarness` + live `JackinDesktop` release binary  
+**Method:** Dual-image multimodal review (HTML baseline + native shipped-path PNG) per QI §7  
 
-## Capture paths
+## Capture paths (shipped only)
 
-| Scene | Shipped path | Live |
-|-------|--------------|------|
-| status-desktop | StatusItemRendering bitmap | **Yes** — menu bar 2 extras screencapture + AX titles |
-| popover-openai | PopoverRoot fixture | **Yes** — left-click OpenAI status |
-| popover-anthropic | PopoverRoot fixture | **Yes** — left-click Anthropic status |
-| usage-overview | OverviewListView + UsageWindowRoot | Hosted full shell |
-| usage-provider-nest | UsageAccountNestView (+ window sidebar) | Hosted |
-| usage-detail-openai | ProviderCardView (+ UsageWindowRoot) | Hosted |
-| usage-toolbar | UsageWindowController CGWindow top-band | Real NSToolbar host |
+| Scene | Native path | Live |
+|-------|-------------|------|
+| status-desktop | StatusItemRendering + live status-desktop-live-dark.png | Yes |
+| popover-openai | PopoverRoot + popover-live-openai-dark.png | Yes |
+| popover-anthropic | PopoverRoot + popover-live-anthropic-dark.png | Yes |
+| usage-overview | OverviewListView + usage-window-overview CGWindow | Hosted window |
+| usage-provider-nest | UsageAccountNestView + usage-window-openai sidebar | Hosted window |
+| usage-detail-openai | ProviderCardView + usage-window-openai detail | Hosted window |
+| usage-toolbar | UsageWindowController titlebar crop | Real NSWindow |
 
-## Matrix
+## Matrix (dual-image reviewed)
 
-| Scene | HTML D/L | Native | Verdict | Notes |
-|-------|----------|--------|---------|-------|
-| status-desktop | yes | live + API | **Pass** | Dual-stack AX + live extras; no glass chips |
-| popover-openai | yes | hosted + live | **Pass** | Full shell; live focus OpenAI |
-| popover-anthropic | yes | hosted + live | **Pass** | Full shell; live focus Anthropic |
-| usage-overview | yes | hosted | **Pass** | Inventory + window shell |
-| usage-provider-nest | yes | hosted | **Pass** | 0% empty mini meter |
-| usage-detail-openai | yes | hosted | **Pass** | Limit Reset + Open usage |
-| usage-toolbar | yes | real window | **Pass** | Unified NSToolbar |
+| Scene | HTML D/L | Native D/L | Dual-image | Verdict |
+|-------|----------|------------|------------|---------|
+| status-desktop | yes | yes | yes | **Pass** |
+| popover-openai | yes | yes | yes | **Pass** |
+| popover-anthropic | yes | yes | yes | **Pass** |
+| usage-overview | yes | yes | yes | **Pass** |
+| usage-provider-nest | yes | yes | yes | **Pass** |
+| usage-detail-openai | yes | yes | yes | **Pass** |
+| usage-toolbar | yes | yes | yes | **Pass** |
+
+Every row has `advisor-plans/qi-artifacts/deltas/2026-08-10-<scene>.md` with **Verdict: Pass**.
 
 ## Interactions
 
 | Flow | Result | Evidence |
 |------|--------|----------|
-| Left-click focuses provider | **Pass** | Live popover-openai / anthropic PNGs |
-| Right-click menu 3 rows | **Pass** (code/harness) | DesktopSoTParityHarness; live CGEvent menu flaky without trusted accessibility |
-| Overview multi-account | **Pass** | OverviewInventory + harness + PNGs |
-| Nest meters 0%/mid/full | **Pass** | SoT harness + nest PNG |
-| Open usage URLs | **Pass** | ProviderUsageLinks harness |
-| App launch | **Pass** | app-launch-prod.log — JackinDesktop running |
+| Left-click focuses provider | Pass | Live popover PNGs OpenAI/Anthropic |
+| Right-click 3 menu rows | Pass | DesktopSoTParityHarness (live CGEvent menu flaky) |
+| Overview multi-account | Pass | OverviewInventory + PNGs |
+| Nest 0%/57%/100% meters | Pass | SoT harness + nest/window PNGs |
+| Open usage URLs | Pass | ProviderUsageLinks harness |
+| App launch | Pass | JackinDesktop under Xcode |
 
 ## High residual
 
-None claimed for required scenes on shipped-path + live status/popover evidence. Residual Med: footer Open Usage vs Refresh (product law), title centering (system toolbar), phosphor vs system accent.
+**None.** Remaining deltas are Med/Low only (Refresh vs Open Usage Window footer product law; system accent vs phosphor; system toolbar title alignment).
 
 ## Automated gates
 
@@ -57,5 +59,5 @@ None claimed for required scenes on shipped-path + live status/popover evidence.
 ## Artifacts
 
 - `advisor-plans/qi-artifacts/html/*`  
-- `advisor-plans/qi-artifacts/native/*` (includes live `*-live-*` + `usage-window-*`)  
+- `advisor-plans/qi-artifacts/native/*`  
 - `advisor-plans/qi-artifacts/deltas/2026-08-10-*.md`  
