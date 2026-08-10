@@ -39,5 +39,5 @@
 | OV-5 unselected multi-account reset | no Account DTO |
 | LG-6 plate hex | interim |
 | UW-O1 open control | footer+menu |
-| Usage full-window glass sidebar | **BLOCKED** — `usage-window-openai-dark.BLOCKED.txt`; Light inactive only |
+| Usage full-window glass sidebar | **BLOCKED** active state — Dark/Light window-ID captures inactive |
 | Live NSStatusItem | status-live-nsstatusitem.BLOCKED.txt |

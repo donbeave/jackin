@@ -35,5 +35,11 @@ inside `bucketCard`: repetition duplicated the card shell. Native now has one
 `limitList` shell; bucket helpers render rows only. Architecture lint guards
 that ownership boundary.
 
+Second audit fixed three visual/data false-passes: metadata values now align to
+the oracle’s trailing edge; provider head uses vendor brand chrome; Weekly keeps
+both Rust pace segments (`13% in deficit` and `Runs out in 2d 17h`). Limit Reset
+Credits now carries its count in the row header. Oracle-only reset-window history
+was removed because provider presentation does not expose it.
+
 ## Verdict
 **Verdict: Pass** (Dark + Light)

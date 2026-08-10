@@ -1173,8 +1173,9 @@ private struct QIFixture {
             var lines: [UsagePresentationLine] = [
                 UsagePresentationLine(leading: remaining, trailing: nil)
             ]
-            if let pace {
-                lines.append(UsagePresentationLine(leading: pace, trailing: nil))
+            let paceLines = pace.map(splitPaceLabel) ?? []
+            for paceLine in paceLines {
+                lines.append(UsagePresentationLine(leading: paceLine, trailing: nil))
             }
             if let reset {
                 lines.append(UsagePresentationLine(leading: nil, trailing: reset))
@@ -1184,7 +1185,8 @@ private struct QIFixture {
                 kind: .bucket,
                 label: label,
                 layoutLines: lines,
-                displayLabel: [remaining, pace, reset].compactMap { $0 }.joined(separator: " · "),
+                displayLabel: ([remaining] + paceLines + [reset].compactMap { $0 })
+                    .joined(separator: " · "),
                 meterPercent: meter,
                 severity: severity
             )
@@ -1235,7 +1237,7 @@ private struct QIFixture {
                 remaining: "57% left",
                 meter: 57,
                 severity: "warn",
-                pace: "13% in deficit",
+                pace: "13% in deficit · Runs out in 2d 17h",
                 reset: "Resets in 3d"
             ),
             bucket(

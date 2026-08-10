@@ -146,12 +146,20 @@ public struct ProviderCardView: View {
     /// Bound bucket: show every Rust layout line as labeled detail (count, next expiry, …).
     private func limitResetCreditsRow(_ row: UsageDetailRow) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text(row.label)
-                .font(.subheadline.weight(.semibold))
             // Prefer structured lines from presentation; fall back to displayLabel split.
             let lines = row.layoutLines.isEmpty
                 ? row.displayLabel.split(separator: " · ").map { String($0) }
                 : row.layoutLines.compactMap { $0.leading ?? $0.trailing }
+            HStack(alignment: .firstTextBaseline, spacing: 12) {
+                Text(row.label)
+                    .font(.subheadline.weight(.semibold))
+                Spacer(minLength: 8)
+                if let count = lines.first {
+                    Text(count)
+                        .font(.subheadline.weight(.semibold))
+                        .multilineTextAlignment(.trailing)
+                }
+            }
             if lines.isEmpty {
                 Text(row.displayLabel)
                     .font(.caption)
@@ -197,24 +205,25 @@ public struct ProviderCardView: View {
     /// Logo plate for provider identity (HTML `.plogo` role — official mark preferred).
     @ViewBuilder
     private func providerLogoPlate(iconKey: String?, size: CGFloat) -> some View {
+        let tint = desktopProviderBrandChrome(iconKey: iconKey)
         ZStack {
             RoundedRectangle(cornerRadius: size * 0.28, style: .continuous)
-                .fill(Color.jackinPhosphor.opacity(0.18))
+                .fill(tint.opacity(0.18))
             if let iconKey, let mark = ProviderMarks.swiftUIImage(forIconKey: iconKey) {
                 mark
                     .resizable()
                     .interpolation(.high)
                     .scaledToFit()
                     .frame(width: size * 0.52, height: size * 0.52)
-                    .colorMultiply(Color.jackinPhosphor)
+                    .colorMultiply(tint)
             } else if let iconKey, let symbol = desktopProviderSystemImage(iconKey: iconKey) {
                 Image(systemName: symbol)
                     .font(.system(size: size * 0.42, weight: .semibold))
-                    .foregroundStyle(Color.jackinPhosphor)
+                    .foregroundStyle(tint)
             } else {
                 Image(systemName: "circle.grid.cross")
                     .font(.system(size: size * 0.42, weight: .semibold))
-                    .foregroundStyle(Color.jackinPhosphor)
+                    .foregroundStyle(tint)
             }
         }
         .frame(width: size, height: size)
@@ -231,6 +240,7 @@ public struct ProviderCardView: View {
                     lineView(line, trailingStyle: .primary)
                 }
             }
+            .frame(maxWidth: .infinity, alignment: .trailing)
         }
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(row.label) \(row.displayLabel)")
@@ -315,6 +325,6 @@ public struct ProviderCardView: View {
                     .foregroundStyle(trailingStyle)
             }
         }
-        .frame(maxWidth: .infinity, alignment: line.leading == nil ? .trailing : .leading)
+        .frame(maxWidth: .infinity, alignment: .trailing)
     }
 }

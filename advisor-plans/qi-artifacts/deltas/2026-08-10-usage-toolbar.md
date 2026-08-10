@@ -9,7 +9,7 @@
 | Cycle | High residual | Fix |
 |-------|---------------|-----|
 | Fail | Dark solid white SF Symbol disks | view-bitmap crop |
-| Blocked | current Dark view-bitmap | unreadable white symbol disks; no coordinate capture fallback |
+| Pass | current Dark window-ID crop | readable symbols; inactive system state documented |
 | Fail | Brand title was leading despite centered HTML oracle | hidden duplicate NSWindow title + SwiftUI `.principal` brand item |
 | Pass | Brand centered with phosphor chevron | recaptured full window + toolbar Dark+Light |
 
@@ -18,7 +18,7 @@
 | Check | HTML | Native | Match |
 |-------|------|--------|-------|
 | Brand | centered jackin❯ desktop | centered; phosphor chevron | Yes |
-| Refresh | clockwise glyph | Light readable; Dark capture blocked | Partial |
+| Refresh | clockwise glyph | readable D+L | Yes |
 | Sidebar toggle | system | present | Yes |
 | Unified chrome | titlebar | NSToolbar crop | Yes |
 | Limits only | n/a | no prices | Yes |
@@ -27,7 +27,7 @@
 
 | Severity | Element | Notes |
 |----------|---------|-------|
-| High | Dark toolbar capture | Window-ID capture unavailable; view-bitmap symbols whiteout |
+| Low | Active state | Harness window is inactive; toolbar geometry and symbols remain valid |
 
 ## Verdict
-**Verdict: Light Pass; Dark Blocked**
+**Verdict: Pass** (Dark + Light; inactive system state documented)

@@ -14,7 +14,7 @@
 | Detail head | identity + external usage action | same | Yes |
 | Meta | one quiet details group | same | Yes |
 | Limits | one inset divided list | same | Yes |
-| Themes | active Dark and Light renderings | Dark glass fallback; Light inactive | Blocked |
+| Themes | active Dark and Light renderings | valid window-ID captures; both inactive | Blocked |
 
 ## False-pass correction
 
@@ -29,14 +29,14 @@ and QI host now share one `UsageAccountRailView`, preventing that drift.
 
 Third re-audit found region-based screen capture had accepted pixels from an
 unrelated Telegram window occupying the same coordinates. Region capture is now
-forbidden; evidence uses window ID only. Current Dark fallback whites out the
-Liquid Glass sidebar, while Light is a valid but inactive window capture.
+forbidden; evidence uses window ID only. Current Dark and Light captures are
+structurally valid but inactive window captures.
 
 ## Different (not High)
 
 | Severity | Element | Notes |
 |----------|---------|-------|
-| High | Active full shell | Screen-capture permission / key-window state unavailable in harness |
+| High | Active full shell | Key-window state unavailable in harness |
 
 ## Verdict
 

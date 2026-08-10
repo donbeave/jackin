@@ -14,9 +14,8 @@ DesktopArchitectureLint ALL PASS
 DesktopSoTParityHarness ALL PASS ×3
 DesktopParityMatrixHarness ALL PASS
 StatusItemChipHarness / ProviderMarks ALL PASS
-usage_window_openai_dark: BLOCKED (Dark glass whiteout)
-usage_window_openai_light: STRUCTURAL_INACTIVE
-usage_toolbar_dark: BLOCKED (view-bitmap icon whiteout)
+usage_window_openai_dark/light: STRUCTURAL_INACTIVE
+usage_toolbar_dark/light: readable inactive window-ID crops
 ```
 
 Log: `qi-artifacts/native/desktop-gates.log`
@@ -88,8 +87,8 @@ Full-window evidence re-audit found a more severe capture false-pass: coordinate
 region capture had promoted an unrelated Telegram window. Harness now forbids
 region capture and targets `NSWindow.windowNumber` only. Correct captures exposed
 and fixed monochrome provider plates plus collapsed missing-reset row geometry.
-Dark full-shell remains blocked by Liquid Glass view-bitmap whiteout; Light is
-retained as structurally valid inactive evidence, not active craft proof.
+Dark/Light full-shell captures are retained as structurally valid inactive
+evidence, not active craft proof.
 
 ## Live
 popover-live / ctx-menu **BLOCKED** — SoTParity proves focus/menu.

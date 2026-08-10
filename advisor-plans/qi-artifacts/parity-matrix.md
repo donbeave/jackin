@@ -5,8 +5,7 @@
 ## High residual craft
 
 Product structure has no known High residual. Active full-window visual parity
-remains blocked: Dark fallback cannot composite Liquid Glass sidebar; Light
-window-ID capture is structurally valid but inactive.
+remains blocked: Dark/Light window-ID captures are structurally valid but inactive.
 
 ## Scenes
 | Scene | Dark | Light | Verdict |
@@ -18,8 +17,8 @@ window-ID capture is structurally valid but inactive.
 | usage-overview | Pass | Pass | one divided per-account inventory |
 | usage-provider-nest | Pass | Pass | 57%/0% |
 | usage-detail-openai | Pass | Pass | Session/Weekly/Spark/LRC |
-| usage-window-openai | Blocked | Blocked | Dark glass whiteout; Light inactive |
-| usage-toolbar | Blocked | Pass | Dark fallback symbol whiteout; Light readable |
+| usage-window-openai | Blocked | Blocked | structurally valid; inactive state |
+| usage-toolbar | Pass | Pass | readable inactive window-ID crops |
 
 ## Live
 | Scene | Verdict |

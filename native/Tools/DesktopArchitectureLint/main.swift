@@ -261,6 +261,8 @@ struct DesktopArchitectureLint {
             "if index > 0 {",
             "private func bucketRow",
             "private func limitResetCreditsRow",
+            "if let count = lines.first",
+            "let tint = desktopProviderBrandChrome(iconKey: iconKey)",
         ]
         let forbidden = ["private func bucketCard", "private func limitResetCreditsCard"]
         let ok = required.allSatisfy(text.contains) && forbidden.allSatisfy { !text.contains($0) }
