@@ -1,2 +1,6 @@
-BLOCKED: live right-click NSMenu CGEvent capture not reliable without Accessibility trust.
-Shipped rows: Open Usage Window / Refresh / Quit jackin❯ desktop via StatusItemMenuModel + DesktopSoTParityHarness.
+BLOCKED: live right-click NSMenu capture (2026-08-10 re-attempt under Xcode 26.6)
+
+- CGEvent / Accessibility-driven status-item right-click not reliable in this agent environment.
+- Shipped rows proven by StatusItemMenuModel + DesktopSoTParityHarness:
+  Open Usage Window / Refresh / Quit jackin❯ desktop
+- No live PNG claimed as craft Pass.

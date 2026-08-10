@@ -1,7 +1,10 @@
-BLOCKED: live left-click popover re-capture after G-P1 rebuild.
-- App launched (single status item; production probe hit keychain + empty glance → "No agent usage detected").
-- Screencapture contaminated by system keychain sheet + desktop chrome — not usable QI craft evidence.
+BLOCKED: live left-click popover craft capture (2026-08-10 re-attempt under Xcode 26.6)
+
+- App: native/.build/release/JackinDesktop launched accessory (pid recorded in app-launch log).
+- Production probe: empty/keychain glance — not DATA_CONTRACT fixture shell.
+- Live screencapture not usable as QI craft oracle match (empty strip / system chrome contamination).
 - G-P1 craft dual-image Pass uses **fixture harness** only:
-  popover-openai-{dark,light}.png · popover-anthropic-{dark,light}.png
-  (full brand · Overview|Providers · provider strip · body · Refresh).
-- Left-click focus wiring still proven by StatusPopoverFocus + DesktopSoTParityHarness.
+  advisor-plans/qi-artifacts/native/popover-openai-{dark,light}.png
+  advisor-plans/qi-artifacts/native/popover-anthropic-{dark,light}.png
+- Left-click focus wiring: StatusPopoverFocus + DesktopSoTParityHarness (ALL PASS).
+- Toolchain: Xcode 26.6 selected; launch RUNNING then killed after capture attempt.

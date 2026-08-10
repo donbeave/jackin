@@ -2,66 +2,66 @@
 
 **Date:** 2026-08-10  
 **Branch:** plan/desktop-visual  
-**Toolchain:** Xcode 26.6  
-**Authority:** `EVIDENCE_LEDGER.toml` + dual-image §7.2/7.3  
+**Toolchain:** Xcode 26.6 (17F113) · Swift 6.3.3  
+**Authority:** `qi-artifacts/EVIDENCE_LEDGER.toml` + dual-image §7.2/7.3  
 
-## Craft closed this pass (skeptic High color)
+## Craft closed (skeptic Highs)
 
 | Gap | Resolution |
 |-----|------------|
-| Healthy severity / CTAs system blue | **Phosphor** `#5CF07A` dark / `#0B774E` light via `JackinBrand` / `Color.jackinPhosphor`; `severityTint` default no longer `Color.accentColor` |
-| Nest 57% always phosphor (greenwash) | `UsageAccountMiniMeter` + a-pct use `account.meterSeverity` / `severityTint`; 57% → **warn orange** (HTML mid); 0% empty; unit `testRemainingPercentMeterSeverityMatchesHTMLNestBands` |
-| Brand mark / chevron / selection / Open Usage | All map to phosphor (LG-A9 / VS-13 / FB1-43) |
-| Footer CTA | **Open Usage Window** glass dock + phosphor hairline (FB1-43); ⌘R refresh invisible host (OV-9) |
-| Brand plate chroma | Per-provider decorative plate fills (HTML plogo family) |
-| ACCOUNT role | Account/Plan/Status/Updated/Credential card |
-| SoT ×3 log | scratch `sot-x3.log` three consecutive ALL PASS |
+| Healthy severity / CTAs system blue | Phosphor `#5CF07A` / `#0B774E` via `JackinBrand` / `severityTint` default |
+| Nest 57% greenwash | `UsageAccountMiniMeter(percent:severity:)` + a-pct → **warn orange** for mid 57% |
+| Footer / brand / Open Usage | Phosphor chrome (FB1-43 / VS-13 / LG-A9) |
 
-## Dual-image matrix (personal read post-phosphor)
+## Dual-image matrix — required §5 scenes (personal read)
 
-| Scene | Dark | Light | High residual | Color roles | Verdict |
-|-------|------|-------|---------------|-------------|---------|
-| status-desktop | yes | yes | none | template mono (FB1-6) | **Pass** |
-| popover-openai | yes | yes | none | phosphor brand/CTA/meters; warn orange when fixture | **Pass** |
-| popover-anthropic | yes | yes | none | same phosphor system | **Pass** |
-| usage-overview | yes | yes | none | red/orange/green severity Tint map | **Pass** |
-| usage-provider-nest | yes | yes | none | nest 0% empty / **57% mid orange** mini + a-pct | **Pass** |
-| usage-detail-openai | yes | yes | none | healthy green · warn orange meters | **Pass** |
-| usage-toolbar | yes | yes | none | system traffic + Refresh only | **Pass** |
+| Scene | Dark | Light | High residual | Color / craft note | Verdict |
+|-------|------|-------|---------------|--------------------|---------|
+| status-desktop | yes | yes | none | template mono dual-stack (FB1-6) | **Pass** (harness) |
+| popover-openai | yes | yes | none | G-P1 full shell; phosphor brand/CTA; ACCOUNT; Open Usage Window | **Pass** (harness) |
+| popover-anthropic | yes | yes | none | same IA; 74% phosphor session | **Pass** (harness) |
+| usage-overview | yes | yes | none | 12% red · 57% orange · 0% empty · 100% phosphor | **Pass** (harness) |
+| usage-provider-nest | yes | yes | none | **57% mid orange** a-pct+meter; 0% empty | **Pass** (harness) |
+| usage-detail-openai | yes | yes | none | Session green / Weekly orange severityTint | **Pass** (harness) |
+| usage-toolbar | yes | yes | none | real NSToolbar titlebar crop | **Pass** (harness) |
 
-## High residual
+**High residual craft scenes: none.**
 
-**None** for required §5 harness craft scenes after phosphor mapping.  
+## Live / interaction tiers (ledger)
 
-Live multi-provider status-item / live popover screencapture remain **BLOCKED** (documented in ledger) — not craft Pass claims.
+| Scene | Verdict | Evidence |
+|-------|---------|----------|
+| popover-live-click | **BLOCKED** | `native/popover-live.BLOCKED.txt` · empty probe/keychain; craft = harness popovers |
+| ctx-menu-live | **BLOCKED** | `native/ctx-menu-live-dark.BLOCKED.txt` · Accessibility; rows = SoT + StatusItemMenuModel |
+| status-desktop-live-extras | optional live file | primary dual-stack = harness status-desktop |
 
-## Low residual only
+Live re-attempt 2026-08-10: JackinDesktop accessory **RUNNING**, menubar capture has **no fixture multi-provider strip** (empty production probe) — not craft Pass.
 
-- SF Symbol glyphs inside brand fills vs HTML SVG marks  
-- Fewer fixture account chips than HTML disabled peers  
-- HTML footer often solid phosphor slab; native = glass capsule + phosphor stroke (FB1-43 intentional)
-
-## Interactions
+## Interactions (wired + harness)
 
 | Flow | Result |
 |------|--------|
-| Left-click focus wiring | Pass — SoT + StatusPopoverFocus |
+| Left-click focus | Pass — StatusPopoverFocus + DesktopSoTParityHarness |
 | Right-click 3 rows | Pass — StatusItemMenuModel + SoT ×3 |
-| Nest 0%/57% | Pass — SoT meters + PNGs |
+| Nest 0%/57% | Pass — SoT meters + dual-image orange mid |
 | Open Usage Window dock | Pass — PopoverFooter FB1-43 |
 
-## Automated gates
+## Automated gates (2026-08-10)
 
 ```
 check_usage_liquid_glass.py PASS
-check_qi_evidence_ledger.py PASS
+check_qi_evidence_ledger.py PASS — 15 pass rows, 2 blocked
 DesktopArchitectureLint ALL PASS
 DesktopSoTParityHarness ×3 ALL PASS
 DesktopParityMatrixHarness ALL PASS
 StatusItemChipHarness ALL PASS
-swift test ArchitectureTests phosphor+severity PASS
+glassEffect only GlassFallbacks; no spend/price UI strings
+swift test 44/44 PASS (incl. nest severity bands)
 ```
 
 ## Artifacts
 
-Harness Dark+Light re-snapped under `advisor-plans/qi-artifacts/native/` after phosphor fix; deltas **Verdict: Pass** with Color dimension scored against HTML `--jk` / `--status-high`.
+- HTML: `advisor-plans/qi-artifacts/html/*`
+- Native harness: `advisor-plans/qi-artifacts/native/{status,popover,usage}-*.png`
+- Deltas: `advisor-plans/qi-artifacts/deltas/2026-08-10-*.md` — all **Verdict: Pass**
+- Live BLOCKED notes: `popover-live.BLOCKED.txt`, `ctx-menu-live-dark.BLOCKED.txt`
