@@ -1,7 +1,7 @@
 # VISUAL_QA_LOG — jackin❯ desktop HTML SoT parity
 
 **Date:** 2026-08-10  
-**Tip:** `e227f37f`  
+**Tip:** `cdf62bcb`  
 **Branch:** plan/desktop-visual  
 **Authority:** UI_PARITY_MASTER §6 + QI_VERIFICATION L1–L4  
 **Artifacts:** `advisor-plans/qi-artifacts/`
@@ -25,18 +25,18 @@ Log: `qi-artifacts/native/desktop-gates.log`
 
 | Scene | Dark | Light | High residual craft | Evidence | Verdict |
 |-------|------|-------|---------------------|----------|---------|
-| status-desktop | yes | yes | none | html+native/status-desktop-*.png | **Pass** |
-| popover-openai | yes | yes | none | html+native/popover-openai-*.png | **Pass** |
-| popover-anthropic | yes | yes | none | full multi-limit plate (74/12/28/35/28/100) · deltas | **Pass** |
-| popover-overview | yes | yes | none | native/popover-overview-*.png | **Pass** |
-| usage-overview | yes | yes | none | html+native/usage-overview-*.png | **Pass** |
-| usage-provider-nest | yes | yes | none | nest 57%/0% | **Pass** |
-| usage-detail-openai | yes | yes | none | detail 63/57/88 | **Pass** |
-| usage-toolbar | **BLOCKED** | yes | capture only | Light PNG · Dark BLOCKED.txt | **Light Pass / Dark BLOCKED** |
+| status-desktop | yes | yes | none | dual-stack 12/57/100 | **Pass** |
+| popover-openai | yes | yes | none | 63/57/88/100 + LRC | **Pass** |
+| popover-anthropic | yes | yes | none | full multi-limit 74/12/28/35/28/100 + Extra | **Pass** |
+| popover-overview | yes | yes | none | inventory OV-5 | **Pass** |
+| usage-overview | yes | yes | none | per-account cards | **Pass** |
+| usage-provider-nest | yes | yes | none | 57%/0% | **Pass** |
+| usage-detail-openai | yes | yes | none | Session/Weekly/Spark/LRC | **Pass** |
+| usage-toolbar | **BLOCKED** | yes | capture only | Light Refresh · Dark BLOCKED.txt | **Light Pass / Dark BLOCKED** |
 
 **High residual craft product: none.**
 
-## Live / interaction
+## Live
 
 | Flow | Result | Evidence |
 |------|--------|----------|
@@ -47,6 +47,6 @@ Log: `qi-artifacts/native/desktop-gates.log`
 
 ## Multimodal
 
-Scene-specific deltas `deltas/2026-08-10-*.md`. Dual-image notes in scratch `deltas/multimodal-verify.md`.
+Scene deltas under `deltas/2026-08-10-*.md`. Anthropic Fail→Pass multi-limit trail in `deltas/2026-08-10-popover-anthropic.md`.
 
-Agent sign-off: QI L1–L4 craft closed; Dark toolbar BLOCKED (§12).
+Agent sign-off: QI L1–L4 craft closed; Dark toolbar BLOCKED (§12); Anthropic multi-limit density Pass.

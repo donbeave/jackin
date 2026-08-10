@@ -1,5 +1,5 @@
-=== tip e227f37f 2026-08-10T10:19Z ===
-=== tip e227f37f 2026-08-10T10:18Z ===
+=== tip cdf62bcb 2026-08-10T10:32Z mission re-verify ===
+=== tip cdf62bcb 2026-08-10T10:31Z ===
 PASS: Usage Liquid Glass + provider≠account structural checks
 PASS: QI evidence ledger — 16 pass rows, 3 blocked, prose PNG refs consistent
 
@@ -30,4 +30,5 @@ native/Sources/JackinDesktop/Popover/PopoverTabGrid.swift:65:        .accessibil
 native/Sources/JackinDesktop/UsageWindowController.swift:47:        window.title = "jackin❯ desktop"
 native/Sources/JackinDesktop/UsageWindow/UsageWindowRoot.swift:136:        .navigationTitle("jackin❯ desktop")
 native/Sources/JackinUsageBridge/StatusItemMenuModel.swift:31:        StatusItemMenuRow(title: "Quit jackin❯ desktop", action: .quit, keyEquivalent: "q"),
-Live: no JackinDesktop GUI in session; popover-live + ctx-menu BLOCKED; SoTParity proves focus/menu.
+Live GUI unavailable; popover-live + ctx-menu BLOCKED; SoTParity proves focus/menu.
+Anthropic multi-limit dual-image Pass (74/12/28/35/28/100 + Extra)
