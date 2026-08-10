@@ -76,10 +76,96 @@ public struct PopoverProviderTab: View {
                 accountStrip
             }
 
+            // HTML `popover.html` Account block — layout role before limit heroes.
+            accountMetaBlock
+
             bucketsSection
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
+    }
+
+    /// Selected account (multi) or glance identity for Account meta rows.
+    private var activeAccount: PresentationStore.AccountRow? {
+        accounts.first(where: \.selected) ?? accounts.first
+    }
+
+    /// ACCOUNT / Plan / Status / Updated / Credential — Rust strings only.
+    private var accountMetaBlock: some View {
+        let accountLabel = activeAccount?.accountLabel.isEmpty == false
+            ? activeAccount!.accountLabel
+            : provider.accountLabel
+        let plan = activeAccount?.planLabel ?? provider.planLabel
+        let status = activeAccount?.statusWord.isEmpty == false
+            ? activeAccount!.statusWord
+            : provider.statusWord
+        let credential = surface?.credentialOrigin
+
+        return VStack(alignment: .leading, spacing: 8) {
+            Text("ACCOUNT")
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .tracking(0.4)
+
+            HStack(alignment: .top, spacing: 16) {
+                metaStack(label: "Account", value: accountLabel.isEmpty ? "—" : accountLabel)
+                if let plan, !plan.isEmpty {
+                    metaStack(label: "Plan", value: plan)
+                }
+            }
+
+            if !status.isEmpty {
+                metaRow(label: "Status", value: status)
+            }
+            if !provider.updatedLabel.isEmpty {
+                metaRow(label: "Updated", value: provider.updatedLabel)
+            }
+            if let credential, !credential.isEmpty {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Credential source")
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                    Text(credential)
+                        .font(.caption.monospaced())
+                        .foregroundStyle(.primary)
+                        .lineLimit(2)
+                        .textSelection(.enabled)
+                }
+                .padding(.top, 2)
+            }
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background {
+            GlassFallbacks.contentCardBackground()
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    private func metaStack(label: String, value: String) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(label)
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(.secondary)
+            Text(value)
+                .font(.caption.weight(.medium))
+                .foregroundStyle(.primary)
+                .lineLimit(2)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func metaRow(label: String, value: String) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 8) {
+            Text(label)
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .frame(width: 72, alignment: .leading)
+            Text(value)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
     }
 
     /// Codex · OpenAI · Updated just now (Rust labels only).

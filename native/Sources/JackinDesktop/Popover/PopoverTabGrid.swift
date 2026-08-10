@@ -125,9 +125,9 @@ public struct PopoverTabGrid: View {
         return Button {
             selection = provider.surfaceId
         } label: {
-            VStack(spacing: 4) {
-                icon(provider.iconKey)
-                    .frame(width: 18, height: 18)
+            VStack(spacing: 5) {
+                // HTML `.plogo` role — rounded brand plate (SF Symbol; system accent tint).
+                brandPlate(iconKey: provider.iconKey, selected: on)
                 Text(provider.displayLabel)
                     .font(.caption2.weight(on ? .semibold : .medium))
                     .lineLimit(1)
@@ -140,10 +140,10 @@ public struct PopoverTabGrid: View {
             .background {
                 if on {
                     RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .fill(Color.accentColor.opacity(0.16))
+                        .fill(Color.accentColor.opacity(0.14))
                         .overlay {
                             RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                .strokeBorder(Color.accentColor.opacity(0.32), lineWidth: 1)
+                                .strokeBorder(Color.accentColor.opacity(0.30), lineWidth: 1)
                         }
                 }
             }
@@ -154,15 +154,17 @@ public struct PopoverTabGrid: View {
         .accessibilityAddTraits(on ? .isSelected : [])
     }
 
-    @ViewBuilder
-    private func icon(_ iconKey: String?) -> some View {
-        if let iconKey, let symbol = desktopProviderSystemImage(iconKey: iconKey) {
+    /// Provider identity plate (popover.html `.plogo` density — not bare SF glyph).
+    private func brandPlate(iconKey: String?, selected: Bool) -> some View {
+        let symbol = iconKey.flatMap { desktopProviderSystemImage(iconKey: $0) } ?? "circle.grid.cross"
+        return ZStack {
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .fill(selected ? Color.accentColor.opacity(0.28) : Color.primary.opacity(0.10))
             Image(systemName: symbol)
-                .font(.system(size: 13, weight: .semibold))
-        } else {
-            Image(systemName: "square.grid.2x2")
-                .font(.system(size: 13, weight: .semibold))
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(selected ? Color.accentColor : Color.primary.opacity(0.85))
         }
+        .frame(width: 28, height: 28)
     }
 
     /// Meter geometry only — nil remaining = empty track (FB1-5).

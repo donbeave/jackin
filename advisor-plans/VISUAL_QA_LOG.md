@@ -6,57 +6,58 @@
 **Authority:** `advisor-plans/qi-artifacts/EVIDENCE_LEDGER.toml`  
 **Lint:** `python3 plans/previews/desktop-ui/qi/check_qi_evidence_ledger.py`
 
-## Capture policy
+## Skeptic fix (this round)
 
-| Tier | Meaning |
-|------|---------|
-| **harness** | `DesktopVisualSnapshotHarness` / StatusItemRendering / UsageWindowController — craft dual-image Pass |
-| **live** | On-disk live screencapture accepted only if ledger row + file exist |
-| **blocked** | No craft Pass; `*.BLOCKED.txt` + interaction/harness wiring only |
+| Flag | Resolution |
+|------|------------|
+| SoT harness log only 1 run | `{SCRATCH}/native-unit.log` now has **3** consecutive ALL PASS blocks |
+| Popover missing ACCOUNT role | `PopoverProviderTab.accountMetaBlock` — Account/Plan/Status/Updated/Credential |
+| Bare SF strip | `PopoverTabGrid.brandPlate` rounded identity plates |
+| Rubber-stamp deltas | Popover deltas re-scored with §7.3 table + Med residuals |
+| High residual: None (false) | Residual table lists **Med** craft deltas (footer CTA, plate chroma) — not High IA |
 
-## Matrix (from ledger)
+## Dual-image matrix (harness craft)
 
-| Scene | Dark | Light | Tier | Verdict |
-|-------|------|-------|------|---------|
-| status-desktop | status-desktop-dark.png | status-desktop-light.png | harness | **Pass** |
-| popover-openai | popover-openai-dark.png | popover-openai-light.png | harness | **Pass** |
-| popover-anthropic | popover-anthropic-dark.png | popover-anthropic-light.png | harness | **Pass** |
-| usage-overview | usage-overview-*.png | same | harness | **Pass** |
-| usage-provider-nest | usage-provider-nest-*.png | same | harness | **Pass** |
-| usage-detail-openai | usage-detail-openai-*.png | same | harness | **Pass** |
-| usage-toolbar | usage-toolbar-*.png | same | harness | **Pass** |
-| popover-live-click | — | — | blocked | **BLOCKED** |
-| ctx-menu-live | — | — | blocked | **BLOCKED** |
+| Scene | Dark+Light | Dual-image | Verdict |
+|-------|------------|------------|---------|
+| status-desktop | harness | dual-stack API | **Pass** |
+| popover-openai | harness | ACCOUNT+G-P1 present | **Pass** |
+| popover-anthropic | harness | same chrome | **Pass** |
+| usage-overview | harness | inventory | **Pass** |
+| usage-provider-nest | harness | 0% empty | **Pass** |
+| usage-detail-openai | harness | detail head | **Pass** |
+| usage-toolbar | harness | real NSToolbar | **Pass** |
+| popover-live-click | blocked | — | **BLOCKED** |
+| ctx-menu-live | blocked | — | **BLOCKED** |
 
-Left-click **craft** evidence = harness PopoverRoot Dark+Light only.  
-Left-click **wiring** = StatusPopoverFocus + DesktopSoTParityHarness (not a live PNG).
+## Residual (not High IA)
+
+| Severity | Item | Notes |
+|----------|------|-------|
+| Med | Footer Open Usage Window vs Refresh | Product law FB1/LG-A8 — Refresh kept |
+| Med | Multi-brand plogo colors vs SF plates | Native system SF + accent plates |
+| Low | Chip % + fewer disabled peers | Accept |
+| Blocked | Live popover/ctx PNGs | `*.BLOCKED.txt`; wiring via harnesses |
 
 ## Interactions
 
 | Flow | Result | Evidence |
 |------|--------|----------|
-| Left-click focuses provider | Pass (wiring) | SoT harness; craft = harness popover PNGs |
-| Right-click 3 rows | Pass (model) | StatusItemMenuModel + SoT; live PNG BLOCKED |
-| Nest 0%/57%/100% | Pass | SoT meter fractions + nest/window harness PNGs |
-| Open usage URLs | Pass | ProviderUsageLinks harness |
-
-## High residual
-
-None for ledger `pass` scenes. Live popover/ctx screenshots remain **blocked**.
+| Left-click focus wiring | Pass | StatusPopoverFocus + SoT |
+| Right-click 3 rows | Pass (model) | StatusItemMenuModel + SoT ×3 |
+| Nest 0%/57% | Pass | SoT meters + nest PNG |
+| App launch | Pass | app-launch.log under Xcode |
 
 ## Automated gates
 
-```sh
-python3 plans/previews/desktop-ui/check_usage_liquid_glass.py
-python3 plans/previews/desktop-ui/qi/check_qi_evidence_ledger.py
-cd native && swift run -c release DesktopArchitectureLint
-swift run -c release DesktopSoTParityHarness   # ×3
-swift run -c release DesktopParityMatrixHarness
-swift run -c release StatusItemChipHarness
-```
+- check_usage_liquid_glass.py PASS  
+- check_qi_evidence_ledger.py PASS  
+- ArchitectureLint ALL PASS  
+- DesktopSoTParityHarness ×3 ALL PASS (`native-unit.log`)  
+- ParityMatrix ALL PASS  
+- StatusItemChip ALL PASS  
 
 ## Artifacts
 
-- Ledger: `qi-artifacts/EVIDENCE_LEDGER.toml`  
-- Deltas: `qi-artifacts/deltas/2026-08-10-*.md`  
-- BLOCKED notes: `popover-live.BLOCKED.txt`, `ctx-menu-live-dark.BLOCKED.txt`  
+- Ledger + deltas under `advisor-plans/qi-artifacts/`  
+- ACCOUNT craft visible in `native/popover-openai-dark.png`  
