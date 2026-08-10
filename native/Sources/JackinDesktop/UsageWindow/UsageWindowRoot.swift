@@ -93,9 +93,11 @@ struct UsageWindowRoot: View {
         }
         .navigationSplitViewStyle(.balanced)
         .navigationTitle("jackin❯ desktop")
+        // Real macOS window toolbar (NSToolbar via hosting controller).
+        .windowToolbarStyle(.unified)
+        .toolbarBackground(.visible, for: .windowToolbar)
         .toolbar {
-            // LG-A8: one Refresh on system glass toolbar (no redundant "Usage" title chrome).
-            // LG-A4/A9: system toolbar glass; icon-only — not a solid accent slab.
+            // LG-A8: system toolbar group — icon-only Refresh (standard macOS pattern).
             ToolbarItem(placement: .primaryAction) {
                 Button {
                     store.refreshAll()

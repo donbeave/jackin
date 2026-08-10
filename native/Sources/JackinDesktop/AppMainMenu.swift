@@ -158,6 +158,9 @@ final class AppMainMenu: NSObject {
         )
         window.title = "Settings"
         window.isReleasedWhenClosed = false
+        window.toolbarStyle = .unified
+        window.titlebarAppearsTransparent = false
+        window.titleVisibility = .visible
         let proxy = SettingsWindowCloseProxy { [weak self] in
             self?.settingsWindow = nil
             self?.settingsCloseProxy = nil
@@ -165,7 +168,11 @@ final class AppMainMenu: NSObject {
         }
         settingsCloseProxy = proxy
         window.delegate = proxy
-        window.contentView = NSHostingView(rootView: SettingsView(store: store))
+        // Hosting controller so any future SwiftUI toolbar attaches as NSToolbar.
+        window.contentViewController = NSHostingController(
+            rootView: SettingsView(store: store)
+                .frame(minWidth: 440, minHeight: 400)
+        )
         window.center()
         window.setFrameAutosaveName("jackin.desktop.settings-window")
         settingsWindow = window

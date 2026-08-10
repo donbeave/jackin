@@ -88,6 +88,13 @@ Native: `ProviderUsageLinks` + `ProviderCardView` button → `NSWorkspace.open`.
 Rust `CodexResetCredits::detail_label` → e.g. `3 manual resets available · Next expires <rel>`.  
 Desktop bound card must show **Available** + **Next expires** (and any further layout segments). Do not invent reset counts.
 
+## Native toolbars (craft)
+
+| Surface | API / AppKit | Rule |
+|---|---|---|
+| Usage window top | **NSToolbar** (unified) | Host with `NSHostingController` so SwiftUI `.toolbar` attaches. `window.toolbarStyle = .unified`. Not a custom floating strip. |
+| Status items | **NSStatusItem** | System menu-bar toolbar: template mono dual stack; no glass chips. |
+
 ## System menu bar (when Usage / Settings open)
 
 Status-item-only mode uses `.accessory` (no app menu chrome). Opening Usage or

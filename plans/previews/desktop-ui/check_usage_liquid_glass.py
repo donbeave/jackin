@@ -98,14 +98,32 @@ def main() -> int:
         is None,
         "account must not use provider-style phosphor full-fill border selection",
     )
-    need("chrome-float" in html, "floating chrome-float overlay missing")
+    need("chrome-float" in html, "unified titlebar/toolbar chrome missing")
     need(
-        "tb-btn" in html and "backdrop-filter" in html,
-        "Usage toolbar Refresh must be glass (tb-btn + backdrop-filter)",
+        'data-native-toolbar' in html and "role=\"toolbar\"" in html,
+        "Usage chrome must mark native NSToolbar craft (data-native-toolbar)",
     )
     need(
+        "tb-btn" in html and "arrow.clockwise" not in html,
+        "toolbar Refresh control (tb-btn) missing",
+    )
+    # Native toolbar item is icon-only square — not green glass CTA capsule.
+    need(
         'class="tb-btn primary"' not in html and ".tb-btn.primary" not in html,
-        "solid primary Refresh slab must be removed (LG glass capsule only)",
+        "solid primary Refresh slab must be removed",
+    )
+    need(
+        re.search(
+            r"\.win\s+\.tb-btn\s*\{[^}]*border-radius:\s*980px",
+            html,
+            re.S,
+        )
+        is None,
+        "toolbar Refresh must be square NSToolbar-style, not capsule CTA",
+    )
+    need(
+        'data-status-toolbar' in html or 'id="flow-bar"' in html,
+        "status bar (menu-bar toolbar) craft marker missing",
     )
     need(
         "page-title" not in html.split('id="usage"', 1)[-1].split('id="glass"', 1)[0],

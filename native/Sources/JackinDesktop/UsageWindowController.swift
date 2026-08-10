@@ -12,10 +12,15 @@ import SwiftUI
 /// Showing the window promotes the process to `.regular` so the **system menu
 /// bar** ( + AppMainMenu) is available; closing the last titled window returns
 /// to `.accessory` status-item mode.
+///
+/// **Native toolbar:** content is an `NSHostingController` so SwiftUI
+/// `.toolbar` installs a real `NSToolbar` (unified titlebar). Plain
+/// `NSHostingView` does **not** attach the window toolbar.
 @MainActor
 final class UsageWindowController: NSObject, NSWindowDelegate {
     private let store: PresentationStore
     private var window: NSWindow?
+    private var hostingController: NSHostingController<UsageWindowRoot>?
 
     init(store: PresentationStore) {
         self.store = store
@@ -39,13 +44,24 @@ final class UsageWindowController: NSObject, NSWindowDelegate {
             backing: .buffered,
             defer: false
         )
-        // Centered title-bar brand (macOS centers NSWindow.title).
         window.title = "jackin❯ desktop"
         window.isReleasedWhenClosed = false
         window.delegate = self
-        window.contentView = NSHostingView(rootView: UsageWindowRoot(store: store))
-        window.center()
         window.setFrameAutosaveName("jackin.desktop.usage-window")
+
+        // Unified titlebar + toolbar (system NSToolbar — not a custom chrome strip).
+        window.toolbarStyle = .unified
+        window.titlebarAppearsTransparent = false
+        window.titleVisibility = .visible
+        window.titlebarSeparatorStyle = .automatic
+
+        // Hosting *controller* is required for SwiftUI toolbar → NSToolbar.
+        let root = UsageWindowRoot(store: store)
+        let host = NSHostingController(rootView: root)
+        hostingController = host
+        window.contentViewController = host
+
+        window.center()
         return window
     }
 
@@ -59,7 +75,8 @@ final class UsageWindowController: NSObject, NSWindowDelegate {
     func invalidate() {
         window?.delegate = nil
         window?.orderOut(nil)
-        window?.contentView = nil
+        window?.contentViewController = nil
+        hostingController = nil
         window = nil
     }
 }
