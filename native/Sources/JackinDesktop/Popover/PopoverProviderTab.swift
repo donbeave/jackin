@@ -340,18 +340,26 @@ public struct PopoverProviderTab: View {
     }
 
     /// Geometry from Rust only — 0% = empty track (no fake sliver); severity colors fill.
+    ///
+    /// Use track + leading overlay (not free-standing GeometryReader) so ScrollView
+    /// width proposals never collapse the capsule to zero width under a hero label.
     @ViewBuilder
     private func bucketMeter(_ meterPercent: UInt8, severity: String, height: CGFloat) -> some View {
-        GeometryReader { geometry in
-            ZStack(alignment: .leading) {
-                Capsule().fill(Color.primary.opacity(0.10))
-                if meterPercent > 0 {
-                    Capsule()
-                        .fill(severityTint(severity))
-                        .frame(width: geometry.size.width * CGFloat(meterPercent) / 100.0)
+        let frac = CGFloat(meterPercent) / 100.0
+        Capsule()
+            .fill(Color.primary.opacity(0.12))
+            .frame(maxWidth: .infinity)
+            .frame(height: height)
+            .overlay(alignment: .leading) {
+                GeometryReader { geo in
+                    if meterPercent > 0 {
+                        Capsule()
+                            .fill(severityTint(severity))
+                            .frame(width: geo.size.width * frac)
+                    }
                 }
             }
-        }
-        .frame(height: height)
+            .clipShape(Capsule())
+            .accessibilityHidden(true)
     }
 }

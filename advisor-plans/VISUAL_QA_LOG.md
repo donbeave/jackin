@@ -14,13 +14,14 @@
 | Nest 57% greenwash | mid → warn orange (`account.meterSeverity`) |
 | status-desktop Light blank | Menu-bar stage + template icon tint; measured cellW |
 | usage-toolbar/window pure black | Reject blank CGImage; restore non-blank CGWindow craft |
+| Popover Session meter missing | bucketMeter track+overlay; taller snap; Session fill+track under 63% |
 
 ## Dual-image matrix — required §5 (personal read HTML + native)
 
 | Scene | Dark | Light | High residual | Craft note | Verdict |
 |-------|------|-------|---------------|------------|---------|
 | status-desktop | yes | yes | none | Icons + dual-stack 1h/12% · 3d/57% · 18h/100%; Light readable | **Pass** |
-| popover-openai | yes | yes | none | G-P1 full shell; ACCOUNT; 63% session; Open Usage Window; phosphor | **Pass** |
+| popover-openai | yes | yes | none | G-P1; ACCOUNT; 63% + **meter fill+track**; pace/reset; Open Usage | **Pass** |
 | popover-anthropic | yes | yes | none | G-P1; 74% session phosphor; Open Usage Window | **Pass** |
 | usage-overview | yes | yes | none | 12% red · 57% orange · 0% empty · 100% green | **Pass** |
 | usage-provider-nest | yes | yes | none | 57% **mid orange** a-pct+meter; 0% empty track | **Pass** |

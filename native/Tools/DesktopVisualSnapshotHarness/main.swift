@@ -37,10 +37,11 @@ struct DesktopVisualSnapshotHarness {
         // ── Dark: full PopoverRoot shell (tab grid + body + footer) ──
         NSApp.appearance = NSAppearance(named: .darkAqua)
         // Tall enough for G-P1 chrome (brand + mode + strip) + body + footer.
+        // Tall enough for G-P1 chrome + ACCOUNT + Session hero + meter + pace/reset.
         capturePopover(
             fixture: fixture,
             selection: "codex",
-            size: NSSize(width: 430, height: 640),
+            size: NSSize(width: 430, height: 720),
             path: "\(out)/popover-openai-dark.png",
             appearance: .darkAqua
         )
@@ -130,7 +131,7 @@ struct DesktopVisualSnapshotHarness {
         capturePopover(
             fixture: fixture,
             selection: "codex",
-            size: NSSize(width: 430, height: 640),
+            size: NSSize(width: 430, height: 720),
             path: "\(out)/popover-openai-light.png",
             appearance: .aqua
         )
