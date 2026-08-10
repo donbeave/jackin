@@ -23,8 +23,9 @@ That is the **same** Liquid Glass popover as the standalone template. Never ship
 
 ## For operators
 
-Reply with `LIKE` / `DISLIKE` / `CHANGE` on what you see.  
-Decisions are recorded in [`../../desktop-design-decisions.md`](../../desktop-design-decisions.md).
+This package is the **visual source of truth** (finished craft reference), not a
+poll. Decisions live in [`../../desktop-design-decisions.md`](../../desktop-design-decisions.md).
+Data fidelity: [`DATA_CONTRACT.md`](./DATA_CONTRACT.md) ↔ `jackin-usage` host APIs.
 
 ## For implementer agents (Swift)
 

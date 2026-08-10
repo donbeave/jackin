@@ -637,6 +637,10 @@
       font-size: 12px; color: var(--tertiary); margin-bottom: 8px;
     }
     .win .limit .meter { height: 5px; }
+    .win .limit.bound .limit-pct {
+      font-size: 13px; font-weight: 560; color: var(--label); font-family: var(--font);
+    }
+    .win .limit.bound .meter { display: none; }
 
     /* Single quiet details group (plan + credential + extras — once) */
     .win .group {
@@ -690,10 +694,11 @@
   <div class="page">
     <h1>jackin❯ desktop — visual reference hub</h1>
     <p class="lead">
-      Source of truth for <code>/goal</code> with
-      <a href="../../desktop-design-decisions.md">decisions §0</a>.
-      Popover craft lives in <a href="./popover.html">popover.html</a>; this hub adds
-      <strong>status interactions</strong>, <strong>Usage window</strong>, and Liquid Glass checks.
+      <strong>Visual source of truth</strong> for jackin❯ desktop craft (paired with
+      <a href="../../desktop-design-decisions.md">decisions §0</a>).
+      This page is a finished design reference — not a decision poll.
+      Data labels match <code>jackin-usage</code> host presentation
+      (<code>HostProviderGlanceRow</code>, <code>usage_detail_presentation</code>).
     </p>
 
     <div class="toolbar">
@@ -705,42 +710,48 @@
     </div>
 
     <div class="banner">
-      <h2>Focus track</h2>
+      <h2>Interaction model (CONFIRMED)</h2>
       <p>
-        <strong>Left-click</strong> status item → <strong>exact</strong> glance popover from
+        <strong>Left-click</strong> status item → glance popover from
         <a href="./popover.html">popover.html</a> (Providers mode, focused provider — not Overview).<br />
-        <strong>Right-click</strong> → system glass context menu (Open Usage / Refresh / Quit).<br />
-        <strong>Usage window</strong> → continuous glass titlebar, floating sidebar, one limits list (no dupes).
+        <strong>Right-click</strong> → glass context menu (Open Usage / Refresh / Quit).<br />
+        <strong>Status bar %</strong> = glance bucket only (Weekly for most providers, Daily for Amp) —
+        same number as sidebar trailing % and Usage weekly/daily limit row.<br />
+        <strong>Usage window</strong> = full <code>usage_detail_presentation</code> buckets + metadata
+        (Session, Spark, Credits, Auth, …) — more detail than the bar, same fixture numbers.
       </p>
     </div>
     <p class="links">
-      Full popover (standalone): <a href="./popover.html">popover.html</a> ·
-      Agent procedure: <a href="./AGENT_HANDOFF.md">AGENT_HANDOFF.md</a>
+      Full popover: <a href="./popover.html">popover.html</a> ·
+      Data map: <a href="./DATA_CONTRACT.md">DATA_CONTRACT.md</a> ·
+      Agent: <a href="./AGENT_HANDOFF.md">AGENT_HANDOFF.md</a>
     </p>
 
     <!-- ========== FLOW ========== -->
     <section class="panel active" id="flow">
       <h2 class="st">Status bar interactions</h2>
       <p class="sl">
-        Left-click opens the <strong>same</strong> Liquid Glass popover as
-        <code>popover.html</code> (iframe embed — no mini reimplementation).
-        Burn-first path: bar shows Anthropic 12% / 1h → popover lands on Anthropic Providers detail.
+        Dual stack = compact reset countdown (top) + <code>bar_label</code> glance % (bottom).
+        Glance = Weekly remaining for OpenAI/Anthropic, Daily for Amp
+        (<code>HostProviderGlanceRow.glance_remaining_percent</code>).
+        Left-click → same <code>popover.html</code> artifact (Providers, focused provider).
       </p>
       <div class="stage" id="flow-stage" style="min-height: 700px; padding-top: 8px;">
         <div class="menubar" id="flow-bar">
-          <div class="sb-item" data-provider="anthropic" data-account="Personal" title="Left: popover · Right: menu">
+          <!-- Worst-first strip sample: Anthropic weekly 12% burns first -->
+          <div class="sb-item" data-provider="anthropic" data-account="Personal" data-glance="12" data-reset="1h" title="Claude · Weekly glance">
             <span class="plogo sm anthropic" aria-hidden="true">
               <svg viewBox="0 0 24 24"><path d="M12 2l1.2 6.2L18 6l-2.8 4.2L22 12l-6.8 1.8L18 18l-4.8-2.2L12 22l-1.2-6.2L6 18l2.8-4.2L2 12l6.8-1.8L6 6l4.8 2.2L12 2z"/></svg>
             </span>
             <div class="stack"><span class="t">1h</span><span class="p">12%</span></div>
           </div>
-          <div class="sb-item" data-provider="openai" data-account="a1" title="Left: popover · Right: menu">
+          <div class="sb-item" data-provider="openai" data-account="a1" data-glance="57" data-reset="3d" title="Codex · Weekly glance">
             <span class="plogo sm openai" aria-hidden="true">
               <svg viewBox="0 0 24 24"><path d="M22.3 10.5a5.4 5.4 0 0 0-.7-5.1 5.5 5.5 0 0 0-5.9-2.6A5.5 5.5 0 0 0 12 .8a5.5 5.5 0 0 0-3.7 1.9 5.5 5.5 0 0 0-5.9 2.6 5.4 5.4 0 0 0-.7 5.1A5.4 5.4 0 0 0 .3 14.7a5.5 5.5 0 0 0 2.1 5.6 5.5 5.5 0 0 0 5.9 1.1A5.5 5.5 0 0 0 12 23.2a5.5 5.5 0 0 0 3.7-1.8 5.5 5.5 0 0 0 5.9-1.1 5.5 5.5 0 0 0 2.1-5.6 5.4 5.4 0 0 0-1.4-4.2z"/></svg>
             </span>
             <div class="stack"><span class="t">3d</span><span class="p">57%</span></div>
           </div>
-          <div class="sb-item" data-provider="amp" data-account="Free" title="Left: popover · Right: menu">
+          <div class="sb-item" data-provider="amp" data-account="Free" data-glance="100" data-reset="18h" title="Amp · Daily glance">
             <span class="plogo sm amp" aria-hidden="true">
               <svg viewBox="0 0 24 24"><path d="M4 16c2-6 4-10 8-10s6 4 8 10h-3c-1.2-3.5-2.5-5.5-5-5.5S8.2 12.5 7 16H4zm4.5 2a3.5 3.5 0 107 0h-7z"/></svg>
             </span>
@@ -764,9 +775,8 @@
         </div>
       </div>
       <p class="flow-caption">
-        Verify: left-click Anthropic → <code>popover.html?embed=1&amp;mode=providers&amp;provider=anthropic</code>
-        (full strip, buckets, credential source, glass chrome). Right-click → glass menu only.
-        <code>LIKE status flow</code>
+        Fixture: Anthropic Weekly <strong>12%</strong> / OpenAI Weekly <strong>57%</strong> / Amp Daily <strong>100%</strong>
+        — identical glance values in sidebar + Usage window Weekly/Daily rows.
       </p>
     </section>
 
@@ -774,10 +784,9 @@
     <section class="panel" id="usage">
       <h2 class="st">Usage window</h2>
       <p class="sl">
-        Safari-style continuous glass titlebar · floating glass sidebar · solid content.
-        <strong>No duplicate limits</strong> (one list, not tiles + buckets) · no titlebar crumb repeating the page title.
-        Provider ≠ account nav. See
-        <a href="./LIQUID_GLASS_REFERENCES.md" style="color:var(--jk)">LG references</a>.
+        Continuous glass titlebar · floating glass sidebar · solid content.
+        Content rows follow <code>usage_detail_presentation</code> (metadata + all buckets).
+        Sidebar trailing % = same glance as the status bar. Full bucket set is only here.
       </p>
       <div class="stage" style="padding: 20px 16px 28px;">
         <div class="win" id="usage-win">
@@ -901,8 +910,8 @@
         </div>
       </div>
       <p class="flow-caption">
-        Verify: continuous titlebar · floating sidebar (no hard 4-pane split) · limits listed once · no tile+bucket dupes.
-        <code>LIKE usage window</code>
+        OpenAI detail includes Session + Weekly (bar shows Weekly only) + Spark windows + Limit Reset Credits bound.
+        Amp Daily matches bar 100%; Credits bound is detail-only (never a glance %).
       </p>
     </section>
 
@@ -1061,74 +1070,114 @@
     const usageDetail = document.getElementById("usage-detail");
     const usageScroll = document.getElementById("usage-scroll");
 
+    /*
+      Fixture mirrors jackin-usage host presentation (not freehand copy):
+      - Glance % = Weekly (Codex/Claude) or Daily (Amp) — HostProviderGlanceRow
+      - Detail rows = usage_detail_presentation segment order:
+        remaining · pace (flat) · reset · bounds
+      - Auth = credential_origin only
+      - Codex bucket labels from usage/codex.rs order
+    */
     const usageViews = {
       overview: `
         <div class="page-head">
           <div class="jmark" style="width:36px;height:36px;border-radius:10px;font-size:14px"><span class="j">j</span><span class="ch">❯</span></div>
           <div>
             <h2>Overview</h2>
-            <div class="sub">Weekly-first · all accounts</div>
+            <div class="sub">Glance inventory · Weekly (or Daily for Amp) only</div>
           </div>
         </div>
         <div class="limit-list">
           <div class="limit">
             <div class="limit-top"><span class="limit-name">Anthropic · Personal</span><span class="limit-pct low">12%</span></div>
-            <div class="limit-reset">Weekly · Resets in 1h · Today, 18:40</div>
+            <div class="limit-reset">Weekly · Resets in 1h · (Today, 18:40)</div>
             <div class="meter low"><i style="width:12%"></i></div>
           </div>
           <div class="limit">
             <div class="limit-top"><span class="limit-name">OpenAI · alexey@chainargos.com</span><span class="limit-pct mid">57%</span></div>
-            <div class="limit-reset">Weekly · Resets in 3 days · 15 Aug 2026, 17:02</div>
+            <div class="limit-reset">Weekly · Resets in 3d · (15 Aug 2026, 17:02)</div>
             <div class="meter mid"><i style="width:57%"></i></div>
           </div>
           <div class="limit">
             <div class="limit-top"><span class="limit-name">OpenAI · alexey@zhokhov.com</span><span class="limit-pct" style="color:var(--tertiary)">0%</span></div>
-            <div class="limit-reset">Fully used · Resets 17 Aug 2026</div>
+            <div class="limit-reset">Weekly · Resets in 5d · (17 Aug 2026)</div>
             <div class="meter depleted"><i style="width:3%"></i></div>
           </div>
           <div class="limit">
             <div class="limit-top"><span class="limit-name">Amp · Free</span><span class="limit-pct high">100%</span></div>
-            <div class="limit-reset">Daily · Resets in 18h · Tomorrow, 08:00</div>
+            <div class="limit-reset">Daily · Resets in 18h · (Tomorrow, 08:00)</div>
             <div class="meter high"><i style="width:100%"></i></div>
           </div>
         </div>
       `,
-      openai: `
+      "openai:a1": `
         <div class="page-head">
           <span class="plogo openai">O</span>
           <div>
             <h2>OpenAI</h2>
-            <div class="sub">alexey@chainargos.com · Pro 20× · Codex</div>
-          </div>
-        </div>
-        <div class="limit-list">
-          <div class="limit">
-            <div class="limit-top"><span class="limit-name">Session</span><span class="limit-pct high">63%</span></div>
-            <div class="limit-reset">Resets in 2h 14m · Today, 19:30</div>
-            <div class="limit-pace">37% used · On pace</div>
-            <div class="meter high"><i style="width:63%"></i></div>
-          </div>
-          <div class="limit">
-            <div class="limit-top"><span class="limit-name">Weekly</span><span class="limit-pct mid">57%</span></div>
-            <div class="limit-reset">Resets in 3 days · 15 Aug 2026, 17:02</div>
-            <div class="limit-pace">13% in deficit · Runs out in 2d 17h</div>
-            <div class="meter mid"><i style="width:57%"></i></div>
-          </div>
-          <div class="limit">
-            <div class="limit-top"><span class="limit-name">Codex Spark 5-hour</span><span class="limit-pct high">88%</span></div>
-            <div class="limit-reset">Resets in 4h 02m · Today, 21:18</div>
-            <div class="meter high"><i style="width:88%"></i></div>
-          </div>
-          <div class="limit">
-            <div class="limit-top"><span class="limit-name">Codex Spark Weekly</span><span class="limit-pct high">100%</span></div>
-            <div class="limit-reset">Resets in 7 days · 19 Aug 2026</div>
-            <div class="meter high"><i style="width:100%"></i></div>
+            <div class="sub">alexey@chainargos.com · Pro 20×</div>
           </div>
         </div>
         <div class="group">
-          <div class="grow"><span class="gl">Credential source</span><span class="gr mono">OAuth · ~/.codex/auth.json</span></div>
+          <div class="grow"><span class="gl">Status</span><span class="gr dim">fresh</span></div>
           <div class="grow"><span class="gl">Updated</span><span class="gr dim">Just now</span></div>
-          <div class="grow"><span class="gl">Limit reset credits</span><span class="gr">3 · next 3d 4h</span></div>
+          <div class="grow"><span class="gl">Auth</span><span class="gr mono">OAuth · ~/.codex/auth.json</span></div>
+        </div>
+        <div class="limit-list">
+          <div class="limit">
+            <div class="limit-top"><span class="limit-name">Session</span><span class="limit-pct high">63% left</span></div>
+            <div class="limit-pace">On pace</div>
+            <div class="limit-reset">Resets in 2h 14m</div>
+            <div class="meter high"><i style="width:63%"></i></div>
+          </div>
+          <div class="limit">
+            <div class="limit-top"><span class="limit-name">Weekly</span><span class="limit-pct mid">57% left</span></div>
+            <div class="limit-pace">13% in deficit</div>
+            <div class="limit-pace">Runs out in 2d 17h</div>
+            <div class="limit-reset">Resets in 3d</div>
+            <div class="meter mid"><i style="width:57%"></i></div>
+          </div>
+          <div class="limit">
+            <div class="limit-top"><span class="limit-name">Codex Spark 5-hour</span><span class="limit-pct high">88% left</span></div>
+            <div class="limit-pace">On pace</div>
+            <div class="limit-reset">Resets in 4h 02m</div>
+            <div class="meter high"><i style="width:88%"></i></div>
+          </div>
+          <div class="limit">
+            <div class="limit-top"><span class="limit-name">Codex Spark Weekly</span><span class="limit-pct high">100% left</span></div>
+            <div class="limit-reset">Resets in 7d</div>
+            <div class="meter high"><i style="width:100%"></i></div>
+          </div>
+          <div class="limit bound">
+            <div class="limit-top"><span class="limit-name">Limit Reset Credits</span><span class="limit-pct">3 manual resets available</span></div>
+            <div class="limit-reset">Next expires in 3d 4h</div>
+          </div>
+        </div>
+      `,
+      "openai:a2": `
+        <div class="page-head">
+          <span class="plogo openai">O</span>
+          <div>
+            <h2>OpenAI</h2>
+            <div class="sub">alexey@zhokhov.com · Plus</div>
+          </div>
+        </div>
+        <div class="group">
+          <div class="grow"><span class="gl">Status</span><span class="gr dim">fresh</span></div>
+          <div class="grow"><span class="gl">Updated</span><span class="gr dim">4 min ago</span></div>
+          <div class="grow"><span class="gl">Auth</span><span class="gr mono">OAuth · ~/.codex/auth.json</span></div>
+        </div>
+        <div class="limit-list">
+          <div class="limit">
+            <div class="limit-top"><span class="limit-name">Session</span><span class="limit-pct" style="color:var(--tertiary)">0% left</span></div>
+            <div class="limit-reset">Resets in 5h</div>
+            <div class="meter depleted"><i style="width:3%"></i></div>
+          </div>
+          <div class="limit">
+            <div class="limit-top"><span class="limit-name">Weekly</span><span class="limit-pct" style="color:var(--tertiary)">0% left</span></div>
+            <div class="limit-reset">Resets in 5d</div>
+            <div class="meter depleted"><i style="width:3%"></i></div>
+          </div>
         </div>
       `,
       anthropic: `
@@ -1136,31 +1185,33 @@
           <span class="plogo anthropic">A</span>
           <div>
             <h2>Anthropic</h2>
-            <div class="sub">Personal · Max 20× · Claude</div>
-          </div>
-        </div>
-        <div class="limit-list">
-          <div class="limit">
-            <div class="limit-top"><span class="limit-name">Weekly</span><span class="limit-pct low">12%</span></div>
-            <div class="limit-reset">Resets in 1 hour · Today, 18:40</div>
-            <div class="limit-pace">52% in reserve · Lasts until reset</div>
-            <div class="meter low"><i style="width:12%"></i></div>
-          </div>
-          <div class="limit">
-            <div class="limit-top"><span class="limit-name">Session</span><span class="limit-pct high">74%</span></div>
-            <div class="limit-reset">Resets in 4h 19m · Today, 22:00</div>
-            <div class="limit-pace">12% in deficit · Projected empty in 2h</div>
-            <div class="meter high"><i style="width:74%"></i></div>
-          </div>
-          <div class="limit">
-            <div class="limit-top"><span class="limit-name">All models</span><span class="limit-pct mid">28%</span></div>
-            <div class="limit-reset">Resets with weekly</div>
-            <div class="meter mid"><i style="width:28%"></i></div>
+            <div class="sub">Personal · Max 20×</div>
           </div>
         </div>
         <div class="group">
-          <div class="grow"><span class="gl">Credential source</span><span class="gr mono">OAuth · macOS Keychain (Claude Code-credentials)</span></div>
+          <div class="grow"><span class="gl">Status</span><span class="gr dim">fresh</span></div>
           <div class="grow"><span class="gl">Updated</span><span class="gr dim">2 min ago</span></div>
+          <div class="grow"><span class="gl">Auth</span><span class="gr mono">OAuth · macOS Keychain (Claude Code-credentials)</span></div>
+        </div>
+        <div class="limit-list">
+          <div class="limit">
+            <div class="limit-top"><span class="limit-name">Session</span><span class="limit-pct high">74% left</span></div>
+            <div class="limit-pace">12% in deficit</div>
+            <div class="limit-pace">Runs out in 2h</div>
+            <div class="limit-reset">Resets in 4h 19m</div>
+            <div class="meter high"><i style="width:74%"></i></div>
+          </div>
+          <div class="limit">
+            <div class="limit-top"><span class="limit-name">Weekly</span><span class="limit-pct low">12% left</span></div>
+            <div class="limit-pace">On pace</div>
+            <div class="limit-reset">Resets in 1h</div>
+            <div class="meter low"><i style="width:12%"></i></div>
+          </div>
+          <div class="limit">
+            <div class="limit-top"><span class="limit-name">All models</span><span class="limit-pct mid">28% left</span></div>
+            <div class="limit-reset">Resets in 1h</div>
+            <div class="meter mid"><i style="width:28%"></i></div>
+          </div>
         </div>
       `,
       amp: `
@@ -1168,20 +1219,24 @@
           <span class="plogo amp">A</span>
           <div>
             <h2>Amp</h2>
-            <div class="sub">Free · Daily</div>
-          </div>
-        </div>
-        <div class="limit-list">
-          <div class="limit">
-            <div class="limit-top"><span class="limit-name">Daily</span><span class="limit-pct high">100%</span></div>
-            <div class="limit-reset">Resets in 18 hours · Tomorrow, 08:00</div>
-            <div class="limit-pace">On pace</div>
-            <div class="meter high"><i style="width:100%"></i></div>
+            <div class="sub">Free</div>
           </div>
         </div>
         <div class="group">
-          <div class="grow"><span class="gl">Credential source</span><span class="gr mono">API key · env AMP_API_KEY</span></div>
+          <div class="grow"><span class="gl">Status</span><span class="gr dim">fresh</span></div>
           <div class="grow"><span class="gl">Updated</span><span class="gr dim">1 min ago</span></div>
+          <div class="grow"><span class="gl">Auth</span><span class="gr mono">API key · env AMP_API_KEY</span></div>
+        </div>
+        <div class="limit-list">
+          <div class="limit">
+            <div class="limit-top"><span class="limit-name">Daily</span><span class="limit-pct high">100% left</span></div>
+            <div class="limit-reset">Resets in 18h</div>
+            <div class="meter high"><i style="width:100%"></i></div>
+          </div>
+          <div class="limit bound">
+            <div class="limit-top"><span class="limit-name">Credits</span><span class="limit-pct">$4.76</span></div>
+            <div class="limit-reset">Detail-only bound · never a status-bar %</div>
+          </div>
         </div>
       `,
     };
@@ -1196,10 +1251,15 @@
       usageScroll.style.setProperty("--fade-b", atBot ? "0px" : "22px");
     }
 
-    function showUsage(nav) {
-      usageDetail.innerHTML = usageViews[nav] || usageViews.openai;
+    function showUsage(key) {
+      usageDetail.innerHTML = usageViews[key] || usageViews["openai:a1"];
       if (usageScroll) usageScroll.scrollTop = 0;
       requestAnimationFrame(updateUsageScrollEdge);
+    }
+
+    function selectedAcct(forId) {
+      const on = document.querySelector(`#usage-win .acct-rail[data-for="${forId}"] .nav-acct.on`);
+      return on?.dataset.acct || null;
     }
 
     document.querySelectorAll("#usage-win [data-nav]").forEach((btn) => {
@@ -1211,11 +1271,14 @@
         document.querySelectorAll("#usage-win .acct-rail").forEach((n) => {
           n.classList.toggle("hidden", n.dataset.for !== nav);
         });
-        if (nav !== "overview") {
-          const rail = document.querySelector(`#usage-win .acct-rail[data-for="${nav}"]`);
-          rail?.querySelectorAll(".nav-acct").forEach((a, i) => a.classList.toggle("on", i === 0));
+        if (nav === "overview") {
+          showUsage("overview");
+          return;
         }
-        showUsage(nav);
+        const rail = document.querySelector(`#usage-win .acct-rail[data-for="${nav}"]`);
+        rail?.querySelectorAll(".nav-acct").forEach((a, i) => a.classList.toggle("on", i === 0));
+        const acct = selectedAcct(nav);
+        showUsage(nav === "openai" && acct ? `openai:${acct}` : nav);
       });
     });
     document.querySelectorAll("#usage-win .nav-acct").forEach((btn) => {
@@ -1223,13 +1286,13 @@
         e.stopPropagation();
         const rail = btn.closest(".acct-rail");
         rail?.querySelectorAll(".nav-acct").forEach((b) => b.classList.toggle("on", b === btn));
-        // ensure parent provider stays selected when picking account
         const forId = rail?.dataset.for;
         if (forId) {
           document.querySelectorAll("#usage-win .nav-overview, #usage-win .nav-provider").forEach((b) =>
             b.classList.toggle("on", b.dataset.nav === forId)
           );
-          showUsage(forId);
+          const acct = btn.dataset.acct;
+          showUsage(forId === "openai" && acct ? `openai:${acct}` : forId);
         }
       });
     });
@@ -1237,7 +1300,7 @@
       usageScroll.addEventListener("scroll", updateUsageScrollEdge, { passive: true });
       window.addEventListener("resize", updateUsageScrollEdge);
     }
-    showUsage("openai");
+    showUsage("openai:a1");
   </script>
 </body>
 </html>

@@ -638,6 +638,8 @@ jackin = soul   (j❯, phosphor accent, mono metrics, deep canvas tint, optional
 | FB1-50 | Reference map for LG app patterns lives in `plans/previews/desktop-ui/LIQUID_GLASS_REFERENCES.md` — craft guidance, not a third-party pixel clone | CONFIRMED |
 | FB1-51 | **Usage IA: no duplicate limits** — each limit appears once (single limit list). No metric tiles + full buckets repeating the same %. Titlebar does not restate the content page title/account. | CONFIRMED |
 | FB1-52 | **Usage chrome is continuous Liquid Glass:** one full-width glass titlebar; sidebar floats with soft depth (no hard vertical pane rule); content solid underneath — Safari-like seamlessness, not a 4-quadrant web split | CONFIRMED |
+| FB1-53 | **Visual HTML package is finished craft SoT** — no LIKE/DISLIKE polls in HTML; craft is shown, not voted. Decisions stay in this markdown file; HTML encodes them visually | CONFIRMED |
+| FB1-54 | **Fixture data must match `jackin-usage` host presentation:** status bar / sidebar glance = Weekly (or Daily for Amp) only; Usage window = full `usage_detail_presentation` buckets + metadata; same account’s glance % identical across bar, sidebar trail, and Weekly/Daily detail row. Map: `plans/previews/desktop-ui/DATA_CONTRACT.md` | CONFIRMED |
 
 ### One-by-one queue (after FB-1)
 
