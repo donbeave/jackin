@@ -78,6 +78,11 @@ instead of account subscription plans, removes fixture-only Anthropic Work,
 uses horizontal divided group anatomy, 22 pt metrics, and one shared 28 pt
 phosphor refresh control. Status burn-first order remains separate and intact.
 
+Usage Overview re-audit corrected its prior structural false-pass. Native now
+includes oracle page identity and groups all accounts inside one bordered,
+divided inventory list. Rows use oracle 13/12/22 pt hierarchy, reset-before-meter
+order, and one row-level hit target; architecture lint forbids floating row cards.
+
 ## Live
 popover-live / ctx-menu **BLOCKED** — SoTParity proves focus/menu.
 

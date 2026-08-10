@@ -39,6 +39,7 @@ struct DesktopArchitectureLint {
         checkUsageWindowToolbarHost(desktopRoot: desktop)
         checkStatusPopoverFocusWiring(desktopRoot: desktop)
         checkPrimaryControlCraft(desktopRoot: desktop)
+        checkUsageOverviewGrouping(desktopRoot: desktop)
         checkUsageDetailGrouping(desktopRoot: desktop)
         checkUsageAccountRail(desktopRoot: desktop)
         run(desktopRoot: desktop)
@@ -218,6 +219,29 @@ struct DesktopArchitectureLint {
             print("PASS  primary controls avoid solid phosphor slabs")
         } else {
             print("DesktopArchitectureLint: primary-control FAILURE")
+            exit(1)
+        }
+    }
+
+    /// G-U5: Overview owns one page head and one divided account inventory.
+    static func checkUsageOverviewGrouping(desktopRoot: URL) {
+        let path = desktopRoot.appendingPathComponent("UsageWindow/OverviewListView.swift")
+        guard let text = try? String(contentsOf: path, encoding: .utf8) else {
+            fputs("FAIL  OverviewListView.swift missing\n", stderr)
+            exit(2)
+        }
+        let required = [
+            "private var overviewHead: some View",
+            "private var inventoryList: some View",
+            "ForEach(Array(inventory.enumerated())",
+            "if index > 0 {",
+            "private func inventoryRow",
+        ]
+        let forbidden = ["private func inventoryCard"]
+        if required.allSatisfy(text.contains) && forbidden.allSatisfy({ !text.contains($0) }) {
+            print("PASS  Usage Overview groups account rows in one inventory list")
+        } else {
+            print("FAIL  Usage Overview must retain page head and one divided inventory list")
             exit(1)
         }
     }

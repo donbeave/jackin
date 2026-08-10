@@ -70,7 +70,7 @@ html_path = "advisor-plans/qi-artifacts/html/usage-overview-dark.png"
 native_path = "advisor-plans/qi-artifacts/native/usage-overview-dark.png"
 capture_tier = "harness"
 verdict = "pass"
-notes = "OverviewListView component harness; explicit-appearance full-shell capture is also valid and theme-distinct."
+notes = "OverviewListView page head + single divided inventory harness; explicit-appearance full-shell capture is also valid and theme-distinct."
 
 [[scene]]
 id = "usage-overview"
@@ -79,6 +79,7 @@ html_path = "advisor-plans/qi-artifacts/html/usage-overview-light.png"
 native_path = "advisor-plans/qi-artifacts/native/usage-overview-light.png"
 capture_tier = "harness"
 verdict = "pass"
+notes = "OverviewListView page head + single divided inventory harness; canonical provider order differs from frozen HTML burn-first scene."
 
 [[scene]]
 id = "usage-provider-nest"
