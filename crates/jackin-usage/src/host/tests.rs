@@ -524,7 +524,10 @@ fn compact_status_bar_strip_hard_cap_three_and_hides_zero() {
         "0% Z.AI must not appear on burn-first bar: {strip}"
     );
     // No reset epochs → higher remaining first among the five non-zero.
-    assert_eq!(parts[0], "Cl 50%", "highest remaining first when times tie: {strip}");
+    assert_eq!(
+        parts[0], "Cl 50%",
+        "highest remaining first when times tie: {strip}"
+    );
     let capped = runtime.compact_status_bar_strip(2).expect("cap2");
     assert_eq!(capped.split(" · ").count(), 2, "cap2 strip: {capped}");
 }
