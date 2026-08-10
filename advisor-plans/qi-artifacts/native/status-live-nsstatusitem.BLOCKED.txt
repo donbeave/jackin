@@ -1,0 +1,3 @@
+Live NSStatusItem Screen Recording not available in CLT agent host.
+Accepted craft bar: DesktopVisualSnapshotHarness StatusItemRendering fixture bitmaps
+(status-desktop-dark/light.png) per plan Risks.
