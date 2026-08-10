@@ -1,6 +1,6 @@
 # SoT CONFIRMED checklist — status / popover / Usage
 
-**Tip:** plan/desktop-visual @ (stamp after evidence commit)  
+**Tip:** plan/desktop-visual @ 7bac5273 (SB-18/13 code); re-verify pack at HEAD after push
 **Code:** SB-18/SB-13 @ 7bac5273 · SB-3/17/19 @ b97f2a4c  
 **SoT:** decisions §0 → HTML index/popover → AGENT_HANDOFF
 
