@@ -1,15 +1,33 @@
-=== tip d7b575c4 2026-08-10T09:17Z toolbar honesty ===
+=== tip 7b760a7e 2026-08-10T09:23Z ===
+=== tip 7b760a7e 2026-08-10T09:22Z ===
 PASS: Usage Liquid Glass + provider≠account structural checks
 PASS: QI evidence ledger — 16 pass rows, 3 blocked, prose PNG refs consistent
 
-/var/folders/8p/h376l_nn3375kyj72czdq2x80000gn/T/grok-goal-67fc7c62e424/implementer/l2-gates.log:DesktopArchitectureLint: ALL PASS
-/var/folders/8p/h376l_nn3375kyj72czdq2x80000gn/T/grok-goal-67fc7c62e424/implementer/l2-gates.log:DesktopSoTParityHarness: ALL PASS (18/18 checks)
-/var/folders/8p/h376l_nn3375kyj72czdq2x80000gn/T/grok-goal-67fc7c62e424/implementer/l2-gates.log:DesktopParityMatrixHarness: ALL PASS
-/var/folders/8p/h376l_nn3375kyj72czdq2x80000gn/T/grok-goal-67fc7c62e424/implementer/l2-gates.log:Matrix: 8/8 providers displayable · dual-bucket · depleted · limits-only
-/var/folders/8p/h376l_nn3375kyj72czdq2x80000gn/T/grok-goal-67fc7c62e424/implementer/snapshot-harness-toolbar-fix.log:BLOCKED ../advisor-plans/qi-artifacts/native/usage-toolbar-dark.png [dark toolbar icons unreadable — white blobs]
-/var/folders/8p/h376l_nn3375kyj72czdq2x80000gn/T/grok-goal-67fc7c62e424/implementer/snapshot-harness-toolbar-fix.log:usage_toolbar_dark: BLOCKED
-/var/folders/8p/h376l_nn3375kyj72czdq2x80000gn/T/grok-goal-67fc7c62e424/implementer/snapshot-harness-toolbar-fix.log:usage_toolbar_light: UsageWindowController titlebar crop
+=== L2 ALL PASS ===
+DesktopArchitectureLint: ALL PASS
+DesktopSoTParityHarness: ALL PASS (18/18 checks)
+DesktopParityMatrixHarness: ALL PASS
+Matrix: 8/8 providers displayable · dual-bucket · depleted · limits-only
+StatusItemChipHarness: ALL PASS
+ProviderMarksHarness: ALL PASS (7/7 official marks)
 
--rw-r--r--@ 1 donbeave  staff    254 Aug 10 16:16 ../advisor-plans/qi-artifacts/native/usage-toolbar-dark.BLOCKED.txt
--rw-r--r--@ 1 donbeave  staff   3387 Aug 10 16:16 ../advisor-plans/qi-artifacts/native/usage-toolbar-dark.png
--rw-r--r--@ 1 donbeave  staff  15261 Aug 10 16:16 ../advisor-plans/qi-artifacts/native/usage-toolbar-light.png
+=== Snapshot toolbar ===
+BLOCKED ../advisor-plans/qi-artifacts/native/usage-toolbar-dark.png [dark toolbar icons unreadable — white blobs]
+usage_toolbar_dark: BLOCKED
+usage_toolbar_light: UsageWindowController titlebar crop
+
+=== Law ===
+=== glass outside Fallbacks ===
+(none)
+=== price/trend ===
+(none)
+=== brand ===
+native/Sources/JackinDesktopApp/JackinDesktopApp.swift:4:// jackin❯ desktop — display-only shell over Rust UniFFI.
+native/Sources/JackinDesktop/DesktopAppDelegate.swift:126:            button.setAccessibilityLabel("jackin❯ desktop usage")
+native/Sources/JackinDesktop/DesktopAppDelegate.swift:241:/// Application delegate for jackin❯ desktop (menu-bar agent). Owns the store,
+native/Sources/JackinDesktop/AppMainMenu.swift:8:/// System **menu bar** for jackin❯ desktop when a document window is front
+native/Sources/JackinDesktop/AppMainMenu.swift:52:            ?? "jackin❯ desktop"
+native/Sources/JackinDesktop/Popover/PopoverTabGrid.swift:65:        .accessibilityLabel("jackin❯ desktop")
+native/Sources/JackinDesktop/UsageWindowController.swift:47:        window.title = "jackin❯ desktop"
+native/Sources/JackinDesktop/UsageWindow/UsageWindowRoot.swift:136:        .navigationTitle("jackin❯ desktop")
+native/Sources/JackinUsageBridge/StatusItemMenuModel.swift:31:        StatusItemMenuRow(title: "Quit jackin❯ desktop", action: .quit, keyEquivalent: "q"),

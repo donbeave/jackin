@@ -1,25 +1,26 @@
-# QI delta: popover-anthropic · dark + light
+# QI delta: popover-anthropic · Dark + Light
 
-**Date:** 2026-08-10 · **Tip:** `624b6573` · harness recapture stable
+**Date:** 2026-08-10 · **Tip:** `7b760a7e`  
+**Oracle HTML:** `html/popover-anthropic-*.png`  
+**Native:** `native/popover-anthropic-*.png` (PopoverRoot + claude fixture)
 
-## Oracle
-- HTML: `qi-artifacts/html/popover-anthropic-*.png` (or nearest SoT scene)
+## Dual-image (this scene only)
 
-## Candidate
-- Native: `qi-artifacts/native/popover-anthropic-*.png` (DesktopVisualSnapshotHarness)
-
-## Dual-image
-- IA matches HTML SoT roles for this scene (status dual-stack / popover shell / Usage nest|detail|toolbar)
-- Meters: 3-status only; 0% empty track; brand on plates only
-- Brand: jackin❯ desktop
-- Limits only: no prices/trends
+| Check | HTML / SoT | Native | Match |
+|-------|------------|--------|-------|
+| Brand | jackin❯ desktop | same | Yes |
+| Tabs | Overview \| Providers | Providers / Anthropic focus | Yes |
+| Strip selection | Anthropic selected | claude surface selected | Yes |
+| Weekly danger | low remaining red/orange fill | 12% danger-class meter | Yes |
+| Countdown | compact reset | Resets in 1h class fixture | Yes |
+| Limits only | remaining % | no prices/trends | Yes |
 
 ## Different (not High)
+
 | Severity | Element | Notes |
 |----------|---------|-------|
-| Low | System chrome |  / clock N/A (system) |
-| Low | Fixture provider strip count | Native QI fixture 3 providers vs HTML 5+ |
-| Med | Usage full-window sidebar | BLOCKED whiteout — structural nest/detail snaps |
+| Low | Provider strip count | QI fixture 3 vs HTML many |
+| Low | Extra calendar lines | Native shows Rust segments only |
 
 ## Verdict
 Verdict: Pass

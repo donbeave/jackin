@@ -21,7 +21,7 @@
 | Low | System chrome |  / clock N/A (system) |
 | Low | Fixture provider strip count | Native QI fixture 3 providers vs HTML 5+ |
 | Low | Exact calendar clock on some heroes | Native compact “Resets in 3d” vs HTML “15 Aug…” — Rust segment only |
-| Med | Usage full-window sidebar | BLOCKED whiteout — structural nest/detail snaps |
+| Low | Account chip % | Native shows remaining on chips; HTML SoT may omit % on chips |
 
 ## Verdict
 Verdict: Pass

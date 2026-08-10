@@ -1,28 +1,27 @@
-# QI delta: popover-overview · dark + light
+# QI delta: popover-overview · Dark + Light
 
-**Tip:** `624b6573` · goal multimodal re-verify
-## Oracle
-- HTML: `popover.html` mode-overview (no separate html PNG required — IA matches popover.html groups)
-- Native: `qi-artifacts/native/popover-overview-{dark,light}.png`
+**Date:** 2026-08-10 · **Tip:** `7b760a7e`  
+**Oracle:** `popover.html` mode-overview (no separate HTML PNG required)  
+**Native:** `native/popover-overview-{dark,light}.png`
 
-## Dual-image / craft
-- Overview tab selected; provider groups (Anthropic / OpenAI / Amp)
-- Official logo plates; per-account % + meter; 0% Fully used empty track
-- OV-5: OpenAI selected shows relative + calendar (`Resets in 3d` + `15 Aug 2026, 17:02`)
-- Per-account refresh; Open Usage Window footer
-- No Overview-level ProgressView (OV-11)
+## Dual-image (this scene only)
 
-| Dimension | Score |
-|-----------|-------|
-| IA / hierarchy | Pass |
-| Meters 3-status | Pass |
-| Official marks | Pass |
-| Data contract | Pass |
+| Check | SoT / HTML | Native | Match |
+|-------|------------|--------|-------|
+| Overview tab | selected | selected | Yes |
+| Inventory | per-provider / per-account groups | Anthropic · OpenAI multi · Amp | Yes |
+| OpenAI multi | a1 57% + a2 0% Fully used | same | Yes |
+| OV-5 calendar | exact reset under selected | `Resets in 3d` + `15 Aug 2026, 17:02` | Yes |
+| Amp | 100% full green | same | Yes |
+| Footer | Open Usage Window | same | Yes |
+| Brand | jackin❯ desktop | same | Yes |
+| Limits only | remaining % | no prices | Yes |
 
-## Different (Low)
+## Different (not High)
+
 | Severity | Notes |
 |----------|-------|
-| Low | HTML baseline PNG not separate file; IA verified vs popover.html + native snap |
+| Low | No separate HTML baseline PNG file; IA vs popover.html + native snap |
 
 ## Verdict
 Verdict: Pass
