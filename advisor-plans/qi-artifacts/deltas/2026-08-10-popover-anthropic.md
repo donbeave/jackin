@@ -5,16 +5,15 @@
 
 ## Candidate
 - Native: popover-anthropic-{dark,light}.png
-- Dual-image: G-P1 chrome; Anthropic plate selected; ACCOUNT meta when surface fields present; Session/Weekly heroes (74%/12%)
+- Dual-image: warm Anthropic plate selected; ACCOUNT Personal/Max 20×; Session 74% / Weekly 12% danger; Open Usage Window footer
 
 ## Same (keep)
-- Sticky chrome + brand plates; Anthropic focus; hero meters; ACCOUNT role when credential/status known
+- G-P1 chrome; brand plates; ACCOUNT; heroes; Open Usage Window dock
 
 ## Different (must fix unless N/A)
 | Severity | Element | HTML | Native | Gap ID | Action |
 |----------|---------|------|--------|--------|--------|
-| Med | Footer | Open Usage Window | Refresh | G-P4 | Product law |
-| Med | Plate colors | Brand anthropic hue | SF plate + accent | G-P1 | Accept native |
+| Low | Credential row | Keychain string in HTML | Optional if surface.credentialOrigin set | G-D1 | Show when Rust provides |
 
 ## Verdict
 Verdict: Pass

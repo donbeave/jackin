@@ -3,41 +3,57 @@
 
 import SwiftUI
 
-/// Popover footer: one Refresh control on a **glass** capsule (LG-A8).
-/// Spinner reflects `refreshInProgress`. No other actions.
+/// Popover sticky footer dock — **Open Usage Window** glass capsule (FB1-43 / LG-A8).
+///
+/// One primary CTA (not a competing Refresh slab). Global refresh remains via
+/// View menu / ⌘R on the app; OV-9 rejected a second global Refresh footer.
 public struct PopoverFooter: View {
-    public let refreshInProgress: Bool
-    public let onRefresh: () -> Void
+    public let title: String
+    public let onOpenUsage: () -> Void
 
-    public init(refreshInProgress: Bool, onRefresh: @escaping () -> Void) {
-        self.refreshInProgress = refreshInProgress
-        self.onRefresh = onRefresh
+    public init(
+        title: String = "Open Usage Window",
+        onOpenUsage: @escaping () -> Void
+    ) {
+        self.title = title
+        self.onOpenUsage = onOpenUsage
     }
 
     public var body: some View {
-        Button(action: onRefresh) {
-            HStack(spacing: 6) {
-                if refreshInProgress {
-                    ProgressView().controlSize(.small)
-                } else {
-                    Image(systemName: "arrow.clockwise")
-                }
-                Text("Refresh")
-                Spacer()
-                Text("⌘R")
-                    .font(.caption)
+        Button(action: onOpenUsage) {
+            HStack(spacing: 8) {
+                Image(systemName: "rectangle.split.2x1")
+                    .font(.body.weight(.semibold))
+                Text(title)
+                    .font(.body.weight(.semibold))
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.semibold))
                     .foregroundStyle(.secondary)
             }
+            .foregroundStyle(Color.primary)
             .contentShape(Rectangle())
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 11)
         }
         .buttonStyle(.plain)
-        .keyboardShortcut("r", modifiers: [.command])
         .background {
-            // Glass control island — chrome only, not a content card.
+            // Glass capsule + phosphor hairline (FB1-43) — not a solid green slab.
             GlassFallbacks.floatingChromeIsland()
+                .overlay {
+                    RoundedRectangle(
+                        cornerRadius: GlassFallbacks.chromeTileCornerRadius,
+                        style: .continuous
+                    )
+                    .strokeBorder(Color.accentColor.opacity(0.45), lineWidth: 1)
+                }
         }
-        .clipShape(RoundedRectangle(cornerRadius: GlassFallbacks.chromeTileCornerRadius, style: .continuous))
+        .clipShape(
+            RoundedRectangle(
+                cornerRadius: GlassFallbacks.chromeTileCornerRadius,
+                style: .continuous
+            )
+        )
+        .accessibilityLabel(title)
     }
 }

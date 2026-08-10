@@ -2,37 +2,31 @@
 
 ## Oracle
 - HTML: advisor-plans/qi-artifacts/html/popover-openai-dark.png (+ light)
-- Source: popover.html Providers mode — brand · mode · pstrip · chips · Account block · Session hero
 
-## Candidate (ledger harness)
+## Candidate
 - Native: advisor-plans/qi-artifacts/native/popover-openai-{dark,light}.png
-- Code: PopoverRoot · PopoverTabGrid · PopoverProviderTab (ACCOUNT block) · PopoverFooter
-- Dual-image dimensions (QI §7.3):
+- Dual-image (personal read): both themes show brand · Overview|Providers · multi-color brand plates · chips · ACCOUNT (Account/Plan/Status/Updated/Credential) · SESSION 63% · **Open Usage Window** footer
 
 | Dimension | Score | Notes |
 |-----------|-------|-------|
-| IA / hierarchy | Pass | Brand → mode → strip → head → chips → **ACCOUNT** → Session hero |
-| Chrome roles | Pass | Glass shell/nav; solid ACCOUNT + hero cards |
-| Typography | Pass | ACCOUNT k/v; large % remaining primary |
-| Spacing / density | Med | Native denser chips (include %); HTML chips label-only + more disabled peers |
-| Materials | Pass | Content cards non-glass |
-| Color / status | Med | System accent plates vs HTML multi-brand plogo colors |
-| Meters | Pass | 63% Session fill; strip meters present |
-| Copy / data | Pass | Fixture account/plan/status/updated/credential from Rust fields |
-| Affordances | Med | Footer Refresh (product FB1/LG-A8) vs HTML Open Usage Window |
+| IA / hierarchy | Pass | Same roles as HTML Providers mode |
+| Chrome roles | Pass | Glass shell + Open Usage glass dock (FB1-43) |
+| Typography | Pass | ACCOUNT k/v; large remaining % |
+| Spacing | Low | HTML denser disabled chips; native % on chips |
+| Materials | Pass | Solid content cards |
+| Color | Low | Brand plate hues approximate CSS plogo family |
+| Meters | Pass | 63% session; strip meters |
+| Copy / data | Pass | Fixture DATA_CONTRACT path |
+| Affordances | Pass | Open Usage Window footer CTA |
 
 ## Same (keep)
-- G-P1 sticky chrome (brand · Overview|Providers · brand plates + strip meters)
-- ACCOUNT block: Account · Plan · Status · Updated · Credential source
-- Multi-account chips; SESSION 63% hero; Open usage page link
-- DATA_CONTRACT fixture path
+- Full G-P1 chrome; ACCOUNT block; brand plates; Open Usage Window CTA; heroes
 
 ## Different (must fix unless N/A)
 | Severity | Element | HTML | Native | Gap ID | Action |
 |----------|---------|------|--------|--------|--------|
-| Med | Footer primary CTA | Open Usage Window | Refresh dock | G-P4 | Product law keep Refresh |
-| Med | Provider plate chroma | Multi-brand plogo fills | SF Symbol in accent/neutral plates | G-P1 | Accept native SF system; optional per-provider colors later |
-| Low | Chip density | Label-only + disabled team pills | Selected fill + % remaining | G-P2 | Accept |
+| Low | Chip set | More disabled team chips | Two fixture accounts + % | G-P2 | Accept fixture |
+| Low | Plate glyphs | SVG brand marks | SF Symbol in brand fill | G-P1 | Accept native SF |
 
 ## Verdict
 Verdict: Pass

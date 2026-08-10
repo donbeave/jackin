@@ -154,17 +154,44 @@ public struct PopoverTabGrid: View {
         .accessibilityAddTraits(on ? .isSelected : [])
     }
 
-    /// Provider identity plate (popover.html `.plogo` density — not bare SF glyph).
+    /// Provider identity plate (popover.html `.plogo` density + per-provider chrome tint).
+    /// Colors are decorative chrome only — not usage/severity data.
     private func brandPlate(iconKey: String?, selected: Bool) -> some View {
         let symbol = iconKey.flatMap { desktopProviderSystemImage(iconKey: $0) } ?? "circle.grid.cross"
+        let brand = brandChrome(for: iconKey)
         return ZStack {
             RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .fill(selected ? Color.accentColor.opacity(0.28) : Color.primary.opacity(0.10))
+                .fill(selected ? brand.opacity(0.95) : brand.opacity(0.78))
             Image(systemName: symbol)
                 .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(selected ? Color.accentColor : Color.primary.opacity(0.85))
+                .foregroundStyle(Color.white.opacity(0.95))
         }
-        .frame(width: 28, height: 28)
+        .frame(width: 30, height: 30)
+        .shadow(color: brand.opacity(selected ? 0.35 : 0.15), radius: selected ? 4 : 1, y: 1)
+    }
+
+    /// HTML-adjacent brand plate fills (index/popover CSS plogo family) — UI chrome only.
+    private func brandChrome(for iconKey: String?) -> Color {
+        switch iconKey {
+        case "codex":
+            // OpenAI-adjacent green
+            return Color(red: 0.12, green: 0.72, blue: 0.52)
+        case "claude":
+            // Anthropic-adjacent warm
+            return Color(red: 0.86, green: 0.48, blue: 0.28)
+        case "amp":
+            return Color(red: 0.52, green: 0.38, blue: 0.92)
+        case "grok":
+            return Color(red: 0.35, green: 0.38, blue: 0.42)
+        case "zai":
+            return Color(red: 0.20, green: 0.55, blue: 0.95)
+        case "kimi":
+            return Color(red: 0.75, green: 0.35, blue: 0.55)
+        case "minimax":
+            return Color(red: 0.90, green: 0.55, blue: 0.20)
+        default:
+            return Color.accentColor
+        }
     }
 
     /// Meter geometry only — nil remaining = empty track (FB1-5).
