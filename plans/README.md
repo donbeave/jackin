@@ -10,7 +10,9 @@ Advisor-produced plans and decision records for jackin❯ (improve skill).
 | [previews/desktop-ui/popover.html](./previews/desktop-ui/popover.html) | Full popover + bar craft reference | Active |
 | [previews/desktop-ui/AGENT_HANDOFF.md](./previews/desktop-ui/AGENT_HANDOFF.md) | How implementer agents use HTML + tokens for predictable native Swift | Active |
 
-Implementation plans (`001-*.md`, …) only after freeze sequence + concept picks. Plans must cite decisions file (+ chosen concept IDs).
+Implementation plans for **native SoT parity** (status bar · popover · Usage) live in  
+[`../advisor-plans/`](../advisor-plans/) (`001`–`005`, generated `/improve deep` @ `1531495c`).  
+Do not drop numbered executor plans into this design-SoT tree.
 
 ### `/goal` / implementer agents
 
