@@ -1,6 +1,6 @@
 # Final goal parity matrix — UI_PARITY_MASTER §6
 
-**Tip:** plan/desktop-visual @ 1025b5b5  
+**Tip:** plan/desktop-visual @ 427a1439 + audited worktree  
 
 ## High residual craft (product)
 **None.**
@@ -15,6 +15,7 @@
 | usage-overview | Pass | Pass | per-account cards |
 | usage-provider-nest | Pass | Pass | 57%/0% |
 | usage-detail-openai | Pass | Pass | Session/Weekly/Spark/LRC |
+| usage-window-openai | Pass | Pass | full shell; theme-distinct captures |
 | usage-toolbar | Pass | Pass | readable Refresh both themes |
 
 ## Live
@@ -24,4 +25,4 @@
 | ctx-menu-live | BLOCKED |
 
 ## Gates
-L1+L2 ALL PASS · MANIFEST usage_window_openai_dark OK · usage_toolbar_dark OK
+L1+L2 ALL PASS · MANIFEST Usage full shell + toolbar Dark/Light OK · theme pairs byte-distinct

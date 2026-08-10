@@ -60,6 +60,12 @@ no longer create separate floating cards. One inset limit-list now owns all
 quota rows and full-width dividers, including structured Limit Reset Credits,
 matching the HTML oracle in deterministic dark/light component captures.
 
+Full-window evidence re-audit corrected another false-pass: the harness had
+accepted byte-identical Dark/Light window images. It now applies appearance to
+the `NSWindow` explicitly and rejects identical theme pairs. New theme-distinct
+full-shell captures prove the floating sidebar, centered toolbar, and single
+divided limit-list together.
+
 ## Live
 popover-live / ctx-menu **BLOCKED** — SoTParity proves focus/menu.
 

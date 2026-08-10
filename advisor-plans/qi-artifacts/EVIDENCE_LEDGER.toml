@@ -4,7 +4,8 @@
 
 version = 1
 updated = "2026-08-10"
-# re-verify tip 7df4d841: gates green, recapture stable
+# re-verify tip 427a1439 + audited worktree: explicit window appearance,
+# cross-theme byte-distinctness gate, and full-shell recapture
 oracle_html_dir = "advisor-plans/qi-artifacts/html"
 native_dir = "advisor-plans/qi-artifacts/native"
 deltas_dir = "advisor-plans/qi-artifacts/deltas"
@@ -69,7 +70,7 @@ html_path = "advisor-plans/qi-artifacts/html/usage-overview-dark.png"
 native_path = "advisor-plans/qi-artifacts/native/usage-overview-dark.png"
 capture_tier = "harness"
 verdict = "pass"
-notes = "OverviewListView component harness. Full usage-window-overview shell is NOT Pass when sidebar whiteout (see usage-window-sidebar.BLOCKED.txt)."
+notes = "OverviewListView component harness; explicit-appearance full-shell capture is also valid and theme-distinct."
 
 [[scene]]
 id = "usage-overview"
@@ -86,7 +87,7 @@ html_path = "advisor-plans/qi-artifacts/html/usage-provider-nest-dark.png"
 native_path = "advisor-plans/qi-artifacts/native/usage-provider-nest-dark.png"
 capture_tier = "harness"
 verdict = "pass"
-notes = "UsageAccountNestView component. Do not claim Pass from usage-window-openai full shell if sidebar whiteout."
+notes = "UsageAccountNestView component; full-shell capture composites the floating sidebar without whiteout."
 
 [[scene]]
 id = "usage-provider-nest"
@@ -103,7 +104,7 @@ html_path = "advisor-plans/qi-artifacts/html/usage-detail-openai-dark.png"
 native_path = "advisor-plans/qi-artifacts/native/usage-detail-openai-dark.png"
 capture_tier = "harness"
 verdict = "pass"
-notes = "ProviderCardView detail component. Full usage-window-openai shell whiteout is BLOCKED — not Pass evidence."
+notes = "ProviderCardView detail component; full-shell capture also proves the single divided limit-list."
 
 [[scene]]
 id = "usage-detail-openai"
@@ -120,7 +121,7 @@ html_path = "advisor-plans/qi-artifacts/html/usage-toolbar-dark.png"
 native_path = "advisor-plans/qi-artifacts/native/usage-toolbar-dark.png"
 capture_tier = "harness"
 verdict = "pass"
-notes = "Readable sidebar toggle + arrow.clockwise Refresh on unified titlebar (screencapture composite); brand jackin❯ desktop leading"
+notes = "Readable sidebar toggle + arrow.clockwise Refresh on unified titlebar; brand jackin❯ desktop centered"
 
 [[scene]]
 id = "usage-toolbar"
@@ -129,7 +130,25 @@ html_path = "advisor-plans/qi-artifacts/html/usage-toolbar-light.png"
 native_path = "advisor-plans/qi-artifacts/native/usage-toolbar-light.png"
 capture_tier = "harness"
 verdict = "pass"
-notes = "Readable sidebar toggle + arrow.clockwise Refresh on unified titlebar; brand jackin❯ desktop leading"
+notes = "Readable sidebar toggle + arrow.clockwise Refresh on unified titlebar; brand jackin❯ desktop centered"
+
+[[scene]]
+id = "usage-window-openai"
+theme = "dark"
+html_path = "advisor-plans/qi-artifacts/html/usage-window-dark.png"
+native_path = "advisor-plans/qi-artifacts/native/usage-window-openai-dark.png"
+capture_tier = "harness"
+verdict = "pass"
+notes = "UsageWindowController full shell; explicit Dark appearance; floating sidebar + one divided limit-list"
+
+[[scene]]
+id = "usage-window-openai"
+theme = "light"
+html_path = "advisor-plans/qi-artifacts/html/usage-window-light.png"
+native_path = "advisor-plans/qi-artifacts/native/usage-window-openai-light.png"
+capture_tier = "harness"
+verdict = "pass"
+notes = "UsageWindowController full shell; explicit Light appearance; byte-distinct from Dark"
 
 # Interaction / live tiers — not craft Pass without files
 

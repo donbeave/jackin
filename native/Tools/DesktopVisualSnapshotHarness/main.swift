@@ -148,14 +148,14 @@ struct DesktopVisualSnapshotHarness {
 
         // Real NSWindow (toolbar + sidebar nest + detail) via UsageWindowController.
         // Prefer CGWindow full-window over NSHostingView NavigationSplitView (sidebar blank offscreen).
-        let windowOkDark = captureUsageWindow(
+        var windowOkDark = captureUsageWindow(
             fixture: fixture,
             focusSurfaceId: "codex",
             appearance: .darkAqua,
             fullPath: "\(out)/usage-window-openai-dark.png",
             toolbarPath: "\(out)/usage-toolbar-dark.png"
         )
-        let overviewOkDark = captureUsageWindow(
+        var overviewOkDark = captureUsageWindow(
             fixture: fixture,
             focusSurfaceId: nil,
             appearance: .darkAqua,
@@ -163,7 +163,7 @@ struct DesktopVisualSnapshotHarness {
             toolbarPath: nil
         )
         // Toolbar may be BLOCKED even when full window PNG exists (white-blob icon crop).
-        let toolbarOkDark =
+        var toolbarOkDark =
             windowOkDark
             && !FileManager.default.fileExists(atPath: "\(out)/usage-toolbar-dark.BLOCKED.txt")
 
@@ -243,23 +243,54 @@ struct DesktopVisualSnapshotHarness {
             path: "\(out)/status-desktop-light.png",
             appearance: .aqua
         )
-        let windowOkLight = captureUsageWindow(
+        var windowOkLight = captureUsageWindow(
             fixture: fixture,
             focusSurfaceId: "codex",
             appearance: .aqua,
             fullPath: "\(out)/usage-window-openai-light.png",
             toolbarPath: "\(out)/usage-toolbar-light.png"
         )
-        let overviewOkLight = captureUsageWindow(
+        var overviewOkLight = captureUsageWindow(
             fixture: fixture,
             focusSurfaceId: nil,
             appearance: .aqua,
             fullPath: "\(out)/usage-window-overview-light.png",
             toolbarPath: nil
         )
-        let toolbarOkLight =
+        var toolbarOkLight =
             windowOkLight
             && !FileManager.default.fileExists(atPath: "\(out)/usage-toolbar-light.BLOCKED.txt")
+
+        if windowOkDark, windowOkLight,
+            !themeCapturesDiffer(
+                darkPath: "\(out)/usage-window-openai-dark.png",
+                lightPath: "\(out)/usage-window-openai-light.png",
+                scene: "usage-window-openai"
+            )
+        {
+            windowOkDark = false
+            windowOkLight = false
+        }
+        if overviewOkDark, overviewOkLight,
+            !themeCapturesDiffer(
+                darkPath: "\(out)/usage-window-overview-dark.png",
+                lightPath: "\(out)/usage-window-overview-light.png",
+                scene: "usage-window-overview"
+            )
+        {
+            overviewOkDark = false
+            overviewOkLight = false
+        }
+        if toolbarOkDark, toolbarOkLight,
+            !themeCapturesDiffer(
+                darkPath: "\(out)/usage-toolbar-dark.png",
+                lightPath: "\(out)/usage-toolbar-light.png",
+                scene: "usage-toolbar"
+            )
+        {
+            toolbarOkDark = false
+            toolbarOkLight = false
+        }
 
         // Manifest for VISUAL_QA_LOG honesty
         let manifest = """
@@ -520,6 +551,7 @@ struct DesktopVisualSnapshotHarness {
             controller.invalidate()
             return false
         }
+        window.appearance = NSAppearance(named: appearance)
 
         // Accessory→regular so titlebar/toolbar composites (matches live app path).
         NSApp.setActivationPolicy(.regular)
@@ -640,6 +672,31 @@ struct DesktopVisualSnapshotHarness {
         NSApp.setActivationPolicy(.prohibited)
         // Full shell Pass only when sidebar composites (not whiteout).
         return !sidebarWhiteout
+    }
+
+    /// Theme evidence must encode visibly different rendered pixels.
+    private static func themeCapturesDiffer(
+        darkPath: String,
+        lightPath: String,
+        scene: String
+    ) -> Bool {
+        guard let dark = FileManager.default.contents(atPath: darkPath),
+            let light = FileManager.default.contents(atPath: lightPath),
+            dark != light
+        else {
+            let reason = "\(scene) dark/light captures are byte-identical; theme evidence rejected."
+            for path in [darkPath, lightPath] {
+                let sidecar = path.replacingOccurrences(of: ".png", with: ".BLOCKED.txt")
+                try? reason.write(
+                    to: URL(fileURLWithPath: sidecar),
+                    atomically: true,
+                    encoding: .utf8
+                )
+            }
+            print("BLOCKED \(scene) [byte-identical dark/light captures]")
+            return false
+        }
+        return true
     }
 
     /// Prefer live composite: screencapture -R region, then -l, then CGWindow.
