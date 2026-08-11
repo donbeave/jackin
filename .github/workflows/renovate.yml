@@ -4,7 +4,6 @@
 name: Renovate
 
 on:
-  merge_group:
   schedule:
     - cron: "0 6 * * *"
   workflow_dispatch:

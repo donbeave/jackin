@@ -1,32 +1,29 @@
 # SPDX-FileCopyrightText: 2026 Alexey Zhokhov
 # SPDX-License-Identifier: Apache-2.0
 
-name: jackin-dev
+name: jackin-dev (public unmerged)
 
 on:
-  push:
-    branches: [main]
+  pull_request:
     paths:
+      - ".github/actions/sign-and-attest-archive/**"
+      - ".github/workflows/jackin-dev.yml"
+      - "Cargo.lock"
+      - "Cargo.toml"
       - "crates/jackin-dev/**"
-  workflow_dispatch:
-    inputs:
-      lanes:
-        description: |
-          Which runner(s) to run on. Default github; use both for parity runs.
-        type: choice
-        default: github
-        options: [github, velnor, both]
+      - "mise.toml"
+      - "rust-toolchain.toml"
 
 concurrency:
   # PR validation may cancel superseded work. Publishing runs serialize and
   # finish because cancellation can leave partially written registry state.
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  group: jackin-dev-public-unmerged-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   validate-version-bump:
     if: github.event_name == 'pull_request'
-    runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'velnor') && fromJSON('["self-hosted","velnor-target-mvp"]') || 'ubuntu-26.04' }}
+    runs-on: ubuntu-26.04
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -60,9 +57,9 @@ jobs:
         with:
           version: "2026.7.12"
           cache_key_prefix: "mise-v2"
-          cache_save: ${{ github.ref == 'refs/heads/main' }}
+          cache_save: false
           install_args: "rust"
-          github_token: ${{ secrets.GH_READONLY_TOKEN }}
+          github_token: ${{ github.token }}
       - if: steps.version-inputs.outputs.lock == 'true' && steps.version-inputs.outputs.artifact != 'true'
         uses: ./.github/actions/cache-cargo-registry
 
@@ -138,11 +135,11 @@ jobs:
           fi
 
   version:
-    runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'velnor') && fromJSON('["self-hosted","velnor-target-mvp"]') || 'ubuntu-26.04' }}
+    runs-on: ubuntu-26.04
     timeout-minutes: 5
     outputs:
       version: ${{ steps.version.outputs.version }}
-      runner-configs: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'both') && '[{"lane":"GitHub","runner":"\"ubuntu-26.04\"","runner_os":"Linux","runner_arch":"X64","writer":true},{"lane":"Velnor","runner":"[\"self-hosted\",\"velnor-target-mvp\"]","runner_os":"Linux","runner_arch":"X64","writer":false}]' || (github.event_name == 'workflow_dispatch' && inputs.lanes == 'velnor') && '[{"lane":"Velnor","runner":"[\"self-hosted\",\"velnor-target-mvp\"]","runner_os":"Linux","runner_arch":"X64","writer":false}]' || '[{"lane":"GitHub","runner":"\"ubuntu-26.04\"","runner_os":"Linux","runner_arch":"X64","writer":true}]' }}
+      runner-configs: '[{"lane":"GitHub","runner":"\"ubuntu-26.04\"","runner_os":"Linux","runner_arch":"X64","writer":true}]'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - id: version
@@ -153,7 +150,7 @@ jobs:
 
   assert-version:
     needs: version
-    runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'velnor') && fromJSON('["self-hosted","velnor-target-mvp"]') || 'ubuntu-26.04' }}
+    runs-on: ubuntu-26.04
     timeout-minutes: 60
     outputs:
       published: ${{ steps.result.outputs.published || steps.off-main.outputs.published }}
@@ -243,9 +240,9 @@ jobs:
         with:
           version: "2026.7.12"
           cache_key_prefix: "mise-v2"
-          cache_save: ${{ github.ref == 'refs/heads/main' }}
+          cache_save: false
           install_args: "cargo-binstall rust zig cargo:cargo-zigbuild cosign syft"
-          github_token: ${{ secrets.GH_READONLY_TOKEN }}
+          github_token: ${{ github.token }}
       - id: sccache
         uses: mozilla-actions/sccache-action@9e7fa8a12102821edf02ca5dbea1acd0f89a2696 # v0.0.10
         with:
@@ -335,7 +332,7 @@ jobs:
       github.ref == 'refs/heads/main' &&
       needs.assert-version.outputs.published != 'true'
     needs: [version, assert-version, build]
-    runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'velnor') && fromJSON('["self-hosted","velnor-target-mvp"]') || 'ubuntu-26.04' }}
+    runs-on: ubuntu-26.04
     timeout-minutes: 60
     concurrency:
       group: homebrew-tap-publish
@@ -365,11 +362,11 @@ jobs:
         with:
           repository: jackin-project/homebrew-tap
           ref: main
-          token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          token: ${{ github.token }}
           path: homebrew-tap
       - name: Rewrite jackin-dev formula
         env:
-          GH_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
           VERSION: ${{ needs.version.outputs.version }}
         run: |
           read_sha() {

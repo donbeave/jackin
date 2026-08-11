@@ -4,37 +4,23 @@
 # NOTE: `preview.yml` is triggered by a successful run of this workflow name
 # on main and verifies the triggering source SHA before publishing. Renaming
 # the `name:` field silently breaks the Homebrew preview chain.
-name: CI
+name: CI (public unmerged)
 
 on:
-  push:
+  pull_request:
     branches: [main]
-  schedule:
-    - cron: "0 4 * * 0"
-  workflow_dispatch:
-    inputs:
-      lanes:
-        description: |
-          Which runner(s) to run on. Default github; use both for parity runs.
-        type: choice
-        default: github
-        options: [github, velnor, both]
-      refresh-package:
-        description: Optional exact crate name whose successful result and target should be refreshed.
-        type: string
-        default: ""
 
 permissions:
   actions: read
   contents: read
 
 concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  group: ci-public-unmerged-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   changes:
-    runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'velnor') && fromJSON('["self-hosted","velnor-target-mvp"]') || 'ubuntu-26.04' }}
+    runs-on: ubuntu-26.04
     timeout-minutes: 5
     outputs:
       rust: ${{ steps.route.outputs.rust }}
@@ -55,7 +41,7 @@ jobs:
       result-name: ${{ steps.ci-result.outputs.name }}
       policy-reuse: ${{ steps.policy-result.outputs.hit }}
       policy-result-name: ${{ steps.policy-result.outputs.name }}
-      runner-configs: ${{ (github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.lanes == 'both')) && '[{"lane":"GitHub","runner":"\"ubuntu-26.04\"","runner_os":"Linux","runner_arch":"X64","mise_data_dir":"/home/runner/.local/share/mise","cache_writer":true,"artifact_writer":true},{"lane":"Velnor","runner":"[\"self-hosted\",\"velnor-target-mvp\"]","runner_os":"Linux","runner_arch":"X64","mise_data_dir":"/opt/mise","cache_writer":false,"artifact_writer":false}]' || (github.event_name == 'workflow_dispatch' && inputs.lanes == 'velnor') && '[{"lane":"Velnor","runner":"[\"self-hosted\",\"velnor-target-mvp\"]","runner_os":"Linux","runner_arch":"X64","mise_data_dir":"/opt/mise","cache_writer":false,"artifact_writer":false}]' || '[{"lane":"GitHub","runner":"\"ubuntu-26.04\"","runner_os":"Linux","runner_arch":"X64","mise_data_dir":"/home/runner/.local/share/mise","cache_writer":true,"artifact_writer":true}]' }}
+      runner-configs: '[{"lane":"GitHub","runner":"\"ubuntu-26.04\"","runner_os":"Linux","runner_arch":"X64","mise_data_dir":"/home/runner/.local/share/mise","cache_writer":false,"artifact_writer":true}]'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -304,8 +290,8 @@ jobs:
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-          LANES: ${{ github.event_name == 'workflow_dispatch' && inputs.lanes || 'github' }}
-          REFRESH_PACKAGE: ${{ github.event_name == 'workflow_dispatch' && inputs.refresh-package || '' }}
+          LANES: github
+          REFRESH_PACKAGE: ""
           REPOSITORY: ${{ github.repository }}
         run: |
           set -euo pipefail
@@ -368,7 +354,7 @@ jobs:
         env:
           BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
           GH_TOKEN: ${{ github.token }}
-          LANES: ${{ github.event_name == 'workflow_dispatch' && inputs.lanes || 'github' }}
+          LANES: github
           REPOSITORY: ${{ github.repository }}
         run: |
           set -euo pipefail
@@ -438,9 +424,9 @@ jobs:
         with:
           version: "2026.7.12"
           cache_key_prefix: "mise-v2"
-          cache_save: ${{ github.ref == 'refs/heads/main' }}
+          cache_save: false
           install_args: "actionlint shellcheck"
-          github_token: ${{ secrets.GH_READONLY_TOKEN }}
+          github_token: ${{ github.token }}
       - run: actionlint .github/workflows/*.yml
 
   fmt:
@@ -545,16 +531,12 @@ jobs:
         with:
           version: "2026.7.12"
           cache_key_prefix: "mise-v2"
-          cache_save: >-
-            ${{ github.ref == 'refs/heads/main' ||
-                github.event_name == 'workflow_dispatch' ||
-                (github.event_name == 'pull_request' &&
-                 github.event.pull_request.head.repo.full_name == github.repository) }}
+          cache_save: false
           install_args: >-
             rust@${{ needs.changes.outputs.rust-version }}
             ${{ env.CI_TOOLS_HIT != 'true' &&
                 'cargo-binstall cargo:sccache aqua:nextest-rs/nextest/cargo-nextest cargo:cargo-deny cargo:cargo-shear cargo:cargo-audit cargo:cargo-dylint cargo:cargo-fuzz cargo:cargo-hack cargo:cargo-hakari cargo:cargo-llvm-cov cargo:cargo-mutants cargo:cargo-zigbuild cargo:dylint-link github:open-telemetry/weaver@0.24.2' || '' }}
-          github_token: ${{ secrets.GH_READONLY_TOKEN }}
+          github_token: ${{ github.token }}
       - name: Use the minimal Rust CI profile
         if: >-
           steps.toolchain-lookup.outputs.cache-hit != 'true'
@@ -657,7 +639,7 @@ jobs:
   affected-crates:
     needs: [changes, cargo-registry-warmup]
     if: needs.changes.outputs.rust == 'true' && needs.changes.outputs.result-reuse != 'true'
-    runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'velnor') && fromJSON('["self-hosted","velnor-target-mvp"]') || 'ubuntu-26.04' }}
+    runs-on: ubuntu-26.04
     timeout-minutes: 5
     outputs:
       packages: ${{ steps.select.outputs.packages }}
@@ -684,7 +666,7 @@ jobs:
           --base-ref "${{ github.base_ref }}"
           --before-sha "${{ github.event.before }}"
           --event-name "${{ github.event_name }}"
-          --force-package "${{ github.event_name == 'workflow_dispatch' && inputs.refresh-package || '' }}"
+          --force-package ""
           --common-contract-key "${{ needs.changes.outputs.nextest-contract }}"
           --construct-image-changed "${{ needs.changes.outputs.construct_image }}"
           --docker-contract-key "${{ needs.changes.outputs.docker-contract }}"
@@ -750,9 +732,9 @@ jobs:
         with:
           version: "2026.7.12"
           cache_key_prefix: "mise-v2"
-          cache_save: ${{ github.ref == 'refs/heads/main' }}
+          cache_save: false
           install_args: rust@${{ needs.changes.outputs.rust-version }}
-          github_token: ${{ secrets.GH_READONLY_TOKEN }}
+          github_token: ${{ github.token }}
       - name: Use the prepared current Rust toolchain
         run: >-
           "$CI_XTASK" ci-toolchain activate
@@ -871,7 +853,7 @@ jobs:
       packages-json: ${{ needs.affected-crates.outputs.packages }}
       package-cache-keys-json: ${{ needs.affected-crates.outputs.cache-keys }}
       package-target-results-json: ${{ needs.affected-crates.outputs.target-results }}
-      refresh-package: ${{ github.event_name == 'workflow_dispatch' && inputs.refresh-package || '' }}
+      refresh-package: ""
       all-features: true
       ci-tools-contract: ${{ needs.changes.outputs.ci-tools-contract }}
       ci-xtask-contract: ${{ needs.changes.outputs.ci-xtask-contract }}
@@ -911,9 +893,9 @@ jobs:
         with:
           version: "2026.7.12"
           cache_key_prefix: "mise-v2"
-          cache_save: ${{ github.ref == 'refs/heads/main' }}
+          cache_save: false
           install_args: "rust aqua:nextest-rs/nextest/cargo-nextest"
-          github_token: ${{ secrets.GH_READONLY_TOKEN }}
+          github_token: ${{ github.token }}
       - id: cargo-registry-cache
         uses: ./.github/actions/cache-cargo-registry
       - *cargo-target-cache
@@ -968,9 +950,9 @@ jobs:
         with:
           version: "2026.7.12"
           cache_key_prefix: "mise-v2"
-          cache_save: ${{ github.ref == 'refs/heads/main' }}
+          cache_save: false
           install_args: rust@${{ needs.changes.outputs.rust-version }}
-          github_token: ${{ secrets.GH_READONLY_TOKEN }}
+          github_token: ${{ github.token }}
       - name: Use the prepared current Rust toolchain
         run: >-
           "$CI_XTASK" ci-toolchain prepare
@@ -1043,9 +1025,9 @@ jobs:
         with:
           version: "2026.7.12"
           cache_key_prefix: "mise-v2"
-          cache_save: ${{ github.ref == 'refs/heads/main' }}
+          cache_save: false
           install_args: "zig"
-          github_token: ${{ secrets.GH_READONLY_TOKEN }}
+          github_token: ${{ github.token }}
       - id: cargo-registry-cache
         uses: ./.github/actions/cache-cargo-registry
         with:
@@ -1096,7 +1078,7 @@ jobs:
       - file-size-gate
       - test
       - telemetry-conformance
-    runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'velnor') && fromJSON('["self-hosted","velnor-target-mvp"]') || 'ubuntu-26.04' }}
+    runs-on: ubuntu-26.04
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
