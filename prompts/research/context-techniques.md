@@ -1,8 +1,9 @@
----
-title: "Token-Optimization Research Brief"
----
-
 # Token-Optimization Research Brief
+
+> **Current-state rule:** Verify one current cutoff, publish only the latest value and state found at
+> that cutoff, and replace superseded findings instead of preserving them. Git history is the only
+> archive. If a current value cannot be verified, report it as unknown rather than using an older
+> value. Any cached facts later in this brief are research questions, never reusable evidence.
 
 > **How to run this file:** `/goal Follow token-optimization.md` (see the Operating Rules
 > section for the exact constraints of the run). You — the agent reading this — are the researcher.

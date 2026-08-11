@@ -26,19 +26,15 @@ The engine places must-survive state only in locations that survive Claude Code 
 
 ## Net accounting (the missing number, shipped)
 
-Every injection from memory (recalled note, codebook line, handoff file, `[related:]` hint) is metered as cost in the ledger; every avoided re-exploration (stub hit, delta-fill, archive expand instead of re-run) is metered as saving. Memory features report **net** per role and are auto-demoted when negative — the accounting complaint the dossier makes of every memory product on the market becomes the engine's acceptance mechanism. Aggregate target from the read-stub layer alone: sem measured 98.4% suppression on repeat fills, ~13-token stubs vs full re-reads; on long multi-turn sessions where cache-read volume is 94% of tokens, suppressed re-reads are also the dominant **tasks-per-cap** lever for subscribers.
+Every injection from memory is metered as cost; every avoided re-exploration is measured through a paired current task path. Memory features report **net** per role and are auto-demoted when negative. Stub size, reachable reread share, and tasks-per-cap effect are local benchmark outputs—not inherited vendor constants.
 
-## The cavemem post-mortem, as requirements
+## Memory requirements
 
-The round-2 [cavemem deep dive](/research/context/tools/14-caveman-ecosystem/) turned that project's four self-inflicted wounds into hard requirements for this layer:
-
-1. **Index the canonical form** (or transform queries identically to stored text). cavemem indexes compressed text and queries raw — its own lexical retrieval cannot match its own vocabulary. The engine stores/indexes verbatim originals; compression is a *view*, never the stored form.
-2. **Embed the canonical form** (cavemem got this one right; kept as an explicit rule).
-3. **Scope retrieval per project/workspace by default**; cross-workspace recall is an explicit opt-in — cavemem's global-across-projects search is the leakage counterexample.
-4. **Budget and measure injection** — already this layer's net-accounting rule; cavemem's structurally uncapped session-start injection with zero accounting is the proof the rule is not paranoia.
-
-Plus one adoption: the **preserved-segment tokenizer** (byte-exact fences/code/URLs/paths/versions/identifiers through any transform) guards every prose-touching path in this layer — and a prohibition: never strip hedge/modality words from stored facts (cavemem's regex compression deterministically converts "could potentially break" into "break" — systematic overclaiming on recall).
+1. **Store and index canonical originals.** Compression is a recoverable view, never the durable source.
+2. **Scope retrieval per workspace by default.** Cross-workspace recall is explicit and policy-gated.
+3. **Budget and measure every injection.** Standing memory is a cost until a current task A/B proves net benefit.
+4. **Preserve exact technical spans and modality words.** Code, URLs, paths, versions, identifiers, uncertainty, and negation remain byte- or meaning-exact.
 
 ## What stays out
 
-No vector memory by default ([tools hub 20 — Qdrant and vector databases for agent context](/research/context/tools/20-qdrant-and-vector-databases/)'s ≥20% bar; the bounded docs/decision hybrid index remains an opt-in role experiment); no cross-capsule shared memory in v1 (the Context-OS/event-bus class is real engineering but unproven token economics — revisit with fleet-ledger data); no episodic "cognition" mechanisms (forgetting curves, Hebbian eviction — lean-ctx's 307-file sprawl is the anti-lesson: unproven wins, huge maintenance surface).
+No vector memory by default; the bounded docs/decision hybrid index remains an opt-in role experiment under the current ≥20% acceptance bar ([current retrieval-tools comparison](/research/context/tools/06-combining/)). No cross-capsule shared memory or adaptive cognition in v1 without current fleet-ledger evidence.

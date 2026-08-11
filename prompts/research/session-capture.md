@@ -1,10 +1,11 @@
----
-title: "Session Capture Research Brief"
----
-
 # Session Capture Research Brief
 
-> **How to run this file:** `/goal Follow session-capture/prompt.mdx`. You — the agent reading this — are the researcher; this brief is your full specification. This dossier's initial run executed the brief via parallel evidence agents (SpecStory deep-dive, agent-store survey, market sweep, jackin❯ codebase recon) plus a direct source-code reading of the SpecStory repository clone.
+> **Current-state rule:** Verify one current cutoff, publish only the latest value and state found at
+> that cutoff, and replace superseded findings instead of preserving them. Git history is the only
+> archive. If a current value cannot be verified, report it as unknown rather than using an older
+> value.
+
+> **How to run this file:** `/goal Follow prompts/research/session-capture.md`. You — the agent reading this — are the researcher; this brief is your full specification. This dossier's initial run executed the brief via parallel evidence agents (SpecStory deep-dive, agent-store survey, market sweep, jackin❯ codebase recon) plus a direct source-code reading of the SpecStory repository clone.
 
 ## 1. Mission
 

@@ -1,173 +1,96 @@
 ---
-title: "01 — Caveman: design teardown"
+title: "01 — Caveman v2: current design"
 ---
 
-# 01 — Caveman: design teardown
+# 01 — Caveman v2: current design
 
-> "Why use many token when few do trick." — the caveman tagline
+Cutoff: **2026-08-12**. Current stable: [v2.0.0](https://github.com/JuliusBrussee/caveman/releases/tag/v2.0.0), released 2026-08-11.
 
-Caveman is the **output-side** member of the trio. It compresses what the model *writes back* — visible prose — and nothing else. It is also the only one of the three you are likely already running: this very research was produced with caveman mode active. Its design is the most surprising of the three precisely because there is almost nothing to it.
+Caveman now contains **two distinct token interventions**:
 
-| Field | Value |
+1. an output-register skill that instructs the model to write terse prose; and
+2. a local input-compression stack—engine, proxy, MCP server, CLI/SDK, recovery store, and optional representation transforms.
+
+Any current assessment must separate these mechanisms and their denominators.
+
+## Current facts
+
+| Field | Current value |
 |---|---|
-| Repository | `JuliusBrussee/caveman` |
-| Pitch | Terse-register output compression; README headline "cuts ~75% of output tokens" [retired in v1.9.1 (2026-07-03, #234): headline is now a flat "65% average output reduction (range 22–87%)" — https://github.com/JuliusBrussee/caveman/releases/tag/v1.9.1, accessed 2026-07-05] |
-| Form factor | Claude Code plugin (skills + hooks); not a binary, not a proxy, not an MCP server |
-| Latest seen | `v1.9.1` (2026-07-03, "65%, honestly") |
-| Adoption | 74,446★ / 166 watchers (2026-06-18); 83,839★ / 194 watchers (2026-07-05) — PR-inflated; see [evidence](/research/context/tools/07-evidence-and-claims/) |
-| Bucket hit | Visible output (~17% of heavy-session dollars) |
-| Cache interaction | **Neutral** — never touches the cached prefix |
+| Repository | [JuliusBrussee/caveman](https://github.com/JuliusBrussee/caveman) |
+| Stable release | [v2.0.0](https://github.com/JuliusBrussee/caveman/releases/tag/v2.0.0) |
+| Adoption snapshot | 97,512 stars / 240 subscribers / 5,622 forks / 470 open issues and PRs |
+| Output layer | Caveman skill: lite/full/ultra and wenyan variants, with exact-content and clarity guards |
+| Input layer | Type-aware Go engine, proxy, MCP, SDK/CLI, CCR recovery, TOON and image/pixel options |
+| License | Skill, CLI, SDK, kit, evals, contracts, and catalog: MIT. Engine, proxy, MCP, shrink, cavemem-core, and platform: BSL-1.1 with delayed Apache-2.0 conversion |
+| Default safety posture | Parse/store/not-smaller failures pass through; exact originals recoverable by reference |
 
-## The magic: a prompt, not a program
+Metadata source: [GitHub API](https://api.github.com/repos/JuliusBrussee/caveman). License boundaries: [LICENSING.md](https://github.com/JuliusBrussee/caveman/blob/v2.0.0/LICENSING.md).
 
-The single most important fact about caveman is that **it has no compression engine.** There is no parser, no model, no subprocess, no byte ever transformed by caveman's own code. The "compression" happens inside the model's own decoding, for free, because a prompt instructed the model to talk shorter.
-
-The engine is a markdown file — `SKILL.md` — that carries a register-shift instruction the model applies to its own generation: drop articles, filler, and hedging; keep code, errors, API names, and commit keywords verbatim; fragments are fine. That is the entire mechanism. Everything else in the plugin exists only to *deliver* that instruction reliably and to *measure* its effect.
+## Current architecture
 
 ```text
-   CAVEMAN ACTIVATION + EFFECT  (no bytes transformed by caveman code)
+output path
+  model decoder ── current Caveman skill ── shorter visible narration
 
-   session opens
-        │
-        ▼
-   ┌─────────────────────────┐   SessionStart hook
-   │ caveman-activate.js      │   injects the mode prompt from SKILL.md
-   └─────────────────────────┘   into the system context
-        │
-        ▼
-   ┌─────────────────────────┐   the register-shift INSTRUCTION now
-   │ SKILL.md rule-set        │   sits in context: "drop articles/filler/
-   │ (lite/full/ultra/wenyan) │    hedging; keep code/errors verbatim"
-   └─────────────────────────┘
-        │
-   user turn
-        │
-        ▼
-   ┌─────────────────────────┐   UserPromptSubmit hook
-   │ caveman-mode-tracker.js  │   re-asserts the active level every turn,
-   └─────────────────────────┘   tallies tokens for /caveman-stats
-        │
-        ▼
-   ┌─────────────────────────┐   the MODEL'S DECODER produces terser text
-   │  model generation        │   because the prompt told it to.
-   │  (compression happens     │   THIS is the "compression" — it is
-   │   HERE, in decoding)      │   generation-time, not a transform.
-   └─────────────────────────┘
-        │
-        ▼
-   shorter visible output  ── fewer output tokens billed at the 5×-priced rate
+input path
+  agent/tool payload
+      ↓
+  local proxy / MCP / SDK
+      ↓
+  type detection and routing
+      ↓
+  JSON | logs | code | diff | search | HTML | tables | config |
+  terminal | tool schemas | TOON | accessibility | repetition
+      ↓
+  shorter-only check + CCR reference
+      ↓
+  model context
 ```
 
-Because the compression is just the model choosing shorter words, it is **unconditionally cache-safe** (it only affects newly generated output, never the cached input prefix) and it costs **zero runtime compute**. That is the whole appeal: the cheapest possible intervention on the most expensive token class.
+The [engine documentation](https://github.com/JuliusBrussee/caveman/blob/v2.0.0/engine/README.md) describes fourteen routed compressor families. Compression is deterministic at this layer; the model does not summarize the payload. The store keeps exact originals behind compact references. An input cap and CCR capacity cap bound local resource use; parse errors, storage failures, and non-smaller outputs return the original content.
 
-## The six intensity levels
+The [proxy documentation](https://github.com/JuliusBrussee/caveman/blob/v2.0.0/proxy/README.md) describes a local base-URL swap and a record-only pass-through mode. A proxy remains an integrity boundary: it sees requests, may change cache geometry, and must preserve provider semantics.
 
-The levels are not different programs — they are different strictness clauses in the same `SKILL.md`. Each ratchets the register harder.
+## Current default stack
 
-| Level | What changes | Measured token cut (local, Fable tokenizer) |
-|---|---|---|
-| `lite` | Drop pleasantries and obvious filler; grammar intact | modest; quality-neutral |
-| `full` | Drop articles/filler/hedging; fragments allowed (the default) | ~50–60% of visible prose |
-| `ultra` | Adds prose-word abbreviation and causal arrows (`→`) | **58.5%** (vs the README's "~75%" headline) |
-| `wenyan-lite` | Switch to Classical Chinese register, lighter | character cut ≫ token cut (see below) |
-| `wenyan-full` | Classical Chinese, fuller | 80.9% **character** cut = **56.6% token** cut |
-| `wenyan-ultra` | Classical Chinese, maximal word-dropping | **74.5% token** cut — the measured ceiling |
+The v2 README presents `caveman claude` as the full wrapper: structured compression, TOON when smaller, MCP integration, and output shrinking. `--off` provides a pass-through control. Pixel mode re-encodes text as images only for gated models; it inherits model-legibility and modality risks similar to pxpipe.
 
-The `wenyan` levels are the cautionary tail of the ladder. Their headline "80–90%" is a **character** reduction; on the Fable tokenizer classical Chinese runs at roughly 0.9 characters per token (i.e. at or above one token per character), so the *token* saving is far smaller than the character saving implies, and on short phrases wenyan can cost **more** tokens than plain English (the omitted non-English version measured 9 tokens vs 8 for "if all tests pass then commit"). The savings that do exist come from extreme word-dropping in wenyan grammar, not from cheap characters — and they are bought with maximal, completely unmeasured comprehension and operator-legibility risk.
+The output skill and input engine can be enabled independently. That separation is necessary for attribution: otherwise a lower total could come from shorter narration, smaller observations, changed agent behavior, or all three.
 
-## Why deleting words is the only lever that works
+## Current evidence
 
-Caveman's effectiveness rests on one property of byte-pair encoding: **a BPE token count tracks word count, not character count.** This single fact decides what works and what is folklore.
+The current release ships a reproducible first-party [wrap benchmark](https://github.com/JuliusBrussee/caveman/blob/v2.0.0/docs/WRAP-BENCHMARK.md): six deterministic 60–95 KB tool-output fixtures, three repetitions per fixture, pinned agent/model, and exact-answer checks. The reported Caveman arm reduces provider-reported input 33.2% with 18/18 exact answers. This is useful fixture evidence, not an independent real-repository accepted-task benchmark.
 
-- **Deleting words saves tokens** — the entire safe core of caveman. The local register ladder on identical content: polite/full 72 tok → plain 33 (−54%) → telegraphic 29 (−60%) → caveman 24 (−67%). Notably, on the reply side, **caveman grammar bought zero tokens over plain telegraphic English** — the savings come from removing words, not from breaking grammar.
-- **Abbreviating common words does *not* save tokens, and usually costs them.** Measured per-word: `function` = 1 token but `fn` = 2; `without` = 1 but `w/o` = 3; `because` = 1 but `bc` = 2; `config` = 1 but `cfg` = 3. BPE already compressed the common words. Abbreviation only pays on genuinely multi-token words (`asynchronous`→`async`, `parameters`→`params`, `implementation`→`impl`).
-- **Glyph/symbol DSLs are a trap on Claude.** Exotic glyphs cost 3.9–4.9 tokens *each*; a glyph DSL lost to plain telegraphic ASCII by ~26–28% in two independent local samples. The lone exception is the arrow `→` at 1.0 token (cheaper than ASCII `->` at 2.0), which is why caveman-ultra adopts causal arrows. Beyond that one symbol, symbolic notation is anti-recommended — and there is a comprehension failure layered on the cost one: Claude Haiku 4.5 parses symbolic instructions at 100% but *obeys* them at only 26% fidelity (silent disobedience).
+No independent end-to-end evaluation of **v2.0.0** was found by the cutoff. Results tied only to earlier skill releases are intentionally not carried into this current-only dossier.
 
-The practical consequence baked into caveman's design: the safe rungs (filler-strip, telegraphic) capture essentially all the realizable saving; the aggressive rungs (caveman-ultra, wenyan) add lossiness and risk for diminishing token returns.
+## Benefits
 
-## The two hooks (and the host-state writes)
+- Only named tool with a first-class output skill **and** a newly integrated input engine.
+- Deterministic, content-typed compression instead of one generic summarizer.
+- Exact-original recovery through CCR.
+- Shorter-only and fail-closed pass-through guards reduce silent corruption risk.
+- Local proxy/engine path; multiple agent wrappers.
+- `--off` and record-only controls support an honest local A/B.
 
-Delivering the instruction reliably requires two Claude Code hooks, both of which write to the host's `~/.claude` configuration — a detail that matters because it is the exact surface that collides with RTK's hook (see [combining](/research/context/tools/06-combining/)).
+## Costs and risks
 
-- **`SessionStart` → `caveman-activate.js`** — injects the mode prompt at session open.
-- **`UserPromptSubmit` → `caveman-mode-tracker.js`** — re-asserts the active level every turn (so it does not drift out of context over a long session) and tallies tokens for the `/caveman-stats` readout.
+- v2.0.0 is one day old at the cutoff; operational maturity is unproven.
+- Product name hides two interventions; combined counters can obscure causality.
+- Engine-side code is BSL-1.1, not MIT/Apache today. Hosted resale has a commercial boundary.
+- Proxy/MCP/wrapper installation expands the trusted path and may overlap existing hooks.
+- CCR is local state with finite capacity and no eviction in the documented current engine; operators must monitor growth/failure behavior.
+- TOON and pixel transforms can change model comprehension even when byte recovery exists outside the active prompt.
+- The current fixture benchmark is vendor-owned and narrow.
 
-`plugin.json` declares the two hooks, and the installer (`bin/lib/settings.js`) writes them into `~/.claude/settings.json` idempotently, with a Zod-validated shape, an `hasCavemanHook` probe to avoid duplicate registration, and a `removeCavemanHooks` uninstall path. The `/caveman-stats` numbers are computed by the hook reading the session JSONL — the model does not compute them.
+## Best fit
 
-## The ecosystem: the same trick aimed elsewhere
+Use the **skill** when visible narration is the measured waste and terse language remains clear. Test the **v2 engine** when large JSON, logs, code/search output, terminal output, or tool schemas dominate fresh input and local recovery is required.
 
-Caveman is the flagship of a family, and every sibling is the same "instruction, not engine" idea pointed at a different surface. This breadth is part of what distinguishes caveman from headroom and RTK — it is an *ecosystem* of small register-shift tools, not a single compressor.
+Do not adopt the full stack merely because the two mechanisms share a repository. Enable one layer at a time, compare against `--off`, and require unchanged task acceptance plus successful raw recovery.
 
-```text
-                       THE CAVEMAN FAMILY
+## Current verdict
 
-   ┌──────────────────────────────────────────────────────────────┐
-   │  OUTPUT side                                                   │
-   │    caveman          terse register on the model's visible prose│
-   │    caveman-commit   terse Conventional-Commit messages         │
-   │    caveman-review   terse PR-review comments (one line each)   │
-   │    caveman-code     "code" variant, "~2× fewer tokens vs Codex"│
-   └──────────────────────────────────────────────────────────────┘
-   ┌──────────────────────────────────────────────────────────────┐
-   │  INPUT / memory side                                           │
-   │    caveman-compress rewrites memory files (CLAUDE.md) in place,│
-   │                     keeps a .original.md backup ("~46% input") │
-   │    caveman-shrink   compresses MCP tool DESCRIPTIONS           │
-   │    cavemem          pre-compressed persistent memory over MCP  │
-   │                     (SQLite+FTS5, BM25+vector retrieval)       │
-   └──────────────────────────────────────────────────────────────┘
-   ┌──────────────────────────────────────────────────────────────┐
-   │  MULTI-AGENT side                                              │
-   │    cavecrew         investigator / builder / reviewer subagents│
-   │                     return caveman-compressed reports to the   │
-   │                     main thread (~43.9% smaller, not the       │
-   │                     claimed 60%)                               │
-   └──────────────────────────────────────────────────────────────┘
-   ┌──────────────────────────────────────────────────────────────┐
-   │  ORCHESTRATION side                                            │
-   │    cavekit          spec-driven autonomous build loop;         │
-   │                     caveman-encoded blueprints + durable        │
-   │                     SPEC.md so /clear doesn't force re-derive   │
-   └──────────────────────────────────────────────────────────────┘
-```
+Caveman v2 is the largest architectural change in the named set. It is no longer accurately described as “a prompt, not a program.” The output skill remains the lightest intervention; the input engine is a new, broad competitor to Headroom and lean-ctx. Its current mechanism is credible and well-guarded, but the latest release has only first-party fixture evidence. Status: **promising, test locally, not yet proven generally**.
 
-Two members are worth singling out because they create the only genuine overlaps with headroom and RTK:
-
-- **cavecrew** (compressed subagents) is caveman's answer to expensive agent-to-agent transfer. Investigator/builder/reviewer subagents do work and return reports that are caveman-compressed before re-entering the main context. This is the same *goal* as headroom's `SharedContext`, but cavecrew is Claude-Code-native and the compression is again just a register instruction on the subagent's output. The honest measured shrink is ~43.9%, not the claimed 60%.
-- **cavemem** (compressed memory) is the only caveman-family tool that acts on input. It stores caveman-compressed (lossy prose) observations in SQLite+FTS5 with BM25/vector retrieval, single-agent. This is the member that competes head-on with headroom's cross-agent memory + CCR — and loses on architecture, because cavemem's compression is lossy with **no recovery path** (the "confidently-wrong recalled fact" failure mode), whereas headroom's memory is reversible. If you adopt headroom memory, you retire cavemem for that workflow; running both is pure overhead.
-
-## What caveman has, and what it lacks
-
-| Feature | Caveman |
-|---|---|
-| Compresses output (the 5×-priced class) | **Yes — its whole purpose** |
-| Zero runtime compute | **Yes** (compression is in the model's decoder) |
-| Unconditionally cache-safe | **Yes** (never touches the input prefix) |
-| Cross-tool (works under any agent/model) | **Yes** — it is just a prompt; the register shift applies wherever the prompt is honored |
-| Minutes to adopt | **Yes** |
-| Multi-surface ecosystem (commit/review/memory/subagents) | **Yes** — the broadest *family* of the three |
-| Compresses input (tool output, files, RAG) | **No** — out of scope (cavemem covers only memory injection, lossily) |
-| Reversible / recoverable compression | **No** — dropped caveats are gone; re-ask to recover |
-| Touches thinking (20% of dollars) | **No** — the README concedes it |
-| Independent benchmark on agentic task success | **No** — every quality datapoint is QA/MCQA on older models |
-| A measurable whole-session telemetry stream | **No** — `/caveman-stats` is a local tally, not a controlled measurement |
-
-## Self-cost, eval method, and failure mode
-
-**Self-cost.** The caveman skill listing carried in context costs ~940 tokens of prefix per session (about 0.5% of the modeled heavy day in cache-read rent before it saves anything), plus the two hooks' host-state writes. Runtime compute is essentially zero.
-
-**Eval method (why the honest number is below the headline).** The plugin's `evals/measure.py` counts tokens with tiktoken `o200k_base` — an *approximation* of Claude's BPE, not Claude's own tokenizer — against an "Answer concisely." terse-control baseline over 10 prompts, reporting median/min/max/stdev. The README's "~75%" is the *pooled* ratio of that table (1214 → 294 tokens); the same table's *per-task mean* is 65% (range 22–87%). A local re-measure on the Claude tokenizer lands caveman-ultra at **58.5%** of visible-prose tokens. The number is real and useful; it is simply smaller than the headline, and it measures what caveman adds *on top of* output that was already told to be concise.
-
-**Failure mode.** Over-terse prose with no recovery — because the long form was never generated, recovering it means re-asking. The project's own issue tracker records the predictable version of this (issue #484 — caveman shrinking PR/issue titles it should have left verbatim). On the dollar axis, the deeper limit is structural: visible output is only ~17% of a heavy session, so even total muteness caps caveman's whole-bill effect at 17%, and the realistic figure is ~10% of session dollars — because the 20%-of-dollars thinking bucket is billed in full (and on Fable 5 cannot even be disabled), reachable only by the **effort** lever, never by any register instruction. That ceiling is the honest frame for everything caveman does; it is detailed in the dossier's [output-discipline](/research/context/techniques/09-output-discipline/) and [style-compression](/research/context/techniques/04-style-and-language-compression/) chapters.
-
-## Evidence and claims to kill
-
-- **"Caveman cuts ~75% of tokens."** The 75% is the pooled benchmark ratio; the per-task mean is 65%; the local Claude-tokenizer replication is 58.5% (ultra). And it targets visible prose only (~17% of dollars), so the whole-bill effect is ~4–6% per day. The README itself calls the cost saving "a bonus." The project itself retired the ~75% headline in v1.9.1 and now claims a 65% output-only average, shipping `docs/HONEST-NUMBERS.md` conceding cases where caveman costs tokens (https://github.com/JuliusBrussee/caveman/blob/v1.9.1/docs/HONEST-NUMBERS.md); the 58.5% Claude-tokenizer replication and the ~17%-of-dollars ceiling remain the deeper correction.
-- **"Wenyan/Classical-Chinese saves ~80%."** Character-token confusion: 80.9% character cut = 56.6% token cut; wenyan-ultra reaches 74.5% tokens only at maximum lossiness and on some short phrases costs *more* than English.
-- **"A terse style cuts your Claude Code bill proportionally."** No — visible output is 17% of dollars; thinking (20%) is billed in full though displayed summarized.
-
-Caveman's evidence tier is **T3, partially reproduced locally** for the output-token mechanism; there is no agentic-task quality benchmark of register-compressed output anywhere, which is the single largest open question hanging over it. The full per-technique records, the folklore ledger, and the tokenizer measurement battery live in the dossier's [style-and-language-compression chapter](/research/context/techniques/04-style-and-language-compression/) and the [prior-art scan](/research/context/techniques/03-prior-art-and-market-scan/).
-
----
-
-Next: [02 — Headroom design](/research/context/tools/02-headroom-design/), a genuine runtime system rather than a prompt or a filter binary.
+Next: [02 — Headroom v0.34.0](/research/context/tools/02-headroom-design/).

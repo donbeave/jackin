@@ -10,10 +10,10 @@ Prevention beats compression: tokens never loaded cost nothing and improve quali
 
 | Modality | Engine | Form | Question it owns |
 |---|---|---|---|
-| Lexical (files, content, literals) | **fff** — `fff-search` + `fff-query-parser` crates, one `SharedFilePicker` per workspace mount, frecency LMDB under `/jackin/state/context/index/` | crates.io dependency (`=0.9.6`, MIT; nushell-proven) | "find the file / the string" — typo-tolerant, frecency+git ranked, warm sub-10 ms |
-| Structural (entities, diffs, impact) | **sem-core** crate — entity graph (33 grammars available, feature-gated per role), structural-hash diff, budgeted context packer, orient ranking | crates.io dependency (`sem-core = "0.16"`, MIT/Apache-2.0) | "what is this function / what changed / what breaks / entity-level blame" |
-| Markdown/docs (sections, TOC, code blocks) | **mq** — `mq-lang` (+`sync`, no `http-import`) compiled canned programs + `mq-markdown` for chunking | crates.io dependencies (`=0.6.4`, MIT) | "which section of this 15 KB doc answers the question" — TOC ≈50–100 tok + section ≈100–500 tok replaces a 4–8k read |
-| Semantic (fuzzy concept recall) | **none by default** | — | Deliberately absent: embeddings for code navigation never met the ≥20% bar ([tools hub 20 — Qdrant and vector databases for agent context](/research/context/tools/20-qdrant-and-vector-databases/)); optional docs-corpus hybrid index stays a role-level experiment |
+| Lexical (files, content, literals) | **fff** — `fff-search` + `fff-query-parser` crates, one `SharedFilePicker` per workspace mount, frecency LMDB under `/jackin/state/context/index/` | current design candidate `=0.10.3`, MIT; API/dependency review required | "find the file / the string" — typo-tolerant, frecency+git ranked |
+| Structural (entities, diffs, impact) | **sem-core** crate — entity graph, structural-hash diff, bounded context surfaces | current design candidate `=0.21.0`, MIT OR Apache-2.0; API/dependency review required | "what is this function / what changed / what breaks / entity-level blame" |
+| Markdown/docs (sections, TOC, code blocks) | **mq** — `mq-lang` (+`sync`, no `http-import`) compiled canned programs + `mq-markdown` for chunking | current design candidate `=0.8.2`, MIT; API/dependency review required | "which section of this large doc answers the question" — select structure before sending full prose |
+| Semantic (fuzzy concept recall) | **none by default** | — | Deliberately absent: embeddings for code navigation never met the ≥20% bar ([current retrieval-tools comparison](/research/context/tools/06-combining/)); optional docs-corpus hybrid index stays a role-level experiment |
 
 Compiler-grade truth stays with the existing role stack: `rust-analyzer` (LSP) and `ast-grep` (CLI) remain the routing targets for definitions/references and structural rewrites — the engine's verbs complement, never replace, them (the architect role's routing decision, inherited).
 
