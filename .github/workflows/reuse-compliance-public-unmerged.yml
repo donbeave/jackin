@@ -1,28 +1,20 @@
 # Copyright 2026 Alexey Zhokhov
 # SPDX-License-Identifier: Apache-2.0
-name: reuse-compliance
+name: reuse-compliance (public unmerged)
 on:
-  push:
-    branches: [main]
-  workflow_dispatch:
-    inputs:
-      lanes:
-        description: github (default) | velnor | both
-        type: choice
-        default: github
-        options: [github, velnor, both]
+  pull_request:
 permissions:
   contents: read
 concurrency:
-  group: reuse-compliance-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  group: reuse-compliance-public-unmerged-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   reuse:
     name: REUSE (${{ matrix.config.lane }})
     strategy:
       fail-fast: false
       matrix:
-        config: ${{ fromJSON((github.event_name == 'workflow_dispatch' && inputs.lanes == 'both') && '[{"lane":"GitHub","runner":"ubuntu-26.04","writer":true},{"lane":"Velnor","runner":["self-hosted","velnor-target-mvp"],"writer":false}]' || (github.event_name == 'workflow_dispatch' && inputs.lanes == 'velnor') && '[{"lane":"Velnor","runner":["self-hosted","velnor-target-mvp"],"writer":false}]' || '[{"lane":"GitHub","runner":"ubuntu-26.04","writer":true}]') }}
+        config: [{"lane":"GitHub","runner":"ubuntu-26.04","writer":true}]
     runs-on: ${{ matrix.config.runner }}
     timeout-minutes: 10
     steps:
@@ -38,11 +30,12 @@ jobs:
         with:
           version: "2026.7.12"
           install_args: python uv pipx:reuse
-          cache_save: ${{ github.ref == 'refs/heads/main' }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          cache_save: false
+          github_token: ${{ github.token }}
       - name: REUSE Compliance Check
         env:
           MISE_DATA_DIR: ${{ runner.temp }}/mise-data
           MISE_CACHE_DIR: ${{ runner.temp }}/mise-cache
           MISE_CONFIG_DIR: ${{ runner.temp }}/mise-config
         run: reuse lint
+

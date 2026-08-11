@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2026 Alexey Zhokhov
 # SPDX-License-Identifier: Apache-2.0
 
-name: Renovate Validate
+name: Renovate Validate (public unmerged)
 
 # Verify the upstream sources the Renovate `customManagers` point at
 # still resolve and still list the expected package names. Renovate's
@@ -19,26 +19,19 @@ name: Renovate Validate
 # on the next Renovate dependency-dashboard cycle.
 
 on:
-  push:
+  pull_request:
     branches: [main]
-  workflow_dispatch:
-    inputs:
-      lanes:
-        description: github (default) | velnor
-        type: choice
-        default: github
-        options: [github, velnor]
 
 permissions:
   contents: read
 
 concurrency:
-  group: renovate-validate-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  group: renovate-validate-public-unmerged-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   validate:
-    runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'velnor') && fromJSON('["self-hosted","velnor-target-mvp"]') || 'ubuntu-26.04' }}
+    runs-on: ubuntu-26.04
     timeout-minutes: 10
     steps:
       - name: Checkout repository
@@ -62,3 +55,4 @@ jobs:
               exit 1
             fi
           done
+

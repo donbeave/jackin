@@ -1,24 +1,16 @@
-name: Construct Image
+name: Construct Image (public unmerged)
 
 on:
-  push:
+  pull_request:
     branches: [main]
-  workflow_dispatch:
-    inputs:
-      lanes:
-        description: |
-          Which runner(s) to run on. Default github; use both for parity runs.
-        type: choice
-        default: github
-        options: [github, velnor, both]
 
 permissions:
   actions: read
   contents: read
 
 concurrency:
-  group: construct-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  group: construct-public-unmerged-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   # Single source of truth for the digest directory — `build` writes
@@ -35,7 +27,7 @@ env:
 
 jobs:
   changes:
-    runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'velnor') && fromJSON('["self-hosted","velnor-target-mvp"]') || 'ubuntu-26.04' }}
+    runs-on: ubuntu-26.04
     timeout-minutes: 5
     outputs:
       reuse: ${{ steps.construct-result.outputs.hit }}
@@ -45,8 +37,8 @@ jobs:
       construct_image: ${{ steps.dispatch.outputs.construct_image || steps.filter.outputs.construct_image }}
       registry-contract: ${{ steps.construct-result.outputs.registry-contract }}
       rustup-contract: ${{ steps.construct-result.outputs.rustup-contract }}
-      build-configs: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'both') && '[{"lane":"GitHub","runner":"\"ubuntu-26.04\"","runner_os":"Linux","runner_arch":"X64","platform":"amd64","writer":true},{"lane":"GitHub","runner":"\"ubuntu-26.04-arm\"","runner_os":"Linux","runner_arch":"ARM64","platform":"arm64","writer":true},{"lane":"Velnor","runner":"[\"self-hosted\",\"velnor-target-mvp\"]","runner_os":"Linux","runner_arch":"X64","platform":"amd64","writer":false}]' || (github.event_name == 'workflow_dispatch' && inputs.lanes == 'velnor') && '[{"lane":"Velnor","runner":"[\"self-hosted\",\"velnor-target-mvp\"]","runner_os":"Linux","runner_arch":"X64","platform":"amd64","writer":false}]' || '[{"lane":"GitHub","runner":"\"ubuntu-26.04\"","runner_os":"Linux","runner_arch":"X64","platform":"amd64","writer":true},{"lane":"GitHub","runner":"\"ubuntu-26.04-arm\"","runner_os":"Linux","runner_arch":"ARM64","platform":"arm64","writer":true}]' }}
-      lane-configs: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'both') && '[{"lane":"GitHub","runner":"\"ubuntu-26.04\"","runner_os":"Linux","runner_arch":"X64"},{"lane":"Velnor","runner":"[\"self-hosted\",\"velnor-target-mvp\"]","runner_os":"Linux","runner_arch":"X64"}]' || (github.event_name == 'workflow_dispatch' && inputs.lanes == 'velnor') && '[{"lane":"Velnor","runner":"[\"self-hosted\",\"velnor-target-mvp\"]","runner_os":"Linux","runner_arch":"X64"}]' || '[{"lane":"GitHub","runner":"\"ubuntu-26.04\"","runner_os":"Linux","runner_arch":"X64"}]' }}
+      build-configs: '[{"lane":"GitHub","runner":"\"ubuntu-26.04\"","runner_os":"Linux","runner_arch":"X64","platform":"amd64","writer":false},{"lane":"GitHub","runner":"\"ubuntu-26.04-arm\"","runner_os":"Linux","runner_arch":"ARM64","platform":"arm64","writer":false}]'
+      lane-configs: '[{"lane":"GitHub","runner":"\"ubuntu-26.04\"","runner_os":"Linux","runner_arch":"X64"}]'
       # Single source of truth for "should this run produce / publish
       # registry artifacts" — true on push-to-main and on
       # workflow_dispatch from main, false everywhere else (PRs,
@@ -66,7 +58,7 @@ jobs:
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-          LANES: ${{ github.event_name == 'workflow_dispatch' && inputs.lanes || 'github' }}
+          LANES: github
           REGISTRY_CONTRACT: ${{ hashFiles('Cargo.lock', 'crates/**/fuzz/Cargo.lock', 'crates/jackin-lints/Cargo.lock', 'rust-toolchain.toml', '.cargo/config.toml') }}
           REPOSITORY: ${{ github.repository }}
           RUSTUP_CONTRACT: ${{ hashFiles('rust-toolchain.toml') }}
@@ -204,8 +196,8 @@ jobs:
       # without this, an unrelated tool's install (e.g. a flaky rustup
       # component download for cargo-zigbuild) reds the construct build.
       MISE_TASK_RUN_AUTO_INSTALL: "false"
-      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+      DOCKERHUB_USERNAME: ${{ github.token }}
+      DOCKERHUB_TOKEN: ${{ github.token }}
     strategy:
       fail-fast: false
       matrix:
@@ -229,9 +221,9 @@ jobs:
         with:
           version: "2026.7.12"
           cache_key_prefix: "mise-v2"
-          cache_save: ${{ github.ref == 'refs/heads/main' }}
+          cache_save: false
           install_args: "rust"
-          github_token: ${{ secrets.GH_READONLY_TOKEN }}
+          github_token: ${{ github.token }}
       - id: cargo-registry-cache
         uses: ./.github/actions/cache-cargo-registry
         with:
@@ -308,7 +300,7 @@ jobs:
     name: publish manifest
     if: needs.changes.outputs.is_publish == 'true' && needs.changes.outputs.construct_image == 'true'
     needs: [changes, build]
-    runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'velnor') && fromJSON('["self-hosted","velnor-target-mvp"]') || 'ubuntu-26.04' }}
+    runs-on: ubuntu-26.04
     timeout-minutes: 60
     permissions:
       contents: read
@@ -336,9 +328,9 @@ jobs:
         with:
           version: "2026.7.12"
           cache_key_prefix: "mise-v2"
-          cache_save: ${{ github.ref == 'refs/heads/main' }}
+          cache_save: false
           install_args: "rust"
-          github_token: ${{ secrets.GH_READONLY_TOKEN }}
+          github_token: ${{ github.token }}
       - id: cargo-registry-cache
         uses: ./.github/actions/cache-cargo-registry
         with:
@@ -352,8 +344,8 @@ jobs:
       - name: Log in to Docker Hub
         uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          username: ${{ github.token }}
+          password: ${{ github.token }}
 
       - name: Download platform digests
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
@@ -412,9 +404,9 @@ jobs:
         with:
           version: "2026.7.12"
           cache_key_prefix: "mise-v2"
-          cache_save: ${{ github.ref == 'refs/heads/main' }}
+          cache_save: false
           install_args: "rust"
-          github_token: ${{ secrets.GH_READONLY_TOKEN }}
+          github_token: ${{ github.token }}
       - id: cargo-registry-cache
         uses: ./.github/actions/cache-cargo-registry
         with:
@@ -454,7 +446,7 @@ jobs:
   construct-required:
     if: always()
     needs: [changes, build, publish-manifest, publish-manifest-rehearsal]
-    runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'velnor') && fromJSON('["self-hosted","velnor-target-mvp"]') || 'ubuntu-26.04' }}
+    runs-on: ubuntu-26.04
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -499,3 +491,4 @@ jobs:
           path: construct-result.txt
           compression-level: 0
           retention-days: 7
+
