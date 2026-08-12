@@ -1,7 +1,7 @@
 # Information architecture
 
-Status: **draft; applies to all alternatives unless an alternative says
-otherwise**
+Status: **approved A1 information architecture; native concept not yet
+confirmed**
 
 ## Rust-owned object model
 

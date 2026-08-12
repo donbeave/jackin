@@ -1,14 +1,15 @@
 # Native Liquid Glass redesign
 
-Status: **Phase 1 draft — operator selection required**
+Status: **A1 selected on 2026-08-12 — native concept not yet confirmed**
 
-These files are the design authority proposed for the native jackin❯ desktop
-redesign. They do not authorize implementation. Production Swift remains
-unchanged until the operator selects a structural direction.
+These files are the design authority for the native jackin❯ desktop redesign.
+The A1 selection authorizes Phase 2 audits and the smallest runnable Phase 3
+proof. It does not authorize full production implementation.
 
 ## Evidence and decisions
 
 - [DRIFT_REPORT.md](DRIFT_REPORT.md) — Phase 0 implementation and preview drift
+- [DecisionLog.md](DecisionLog.md) — operator decisions and their exact scope
 - [ExperienceBrief.md](ExperienceBrief.md) — separate briefs for the menu-bar
   popover and Usage window
 - [InformationArchitecture.md](InformationArchitecture.md) — objects,
@@ -25,9 +26,9 @@ unchanged until the operator selects a structural direction.
 
 ## Gate
 
-The operator must select one alternative, reject all alternatives, or request a
-remix. After that decision, the selected structure is recorded and Phase 2 can
-begin. No alternative is implicitly approved by this document set.
+The operator selected A1. Phase 2 audits and a runnable native concept may now
+proceed. Production implementation remains blocked until the operator separately
+confirms the running concept and its real captures.
 
 ## Product invariants
 

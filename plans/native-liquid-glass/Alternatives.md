@@ -1,6 +1,6 @@
 # Structural alternatives
 
-Status: **operator decision pending**
+Status: **A1 selected by the operator on 2026-08-12**
 
 These are paired alternatives: each defines both the menu-bar popover and Usage
 window. Color, radius, blur, and decorative styling are deliberately absent.
@@ -432,14 +432,11 @@ Recommended details to carry into a selected concept:
 - Sidebar contains Overview plus providers, not accounts.
 - System popover/window/sidebar/toolbar materials are the only glass.
 
-## Operator decision gate
+## Operator decision
 
-No selection is recorded yet. Reply with one of:
+The operator replied `Select A1` on 2026-08-12. `DecisionLog.md` records the
+scope and reasoning. A1 is frozen for the native concept proof; alternatives A2
+through A8 remain comparison history, not implementation options.
 
-- `Select A1` through `Select A8`;
-- `Reject all` with the missing structural requirement; or
-- `Remix A# popover + A# Usage` with any required adjustment.
-
-After selection, the decision is frozen in a decision log. Phase 2 may inspect
-project/API setup, but production Swift still waits for a separately confirmed
-runnable native preview.
+Full production implementation still waits for a separately confirmed runnable
+native concept.

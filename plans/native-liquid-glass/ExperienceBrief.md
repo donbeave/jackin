@@ -1,6 +1,6 @@
 # Experience brief
 
-Status: **draft; structural direction not selected**
+Status: **approved for the selected A1 native concept on 2026-08-12**
 
 ## Shared product promise
 
@@ -209,5 +209,5 @@ implementation phase. Do not add preferences solely to expose design choices.
 
 ## Approval boundary
 
-This brief sets product and platform constraints, not the final structure. The
-operator must select an entry from `Alternatives.md` before implementation.
+This brief sets product and platform constraints for A1. Final rendered craft
+and production implementation remain subject to the runnable-concept gate.

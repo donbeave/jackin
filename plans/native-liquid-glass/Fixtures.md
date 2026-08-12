@@ -1,6 +1,6 @@
 # Deterministic fixtures
 
-Status: **draft; required before native preview implementation**
+Status: **approved fixture requirements for the A1 native concept**
 
 ## Contract
 

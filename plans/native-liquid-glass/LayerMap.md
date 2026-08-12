@@ -1,6 +1,6 @@
 # Liquid Glass layer map
 
-Status: **draft; recommended baseline only**
+Status: **approved A1 layer map; runnable proof pending**
 
 ## Governing rule
 

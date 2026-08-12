@@ -4,7 +4,11 @@ title: "jackin❯ desktop — native macOS usage status bar"
 
 **Status**: Partially implemented
 
-**Current state**: jackin❯ desktop ships one native status item per auto-detected provider, a focused usage popover, the Capsule-parity Usage window, host-global snapshot coordination, and secret-free release validation. This implementation is deliberately accepted as a functional baseline, not as visual parity: its native composition and feel remain materially short of the canonical HTML design. Visual alignment continues in a follow-up pull request. Public notarized distribution and production acceptance also remain unfinished, so this item cannot retire yet.
+**Current state**: jackin❯ desktop ships one native status item per auto-detected provider, a focused usage popover, the Capsule-parity Usage window, host-global snapshot coordination, and secret-free release validation. This implementation is deliberately accepted as a functional baseline, not as the final native experience. The operator selected the A1 focused-popover and two-column Usage direction for the redesign; its runnable native proof and production implementation remain gated on separate confirmation. Public notarized distribution and production acceptance also remain unfinished, so this item cannot retire yet.
+
+## Decisions
+
+- **2026-08-12 — Select A1: focused provider popover plus two-column Usage.** The operator accepted the recommended structure after reviewing eight native alternatives. A primary status-item click keeps the clicked provider as popover context. Cross-provider comparison belongs in the Usage window, which uses Overview plus provider sidebar navigation and provider-scoped account selection. The reason is to preserve provider-click context, remove duplicate custom navigation, and let standard macOS components own hierarchy and behavior. Final pixels remain subject to the separately confirmed runnable native proof.
 
 ## Shipped baseline
 
@@ -30,14 +34,14 @@ As of 2026-08-09, the `release-macos` environment has none of the five required 
 
 ### Native interaction and visual acceptance
 
-The durable design oracle is `plans/previews/desktop-ui/index.html`, `popover.html`, and their adjacent `SPECIFICATION.md`. Historical implementation plans, progress screenshots, and visual-diff journals were removed because they described a process, not the desired product. Structural tests, full-Xcode tests, pure Swift harnesses, build verification, and ephemeral launch smokes do not prove visual parity.
+Live current-stable macOS behavior, Apple guidance, the approved native design artifacts under `plans/native-liquid-glass/`, and the operator-confirmed runnable native proof are the visual and behavioral authority. Files under `plans/previews/desktop-ui/` remain historical information-architecture and fixture inputs only. Structural tests, pure Swift harnesses, build verification, detached previews, and HTML screenshots do not approve live Liquid Glass.
 
-- Continue direct HTML-to-running-app alignment in the next pull request. Treat the current native UI as a baseline to improve, never as the visual source of truth.
+- Build and review A1 as a runnable native proof before production implementation. Keep the popover provider-focused; put cross-provider Overview and provider navigation in the two-column Usage window; use standard components before native composition and avoid custom glass.
 
-- Run real Apple Silicon acceptance on macOS 14 fallback materials and macOS 26 Liquid Glass, covering light/dark appearance, Increase Contrast, Reduce Transparency, mouse, keyboard-only navigation, VoiceOver, and screen-sharing privacy transitions.
+- Run real Apple Silicon acceptance on the selected latest-stable macOS baseline, covering light/dark appearance, active/inactive windows, Increase Contrast, Reduce Transparency, Reduce Motion, mouse, keyboard-only navigation, VoiceOver, and screen-sharing privacy transitions.
 - Exercise no providers, one provider, all detected providers, dual and many-window quotas, multi-account selection, very long labels, refreshing, fresh, stale-last-good, depleted-with-reset, needs-login, unsupported, and provider-error states at minimum and large window sizes. Include remembered sizing, repeated open/close, and simultaneous popover/Usage-window behavior.
 - Compare jackin❯ desktop, Capsule, and `jackin usage` from the same serialized snapshots; every quota/account string and ordering decision must agree. Retain redacted evidence.
-- Compare the running native status items, Overview/provider popover tabs, Usage window, and state families directly with the HTML oracle. Temporary local captures may assist review, but progress screenshots and visual-diff artifacts do not belong in the repository. Current source-confinement and presentation harnesses prove ownership and structure, not pixel output.
+- Compare the running native status items, focused provider popover, Usage Overview/sidebar/detail structure, and state families with the approved A1 artifacts and confirmed native proof. HTML may identify retained data inventory but cannot dictate native geometry, material, controls, navigation, or pixels. Current source-confinement and presentation harnesses prove ownership and structure, not live appearance.
 
 ### Capture-gated provider work
 

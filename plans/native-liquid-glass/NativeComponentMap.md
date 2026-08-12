@@ -1,6 +1,6 @@
 # Native component map
 
-Status: **draft; recommended baseline only**
+Status: **approved A1 component map; runnable proof pending**
 
 Classification:
 

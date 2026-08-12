@@ -1,6 +1,6 @@
 # Required states and evidence matrix
 
-Status: **design requirements only; no rendered evidence captured yet**
+Status: **approved A1 requirements; no rendered evidence captured yet**
 
 Every row is mandatory after native preview implementation. A screenshot alone
 does not prove keyboard, accessibility, or restoration behavior; use the named
