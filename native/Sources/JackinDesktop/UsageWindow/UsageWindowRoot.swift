@@ -13,14 +13,10 @@ public struct UsageWindowRoot: View {
 
     @ObservedObject public var store: PresentationStore
     @Environment(\.dismiss) private var dismiss
-    @State private var destination: Destination?
     @State private var columnVisibility: NavigationSplitViewVisibility = .all
 
     public init(store: PresentationStore) {
         self.store = store
-        _destination = State(
-            initialValue: store.usageSelection.map(Destination.provider) ?? .overview
-        )
     }
 
     private var model: UsageWindowModel {
@@ -35,7 +31,7 @@ public struct UsageWindowRoot: View {
     public var body: some View {
         NavigationSplitView(columnVisibility: $columnVisibility) {
             VStack(spacing: 0) {
-                List(selection: $destination) {
+                List(selection: destination) {
                     Label("Overview", systemImage: "rectangle.grid.2x2")
                         .tag(Destination.overview)
                         .accessibilityIdentifier("usage.sidebar.overview")
@@ -98,21 +94,21 @@ public struct UsageWindowRoot: View {
                 store.openDefault()
             }
         }
-        .onChange(of: destination) { _, value in
-            switch value {
-            case .overview, .none:
-                store.selectUsageSurface(nil)
-            case .provider(let surfaceId):
-                store.selectUsageSurface(surfaceId)
-            }
-        }
-        .onChange(of: store.usageSelection) { _, surfaceId in
-            let updated = surfaceId.map(Destination.provider) ?? .overview
-            if destination != updated {
-                destination = updated
-            }
-        }
         .frame(minWidth: 760, minHeight: 500)
+    }
+
+    private var destination: Binding<Destination?> {
+        Binding(
+            get: { store.usageSelection.map(Destination.provider) ?? .overview },
+            set: { value in
+                switch value {
+                case .overview, .none:
+                    store.selectUsageSurface(nil)
+                case .provider(let surfaceId):
+                    store.selectUsageSurface(surfaceId)
+                }
+            }
+        )
     }
 
     private var isSidebarVisible: Bool {
@@ -148,12 +144,19 @@ public struct UsageWindowRoot: View {
                 onRetry: { store.refresh(surfaceId: content.surfaceId) }
             )
         } else {
-            OverviewListView(model: model, accounts: store.accounts) { surfaceId, accountKey in
-                store.selectUsageSurface(surfaceId)
-                if let accountKey {
-                    store.setSelectedAccount(surfaceId: surfaceId, accountKey: accountKey)
+            OverviewListView(
+                model: model,
+                accounts: store.accounts,
+                onSelect: { surfaceId, accountKey in
+                    store.selectUsageSurface(surfaceId)
+                    if let accountKey {
+                        store.setSelectedAccount(surfaceId: surfaceId, accountKey: accountKey)
+                    }
+                },
+                onRetry: { surfaceId in
+                    store.refresh(surfaceId: surfaceId)
                 }
-            }
+            )
         }
     }
 

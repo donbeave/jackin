@@ -25,6 +25,27 @@ final class JackinDesktopUITests: XCTestCase {
         XCTAssertTrue(element("usage.refresh").isEnabled)
     }
 
+    func testPartialFailureOverviewRemainsCoherentWhenRepresented() {
+        defer { application.terminate() }
+        guard launchUsage(fixture: "F08-partial-timeout", selection: "overview", size: "920x620")
+        else { return }
+
+        for _ in 0..<3 {
+            DistributedNotificationCenter.default().postNotificationName(
+                Notification.Name("com.jackin-project.desktop.visual-qa.show-usage"),
+                object: nil,
+                userInfo: nil,
+                deliverImmediately: true
+            )
+        }
+
+        XCTAssertTrue(element("usage.overview.table").waitForExistence(timeout: 5))
+        XCTAssertFalse(element("usage.provider.codex").exists)
+        XCTAssertTrue(element("usage.overview.error.kimi").waitForExistence(timeout: 3))
+        XCTAssertTrue(element("usage.overview.retry.kimi").isEnabled)
+        XCTAssertTrue(element("usage.sidebar.provider.codex").exists)
+    }
+
     func testNativeSidebarToggleKeepsLeadingToolbarSlot() {
         defer { application.terminate() }
         guard launchUsage(fixture: "F03-multi-account", selection: "codex", size: "920x620")

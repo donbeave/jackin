@@ -9,7 +9,23 @@ result="$repo/native/DerivedData/UITests-$stamp-$$.xcresult"
 expected=$(rg --no-filename '^[[:space:]]+func test' "$repo/native/UITests"/*.swift | wc -l | tr -d ' ')
 lock="$repo/native/.build/ui-test.lock"
 runner="$repo/native/DerivedData/Build/Products/Debug/JackinDesktopUITests-Runner.app/Contents/MacOS/JackinDesktopUITests-Runner"
+app_pattern="^$repo/native/(dist|DerivedData)/.*JackinDesktop.app/Contents/MacOS/JackinDesktop( |$)"
 child_pid=""
+
+terminate_repo_apps() {
+  while IFS= read -r app_pid; do
+    kill -TERM "$app_pid" 2>/dev/null || true
+  done < <(pgrep -f "$app_pattern" || true)
+  i=0
+  while pgrep -f "$app_pattern" >/dev/null 2>&1 && [[ "$i" -lt 20 ]]; do
+    sleep 0.25
+    i=$((i + 1))
+  done
+  while IFS= read -r app_pid; do
+    kill -KILL "$app_pid" 2>/dev/null || true
+  done < <(pgrep -f "$app_pattern" || true)
+  ! pgrep -f "$app_pattern" >/dev/null 2>&1
+}
 
 mkdir -p "$(dirname "$lock")"
 if ! mkdir "$lock"; then
@@ -27,12 +43,14 @@ cleanup() {
   while IFS= read -r runner_pid; do
     kill -TERM "$runner_pid" 2>/dev/null || true
   done < <(pgrep -f "^${runner}$" || true)
+  terminate_repo_apps || status=1
   rmdir "$lock" 2>/dev/null || true
   exit "$status"
 }
 trap cleanup EXIT INT TERM HUP
 
 test "$expected" -gt 0
+terminate_repo_apps
 xcodebuild test \
   -quiet \
   -project "$repo/native/JackinDesktop.xcodeproj" \

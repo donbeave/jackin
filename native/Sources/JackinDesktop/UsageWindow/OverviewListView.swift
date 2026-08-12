@@ -9,16 +9,19 @@ public struct OverviewListView: View {
     public let model: UsageWindowModel
     public let accounts: [PresentationStore.AccountRow]
     public var onSelect: (String, String?) -> Void
+    public var onRetry: (String) -> Void
     @State private var selectedRowID: OverviewInventoryRow.ID?
 
     public init(
         model: UsageWindowModel,
         accounts: [PresentationStore.AccountRow],
-        onSelect: @escaping (String, String?) -> Void
+        onSelect: @escaping (String, String?) -> Void,
+        onRetry: @escaping (String) -> Void
     ) {
         self.model = model
         self.accounts = accounts
         self.onSelect = onSelect
+        self.onRetry = onRetry
     }
 
     private var inventory: [OverviewInventoryRow] {
@@ -39,11 +42,23 @@ public struct OverviewListView: View {
                     Text(row.title)
                         .lineLimit(2)
                 }
-                TableColumn("Plan") { row in
-                    Text(row.planLabel ?? "—")
-                        .foregroundStyle(.primary)
+                TableColumn("Plan or status") { row in
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(row.planLabel ?? row.statusLabel ?? "—")
+                            .foregroundStyle(.primary)
+                        if let error = row.lastError {
+                            Text(error)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(2)
+                                .accessibilityIdentifier("usage.overview.error.\(row.surfaceId)")
+                            Button("Retry") { onRetry(row.surfaceId) }
+                                .controlSize(.small)
+                                .accessibilityIdentifier("usage.overview.retry.\(row.surfaceId)")
+                        }
+                    }
                 }
-                .width(min: 100, ideal: 150)
+                .width(min: 120, ideal: 210)
                 TableColumn("Remaining") { row in
                     Text(row.barLabel)
                         .monospacedDigit()

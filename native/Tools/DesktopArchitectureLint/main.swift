@@ -63,10 +63,10 @@ struct DesktopArchitectureLint {
         require(usage.contains("NavigationSplitView"), "Usage uses NavigationSplitView")
         require(usage.contains(".listStyle(.sidebar)"), "Usage uses native sidebar List")
         require(
-            usage.contains("@State private var destination")
-                && usage.contains("List(selection: $destination)")
-                && !usage.contains("private var destination: Binding"),
-            "Usage sidebar selection mutates after view updates"
+            usage.contains("List(selection: destination)")
+                && usage.contains("private var destination: Binding")
+                && !usage.contains("@State private var destination"),
+            "Usage sidebar has one store-owned selection authority"
         )
         require(
             usage.contains("ToolbarItem(placement: .primaryAction)"), "Usage uses native toolbar")

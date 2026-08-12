@@ -21,6 +21,8 @@ public struct OverviewInventoryRow: Identifiable, Equatable, Sendable {
     /// Rust strings only — composed by ``overviewResetDisplay``.
     public let resetLabel: String?
     public let severity: String
+    public let statusLabel: String?
+    public let lastError: String?
 
     public init(
         id: String,
@@ -31,7 +33,9 @@ public struct OverviewInventoryRow: Identifiable, Equatable, Sendable {
         remainingPercent: UInt8?,
         barLabel: String,
         resetLabel: String?,
-        severity: String
+        severity: String,
+        statusLabel: String? = nil,
+        lastError: String? = nil
     ) {
         self.id = id
         self.surfaceId = surfaceId
@@ -42,6 +46,8 @@ public struct OverviewInventoryRow: Identifiable, Equatable, Sendable {
         self.barLabel = barLabel
         self.resetLabel = resetLabel
         self.severity = severity
+        self.statusLabel = statusLabel
+        self.lastError = lastError
     }
 }
 
@@ -146,7 +152,9 @@ public enum OverviewInventory: Sendable {
                             barLabel: bar,
                             resetLabel: reset,
                             // Per-account nest severity (HTML a-meter mid/low/high), not provider glance only.
-                            severity: account.meterSeverity
+                            severity: account.meterSeverity,
+                            statusLabel: glance?.statusLabel,
+                            lastError: glance?.lastError
                         )
                     )
                 }
@@ -168,7 +176,9 @@ public enum OverviewInventory: Sendable {
                     resetLabel: row.resetLabel,
                     exactReset: row.exactReset
                 ),
-                severity: row.severity
+                severity: row.severity,
+                statusLabel: row.statusLabel,
+                lastError: row.lastError
             )
         }
     }
