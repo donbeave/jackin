@@ -12,10 +12,10 @@ on:
       mode:
         description: |
           validate = secret-free assembly + reconciliation fixtures (feature branch OK).
-          publish = credentialed notarized menu-bar + release (main only).
+          Stable publication is tag-triggered only.
         type: choice
         default: validate
-        options: [validate, publish]
+        options: [validate]
       lanes:
         description: |
           Which runner(s) to run on for Linux CLI/capsule builds. Default github; use both for parity runs.
@@ -100,12 +100,6 @@ jobs:
           MODE: ${{ steps.mode.outputs.mode }}
         run: |
           set -euo pipefail
-          if [[ "$MODE" == "publish" && "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            test "${GITHUB_REF}" = "refs/heads/main" || {
-              echo "::error::publish mode workflow_dispatch must run from main"
-              exit 1
-            }
-          fi
           if [[ "$MODE" == "validate" ]]; then
             echo "validate mode: feature branches allowed; no secrets; no external writes"
           fi
@@ -602,6 +596,7 @@ jobs:
       contents: write
       id-token: write
     outputs:
+      version: ${{ needs.check-version.outputs.version }}
       arm64_macos: ${{ steps.shas.outputs.arm64_macos }}
       x86_macos: ${{ steps.shas.outputs.x86_macos }}
       arm64_linux: ${{ steps.shas.outputs.arm64_linux }}
@@ -619,12 +614,6 @@ jobs:
           pattern: release-GitHub-*
           path: artifacts
           merge-multiple: true
-
-      - name: Create tag
-        if: github.event_name == 'workflow_dispatch'
-        run: |
-          git tag "v${VERSION}"
-          git push origin "v${VERSION}"
 
       - name: Read platform SHA256s
         id: shas
@@ -654,6 +643,78 @@ jobs:
           x86-sha: ${{ steps.shas.outputs.capsule_x86_linux }}
           github-token: ${{ github.token }}
 
+      - name: Assemble consumer release manifest and independent checksums
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          subjects=(
+            artifacts/jackin-${VERSION}-*.tar.gz
+            artifacts/jackin-capsule-${VERSION}-*.tar.gz
+            artifacts/jackin-desktop-${VERSION}-*.zip
+          )
+          test "${#subjects[@]}" -eq 7
+          : > artifacts/SHA256SUMS
+          : > assets.jsonl
+          for subject in "${subjects[@]}"; do
+            name=$(basename "$subject")
+            digest=$(sha256sum "$subject" | awk '{print $1}')
+            printf '%s  %s\n' "$digest" "$name" >> artifacts/SHA256SUMS
+            jq -cn --arg name "$name" --arg sha256 "$digest" \
+              '{name:$name,sha256:$sha256}' >> assets.jsonl
+          done
+          jq -S -n \
+            --arg source_repository "$GITHUB_REPOSITORY" \
+            --arg source_ref "refs/tags/v${VERSION}" \
+            --arg source_commit "$GITHUB_SHA" \
+            --arg version "$VERSION" \
+            --slurpfile assets assets.jsonl \
+            '{schema:"velnor.package-release.v1",source_repository:$source_repository,source_ref:$source_ref,source_commit:$source_commit,version:$version,assets:$assets}' \
+            > artifacts/release-manifest.json
+          (cd artifacts && sha256sum --check --strict SHA256SUMS)
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: package-release-assets
+          path: artifacts
+          if-no-files-found: error
+
+  sign-packages:
+    needs: release
+    strategy:
+      fail-fast: false
+      matrix:
+        subject:
+          - jackin-${{ needs.release.outputs.version }}-aarch64-apple-darwin.tar.gz
+          - jackin-${{ needs.release.outputs.version }}-x86_64-apple-darwin.tar.gz
+          - jackin-${{ needs.release.outputs.version }}-aarch64-unknown-linux-gnu.tar.gz
+          - jackin-${{ needs.release.outputs.version }}-x86_64-unknown-linux-gnu.tar.gz
+          - jackin-capsule-${{ needs.release.outputs.version }}-aarch64-unknown-linux-gnu.tar.gz
+          - jackin-capsule-${{ needs.release.outputs.version }}-x86_64-unknown-linux-gnu.tar.gz
+          - jackin-desktop-${{ needs.release.outputs.version }}-aarch64-apple-darwin.zip
+    permissions:
+      attestations: write
+      contents: read
+      id-token: write
+    uses: jackin-project/velnor-actions/.github/workflows/package-signer.yml@a1ff41d323ab0d87bcb6407e14aee406b32a6cb0 # 2026.8.6
+    with:
+      artifact-name: package-release-assets
+      subject-path: ${{ matrix.subject }}
+      source-ref: refs/tags/v${{ needs.release.outputs.version }}
+
+  publish-release:
+    needs: [release, sign-packages]
+    runs-on: ubuntu-26.04
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    env:
+      VERSION: ${{ needs.release.outputs.version }}
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: package-release-assets
+          path: artifacts
+
       - name: Create or repair GitHub Release (no clobber)
         env:
           GH_TOKEN: ${{ github.token }}
@@ -661,6 +722,8 @@ jobs:
           set -euo pipefail
           tag="v${VERSION}"
           upload_args=(
+            artifacts/release-manifest.json
+            artifacts/SHA256SUMS
             artifacts/jackin-[0-9]*.tar.gz
             artifacts/jackin-[0-9]*.tar.gz.sha256
             artifacts/jackin-[0-9]*.tar.gz.bundle
