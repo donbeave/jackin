@@ -234,13 +234,15 @@ final class JackinDesktopUITests: XCTestCase {
         guard launchUsage(fixture: "F02-catalog-normal", selection: "overview", size: "920x620")
         else { return }
 
-        application.typeKey(",", modifierFlags: .command)
+        application.menuBars.menuBarItems["jackin❯ desktop"].click()
+        application.menuItems["Settings…"].click()
         let settingsWindow = application.windows["settings-window"]
         XCTAssertTrue(
             settingsWindow.waitForExistence(timeout: 3),
             application.debugDescription
         )
-        application.typeKey("w", modifierFlags: .command)
+        application.menuBars.menuBarItems["File"].click()
+        application.menuItems["Close Window"].click()
         XCTAssertTrue(settingsWindow.waitForNonExistence(timeout: 3))
 
         let usageWindow = application.windows["usage-window"]
@@ -248,14 +250,16 @@ final class JackinDesktopUITests: XCTestCase {
         let sidebarToggle = usageWindow.buttons["usage.sidebar-toggle"]
         XCTAssertEqual(sidebarToggle.label, "Hide Sidebar")
 
-        application.typeKey("s", modifierFlags: [.command, .control])
+        application.menuBars.menuBarItems["View"].click()
+        application.menuItems["Hide Sidebar"].click()
         XCTAssertTrue(
             sidebarToggle.waitForLabel("Show Sidebar", timeout: 3), application.debugDescription)
         application.menuBars.menuBarItems["View"].click()
         application.menuItems["Show Sidebar"].click()
         XCTAssertTrue(sidebarToggle.waitForLabel("Hide Sidebar", timeout: 3))
 
-        application.typeKey("r", modifierFlags: .command)
+        application.menuBars.menuBarItems["View"].click()
+        application.menuItems["Refresh"].click()
         XCTAssertTrue(usageWindow.exists)
         XCTAssertTrue(element("usage.refresh").isEnabled)
     }

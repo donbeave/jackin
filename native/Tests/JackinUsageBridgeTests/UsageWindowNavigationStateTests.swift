@@ -49,4 +49,15 @@ final class UsageWindowNavigationStateTests: XCTestCase {
         XCTAssertTrue(menu.validateMenuItem(item))
         XCTAssertEqual(item.title, "Show Sidebar")
     }
+
+    func testStandardMenuKeyEquivalents() {
+        XCTAssertEqual(AppMainMenu.settingsKeyEquivalent, ",")
+        XCTAssertEqual(AppMainMenu.settingsKeyModifiers, .command)
+        XCTAssertEqual(AppMainMenu.closeKeyEquivalent, "w")
+        XCTAssertEqual(AppMainMenu.closeKeyModifiers, .command)
+        XCTAssertEqual(AppMainMenu.sidebarKeyEquivalent, "s")
+        XCTAssertEqual(AppMainMenu.sidebarKeyModifiers, [.command, .control])
+        XCTAssertEqual(AppMainMenu.refreshKeyEquivalent, "r")
+        XCTAssertEqual(AppMainMenu.refreshKeyModifiers, .command)
+    }
 }

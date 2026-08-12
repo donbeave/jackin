@@ -14,6 +14,15 @@ import SwiftUI
 /// Standard macOS menu citizenship for the Usage window.
 @MainActor
 public final class AppMainMenu: NSObject, NSMenuItemValidation {
+    static let settingsKeyEquivalent = ","
+    static let settingsKeyModifiers: NSEvent.ModifierFlags = [.command]
+    static let closeKeyEquivalent = "w"
+    static let closeKeyModifiers: NSEvent.ModifierFlags = [.command]
+    static let sidebarKeyEquivalent = "s"
+    static let sidebarKeyModifiers: NSEvent.ModifierFlags = [.command, .control]
+    static let refreshKeyEquivalent = "r"
+    static let refreshKeyModifiers: NSEvent.ModifierFlags = [.command]
+
     private let store: PresentationStore
     private let openUsage: () -> Void
     private let toggleUsageSidebar: () -> Void
@@ -67,7 +76,13 @@ public final class AppMainMenu: NSObject, NSMenuItemValidation {
 
         menu.addItem(owned("About \(appMenuTitle)", #selector(orderFrontAbout(_:)), key: ""))
         menu.addItem(.separator())
-        menu.addItem(owned("Settings…", #selector(openSettings(_:)), key: ","))
+        menu.addItem(
+            owned(
+                "Settings…",
+                #selector(openSettings(_:)),
+                key: Self.settingsKeyEquivalent,
+                modifiers: Self.settingsKeyModifiers
+            ))
         menu.addItem(.separator())
         let services = NSMenu(title: "Services")
         let servicesItem = NSMenuItem(title: "Services", action: nil, keyEquivalent: "")
@@ -109,7 +124,13 @@ public final class AppMainMenu: NSObject, NSMenuItemValidation {
 
     private func fileMenu() -> NSMenu {
         let menu = NSMenu(title: "File")
-        menu.addItem(firstResponder("Close Window", #selector(NSWindow.performClose(_:)), key: "w"))
+        menu.addItem(
+            firstResponder(
+                "Close Window",
+                #selector(NSWindow.performClose(_:)),
+                key: Self.closeKeyEquivalent,
+                modifiers: Self.closeKeyModifiers
+            ))
         return menu
     }
 
@@ -139,11 +160,17 @@ public final class AppMainMenu: NSObject, NSMenuItemValidation {
             owned(
                 "Hide Sidebar",
                 #selector(toggleSidebar(_:)),
-                key: "s",
-                modifiers: [.command, .control]
+                key: Self.sidebarKeyEquivalent,
+                modifiers: Self.sidebarKeyModifiers
             ))
         menu.addItem(.separator())
-        menu.addItem(owned("Refresh", #selector(refreshAll(_:)), key: "r"))
+        menu.addItem(
+            owned(
+                "Refresh",
+                #selector(refreshAll(_:)),
+                key: Self.refreshKeyEquivalent,
+                modifiers: Self.refreshKeyModifiers
+            ))
         return menu
     }
 
