@@ -269,8 +269,8 @@ public final class PresentationStore: ObservableObject {
     /// Known accounts across surfaces (multi-account host logins / shared snapshots).
     @Published public private(set) var accounts: [AccountRow] = []
     /// Sidebar / detail selection: `nil` = Overview, else surface id.
-    @Published public var usageSelection: String?
-    /// Popover tab selection: `nil` = Overview, else provider surface id.
+    @Published public private(set) var usageSelection: String?
+    /// Focused popover provider; nil lets the host select the first available provider.
     @Published public var popoverSelection: String?
     /// True only while an enqueued refresh request runs its bridge operation —
     /// drives the popover/footer spinner.
@@ -364,6 +364,7 @@ public final class PresentationStore: ObservableObject {
     private var refreshTask: Task<Void, Never>?
     private var screenShareActive: Bool = false
     private var fixtureMode = false
+    private var launchConfiguration: LaunchConfiguration = .production
 
     public var usesFixture: Bool { fixtureMode }
 
@@ -442,6 +443,7 @@ public final class PresentationStore: ObservableObject {
     }
 
     public func openForLaunch(_ configuration: LaunchConfiguration) {
+        launchConfiguration = configuration
         switch configuration {
         case .production:
             openDefault()
@@ -454,6 +456,16 @@ public final class PresentationStore: ObservableObject {
         let home = FileManager.default.homeDirectoryForCurrentUser
         let dataDir = home.appendingPathComponent(".jackin/data").path
         open(dataDir: dataDir, refreshFloorSecs: 300, enabled: [])
+    }
+
+    /// Retry the failed cold open, or refresh when the runtime is already open.
+    public func retryLastOperation() {
+        guard !fixtureMode else { return }
+        if isOpen {
+            refreshAll()
+        } else {
+            openForLaunch(launchConfiguration)
+        }
     }
 
     /// Ephemeral smoke open: isolated path, live probes disabled, exactly one
@@ -615,6 +627,7 @@ public final class PresentationStore: ObservableObject {
         self.isOpen = true
         self.isOpening = isLoading
         self.lastError = lastError
+        reconcileSelections()
     }
 
     public func setRefreshFloorSecs(_ secs: UInt64) {
@@ -887,6 +900,7 @@ public final class PresentationStore: ObservableObject {
         // Rust owns detection, ordering, and every string — project verbatim.
         providerGlanceRows = projection.glanceRows.map(Self.mapGlanceDto)
         statusBarGlanceRows = projection.statusBarGlanceRows.map(Self.mapGlanceDto)
+        reconcileSelections()
         lastError = nil
         await applyStatusItemText()
     }
@@ -915,7 +929,27 @@ public final class PresentationStore: ObservableObject {
 
     /// Open the Usage window on Overview or a specific surface.
     public func selectUsageSurface(_ surfaceId: String?) {
-        usageSelection = surfaceId
+        guard let surfaceId else {
+            usageSelection = nil
+            return
+        }
+        usageSelection = isNavigableSurface(surfaceId) ? surfaceId : nil
+    }
+
+    private func reconcileSelections() {
+        if let usageSelection, !isNavigableSurface(usageSelection) {
+            self.usageSelection = nil
+        }
+        if let popoverSelection,
+            !providerGlanceRows.contains(where: { $0.surfaceId == popoverSelection })
+        {
+            self.popoverSelection = providerGlanceRows.first?.surfaceId
+        }
+    }
+
+    private func isNavigableSurface(_ surfaceId: String) -> Bool {
+        providerGlanceRows.contains(where: { $0.surfaceId == surfaceId })
+            && surfaces.contains(where: { $0.id == surfaceId && $0.enabled })
     }
 
     private func applyStatusItemText() async {

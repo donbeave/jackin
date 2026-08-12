@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Alexey Zhokhov
 // SPDX-License-Identifier: Apache-2.0
 
+import AppKit
 import XCTest
 
 @testable import JackinDesktopUI
@@ -109,6 +110,53 @@ final class ConceptFixturesTests: XCTestCase {
             store.providerGlanceRows.map(\.surfaceId), fixture.glanceRows.map(\.surfaceId))
     }
 
+    @MainActor
+    func testFixtureSnapshotNormalizesRemovedProviderAtStateOwner() {
+        let fixture = ConceptFixtures.fixture(id: .catalogNormal)
+        let store = PresentationStore()
+        let remainingGlance = fixture.glanceRows.filter { $0.surfaceId != "codex" }
+        let remainingSurfaces = fixture.surfaces.filter { $0.id != "codex" }
+        let remainingAccounts = fixture.accounts.filter { $0.surfaceId != "codex" }
+
+        store.applyQIFixture(
+            glanceRows: remainingGlance,
+            surfaces: remainingSurfaces,
+            accounts: remainingAccounts,
+            popoverSelection: "codex",
+            usageSelection: "codex"
+        )
+
+        XCTAssertNil(store.usageSelection)
+        XCTAssertEqual(store.popoverSelection, remainingGlance.first?.surfaceId)
+    }
+
+    @MainActor
+    func testRetainedUsageWindowPreservesValidDestinationUntilExplicitlyChanged() {
+        _ = NSApplication.shared
+        let fixture = ConceptFixtures.fixture(id: .multiAccount)
+        let store = PresentationStore()
+        store.applyQIFixture(
+            glanceRows: fixture.glanceRows,
+            surfaces: fixture.surfaces,
+            accounts: fixture.accounts,
+            popoverSelection: fixture.popoverSelection,
+            usageSelection: fixture.usageSelection
+        )
+        let controller = UsageWindowController(store: store)
+        defer { controller.invalidate() }
+
+        controller.show(focusOn: "codex")
+        let retainedWindow = controller.qiWindow
+        retainedWindow?.close()
+        controller.show()
+
+        XCTAssertTrue(controller.qiWindow === retainedWindow)
+        XCTAssertEqual(store.usageSelection, "codex")
+
+        controller.show(focusOn: nil)
+        XCTAssertNil(store.usageSelection)
+    }
+
     func testA1SourcesExposeNoDestructiveAction() throws {
         let sources = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
@@ -128,5 +176,18 @@ final class ConceptFixturesTests: XCTestCase {
                 XCTAssertFalse(text.contains(token), "\(relativePath) exposes \(token)")
             }
         }
+    }
+
+    func testA1SourcesExposeNoInvisibleShortcutControl() throws {
+        let source = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .appendingPathComponent("Sources/JackinDesktop/PopoverRoot.swift")
+        let text = try String(contentsOf: source, encoding: .utf8)
+
+        XCTAssertTrue(text.contains("accessibilityIdentifier(\"popover.refresh\")"))
+        XCTAssertTrue(text.contains("keyboardShortcut(\"r\""))
+        XCTAssertFalse(text.contains(".hidden()"))
     }
 }

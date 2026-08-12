@@ -130,17 +130,22 @@ public struct UsageWindowRoot: View {
                 .controlSize(.large)
                 .accessibilityIdentifier("usage.loading")
         } else if let error = store.lastError, store.providerGlanceRows.isEmpty {
-            ContentUnavailableView(
-                "Usage unavailable",
-                systemImage: "exclamationmark.triangle",
-                description: Text(error)
-            )
+            ContentUnavailableView {
+                Label("Usage unavailable", systemImage: "exclamationmark.triangle")
+            } description: {
+                Text(error)
+            } actions: {
+                Button("Retry") { store.retryLastOperation() }
+                    .disabled(store.isOpening || store.refreshInProgress)
+                    .accessibilityIdentifier("usage.retry")
+            }
             .accessibilityIdentifier("usage.global-error")
         } else if let content = model.content {
             ProviderCardView(
                 content: content,
                 providerError: store.surfaces.first { $0.id == content.surfaceId }?.lastError,
-                onSelectAccount: store.setSelectedAccount
+                onSelectAccount: store.setSelectedAccount,
+                onRetry: { store.refresh(surfaceId: content.surfaceId) }
             )
         } else {
             OverviewListView(model: model, accounts: store.accounts) { surfaceId, accountKey in

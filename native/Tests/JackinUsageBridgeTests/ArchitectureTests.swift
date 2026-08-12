@@ -534,6 +534,17 @@ final class ArchitectureTests: XCTestCase {
         XCTAssertFalse(text.contains("Capsule"), "A1 Overview must not paint custom meters")
     }
 
+    func testOverviewTableCellTextUsesPrimarySystemForeground() throws {
+        let overview =
+            sourcesRoot
+            .appendingPathComponent("JackinDesktop")
+            .appendingPathComponent("UsageWindow/OverviewListView.swift")
+        let text = try String(contentsOf: overview, encoding: .utf8)
+
+        XCTAssertFalse(text.contains(".foregroundStyle(.secondary)"))
+        XCTAssertFalse(text.contains("Color("))
+    }
+
     /// SB-5 vs FB1-6: bar stays template mono (no severity tint).
     ///
     /// Urgency color

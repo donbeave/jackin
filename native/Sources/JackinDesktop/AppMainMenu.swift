@@ -142,7 +142,9 @@ public final class AppMainMenu: NSObject {
             firstResponder("Minimize", #selector(NSWindow.performMiniaturize(_:)), key: "m"))
         menu.addItem(firstResponder("Zoom", #selector(NSWindow.performZoom(_:)), key: ""))
         menu.addItem(.separator())
-        menu.addItem(owned("Usage", #selector(showUsageWindow(_:)), key: "0"))
+        let usage = owned("Usage", #selector(showUsageWindow(_:)), key: "0")
+        usage.identifier = NSUserInterfaceItemIdentifier("menu.show-usage")
+        menu.addItem(usage)
         menu.addItem(.separator())
         menu.addItem(
             routed(
@@ -193,6 +195,8 @@ public final class AppMainMenu: NSObject {
         )
         window.title = "Settings"
         window.isReleasedWhenClosed = false
+        window.identifier = NSUserInterfaceItemIdentifier("settings-window")
+        window.setAccessibilityIdentifier("settings-window")
         window.toolbarStyle = .unified
         window.titlebarAppearsTransparent = false
         window.titleVisibility = .visible

@@ -41,7 +41,7 @@ public struct OverviewListView: View {
                 }
                 TableColumn("Plan") { row in
                     Text(row.planLabel ?? "—")
-                        .foregroundStyle(row.planLabel == nil ? .secondary : .primary)
+                        .foregroundStyle(.primary)
                 }
                 .width(min: 100, ideal: 150)
                 TableColumn("Remaining") { row in
@@ -51,11 +51,12 @@ public struct OverviewListView: View {
                 .width(min: 90, ideal: 110)
                 TableColumn("Reset") { row in
                     Text(row.resetLabel ?? "—")
-                        .foregroundStyle(row.resetLabel == nil ? .secondary : .primary)
+                        .foregroundStyle(.primary)
                         .lineLimit(2)
                 }
                 .width(min: 140, ideal: 210)
             }
+            .accessibilityLabel("Usage overview")
             .accessibilityIdentifier("usage.overview.table")
             .onChange(of: selectedRowID) { _, selectedID in
                 guard let selectedID, let row = inventory.first(where: { $0.id == selectedID })

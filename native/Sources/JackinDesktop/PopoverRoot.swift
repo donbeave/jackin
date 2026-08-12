@@ -44,11 +44,7 @@ public struct PopoverRoot: View {
             idealHeight: qiFullPlate ? 1_100 : 520,
             maxHeight: qiFullPlate ? 1_100 : 520
         )
-        .background {
-            Button("Refresh") { store.refreshAll() }
-                .keyboardShortcut("r", modifiers: [.command])
-                .hidden()
-        }
+        .accessibilityLabel("Provider usage")
     }
 
     @ViewBuilder
@@ -58,11 +54,15 @@ public struct PopoverRoot: View {
                 .controlSize(.large)
                 .accessibilityIdentifier("popover.loading")
         } else if let error = store.lastError, store.providerGlanceRows.isEmpty {
-            ContentUnavailableView(
-                "Usage unavailable",
-                systemImage: "exclamationmark.triangle",
-                description: Text(error)
-            )
+            ContentUnavailableView {
+                Label("Usage unavailable", systemImage: "exclamationmark.triangle")
+            } description: {
+                Text(error)
+            } actions: {
+                Button("Retry") { store.retryLastOperation() }
+                    .disabled(store.isOpening || store.refreshInProgress)
+                    .accessibilityIdentifier("popover.retry")
+            }
             .accessibilityIdentifier("popover.global-error")
         } else if let provider = selectedProvider {
             providerForm(provider)
@@ -117,6 +117,7 @@ public struct PopoverRoot: View {
                     ForEach(metadataRows) { row in
                         LabeledContent(row.label, value: row.displayLabel)
                             .accessibilityLabel("\(row.label), \(row.displayLabel)")
+                            .accessibilityIdentifier("popover.detail.\(row.rowId)")
                     }
                 } header: {
                     sectionHeader("Details")
@@ -144,6 +145,9 @@ public struct PopoverRoot: View {
                 Section {
                     Label(error, systemImage: "exclamationmark.triangle")
                         .accessibilityIdentifier("popover.provider-error")
+                    Button("Retry") { store.refresh(surfaceId: provider.surfaceId) }
+                        .disabled(store.refreshInProgress)
+                        .accessibilityIdentifier("popover.provider-retry")
                 } header: {
                     sectionHeader("Provider status")
                 }
@@ -211,9 +215,12 @@ public struct PopoverRoot: View {
                 }
             }
         }
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(row.label), \(row.displayLabel)")
-        .accessibilityIdentifier("popover.limit.\(row.rowId)")
+        .accessibilityElement(children: .ignore)
+        .accessibilityRepresentation {
+            Text(row.displayLabel)
+                .accessibilityLabel("\(row.label), \(row.displayLabel)")
+                .accessibilityIdentifier("popover.limit.\(row.rowId)")
+        }
     }
 
     private func sectionHeader(_ title: String) -> some View {
@@ -232,6 +239,7 @@ public struct PopoverRoot: View {
             } label: {
                 Label("Refresh", systemImage: "arrow.clockwise")
             }
+            .keyboardShortcut("r", modifiers: [.command])
             .disabled(store.refreshInProgress)
             .accessibilityIdentifier("popover.refresh")
 

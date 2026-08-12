@@ -11,15 +11,18 @@ public struct ProviderCardView: View {
     public let content: UsageWindowModel.Content
     public let providerError: String?
     public var onSelectAccount: (String, String) -> Void
+    public var onRetry: () -> Void
 
     public init(
         content: UsageWindowModel.Content,
         providerError: String? = nil,
-        onSelectAccount: @escaping (String, String) -> Void = { _, _ in }
+        onSelectAccount: @escaping (String, String) -> Void = { _, _ in },
+        onRetry: @escaping () -> Void = {}
     ) {
         self.content = content
         self.providerError = providerError
         self.onSelectAccount = onSelectAccount
+        self.onRetry = onRetry
     }
 
     public var body: some View {
@@ -85,6 +88,8 @@ public struct ProviderCardView: View {
                 Section {
                     Label(providerError, systemImage: "exclamationmark.triangle")
                         .accessibilityIdentifier("usage.provider-error")
+                    Button("Retry", action: onRetry)
+                        .accessibilityIdentifier("usage.provider-retry")
                 } header: {
                     sectionHeader("Provider status")
                 }
@@ -164,9 +169,12 @@ public struct ProviderCardView: View {
                 }
             }
         }
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(row.label), \(row.displayLabel)")
-        .accessibilityIdentifier("usage.limit.\(row.rowId)")
+        .accessibilityElement(children: .ignore)
+        .accessibilityRepresentation {
+            Text(row.displayLabel)
+                .accessibilityLabel("\(row.label), \(row.displayLabel)")
+                .accessibilityIdentifier("usage.limit.\(row.rowId)")
+        }
     }
 
     private func sectionHeader(_ title: String) -> some View {

@@ -28,10 +28,18 @@ public final class UsageWindowController: NSObject, NSWindowDelegate {
         super.init()
     }
 
-    /// Show the Usage window, focused on a provider surface id (`nil` = Overview),
-    /// creating it on first use and reusing it afterward.
+    /// Show the retained Usage window without changing its valid destination.
+    public func show(size: CGSize? = nil) {
+        present(size: size)
+    }
+
+    /// Show the Usage window at an explicit provider surface id (`nil` = Overview).
     public func show(focusOn surfaceId: String?, size: CGSize? = nil) {
         store.selectUsageSurface(surfaceId)
+        present(size: size)
+    }
+
+    private func present(size: CGSize?) {
         let window = window ?? makeWindow()
         self.window = window
         if let size {
@@ -89,6 +97,6 @@ public final class UsageWindowController: NSObject, NSWindowDelegate {
         window = nil
     }
 
-    /// QI / snapshot: the live `NSWindow` after ``show(focusOn:)`` (nil if never shown).
+    /// Visual QA: the live `NSWindow` after `show` (nil if never shown).
     public var qiWindow: NSWindow? { window }
 }

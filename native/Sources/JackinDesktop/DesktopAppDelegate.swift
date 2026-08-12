@@ -249,7 +249,7 @@ public final class StatusBarController: NSObject {
         if popover.isShown {
             popover.performClose(sender)
         }
-        // HTML SoT: left-click focuses that provider (or Overview for fallback).
+        // A primary status-item click focuses that provider; fallback has no provider focus.
         let target = clickTarget(for: sender)
         let outcome = StatusPopoverFocus.outcome(
             surfaceId: target.surfaceId,
@@ -261,7 +261,7 @@ public final class StatusBarController: NSObject {
         popover.show(relativeTo: sender.bounds, of: sender, preferredEdge: .minY)
     }
 
-    /// Deterministic concept launch seam.
+    /// Deterministic visual-QA launch seam.
     ///
     /// The real `NSPopover` remains anchored
     /// to a real status item; no detached preview host is introduced.
@@ -306,8 +306,10 @@ public final class StatusBarController: NSObject {
         panel.ignoresMouseEvents = true
         panel.level = .statusBar
         panel.collectionBehavior = [.canJoinAllSpaces, .stationary]
+        panel.setAccessibilityElement(false)
         panel.orderFrontRegardless()
         guard let anchor = panel.contentView else { return }
+        anchor.setAccessibilityElement(false)
         automationAnchorPanel = panel
         popover.show(relativeTo: anchor.bounds, of: anchor, preferredEdge: .minY)
     }
@@ -335,6 +337,9 @@ public final class StatusBarController: NSObject {
 /// status-bar controller, main menu, and document windows (Usage / Settings).
 @MainActor
 public final class DesktopAppDelegate: NSObject, NSApplicationDelegate {
+    private static let visualQAShowUsageNotification = Notification.Name(
+        "com.jackin-project.desktop.visual-qa.show-usage"
+    )
     let store: PresentationStore
     private let launchConfiguration: PresentationStore.LaunchConfiguration
     private let conceptLaunchOptions: ConceptLaunchOptions
@@ -368,7 +373,7 @@ public final class DesktopAppDelegate: NSObject, NSApplicationDelegate {
         self.usageWindow = usageWindow
 
         let menu = AppMainMenu(store: store) { [weak usageWindow] in
-            usageWindow?.show(focusOn: nil)
+            usageWindow?.show()
         }
         menu.install()
         self.mainMenu = menu
@@ -382,12 +387,21 @@ public final class DesktopAppDelegate: NSObject, NSApplicationDelegate {
         let statusBar = StatusBarController(
             store: store,
             menuRouter: router,
-            compactStatusItems: conceptLaunchOptions.openPopover
+            compactStatusItems: conceptLaunchOptions.usesFixture
         ) {
             [weak usageWindow] surfaceId in
             usageWindow?.show(focusOn: surfaceId)
         }
         self.statusBar = statusBar
+
+        if conceptLaunchOptions.usesFixture {
+            DistributedNotificationCenter.default().addObserver(
+                self,
+                selector: #selector(showUsageForVisualQA(_:)),
+                name: Self.visualQAShowUsageNotification,
+                object: nil
+            )
+        }
 
         let selection: String?
         switch conceptLaunchOptions.selection {
@@ -423,18 +437,23 @@ public final class DesktopAppDelegate: NSObject, NSApplicationDelegate {
     ) -> Bool {
         // Dock click while regular (or after hide) → bring Usage forward.
         if !hasVisibleWindows, !conceptLaunchOptions.openPopover {
-            usageWindow?.show(focusOn: nil)
+            usageWindow?.show()
         }
         return true
     }
 
     public func applicationWillTerminate(_ notification: Notification) {
+        DistributedNotificationCenter.default().removeObserver(self)
         statusBar?.invalidate()
         statusBar = nil
         usageWindow?.invalidate()
         usageWindow = nil
         mainMenu = nil
         store.shutdown()
+    }
+
+    @objc private func showUsageForVisualQA(_: Notification) {
+        usageWindow?.show()
     }
 
     private func applyConceptAppearance() {
