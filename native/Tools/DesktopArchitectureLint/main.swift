@@ -38,7 +38,7 @@ struct DesktopArchitectureLint {
         let delegate = read("DesktopAppDelegate.swift")
         let usage = read("UsageWindow/UsageWindowRoot.swift")
         let overview = read("UsageWindow/OverviewListView.swift")
-        let provider = read("UsageWindow/ProviderCardView.swift")
+        let provider = read("UsageWindow/ProviderDetailView.swift")
 
         require(delegate.contains("NSPopover()"), "real NSPopover host")
         require(

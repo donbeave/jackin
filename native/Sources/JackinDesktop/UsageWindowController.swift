@@ -7,7 +7,7 @@ import SwiftUI
 
 /// Lazily creates and retains the AppKit Usage window hosting `UsageWindowRoot`.
 ///
-/// The approved A1 concept owns the window's content; this controller only
+/// The approved A1 design owns the window's content; this controller only
 /// owns its lifecycle and focus.
 ///
 /// Showing the window promotes the process to `.regular` so the **system menu

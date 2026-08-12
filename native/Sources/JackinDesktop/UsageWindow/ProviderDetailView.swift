@@ -7,7 +7,7 @@ import SwiftUI
 /// Native provider detail.
 ///
 /// Content remains on standard list surfaces.
-public struct ProviderCardView: View {
+public struct ProviderDetailView: View {
     public let content: UsageWindowModel.Content
     public let providerError: String?
     public var onSelectAccount: (String, String) -> Void

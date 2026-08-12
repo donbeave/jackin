@@ -63,7 +63,7 @@ public struct UsageDetailRow: Identifiable, Equatable, Sendable {
     }
 }
 
-/// The complete Rust-owned provider-detail card.
+/// The complete Rust-owned provider detail.
 ///
 /// It mirrors `UsageDetailPresentation`; rows are already in canonical order.
 public struct UsageDetailPresentation: Equatable, Sendable {

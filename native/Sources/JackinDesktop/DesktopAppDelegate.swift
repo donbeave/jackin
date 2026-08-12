@@ -342,14 +342,14 @@ public final class DesktopAppDelegate: NSObject, NSApplicationDelegate {
     )
     let store: PresentationStore
     private let launchConfiguration: PresentationStore.LaunchConfiguration
-    private let conceptLaunchOptions: ConceptLaunchOptions
+    private let visualQALaunchOptions: VisualQALaunchOptions
     private var statusBar: StatusBarController?
     private var usageWindow: UsageWindowController?
     /// Retained: menu item targets point here / AppMainMenu for the process life.
     private var mainMenu: AppMainMenu?
 
     override public init() {
-        self.conceptLaunchOptions = ConceptLaunchOptions.resolve(
+        self.visualQALaunchOptions = VisualQALaunchOptions.resolve(
             arguments: ProcessInfo.processInfo.arguments,
             environment: ProcessInfo.processInfo.environment
         )
@@ -367,8 +367,8 @@ public final class DesktopAppDelegate: NSObject, NSApplicationDelegate {
 
     public func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
-        applyConceptAppearance()
-        let fixture = applyConceptFixtureIfRequested()
+        applyVisualQAAppearance()
+        let fixture = applyVisualQAFixtureIfRequested()
         let usageWindow = UsageWindowController(store: store)
         self.usageWindow = usageWindow
 
@@ -387,14 +387,14 @@ public final class DesktopAppDelegate: NSObject, NSApplicationDelegate {
         let statusBar = StatusBarController(
             store: store,
             menuRouter: router,
-            compactStatusItems: conceptLaunchOptions.usesFixture
+            compactStatusItems: visualQALaunchOptions.usesFixture
         ) {
             [weak usageWindow] surfaceId in
             usageWindow?.show(focusOn: surfaceId)
         }
         self.statusBar = statusBar
 
-        if conceptLaunchOptions.usesFixture {
+        if visualQALaunchOptions.usesFixture {
             DistributedNotificationCenter.default().addObserver(
                 self,
                 selector: #selector(showUsageForVisualQA(_:)),
@@ -404,7 +404,7 @@ public final class DesktopAppDelegate: NSObject, NSApplicationDelegate {
         }
 
         let selection: String?
-        switch conceptLaunchOptions.selection {
+        switch visualQALaunchOptions.selection {
         case .fixtureDefault:
             selection = fixture?.usageSelection
         case .overview:
@@ -412,10 +412,10 @@ public final class DesktopAppDelegate: NSObject, NSApplicationDelegate {
         case .provider(let surfaceId):
             selection = surfaceId
         }
-        if conceptLaunchOptions.openUsage || conceptLaunchOptions.invalidFixtureID != nil {
-            usageWindow.show(focusOn: selection, size: conceptLaunchOptions.windowSize)
+        if visualQALaunchOptions.openUsage || visualQALaunchOptions.invalidFixtureID != nil {
+            usageWindow.show(focusOn: selection, size: visualQALaunchOptions.windowSize)
         }
-        if conceptLaunchOptions.openPopover {
+        if visualQALaunchOptions.openPopover {
             // Automation launches without a status-item click. Front the fixture process so the
             // system menu bar attaches its real status-item window before NSPopover presentation.
             NSApp.setActivationPolicy(.regular)
@@ -436,7 +436,7 @@ public final class DesktopAppDelegate: NSObject, NSApplicationDelegate {
         _ sender: NSApplication, hasVisibleWindows: Bool
     ) -> Bool {
         // Dock click while regular (or after hide) → bring Usage forward.
-        if !hasVisibleWindows, !conceptLaunchOptions.openPopover {
+        if !hasVisibleWindows, !visualQALaunchOptions.openPopover {
             usageWindow?.show()
         }
         return true
@@ -456,8 +456,8 @@ public final class DesktopAppDelegate: NSObject, NSApplicationDelegate {
         usageWindow?.show()
     }
 
-    private func applyConceptAppearance() {
-        switch conceptLaunchOptions.appearance {
+    private func applyVisualQAAppearance() {
+        switch visualQALaunchOptions.appearance {
         case .system:
             break
         case .light:
@@ -467,9 +467,9 @@ public final class DesktopAppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    private func applyConceptFixtureIfRequested() -> ConceptFixture? {
-        if let id = conceptLaunchOptions.fixtureID {
-            let fixture = ConceptFixtures.fixture(id: id)
+    private func applyVisualQAFixtureIfRequested() -> VisualQAFixture? {
+        if let id = visualQALaunchOptions.fixtureID {
+            let fixture = VisualQAFixtures.fixture(id: id)
             store.applyQIFixture(
                 glanceRows: fixture.glanceRows,
                 statusBarGlanceRows: fixture.statusGlanceRows,
@@ -484,7 +484,7 @@ public final class DesktopAppDelegate: NSObject, NSApplicationDelegate {
             )
             return fixture
         }
-        if let invalid = conceptLaunchOptions.invalidFixtureID {
+        if let invalid = visualQALaunchOptions.invalidFixtureID {
             store.applyQIFixture(
                 glanceRows: [],
                 surfaces: [],

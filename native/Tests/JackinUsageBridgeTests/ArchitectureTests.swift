@@ -157,7 +157,7 @@ final class ArchitectureTests: XCTestCase {
 
     // ProviderMarks live in JackinDesktopUI — covered by DesktopSoT / visual harness.
 
-    func testJackinPhosphorTokensMatchHTMLSoT() {
+    func testJackinPhosphorTokensMatchBrandGuide() {
         XCTAssertEqual(JackinBrand.phosphorDarkSRGB.r, 0x5C / 255.0, accuracy: 0.0001)
         XCTAssertEqual(JackinBrand.phosphorDarkSRGB.g, 0xF0 / 255.0, accuracy: 0.0001)
         XCTAssertEqual(JackinBrand.phosphorDarkSRGB.b, 0x7A / 255.0, accuracy: 0.0001)
@@ -166,8 +166,8 @@ final class ArchitectureTests: XCTestCase {
         XCTAssertEqual(JackinBrand.phosphorLightSRGB.b, 0x4E / 255.0, accuracy: 0.0001)
     }
 
-    func testRemainingPercentMeterSeverityMatchesHTMLNestBands() {
-        // index.html nest fixture: 100 high, 57 mid, 12 low, 0 depleted.
+    func testRemainingPercentMeterSeverityMatchesDesignBands() {
+        // Design bands: 100 high, 57 mid, 12 low, 0 depleted.
         XCTAssertEqual(remainingPercentMeterSeverity(100), "normal")
         XCTAssertEqual(remainingPercentMeterSeverity(61), "normal")
         XCTAssertEqual(remainingPercentMeterSeverity(60), "warn")
@@ -701,7 +701,7 @@ final class ArchitectureTests: XCTestCase {
         // Always ban format composition everywhere under JackinDesktop.
         let alwaysBanned = ["String(format:"]
         // Preference chrome only (S6 format pickers); never render usage data.
-        let preferenceChromeFiles: Set<String> = ["SettingsView.swift", "ConceptFixtures.swift"]
+        let preferenceChromeFiles: Set<String> = ["SettingsView.swift", "VisualQAFixtures.swift"]
         for file in files {
             let text = try String(contentsOf: file, encoding: .utf8)
             let name = file.lastPathComponent
@@ -733,7 +733,7 @@ final class ArchitectureTests: XCTestCase {
             sourcesRoot
             .appendingPathComponent("JackinDesktop")
             .appendingPathComponent("UsageWindow")
-        let files = ["UsageWindowRoot.swift", "OverviewListView.swift", "ProviderCardView.swift"]
+        let files = ["UsageWindowRoot.swift", "OverviewListView.swift", "ProviderDetailView.swift"]
         let banned = [
             "splitPaceLabel",
             "displaySegments",
@@ -762,7 +762,7 @@ final class ArchitectureTests: XCTestCase {
             }
         }
         let provider = try String(
-            contentsOf: usageDir.appendingPathComponent("ProviderCardView.swift"),
+            contentsOf: usageDir.appendingPathComponent("ProviderDetailView.swift"),
             encoding: .utf8
         )
         XCTAssertTrue(provider.contains("content.detail.rows"))
@@ -854,7 +854,7 @@ final class ArchitectureTests: XCTestCase {
         let banned = ["\"OpenAI\"", "\"Anthropic\"", "\"xAI\"", "\"Z.AI\""]
         while let url = enumerator?.nextObject() as? URL {
             guard url.pathExtension == "swift" else { continue }
-            if url.lastPathComponent == "ConceptFixtures.swift" { continue }
+            if url.lastPathComponent == "VisualQAFixtures.swift" { continue }
             let text = try String(contentsOf: url, encoding: .utf8)
             for token in banned {
                 XCTAssertFalse(

@@ -4,8 +4,8 @@
 import CoreGraphics
 import Foundation
 
-/// Explicit process-local controls for deterministic native concept runs.
-struct ConceptLaunchOptions: Equatable {
+/// Explicit process-local controls for deterministic native visual-QA runs.
+struct VisualQALaunchOptions: Equatable {
     enum Appearance: String {
         case system
         case light
@@ -18,7 +18,7 @@ struct ConceptLaunchOptions: Equatable {
         case provider(String)
     }
 
-    let fixtureID: ConceptFixtureID?
+    let fixtureID: VisualQAFixtureID?
     let invalidFixtureID: String?
     let openUsage: Bool
     let openPopover: Bool
@@ -31,11 +31,11 @@ struct ConceptLaunchOptions: Equatable {
     static func resolve(
         arguments: [String],
         environment: [String: String]
-    ) -> ConceptLaunchOptions {
+    ) -> VisualQALaunchOptions {
         let rawFixture =
             value(after: "--fixture", in: arguments)
             ?? environment["JACKIN_DESKTOP_FIXTURE"]
-        let fixtureID = rawFixture.flatMap(ConceptFixtureID.init(rawValue:))
+        let fixtureID = rawFixture.flatMap(VisualQAFixtureID.init(rawValue:))
         let rawSelection = value(after: "--selection", in: arguments)
         let selection: Selection
         if rawSelection == "overview" {
@@ -50,7 +50,7 @@ struct ConceptLaunchOptions: Equatable {
             value(after: "--appearance", in: arguments)
             .flatMap(Appearance.init(rawValue:)) ?? .system
 
-        return ConceptLaunchOptions(
+        return VisualQALaunchOptions(
             fixtureID: fixtureID,
             invalidFixtureID: rawFixture != nil && fixtureID == nil ? rawFixture : nil,
             openUsage: arguments.contains("--open-usage"),

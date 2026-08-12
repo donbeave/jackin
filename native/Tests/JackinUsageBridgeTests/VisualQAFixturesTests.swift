@@ -7,17 +7,17 @@ import XCTest
 @testable import JackinDesktopUI
 @testable import JackinUsageBridge
 
-final class ConceptFixturesTests: XCTestCase {
+final class VisualQAFixturesTests: XCTestCase {
     func testCatalogContainsEveryStableFixtureExactlyOnce() {
-        XCTAssertEqual(ConceptFixtureID.allCases.count, 15)
-        XCTAssertEqual(Set(ConceptFixtureID.allCases.map(\.rawValue)).count, 15)
-        for id in ConceptFixtureID.allCases {
-            XCTAssertEqual(ConceptFixtures.fixture(id: id).id, id)
+        XCTAssertEqual(VisualQAFixtureID.allCases.count, 15)
+        XCTAssertEqual(Set(VisualQAFixtureID.allCases.map(\.rawValue)).count, 15)
+        for id in VisualQAFixtureID.allCases {
+            XCTAssertEqual(VisualQAFixtures.fixture(id: id).id, id)
         }
     }
 
     func testCatalogProviderOrderAndLayoutEnvelope() {
-        let catalog = ConceptFixtures.fixture(id: .catalogNormal)
+        let catalog = VisualQAFixtures.fixture(id: .catalogNormal)
         XCTAssertEqual(
             catalog.glanceRows.map(\.surfaceId),
             ["codex", "claude", "amp", "grok", "zai", "kimi", "minimax"]
@@ -26,12 +26,12 @@ final class ConceptFixturesTests: XCTestCase {
             catalog.statusGlanceRows.map(\.surfaceId),
             ["claude", "codex", "minimax"]
         )
-        XCTAssertEqual(ConceptFixtures.fixture(id: .layoutEnvelope).accounts.count, 12)
+        XCTAssertEqual(VisualQAFixtures.fixture(id: .layoutEnvelope).accounts.count, 12)
     }
 
     func testFixtureIdentitiesAreSynthetic() {
-        for id in ConceptFixtureID.allCases {
-            let fixture = ConceptFixtures.fixture(id: id)
+        for id in VisualQAFixtureID.allCases {
+            let fixture = VisualQAFixtures.fixture(id: id)
             for account in fixture.accounts {
                 XCTAssertFalse(account.accountLabel.contains("chainargos"))
                 XCTAssertFalse(account.accountLabel.contains("zhokhov"))
@@ -43,18 +43,18 @@ final class ConceptFixturesTests: XCTestCase {
     }
 
     func testFixtureModeRequiresExplicitSelector() {
-        let production = ConceptLaunchOptions.resolve(
+        let production = VisualQALaunchOptions.resolve(
             arguments: ["JackinDesktop"], environment: [:])
         XCTAssertFalse(production.usesFixture)
 
-        let fixture = ConceptLaunchOptions.resolve(
+        let fixture = VisualQALaunchOptions.resolve(
             arguments: ["JackinDesktop", "--fixture", "F03-multi-account"],
             environment: [:]
         )
         XCTAssertEqual(fixture.fixtureID, .multiAccount)
         XCTAssertNil(fixture.invalidFixtureID)
 
-        let invalid = ConceptLaunchOptions.resolve(
+        let invalid = VisualQALaunchOptions.resolve(
             arguments: ["JackinDesktop", "--fixture", "F99-unknown"],
             environment: [:]
         )
@@ -64,7 +64,7 @@ final class ConceptFixturesTests: XCTestCase {
 
     @MainActor
     func testFixtureAccountSelectionNeverCallsBridge() {
-        let fixture = ConceptFixtures.fixture(id: .multiAccount)
+        let fixture = VisualQAFixtures.fixture(id: .multiAccount)
         let store = PresentationStore()
         store.applyQIFixture(
             glanceRows: fixture.glanceRows,
@@ -85,7 +85,7 @@ final class ConceptFixturesTests: XCTestCase {
 
     @MainActor
     func testFixturePreferenceChangesNeverCallBridge() async {
-        let fixture = ConceptFixtures.fixture(id: .multiAccount)
+        let fixture = VisualQAFixtures.fixture(id: .multiAccount)
         let scheduler = RefreshScheduler()
         scheduler.invalidateAndShutdown()
         let store = PresentationStore(scheduler: scheduler)
@@ -112,7 +112,7 @@ final class ConceptFixturesTests: XCTestCase {
 
     @MainActor
     func testFixtureSnapshotNormalizesRemovedProviderAtStateOwner() {
-        let fixture = ConceptFixtures.fixture(id: .catalogNormal)
+        let fixture = VisualQAFixtures.fixture(id: .catalogNormal)
         let store = PresentationStore()
         let remainingGlance = fixture.glanceRows.filter { $0.surfaceId != "codex" }
         let remainingSurfaces = fixture.surfaces.filter { $0.id != "codex" }
@@ -133,7 +133,7 @@ final class ConceptFixturesTests: XCTestCase {
     @MainActor
     func testRetainedUsageWindowPreservesValidDestinationUntilExplicitlyChanged() {
         _ = NSApplication.shared
-        let fixture = ConceptFixtures.fixture(id: .multiAccount)
+        let fixture = VisualQAFixtures.fixture(id: .multiAccount)
         let store = PresentationStore()
         store.applyQIFixture(
             glanceRows: fixture.glanceRows,
@@ -166,7 +166,7 @@ final class ConceptFixturesTests: XCTestCase {
         for relativePath in [
             "PopoverRoot.swift",
             "UsageWindow/UsageWindowRoot.swift",
-            "UsageWindow/ProviderCardView.swift",
+            "UsageWindow/ProviderDetailView.swift",
         ] {
             let text = try String(
                 contentsOf: sources.appendingPathComponent(relativePath),

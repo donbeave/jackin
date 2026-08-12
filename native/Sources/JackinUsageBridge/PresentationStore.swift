@@ -67,7 +67,7 @@ public final class PresentationStore: ObservableObject {
         public var buckets: [BucketRow]
         public var updatedLabel: String
         public var lastError: String?
-        /// Rust-owned Capsule-parity provider-detail card.
+        /// Rust-owned Capsule-parity provider detail.
         ///
         /// The Usage window
         /// renders these rows verbatim; other surfaces ignore it.
@@ -598,7 +598,7 @@ public final class PresentationStore: ObservableObject {
 
     /// Inject frozen DATA_CONTRACT / QI presentation without a live bridge poll.
     ///
-    /// Used by explicit concept launches so UI automation drives the same
+    /// Used by explicit visual-QA launches so UI automation drives the same
     /// ``PresentationStore`` + SwiftUI surfaces as production.
     /// Does not invent strings — caller supplies Rust-shaped fixtures.
     public func applyQIFixture(

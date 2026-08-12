@@ -4,8 +4,8 @@
 import Foundation
 import JackinUsageBridge
 
-/// Stable, explicit launch fixtures for native concept QA.
-public enum ConceptFixtureID: String, CaseIterable, Sendable {
+/// Stable, explicit launch fixtures for native visual QA.
+public enum VisualQAFixtureID: String, CaseIterable, Sendable {
     case noProviders = "F00-no-providers"
     case singleNormal = "F01-single-normal"
     case catalogNormal = "F02-catalog-normal"
@@ -24,8 +24,8 @@ public enum ConceptFixtureID: String, CaseIterable, Sendable {
 }
 
 /// Rust-shaped presentation records plus explicit transient state.
-public struct ConceptFixture: Sendable {
-    public let id: ConceptFixtureID
+public struct VisualQAFixture: Sendable {
+    public let id: VisualQAFixtureID
     public let glanceRows: [PresentationStore.GlanceProviderRow]
     public let statusGlanceRows: [PresentationStore.GlanceProviderRow]
     public let surfaces: [PresentationStore.SurfaceRow]
@@ -49,13 +49,13 @@ public struct ConceptFixture: Sendable {
 }
 
 /// One catalog owns app launch, UI automation, and native capture data.
-public enum ConceptFixtures: Sendable {
+public enum VisualQAFixtures: Sendable {
     public static let frozenNow = "2026-08-12T12:00:00+07:00"
     public static let localeIdentifier = "en_US"
     public static let calendarIdentifier = "gregorian"
     public static let timeZoneIdentifier = "Asia/Ho_Chi_Minh"
 
-    public static func fixture(id: ConceptFixtureID) -> ConceptFixture {
+    public static func fixture(id: VisualQAFixtureID) -> VisualQAFixture {
         switch id {
         case .noProviders:
             return fixture(
@@ -117,7 +117,7 @@ public enum ConceptFixtures: Sendable {
             )
         case .refreshingLastGood:
             var fixture = catalogFixture(id: id, refreshingSurface: "codex")
-            fixture = ConceptFixture(
+            fixture = VisualQAFixture(
                 id: fixture.id,
                 glanceRows: fixture.glanceRows,
                 statusGlanceRows: fixture.statusGlanceRows,
@@ -215,7 +215,7 @@ public enum ConceptFixtures: Sendable {
         case .layoutEnvelope:
             return layoutEnvelopeFixture()
         case .initialLoading:
-            return ConceptFixture(
+            return VisualQAFixture(
                 id: id,
                 glanceRows: [],
                 statusGlanceRows: [],
@@ -229,7 +229,7 @@ public enum ConceptFixtures: Sendable {
                 globalError: nil
             )
         case .globalBridgeError:
-            return ConceptFixture(
+            return VisualQAFixture(
                 id: id,
                 glanceRows: [],
                 statusGlanceRows: [],
@@ -289,14 +289,14 @@ public enum ConceptFixtures: Sendable {
     }
 
     private static func fixture(
-        id: ConceptFixtureID,
+        id: VisualQAFixtureID,
         glanceRows: [PresentationStore.GlanceProviderRow],
         surfaces: [PresentationStore.SurfaceRow],
         accounts: [PresentationStore.AccountRow],
         popover: String?,
         usage: String?
-    ) -> ConceptFixture {
-        ConceptFixture(
+    ) -> VisualQAFixture {
+        VisualQAFixture(
             id: id,
             glanceRows: glanceRows,
             statusGlanceRows: Array(glanceRows.prefix(3)),
@@ -312,7 +312,7 @@ public enum ConceptFixtures: Sendable {
     }
 
     private static func singleProviderFixture(
-        id: ConceptFixtureID,
+        id: VisualQAFixtureID,
         provider: Provider,
         accounts: [PresentationStore.AccountRow],
         glanceRemaining: UInt8? = nil,
@@ -320,7 +320,7 @@ public enum ConceptFixtures: Sendable {
         updated: String = "Just now",
         error: String? = nil,
         detail: UsageDetailPresentation? = nil
-    ) -> ConceptFixture {
+    ) -> VisualQAFixture {
         customSingleProviderFixture(
             id: id,
             surfaceId: provider.rawValue,
@@ -336,7 +336,7 @@ public enum ConceptFixtures: Sendable {
     }
 
     private static func customSingleProviderFixture(
-        id: ConceptFixtureID,
+        id: VisualQAFixtureID,
         surfaceId: String,
         iconKey: String,
         displayLabel: String,
@@ -346,7 +346,7 @@ public enum ConceptFixtures: Sendable {
         updated: String,
         error: String?,
         detail: UsageDetailPresentation
-    ) -> ConceptFixture {
+    ) -> VisualQAFixture {
         let selected = accounts.first(where: \.selected) ?? accounts.first
         let provider = Provider(rawValue: surfaceId)
         let glance = glance(
@@ -378,12 +378,12 @@ public enum ConceptFixtures: Sendable {
     }
 
     private static func catalogFixture(
-        id: ConceptFixtureID,
+        id: VisualQAFixtureID,
         refreshingSurface: String? = nil,
         failingSurface: String? = nil,
         failureStatus: String = "fresh",
         failureError: String? = nil
-    ) -> ConceptFixture {
+    ) -> VisualQAFixture {
         let accounts = catalogAccounts()
         let glances = Provider.allCases.map { provider in
             let selected = accounts.first { $0.surfaceId == provider.rawValue && $0.selected }
@@ -412,7 +412,7 @@ public enum ConceptFixtures: Sendable {
         let statusOrder = ["claude", "codex", "minimax"].compactMap { id in
             glances.first { $0.surfaceId == id }
         }
-        return ConceptFixture(
+        return VisualQAFixture(
             id: id,
             glanceRows: glances,
             statusGlanceRows: statusOrder,
@@ -427,7 +427,7 @@ public enum ConceptFixtures: Sendable {
         )
     }
 
-    private static func layoutEnvelopeFixture() -> ConceptFixture {
+    private static func layoutEnvelopeFixture() -> VisualQAFixture {
         var base = catalogFixture(id: .layoutEnvelope)
         let accounts = [
             codexPersonal(selected: false),
@@ -506,7 +506,7 @@ public enum ConceptFixtures: Sendable {
                 detailPresentation: detail
             )
         }
-        base = ConceptFixture(
+        base = VisualQAFixture(
             id: .layoutEnvelope,
             glanceRows: base.glanceRows,
             statusGlanceRows: base.statusGlanceRows,

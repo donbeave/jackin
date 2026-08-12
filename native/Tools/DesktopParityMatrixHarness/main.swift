@@ -281,7 +281,7 @@ struct DesktopParityMatrixHarness {
         let statusItem = read("StatusItemLabel.swift")
         let statusBar = read("DesktopAppDelegate.swift")
         let popover = read("PopoverRoot.swift")
-        let provider = read("UsageWindow/ProviderCardView.swift")
+        let provider = read("UsageWindow/ProviderDetailView.swift")
         let overview = read("UsageWindow/OverviewListView.swift")
         let usageController = read("UsageWindowController.swift")
         check(
@@ -336,13 +336,13 @@ struct DesktopParityMatrixHarness {
                 && !popover.contains("statusItemPercentToken")
         )
         check(
-            "ProviderCard renders Rust detail rows mechanically (plan 008)",
+            "Provider detail renders Rust rows mechanically (plan 008)",
             provider.contains("content.detail.rows")
                 && provider.contains("layoutLines")
                 && provider.contains("row.label")
         )
         check(
-            "ProviderCard splits/joins no usage string and invents no field copy",
+            "Provider detail splits/joins no usage string and invents no field copy",
             !provider.contains("splitPaceLabel")
                 && !provider.contains("bucketMetricPrimaryLabel")
                 && !provider.contains("statusItemPercentToken")
@@ -352,7 +352,7 @@ struct DesktopParityMatrixHarness {
                 && !provider.contains("\"— No data\"")
         )
         check(
-            "ProviderCard bucket identity is Rust rowId, not label",
+            "Provider detail bucket identity is Rust rowId, not label",
             provider.contains("content.detail.rows")
                 && provider.contains("ForEach")
                 && !provider.contains("ForEach(surface.buckets)")
@@ -378,7 +378,7 @@ struct DesktopParityMatrixHarness {
                 && !overview.contains("\"No enabled surfaces\"")
         )
         check(
-            "Overview uses per-account inventory helper (HTML SoT)",
+            "Overview uses the per-account inventory helper",
             overview.contains("OverviewInventory")
         )
         check(

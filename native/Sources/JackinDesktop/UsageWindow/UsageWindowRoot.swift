@@ -141,7 +141,7 @@ public struct UsageWindowRoot: View {
             }
             .accessibilityIdentifier("usage.global-error")
         } else if let content = model.content {
-            ProviderCardView(
+            ProviderDetailView(
                 content: content,
                 providerError: store.surfaces.first { $0.id == content.surfaceId }?.lastError,
                 onSelectAccount: store.setSelectedAccount,
