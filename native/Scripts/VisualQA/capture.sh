@@ -107,8 +107,21 @@ if [ -n "${CAPTURE_TOOLBAR_BUTTON_DESCRIPTION:-}" ]; then
     echo "toolbar driving requires a window title" >&2
     exit 2
   }
-  osascript -e \
-    "tell application \"System Events\" to tell application process \"$executable\" to tell front window to click first button of toolbar 1 whose description is \"$CAPTURE_TOOLBAR_BUTTON_DESCRIPTION\""
+  toolbar_ok=0
+  i=0
+  while [ "$i" -lt 10 ]; do
+    if osascript -e \
+      "tell application \"System Events\" to tell application process \"$executable\" to tell front window to click first button of toolbar 1 whose description is \"$CAPTURE_TOOLBAR_BUTTON_DESCRIPTION\""; then
+      toolbar_ok=1
+      break
+    fi
+    sleep 0.5
+    i=$((i + 1))
+  done
+  [ "$toolbar_ok" -eq 1 ] || {
+    echo "toolbar button did not become available: $CAPTURE_TOOLBAR_BUTTON_DESCRIPTION" >&2
+    exit 1
+  }
   sleep 1
 fi
 
