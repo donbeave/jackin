@@ -1,8 +1,8 @@
 # Required states and evidence matrix
 
-Status: **production matrix recorded; final branch-head proof in progress**
+Status: **branch-head automated matrix complete; A08–A09 operator observations pending**
 
-Current provisional evidence lives in [`evidence/final/`](evidence/final/). The harness has captured the 36-state core matrix plus Reduce Transparency, Increase Contrast, Reduce Motion, and Differentiate Without Color on both native surfaces, with byte-identical before/after setting receipts. Those captures predate the latest source corrections and therefore do not yet prove the final branch head. A08–A09 remain operator-owned because macOS exposes no public clear/tinted preference API. No placeholder or offscreen rendering substitutes for these states.
+Current branch-head evidence lives in [`evidence/final/`](evidence/final/). At clean pushed source `2be951e5e834e787bc64eaf9bf6202ed123da116`, the harness captured the 36-state core matrix plus Reduce Transparency, Increase Contrast, Reduce Motion, and Differentiate Without Color on both native surfaces, with byte-identical before/after setting receipts. A provenance validator reports zero failures. A08–A09 remain operator-owned because macOS exposes no public clear/tinted preference API. No placeholder or offscreen rendering substitutes for these states.
 
 Every row remains mandatory before production completion. A screenshot alone
 does not prove keyboard, accessibility, or restoration behavior; use the named
@@ -95,4 +95,4 @@ not branch on guessed defaults.
   appearance, accessibility settings, window geometry, and key-window state.
 - Scripts that modify macOS settings snapshot old values first and restore them
   on success, failure, and interruption.
-- Runnable-concept captures supported the operator confirmation gate. Final captures must be regenerated from production branch HEAD and cannot inherit proof from the concept commit.
+- Runnable-concept captures supported the operator confirmation gate. Current production captures were independently regenerated from branch HEAD and do not inherit proof from the concept commit.

@@ -1,6 +1,6 @@
 # Native Liquid Glass redesign
 
-Status: **A1 production implementation in progress; final branch-head evidence and repository gates pending**
+Status: **A1 production implementation and automated branch-head evidence complete; A08–A09 and final repository delivery proof pending**
 
 These files are the design authority for the native jackin❯ desktop redesign. The A1 selection authorized Phase 2 audits and the smallest runnable Phase 3 proof; D-004 separately authorizes production implementation of that confirmed direction.
 

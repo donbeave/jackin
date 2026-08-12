@@ -1,6 +1,6 @@
 # Blocked native setting evidence
 
-Status: **historical blocker cleared; final branch-head regeneration still required**
+Status: **historical blocker cleared; branch-head regeneration complete**
 
 ## Accessibility setting captures
 
@@ -10,7 +10,7 @@ Full-screen `screencapture` returned an all-black image. ScreenCaptureKit return
 
 XCTest then failed before launching any test with `LocalAuthentication Code=-4` (`System authentication is running`). Restarting only the per-user LocalAuthentication UI agent and daemon did not clear the system-owned authentication state. Restarting the full GUI session or host would have been an external destructive interruption and was not performed.
 
-The host services later recovered without a GUI restart. Real Usage and popover captures now exist for Reduce Transparency, Increase Contrast, Reduce Motion, and Differentiate Without Color under [`accessibility/`](accessibility/). All five accessibility setting receipts share SHA-256 `821f1c28b1034fbfb139830116d71472b21a168334a353b2bc7b87ff7ca0be07`, proving restoration. Because source changed afterward, these images remain provisional until the clean branch-head matrix regenerates them.
+The host services later recovered without a GUI restart. Real Usage and popover captures now exist for Reduce Transparency, Increase Contrast, Reduce Motion, and Differentiate Without Color under [`accessibility/`](accessibility/) at clean pushed source `2be951e5e834e787bc64eaf9bf6202ed123da116`. The before receipt and all four after receipts share SHA-256 `92d340a5d72d58db9ed095fc032ce328fc183cb7bf5b7bd1caa541d72c552d2b`, proving restoration.
 
 Code does not branch on these settings and contains no custom material, glass, blur, opacity, motion, glow, custom progress track, or color-only status. Standard `NSPopover`, `NavigationSplitView`, `Table`, `List`, `Form`, `Section`, `Picker`, `Button`, and `ProgressView` components therefore retain system ownership of accessibility adaptation. Default-state UI audits passed on Overview, provider detail, and the real popover before the host service entered this state.
 
@@ -20,4 +20,4 @@ macOS provides no public API that identifies the operator's clear/tinted Liquid 
 
 ## Restoration result
 
-`settings-before.txt`, `settings-after-recovery.txt`, and `settings-after-trap-test.txt` have the same SHA-256: `d1b88cdf87446cb235e617faf110014e3164e247d8ab96935df1e23900d92d87`. The later focus snapshots add `AppleKeyboardUIMode`; all five, including `settings-current.txt`, have the same SHA-256: `821f1c28b1034fbfb139830116d71472b21a168334a353b2bc7b87ff7ca0be07`. No tested macOS preference remains modified.
+`settings-before.txt`, `settings-after-recovery.txt`, and `settings-after-trap-test.txt` have the same SHA-256: `d1b88cdf87446cb235e617faf110014e3164e247d8ab96935df1e23900d92d87`. The focus snapshots add `AppleKeyboardUIMode`; all four share SHA-256 `821f1c28b1034fbfb139830116d71472b21a168334a353b2bc7b87ff7ca0be07`. The final accessibility baseline and four after receipts share SHA-256 `92d340a5d72d58db9ed095fc032ce328fc183cb7bf5b7bd1caa541d72c552d2b`. No tested macOS preference remains modified.
