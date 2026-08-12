@@ -65,6 +65,14 @@ if [ ! -x "$DRIVE_TOOL" ]; then
   }
   swiftc -O "$HERE/notification-drive.swift" -o "$DRIVE_TOOL"
 fi
+FOCUS_TOOL=${FOCUS_DRIVE_TOOL:-"${TMPDIR:-/tmp}/tailrocks-focus-drive"}
+if [ ! -x "$FOCUS_TOOL" ]; then
+  command -v swiftc >/dev/null 2>&1 || {
+    echo "swiftc missing; set FOCUS_DRIVE_TOOL" >&2
+    exit 2
+  }
+  swiftc -O "$HERE/focus-drive.swift" -o "$FOCUS_TOOL"
+fi
 
 EXEC="$APP/Contents/MacOS/"
 matched=$(pgrep -f "$EXEC" 2>/dev/null | wc -l | tr -d ' ')
@@ -134,11 +142,11 @@ drive_activation() {
       "tell application \"System Events\" to set frontmost of application process \"$CAPTURE_INACTIVE_APP\" to true" \
       >/dev/null 2>&1 || true
   else
-    if [ -n "$WINDOW_NAME" ] && [ "$window_onscreen" != true ]; then
-      # AppleScript can report a cross-Space app as frontmost while its key window remains
-      # offscreen. Opening the exact bundle activates that existing window on the active Space.
-      open "$APP" >/dev/null 2>&1 || true
-      sleep 2
+    if [ -n "$WINDOW_NAME" ]; then
+      pid=$(pgrep -f "$EXEC" | head -1)
+      # AppKit's default activation can report success while a window remains on another Space.
+      # activateAllWindows moves the existing Usage window onto the active Space.
+      "$FOCUS_TOOL" "$pid" 0 >/dev/null
     else
       osascript -e \
         "tell application \"System Events\" to set frontmost of application process \"$executable\" to true" \

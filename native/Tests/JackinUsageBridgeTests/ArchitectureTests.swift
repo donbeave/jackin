@@ -555,16 +555,28 @@ final class ArchitectureTests: XCTestCase {
     }
 
     func testFinalCaptureMatrixBuildsCleanBranchHeadApp() throws {
-        let script =
+        let visualQARoot =
             sourcesRoot
             .deletingLastPathComponent()
-            .appendingPathComponent("Scripts/VisualQA/capture-final-matrix.sh")
+            .appendingPathComponent("Scripts/VisualQA")
+        let script = visualQARoot.appendingPathComponent("capture-final-matrix.sh")
         let text = try String(contentsOf: script, encoding: .utf8)
+        let capture = try String(
+            contentsOf: visualQARoot.appendingPathComponent("capture.sh"),
+            encoding: .utf8
+        )
+        let focusDrive = try String(
+            contentsOf: visualQARoot.appendingPathComponent("focus-drive.swift"),
+            encoding: .utf8
+        )
 
         XCTAssertTrue(text.contains("git -C \"$repo\" status --porcelain"))
         XCTAssertTrue(text.contains("mise -C \"$repo\" run desktop-build"))
         XCTAssertTrue(text.contains("mise -C \"$repo\" run desktop-verify"))
         XCTAssertTrue(text.contains("final evidence requires the canonical branch-head app"))
+        XCTAssertTrue(text.contains("FOCUS_DRIVE_TOOL=$focus_tool"))
+        XCTAssertTrue(capture.contains("\"$FOCUS_TOOL\" \"$pid\" 0"))
+        XCTAssertTrue(focusDrive.contains("activate(options: [.activateAllWindows])"))
     }
 
     /// SB-5 vs FB1-6: bar stays template mono (no severity tint).

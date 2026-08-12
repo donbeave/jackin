@@ -8,6 +8,7 @@ app=${1:-"$repo/native/dist/JackinDesktop.app"}
 output="$repo/plans/native-liquid-glass/evidence/final"
 window_tool="$repo/native/.build/final-window-id"
 notification_tool="$repo/native/.build/final-notification-drive"
+focus_tool="$repo/native/.build/final-focus-drive"
 capture="$here/capture.sh"
 owner="jackin❯ desktop"
 
@@ -54,6 +55,7 @@ test -d "$app" || {
 mkdir -p "$repo/native/.build" "$output"
 swiftc -O "$here/window-id.swift" -o "$window_tool"
 swiftc -O "$here/notification-drive.swift" -o "$notification_tool"
+swiftc -O "$here/focus-drive.swift" -o "$focus_tool"
 
 cleanup() {
   status=$?
@@ -70,6 +72,7 @@ usage() {
   local -a environment=(
     "WINDOW_ID_TOOL=$window_tool"
     "NOTIFICATION_DRIVE_TOOL=$notification_tool"
+    "FOCUS_DRIVE_TOOL=$focus_tool"
   )
   if [[ "$state" == inactive ]]; then
     environment+=("CAPTURE_INACTIVE_APP=Finder")
