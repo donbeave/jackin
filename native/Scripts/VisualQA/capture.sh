@@ -116,7 +116,11 @@ fi
 
 drive_activation() {
   if [ -n "$WINDOW_NAME" ]; then
-    "$DRIVE_TOOL" "com.jackin-project.desktop.visual-qa.show-usage"
+    window_onscreen=$("$TOOL" "$OWNER" "$WINDOW_NAME" --json 2>/dev/null \
+      | plutil -extract onScreen raw - 2>/dev/null || echo false)
+    if [ "$window_onscreen" != true ]; then
+      "$DRIVE_TOOL" "com.jackin-project.desktop.visual-qa.show-usage"
+    fi
   else
     popover_onscreen=$(WINDOW_LAYER_MODE=all "$TOOL" "$OWNER" --json 2>/dev/null \
       | plutil -extract onScreen raw - 2>/dev/null || echo false)
@@ -183,6 +187,7 @@ if [ -n "${CAPTURE_TOOLBAR_BUTTON_DESCRIPTION:-}" ]; then
 fi
 
 capture_ok=0
+success_count=0
 best_size=0
 best_metadata="$OUT.capture-metadata.json"
 attempt=0
@@ -236,6 +241,7 @@ while [ "$attempt" -lt 20 ]; do
     fi
     rm -f "$candidate_post_metadata"
     capture_ok=1
+    success_count=$((success_count + 1))
     candidate_size=$(wc -c < "$candidate")
     if [ "$candidate_size" -gt "$best_size" ]; then
       mv -f "$candidate" "$OUT"
@@ -245,6 +251,7 @@ while [ "$attempt" -lt 20 ]; do
       rm -f "$candidate" "$candidate_metadata"
     fi
     attempt=$((attempt + 1))
+    [ "$success_count" -ge 2 ] && break
     continue
   fi
   rm -f "$candidate" "$candidate_metadata" "$candidate_post_metadata"
