@@ -485,7 +485,10 @@ jobs:
 
   cargo-registry-warmup:
     needs: [changes]
-    if: needs.changes.outputs.rust == 'true' && needs.changes.outputs.result-reuse != 'true'
+    if: >-
+      needs.changes.outputs.rust == 'true' &&
+      (needs.changes.outputs.result-reuse != 'true' ||
+       github.event_name == 'workflow_dispatch')
     strategy:
       fail-fast: false
       matrix:
