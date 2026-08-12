@@ -207,8 +207,6 @@ best_size=0
 best_metadata="$OUT.capture-metadata.json"
 attempt=0
 while [ "$attempt" -lt 20 ]; do
-  drive_activation
-  sleep 0.5
   candidate="$OUT.capture-$attempt.png"
   candidate_metadata="$OUT.capture-$attempt.json"
   candidate_post_metadata="$OUT.capture-$attempt-post.json"
@@ -234,6 +232,8 @@ while [ "$attempt" -lt 20 ]; do
   if [ "$actual_activation" != "$requested_activation" ] \
     || [ "$actual_key" != "$expected_key" ] || [ "$actual_onscreen" != true ]; then
     rm -f "$candidate_metadata"
+    drive_activation
+    sleep 0.5
     attempt=$((attempt + 1))
     continue
   fi
@@ -270,6 +270,7 @@ while [ "$attempt" -lt 20 ]; do
     continue
   fi
   rm -f "$candidate" "$candidate_metadata" "$candidate_post_metadata"
+  sleep 0.5
   attempt=$((attempt + 1))
 done
 [ "$capture_ok" -eq 1 ] || {
