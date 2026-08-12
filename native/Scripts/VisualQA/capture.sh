@@ -205,6 +205,11 @@ capture_ok=0
 success_count=0
 best_size=0
 best_metadata="$OUT.capture-metadata.json"
+resolve_failures=0
+state_failures=0
+capture_failures=0
+postcheck_failures=0
+last_state=unresolved
 attempt=0
 while [ "$attempt" -lt 20 ]; do
   candidate="$OUT.capture-$attempt.png"
@@ -213,12 +218,14 @@ while [ "$attempt" -lt 20 ]; do
   if [ -n "$WINDOW_NAME" ]; then
     "$TOOL" "$OWNER" "$WINDOW_NAME" --json > "$candidate_metadata" 2>/dev/null || {
       rm -f "$candidate_metadata"
+      resolve_failures=$((resolve_failures + 1))
       attempt=$((attempt + 1))
       continue
     }
   else
     "$TOOL" "$OWNER" --json > "$candidate_metadata" 2>/dev/null || {
       rm -f "$candidate_metadata"
+      resolve_failures=$((resolve_failures + 1))
       attempt=$((attempt + 1))
       continue
     }
@@ -226,12 +233,14 @@ while [ "$attempt" -lt 20 ]; do
   actual_activation=$(plutil -extract applicationActivationState raw "$candidate_metadata")
   actual_key=$(plutil -extract keyStatus raw "$candidate_metadata")
   actual_onscreen=$(plutil -extract onScreen raw "$candidate_metadata")
+  last_state="$actual_activation/$actual_key/$actual_onscreen"
   expected_key=key
   [ "$requested_activation" = inactive ] && expected_key=non-key
   [ -z "$WINDOW_NAME" ] && expected_key=not-applicable-transient
   if [ "$actual_activation" != "$requested_activation" ] \
     || [ "$actual_key" != "$expected_key" ] || [ "$actual_onscreen" != true ]; then
     rm -f "$candidate_metadata"
+    state_failures=$((state_failures + 1))
     drive_activation
     sleep 0.5
     attempt=$((attempt + 1))
@@ -251,6 +260,7 @@ while [ "$attempt" -lt 20 ]; do
     if [ "$post_id" != "$WID" ] || [ "$post_activation" != "$requested_activation" ] \
       || [ "$post_key" != "$expected_key" ] || [ "$post_onscreen" != true ]; then
       rm -f "$candidate" "$candidate_metadata" "$candidate_post_metadata"
+      postcheck_failures=$((postcheck_failures + 1))
       attempt=$((attempt + 1))
       continue
     fi
@@ -270,11 +280,12 @@ while [ "$attempt" -lt 20 ]; do
     continue
   fi
   rm -f "$candidate" "$candidate_metadata" "$candidate_post_metadata"
+  capture_failures=$((capture_failures + 1))
   sleep 0.5
   attempt=$((attempt + 1))
 done
 [ "$capture_ok" -eq 1 ] || {
-  echo "window capture did not stabilize" >&2
+  echo "window capture did not stabilize: resolve=$resolve_failures state=$state_failures capture=$capture_failures postcheck=$postcheck_failures last=$last_state" >&2
   exit 1
 }
 [ -f "$OUT" ] && [ "$(wc -c < "$OUT")" -ge 8192 ] || {
