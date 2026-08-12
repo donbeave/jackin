@@ -64,9 +64,35 @@ fi
 
 open -n "$APP" --args "$@"
 sleep 3
-# Re-activate before resolving; activation can replace the target window.
-open "$APP"
-sleep 1
+executable=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$APP/Contents/Info.plist")
+if [ -n "${CAPTURE_STATUS_ITEM_INDEX:-}" ]; then
+  if [ "${CAPTURE_STATUS_ITEM_BUTTON:-left}" = right ]; then
+    STATUS_TOOL=${STATUS_ITEM_TOOL:-"${TMPDIR:-/tmp}/tailrocks-status-item-drive"}
+    if [ ! -x "$STATUS_TOOL" ]; then
+      swiftc -O "$HERE/status-item-drive.swift" -o "$STATUS_TOOL"
+    fi
+    pid=$(pgrep -f "$EXEC" | head -1)
+    "$STATUS_TOOL" "$pid" "$CAPTURE_STATUS_ITEM_INDEX" right
+  else
+    osascript -e \
+      "tell application \"System Events\" to tell application process \"$executable\" to click menu bar item $CAPTURE_STATUS_ITEM_INDEX of menu bar 2"
+  fi
+  sleep 1
+else
+  # Re-activate before resolving; activation can replace the target window.
+  open "$APP"
+  sleep 1
+fi
+
+if [ -n "${CAPTURE_TOOLBAR_BUTTON_DESCRIPTION:-}" ]; then
+  [ -n "$WINDOW_NAME" ] || {
+    echo "toolbar driving requires a window title" >&2
+    exit 2
+  }
+  osascript -e \
+    "tell application \"System Events\" to tell application process \"$executable\" to tell front window to click first button of toolbar 1 whose description is \"$CAPTURE_TOOLBAR_BUTTON_DESCRIPTION\""
+  sleep 1
+fi
 
 WID=""
 i=0
@@ -90,10 +116,44 @@ esac
 
 if [ -n "${CAPTURE_INACTIVE_APP:-}" ]; then
   open -a "$CAPTURE_INACTIVE_APP"
+  osascript -e "tell application \"$CAPTURE_INACTIVE_APP\" to activate"
   sleep 1
 fi
 
-screencapture -x -o -l "$WID" "$OUT"
+capture_ok=0
+best_size=0
+attempt=0
+while [ "$attempt" -lt 3 ]; do
+  sleep 1
+  candidate="$OUT.capture-$attempt.png"
+  if screencapture -x -o -l "$WID" "$candidate"; then
+    capture_ok=1
+    candidate_size=$(wc -c < "$candidate")
+    if [ "$candidate_size" -gt "$best_size" ]; then
+      mv -f "$candidate" "$OUT"
+      best_size=$candidate_size
+    else
+      rm -f "$candidate"
+    fi
+    attempt=$((attempt + 1))
+    continue
+  fi
+  rm -f "$candidate"
+  if [ -n "$WINDOW_NAME" ]; then
+    WID=$("$TOOL" "$OWNER" "$WINDOW_NAME" || true)
+  else
+    WID=$("$TOOL" "$OWNER" || true)
+  fi
+  case "$WID" in
+    '' | *[!0-9]*) WID="" ;;
+  esac
+  [ -n "$WID" ] || break
+  attempt=$((attempt + 1))
+done
+[ "$capture_ok" -eq 1 ] || {
+  echo "window capture did not stabilize" >&2
+  exit 1
+}
 [ -f "$OUT" ] && [ "$(wc -c < "$OUT")" -ge 8192 ] || {
   echo "capture empty — check Screen Recording permission for this terminal" >&2
   exit 1

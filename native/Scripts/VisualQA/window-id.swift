@@ -6,6 +6,7 @@ import Foundation
 
 struct Window {
     let id: CGWindowID
+    let pid: pid_t
     let owner: String
     let name: String
     let bounds: CGRect
@@ -27,6 +28,7 @@ func windows(ownedBy owner: String) -> ([Window], Bool) {
     let result: [Window] = raw.compactMap { entry -> Window? in
         guard
             let id = entry[kCGWindowNumber as String] as? CGWindowID,
+            let ownerPID = entry[kCGWindowOwnerPID as String] as? Int,
             let ownerName = entry[kCGWindowOwnerName as String] as? String,
             ownerName == owner
         else { return nil }
@@ -40,6 +42,7 @@ func windows(ownedBy owner: String) -> ([Window], Bool) {
         }
         return Window(
             id: id,
+            pid: pid_t(ownerPID),
             owner: ownerName,
             name: name,
             bounds: bounds,
@@ -106,9 +109,10 @@ if matches.count > 1 {
 }
 
 if jsonMode {
-    let active = NSWorkspace.shared.frontmostApplication?.localizedName == owner
+    let active = NSWorkspace.shared.frontmostApplication?.processIdentifier == window.pid
     let object: [String: Any] = [
         "windowID": Int(window.id),
+        "ownerPID": Int(window.pid),
         "owner": window.owner,
         "windowTitle": window.name,
         "windowLayer": window.layer,

@@ -63,7 +63,8 @@ targets:
     sources:
       - path: Sources/JackinDesktopApp
         type: syncedFolder
-      - path: Sources/JackinDesktop/Resources/JackinMark.pdf
+      - path: Sources/JackinDesktop/Resources/Brand
+        type: folder
         buildPhase: resources
       - path: Sources/JackinDesktop/Resources/ProviderMarks
         type: folder

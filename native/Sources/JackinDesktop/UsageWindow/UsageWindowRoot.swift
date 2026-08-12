@@ -14,6 +14,7 @@ public struct UsageWindowRoot: View {
     @ObservedObject public var store: PresentationStore
     @Environment(\.dismiss) private var dismiss
     @State private var destination: Destination?
+    @State private var columnVisibility: NavigationSplitViewVisibility = .all
 
     public init(store: PresentationStore) {
         self.store = store
@@ -32,36 +33,54 @@ public struct UsageWindowRoot: View {
     }
 
     public var body: some View {
-        NavigationSplitView {
-            List(selection: $destination) {
-                Label("Overview", systemImage: "rectangle.grid.2x2")
-                    .tag(Destination.overview)
-                    .accessibilityIdentifier("usage.sidebar.overview")
+        NavigationSplitView(columnVisibility: $columnVisibility) {
+            VStack(spacing: 0) {
+                List(selection: $destination) {
+                    Label("Overview", systemImage: "rectangle.grid.2x2")
+                        .tag(Destination.overview)
+                        .accessibilityIdentifier("usage.sidebar.overview")
 
-                Section {
-                    ForEach(model.sidebar) { provider in
-                        Label {
-                            Text(provider.displayLabel)
-                        } icon: {
-                            providerMark(provider)
+                    Section {
+                        ForEach(model.sidebar) { provider in
+                            Label {
+                                Text(provider.displayLabel)
+                            } icon: {
+                                providerMark(provider)
+                            }
+                            .tag(Destination.provider(provider.surfaceId))
+                            .accessibilityIdentifier("usage.sidebar.provider.\(provider.surfaceId)")
                         }
-                        .tag(Destination.provider(provider.surfaceId))
-                        .accessibilityIdentifier("usage.sidebar.provider.\(provider.surfaceId)")
+                    } header: {
+                        Text("Providers")
+                            .accessibilityLabel("Providers")
                     }
-                } header: {
-                    Text("Providers")
-                        .accessibilityLabel("Providers")
                 }
+                .listStyle(.sidebar)
+                .accessibilityLabel("Usage providers sidebar")
+                .accessibilityIdentifier("usage.sidebar")
+
+                JackinBrandSignature()
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 10)
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .listStyle(.sidebar)
             .navigationSplitViewColumnWidth(min: 190, ideal: 220, max: 280)
-            .accessibilityLabel("Usage providers sidebar")
-            .accessibilityIdentifier("usage.sidebar")
+            .toolbar(removing: .sidebarToggle)
         } detail: {
             detail
         }
         .navigationSplitViewStyle(.balanced)
         .toolbar {
+            ToolbarItem(id: "usage.sidebar-toggle", placement: .navigation) {
+                Button {
+                    columnVisibility = isSidebarVisible ? .detailOnly : .all
+                } label: {
+                    Label(sidebarToggleLabel, systemImage: "sidebar.left")
+                }
+                .help(sidebarToggleLabel)
+                .accessibilityIdentifier("usage.sidebar-toggle")
+            }
+
             ToolbarItem(placement: .primaryAction) {
                 Button {
                     store.refreshAll()
@@ -94,6 +113,14 @@ public struct UsageWindowRoot: View {
             }
         }
         .frame(minWidth: 760, minHeight: 500)
+    }
+
+    private var isSidebarVisible: Bool {
+        columnVisibility != .detailOnly
+    }
+
+    private var sidebarToggleLabel: String {
+        isSidebarVisible ? "Hide Sidebar" : "Show Sidebar"
     }
 
     @ViewBuilder

@@ -358,10 +358,11 @@ struct DesktopParityMatrixHarness {
                 && !provider.contains("ForEach(surface.buckets)")
         )
         check(
-            "Usage detail meter is native and severity is not color-only",
+            "Usage detail meter is native and severity supplements textual state",
             provider.contains("meterPercent")
                 && provider.contains("ProgressView(value:")
-                && !provider.contains("severityTint")
+                && provider.contains("severityTint(row.severity)")
+                && provider.contains("row.displayLabel")
         )
         let usageRoot = read("UsageWindow/UsageWindowRoot.swift")
         check(

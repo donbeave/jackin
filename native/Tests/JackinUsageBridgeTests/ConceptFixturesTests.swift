@@ -82,6 +82,33 @@ final class ConceptFixturesTests: XCTestCase {
         XCTAssertEqual(store.accounts.filter(\.selected).count, 1)
     }
 
+    @MainActor
+    func testFixturePreferenceChangesNeverCallBridge() async {
+        let fixture = ConceptFixtures.fixture(id: .multiAccount)
+        let scheduler = RefreshScheduler()
+        scheduler.invalidateAndShutdown()
+        let store = PresentationStore(scheduler: scheduler)
+        store.applyQIFixture(
+            glanceRows: fixture.glanceRows,
+            statusBarGlanceRows: fixture.statusGlanceRows,
+            surfaces: fixture.surfaces,
+            accounts: fixture.accounts,
+            popoverSelection: fixture.popoverSelection,
+            usageSelection: fixture.usageSelection
+        )
+
+        store.displayMode = .focusPercent
+        store.percentStyle = "used"
+        store.resetStyle = "exact_clock"
+        store.hideWhileScreenSharing.toggle()
+        for _ in 0..<4 { await Task.yield() }
+
+        XCTAssertTrue(store.usesFixture)
+        XCTAssertNil(store.lastError)
+        XCTAssertEqual(
+            store.providerGlanceRows.map(\.surfaceId), fixture.glanceRows.map(\.surfaceId))
+    }
+
     func testA1SourcesExposeNoDestructiveAction() throws {
         let sources = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()

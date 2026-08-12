@@ -12,6 +12,7 @@ final class JackinDesktopUITests: XCTestCase {
         launchUsage(fixture: "F02-catalog-normal", selection: "overview", size: "760x500")
 
         XCTAssertTrue(element("usage.sidebar").waitForExistence(timeout: 5))
+        XCTAssertFalse(application.staticTexts["Usage"].exists)
         XCTAssertTrue(element("usage.overview.table").waitForExistence(timeout: 5))
 
         let openAI = element("usage.sidebar.provider.codex")
@@ -21,6 +22,37 @@ final class JackinDesktopUITests: XCTestCase {
         XCTAssertTrue(element("usage.provider.codex").waitForExistence(timeout: 3))
         XCTAssertTrue(element("usage.limit.bucket:0").exists)
         XCTAssertTrue(element("usage.refresh").isEnabled)
+    }
+
+    func testNativeSidebarToggleKeepsLeadingToolbarSlot() {
+        defer { application.terminate() }
+        launchUsage(fixture: "F03-multi-account", selection: "codex", size: "920x620")
+
+        let usageWindow = element("usage-window")
+        let hideSidebar = usageWindow.buttons["usage.sidebar-toggle"]
+        XCTAssertTrue(hideSidebar.waitForExistence(timeout: 5), application.debugDescription)
+        XCTAssertTrue(hideSidebar.isHittable)
+        XCTAssertEqual(hideSidebar.label, "Hide Sidebar")
+        XCTAssertEqual(
+            usageWindow.buttons.matching(NSPredicate(format: "label == %@", "Hide Sidebar")).count,
+            1)
+        let expandedFrame = hideSidebar.frame
+        hideSidebar.click()
+
+        XCTAssertTrue(hideSidebar.waitForExistence(timeout: 3), application.debugDescription)
+        XCTAssertTrue(hideSidebar.isHittable)
+        XCTAssertEqual(hideSidebar.label, "Show Sidebar")
+        XCTAssertEqual(
+            usageWindow.buttons.matching(NSPredicate(format: "label == %@", "Show Sidebar")).count,
+            1)
+        XCTAssertEqual(hideSidebar.frame.midX, expandedFrame.midX, accuracy: 1)
+        XCTAssertEqual(hideSidebar.frame.midY, expandedFrame.midY, accuracy: 1)
+        hideSidebar.click()
+        XCTAssertTrue(hideSidebar.waitForExistence(timeout: 3))
+        XCTAssertTrue(hideSidebar.isHittable)
+        XCTAssertEqual(hideSidebar.label, "Hide Sidebar")
+        XCTAssertEqual(hideSidebar.frame.midX, expandedFrame.midX, accuracy: 1)
+        XCTAssertEqual(hideSidebar.frame.midY, expandedFrame.midY, accuracy: 1)
     }
 
     func testMultiAccountProviderUsesNativePicker() {
@@ -88,7 +120,8 @@ final class JackinDesktopUITests: XCTestCase {
             "--window-size", size,
         ]
         application.launch()
-        XCTAssertTrue(application.windows["jackin❯ desktop"].waitForExistence(timeout: 5))
+        application.activate()
+        XCTAssertTrue(element("usage-window").waitForExistence(timeout: 5))
     }
 
     private func element(_ identifier: String) -> XCUIElement {
@@ -123,6 +156,24 @@ final class JackinDesktopUITests: XCTestCase {
         if issue.auditType == .contrast,
             element.elementType == .staticText,
             element.identifier.hasPrefix("usage.limit.")
+        {
+            return true
+        }
+
+        // Xcode 26 reports primary system text inside native Section and LabeledContent labels as
+        // failed contrast even though issue captures show opaque primary text on the list surface.
+        if issue.auditType == .contrast,
+            element.elementType == .staticText,
+            element.identifier.hasPrefix("usage.section.")
+                || element.identifier.hasPrefix("usage.detail-label.")
+        {
+            return true
+        }
+
+        // AppKit does not expose SwiftUI Section header identifiers to XCTest on macOS 26.
+        if issue.auditType == .contrast,
+            element.elementType == .staticText,
+            (element.value as? String) == "Account"
         {
             return true
         }

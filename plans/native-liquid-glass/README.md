@@ -1,6 +1,6 @@
 # Native Liquid Glass redesign
 
-Status: **A1 selected on 2026-08-12 — native concept not yet confirmed**
+Status: **A1 runnable concept verified on 2026-08-12 — awaiting operator confirmation**
 
 These files are the design authority for the native jackin❯ desktop redesign.
 The A1 selection authorizes Phase 2 audits and the smallest runnable Phase 3
@@ -18,6 +18,8 @@ proof. It does not authorize full production implementation.
   visible region
 - [LayerMap.md](LayerMap.md) — content versus functional layers and material
   ownership
+- [BrandIntegration.md](BrandIntegration.md) — operator-directed synthesis of
+  native hierarchy, canonical identity, and semantic phosphor color
 - [Fixtures.md](Fixtures.md) — deterministic design and validation data
 - [RequiredStates.md](RequiredStates.md) — required appearance, accessibility,
   interaction, sizing, and restoration states

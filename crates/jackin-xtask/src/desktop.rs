@@ -642,7 +642,7 @@ pub(super) fn verify_app(
 
     let bin = app.join(format!("Contents/MacOS/{APP_EXECUTABLE}"));
     let plist = app.join("Contents/Info.plist");
-    let app_mark = app.join("Contents/Resources/JackinMark.pdf");
+    let brand_assets = app.join("Contents/Resources/Brand");
     let provider_marks = app.join("Contents/Resources/ProviderMarks");
 
     if !bin.is_file() {
@@ -651,8 +651,16 @@ pub(super) fn verify_app(
     if !plist.is_file() {
         bail!("missing {}", plist.display());
     }
-    if !app_mark.is_file() {
-        bail!("missing app mark {}", app_mark.display());
+    for name in [
+        "JackinMonogramDark.svg",
+        "JackinMonogramLight.svg",
+        "JackinWordmarkDark.svg",
+        "JackinWordmarkLight.svg",
+    ] {
+        let asset = brand_assets.join(name);
+        if !asset.is_file() {
+            bail!("missing generated brand asset {}", asset.display());
+        }
     }
     if !provider_marks.is_dir() {
         bail!("missing provider marks {}", provider_marks.display());

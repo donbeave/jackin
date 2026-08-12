@@ -1,6 +1,6 @@
 # Native component map
 
-Status: **approved A1 component map; runnable proof pending**
+Status: **approved A1 component map; runnable proof verified; operator confirmation pending**
 
 Classification:
 
@@ -53,9 +53,11 @@ replacement. The label content and all transient content remain SwiftUI-first.
 | Visible region | Class | Exact platform component | Allowed adaptation | Forbidden replacement |
 |---|---|---|---|---|
 | Window chrome | NATIVE | `NSWindow` today; SwiftUI `Window` scene if Phase 2 proves lifecycle parity | Standard title, traffic lights, restoration, minimum/default size | Borderless window, custom traffic lights, custom rounded shell |
-| Title and represented state | NATIVE | Native window title/titlebar APIs | `Usage` as the window title; provider context stays in content | Branded principal-title capsule |
+| Title and represented state | NATIVE | Native window title/titlebar APIs | Internal title `Usage` for Window menu/accessibility; visible title hidden; provider context stays in content | Visible branded or redundant principal title |
+| Product signature | NATIVE-COMPOSED | Generated adaptive wordmark `Image` in a noninteractive sidebar footer | Canonical outlined `jackin❯ by tailrocks` assets; transparent background; appearance-matched word color | Toolbar logo button, brand card, hand-drawn wordmark, custom background/material |
 | Root navigation | NATIVE | SwiftUI `NavigationSplitView` | Two-column adaptive layout; native sidebar collapse | Hand-built split panes or dividers |
 | Sidebar | NATIVE | `List(selection:)` with sidebar style and `NavigationLink(value:)`/selection values | Overview plus Rust-ordered providers; system accent and selection | Rounded custom selection backgrounds, account chips |
+| Sidebar visibility control | NATIVE | SwiftUI toolbar `Button` in `.navigation`, bound to `NavigationSplitViewVisibility`; `sidebar.left` SF Symbol | Exactly one leading toolbar slot in expanded and collapsed states; system icon, material, focus, hover, help, and accessibility | Automatic item that migrates into detail, duplicate control, conditional placement, hand-drawn icon, custom material |
 | Sidebar rows | NATIVE-COMPOSED | `Label` with provider `Image` and `Text` | Existing provider mark and Rust label | Glass rows, hover-only action buttons |
 | Toolbar | NATIVE | SwiftUI `.toolbar`, `ToolbarItem`, native sidebar toggle and system overflow | Refresh and contextual provider link; system grouping | Custom top bar, manual overflow menu, explicit glass modifiers |
 | Toolbar refresh | NATIVE | `Button` and `ProgressView` state | View-menu Command-R equivalent, disabled/help/accessibility states | Detached custom refresh capsule |
@@ -85,7 +87,7 @@ permission to hand-style the window.
 | Provider heading | NATIVE-COMPOSED | `Label`, `Text` | Provider mark and Rust label | Hero card or oversized app icon |
 | Account selector | NATIVE | Menu-style `Picker` | Multiple accounts only; current selection restored when valid | Horizontal account rail, custom segmented pills |
 | Metadata | NATIVE-COMPOSED | `Section` and `LabeledContent` | Rust-owned label/value pairs | Metadata cards, colored status chips |
-| Quota/detail rows | NATIVE-COMPOSED | `Section`, `LabeledContent`, native `ProgressView(value:total:)`, `Text` | Rust order and values; native accessibility | Per-row material, custom progress, graph, cost/trend display |
+| Quota/detail rows | NATIVE-COMPOSED | `Section`, `LabeledContent`, native `ProgressView(value:total:)`, `Text` | Rust order and values; adaptive phosphor for healthy meters, system orange/red for source-owned severity, textual state always present | Per-row material, custom progress, graph, cost/trend display |
 | Provider-page action | NATIVE | `Link` or `Button` opening the Rust-mapped URL | Native external-link semantics and help | Raw URL text as primary UI |
 | Local error/retry | NATIVE-COMPOSED | Inline `ContentUnavailableView` or `Section` with `Button` | Rust-owned error; preserves last-good rows | Modal alert for a recoverable local failure |
 

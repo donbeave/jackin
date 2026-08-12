@@ -20,6 +20,17 @@ open -n native/dist/JackinDesktop.app --args \
 Optional arguments are `--appearance light|dark`, `--window-size WIDTHxHEIGHT`,
 `--selection overview|SURFACE_ID`, `--open-usage`, and `--open-popover`.
 
+## Final visual proof
+
+- [Light, sidebar visible](evidence/concept/usage-brand-light-F03.png)
+- [Light, sidebar collapsed](evidence/concept/usage-brand-light-collapsed-F03.png)
+- [Dark, sidebar visible](evidence/concept/usage-brand-dark-F03.png)
+
+The expanded/collapsed pair proves one leading sidebar button remains visible in
+the same toolbar slot. UI automation separately proves one matching control,
+stable coordinates, changing Hide/Show semantics, and hit testing in both
+states.
+
 ## Stable fixtures
 
 The runnable catalog implements `F00` through `F14` from [Fixtures.md](Fixtures.md).
@@ -36,6 +47,8 @@ real capture.
 | Limit rows | `LabeledContent` + `ProgressView` | Content |
 | Usage shell | `NavigationSplitView` | Functional navigation + content |
 | Usage sidebar | selection `List` | Functional navigation |
+| Sidebar visibility | fixed leading SwiftUI toolbar `Button` + `NavigationSplitViewVisibility` | System functional chrome |
+| Product signature | generated adaptive `jackin❯ by tailrocks` wordmark | Noninteractive content identity |
 | Overview | `Table` | Content |
 | Provider detail | inset `List` | Content |
 | Usage toolbar/window | `NSToolbar` through SwiftUI toolbar hosting | System functional chrome |

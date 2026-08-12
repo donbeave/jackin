@@ -39,3 +39,23 @@
 
 The next gate is a separately confirmed runnable native concept. The agent may
 not treat this design selection as confirmation of that concept.
+
+## D-002 — A1 identity placement revised
+
+- **Date:** 2026-08-12
+- **Decision maker:** Operator
+- **Operator direction:** Move `jackin❯ desktop` out of its current toolbar-title position, place the real product logo in a principled location, and make the result coherent with both jackin❯ identity and Apple Liquid Glass.
+- **Decision:** Keep A1 structure. Remove the visible product-name title, add the generated full wordmark as a noninteractive sidebar footer, and tint healthy quota meters with adaptive phosphor only.
+- **Reason:** Selection and detail provide orientation, the wordmark provides restrained product identity, and semantic phosphor connects data to the product without tinting system-owned glass or controls.
+- **Rejected:** branded principal title, popover brand header, toolbar logo button, logo card, and phosphor glass/control backgrounds.
+- **Scope:** Runnable A1 concept only. Production remains behind the separately confirmed running-concept gate.
+
+## D-003 — Visible title removed; native sidebar toggle fixed
+
+- **Date:** 2026-08-12
+- **Decision maker:** Operator
+- **Operator direction:** Remove visible `Usage` text and keep one sidebar open/close control in the left sidebar position at all times.
+- **Decision:** Retain `Usage` only as the internal native window title for the Window menu and accessibility. Set native title visibility to hidden. Remove `NavigationSplitView`'s automatic relocating item at the sidebar-column source, then bind one native SwiftUI toolbar `Button` in the fixed `.navigation` slot to `NavigationSplitViewVisibility`. The button uses Apple's `sidebar.left` SF Symbol, native toolbar material, help, focus, hover, accessibility label, and stable identity.
+- **Reason:** Apple's automatic item moves to the trailing detail group when the sidebar collapses. Explicit navigation placement preserves the requested invariant while keeping rendering and interaction system-owned.
+- **Rejected:** duplicate toggles, a control that migrates into the detail group, hand-drawn icon, colored/custom-glass button, conditional placement, and a logo that acts like a sidebar control.
+- **Scope:** A1 concept refinement. Production gate remains closed.

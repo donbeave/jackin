@@ -48,7 +48,7 @@ public final class UsageWindowController: NSObject, NSWindowDelegate {
             backing: .buffered,
             defer: false
         )
-        window.title = "jackin❯ desktop"
+        window.title = "Usage"
         window.isReleasedWhenClosed = false
         window.delegate = self
         window.contentMinSize = NSSize(width: 760, height: 500)
@@ -61,7 +61,7 @@ public final class UsageWindowController: NSObject, NSWindowDelegate {
         // Unified titlebar + toolbar (system NSToolbar — not a custom chrome strip).
         window.toolbarStyle = .unified
         window.titlebarAppearsTransparent = false
-        window.titleVisibility = .visible
+        window.titleVisibility = .hidden
         window.titlebarSeparatorStyle = .automatic
 
         // Hosting *controller* is required for SwiftUI toolbar → NSToolbar.

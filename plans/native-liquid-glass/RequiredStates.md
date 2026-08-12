@@ -1,8 +1,8 @@
 # Required states and evidence matrix
 
-Status: **approved A1 requirements; no rendered evidence captured yet**
+Status: **approved A1 requirements; runnable-concept evidence captured; production evidence pending operator confirmation**
 
-Every row is mandatory after native preview implementation. A screenshot alone
+Every row remains mandatory before production completion. A screenshot alone
 does not prove keyboard, accessibility, or restoration behavior; use the named
 evidence type.
 
@@ -93,5 +93,5 @@ not branch on guessed defaults.
   appearance, accessibility settings, window geometry, and key-window state.
 - Scripts that modify macOS settings snapshot old values first and restore them
   on success, failure, and interruption.
-- Rendered evidence is reviewed only after the operator selects a structure and
-  explicitly confirms the runnable native preview.
+- Runnable-concept captures support the operator confirmation gate. Full
+  production evidence review begins only after that separate confirmation.

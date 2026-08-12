@@ -1,9 +1,15 @@
 # Phase 2 Liquid Glass audit
 
-Status: **audit complete; remediation not started**
+Status: **audit complete; A1 concept remediation verified; production confirmation pending**
 
-Audit mode is read-only. This report inventories the approved A1 design and the
-current native implementation. It does not authorize full production work.
+The inventory below records the pre-remediation Phase 2 baseline. The runnable
+A1 concept now removes every explicit custom-glass surface named here and passes
+the architecture, parity, native UI, accessibility, build, and
+bundle-verification gates.
+
+Phase 2 audit mode was read-only. This report inventories the approved A1 design
+and pre-remediation native implementation, then records the concept outcome. It
+does not authorize full production work.
 
 ## Baseline
 
@@ -60,9 +66,9 @@ No approved region reaches custom-bar or custom-glass steps. Therefore:
 | Menus, picker menu, blocking alert | FUNCTIONAL / transient | native menu/sheet/alert | automatic | Pass by design. |
 | Settings form | CONTENT with native controls | `Form`, `Section`, `Picker`, `Toggle` | control-owned | Pass if stale glass copy is removed. |
 
-## Current explicit glass inventory
+## Pre-remediation explicit glass inventory
 
-All explicit calls are in `GlassFallbacks.swift`.
+At the Phase 2 baseline, all explicit calls were in `GlassFallbacks.swift`.
 
 | Surface/helper | Caller | Current construction | Finding |
 |---|---|---|---|
@@ -123,8 +129,10 @@ SwiftUI shell draw replacement material and shadow.
   and progress tracks. This is not technically glass tint, but it competes with
   system accent and makes several controls read as primary.
 - A1 resolution: native selection/control accent owns functional emphasis;
-  provider color is content identity only. No prominent toolbar or popover
-  action is proposed.
+  provider color is content identity only. Adaptive jackin❯ phosphor is allowed
+  on healthy quota progress because the meter is content, not glass; textual
+  values preserve non-color meaning. No prominent toolbar or popover action is
+  proposed.
 
 ### Scroll-edge behavior
 
@@ -155,7 +163,7 @@ SwiftUI shell draw replacement material and shadow.
 | Glass-on-glass | Fail | Footer effect samples already refracted shell output; Usage footer adds glass inside native sidebar glass. | Delete both footer effects. |
 | Custom background on popover/split view | Fail | Custom background blocks or replaces system material and adaptation. | Delete popover shell and sidebar background/footer. |
 | Hard-coded radii | Fail | Literal radius cannot track system container geometry. | Use standard components; no custom glass shape. |
-| Tint abuse | Needs remediation | Multiple phosphor control/selection treatments weaken one-primary-action and system-accent hierarchy. | Remove custom functional tint; retain provider identity only. |
+| Tint abuse | Needs remediation | Multiple phosphor control/selection treatments weaken one-primary-action and system-accent hierarchy. | Remove custom functional tint; retain provider identity plus adaptive phosphor on healthy native quota progress only. |
 | Accessibility settings ignored | Fail | No Reduce Transparency, Increase Contrast, Reduce Motion, or differentiate-without-color branches/evidence exist for custom surfaces. | Delete custom glass; validate standard components live. |
 | Per-view unbatched effects | Fail | Four helper effects exist without a container; two nest in the same popover. | Delete all effects; no container needed. |
 | iOS-shaped macOS UI | Fail | Segmented root, horizontal provider tabs, account pills, card stacks, and detached CTA form a phone-screen hierarchy. | A1 replaces with focused popover and list-detail window. |

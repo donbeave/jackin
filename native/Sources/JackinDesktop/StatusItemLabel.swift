@@ -32,10 +32,7 @@ public enum StatusItemRendering {
     /// The static jackin❯ logomark used by the empty-set fallback status item
     /// and for any non-provider icon key.
     public static func fallbackIcon() -> NSImage {
-        if let url = Bundle.main.url(forResource: "JackinMark", withExtension: "pdf"),
-            let image = NSImage(contentsOf: url)
-        {
-            image.isTemplate = true
+        if let image = JackinBrandIdentity.templateMonogram() {
             return image
         }
         let image =

@@ -676,7 +676,7 @@ public final class PresentationStore: ObservableObject {
     }
 
     private func pushFormatPrefs() async {
-        guard isOpen else { return }
+        guard !fixtureMode, isOpen else { return }
         let prefs = UsageFormatPrefsDto(percentStyle: percentStyle, resetStyle: resetStyle)
         do {
             try await scheduler.run { try $0.setFormatPrefs(prefs: prefs) }
@@ -696,7 +696,7 @@ public final class PresentationStore: ObservableObject {
     }
 
     private func pollOnce() async {
-        guard isOpen else { return }
+        guard !fixtureMode, isOpen else { return }
         if hideWhileScreenSharing {
             screenShareActive = Self.isScreenCurrentlyShared()
         } else {
@@ -739,6 +739,7 @@ public final class PresentationStore: ObservableObject {
     }
 
     private func applySnapshots() async {
+        guard !fixtureMode else { return }
         let projection: BridgeProjection
         // Capture off MainActor before the Sendable bridge batch (SB-3 ≤3).
         let barMax = UInt32(max(1, min(statusBarMaxChips, stripMax)))
@@ -918,6 +919,7 @@ public final class PresentationStore: ObservableObject {
     }
 
     private func applyStatusItemText() async {
+        guard !fixtureMode else { return }
         let selection = statusItemTextSelection(
             mode: displayMode,
             pinnedSurfaceId: pinnedSurfaceId.isEmpty ? nil : pinnedSurfaceId,

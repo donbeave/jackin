@@ -200,6 +200,7 @@ public struct PopoverRoot: View {
             }
             if let percent = row.meterPercent {
                 ProgressView(value: Double(percent), total: 100)
+                    .tint(severityTint(row.severity))
                     .accessibilityHidden(true)
             }
             ForEach(Array(row.layoutLines.dropFirst().enumerated()), id: \.offset) { _, line in

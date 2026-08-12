@@ -48,8 +48,15 @@ public struct ProviderCardView: View {
             if !metadataRows.isEmpty {
                 Section {
                     ForEach(metadataRows) { row in
-                        LabeledContent(row.label, value: row.displayLabel)
-                            .accessibilityLabel("\(row.label), \(row.displayLabel)")
+                        LabeledContent {
+                            Text(row.displayLabel)
+                                .foregroundStyle(.primary)
+                        } label: {
+                            Text(row.label)
+                                .foregroundStyle(.primary)
+                                .accessibilityIdentifier("usage.detail-label.\(row.rowId)")
+                        }
+                        .accessibilityLabel("\(row.label), \(row.displayLabel)")
                     }
                 } header: {
                     sectionHeader("Details")
@@ -146,6 +153,7 @@ public struct ProviderCardView: View {
             }
             if let percent = row.meterPercent {
                 ProgressView(value: Double(percent), total: 100)
+                    .tint(severityTint(row.severity))
                     .accessibilityHidden(true)
             }
             ForEach(Array(row.layoutLines.dropFirst().enumerated()), id: \.offset) { _, line in
@@ -163,6 +171,10 @@ public struct ProviderCardView: View {
 
     private func sectionHeader(_ title: String) -> some View {
         Text(title)
+            .foregroundStyle(.primary)
             .accessibilityLabel(title)
+            .accessibilityIdentifier(
+                "usage.section.\(title.lowercased().replacingOccurrences(of: " ", with: "-"))"
+            )
     }
 }

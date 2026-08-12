@@ -7,12 +7,30 @@ com.apple.universalaccess|reduceTransparency
 com.apple.universalaccess|reduceMotion
 com.apple.universalaccess|differentiateWithoutColor
 NSGlobalDomain|AppleInterfaceStyle
-NSGlobalDomain|AppleInterfaceStyleSwitchesAutomatically'
+NSGlobalDomain|AppleInterfaceStyleSwitchesAutomatically
+SystemEvents|darkMode'
 
 read_value() {
   domain=$1
+  if [ "$domain" = SystemEvents ]; then
+    osascript -e 'tell application "System Events" to tell appearance preferences to get dark mode'
+    return
+  fi
   [ "$domain" = NSGlobalDomain ] && domain=-g
   defaults read "$domain" "$2" 2>/dev/null || return 1
+}
+
+set_dark_mode() {
+  value=$1
+  osascript -e \
+    "tell application \"System Events\" to tell appearance preferences to set dark mode to $value" \
+    >/dev/null
+  actual=$(read_value SystemEvents darkMode)
+  [ "$actual" = "$value" ] || {
+    echo "appearance write mismatch: expected $value, got $actual" >&2
+    exit 1
+  }
+  sleep 2
 }
 
 snapshot() {
@@ -52,8 +70,8 @@ apply_state() {
     differentiate-without-color)
       write_verified com.apple.universalaccess differentiateWithoutColor -bool 1
       ;;
-    dark) write_verified NSGlobalDomain AppleInterfaceStyle -string Dark ;;
-    light) defaults delete NSGlobalDomain AppleInterfaceStyle 2>/dev/null || true ;;
+    dark) set_dark_mode true ;;
+    light) set_dark_mode false ;;
     *)
       echo "unknown state: $1" >&2
       exit 2
@@ -64,6 +82,11 @@ apply_state() {
 restore() {
   file=$1
   while IFS='|' read -r domain key value; do
+    if [ "$domain" = SystemEvents ]; then
+      set_dark_mode "$value"
+      echo "restored $domain $key"
+      continue
+    fi
     defaults_domain=$domain
     [ "$defaults_domain" = NSGlobalDomain ] && defaults_domain=-g
     if [ "$value" = ABSENT ]; then
