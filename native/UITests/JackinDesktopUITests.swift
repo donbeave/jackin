@@ -227,13 +227,17 @@ final class JackinDesktopUITests: XCTestCase {
 
         let provider = element("popover.provider.claude")
         let lastLimit = element("popover.limit.bucket:layout-long")
+        let refresh = element("popover.refresh")
+        let openUsage = element("popover.open-usage")
         XCTAssertTrue(lastLimit.waitForExistence(timeout: 3))
+        XCTAssertTrue(refresh.isHittable)
+        XCTAssertTrue(openUsage.isHittable)
         for _ in 0..<8 where !lastLimit.isHittable {
             provider.swipeUp()
         }
         XCTAssertTrue(lastLimit.isHittable)
-        XCTAssertTrue(element("popover.refresh").isHittable)
-        XCTAssertTrue(element("popover.open-usage").isHittable)
+        XCTAssertTrue(refresh.isHittable)
+        XCTAssertTrue(openUsage.isHittable)
     }
 
     func testStandardCommandsAndMenusShareNativeState() {

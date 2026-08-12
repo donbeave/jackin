@@ -38,12 +38,7 @@ public struct PopoverRoot: View {
             controls
                 .padding(12)
         }
-        .frame(width: 380)
-        .frame(
-            minHeight: 260,
-            idealHeight: qiFullPlate ? 1_100 : 520,
-            maxHeight: qiFullPlate ? 1_100 : 520
-        )
+        .frame(width: 380, height: qiFullPlate ? 1_100 : 520)
         .accessibilityLabel("Provider usage")
     }
 
