@@ -639,11 +639,12 @@ jobs:
       - name: Assemble consumer release manifest and independent checksums
         run: |
           set -euo pipefail
-          shopt -s nullglob
-          subjects=(
-            artifacts/jackin-"${VERSION}"-*.tar.gz
-            artifacts/jackin-capsule-"${VERSION}"-*.tar.gz
-            artifacts/jackin-desktop-"${VERSION}"-*.zip
+          mapfile -d '' -t subjects < <(
+            find artifacts -maxdepth 1 -type f \
+              \( -name "jackin-${VERSION}-*.tar.gz" \
+                 -o -name "jackin-capsule-${VERSION}-*.tar.gz" \
+                 -o -name "jackin-desktop-${VERSION}-*.zip" \) \
+              -print0 | sort -z
           )
           test "${#subjects[@]}" -eq 7
           : > artifacts/SHA256SUMS
