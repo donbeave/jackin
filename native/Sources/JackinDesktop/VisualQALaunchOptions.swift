@@ -25,6 +25,7 @@ struct VisualQALaunchOptions: Equatable {
     let selection: Selection
     let windowSize: CGSize?
     let appearance: Appearance
+    let elevatesFixtureWindow: Bool
 
     var usesFixture: Bool { fixtureID != nil || invalidFixtureID != nil }
 
@@ -57,7 +58,8 @@ struct VisualQALaunchOptions: Equatable {
             openPopover: arguments.contains("--open-popover"),
             selection: selection,
             windowSize: size,
-            appearance: appearance
+            appearance: appearance,
+            elevatesFixtureWindow: rawFixture != nil && arguments.contains("--ui-test")
         )
     }
 

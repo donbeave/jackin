@@ -20,12 +20,14 @@ import SwiftUI
 @MainActor
 public final class UsageWindowController: NSObject, NSWindowDelegate {
     private let store: PresentationStore
+    private let elevatesFixtureWindow: Bool
     private let navigationState = UsageWindowNavigationState()
     private var window: NSWindow?
     private var hostingController: NSHostingController<UsageWindowRoot>?
 
-    public init(store: PresentationStore) {
+    public init(store: PresentationStore, elevatesFixtureWindow: Bool = false) {
         self.store = store
+        self.elevatesFixtureWindow = elevatesFixtureWindow
         super.init()
     }
 
@@ -61,10 +63,11 @@ public final class UsageWindowController: NSObject, NSWindowDelegate {
         window.delegate = self
         if store.usesFixture {
             // Deterministic UI/visual QA must stay observable when WindowServer assigns rapid
-            // fixture launches and the test runner to different or full-screen Spaces. Floating
-            // prevents the full-screen host from retaking the gesture target between XCTest steps.
+            // fixture launches and the test runner to different or full-screen Spaces.
             window.collectionBehavior.formUnion([.canJoinAllSpaces, .fullScreenAuxiliary])
-            window.level = .floating
+            if elevatesFixtureWindow {
+                window.level = .floating
+            }
         } else {
             window.collectionBehavior.insert(.moveToActiveSpace)
         }

@@ -312,6 +312,7 @@ final class JackinDesktopUITests: XCTestCase {
     private func launchUsage(fixture: String, selection: String, size: String) -> Bool {
         application.launchArguments = [
             "--fixture", fixture,
+            "--ui-test",
             "--open-usage",
             "--selection", selection,
             "--window-size", size,
@@ -349,6 +350,7 @@ final class JackinDesktopUITests: XCTestCase {
     private func launchPopover(fixture: String, selection: String) -> Bool {
         application.launchArguments = [
             "--fixture", fixture,
+            "--ui-test",
             "--open-popover",
             "--selection", selection,
         ]

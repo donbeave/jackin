@@ -374,7 +374,10 @@ public final class DesktopAppDelegate: NSObject, NSApplicationDelegate {
         NSApp.setActivationPolicy(initialActivationPolicy)
         applyVisualQAAppearance()
         let fixture = applyVisualQAFixtureIfRequested()
-        let usageWindow = UsageWindowController(store: store)
+        let usageWindow = UsageWindowController(
+            store: store,
+            elevatesFixtureWindow: visualQALaunchOptions.elevatesFixtureWindow
+        )
         self.usageWindow = usageWindow
 
         let menu = AppMainMenu(

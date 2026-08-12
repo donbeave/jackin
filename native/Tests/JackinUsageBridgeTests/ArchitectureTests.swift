@@ -589,8 +589,20 @@ final class ArchitectureTests: XCTestCase {
         let text = try String(contentsOf: controller, encoding: .utf8)
 
         XCTAssertTrue(text.contains("[.canJoinAllSpaces, .fullScreenAuxiliary]"))
+        XCTAssertTrue(text.contains("if elevatesFixtureWindow"))
         XCTAssertTrue(text.contains("window.level = .floating"))
         XCTAssertTrue(text.contains("window.collectionBehavior.insert(.moveToActiveSpace)"))
+
+        let options =
+            sourcesRoot
+            .appendingPathComponent("JackinDesktop")
+            .appendingPathComponent("VisualQALaunchOptions.swift")
+        let optionsText = try String(contentsOf: options, encoding: .utf8)
+        XCTAssertTrue(
+            optionsText.contains(
+                "elevatesFixtureWindow: rawFixture != nil && arguments.contains(\"--ui-test\")"
+            )
+        )
     }
 
     /// SB-5 vs FB1-6: bar stays template mono (no severity tint).
