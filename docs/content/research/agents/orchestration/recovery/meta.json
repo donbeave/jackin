@@ -2,6 +2,7 @@
   "title": "Recovery",
   "defaultOpen": false,
   "pages": [
+    "index",
     "session-keep-and-resume-design",
     "session-snapshot-rollback"
   ]

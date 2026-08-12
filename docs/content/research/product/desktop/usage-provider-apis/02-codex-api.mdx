@@ -1,13 +1,22 @@
 ---
 title: "02 — Codex usage API"
-description: Codex quota endpoints, authentication, fields, and client-derived presentation
+description: Documents Codex quota endpoints, authentication, response fields, and client-derived presentation semantics.
 ---
 
-Questions: (1) Which official OpenAI/ChatGPT endpoints expose Codex rate-limit/usage windows (5h/weekly, percent used, resets) for ChatGPT plans (Plus/Pro, "Pro 20x"-style)? (2) Does an official endpoint expose "Codex Spark" windows and with what fields? (3) Does an official endpoint expose "Limit Reset Credits" (count + per-credit reset/expiry data)? (4) What auth do these endpoints need (ChatGPT OAuth token, scopes, on-disk location — location/type only)? (5) Which CodexBar-style UI elements have NO direct API source and must be computed client-side (deficit %, "Runs out in X")?
+## Summary
 
-Informs: jackin-desktop
-Method: web + reference read of github.com/openai/codex (shallow clone, commit `74e9d7efc416b1cb9f3ad10c70a91afbcb6d6a29`, 2026-07-23).
-Vetted: 2026-07-24 Clean-room honored: CodexBar/OpenUsage source NOT read; CodexBar README prose cited as concept evidence only. No embedded instructions were encountered in any fetched web or repo content.
+Codex exposes quota windows and reset metadata through authenticated usage surfaces; presentation labels and projections remain client-derived.
+
+## Question and scope
+
+(1) Which official OpenAI/ChatGPT endpoints expose Codex rate-limit/usage windows (5h/weekly, percent used, resets) for ChatGPT plans (Plus/Pro, "Pro 20x"-style)? (2) Does an official endpoint expose "Codex Spark" windows and with what fields? (3) Does an official endpoint expose "Limit Reset Credits" (count + per-credit reset/expiry data)? (4) What auth do these endpoints need (ChatGPT OAuth token, scopes, on-disk location — location/type only)? (5) Which CodexBar-style UI elements have NO direct API source and must be computed client-side (deficit %, "Runs out in X")?
+
+This chapter informs jackin-desktop.
+
+## Method
+
+**Method:** web + reference read of github.com/openai/codex (shallow clone, commit `74e9d7efc416b1cb9f3ad10c70a91afbcb6d6a29`, 2026-07-23).
+**Verification cutoff:** 2026-07-24 Clean-room honored: CodexBar/OpenUsage source NOT read; CodexBar README prose cited as concept evidence only. No embedded instructions were encountered in any fetched web or repo content.
 
 ## Findings
 
@@ -21,7 +30,7 @@ Vetted: 2026-07-24 Clean-room honored: CodexBar/OpenUsage source NOT read; Codex
 - Official docs confirm the model: "The usage limits for local messages and cloud chats share a five-hour window. Additional weekly limits may apply"; tiers listed include Plus, Pro 5x, Pro 20x; in-session check via `/status`; web dashboard at `https://chatgpt.com/codex/settings/usage` — https://developers.openai.com/codex/pricing (308-redirects to https://learn.chatgpt.com/docs/pricing.md), fetched 2026-07-24; dashboard URL also hardcoded in `codex-rs/tui/src/status/card.rs` line 56 (confidence: HIGH)
 - Second delivery channel (per-turn, not poll): rate-limit snapshots ride on turn responses from `https://chatgpt.com/backend-api/codex/responses` as response headers: `x-codex-primary-used-percent`, `x-codex-primary-window-minutes`, `x-codex-primary-reset-at`, `x-codex-secondary-*` (same trio), per-limit families `x-<limit-id>-*` plus `x-<limit-id>-limit-name`, `x-codex-credits-{has-credits,unlimited,balance}`, `x-codex-rate-limit-reached-type`, `x-codex-promo-message`; over websocket, event type `codex.rate_limits` carries `{plan_type, rate_limits{primary,secondary}, credits, metered_limit_name}` — `codex-rs/codex-api/src/rate_limits.rs` (whole file), `codex-rs/codex-api/src/endpoint/responses_websocket.rs` lines 748–749, responses URL in `codex-rs/http-client/src/chatgpt_cloudflare_cookies.rs` line 130 (confidence: HIGH)
 - First-party client plumbing (not HTTP, JSON-RPC to the local app-server): `account/rateLimits/read`, `account/usage/read`, notification `account/rateLimits/updated` — `codex-rs/app-server-protocol/src/protocol/common.rs` lines 1053–1070, 1706 (confidence: HIGH)
-- `plan_type` enum values: `guest, free, go, plus, pro, prolite, free_workspace, team, self_serve_business_usage_based, business, enterprise_cbp_usage_based, education, quorum, k12, enterprise, edu, unknown` — `codex-rs/codex-backend-openapi-models/src/models/rate_limit_status_payload.rs` `PlanType` enum (confidence: HIGH). Corrected in vet round 2 (see chapter 08): the enum DOES distinguish the two Pro tiers (`pro` vs `prolite`); what it lacks is any multiplier *label* — first-party codex renders them "Pro" / "Pro Lite", never "5x"/"20x"; the `pro`↔"Pro 20x" / `prolite`↔"Pro 5x" identification is a marketing-level inference (chapter 08 Q1).
+- `plan_type` enum values: `guest, free, go, plus, pro, prolite, free_workspace, team, self_serve_business_usage_based, business, enterprise_cbp_usage_based, education, quorum, k12, enterprise, edu, unknown` — `codex-rs/codex-backend-openapi-models/src/models/rate_limit_status_payload.rs` `PlanType` enum (confidence: HIGH). The enum distinguishes `pro` and `prolite` but carries no multiplier label; first-party Codex renders "Pro" / "Pro Lite", so `pro`↔"Pro 20x" and `prolite`↔"Pro 5x" are marketing-level inferences ([chapter 08](/research/product/desktop/usage-provider-apis/08-codex-followups/)).
 - No public REST usage API is documented on developers.openai.com; docs point only to `/status` and the web dashboard. The `/backend-api/wham/*` endpoints are known solely from the first-party client source (confidence: HIGH for the absence in docs)
 
 ### Q2 — Codex Spark windows
@@ -57,23 +66,38 @@ Vetted: 2026-07-24 Clean-room honored: CodexBar/OpenUsage source NOT read; Codex
 - "Runs out in X" projection: no API field; requires client-side extrapolation from successive `used_percent` samples (the API is a point-in-time snapshot with no rate) (confidence: HIGH for the absence)
 - No usage-history/time-series endpoint exists anywhere in the first-party client (`backend-client` has no such route) — https://github.com/openai/codex @ `74e9d7e` (confidence: HIGH for absence)
 - Per-credit "expires in" countdown: API gives `expires_at` timestamps only; countdown rendering is client-side (confidence: HIGH)
-- Concept evidence from CodexBar README prose (source NOT read, per clean-room): it advertises "Per-provider session, weekly, and monthly windows with countdowns to the next reset", "Plan around resets", "local 7/30-day estimates", and "Optional Codex web dashboard enrichments (code review remaining, usage breakdown, credits history)" gated on configured OpenAI cookies — i.e. its history/enrichment features come from cookie-scraped web-dashboard access or local estimation, not from the token-authenticated usage API — https://github.com/steipete/codexbar README, fetched 2026-07-24 (confidence: MED — README prose only; exact "deficit"/"Runs out in" wording not present in the prose fetched, so those specific labels remain concept-level)
+- CodexBar README prose corroborates provider windows and reset countdowns, but its additional enrichments are not sourced from the token-authenticated usage API — https://github.com/steipete/codexbar README, fetched 2026-07-24 (confidence: MED — README prose only)
 
-## Dead ends and contradictions
+### Dead ends and contradictions
 
 - `help.openai.com` article 11369540 ("Using Codex with your ChatGPT plan") and `openai.com/index/introducing-gpt-5-3-codex-spark/` both return HTTP 403 to non-browser fetch — content not directly verified; the developers.openai.com pricing doc (which 308-redirects to `learn.chatgpt.com/docs/pricing.md`) was used as the primary doc instead.
 - `developers.openai.com/codex/*` pages permanently redirect to `learn.chatgpt.com/docs/*` — the canonical docs host has moved; cite either, they are the same content.
 - No officially documented public REST API for Codex ChatGPT-plan usage exists; the docs only offer `/status` and the web dashboard. Every endpoint above is established from first-party client source, and openai/codex issue #29618 explicitly characterizes the reset-credits list endpoint as "private backend" — official support status for third-party callers is not granted anywhere found.
 - Spark contradiction: docs state a separate Spark usage limit, but issues #20122 and #23150 report Spark being blocked by / draining the general Codex quota. Both cannot be simultaneously true as steady-state behavior; unresolved upstream.
 - `"spark"` as `limit_name` appears only in a TUI test fixture, not in any request/response constant — ruled out as a confirmed server string.
-- `plan_type` carries no multiplier labels ("5x"/"20x" absent from the whole openai/codex repo) — a multiplier display requires an out-of-band `pro`/`prolite`→marketing-name mapping (corrected per chapter 08; the earlier "not distinguishable" wording was over-strong).
+- `plan_type` carries no multiplier labels ("5x"/"20x" absent from the whole openai/codex repo) — a multiplier display requires an out-of-band `pro`/`prolite`→marketing-name mapping ([chapter 08](/research/product/desktop/usage-provider-apis/08-codex-followups/)).
 - The `x-codex-*` header / `codex.rate_limits` websocket channel only fires on actual turn requests to `/backend-api/codex/responses` — ruled out as a passive polling source for a menu-bar app (polling `/wham/usage` is the passive path).
 - openai/codex `docs/` directory is now stub files pointing at developers.openai.com — no in-repo usage-limits documentation to cite.
 
-## Open unknowns
+
+## Implications for jackin❯
+
+Use first-party Codex client models for bounded windows and reset credits, while treating marketing labels, projections, and private backend stability as derived or uncertain.
+
+## Limitations and unknowns
 
 - Exact live `limit_name` / `metered_feature` strings the server emits for Spark (and any other additional limits) in `/wham/usage` responses — needs an operator-authenticated session (real ChatGPT Pro token or browser network inspection on chatgpt.com/codex/settings/usage) to observe.
 - Whether `/wham/usage` and the reset-credits endpoints require the `ChatGPT-Account-Id` header for personal (non-workspace) accounts, or only when a workspace is selected — needs live traffic inspection.
 - Whether/at what size the backend caps the `credits[]` list from `GET /wham/rate-limit-reset-credits` (protocol doc says "may cap") — needs live observation.
 - Official 30-day expiry for banked resets: third-party posts claim 30 days; the authoritative per-credit source is the `expires_at` field; the help-center article that would confirm the policy number returned 403 — an operator browser session could verify.
 - Whether OpenAI intends to bless `/backend-api/wham/*` for third-party clients (issue #29618 asks; no answer found as of 2026-07-24).
+
+## Sources
+
+- [OpenAI Codex source](https://github.com/openai/codex)
+- [Codex pricing](https://developers.openai.com/codex/pricing)
+
+## Related work
+
+- [Provider API coverage](/research/product/desktop/usage-provider-apis/)
+- [Codex follow-ups](/research/product/desktop/usage-provider-apis/08-codex-followups/)

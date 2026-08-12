@@ -1,20 +1,17 @@
 ---
 title: "21 — Latency, wall-clock, and human-time as a second cost axis"
+description: "Latency and human-time model for evaluating caching, batching, routing, delegation, retrieval, and optimization work."
 ---
 
-# 21 — Latency, wall-clock, and human-time as a second cost axis
+## Summary
 
-Volume II area file for blind spot 3. Volume I optimizes dollars
-only; latency appears in scattered mentions (`11:110` "dollars-for-wallclock", `12:132` batch
-latency, `13:147` self-host TTFT, `01:52` "speed not savings") but is **never built into a decision
-model**. This file makes time a first-class axis: when spending more tokens or dollars to finish
-faster is correct, with the breakeven arithmetic Anthropic does not publish.
+Latency and human time are first-class decision axes beside tokens, quota, and quality. This chapter supplies the break-even model for deciding when spending more tokens or dollars to finish faster is correct.
 
 **TL;DR**
 
 - **Time is priceable, and the same model spans a ~4× price range on the latency axis alone.** On
  Opus 4.8: batch (slow, ≤24 h) = $2.50/$12.50 per MTok; standard = $5/$25; **fast mode (≤2.5× faster)
- = $10/$50** — 2× the standard rate for up to 2.5× the speed . The model and
+ = $10/$50** — 2× the standard rate for up to 2.5× the speed. The model and
  quality are identical across all three; only wall-clock and price change.
 - **For interactive work where a human waits, buying speed almost always wins on total cost.** A
  fully-loaded developer-minute is ~$0.83–1.25 (ESTIMATE: $100–150k/yr ÷ 2,000 h ÷ 60). Fast mode's
@@ -22,10 +19,10 @@ faster is correct, with the breakeven arithmetic Anthropic does not publish.
  blocked human — so the time-optimal and the *total-cost*-optimal choice is fast mode for live
  iteration and standard/batch for autonomous work. Anthropic ships the qualitative rubric but **no
  quantitative breakeven**; this file supplies it.
-- **Prompt caching is the rare negative-cost-on-both-axes lever:** it cuts dollars (Volume I) *and*
+- **Prompt caching is the rare negative-cost-on-both-axes lever:** it cuts dollars (the core dossier) *and*
  time — measured TTFT −79% on a 100K-token prefix (11.5 s → 2.4 s), −75% on a 10-turn session — and
  raises throughput, because cache reads are excluded from ITPM (a 2M ITPM limit at 80% hit ≈ 10M
- effective tokens/min). Volume I credits only the dollar half.
+ effective tokens/min). The core dossier credits only the dollar half.
 - **The validation/measurement machinery has a *time* tax, not a dollar one.** `count_tokens` is free
  but draws a separate RPM pool (100 RPM at Tier 1), does not cache, and re-processes the whole
  prompt — so using it as a tight-loop compression proxy throttles at ~1.6 req/s. The optimizer can
@@ -36,12 +33,22 @@ faster is correct, with the breakeven arithmetic Anthropic does not publish.
  contends for one **pooled Opus rate limit**, so it can hit 429s and *increase* wall-clock via
  backoff. Parallelism buys time with tokens only when the work is genuinely independent.
 
-Pricing; dollar profile per Volume I's $22/day. Time figures are wall-clock
+Pricing; dollar profile per the core dossier's $22/day. Time figures are wall-clock
 from primary Anthropic sources or labeled ESTIMATE with arithmetic.
 
 ---
 
-## The latency price ladder (Opus 4.8, per MTok)
+## Question and scope
+
+How do latency, throughput, and operator wait time change the ranking of techniques that look efficient in token arithmetic alone?
+
+## Method
+
+The analysis combines published latency and throughput results with explicit workload arithmetic, separating measured timings, vendor benchmarks, and modeled operator-time effects.
+
+## Findings
+
+### The latency price ladder (Opus 4.8, per MTok)
 
 | Mode | Input | Output | Wall-clock | When |
 |---|---|---|---|---|
@@ -54,10 +61,10 @@ from primary Anthropic sources or labeled ESTIMATE with arithmetic.
 mode "three times cheaper than previous models", anthropic.com/news/claude-opus-4-8.)
 
 The same model, same quality, occupies a 4× dollar range purely on how fast you want the answer.
-That is the proof that wall-clock is a priceable axis — and the thing Volume I's dollar-only model
+That is the proof that wall-clock is a priceable axis — and the thing the core dossier's dollar-only model
 cannot represent.
 
-## The time-value model (the framework Anthropic doesn't publish)
+### The time-value model (the framework Anthropic doesn't publish)
 
 Let **v** = value of one developer-minute (ESTIMATE $0.83–1.25, fully-loaded), **t** = wall-clock
 minutes a human is *blocked* waiting on the agent, **Δ$** = extra dollars a speed lever costs, **s** =
@@ -74,18 +81,16 @@ fast mode and parallelism pay; the more autonomous, the more batch and standard 
 inequality reorders every latency decision below.
 
 Crucially, on a **subscription** the dollar term changes meaning: fast-mode tokens draw from usage
-credits (real dollars) but **do not count against the cap** ([19 — Subscription & quota economics: the metric Volume I optimized was the wrong one for a subscriber](/research/context/techniques/19-subscription-and-quota-economics/)) — so on a quota-bound Max seat,
+credits (real dollars) but **do not count against the cap** ([19 — Subscription and quota economics](/research/context/techniques/19-subscription-and-quota-economics/)) — so on a quota-bound Max seat,
 fast mode is also a way to *finish without burning cap headroom*, at a dollar price.
 
 ---
-
-## Techniques
 
 ### L1. Fast mode — buy ~2.5× wall-clock for 2× dollars, at session start only
 
 The cleanest "pay more to finish faster" knob; the time-value inequality decides when.
 
-- **Coverage-delta:** New as a *model*. Volume I names fast mode only as a cache-buster fact
+- **Evidence scope:** Time-value model. The core dossier names fast mode only as a cache-buster fact
  (`07:49`); the speed/price tradeoff and the breakeven are absent.
 - **Layer:** infra / latency (price multiplier at fixed quality).
 - **Mechanism:** `speed: "fast"` runs the same Opus 4.8 at up to 2.5× throughput for 2× the per-token
@@ -114,7 +119,7 @@ The cleanest "pay more to finish faster" knob; the time-value inequality decides
 The measurement machinery is free in dollars but costs time and request budget; a tight-loop proxy
 can be slower than the inference it guards.
 
-- **Coverage-delta:** New. Volume I's measurement file (01) and validation harness (16) never cost
+- **Evidence scope:** The core dossier's measurement file (01) and validation harness (16) never cost
  their own latency; this is blind spot 8's time facet (see also 25).
 - **Layer:** meta / measurement.
 - **Mechanism:** `count_tokens` is $0 but draws a **separate RPM pool** (Tier 1 = 100 RPM, Tier 2 =
@@ -141,7 +146,7 @@ can be slower than the inference it guards.
 The "90% faster" headline is research-only and does not survive contact with a coding agent's shared
 context or Anthropic's pooled Opus rate limit.
 
-- **Coverage-delta:** Volume I's multi-agent file (11) covers parallel-vs-serial *token* economics;
+- **Evidence scope:** the core dossier's multi-agent file (11) covers parallel-vs-serial *token* economics;
  the *wall-clock* model, the sourced 90% caveat, and the pooled-limit backoff trap are new.
 - **Layer:** turn-structure / latency.
 - **Mechanism:** Anthropic's multi-agent research system "cut research time by up to 90%" by spawning
@@ -167,9 +172,9 @@ context or Anthropic's pooled Opus rate limit.
 
 ### L4. Caching cuts time and dollars together — the latency case for prefix hygiene
 
-Volume I made the dollar case for caching; the time case is just as strong and independent.
+The core dossier made the dollar case for caching; the time case is just as strong and independent.
 
-- **Coverage-delta:** Volume I's caching file (07) is entirely dollar/quota; the **TTFT and
+- **Evidence scope:** the core dossier's caching file (07) is entirely dollar/quota; the **TTFT and
  throughput** numbers are new here.
 - **Layer:** cache / latency.
 - **Mechanism:** warm cache reads return at 10% price *and* cut time-to-first-token (measured −79% on
@@ -183,7 +188,7 @@ Volume I made the dollar case for caching; the time case is just as strong and i
 - **Quality risk:** **NEGATIVE-COST** (faster and cheaper, identical output).
 - **Availability:** CLAUDE-CODE-TODAY (automatic) / SDK (`max_tokens:0` warming).
 - **Effort to adopt:** zero (already on) to hours (pre-warming for staged prompts).
-- **Composability:** the time-axis complement of every Volume I cache technique; pre-warm pairs with
+- **Composability:** the time-axis complement of every core-dossier cache technique; pre-warm pairs with
  staggered fan-out (L3).
 - **Validation protocol:** measure TTFT on a large-prefix task cold vs warm; confirm the ITPM headroom
  by pushing concurrent volume with and without cache hits.
@@ -192,15 +197,14 @@ Volume I made the dollar case for caching; the time case is just as strong and i
 
 The slow-cheap end of the ladder; correct exactly when t≈0 in the time-value inequality.
 
-- **Coverage-delta:** Volume I (12) states the 50%/24 h facts; weighing them on the *time axis* (when
+- **Evidence scope:** the core dossier (12) states the 50%/24 h facts; weighing them on the *time axis* (when
  the latency is free because nobody waits) is the new framing.
 - **Layer:** infra / scheduling.
 - **Mechanism:** Message Batches run async (most &lt;1 h, hard 24 h cap, expire after) at exactly 50% of
  standard prices, stacking with caching (best-effort 30–98% hit; use 1 h TTL). `speed:"fast"` is
  rejected in batches. For evals, nightly review queues, and repo sweeps — where no human is blocked —
  the wall-clock cost is ~zero value, so the 50% discount is pure win.
-- **Expected savings:** 50% dollars on all offline-able work; on a subscription, headless/SDK batch
- also draws the separate credit pool, off the interactive cap (19 Q7).
+- **Expected savings:** 50% dollars on API-billed offline work. Subscription headless and SDK work still draws from the interactive cap while the announced split remains paused ([19](/research/context/techniques/19-subscription-and-quota-economics/) Q7).
 - **Evidence tier:** T1 (batch docs).
 - **Quality risk:** **NEUTRAL** (same model/prompts; async only).
 - **Availability:** SDK.
@@ -212,9 +216,9 @@ The slow-cheap end of the ladder; correct exactly when t≈0 in the time-value i
 
 ### L6. The quota-edge time decision — wait for reset (free, slow) vs spend (fast, $)
 
-At the subscription cap, the only remaining lever *is* a time-vs-dollar trade (bridges [19 — Subscription & quota economics: the metric Volume I optimized was the wrong one for a subscriber](/research/context/techniques/19-subscription-and-quota-economics/) Q6).
+At the subscription cap, the only remaining lever *is* a time-vs-dollar trade (bridges [19 — Subscription and quota economics](/research/context/techniques/19-subscription-and-quota-economics/) Q6).
 
-- **Coverage-delta:** New (Volume I models neither the cap nor time).
+- **Evidence scope:** the earlier chapters model neither the subscription cap nor elapsed time.
 - **Layer:** governance / scheduling.
 - **Mechanism:** at the 5-hour or weekly cap you either wait for reset (rolling 5-hour frees
  continuously; weekly is a fixed anchor) — zero dollars, pure wall-clock — or enable credits / fast
@@ -232,10 +236,10 @@ At the subscription cap, the only remaining lever *is* a time-vs-dollar trade (b
 
 ---
 
-## Surprising findings
+### Surprising findings
 
 - The same Opus 4.8 spans **4× in price on the latency axis** (batch $2.50 → fast $10 input) with
- identical quality — wall-clock is as real a cost lever as the token count, and Volume I's dollar-only
+ identical quality — wall-clock is as real a cost lever as the token count, and the core dossier's dollar-only
  ledger is blind to three-quarters of that range.
 - Anthropic's own headline "90% faster" parallelism number is **anti-applicable** to the user's domain
  (coding), and naive parallelism can make a coding agent *slower* by triggering pooled-limit backoff —
@@ -243,9 +247,19 @@ At the subscription cap, the only remaining lever *is* a time-vs-dollar trade (b
 - The optimizer can cost more time than it saves: a per-step `count_tokens` proxy is RPM-throttled to
  ~1.6 req/s at Tier 1 and never caches, so a "compression check" loop can be the slowest link.
 - Caching is the only lever that is **negative-cost on dollars, quota, *and* time** simultaneously —
- which is why prefix hygiene ([07 — Caching exploitation](/research/context/techniques/07-caching-exploitation/), [19 — Subscription & quota economics: the metric Volume I optimized was the wrong one for a subscriber](/research/context/techniques/19-subscription-and-quota-economics/) Q2) is the highest-leverage habit on every axis.
+ which is why prefix hygiene ([07 — Caching exploitation](/research/context/techniques/07-caching-exploitation/), [19 — Subscription and quota economics](/research/context/techniques/19-subscription-and-quota-economics/) Q2) is the highest-leverage habit on every axis.
 
-## Verification ledger
+## Implications for jackin❯
+
+### Techniques
+
+For jackin❯, the latency, wall-clock, and human-time as a second cost axis evidence identifies which mechanisms are safe to adopt directly and which still require workload-specific validation.
+
+## Limitations and unknowns
+
+Quantitative conclusions are workload- and model-specific. Re-measure volatile provider inputs and validate transfers on representative jackin❯ tasks.
+
+## Sources
 
 | # | Number / claim | Source (access) |
 |---|---|---|
@@ -258,3 +272,9 @@ At the subscription cap, the only remaining lever *is* a time-vs-dollar trade (b
 | 7 | count_tokens: free; separate RPM pool (100/2,000/4,000/8,000 by tier); no caching; estimate | platform.claude.com/docs/en/build-with-claude/token-counting |
 | 8 | Developer-minute ≈ $0.83–1.25 ($100–150k/yr ÷ 2,000 h ÷ 60); time-value inequality v·t·s > Δ$ | ESTIMATE (arithmetic shown) |
 | 9 | No published Anthropic time-value framework; count_tokens round-trip ms unpublished; coding-agent transfer of 90% unsourced | documented gaps (deadEnds) |
+
+## Related work
+
+- [Token-optimization techniques dossier](/research/context/techniques/)
+- [Validation harness](/research/context/techniques/16-validation-harness/)
+- [Context engine](/research/context/engine/)

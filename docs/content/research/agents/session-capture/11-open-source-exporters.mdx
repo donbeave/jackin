@@ -1,14 +1,26 @@
 ---
 title: "11 — Open-Source Exporters and Viewers"
+description: "Open-source tools converge on reading native agent stores, but none covers jackin❯’s full roster or supplies a purge-surviving cross-agent archive."
 ---
 
-# 11 — Open-Source Exporters and Viewers
+## Summary
 
-**Research conducted:** 2026-07-03; stars and activity dates from the GitHub API on that date (tier B/C — repos and readmes; none source-audited except where noted). Record schema per the <RepoFile path="prompts/research/session-capture.md">research brief</RepoFile>. Baseline for comparison: SpecStory CLI, 1,268★, Apache-2.0.
+Compares open-source session exporters and viewers by capture mechanism, coverage, output, license, and maintenance.
+**Verification cutoff:** 2026-07-03; stars and activity dates are GitHub API observations at that cutoff (tier B/C — repositories and readmes; source-audited only where noted). Records follow the <RepoFile path="prompts/research/session-capture.md">research brief</RepoFile>. Comparison baseline: SpecStory CLI, 1,268★, Apache-2.0.
 
-Pattern across the whole category: **every serious OSS tool reads the agents' native stores** (vector A in [Déjà Vu](/research/agents/orchestration/conversation-capture/deja-vu/) terms). None wraps a PTY; one (claude-trace) patches fetch to see wire traffic. The market has independently converged on SpecStory's mechanism.
+Pattern across the whole category: **every serious OSS tool reads the agents' native stores** (vector A in [Déjà Vu](/research/agents/orchestration/conversation-capture/) terms). None wraps a PTY; one (claude-trace) patches fetch to see wire traffic. The market has independently converged on SpecStory's mechanism.
 
-## Multi-agent tools (closest to SpecStory scope)
+
+## Question and scope
+
+Which open-source capture tools provide reusable mechanisms, roster coverage, and durable maintenance signals?
+
+## Method
+
+The catalog reviews repository code, READMEs, licenses, release activity, and public discovery threads at the verification cutoff.
+
+## Findings
+### Multi-agent tools (closest to SpecStory scope)
 
 ### claude-replay — replay as a portable artifact
 
@@ -25,7 +37,7 @@ Pattern across the whole category: **every serious OSS tool reads the agents' na
 - **What/maker**: unified Rust TUI/CLI full-text search over local session history "across 11+ providers"; Jeffrey Emanuel (Dicklesworthstone). Free (non-standard license — GitHub reports NOASSERTION).
 - **Mechanism**: indexes each agent's native store read-only; no capture step at all.
 - **Maintenance**: 938★, pushed 2026-07-03 (same-day activity).
-- **Differentiator**: broadest provider coverage in this sweep; solves the retrieval half of SpecStory's proposition without owning capture. SpecStory only reached indexed search in v2.0.0 (2026-06-29).
+- **Differentiator**: broadest provider coverage in the compared evidence; solves the retrieval half of SpecStory's proposition without owning capture. SpecStory only reached indexed search in v2.0.0 (2026-06-29).
 - **Sources**: [github.com/Dicklesworthstone/coding_agent_session_search](https://github.com/Dicklesworthstone/coding_agent_session_search).
 
 ### claude-code-tools / `aichat search`
@@ -44,7 +56,7 @@ Pattern across the whole category: **every serious OSS tool reads the agents' na
 
 [recall](https://github.com/akhshyganesh/recall) (Apache-2.0, desktop browser), [tessera](https://github.com/effective-momentum/tessera), [agents-session-viewer](https://github.com/catesandrew/agents-session-viewer), [chathistory](https://github.com/fathiyul/chathistory) (HTML/PDF export).
 
-## Claude Code-specific
+### Claude Code-specific
 
 | Tool | What | Mechanism | Output | Signals (2026-07-03) |
 |---|---|---|---|---|
@@ -61,7 +73,7 @@ Pattern across the whole category: **every serious OSS tool reads the agents' na
 
 Smaller: [claude-notes](https://github.com/vtemian/claude-notes) (76★), [claude-insight](https://github.com/Feloguarin/claude-insight) (75★), [ccrecall](https://github.com/spences10/ccrecall) (transcripts → SQLite, 22★, pushed 2026-07-02), [claude-session-export](https://github.com/robzolkos/claude-session-export), [claude-code-log-analyzer](https://github.com/mrothroc/claude-code-log-analyzer) (21★).
 
-## Cursor-specific
+### Cursor-specific
 
 | Tool | What | Signals |
 |---|---|---|
@@ -72,14 +84,32 @@ Smaller: [claude-notes](https://github.com/vtemian/claude-notes) (76★), [claud
 
 The graveyard rate here is the Cursor-schema-churn story from [01](/research/agents/session-capture/01-specstory-product/) seen from the OSS side: unfunded maintainers stop chasing `state.vscdb` changes.
 
-## Copilot- and Codex-specific
+### Copilot- and Codex-specific
 
 - **Copilot cluster** (native export is JSON-only, so small tools fill the gap): [fengzehan's Copilot Chat Exporter](https://marketplace.visualstudio.com/items?itemName=fengzehan.vscode-copilot-exporter) and [Copilot Chat to Markdown](https://marketplace.visualstudio.com/items?itemName=imperium-dev.copilot-chat-to-markdown) (VS Marketplace), [github-copilot-chat-exporter](https://github.com/ZacharyLuz/github-copilot-chat-exporter) (PowerShell, 5★, 2026-04-26), [copilot-chat-export-formatter](https://github.com/Marijn-Bergman/copilot-chat-export-formatter) (dead, 2023). All read `workspaceStorage/**/chatSessions/*.json` or drive the built-in export command.
 - **Codex cluster** (no dominant viewer exists): [@nogataka/codex-viewer](https://github.com/nogataka/codex-viewer) (npm v0.0.11, 2026-02-05, 35★), [codex-session-viewer](https://github.com/eric-gitta-moore/codex-session-viewer) (2★), [codex-history-list](https://github.com/shinshin86/codex-history-list) (10★), plus ~5 more ≤2★ repos. All parse `~/.codex/sessions/**/rollout-*.jsonl`. The niche is unconsolidated — nobody owns Codex history tooling.
 
-## Category read-out
+### Category read-out
 
 1. **Mechanism monoculture**: native-store reading won everywhere; wire interception (claude-trace) exists only for depth (system prompts/thinking), and PTY scraping appears nowhere.
 2. **Claude Code has a rich, healthy tool belt; every other agent's ecosystem is thin or stale.** Cross-agent tools are new (2026) and retrieval-focused.
 3. **Sharing is the unsolved half**: gist upload (simonw) and static HTML files (claude-replay) are the state of the OSS art; only embryonic agentlore attempts team-level aggregation.
 4. **Maintenance risk correlates with store stability**: Cursor exporters die fastest; Claude Code JSONL readers live longest — matching Déjà Vu's "pair unstable formats with a vendor-blessed hedge" stance.
+
+## Implications for jackin❯
+
+Borrow proven schemas, adapters, and export patterns, but own unsupported providers and the durable host-side archive contract.
+
+## Limitations and unknowns
+
+Repository activity and star counts are weak maintenance proxies, and tools discovered after the cutoff are absent.
+
+## Sources
+
+- [claude-replay](https://github.com/es617/claude-replay)
+- [claude-replay Show HN](https://news.ycombinator.com/item?id=47276604)
+
+## Related work
+
+- [Session-capture dossier](/research/agents/session-capture/)
+- [Déjà Vu conversation-capture design](/research/agents/orchestration/conversation-capture/)

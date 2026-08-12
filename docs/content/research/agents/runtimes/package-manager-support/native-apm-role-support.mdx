@@ -1,8 +1,11 @@
 ---
 title: "Native APM Support for jackin❯ Agent Roles"
+description: "Evaluates native agent package managers as the delivery layer for role skills, plugins, prompts, and dependencies."
 ---
 
-**Research state**: Open — design proposal
+**Research state:** Incomplete
+
+The proposal still requires a final package-manager boundary, lockfile policy, and replacement plan for jackin❯-owned delivery mechanisms.
 
 ## Summary
 
@@ -166,37 +169,11 @@ Likely desired behavior:
 - Tests cover target override behavior.
 - Tests prove APM writes into the container/role environment, not the host.
 
-## Implementation Phases
+## Delivery ownership
 
-### Phase 1: Detection and execution
+Implementation sequencing belongs in the affected roadmap items under Related work. This page retains the APM compatibility evidence, replacement boundaries, reproducibility requirements, and isolation constraints.
 
-Detect `apm.yml` next to `jackin.role.toml`, run APM inside the role container or role build environment with an explicit target, capture logs, and fail clearly on errors. Prefer a container-local user-scope/staging-home install so role dependencies become image/default-home context rather than project-repo mutations.
-
-### Phase 1b: Schema migration and removal
-
-Bump the role manifest schema, remove `[claude].plugins` and `[[claude.marketplaces]]` from the current serde shape, and add a migration that automatically converts existing role manifests to the APM shape. The migration should create or update `apm.yml`, add equivalent APM dependencies and marketplace references where APM supports them, remove the legacy fields from `jackin.role.toml`, and leave startup with no legacy plugin installer path. Role resolution must run the raw-document version/migration gate before `RoleManifest` deserialization so migrated old manifests never hit `deny_unknown_fields` on removed fields. Newer manifests and old manifests with no registry path should fail with migration/upgrade instructions rather than being tolerated by runtime fallback code.
-
-### Phase 2: Lockfile and reproducibility
-
-Detect `apm.lock.yaml`, pass `--frozen` when it exists, warn when it is missing, and add a cache key based on `apm.yml`, `apm.lock.yaml`, APM version, selected targets, and the chosen APM install scope.
-
-### Phase 3: Target mapping
-
-Map jackin❯ agent runtime names to APM target names, starting with `claude` and `codex`, then extending to other runtimes jackin❯ supports. Always pass explicit `--target` and test that jackin❯ never relies on APM auto-detection.
-
-### Phase 4: Isolation hardening
-
-Ensure `HOME`, agent config paths, MCP config paths, and APM cache/config paths are container-local. Add tests that host `.claude`, `.codex`, MCP config, and other relevant host paths are not modified.
-
-### Phase 5: Compatibility testing
-
-Test representative APM inputs: `mattpocock/skills`, `mattpocock/skills/skills/engineering/tdd`, `frontend-design@claude-plugins-official`, direct MCP declarations such as `io.github.github/github-mcp-server`, and `JuliusBrussee/caveman`. Document known limitations instead of assuming every Claude plugin behavior is preserved just because APM can resolve it.
-
-### Phase 6: Documentation
-
-Document how role authors add `apm.yml`, provide Claude/Codex/multi-agent examples, explain lockfile recommendations, explain target override behavior, and state clearly that normal jackin❯ launch does not own or generate APM manifests. Replace the existing jackin❯-owned Claude plugin and marketplace examples with APM examples, and document that `jackin role migrate` performs the one-time conversion for legacy role manifests.
-
-## Research Notes
+## Findings
 
 APM appears to be the closest existing tool for this problem. It supports agent skills, prompts, instructions, agents, Claude plugin collections, MCP server declarations, multiple target runtimes, lockfiles, marketplaces, and policy/audit concepts.
 
@@ -210,7 +187,7 @@ Researched examples:
 - `JuliusBrussee/caveman` was recognized as a Claude plugin/marketplace-shaped package and installed skills and agents for Claude/Codex, but plugin hook behavior appeared only partially preserved in testing. jackin❯ should not assume every complex Claude plugin is fully supported through APM without compatibility notes or post-install support.
 - `claude.com/plugins` is a catalog, not the install source. The APM-consumable source is the official Anthropic plugin marketplace repository, `anthropics/claude-plugins-official`; `apm marketplace add anthropics/claude-plugins-official` listed 203 plugins during testing, and `frontend-design@claude-plugins-official` installed cleanly as a skill. Some MCP-heavy plugins may still need direct MCP declaration in `apm.yml` instead of relying on plugin metadata.
 
-## Open Questions
+## Limitations and open questions
 
 - Should APM be preinstalled in jackin❯ base role images, or installed on demand?
 - Should jackin❯ support a global setting to disable APM installs?
@@ -224,7 +201,7 @@ Researched examples:
 - Should jackin❯ provide a command like `jackin role apm install`, or keep the integration entirely automatic?
 - Should jackin❯ add special compatibility handling for packages known to be partially supported by APM, such as complex Claude plugins with hooks?
 
-## Related Work
+## Related work
 
 - [APM repository](https://github.com/microsoft/apm)
 - [APM documentation](https://microsoft.github.io/apm/)

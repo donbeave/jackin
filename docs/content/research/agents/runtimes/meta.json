@@ -1,7 +1,8 @@
 {
-  "title": "Agent Runtimes",
+  "title": "Agent runtimes",
   "defaultOpen": false,
   "pages": [
+    "index",
     "package-manager-support",
     "agent-launch-flags-api-design"
   ]

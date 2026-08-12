@@ -1,12 +1,22 @@
 ---
-title: "10 — Phrase provenance and follow-ups"
-description: Provenance for projection phrases and unresolved provider semantics
+title: "10 — Projection and provider semantics"
+description: Traces projection-language provenance and records provider semantics that remain unresolved.
 ---
 
-Questions: (1) Do the projection phrases "Runs out in", "Projected empty in", "Lasts until reset" actually appear in CodexBar or OpenUsage UIs, per clean-room-allowed materials only (raw README bytes, GitHub release notes, screenshots, homepage prose, third-party reviews)? (2) Which `Authorization` header form (raw key vs `Bearer <key>`) do public third-party clients of `api.z.ai/api/monitor/usage/quota/limit` use, and is there evidence the Bearer form (jackin❯ form, `crates/jackin-usage/src/usage/zai.rs:259`) succeeds? (3) What public evidence exists of Amp's `userDisplayBalanceInfo` `displayText` / `amp usage` output after the 2026-07-18 Megawatt/Gigawatt subscription launch? (4) From primary docs: is the Codex 5h window rolling-from-first-message or fixed slots, and is the Grok weekly pool a fixed weekly reset — enough to validate a linear-from-window-start projection model?
-Informs: jackin-desktop
-Vetted: 2026-07-24
-Method: web (clean-room: READMEs/releases/screenshots only for CodexBar/OpenUsage), all fetched/verified live 2026-07-24. Raw-byte fetches (curl) used for READMEs, codexbar.app, learn.chatgpt.com pricing, docs.x.ai FAQ, ampcode.com/news — no summarizer mediation except where noted.
+## Summary
+
+Public evidence supports fixed-window projection language for some providers, but several reset anchors and wire details remain unresolved.
+
+## Question and scope
+
+(1) Do the projection phrases "Runs out in", "Projected empty in", "Lasts until reset" actually appear in CodexBar or OpenUsage UIs, per clean-room-allowed materials only (raw README bytes, GitHub release notes, screenshots, homepage prose, third-party reviews)? (2) Which `Authorization` header form (raw key vs `Bearer <key>`) do public third-party clients of `api.z.ai/api/monitor/usage/quota/limit` use, and is there evidence the Bearer form (jackin❯ form, `crates/jackin-usage/src/usage/zai.rs:259`) succeeds? (3) What public evidence exists of Amp's `userDisplayBalanceInfo` `displayText` / `amp usage` output after the 2026-07-18 Megawatt/Gigawatt subscription launch? (4) From primary docs: is the Codex 5h window rolling-from-first-message or fixed slots, and is the Grok weekly pool a fixed weekly reset — enough to validate a linear-from-window-start projection model?
+
+This chapter informs jackin-desktop.
+
+## Method
+
+**Verification cutoff:** 2026-07-24
+**Method:** web (clean-room: READMEs/releases/screenshots only for CodexBar/OpenUsage), all fetched/verified live 2026-07-24. Raw-byte fetches (curl) used for READMEs, codexbar.app, learn.chatgpt.com pricing, docs.x.ai FAQ, ampcode.com/news — no summarizer mediation except where noted.
 
 ## Findings
 
@@ -21,12 +31,12 @@ Verdict per phrase — **all three originate in CodexBar; none appear in OpenUsa
   - Release notes v0.21 (2026-04-18): "OpenCode: enable weekly pace visualization … weekly bars show reserve percentage, expected-usage markers, and \"Lasts until reset\" details like Codex and Claude (#639)" — https://github.com/steipete/CodexBar/releases/tag/v0.21 (confidence: HIGH)
   - Wording variant: the README screenshot (`docs/codexbar.png`, raw byte fetch, image inspected) shows a Claude weekly bar captioned "Pace: Behind (-42%) · **Lasts to reset**" — "Lasts *to* reset", not "until" — https://raw.githubusercontent.com/steipete/CodexBar/main/docs/codexbar.png (confidence: HIGH that the screenshot shows this; the until/to drift is across versions/surfaces)
 - **"Projected empty" — CONFIRMED as a CodexBar label; the `"in <duration>"` suffix is NOT verbatim in any allowed material.** Release notes v0.27.0 (2026-05-18): "Claude: label five-hour session pace as \"Projected empty\" so it is not confused with the reset countdown (#960)" — https://github.com/steipete/CodexBar/releases/tag/v0.27.0 (confidence: HIGH for the label; LOW for the exact "Projected empty in Xh" rendering — no allowed source shows the full string)
-- **Raw README bytes (upgrade from round 1's summarizer-mediated fetch): CodexBar README contains NONE of the three phrases.** Byte-level grep of https://raw.githubusercontent.com/steipete/CodexBar/main/README.md (19.9 KB, fetched 2026-07-24) finds zero hits for "Runs out", "Projected", "Lasts". The only "pace" occurrence is the third-party-widget line: "codexbar-plasmoid — KDE Plasma 6 widget for CodexBar's meter icon, provider switcher, quota windows, pace, credits, local cost, and status". Tagline (prose, not UI): "# CodexBar 🎚️ — May your tokens never run out." (confidence: HIGH)
+- **CodexBar README contains none of the three phrases.** Byte-level grep of https://raw.githubusercontent.com/steipete/CodexBar/main/README.md (19.9 KB, fetched 2026-07-24) finds zero hits for "Runs out", "Projected", or "Lasts". The homepage and release notes provide the relevant UI evidence instead. (confidence: HIGH)
 - **OpenUsage: all three phrases NOT FOUND in any allowed material.** Byte-level grep of https://raw.githubusercontent.com/robinebers/openusage/main/README.md (9.5 KB): zero hits; the only pace mention is "**Dashboard popover.** Provider-grouped meters with live reset countdowns and pace indicators." Full release-notes corpus (gh API, all releases, 2 520 lines): zero exact-phrase hits; pace features are alerts, e.g. "Quota pace alerts — 3 triggers, launch-prime, per-app stacking (#786)" and "Show Codex usage percentages as reported while keeping near-empty pacing calm (#905)" — https://github.com/robinebers/openusage/releases (confidence: HIGH)
-- **OpenUsage's projection idiom is different: "~N% left at reset".** The README screenshot (https://raw.githubusercontent.com/robinebers/openusage/main/assets/screenshot.jpg, image inspected) shows a Claude "Team 5x" card with "Session · 100% left · Resets in 5h", "Weekly · **~22% left at reset** · 36% left · Resets in 1d 6h", "Fable · **~11% left at reset** · 27% left · Resets in 1d 6h" — a projected-remaining-at-reset number, not a time-to-empty countdown (confidence: HIGH). Same screenshot shows a "Total Spend" Today/Yesterday/30-Days donut with per-provider dollar legend — a surface jackin❯ must not copy per the usage-surfaces rule.
+- **OpenUsage's projection idiom is different: "~N% left at reset".** The README screenshot (https://raw.githubusercontent.com/robinebers/openusage/main/assets/screenshot.jpg, image inspected) shows bounded quota cards with projected remaining-at-reset values rather than time-to-empty countdowns (confidence: HIGH). Other screenshot surfaces are outside jackin❯ limits-only scope.
 - Cross-ref: CodexBar's homepage pace tokens ("2% in reserve", "On pace") match jackin❯ `quota_pace_label` vocabulary exactly (`crates/jackin-usage/src/usage/format.rs:176-191`), and the homepage co-displays "On pace" *with* "Runs out in 4d 21h" on one line — relevant to the capsule TUI rule that suppresses "Lasts until reset" only when a "Runs out…" detail exists (`crates/jackin-capsule/src/tui/components/dialog_widgets/usage.rs:754-764`).
 
-### Q2 — z.ai quota endpoint `Authorization` header sweep (raw key vs Bearer)
+### Q2 — z.ai quota endpoint `Authorization` header evidence (raw key vs Bearer)
 
 GitHub code search for `"api/monitor/usage/quota/limit"` returns 1 396 files; 22 distinct non-banned client implementations were fetched raw (HEAD) and inspected. CodexBar and OpenUsage hits skipped unread (clean-room).
 
@@ -34,7 +44,7 @@ GitHub code search for `"api/monitor/usage/quota/limit"` returns 1 396 files; 22
 
 - akitaonrails/ai-usagebar (Rust): "Note the auth-header quirk — the API key is passed as `Authorization: <KEY>` WITHOUT the `Bearer` prefix. **Sending `Bearer …` returns 401.**" — https://raw.githubusercontent.com/akitaonrails/ai-usagebar/HEAD/src/zai/fetch.rs (lines 1-3, 129) (confidence: HIGH that the client claims this; MED that it holds for all keys — contradicted below)
 - fabioluciano/tmux-powerkit: header doc `"Auth: Authorization: <ZAI_API_KEY> (raw key; Bearer fallback on 401)"`; in-code comment "The Z.ai monitor endpoints accept the raw API key (matching the web console). **Some keys require the Bearer form, so retry on a 401.**" — https://raw.githubusercontent.com/fabioluciano/tmux-powerkit/HEAD/src/plugins/aiquotas/zai.sh (confidence: HIGH)
-- farion1231/cc-switch (round-1 source, re-verified in source): `.header("Authorization", api_key)` with a comment stating that Zhipu does not add a Bearer prefix, lines 325 and 1218 — https://raw.githubusercontent.com/farion1231/cc-switch/HEAD/src-tauri/src/services/coding_plan.rs (confidence: HIGH)
+- farion1231/cc-switch: `.header("Authorization", api_key)` with a comment stating that Zhipu does not add a Bearer prefix, lines 325 and 1218 — https://raw.githubusercontent.com/farion1231/cc-switch/HEAD/src-tauri/src/services/coding_plan.rs (confidence: HIGH)
 - can1357/oh-my-pi: "// Authorization header (no Bearer prefix)." `Authorization: token` — https://raw.githubusercontent.com/can1357/oh-my-pi/HEAD/packages/ai/src/usage/zai.ts (lines 225-232) (confidence: HIGH)
 - juggler-ai/juggler (Go): "authenticates with the raw API key in the Authorization header (no \"Bearer\")" → `RawAuthorization: credential` — https://raw.githubusercontent.com/juggler-ai/juggler/HEAD/cmd/juggler/providers/zai/usage.go (line 48) (confidence: HIGH)
 - onllm-dev/onWatch (Go): "Z.ai uses API key directly without Bearer prefix" — https://raw.githubusercontent.com/onllm-dev/onWatch/HEAD/internal/api/zai_client.go (lines 85-86) (confidence: HIGH)
@@ -42,7 +52,7 @@ GitHub code search for `"api/monitor/usage/quota/limit"` returns 1 396 files; 22
 - opgginc/opencode-bar: `-H "Authorization: $API_KEY"` for quota/limit, model-usage and tool-usage — https://raw.githubusercontent.com/opgginc/opencode-bar/HEAD/scripts/query-zai-coding-plan.sh (confidence: HIGH)
 - musistudio/claude-code-router (zhipu-cn preset, `open.bigmodel.cn` host): connector `auth: "provider-api-key-raw"` — https://raw.githubusercontent.com/musistudio/claude-code-router/HEAD/packages/core/src/providers/presets/zhipu-cn-general/index.ts (confidence: HIGH)
 - Yeachan-Heo/oh-my-claudecode: quota/limit call sends `'Authorization': authToken` where `authToken = process.env.ANTHROPIC_AUTH_TOKEN` — raw, no prefix (its *other* endpoint, `coding_plan/remains`, uses Bearer) — https://raw.githubusercontent.com/Yeachan-Heo/oh-my-claudecode/HEAD/src/hud/usage-api.ts (lines 710, 737 vs 1152) (confidence: HIGH)
-- Plus round-1's raw-key clients: opencode-glm-quota, opencode-mystatus, and the cc-switch issue script (chapter 06).
+- Other raw-key clients: opencode-glm-quota, opencode-mystatus, and the cc-switch issue script (chapter 06).
 
 **`Bearer <key>` — 12 clients ship it as the only form:**
 
@@ -60,7 +70,7 @@ GitHub code search for `"api/monitor/usage/quota/limit"` returns 1 396 files; 22
 - Direct positive claim: tmux-powerkit's "Some keys require the Bearer form" (above) — i.e. the author observed Bearer being *required*, not merely tolerated, for some keys (confidence: MED — one author's comment).
 - Circumstantial: 12 shipped tools (several packaged apps with real user bases) send Bearer-only; issue-tracker sweeps of quotio and tokscale show **no** z.ai/GLM auth-failure reports — https://github.com/nguyenphutrong/quotio/issues, https://github.com/junhoyeo/tokscale/issues (confidence: MED — absence of complaints, not proof)
 - Direct negative claim: ai-usagebar's "Sending `Bearer …` returns 401" (above). Unreconciled; acceptance may vary by key type, host (api.z.ai vs open.bigmodel.cn), or time (confidence: LOW either way as a universal rule).
-- Net for jackin❯ (`zai.rs:259`, Bearer): the header form is *not* uniformly wrong, but round-1's open unknown stands — only an operator live probe of both forms settles it.
+- Net for jackin❯ (`zai.rs:259`, Bearer): the header form is *not* uniformly wrong; only an operator live probe of both forms settles it.
 
 ### Q3 — Amp `amp usage` / `userDisplayBalanceInfo` output after the 2026-07-18 subscription launch
 
@@ -87,7 +97,7 @@ GitHub code search for `"api/monitor/usage/quota/limit"` returns 1 396 files; 22
 - Behavior at limit, verbatim: "When your weekly usage limit is met, paid features will pause until your weekly limit resets." Free-tier Chat/Voice limits are "separate from your weekly usage limit and resets on their own schedule." — same URL (confidence: HIGH)
 - Corroborates chapter 05's RPC shape: `config.currentPeriod {type: USAGE_PERIOD_TYPE_WEEKLY, start, end}` plus `history` of past periods = consecutive fixed slots; window start is available on the RPC path (period `start`), so **linear-from-window-start projection is well-founded for Grok weekly**; on the web-scrape path only `reset_at` is available and window start must be inferred as `reset_at − 7d` (valid under fixed slots) (confidence: HIGH for the model; the anchor — billing anniversary vs calendar day — is not stated in the FAQ)
 
-## Dead ends and contradictions
+### Dead ends and contradictions
 
 - **Amp reset-model contradiction resolved for Amp Free:** chapter
   [11](/research/product/desktop/usage-provider-apis/11-amp-daily-followup/) adds a redacted live `amp usage`
@@ -96,19 +106,34 @@ GitHub code search for `"api/monitor/usage/quota/limit"` returns 1 396 files; 22
   retired for current implementation. No exact reset timestamp is proven;
   paid subscription text remains open.
 - **help.openai.com articles unfetchable even with browser UA** (Intercom SPA returns a JS shell to curl; verified 2026-07-24) — the Pro-tier 5x/20x multiplier statement stays MED until an operator browser session opens article 9793128.
-- **Disallowed source deliberately not used:** web search surfaced steipete/CodexBar `docs/ui.md` content describing "Runs out in"/"Lasts until reset" semantics, and repo issue #1336 ("Cursor 30-day timeframe: show deficit and \"runs out in\"") — repo docs and issues are outside the allowed clean-room list; the summarizer text derived from them was discarded and the homepage/release-notes evidence used instead. The issue *title* (visible in search results without fetching) is noted as a corroborating lead only.
-- **Clean-room skips in the code sweep:** hits inside steipete/CodexBar and robinebers/openusage were skipped unread; likewise CodexBar/OpenUsage source *clones and forks* surfaced by search (zippyg/AgentMeter, y0shua1ee/TokenBar, o1xhack/CodexBar-Mobile, kierr/CodexBar, cic8822-cpu/20260710 vendored copy, and the `plugins/<provider>/plugin.js`-pattern OpenUsage-derived repos: cogine-ai/OpenUsageCN, Noisemaker111/openusage-mono, mhpsy/waybar-openusage, luisleineweber/usagebar, Halloweedev/usagepal, datell1357/AI-Usage-for-Windows, cbnsndwch/pacebar) — excluded as back-door source reads.
-- **Phrase-wording drift inside CodexBar:** release notes and homepage say "Lasts until reset"; the current README screenshot shows "Lasts to reset". Round 1's conclusion that "the READMEs are silent" was correct but incomplete — the phrases live on the homepage, in release notes, and in screenshots, all allowed materials that round 1 did not exhaust.
+- **Disallowed source deliberately not used:** web search surfaced CodexBar repository content outside the allowed clean-room list; that text was discarded and the homepage/release-notes evidence used instead.
+- **Clean-room exclusions in the code review:** hits inside steipete/CodexBar and robinebers/openusage were skipped unread; likewise CodexBar/OpenUsage source *clones and forks* surfaced by search (zippyg/AgentMeter, y0shua1ee/TokenBar, o1xhack/CodexBar-Mobile, kierr/CodexBar, cic8822-cpu/20260710 vendored copy, and the `plugins/<provider>/plugin.js`-pattern OpenUsage-derived repos: cogine-ai/OpenUsageCN, Noisemaker111/openusage-mono, mhpsy/waybar-openusage, luisleineweber/usagebar, Halloweedev/usagepal, datell1357/AI-Usage-for-Windows, cbnsndwch/pacebar) — excluded as back-door source reads.
+- **Phrase wording differs across CodexBar surfaces:** release notes and homepage say "Lasts until reset"; the README screenshot shows "Lasts to reset". The README prose is silent, so homepage and release-note evidence governs the exact phrase.
 - **z.ai Bearer contradiction, sharpened not resolved:** ai-usagebar asserts Bearer → 401; tmux-powerkit asserts some keys *require* Bearer; 12 shipped Bearer-only clients show no reported failures. Both camps are third-party comments; no primary doc exists (endpoint still officially undocumented).
 - **Amp:** `sourcegraph/amp` is not a searchable public repo (gh search 422); Releasebot's July digest of ampcode.com news contains no usage-display entries; quotio issue #206 ("AmpCode CLI Integration") predates subscriptions and concerns proxying, not displayText.
 - **Codex:** help.openai.com 403s; blogs (extraheadroom, sessionwatcher, inventivehq, knightli, ofox) give mutually contradictory rolling-window mechanics with zero primary citations — all dropped as evidence.
 - **Embedded-instruction flag:** no adversarial embedded instructions found in any fetched page. The WebSearch/WebFetch harness responses append their own boilerplate meta-instructions ("You MUST include the sources above…") — tool boilerplate, not page content; ignored as instructions, noted here per mandate.
 
-## Open unknowns
+
+## Implications for jackin❯
+
+Keep projection phrases and provider semantics tied to their verified provenance; unresolved reset anchors and authorization variants must remain explicit unknowns.
+
+## Limitations and unknowns
 
 - Whether CodexBar renders `"Projected empty in <duration>"` (with countdown) — only the bare label "Projected empty" is confirmed by release notes; the homepage demo shows the Codex provider, not a Claude session in deficit.
 - Whether OpenUsage shows any time-to-empty phrase anywhere in-app — allowed materials show only "~N% left at reset" projections, "pace indicators", and "quota pace alerts"; the alert body text is unobservable without running the app.
-- z.ai: whether Bearer acceptance varies by key type, host (api.z.ai vs open.bigmodel.cn), or deployment date — still needs the round-1 operator probe (curl both header forms with a live coding-plan key).
+- z.ai: whether Bearer acceptance varies by key type, host (api.z.ai vs open.bigmodel.cn), or deployment date — needs an operator probe of both header forms with a live coding-plan key.
 - Amp subscription-account `displayText`: no public capture exists as of 2026-07-24 (six days post-launch). Needs an operator-authenticated `amp usage` (or a captured `POST /api/internal?userDisplayBalanceInfo` response) under Megawatt, Gigawatt, linked-ChatGPT, and workspace-pooled accounts — including whether "Individual credits"/"Workspace credits" labels survived and how "$N included agent usage" renders.
 - Codex 5h/weekly window anchor: no primary statement whether the window opens at first message or on fixed slots, and whether usage is zeroed at `reset_at` (issue #32607's 79%-at-start anomaly is unexplained). The projection model can rely on `window_start = reset_at − limit_window_seconds` as the client-observable convention, but not on usage-starts-at-zero.
 - Grok weekly reset anchor (subscription anniversary vs fixed weekday) and timezone of the "weekly reset date and time" — FAQ shows it per-account in Settings only.
+
+## Sources
+
+- [CodexBar](https://github.com/steipete/codexbar)
+- [Grok FAQ](https://docs.x.ai/grok/faq.md)
+
+## Related work
+
+- [Provider API coverage](/research/product/desktop/usage-provider-apis/)
+- [Runout projection](/research/product/desktop/usage-provider-apis/07-runout-projection/)

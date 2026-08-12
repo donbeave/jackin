@@ -1,9 +1,11 @@
 ---
 title: "09 — Output discipline and structured generation"
+description: "Methods for reducing visible output and structured-generation overhead without losing decisions, evidence, or errors."
 ---
 
-# 09 — Output discipline and structured generation
+## Summary
 
+Diffs, omission of code restatement, and concise wrappers reduce output safely; brevity must not remove reasoning, decisions, evidence, or errors.
 **TL;DR**
 
 - Output tokens are the 5x-priced class ($50/MTok out vs $10 in on Fable 5) and ~37% of a heavy day's dollars (thinking 20% + visible output 17%, local measurement). Locally, thinking is 54.8% of output tokens at max effort (n=1) — and on Fable 5 **only the effort parameter can touch that share**; thinking cannot be disabled.
@@ -12,7 +14,17 @@ title: "09 — Output discipline and structured generation"
 - Suppressing post-edit code restatement saves a measured **352 tok/edit (91.4%)**; a "Here is the JSON…" wrapper costs a measured **29 tok/call**.
 - Terseness has a floor: "be concise" captures only ~1.4x of a 4.8–11.2x theoretically-safe compression, degradation past per-problem token thresholds is a cliff not a slope, and >10x compression measurably increases hallucination. Route brevity at restatement and ceremony, never at reasoning. Techniques that trade quality are marked **QUALITY-TRADE**.
 
-## Why this layer matters
+## Question and scope
+
+Which output controls remove restatement and formatting waste while preserving reasoning, correctness, and warnings?
+
+## Method
+
+The analysis compares provider output controls, published quality studies, and local counts of equivalent edit, rewrite, summary, and structured-output payloads using the checked-in token counter.
+
+## Findings
+
+### Why this layer matters
 
 On the modeled heavy day (~$22, 6 sessions, ~27k output tok/session — see [01 — Token Economics and Measurement](/research/context/techniques/01-economics-and-measurement/)), output is ~$8.14/day: ~$4.40 thinking + ~$3.74 visible (prose + tool arguments). Three structural facts shape everything below:
 
@@ -20,7 +32,7 @@ On the modeled heavy day (~$22, 6 sessions, ~27k output tok/session — see [01 
 2. **Tool arguments are output.** A Write call's `content` field is model-generated text billed at $50/MTok. Edit-vs-Write is therefore an output-discipline question, not a tooling preference.
 3. **Visible prose is the smallest slice (~17% of dollars) but the only slice prompts can address directly** — which is why prompt-level brevity folklore systematically overpromises (it can't reach the other 83%).
 
-## Local measurements 
+### Local measurements
 
 Method: free `count_tokens` API, model `claude-fable-5`, each payload sent as a single user message; 1-char baseline message = 7 tok envelope, subtracted in % columns. Measurement script reproduced in [16 — Validation Harness: the No-Quality-Loss Proof Protocol](/research/context/techniques/16-validation-harness/) style: simulate the exact JSON a tool call would carry. File under test: <RepoFile path="crates/jackin-config/src/app_config/workspaces.rs">crates/jackin-config/src/app_config/workspaces.rs</RepoFile> (200 lines); change under test: a realistic 5-line method addition with a 5-line unique anchor.
 
@@ -32,11 +44,9 @@ Method: free `count_tokens` API, model `claude-fable-5`, each payload sent as a 
 | Bare JSON object (extraction answer) | 35 | same object in "Here is the JSON…" + fences + closer | 64 | **29 tok/call** |
 | Write-vs-Edit crossover (ESTIMATE from above) | — | 3,190 net Write ÷ 340 net per-hunk Edit | — | ≈ 9.4 hunks |
 
-These independently reproduce the Phase-0 sweep numbers (89.5% / 302 tok / 15–25 tok est.) within noise of payload phrasing. At $50/MTok: an avoided whole-file rewrite of this file saves ~$0.143; an avoided verbose summary ~$0.018; an avoided JSON wrapper ~$0.0015.
+These independently reproduce the baseline numbers (89.5% / 302 tok / 15–25 tok est.) within noise of payload phrasing. At $50/MTok: an avoided whole-file rewrite of this file saves ~$0.143; an avoided verbose summary ~$0.018; an avoided JSON wrapper ~$0.0015.
 
 ---
-
-## Techniques
 
 ### 1. Effort parameter (`/effort`, `output_config.effort`)
 
@@ -50,7 +60,7 @@ One-line pitch: Anthropic's only sanctioned whole-response throttle — one knob
 - **Availability:** CLAUDE-CODE-TODAY.
 - **Effort to adopt:** minutes (`/effort medium`; `effort: low` in subagent frontmatter).
 - **Composability:** composes with everything below; it is the *only* lever on the 54.8% thinking share. Per-subagent `effort: low` under a high-effort main loop is a shipped, documented pattern almost no cost guide mentions. Anti-synergy: partially redundant with terse-by-instruction (#3) — low effort already produces terse confirmations.
-- **Validation protocol:** fix a 10-task repo-representative suite (bugfix, refactor, test-add). Run 3x at high and at medium with identical prompts. Record `usage.output_tokens`, wall time, pass rate (tests green), and thinking share (output_tokens minus count_tokens of visible blocks — same method as Phase-0). Adopt medium where pass-rate delta ≤ 0; this experiment also closes the open thinking-fraction-by-effort gap (#2 in Gaps).
+- **Validation protocol:** fix a 10-task repo-representative suite (bugfix, refactor, test-add). Run 3x at high and at medium with identical prompts. Record `usage.output_tokens`, wall time, pass rate (tests green), and thinking share (output_tokens minus count_tokens of visible blocks — same method as Baseline). Adopt medium where pass-rate delta ≤ 0; this experiment also closes the open thinking-fraction-by-effort gap (#2 in Gaps).
 
 ### 2. Diff-style edits (Edit) instead of whole-file rewrites (Write)
 
@@ -127,7 +137,7 @@ One-line pitch: the classic "prefill `{`" trick still works on non-thinking mode
 One-line pitch: a tight cap in agent loops *backfires*: a truncated tool_use must be retried at a HIGHER limit, paying for the dead attempt in full.
 
 - **Layer:** output / infra (circuit breaker).
-- **Mechanism:** generation halts at the limit with `stop_reason: "max_tokens"`; the model does not plan toward the budget, it gets amputated mid-structure. Docs' own remediation: "If Claude's response is cut off due to hitting the max_tokens limit, and the truncated response contains an incomplete tool use block, you'll need to retry the request with a higher max_tokens value" . Anthropic's guidance for high-effort agents is the opposite of tight caps: "set a large max_tokens… Starting at 64k tokens and tuning from there." On Fable 5, max_tokens "is a hard limit on total output, thinking plus response text" — one pool.
+- **Mechanism:** generation halts at the limit with `stop_reason: "max_tokens"`; the model does not plan toward the budget, it gets amputated mid-structure. Docs' own remediation: "If Claude's response is cut off due to hitting the max_tokens limit, and the truncated response contains an incomplete tool use block, you'll need to retry the request with a higher max_tokens value". Anthropic's guidance for high-effort agents is the opposite of tight caps: "set a large max_tokens… Starting at 64k tokens and tuning from there." On Fable 5, max_tokens "is a hard limit on total output, thinking plus response text" — one pool.
 - **Expected savings:** zero as an optimizer; positive only as a runaway-cost breaker (a 64k cap bounds worst-case single response at 64k × $50/MTok = $3.20).
 - **Evidence tier:** T1 (platform.claude.com/docs/en/api/handling-stop-reasons + effort doc, both).
 - **Quality risk:** **RISKY when set tight**: mid-structure truncation (schema-invalid JSON under #5 — documented edge case), lost work, retry double-billing. Degradation manifests as `max_tokens` stop reasons in logs. Falsification: any nonzero rate of max_tokens stops on tool-bearing turns means the cap is destroying value.
@@ -155,8 +165,8 @@ One-line pitch: sampler-enforced cutoff — "output the answer then END" + `stop
 One-line pitch: persona-level brevity delivers a measured ~58% cut of visible prose and is structurally cache-stable — but its claimed durability edge over a plain instruction has never been measured, and research says style choice doesn't move the accuracy-length frontier anyway.
 
 - **Layer:** output (visible prose), via system prompt (input-side rider, cached at 0.1x).
-- **Mechanism:** Claude Code output styles replace part of the default system prompt (re-sent and cache-stable every turn); CLAUDE.md content rides as a user message after the default system prompt. The caveman plugin implements register-based persona compression as a skill. History: output styles deprecated v2.0.30, un-deprecated v2.0.32 after backlash; `/output-style` command removed v2.1.91 but the `outputStyle` setting remains via `/config` (github.com/anthropics/claude-code/issues/10671).
-- **Expected savings:** local Phase-0 ground truth : caveman ultra = **58.5%** token cut on visible prose (the plugin's "~75%" claim is character-level folklore); wenyan-full = 80.9% char cut but only **56.6%** token cut (CJK ≈ 1.47 chars/tok vs 3.35 English); wenyan-ultra = 74.5% token cut. Applies ONLY to visible prose ≈ 17% of session dollars: upper bound 0.585 × $3.74 ≈ **$2.19/day** on the modeled profile if every visible token were prose (it isn't — tool args share that class, so real ceiling is lower).
+- **Mechanism:** Claude Code output styles replace part of the default system prompt (re-sent and cache-stable every turn); CLAUDE.md content rides as a user message after the default system prompt. The caveman plugin implements register-based persona compression as a skill. The current `outputStyle` setting remains available through `/config`; the `/output-style` command is absent (github.com/anthropics/claude-code/issues/10671).
+- **Expected savings:** local baseline ground truth: caveman ultra = **58.5%** token cut on visible prose (the plugin's "~75%" claim is character-level folklore); wenyan-full = 80.9% char cut but only **56.6%** token cut (CJK ≈ 1.47 chars/tok vs 3.35 English); wenyan-ultra = 74.5% token cut. Applies ONLY to visible prose ≈ 17% of session dollars: upper bound 0.585 × $3.74 ≈ **$2.19/day** on the modeled profile if every visible token were prose (it isn't — tool args share that class, so real ceiling is lower).
 - **Evidence tier:** T1 for the local cut measurements; T3 for plugin claims; T2 for the frontier argument — format/language variants "lie on a universal trade-off curve between response length and accuracy" incl. "in Chinese" and no-spaces variants (arXiv 2503.01141). The persona is a delivery vehicle for a length target, not a free lunch.
 - **Quality risk:** **QUALITY-TRADE** at aggressive registers (#10 governs), plus a human-comprehension cost. Degradation manifests as dropped qualifiers and operator misreadings. Falsification: same task suite styled/unstyled, diff for lost caveats (grep negations/"not"/"however"), and have a second reader rate ambiguity.
 - **Availability:** CLAUDE-CODE-TODAY (plugin install or `outputStyle` setting).
@@ -180,7 +190,15 @@ One-line pitch: the anti-claim that bounds every entry above — each problem ha
 
 ---
 
-## Claims to kill
+## Implications for jackin❯
+
+### Techniques
+
+For jackin❯, the output discipline and structured generation evidence identifies which mechanisms are safe to adopt directly and which still require workload-specific validation.
+
+## Limitations and unknowns
+
+### Claims to kill
 
 | Folklore claim | Why it dies | Evidence |
 |---|---|---|
@@ -193,7 +211,7 @@ One-line pitch: the anti-claim that bounds every entry above — each problem ha
 | "Run everything at max effort" | "max… may show diminishing returns and is prone to overthinking. Test before adopting broadly"; "adds significant cost for relatively small quality gains" | code.claude.com model-config + platform effort doc |
 | "Diff formats are only a token optimization" | Primarily a QUALITY intervention (20%→61%, lazy comments 12→4 of 89); the 89.3% token saving is the secondary effect | aider.chat/docs/unified-diffs.html + local measurement |
 
-## Gaps (highest-value follow-ups)
+### Gaps (highest-value follow-ups)
 
 1. **No quality-vs-effort curve for Fable 5 / Opus 4.8** — the 76%/48% figures are Opus 4.5 + SWE-bench only; the usage object doesn't report what effort "did", so the knob can't be audited post-hoc.
 2. **Thinking-fraction-by-effort is unmeasured anywhere.** Local n=1: 54.8% of output at max effort. The #1 validation protocol closes this for free.
@@ -203,7 +221,7 @@ One-line pitch: the anti-claim that bounds every entry above — each problem ha
 6. **Structured outputs' hidden system-prompt size** ("slightly higher") — measurable by diffing count_tokens against a live request with `output_config`; not run here because count_tokens in the local harness does not accept `output_config`.
 7. **Claude Code REPL still lacks schema-constrained final answers** (issue #9058 open); only SDK/subagent tool-schema paths get the guarantee.
 
-## Verification ledger
+## Sources
 
 | Number / claim | Value | Source + access date OR local method |
 |---|---|---|
@@ -213,7 +231,7 @@ One-line pitch: the anti-claim that bounds every entry above — each problem ha
 | Effort = "behavioral signal"; levels; low-effort terse behaviors; Sonnet 4.6 medium-recommended; 64k max_tokens guidance; Fable 5 "hard limit… thinking plus response text" | quotes | platform.claude.com/docs/en/build-with-claude/effort |
 | Claude Code effort defaults (high on Fable 5/Opus 4.8/4.6/Sonnet 4.6; xhigh on Opus 4.7); max session-only (persists when set via `CLAUDE_CODE_EFFORT_LEVEL`) + "prone to overthinking"; ultracode/ultrathink semantics; per-model calibration; frontmatter `effort` | quotes | code.claude.com/docs/en/model-config |
 | "Thinking cannot be turned off on Fable 5… MAX_THINKING_TOKENS=0 have no effect there" | quote | same |
-| Edit vs Write payloads (200-line file, 5-line change) | 347 vs 3,197 tok = 89.3% | local: count_tokens API, claude-fable-5, script /tmp/measure_output.py |
+| Edit vs Write payloads (200-line file, 5-line change) | 347 vs 3,197 tok = 89.3% | Local `count_tokens` measurement using the file, anchor, payload construction, and model specified in Method with the [checked-in token counter](/research/context/techniques/tools/#count_tokenspy-modes) |
 | Raw-string variant | 256 vs 2,851 = 91.2% | same local method |
 | Verbose vs terse post-edit summary | 392 vs 40 tok = 352 saved (91.4%) | same local method |
 | "Here is the JSON…" wrapper overhead | 29 tok/call | same local method |
@@ -223,20 +241,26 @@ One-line pitch: the anti-claim that bounds every entry above — each problem ha
 | CoD sports understanding ("7.6%") | 93.2@189.4 vs 97.3@14.3 | same, Table 3 |
 | CoD zero-shot collapse / &lt;3B limit | +3.6% over direct | same |
 | CCoT | −48.70% length; −27.69% GPT-3.5 math; −22.67% per-token cost | arxiv.org/abs/2401.05618 abstract |
-| Token-complexity thresholds; universal curve; success prediction | "above 90% for most models and benchmarks" (sweep's "95%" not confirmed — corrected) | arxiv.org/html/2503.01141v1 |
+| Token-complexity thresholds; universal curve; success prediction | "above 90% for most models and benchmarks" (the stronger 95% figure is not confirmed) | arxiv.org/html/2503.01141v1 |
 | BeConcise vs theoretical compression | 1.41x/4.83x (MMLU-Pro Math); 1.47x/11.16x (GSM8K); 1.26x/3.69x (MATH-500) | same |
 | 2–6x safe / >10x hallucination increase | quote | arxiv.org/html/2505.00019v1 |
 | Negation/disclaimer loss under compression | quote | arxiv.org/html/2510.22963v2 (CompressionAttack) |
 | Budget-dependent optimal model/prompt | 30-LLM study | aclanthology.org/2025.emnlp-main.389 |
 | Structured outputs: GA models incl. Fable 5; "No retries needed"; hidden prompt "slightly higher"; 24h grammar cache; cache invalidation; schema limits (no recursion/numerics, 20 strict tools, 24 optional); refusal/max_tokens edge cases | quotes | platform.claude.com/docs/en/build-with-claude/structured-outputs |
 | Incomplete tool_use → "retry the request with a higher max_tokens"; stop_sequences mechanics; ~21k streaming note | quotes | platform.claude.com/docs/en/api/handling-stop-reasons |
-| Prefill `{` mechanics + thinking incompatibility | quotes | platform prefill doc via search snippets (direct fetch redirected — page possibly mid-reorganization); 400s on Opus 4.6: blog.laozhang.ai, sweep-verified (T3) |
+| Prefill `{` mechanics + thinking incompatibility | quotes | platform prefill doc via search snippets (direct fetch redirected — page possibly mid-reorganization); 400s on Opus 4.6: blog.laozhang.ai (T3) |
 | Claude Code REPL lacks schema-constrained output | open issue | github.com/anthropics/claude-code/issues/9058 |
-| Output styles deprecate/un-deprecate/v2.1.91 removal | timeline | github.com/anthropics/claude-code/issues/10671 |
-| Caveman/wenyan register cuts | 58.5% / 56.6% / 74.5% token; 80.9% char | local Phase-0 measurement |
-| Thinking share of output at max effort | 54.8% (n=1) | local Phase-0: usage.output_tokens − count_tokens(visible blocks) |
-| Session dollar split (reads 32/writes 29/thinking 20/visible 17/uncached 2) | modeled day ~$22 | local Phase-0 heavy-session profile — see [01 — Token Economics and Measurement](/research/context/techniques/01-economics-and-measurement/) |
-| Root <RepoFile path="AGENTS.md">AGENTS.md</RepoFile> always-on size | 2,738 tok | local Phase-0 measurement |
+| Current output-style behavior and availability | current provider status | code.claude.com/docs/en/output-styles |
+| Caveman/wenyan register cuts | 58.5% / 56.6% / 74.5% token; 80.9% char | local Baseline measurement |
+| Thinking share of output at max effort | 54.8% (n=1) | local Baseline: usage.output_tokens − count_tokens(visible blocks) |
+| Session dollar split (reads 32/writes 29/thinking 20/visible 17/uncached 2) | modeled day ~$22 | local Baseline heavy-session profile — see [01 — Token Economics and Measurement](/research/context/techniques/01-economics-and-measurement/) |
+| Root <RepoFile path="AGENTS.md">AGENTS.md</RepoFile> always-on size | 2,738 tok | local Baseline measurement |
 | Claude Code system prompt "&lt;4 lines"/"minimize output tokens" | community-documented | NOT locally verifiable (v2.1.175 compiled Bun bundle; strings not greppable); T3 |
 | Pricing (Fable 5 $10/$50; cache 0.1x/1.25x/2x; batch 50%) | reference | task brief, consistent with live docs |
 | Dollar arithmetic ($6.19/day effort ceiling; $1.43/day Edit; $0.88/day terse; $2.19/day persona ceiling) | ESTIMATES | arithmetic on modeled profile shown inline |
+
+## Related work
+
+- [Token-optimization techniques dossier](/research/context/techniques/)
+- [Validation harness](/research/context/techniques/16-validation-harness/)
+- [Context engine](/research/context/engine/)

@@ -1,14 +1,13 @@
 ---
 title: "15 — Composed Stacks: Conservative / Aggressive / Unbelievable"
+description: "End-to-end conservative, aggressive, and frontier optimization stacks with sequential cost and quality accounting."
 ---
 
-# 15 — Composed Stacks: Conservative / Aggressive / Unbelievable
+## Summary
 
 This file does the end-to-end dollar math. Savings are
 composed **per token class, sequentially** (multipliers on the class a technique actually
 touches) — never by multiplying headline percentages across different classes.
-
-## TL;DR
 
 - **The defaults already bank the first ~4–5x.** Prompt caching (−86.3% input-side, measured
  live), MCP schema deferral, Edit-tool diffs, and 1h-TTL main-loop caching are Claude Code
@@ -28,7 +27,17 @@ touches) — never by multiplying headline percentages across different classes.
  effort touches it; (2) the cache-read floor of context the agent genuinely uses; (3) quality
  risk of cheap-model main loops on the hardest tasks.
 
-## 0. Baseline and composition rules
+## Question and scope
+
+How do compatible techniques compose into conservative, aggressive, and unsupported stacks without double-counting savings?
+
+## Method
+
+The stack model assigns every technique to the token class it can change, composes only independent effects, and carries evidence tier, quality gate, and uncertainty through the final multiple.
+
+## Findings
+
+### 0. Baseline and composition rules
 
 Working profile ([01 — Token Economics and Measurement](/research/context/techniques/01-economics-and-measurement/) §5, $22 variant = 6 × measured session):
 
@@ -52,7 +61,7 @@ ratio** (same multipliers).
 session), MCP deferral by default (06), Edit-tool default (09), 1h-TTL main-loop writes
 (07: 320/320 calls observed), prior-turn thinking billed per current docs (12).
 
-## 1. Conservative stack — "do this tomorrow"
+### 1. Conservative stack — "do this tomorrow"
 
 Constraints: T1/T2 evidence only, `CLAUDE-CODE-TODAY` only, zero quality risk (each item is
 NEGATIVE-COST or NEUTRAL with a trivial falsification check).
@@ -74,7 +83,7 @@ The honest conservative headline: **riskless knobs are small because the platfor
 the big ones.** The conservative stack's real value is *not regressing* (a busted cache or a
 restored 50k MCP schema load silently costs more than C1–C5 save).
 
-## 2. Aggressive stack — adds T3 + SDK tier, validation attached
+### 2. Aggressive stack — adds T3 + SDK tier, validation attached
 
 Adds: effort tiering, model routing, context editing/masking, register compression, batch.
 Each item carries a validation plan; adopt sequentially, validating each (the multipliers below
@@ -109,7 +118,7 @@ Validation: full harness confirmation run (n=30) on the composed stack as a unit
 effort-sweep experiment (09 §1) before and after A1 — it doubles as the missing
 thinking-fraction-by-effort measurement.
 
-## 3. Unbelievable stack — chasing 10x
+### 3. Unbelievable stack — chasing 10x
 
 Adds BUILDABLE frontier items ([14 — Frontier — unrealistic but maybe real](/research/context/techniques/14-frontier-ideas/)) and flips the main loop. Stated honestly:
 the quality side of U1 is the unproven hinge.
@@ -123,7 +132,7 @@ the quality side of U1 is the unproven hinge.
 | U5 | jackin❯ token-pack: all of the above baked into every launched container (14 §jackin❯; insertion points mapped: `launch.rs:590-717` env assembly, RoleManifest `[token_policy]`, CapsuleConfig → `build_agent_command`) | adherence → 100%, drift → 0 | protects the multipliers |
 | U6 | Batch+cache stacking for all offline work (07: reads at 0.05x) | offline share | as A5, deeper |
 
-Composed (same sequential method, from the corrected Aggressive endpoint $8.63, prose-heavy case):
+Composed from the aggressive endpoint of $8.63 using the same sequential method (prose-heavy case):
 U1 widens the routed share from half to ~all sessions (remaining Fable spend only on escalations):
 ≈ ×0.55 → $4.75; U2 ≈ ×0.93 → $4.42; U3 (R component) ≈ −$0.45 → $3.97; U4 ≈ −$0.10 → $3.87;
 U6 ≈ ×0.93 → **≈ $3.60/day → 6.1x** against the $21.83 baseline (code-heavy endpoint ≈5.7x).
@@ -141,7 +150,7 @@ except by effort and by not-being-the-frontier-model); #2 is the **cache-read fl
 the agent truly needs (R after A3/U3 ≈ $3.0/day is mostly *useful* context); #3 is **quality
 risk concentration** — every remaining big multiplier moves work off the frontier model.
 
-## 4. The negative-cost set (save tokens AND improve output)
+### 4. The negative-cost set (save tokens AND improve output)
 
 Explicitly identified across the dossier (the brief's "genuinely unbelievable" category):
 
@@ -159,13 +168,21 @@ Explicitly identified across the dossier (the brief's "genuinely unbelievable" c
 Common thread: **less junk in, less junk out** — the input-architecture layer is where saving
 money and raising quality are the same action. Register compression is conspicuously *not* in
 this set (it is paid for in readability and caveat-risk), and that is the dossier's central
-correction to the operator's starting intuition.
+constraint on the 10× target.
 
-## Verification ledger
+## Implications for jackin❯
+
+For jackin❯, the composed stacks: conservative / aggressive / unbelievable evidence identifies which mechanisms are safe to adopt directly and which still require workload-specific validation.
+
+## Limitations and unknowns
+
+Quantitative conclusions are workload- and model-specific. Re-measure volatile provider inputs and validate transfers on representative jackin❯ tasks.
+
+## Sources
 
 | Number | Basis |
 |---|---|
-| Baseline class table | 01 §5 ($22 variant), local Phase-0 measurement scaled |
+| Baseline class table | 01 §5 ($22 variant), local Baseline measurement scaled |
 | −86.3% caching, $71.59 vs $524.23; 320/320 1h-TTL; 1,310:1 read ratio | 07, local session measurement + GH #24147 |
 | 89.3% Edit-vs-Write; 352 tok restatement; 58.5% caveman-ultra | 09/02, local count_tokens |
 | 76% fewer output tokens at medium effort (Opus 4.5, SWE-bench) | anthropic.com/news/claude-opus-4-5 via 09 |
@@ -176,3 +193,9 @@ correction to the operator's starting intuition.
 | Masking ≈ −50% at parity | arXiv 2508.21433 via 06 |
 | 9-turn break-even on mid-session model switch | 10, ESTIMATE from cache mechanics |
 | All stack totals | ESTIMATE — sequential class arithmetic shown in tables above |
+
+## Related work
+
+- [Token-optimization techniques dossier](/research/context/techniques/)
+- [Validation harness](/research/context/techniques/16-validation-harness/)
+- [Context engine](/research/context/engine/)

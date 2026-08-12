@@ -1,12 +1,22 @@
 ---
 title: "06 — z.ai, MiniMax, and Kimi usage APIs"
-description: Subscription quota sources and semantics for z.ai, MiniMax, and Kimi
+description: Compares subscription-quota sources, credential paths, and limit semantics for z.ai, MiniMax, and Kimi.
 ---
 
-Questions: For each of z.ai (GLM coding plan), MiniMax (coding/agent plan), and Kimi (Moonshot AI, Kimi for Coding): (1) which official endpoint(s) expose subscription/coding-plan usage quotas — windows (5-hour/daily/weekly), percent or counts remaining, reset times; (2) what auth is required and where credentials live (location/type only); (3) is a plan label available via API; (4) which display elements have no direct API source (deficit, run-out projections).
-Informs: jackin-desktop
-Vetted: 2026-07-24
-Method: web + codebase cross-reference. Verified live 2026-07-24. Clean-room constraint honored: CodexBar and OpenUsage source/docs excluded (their repo pages surfaced in several searches and were discarded; no endpoint lifted from them). No embedded instructions were observed in any fetched external content.
+## Summary
+
+Z.AI, MiniMax, and Kimi each expose subscription limits, but their authentication and reset semantics require provider-specific adapters.
+
+## Question and scope
+
+For each of z.ai (GLM coding plan), MiniMax (coding/agent plan), and Kimi (Moonshot AI, Kimi for Coding): (1) which official endpoint(s) expose subscription/coding-plan usage quotas — windows (5-hour/daily/weekly), percent or counts remaining, reset times; (2) what auth is required and where credentials live (location/type only); (3) is a plan label available via API; (4) which display elements have no direct API source (deficit, run-out projections).
+
+This chapter informs jackin-desktop.
+
+## Method
+
+**Verification cutoff:** 2026-07-24
+**Method:** web + codebase cross-reference. Verified live 2026-07-24. Clean-room constraint honored: CodexBar and OpenUsage source/docs excluded (their repo pages surfaced in several searches and were discarded; no endpoint lifted from them). No embedded instructions were observed in any fetched external content.
 
 ## Findings
 
@@ -17,7 +27,7 @@ Method: web + codebase cross-reference. Verified live 2026-07-24. Clean-room con
 - Quota endpoint (real, but officially undocumented): `GET https://api.z.ai/api/monitor/usage/quota/limit` (global) and `https://open.bigmodel.cn/api/monitor/usage/quota/limit` (CN; also seen as `bigmodel.cn`). It appears in no official z.ai doc page checked (devpack FAQ, ZCode configuration); it is corroborated by ≥4 independent third-party clients: [opencode-glm-quota](https://github.com/guyinwonder168/opencode-glm-quota/), [opencode-mystatus](https://github.com/vbgate/opencode-mystatus) (+ its [docs mirror](https://lzw.me/docs/opencodedocs/vbgate/opencode-mystatus/platforms/zhipu-usage/)), [pi-zai-usage](https://github.com/harms-haus/pi-zai-usage), and a [cc-switch issue](https://github.com/farion1231/cc-switch/issues/1588) quoting the response. Confidence: HIGH that the endpoint exists and serves quota; MED on any individual response detail (no primary doc). jackin❯ already calls exactly this path: `crates/jackin-usage/src/usage/zai.rs:257-266` (fetch) and `zai.rs:276-290` (URL resolution, env overrides `ZAI_QUOTA_URL`/`Z_AI_QUOTA_URL`, `ZAI_API_HOST`/`Z_AI_API_HOST`, default host `https://api.z.ai`).
 - Response shape (third-party observed, MED): `{code, msg, success, data:{limits:[…], level}}`; each `limits[]` entry: `type` (`"TOKENS_LIMIT"` or `"TIME_LIMIT"`), `unit`, `number`, `usage` (total), `currentValue` (used), `remaining`, `percentage`, `nextResetTime` (epoch ms). Source: [cc-switch issue #1588](https://github.com/farion1231/cc-switch/issues/1588). jackin❯ parser matches field-for-field: `zai.rs:104-117` (`ZaiLimitRaw`), percent math `zai.rs:174-195`, window decode from `unit`/`number` `zai.rs:197-209`, reset from `nextResetTime` ms→s `zai.rs:215`.
 - Windows (official, HIGH): [docs.z.ai/devpack/faq](https://docs.z.ai/devpack/faq) documents 5-hour prompt quotas (Lite ~80 / Pro ~400 / Max ~1600 prompts per 5 h), a weekly quota ("refreshed and reset on a 7-day cycle" anchored to order time), and monthly MCP tool counts (Web Search/Reader: 100/1,000/4,000 per month by tier). The quota endpoint's three buckets map onto these: two `TOKENS_LIMIT` entries (5-hour + weekly) and one `TIME_LIMIT` entry (MCP monthly) — window labels per [opencode-glm-quota](https://github.com/guyinwonder168/opencode-glm-quota/) ("5h Token", "Weekly", "MCP (1 Month)"), MED. jackin❯ renders the same triple: `zai.rs:128-160`.
-- Two sibling endpoints exist per [opencode-glm-quota](https://github.com/guyinwonder168/opencode-glm-quota/) (MED): `/api/monitor/usage/model-usage` and `/api/monitor/usage/tool-usage`, both "24h window" — historical-usage/trend data. jackin❯ does not call them; the crate's limits-only rule forbids trend surfaces (<RepoFile path="crates/jackin-usage/CLAUDE.md" />).
+- Two sibling endpoints exist per [opencode-glm-quota](https://github.com/guyinwonder168/opencode-glm-quota/) (MED), but they are outside jackin❯ limits-only scope and are not called (<RepoFile path="crates/jackin-usage/CLAUDE.md" />).
 - Quota is also shown in the provider web console (Usage Statistics); official docs point users there rather than to an API ([docs.z.ai/devpack/faq](https://docs.z.ai/devpack/faq), [zcode.z.ai configuration](https://zcode.z.ai/en/docs/configuration)). HIGH.
 
 **Q2 — Auth.** API key (console-issued), sent in the `Authorization` header. Two independent third-party sources state the header carries the raw key with **no `Bearer` prefix**: [opencode-glm-quota](https://github.com/guyinwonder168/opencode-glm-quota/) ("The plugin does NOT use 'Bearer' prefix… The token is passed directly") and the [cc-switch issue script](https://github.com/farion1231/cc-switch/issues/1588) (`"Authorization": "{{apiKey}}"`). MED. jackin❯ sends Bearer via `get_json_bearer` (`zai.rs:259`) — see Contradictions. Storage: environment variable only (jackin❯ surfaces `"API token · env {key_name}"`, `zai.rs:58-62`); ecosystem tools read it from their own config stores (e.g. opencode `auth.json` under `~/.local/share/opencode/`, type: API key — location/type only, per [opencode-mystatus](https://github.com/vbgate/opencode-mystatus)). No OAuth flow observed for the coding plan.
@@ -59,7 +69,7 @@ Method: web + codebase cross-reference. Verified live 2026-07-24. Clean-room con
 
 **Q4 — No direct API source.** Pace/run-out projection (jackin❯ computes `quota_pace_label` locally, `kimi.rs:238-239`); plan label on the API-key surface; account identity/username. Client gating is a risk, not a display element: the coding inference endpoint rejects non-whitelisted agents ("Kimi For Coding is currently only available for Coding Agents such as Kimi CLI, Claude Code, Roo Code, Kilo Code, etc." — [nanobot issue #354](https://github.com/HKUDS/nanobot/issues/354), MED), and the one third-party tracker with visible source spoofs `KimiCLI/1.6` UA — whether `/usages` enforces the whitelist/UA is unknown.
 
-## Dead ends and contradictions
+### Dead ends and contradictions
 
 - **CodexBar docs excluded (clean-room).** `github.com/steipete/CodexBar/docs/zai.md` and `docs/kimi.md` were top hits for four separate queries; discarded unread. All endpoints above are sourced from official docs, vendor repo trackers, or non-banned third-party repos, and cross-checked against jackin❯ existing probes.
 - **z.ai Authorization header: raw key vs Bearer.** Two independent third-party clients send the raw key with no `Bearer` prefix; jackin❯ sends `Bearer` (`zai.rs:259`) and presumably works. Both may be accepted server-side; unproven either way. MED contradiction, resolvable only with a live key.
@@ -70,7 +80,12 @@ Method: web + codebase cross-reference. Verified live 2026-07-24. Clean-room con
 - **Search-summary noise dropped:** one aggregated search result claimed `Z_AI_QUOTA_URL=https://open.bigmodel.cn/api/coding/paas/v4` as a "quota URL override" — that path is the chat-completions endpoint, not the quota endpoint; dropped as conflation. Similarly, unofficial blog domains (aipricing.guru, minimax-ai.chat, kimi-ai.chat, lorphic.com, nxcode.io) were treated as leads only and nothing was sourced from them.
 - **Kimi official docs dead end:** neither [kimi.com/code docs](https://www.kimi.com/code/docs/en/) nor [kimi-cli docs](https://moonshotai.github.io/kimi-cli/en/configuration/providers.html) document any usage-query endpoint or command. platform.moonshot.ai now redirects into the platform.kimi.ai / kimi.com doc set; no moonshot.ai-hosted usage API doc found.
 
-## Open unknowns
+
+## Implications for jackin❯
+
+Keep provider-specific adapters and confidence labels because these quota surfaces differ in authentication, reset semantics, and documentation quality.
+
+## Limitations and unknowns
 
 - **z.ai:** Does the quota endpoint accept `Bearer`-prefixed auth (jackin❯ current form, `zai.rs:259`)? Enumeration of `data.level` values (only `"pro"` observed) and whether `level` is the sole plan field — jackin❯ aliases (`zai.rs:95-101`) match nothing observed. A LOW-confidence lead says the API shifted toward percentage-only (counts zeroed) around Feb 2026 — unverified. All three need an operator-authenticated probe (curl with a live coding-plan key; no browser needed).
 - **z.ai:** exact team-account behavior (`usageScope: team` seen in one search summary only — LOW, dropped from findings).
@@ -79,3 +94,13 @@ Method: web + codebase cross-reference. Verified live 2026-07-24. Clean-room con
 - **Kimi:** Exact JSON schema of `GET https://api.kimi.com/coding/v1/usages` — including whether it returns `usages[]`/`FEATURE_CODING` (the shape jackin❯ parses), whether it includes a membership/plan field, and whether it is User-Agent/client-whitelist gated (third-party tool spoofs `KimiCLI/1.6`; jackin❯ sends `jackin-capsule/usage`, `kimi.rs:265`). Needs an operator key; if the endpoint is UA-gated, needs header experimentation.
 - **Kimi:** Whether the OAuth `access_token` from `~/.kimi/credentials/kimi-code.json` is accepted by `api.kimi.com/coding/v1/usages` (jackin❯ assumes yes, `kimi.rs:269-283`) or only by the `www.kimi.com/apiv2` billing gateway. The gateway's stability and required `x-msh-*` headers would need an operator-authenticated browser session to inspect network traffic.
 - **Kimi:** Official existence/size of the weekly window (docs state only the 5-hour window; trackers show weekly). Needs authenticated response capture or official doc update.
+
+## Sources
+
+- [Z.AI quota client evidence](https://github.com/guyinwonder168/opencode-glm-quota/)
+- <RepoFile path="crates/jackin-usage/src/usage/zai.rs" /> — current Z.AI probe and normalized quota mapping.
+
+## Related work
+
+- [Provider API coverage](/research/product/desktop/usage-provider-apis/)
+- [Provider provenance and unresolved semantics](/research/product/desktop/usage-provider-apis/10-provenance-and-misc/)

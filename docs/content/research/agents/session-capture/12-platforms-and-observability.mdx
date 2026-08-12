@@ -1,12 +1,24 @@
 ---
 title: "12 — Platforms, Hosted Sharing, Observability"
+description: "Hosted capture adds collaboration above native stores, while telemetry and orchestrator history omit full durable transcripts."
 ---
 
-# 12 — Platforms, Hosted Sharing, Observability
+## Summary
 
-**Research conducted:** 2026-07-03 (tier B/C unless noted). This chapter covers everything that is not a local OSS exporter: commercial capture products, sharing built into the agents themselves, analytics dashboards, and telemetry pipelines. SpecStory Cloud is covered in [01](/research/agents/session-capture/01-specstory-product/).
+Compares hosted capture, native sharing, analytics, telemetry pipelines, and orchestrator-owned conversation history.
+**Verification cutoff:** 2026-07-03 (tier B/C unless noted). This chapter covers commercial capture products, agent-native sharing, analytics dashboards, and telemetry pipelines; local OSS exporters are covered separately. SpecStory Cloud is covered in [01](/research/agents/session-capture/01-specstory-product/).
 
-## Commercial capture products
+
+## Question and scope
+
+Can hosted products, native sharing, telemetry, or orchestrator history satisfy the archive requirement?
+
+## Method
+
+The comparison reviews product documentation, public repositories, and capture mechanisms at the verification cutoff.
+
+## Findings
+### Commercial capture products
 
 ### Mantra — the most direct SpecStory alternative
 
@@ -18,7 +30,7 @@ The turn↔git-state correlation is the same problem SpecStory's unreleased prov
 
 Commercial SaaS: point `ANTHROPIC_BASE_URL` at their gateway and every request/file-read/token is logged server-side into a hosted dashboard. Sees wire-level traffic including system prompts — at the price of routing all code and prompts through a third party. The associated 2,103★ repo is an awesome-list funnel, not the product. Sources: [docs.leanmcp.com](https://docs.leanmcp.com/ai-gateway/claude-code), [github.com/Leanmcp/superview.sh](https://github.com/Leanmcp/superview.sh).
 
-## Sharing and persistence built into the agents
+### Sharing and persistence built into the agents
 
 The vendors are absorbing capture natively — the baseline any third-party feature must exceed:
 
@@ -33,7 +45,7 @@ The vendors are absorbing capture natively — the baseline any third-party feat
 | **aider** | oldest native archive in the space: auto-writes `.aider.chat.history.md` markdown transcript | [aider FAQ](https://aider.chat/docs/faq.html) |
 | **Cline** | per-task export button → markdown | [discussion](https://github.com/cline/cline/discussions/2352) |
 
-## Usage analytics dashboards (transcript-adjacent, content-light)
+### Usage analytics dashboards (transcript-adjacent, content-light)
 
 | Tool | What | Signals (2026-07-03) |
 |---|---|---|
@@ -47,15 +59,15 @@ The vendors are absorbing capture natively — the baseline any third-party feat
 
 These read the same native stores but extract *numbers*, not conversations — proof the stores support multiple derived products, and none of them is an archive.
 
-## Telemetry pipelines (vector C in Déjà Vu terms)
+### Telemetry pipelines (vector C in Déjà Vu terms)
 
 - **Grafana Cloud Claude Code integration** (first-party): Claude Code OTel → Grafana OTLP endpoint, official dashboard ID 25052, org-deployable. Metrics/logs, no conversation content. [Docs](https://grafana.com/docs/grafana-cloud/monitor-infrastructure/integrations/integration-reference/integration-claude-code/), [dashboard](https://grafana.com/grafana/dashboards/25052-claude-code/).
 - **Langfuse coding-agent ingestion**: three routes — Claude Code plugin, Stop-hook → trace converter (this one does capture full conversations), or OTLP env vars. Caveat: Claude Code emits OTel *logs*, not traces, so bridges are needed ([discussion #9088](https://github.com/orgs/langfuse/discussions/9088)). [Integration docs](https://langfuse.com/integrations/developer-tools/claude-code).
 - **Pydantic Logfire plugin** ([official repo](https://github.com/pydantic/claude-code-logfire-plugin), 12★, pushed 2026-07-02) and [claude_telemetry](https://github.com/TechNickAI/claude_telemetry) (`claudia` wrapper → Logfire/Sentry/Honeycomb/Datadog, 26★).
-- **claude-code-otel** ([ColeMurray](https://github.com/ColeMurray/claude-code-otel), 454★, pushed 2025-06-17 — stale; superseded by the official Grafana path).
+- **Official Grafana path** is the supported Claude Code OTel integration; [ColeMurray/claude-code-otel](https://github.com/ColeMurray/claude-code-otel) is an older community reference (454★, pushed 2025-06-17).
 - **Hook fan-out**: [claude-code-hooks-multi-agent-observability](https://github.com/disler/claude-code-hooks-multi-agent-observability) (disler, 1,474★, pushed 2026-02-08) — hooks POST every event to a local server + live dashboard; the reference implementation of vector B liveness.
 
-## Orchestrators whose captive history is not an archive
+### Orchestrators whose captive history is not an archive
 
 Every agent orchestrator persists conversations *for its own workflow*, none as an exportable cross-agent archive — directly relevant since jackin❯ sits in this category:
 
@@ -69,8 +81,27 @@ Every agent orchestrator persists conversations *for its own workflow*, none as 
 | [claude-squad](https://github.com/smtg-ai/claude-squad) | tmux/worktree manager | **no capture at all** — panes only | 8,005★, 2026-06-17 |
 | [omnara](https://github.com/omnara-ai/omnara) (YC S25), [cui](https://github.com/wbopan/cui) | remote session relays | **both archived** (2026-01/03) | dead |
 
-## Category read-out
+### Category read-out
 
 1. **Nobody ships the cross-agent, host-side, purge-surviving archive** Déjà Vu targets. Mantra is closest in spirit but closed, desktop-bound, 3-agent. Orchestrators keep history captive; analytics tools drop content; telemetry pipelines drop content by design (OTel never exports thinking; GenAI semconv content fields are opt-in).
 2. **Native vendor sharing is rising** (Amp threads, opencode share, Codex sync) — but it is per-vendor, cloud-tied, and inconsistent; Amp even *withdrew* public sharing. Cross-agent normalization remains unclaimed ground.
 3. **The provenance frontier is live**: Mantra's git time-travel and SpecStory's provenance engine both join turns to code state — the capability layer above capture, and one jackin❯ is structurally positioned for (it owns the container, the workspace mounts, and the git materialization).
+
+## Implications for jackin❯
+
+Separate the transcript archive from optional sharing, analytics, telemetry, and orchestrator-history layers.
+
+## Limitations and unknowns
+
+Closed products expose limited implementation evidence, and hosted features, pricing, and retention policies can change.
+
+## Sources
+
+- [Mantra product](https://mantra.gonewx.com/)
+- [Mantra comparison documentation](https://docs.mantra.gonewx.com/en/about/mantra-vs-alternatives)
+- [LeanMCP gateway documentation](https://docs.leanmcp.com/ai-gateway/claude-code)
+
+## Related work
+
+- [Session-capture dossier](/research/agents/session-capture/)
+- [Déjà Vu conversation-capture design](/research/agents/orchestration/conversation-capture/)

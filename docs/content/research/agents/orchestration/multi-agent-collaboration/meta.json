@@ -1,7 +1,7 @@
 {
-  "title": "Multi Agent Collaboration",
+  "title": "Multi-agent collaboration",
   "defaultOpen": false,
   "pages": [
-    "agent-to-agent-collaboration"
+    "index"
   ]
 }

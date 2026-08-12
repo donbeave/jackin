@@ -1,10 +1,15 @@
 ---
 title: "Agent Attention Prompts: Design Exploration"
+description: "Designs host notifications for agents that finish, block, or await input without disrupting operator focus."
 ---
 
-**Research state**: Design exploration for [Agent attention prompts](/roadmap/agent-attention-prompts/) (Phase 2, Reactive Daemon Program) — not yet implemented.
+**Research state:** Incomplete
 
-## Problem
+## Summary
+
+Attention prompts should originate from semantic runtime-state transitions and use focus-aware, operator-controlled delivery; the signal and platform contracts remain open.
+
+## Research question
 
 The biggest hidden cost of running AI coding agents today is idle wall-clock. Agents finish work, hit a confirmation prompt, run into an ambiguous decision, or stop on a long-running command and silently wait for the operator to come back to the terminal. The operator, meanwhile, is heads-down on something else — reviewing a PR, in a meeting, on another machine — with no signal that anything wants their attention.
 
@@ -42,7 +47,7 @@ The proposed pieces:
 - **Agent-state event stream.** `jackin-capsule` emits effective state transitions over the per-container control channel. The daemon would subscribe to `blocked`, `done`, `idle`, `working`, and stuck-diagnostic events instead of scraping PTY output from the host.
 - **Optional `jackin-attention` MCP server.** Static binary baked into the construct image, registered automatically in each agent's MCP config at container launch — extending the registration pattern <RepoFile path="crates/jackin-capsule/src/runtime_setup.rs" /> already uses for the Claude runtime's `tirith` / `shellfirm` to every supported runtime. When the agent adds attention context, the MCP server would push metadata over the same per-container control channel. It would not replace the state authority.
 - **The jackin❯ daemon dispatches the host-side notification.** Per the [jackin❯ daemon](/roadmap/jackin-daemon/) plug-in surface, this feature is one adapter that listens for state/attention events from any running container and translates them to OS-native notifications: macOS via `osascript -e 'display notification …'` or the `UserNotifications` framework via a small Swift helper (sound escalation via `afplay` / `NSSound`); Linux via `notify-send` (libnotify) or the org.freedesktop.Notifications D-Bus API (sound via `paplay` / `aplay`); Windows out of scope for the first phase.
-- **Click-to-focus adapter.** The notification would carry an action that, when activated, runs a host-side command to focus the right terminal tab. The first Desktop slice should implement Ghostty only, matching the [jackin❯ desktop Agent Hub](/research/product/desktop/agent-hub/jackin-desktop-agent-hub/) v1 launch contract. Other terminal emulators get a notification without click focus until their adapters are deliberately added.
+- **Click-to-focus adapter.** The notification would carry an action that, when activated, runs a host-side command to focus the right terminal tab. The first Desktop slice should implement Ghostty only, matching the [jackin❯ desktop Agent Hub](/research/product/desktop/agent-hub/) v1 launch contract. Other terminal emulators get a notification without click focus until their adapters are deliberately added.
 
 ## Why a daemon
 
@@ -50,7 +55,7 @@ Same answer as live auth sync: this feature can't run from a CLI that exits betw
 
 The lifecycle, install, and security posture this needs are the same ones the [jackin❯ daemon](/roadmap/jackin-daemon/) item has to decide first. This feature would be an adapter against that daemon; it does not introduce its own long-running shape.
 
-## Open design questions
+## Limitations and open questions
 
 ### MCP server contract
 
@@ -88,6 +93,6 @@ The bet of jackin❯ is that running many agents safely and conveniently changes
 - [Agent attention prompts](/roadmap/agent-attention-prompts/) — the roadmap item this design exploration supports.
 - [jackin❯ daemon](/roadmap/jackin-daemon/) — host-side process this feature would plug into.
 - [Live bidirectional auth sync](/roadmap/live-auth-sync/) — sibling feature plugging into the same daemon; sets the precedent for per-axis adapters.
-- [jackin❯ desktop Agent Hub](/research/product/desktop/agent-hub/jackin-desktop-agent-hub/) — native macOS surface that should display attention/ready-for-review state and would own the first Ghostty click-to-focus UX.
+- [jackin❯ desktop Agent Hub](/research/product/desktop/agent-hub/) — native macOS surface that should display attention/ready-for-review state and would own the first Ghostty click-to-focus UX.
 - [Agent runtime status authority](/roadmap/agent-runtime-status/) — canonical source for `blocked`, derived `done`, `idle`, `working`, `unknown`, and stuck diagnostics.
 - [Agent Orchestration Program → Live agent observability](/research/agents/orchestration/program-research/) — adjacent work on surfacing what the agent is doing in real time; attention prompts would close the loop the other direction.

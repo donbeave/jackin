@@ -1,16 +1,28 @@
 ---
 title: "01 — SpecStory: Product, Business, Reception"
+description: "SpecStory pairs an open CLI capture engine with closed editor and hosted surfaces, plus documented fidelity and privacy risks."
 ---
 
-# 01 — SpecStory: Product, Business, Reception
+## Summary
 
-**Research conducted:** 2026-07-03. Evidence tiers (A/B/C/D) per the <RepoFile path="prompts/research/session-capture.md">research brief</RepoFile>. Mechanism internals live in [02 — SpecStory CLI internals](/research/agents/session-capture/02-specstory-cli-internals/); this chapter covers what SpecStory *is* as a product and business.
+Examines SpecStory's capture product, open-source boundary, business model, adoption, and user-reported limitations.
+**Verification cutoff:** 2026-07-03. Evidence tiers (A/B/C/D) follow the <RepoFile path="prompts/research/session-capture.md">research brief</RepoFile>. Mechanism internals live in [02 — SpecStory CLI internals](/research/agents/session-capture/02-specstory-cli-internals/); this chapter covers the product and business.
 
-## What SpecStory is
+
+## Question and scope
+
+What does SpecStory’s product and business boundary make reusable, and which field failures constrain a jackin❯ design?
+
+## Method
+
+The chapter compares the public product, marketplace listing, open CLI repository, documentation, and reported issues at the verification cutoff.
+
+## Findings
+### What SpecStory is
 
 SpecStory is the best-known "session capture" product: it auto-saves AI coding-assistant conversations to local markdown under `.specstory/history/` in the project, then layers search, sharing, cloud sync, and skill-mining on top. Tagline: **"Intent is the new source code"** ([README](https://github.com/specstoryai/getspecstory)); site headline "Turn your AI development conversations into searchable, shareable knowledge" ([specstory.com](https://specstory.com/)). Company thesis: the prompt/response history — the *intent* — is a durable asset worth versioning alongside code.
 
-## Product surface (as of 2026-07-03)
+### Product surface (as of 2026-07-03)
 
 | Product | What it does | Source | Version / status |
 |---|---|---|---|
@@ -23,23 +35,23 @@ SpecStory is the best-known "session capture" product: it auto-saves AI coding-a
 
 Adjacent: [SpecFlow](https://github.com/specstoryai/specflow) (open methodology site, 141★), `intent-releases` ("system of record for human decisions"), and unreleased git-provenance research inside the CLI repo (covered in [02](/research/agents/session-capture/02-specstory-cli-internals/)).
 
-## The open/closed split (load-bearing fact)
+### The open/closed split (load-bearing fact)
 
 The **capture engine for terminal agents is fully open source** — the entire `specstory-cli` Go tree, including every provider parser, ships under Apache-2.0 in [getspecstory](https://github.com/specstoryai/getspecstory). The **IDE extensions are closed**: the repo's own installation table marks the Cursor and VS Code Copilot extensions "Source: Closed"; the GitHub repo hosts only their issues and releases. On open-sourcing the extension, the FAQ says "we have not made a decision" ([docs.specstory.com/faqs](https://docs.specstory.com/faqs)). Practical consequence: the CLI's extraction machinery is directly reusable prior art (license-compatible with jackin❯'s Apache-2.0), while the editor-side extraction (Cursor `state.vscdb`, Copilot `chatSessions` JSON) is only documented via FAQ statements and community reverse engineering (tier B/C).
 
-## Pricing and business model
+### Pricing and business model
 
 Everything capture-side is free as of 2026-07-03: extension ("free as in beer" — FAQ), CLI (open source), Cloud (free, single-user). Monetization has visibly moved to **Stoa** ($5/hour, no seats, $50 free credit — [pricing](https://withstoa.com/pricing)). Company: SpecStory, Inc., Boston, founded 2024; founders Jake Levirne (CEO, ex-DigitalOcean/Docker), Sean Johnson (CTO), Greg Ceccarelli (CPO, ex-GitHub/Pluralsight); seed investors NP-Hard Ventures, Mango Capital, Tola Capital, amount undisclosed ([specstory.com/company](https://specstory.com/company), [Specter monitor](https://insights.tryspecter.com/specter-monitor-181/); tier B/C).
 
-Read for jackin❯: the capture layer itself has been commoditized to $0 by its own vendor — value accrues in what sits *on top* (search, resume, skills-mining, team surfaces). That matches the [Déjà Vu](/research/agents/orchestration/conversation-capture/deja-vu/) framing of capture as infrastructure, not product.
+Read for jackin❯: the capture layer itself has been commoditized to $0 by its own vendor — value accrues in what sits *on top* (search, resume, skills-mining, team surfaces). That matches the [Déjà Vu](/research/agents/orchestration/conversation-capture/) framing of capture as infrastructure, not product.
 
-## Reception
+### Reception
 
 - **Traction signals** (2026-07-03): 1,268★ / 78 forks on getspecstory; 22.4k marketplace installs; badge endpoints exist for installs/active-users/sessions-saved but publish no public totals (tier B).
 - **Positive**: Cursor forum launch thread called it a "godsend" ([forum thread](https://forum.cursor.com/t/built-a-cursor-extension-to-save-and-share-chat-and-composer-history/35314)); recurring HN endorsement pattern — commit `.specstory/history` to the repo so AI conversations ride along in PRs ([HN 44976568](https://news.ycombinator.com/item?id=44976568)); their "Why Git is no 'good' for AI-generated code" essay reached 35 points ([HN 43557698](https://news.ycombinator.com/item?id=43557698)).
 - **No breakout moment**: no large Show HN; effectively no Reddit footprint found (tier D — absence).
 
-## Complaint themes (GitHub issues, tier B)
+### Complaint themes (GitHub issues, tier B)
 
 These are the field-tested failure modes any capture feature must design against — the fragility *mechanics* are analyzed in [02](/research/agents/session-capture/02-specstory-cli-internals/):
 
@@ -49,8 +61,26 @@ These are the field-tested failure modes any capture feature must design against
 4. **Privacy defaults.** PostHog telemetry on by default ([#100](https://github.com/specstoryai/getspecstory/issues/100)); derived-rules calls logged via Helicone ([privacy doc](https://docs.specstory.com/privacy)); open [#224](https://github.com/specstoryai/getspecstory/issues/224): histories are not gitignored by default, so transcripts (and any secrets inside) can land in public repos — getspecstory's own committed history demonstrates the pattern.
 5. **Known capture gaps**: Cursor Cmd-K inline edits ([#27](https://github.com/specstoryai/getspecstory/issues/27)), Cursor Agents Window ([#212](https://github.com/specstoryai/getspecstory/issues/212)), images ([#64](https://github.com/specstoryai/getspecstory/issues/64)); Windsurf declared **impossible** — "encrypted protobufs… locked that data away and thrown away the key" (maintainer, [#26](https://github.com/specstoryai/getspecstory/issues/26)).
 
-## What jackin❯ should take from the product story
+### What jackin❯ should take from the product story
 
 - Local-first markdown in the repo is the adoption hook; cloud is optional and single-user even after ~1.5 years.
 - The open CLI + closed extension split maps exactly to extraction difficulty: file-store parsing is commodity, editor-DB scraping is a maintenance treadmill they keep private.
 - SpecStory's newest moves (cross-agent resume, session portability, Lore skill-mining) all monetize the *archive*, validating Déjà Vu's premise that the normalized cross-agent store is the strategic asset.
+
+## Implications for jackin❯
+
+Reuse the open extraction and normalization patterns, but keep jackin❯’s archive independent of SpecStory’s closed editor and hosted collaboration surfaces.
+
+## Limitations and unknowns
+
+Install counts, pricing, product status, and issue state are cutoff-bound; absence of public adoption evidence is not proof of absence.
+
+## Sources
+
+- [SpecStory source](https://github.com/specstoryai/getspecstory)
+- [SpecStory product](https://specstory.com/)
+
+## Related work
+
+- [Session-capture dossier](/research/agents/session-capture/)
+- [Déjà Vu conversation-capture design](/research/agents/orchestration/conversation-capture/)

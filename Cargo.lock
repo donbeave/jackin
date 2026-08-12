@@ -3478,6 +3478,7 @@ version = "0.6.0-dev"
 dependencies = [
  "anyhow",
  "clap",
+ "fs4",
  "hex",
  "jackin-process",
  "portable-pty",

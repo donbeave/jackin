@@ -1,7 +1,8 @@
 {
-  "title": "Agent Orchestration",
+  "title": "Agent orchestration",
   "defaultOpen": false,
   "pages": [
+    "index",
     "program-research",
     "orca-ade",
     "agent-attention-prompts-design",

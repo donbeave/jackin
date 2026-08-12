@@ -1,10 +1,15 @@
 ---
 title: "Stack Integration Hints: Design Rationale"
+description: "Examines how role and workspace metadata can expose stack-aware commands without hard-coding framework behavior."
 ---
 
-**Research state**: Research — background for [Stack integration contracts](/roadmap/stack-integration-contracts/); no schema or code exists yet.
+**Research state:** Incomplete
 
-## Problem
+## Summary
+
+Stack integration metadata should remain data-only, host-approved hints for commands, selectors, caches, and warnings rather than repository-controlled mounts or execution.
+
+## Research question
 
 jackin❯ roles define the agent environment, but real engineering projects still have local stack details that are awkward to encode in every role: read-only toolchain paths or caches that live on the operator machine, safe selector environment variables such as `JAVA_HOME`, `GOPATH`, or `VIRTUAL_ENV`, generated directories that should be excluded from future snapshots, and project-specific warnings and command hints.
 
@@ -18,7 +23,7 @@ The [Agent Orchestration Program](/research/agents/orchestration/program-researc
 
 Repo recommendations should reference existing integration names only — the repo should not be able to define custom paths inline. If a repo recommendation is accepted, the design calls for storing the approval outside the repo, keyed by canonical path plus file hash, so changes prompt again.
 
-## Source materials
+## Sources
 
 - [Hazmat integrations](https://github.com/dredozubov/hazmat/blob/master/docs/integrations.md) — capability limits, repo recommendations, validation, and built-in stack list.
 - [Agent Orchestration Program](/research/agents/orchestration/program-research/) — parent containment-track research.

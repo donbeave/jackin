@@ -1,16 +1,20 @@
 ---
 title: "Source Branch Policy for Isolated Mounts (Design Proposal)"
+description: Defines source-branch policy for isolated mounts through product behavior, TUI flows, data modeling, and open design questions.
 ---
 
+## Summary
+
+Isolated mounts need an explicit source-branch policy represented consistently in configuration, resolution, and operator prompts.
 Design dossier backing [Source Branch Policy for Isolated Mounts](/roadmap/source-branch-policy-isolated-mounts/). Captures the problem framing, product positioning, TUI mockups, data model, and open design questions so the roadmap item itself can stay a lean task list.
 
-## Problem
+## Research question
 
 `worktree` and `clone` mount isolation let multiple agents work against the same project without sharing one writable checkout, but the branch each isolated checkout starts from is still implicit. Today `worktree` materialization uses the host repository's current `HEAD` (a plain `git rev-parse HEAD` against the mount source), and `clone` follows the same host-checkout state. That is convenient when the operator is already on the exact base they want, but it breaks the common workflow where the host checkout sits on one branch while a new agent should start from `main`, a release branch, a specific feature branch, or an operator-selected branch at launch time.
 
 This is especially visible when the operator keeps the host repo on a long-running work branch. Starting a new jackin❯ agent from that branch by accident makes the isolated checkout inherit the wrong context, while switching the host checkout first is exactly the kind of host-side workflow mutation jackin❯ should avoid requiring.
 
-## Why It Matters
+## Why it matters
 
 - **Parallel agents need intentional starting points.** The operator may want three agents to branch from `main`, one from `release/2026-06`, and one from the host's current exploratory branch without touching the host checkout between launches.
 - **Isolation should remove host choreography.** A feature whose promise is "each agent gets its own checkout" should not make the operator manually `git switch main` on the host before launching a clean agent.
@@ -234,7 +238,7 @@ Candidate grammar:
 
 The CLI should reject source-branch overrides for unknown destinations the same way `--mount-isolation` does. If the destination is currently `shared`, the edit can either reject immediately or accept the setting only when the same command also switches the mount to `worktree`/`clone`; the latter is friendlier and mirrors existing mount-edit planning.
 
-## Open Questions
+## Limitations and open questions
 
 - Should fresh isolated mounts created in the console default to `Default branch` instead of `Host HEAD` while migrated configs keep `Host HEAD`? Recommended: yes, if the editor makes the default visible in the preview before save.
 - Should `current_branch` store the branch name at save time or resolve it at launch time? Recommended: resolve at launch time, because the label means "whatever branch the host checkout currently has"; use `named` when the operator wants a pinned branch.

@@ -1,7 +1,8 @@
 {
-  "title": "Credential Exposure",
+  "title": "Credential exposure",
   "defaultOpen": false,
   "pages": [
+    "index",
     "container-credential-exposure",
     "credential-source-pattern",
     "host-bridge-design",

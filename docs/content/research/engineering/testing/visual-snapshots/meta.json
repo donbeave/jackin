@@ -1,7 +1,7 @@
 {
-  "title": "Visual Snapshots",
+  "title": "Visual snapshots",
   "defaultOpen": false,
   "pages": [
-    "visual-snapshot-testing"
+    "index"
   ]
 }

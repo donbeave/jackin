@@ -1,7 +1,8 @@
 {
-  "title": "Operator Surface",
+  "title": "Operator experience",
   "defaultOpen": false,
   "pages": [
+    "index",
     "host-affordances",
     "agent-tag-protocol-design",
     "console-agent-session-control-design",

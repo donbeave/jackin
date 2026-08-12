@@ -1,10 +1,28 @@
 ---
 title: "01 — Goals and non-goals"
+description: "Goals, exclusions, evidence thresholds, and success criteria for the jackin❯ context engine."
 ---
 
-# 01 — Goals and non-goals
+## Summary
 
-## Goals
+The context engine should reduce tokens automatically at ingestion and retrieval boundaries while keeping every lossy transform reversible, measurable, and cache-safe.
+
+## Question and scope
+
+Which goals, exclusions, and evidence bars must constrain a jackin❯ context engine?
+
+## Method
+
+### Evidence bars (every feature, no exceptions)
+
+- **Adoption bar** (from [techniques 16 — Validation Harness: the No-Quality-Loss Proof Protocol](/research/context/techniques/16-validation-harness/) + [tools hub 07 — Evidence, benchmarks, and the claim graveyard](/research/context/tools/07-evidence-and-claims/)): task/test success ≥ baseline (non-inferiority, 5pp margin, n=12 screening / n=30 confirmation); `cache_read` continuity preserved; command re-run / bounce rate not worse; **total tokens per solved task ≤ baseline by ≥20% net of the feature's own overhead** (schema rent, injected instructions, retrieval round-trips, handles).
+- **Net-of-injection accounting**: any standing prefix the engine injects is a first-class cost in its own ledger. lean-ctx's current documentation reports roughly 2.1K tokens of fixed session overhead; jackin❯ must measure and gate its own current footprint rather than inherit that number as a benchmark result.
+- **Canary gate**: the six compression-failure canaries (negation, ordering, numeric precision, don't-do-X, multi-step, caveat retention — [techniques 16 — Validation Harness: the No-Quality-Loss Proof Protocol](/research/context/techniques/16-validation-harness/) §3) run in both arms of every A/B; one Arm-B-only failure vetoes the feature regardless of savings.
+- **Quality-risk features run behind holdouts**: aggressive registers and effort downgrades ship with a headroom-style holdout control group and an online sampled canary ([techniques 25 — Meta layer: the cost of optimizing, budget governance, and online quality guarding](/research/context/techniques/25-meta-cost-governance-and-online-quality/): alarm, don't block), so the "does register compression degrade agentic success" open question finally gets an answer on live traffic.
+
+## Findings
+
+### Goals
 
 1. **Out-of-box token optimization for every capsule.** A freshly launched jackin❯ container is born with the negative-cost set active (tool-search deferral intact, Edit-over-Write guards, observation filtering, subagent model/effort pins) — zero operator discipline required. This is the dossier's K16 "jackin-baked optimization pack" (ESTIMATE 20–35% integrated) made concrete.
 2. **Cover both interception points.** Write-time compression must reach shell output (RTK's slot) *and* native reads (headroom/lean-ctx's slot), because the measured Bash share of observation tokens ranged 16.5% (docs workload) to dominant (test-heavy workloads). One engine, both boundaries, exactly one shell-rewrite path per capsule.
@@ -16,7 +34,13 @@ title: "01 — Goals and non-goals"
 8. **Prove it or lose it.** Every layer reports through one bounce-netted, Claude-tokenizer-honest ledger; features that fail the acceptance bar (below) get disabled per role, automatically. The engine is its own validation harness.
 9. **Agent-agnostic by layer.** ~80% of the stack ports as discipline across Claude Code/Codex/other runtimes ([techniques 23 — Cross-agent / cross-provider portability matrix](/research/context/techniques/23-cross-agent-portability/)); the engine abstracts effort tier, routing, rules-file compilation, output caps, and cache-stability per `Agent` adapter, and degrades gracefully where a runtime lacks a hook surface (Codex: instructions-only).
 
-## Non-goals (the graveyard, enforced)
+## Implications for jackin❯
+
+These findings define the goals and non-goals contract for jackin❯; any implementation must preserve the acceptance gates and boundaries above.
+
+## Limitations and unknowns
+
+### Non-goals (the graveyard, enforced)
 
 Each entry below was killed by the research with evidence; the engine treats these as tripwires in review, not options:
 
@@ -36,9 +60,12 @@ Each entry below was killed by the research with evidence; the engine treats the
 | Trusting per-payload percentages as savings | Per-payload ≠ whole-bill: the correction that killed every vendor headline ([tools hub 07 — Evidence, benchmarks, and the claim graveyard](/research/context/tools/07-evidence-and-claims/)) |
 | `max_tokens` as a spend governor | Truncates `tool_use`, bills the attempt, forces retry at higher cap ([techniques 09 — Output discipline and structured generation](/research/context/techniques/09-output-discipline/), 25) |
 
-## Evidence bars (every feature, no exceptions)
+## Sources
 
-- **Adoption bar** (from [techniques 16 — Validation Harness: the No-Quality-Loss Proof Protocol](/research/context/techniques/16-validation-harness/) + [tools hub 07 — Evidence, benchmarks, and the claim graveyard](/research/context/tools/07-evidence-and-claims/)): task/test success ≥ baseline (non-inferiority, 5pp margin, n=12 screening / n=30 confirmation); `cache_read` continuity preserved; command re-run / bounce rate not worse; **total tokens per solved task ≤ baseline by ≥20% net of the feature's own overhead** (schema rent, injected instructions, retrieval round-trips, handles).
-- **Net-of-injection accounting**: any standing prefix the engine injects is a first-class cost in its own ledger. lean-ctx's current documentation reports roughly 2.1K tokens of fixed session overhead; jackin❯ must measure and gate its own current footprint rather than inherit that number as a benchmark result.
-- **Canary gate**: the six compression-failure canaries (negation, ordering, numeric precision, don't-do-X, multi-step, caveat retention — [techniques 16 — Validation Harness: the No-Quality-Loss Proof Protocol](/research/context/techniques/16-validation-harness/) §3) run in both arms of every A/B; one Arm-B-only failure vetoes the feature regardless of savings.
-- **Quality-risk features run behind holdouts**: aggressive registers and effort downgrades ship with a headroom-style holdout control group and an online sampled canary ([techniques 25 — Meta layer: the cost of optimizing, budget governance, and online quality guarding](/research/context/techniques/25-meta-cost-governance-and-online-quality/): alarm, don't block), so the "does register compression degrade agentic success" open question finally gets an answer on live traffic.
+Evidence and repository references are cited inline beside the claims they support.
+
+## Related work
+
+- [Context engine dossier](/research/context/engine/)
+- [Token-optimization techniques](/research/context/techniques/)
+- [Token-optimization tools](/research/context/tools/)

@@ -1,18 +1,23 @@
 ---
-title: "11 — Amp Free daily-quota follow-up"
-description: Evidence for Amp Free daily quota output and required parser changes
+title: "11 — Amp Free daily-quota semantics"
+description: Verifies Amp Free daily-quota output and identifies the parser behavior needed to represent it accurately.
 ---
 
-Questions: (1) Did Amp replace its hourly dollar-pair quota with a daily
-percentage? (2) How is the current value fetched and extracted? (3) Does the
-daily cadence apply to Amp Free only or to Megawatt/Gigawatt subscriptions?
-(4) What exact change does jackin❯ need?
+## Summary
 
-Informs: jackin-desktop
+Live evidence confirms Amp Free reports one daily remaining percentage, which the parser should preserve without fabricating a reset timestamp.
 
-Vetted: 2026-07-24
+## Question and scope
 
-Method: deep follow-up after operator direction. Re-checked Amp's official
+(1) Did Amp replace its hourly dollar-pair quota with a daily percentage? (2) How is the current value fetched and extracted? (3) Does the daily cadence apply to Amp Free only or to Megawatt/Gigawatt subscriptions? (4) What exact change does jackin❯ need?
+
+This chapter informs jackin-desktop.
+
+## Method
+
+**Verification cutoff:** 2026-07-24
+
+**Method:** Amp's official
 news/manual and current npm package metadata; inspected the redacted live
 `amp usage` transcript, screenshot, merged patch, tests, and current Amp
 provider documentation in CodexBar PR
@@ -43,11 +48,9 @@ secret values were read or recorded.
   permanent at
   [`AmpUsageParserTests.swift`](https://github.com/steipete/CodexBar/blob/7535638cc4dd25254abb69d9de4766ede07432a3/Tests/CodexBarTests/AmpUsageParserTests.swift#L61-L120).
   Confidence: HIGH.
-- This supersedes the January Amp Free hourly-dollar format for current
-  engineering. Amp's January post remains evidence only for the retired
-  behavior: [The Frontier Is Now Free](https://ampcode.com/news/amp-free-frontier).
-  Latest-only engineering means jackin❯ should not keep a parallel
-  compatibility reader for that old line.
+- Current engineering uses the daily limit-window format. Hourly-dollar
+  presentation is outside the usage contract, so jackin❯ keeps no parallel
+  compatibility reader for it.
 
 ### 2. Extraction is server-text parsing, not a structured daily API
 
@@ -141,7 +144,7 @@ secret values were read or recorded.
      repeated workspace balances, no legacy reset inheritance, semantic slot,
      and the seven-provider Desktop glance selection.
 
-## Ruled out
+### Ruled out
 
 - Treating individual/workspace credits as the daily percentage.
 - Mapping Megawatt/Gigawatt monthly inclusion to Daily without a capture.
@@ -151,7 +154,12 @@ secret values were read or recorded.
 - Copying CodexBar implementation. The plan uses an independently specified
   wire fixture and Rust-native design.
 
-## Open unknowns
+
+## Implications for jackin❯
+
+Model Amp Free as a daily remaining percentage with no invented reset timestamp, while leaving paid-plan cadence unknown until equivalent evidence exists.
+
+## Limitations and unknowns
 
 - Exact `displayText` for Megawatt, Gigawatt, linked-ChatGPT, linked-X, and
   paid-only accounts.
@@ -160,3 +168,13 @@ secret values were read or recorded.
 
 These unknowns no longer block the Amp Free daily implementation. They block
 only the paid-plan/monthly follow-up.
+
+## Sources
+
+- [Amp Free announcement](https://ampcode.com/news/amp-free-frontier)
+- [CodexBar Amp parser change](https://github.com/steipete/CodexBar/pull/2071)
+
+## Related work
+
+- [Amp API evidence](/research/product/desktop/usage-provider-apis/04-amp-api/)
+- [Provider API coverage](/research/product/desktop/usage-provider-apis/)

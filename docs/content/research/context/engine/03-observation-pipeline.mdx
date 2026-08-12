@@ -1,12 +1,24 @@
 ---
 title: "03 — Observation pipeline (L2)"
+description: "Design for classifying, filtering, compressing, and preserving agent observations before they enter cached context."
 ---
 
-# 03 — Observation pipeline (L2)
+## Summary
 
+Observations should be classified and reduced once, before first cache admission, with a content-addressed original available for recovery on every outcome.
 The write-time layer shrinks an observation **once, at ingestion, before it is first cached**. Current design references are [Headroom v0.34.0](/research/context/tools/02-headroom-design/), [RTK v0.45.0](/research/context/tools/03-rtk-design/), [lean-ctx v3.9.18](/research/context/tools/04-leanctx-design/), and [Caveman v2.0.0](/research/context/tools/01-caveman-design/).
 
-## Pipeline
+## Question and scope
+
+Which runtime observations should the engine collect, normalize, filter, and expose without leaking secrets or flooding context?
+
+## Method
+
+The design traces current runtime signals from collection through normalization and filtering, using repository interfaces and the dossier’s measurement rules to bound payload size, freshness, and secret exposure.
+
+## Findings
+
+### Pipeline
 
 ```text
  shim / MCP read / web fetch                    (ingestion point)
@@ -36,36 +48,36 @@ The write-time layer shrinks an observation **once, at ingestion, before it is f
  LEDGER     tokens_in/out, transform id, per-block manifest → measure/ (L0)
 ```
 
-## Shell boundary (shims)
+### Shell boundary (shims)
 
 - **Coverage**: review RTK v0.45.0's current declarative corpus and port only high-traffic filters proven by the local reach audit. The declarative pipeline is the primary extension form; project-local filters are content-hash trusted before loading.
 - **Classifier**: review and port RTK v0.45.0's current classifier table + shell lexer: split on `&&`/`||`/`;` and rewrite each segment; anything with backticks, `$( )`, or file redirects is unattestable → passthrough. Ignore-list for shell built-ins and one-liners.
 - **Safety**: exit codes bit-exact (INV-4); stderr filtered separately; signal exits propagate 128+n; package-manager sniffing before JS tool rewrites.
 - **What shims buy over hooks**: identical behavior for every runtime (Claude Code, Codex, Amp, Kimi, Opencode, Grok) with zero per-agent integration code, no settings.json surface, no permission-prompt mediation (the agent's permission system sees the original command; the shim is transparent downstream of approval).
 
-## Native-read boundary (MCP verbs + optional PostToolUse dedup)
+### Native-read boundary (MCP verbs + optional PostToolUse dedup)
 
 - `ctx_read` with `full` / `signatures` / `outline` / `lines:N-M` / `section:<heading>` modes. Compressed modes remain experimental until current local task evidence establishes a size gate and non-inferiority.
 - **Read-stub cache**: content-addressed re-read suppression for unchanged files; changed files return a bounded delta or full content. Scoping is per conversation and subagent, with purge on compaction. Exact output sizes and fallback thresholds are benchmark outputs, not inherited constants.
 - **Steering, honestly**: role instructions advertise the verbs and when to prefer them; native tools stay available and (where the runtime supports PostToolUse output mutation) get transparent read-dedup so even un-steered reads benefit. No deny-hooks, no "always use X" absolutism — codedb's blocking installer hook and lean-ctx's abandoned "NEVER use native tools" rulebook are the documented anti-patterns.
 
-## Code outlining
+### Code outlining
 
 tree-sitter only; no regex-and-brace approximation. The grammar set is **per role** so the image links only required languages. Output uses a declaration skeleton, explicit omission count, and an escalation footer naming the exact follow-up read.
 
-## Structured-data crushers
+### Structured-data crushers
 
 Deterministic, byte-stable, never-inflate: JSON schema/statistics with disclosed sampling, CSV/TSV sampling with counts, and YAML/TOML minification only where round-trip lossless. Current token effects are measured with the target provider tokenizer; no percentage is inherited from another tool or format benchmark.
 
-## Media policy ([techniques 20 — Multimodal token economics: images, screenshots, PDFs](/research/context/techniques/20-multimodal-token-economics/))
+### Media policy ([techniques 20 — Multimodal token economics: images, screenshots, PDFs](/research/context/techniques/20-multimodal-token-economics/))
 
 Text-first enforcement at the boundary: born-digital PDFs transcode to text via `pdftotext` baked in the construct image (~2× PDF tax avoided; 25-page PDF ≈ 78.8k tokens as pages vs ~40k as text); screenshots of textual content are rejected with a pointer to the text source when one exists (2–6× cost); images client-side downsampled to the model family's pixel cap before send (up to −73% on Opus-family caps); vision work routes to a Sonnet/Haiku-tier subagent returning text (−67%/frame, the ~3.0–3.1× per-image cap divergence). Text-to-image re-encoding of textual context — [current rising-tools comparison](/research/context/tools/06-combining/) — inverts this rule; the engine keeps text-first as the default and treats modality re-encoding as a harness-gated experiment only, because byte-exact content must never live only in pixels (silent-confabulation failure shape) and the economics depend on undocumented provider vision pricing.
 
-## Prose (the residual)
+### Prose (the residual)
 
 No ML in the default path. Any extractive prose mode must be CCR-recoverable and pass a current buried-answer/non-inferiority test. Web/HTML first converts to structured Markdown, then selects sections instead of stripping tags heuristically.
 
-## Guard contracts adopted from the round-2 source verification
+### Guard contracts adopted from the current source verification
 
 The pipeline requires these contracts; each port is revalidated against current upstream source and local tests:
 
@@ -81,6 +93,22 @@ The pipeline requires these contracts; each port is revalidated against current 
 - **`anchored` read mode**: verbatim content with per-line hash anchors, making compressed-read → patch workflows drift-safe (lean-ctx; excluded from bounce accounting as lossless).
 - **Preserved-segment span classification** for any prose transform: fences, inline code, URLs, paths, versions, numbers, and identifiers pass byte-exact through every lossy path.
 
-## Explicit exclusions
+## Implications for jackin❯
+
+These findings define the observation pipeline (l2) contract for jackin❯; any implementation must preserve the acceptance gates and boundaries above.
+
+## Limitations and unknowns
+
+### Explicit exclusions
 
 No whole-prompt rewriting, history pruning, or conversation compaction in the default engine. It measures incremental benefit over current native agent features, not over a naive baseline ([current objective comparison](/research/context/tools/05-head-to-head/)).
+
+## Sources
+
+Evidence and repository references are cited inline beside the claims they support.
+
+## Related work
+
+- [Context engine dossier](/research/context/engine/)
+- [Token-optimization techniques](/research/context/techniques/)
+- [Token-optimization tools](/research/context/tools/)

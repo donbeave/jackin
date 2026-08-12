@@ -42,6 +42,6 @@ The control channel today is request/reply only (`Status`, `Snapshot`, `Agents`,
 - [Agent runtime status authority](/roadmap/agent-runtime-status/) — owns the shipped state vocabulary and arbitration; item 1 above is the delivery mechanism for pushing its transitions to the host instead of polling.
 - [Agent attention prompts](/roadmap/agent-attention-prompts/) — blocked on item 1 above to replace host PTY polling with real events.
 - [jackin❯ daemon](/roadmap/jackin-daemon/) — Phase 4 above is designed together with this item's per-container endpoint.
-- [jackin❯ desktop Agent Hub](/research/product/desktop/agent-hub/jackin-desktop-agent-hub/) — consumes the daemon's aggregated view once Phase 4 ships.
+- [jackin❯ desktop Agent Hub](/research/product/desktop/agent-hub/) — consumes the daemon's aggregated view once Phase 4 ships.
 - [Console agent session control](/roadmap/console-agent-session-control/) — already consumes the shipped agent runtime status authority for its live pane list; its own Phase 4 (live session reconciliation) is separate, unblocked work.
 - [jackin-remote](/roadmap/jackin-remote/) — remote containers will need a `jackin-capsule` socket reachable over the tunnel; the socket mount and auth model still need to account for the remote path.

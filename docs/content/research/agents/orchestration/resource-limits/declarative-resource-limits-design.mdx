@@ -1,14 +1,19 @@
 ---
 title: "Declarative Resource Limits: Design Alternatives"
+description: "Compares configuration shapes for portable agent resource ceilings and records why operator-level grants were selected."
 ---
 
-**Research state**: Historical design exploration for [Declarative resource limits per agent](/roadmap/declarative-resource-limits/) (Phase 1, [Agent Orchestration Program](/research/agents/orchestration/program-research/)). The shipped design ended up simpler than what's explored here: resource ceilings live in operator-level `[docker.grants]` (`config.toml`/workspace), not in a role-manifest `[runtime.limits]` block. This page records the alternatives considered and the open questions that were live at the time, for whoever revisits cross-backend translation or role-manifest-level defaults later.
+**Research state:** Reference
 
-## Problem framing
+## Summary
 
-jackin❯ runs every agent in a Docker container with whatever resource allocation the host gives it. On a developer laptop, six parallel agents can each spawn a `cargo build`, exhaust memory, OOM-kill the desktop, or starve each other for CPU. Before `[docker.grants]` shipped, the operator's only knob was "launch fewer agents." Docker exposes the right primitives (`--memory`, `--cpus`, `--ulimit nofile=N`, plus `--memory-reservation` for soft limits); the open question was where in jackin❯'s own config surface to expose them, and how far to abstract away from Docker's specific flag names.
+Operator-level `[docker.grants]` should remain the resource authority because roles and repositories must not grant themselves host capacity.
 
-This mattered beyond a single-host nicety: the [autonomous task queue](/roadmap/autonomous-task-queue/) (Phase 4) is unusable without some resource ceiling — five queued agents with unlimited memory and CPU is a recipe for simultaneous OOM kills the moment two of them run `cargo build` at once. And cross-backend resource translation (Docker, Apple `container`, and any [selectable sandbox backend](/research/platform/security/sandbox-backends/selectable-sandbox-backends/)) each express limits differently, so a declarative layer that translates once per backend looked like the right shape regardless of where the config surface lived.
+## Research question
+
+jackin❯ runs every agent in a Docker container with host-defined resource allocation. On a developer laptop, six parallel agents can each spawn a `cargo build`, exhaust memory, OOM-kill the desktop, or starve each other for CPU. The current operator surface is `[docker.grants]`. Docker exposes the right primitives (`--memory`, `--cpus`, `--ulimit nofile=N`, plus `--memory-reservation` for soft limits); the design question is how much jackin❯ should abstract away from Docker's specific flag names.
+
+This matters beyond a single-host nicety: the [autonomous task queue](/roadmap/autonomous-task-queue/) is unusable without some resource ceiling — five queued agents with unlimited memory and CPU is a recipe for simultaneous OOM kills the moment two of them run `cargo build` at once. And cross-backend resource translation (Docker, Apple `container`, and any [selectable sandbox backend](/research/platform/security/sandbox-backends/)) each express limits differently, so a declarative layer that translates once per backend looked like the right shape regardless of where the config surface lived.
 
 ## Inspiration in multicode
 
@@ -49,13 +54,13 @@ preserve_state = true       # don't auto-clean an OOM-killed instance
 notify         = true       # surface OOM in console
 ```
 
-A one-shot CLI override was sketched alongside it (`jackin load <agent> --memory-max 8GiB --cpus 2.0`), and a per-backend `ResourceLimits` translator trait: Docker (`--memory`/`--memory-reservation`/`--cpus`/`--ulimit nofile=N:N`, plus `oom_score_adj` for preserve-state), Apple `container` (direct per-allocation limits, once [selectable backends](/research/platform/security/sandbox-backends/selectable-sandbox-backends/) ships), and `systemd-run`/`bwrap` (cgroups properties, if either ever lands). The intended contract: a backend that can't honor a declared limit (e.g. `nofile` on a runtime that doesn't expose it) emits a warning at launch and proceeds, rather than hard-erroring.
+A one-shot CLI override was sketched alongside it (`jackin load <agent> --memory-max 8GiB --cpus 2.0`), and a per-backend `ResourceLimits` translator trait: Docker (`--memory`/`--memory-reservation`/`--cpus`/`--ulimit nofile=N:N`, plus `oom_score_adj` for preserve-state), Apple `container` (direct per-allocation limits, once [selectable backends](/research/platform/security/sandbox-backends/) ships), and `systemd-run`/`bwrap` (cgroups properties, if either ever lands). The intended contract: a backend that can't honor a declared limit (e.g. `nofile` on a runtime that doesn't expose it) emits a warning at launch and proceeds, rather than hard-erroring.
 
-This was not adopted. The shipped design keeps resource ceilings entirely at the operator/host level (`[docker.grants]` in `config.toml` or per-workspace), on the reasoning that resource limits are a property of the *machine running the container*, not the *role's toolchain* — the same role repo should be launchable with a tight limit on a laptop and a generous one on a beefy CI runner without editing the role. The role manifest's `[docker]` table deliberately exposes only `min_profile`, `dind`, `allowed_hosts`, and `capabilities_add` — no resource fields. Grants can also only ever raise a dimension above the active profile's default, never lower it, which the manifest-inheritance question below doesn't apply to as directly since there's no manifest-level tier to inherit from.
+The current design keeps resource ceilings entirely at the operator/host level (`[docker.grants]` in `config.toml` or per-workspace), because resource limits are a property of the *machine running the container*, not the *role's toolchain*. The same role repo should run with a tight limit on a laptop and a generous one on a CI runner without editing the role. The role manifest's `[docker]` table deliberately exposes only `min_profile`, `dind`, `allowed_hosts`, and `capabilities_add` — no resource fields. Grants can only raise a dimension above the active profile's default, never lower it, so manifest inheritance does not apply without a manifest-level tier.
 
 If a future need for role-declared resource floors emerges (e.g. "this role always needs at least 8 GiB regardless of operator config"), this page is the starting point for that design — the operator-level grant model would need a `min_*` counterpart symmetric to `min_profile`, not a full parallel schema.
 
-## Open questions that were live at the time
+## Limitations and open questions
 
 - **Should `cpus` accept percentages explicitly?** `"3.0"` is unambiguous for Docker's own `--cpus` flag. multicode's `"300%"` form is arguably more readable but maps awkwardly onto Docker, which doesn't accept a percent sign on `--cpus`. jackin❯'s shipped `[docker.grants].cpus` is a plain `f64` (Docker-shaped), so this question is moot for the current design — it would resurface only if a backend-neutral layer were added later.
 - **Should resource limits be inheritable across roles?** If a base role declares a limit and a derived role extends it, does the derived role inherit? This was flagged as a separate, larger role-inheritance design question, out of scope for V1, and remains unresolved because role-level resource limits were never adopted in the first place.

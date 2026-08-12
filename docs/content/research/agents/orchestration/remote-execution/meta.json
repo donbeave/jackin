@@ -1,7 +1,7 @@
 {
-  "title": "Remote Execution",
+  "title": "Remote execution",
   "defaultOpen": false,
   "pages": [
-    "jackin-remote-design"
+    "index"
   ]
 }

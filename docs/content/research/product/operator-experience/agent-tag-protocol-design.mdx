@@ -1,16 +1,23 @@
 ---
 title: "Agent Tag Protocol: Design Exploration"
+description: Defines a structured agent-tag protocol for attention requests, status signals, and operator-facing routing.
 ---
 
-**Research state**: Design exploration for [Agent tag protocol](/roadmap/agent-tag-protocol/) (Phase 2, [Agent Orchestration Program](/research/agents/orchestration/program-research/)) — not yet implemented
+**Research state:** Incomplete
 
-## Problem
+## Summary
+
+A typed tag protocol should distinguish attention requests from status signals and route both through one operator-visible channel.
+
+This exploration informs [Agent tag protocol](/roadmap/agent-tag-protocol/) in the [Agent Orchestration Program](/research/agents/orchestration/program-research/).
+
+## Research question
 
 Agents produce useful machine-readable signals during their work — "I'm investigating an issue", "I just opened a pull request", "the repo I'm editing is at /workspace/jackin". Today jackin❯ has no way to *capture* these signals; the operator either reads them in the agent's prose output or doesn't see them at all. As a result, jackin❯ UI cannot show live PR status, can't link the active workspace to its issue, and can't surface the agent's repo-of-record without scraping its stdout.
 
 multicode demonstrates that a tiny opt-in protocol — XML-like tags emitted by the agent and parsed by the orchestrator — is sufficient to turn the agent into an observable workflow node.
 
-## Why It Matters
+## Why it matters
 
 - It's the cheapest way to make the operator console *informative* without adding agent-side complexity. Agents emit one line of pseudo-XML; jackin❯ parses, indexes, and renders.
 - It enables the [GitHub link tracking](/roadmap/github-link-tracking/) feature — without a way for the agent to declare "the issue I'm working" the live-status cache has no input.
@@ -32,7 +39,7 @@ Skill markdown files (under `workspace-skills/`) instruct the agent to emit thes
 
 Important properties: it is **skill-driven**, not entrypoint-driven — the runtime doesn't enforce emission, roles opt in via the skill the operator includes; **idempotent** — re-emitting the same tag is a no-op (deduped by value); and **optional** — agents that don't emit tags work fine, the UI just degrades.
 
-## Recommended Shape
+## Recommended shape
 
 A jackin❯-namespaced version with a small core vocabulary, an extension point for future kinds, and explicit multi-vendor compatibility (jackin❯ honors `<multicode:*>` too, so a role designed for either tool keeps working).
 
@@ -69,14 +76,14 @@ The parser must be **defensive**: tags inside fenced code blocks are ignored (so
 
 To make adoption cheap, a small repo of jackin-managed skills would live at `jackin-project/jackin-skills` (or as a section of `jackin-project/jackin-marketplace`): `jackin-machine-readable-issue` instructs the agent to emit `<jackin:issue>` when investigating, `jackin-machine-readable-pr` instructs on PR open/review, and `jackin-machine-readable-repo` instructs on workspace identification. Operators add these to their role's skill list (mechanism per runtime; for Claude, that's the `[claude.plugins]` array).
 
-## Open Questions
+## Limitations and open questions
 
 - **Multi-vendor extent.** Just `<multicode:*>`, or also `<conductor:*>`, `<sandbox:*>`, etc.? Recommended: *just multicode for now*; add others on demand. The cost of being multi-vendor is tiny but maintaining the list is real.
 - **Code-block fencing.** Should the parser recognize markdown code fences in the agent's text output, or operate on raw bytes? Recommended: *recognize fences for `<jackin:*>` parsing* — operators discussing the protocol shouldn't accidentally trigger it.
 - **`status` tag semantics.** Is the agent's `<jackin:status>` value authoritative, or just a display hint? Recommended: *display hint only* — the runtime status adapter remains the source of truth.
 - **Self-emission for ecosystem skills.** Should jackin❯ emit tags on the operator's behalf when, e.g., the operator starts a workspace from a GitHub issue URL? Recommended: *yes, eventually*. The [autonomous queue](/roadmap/autonomous-task-queue/) would emit `<jackin:issue>` on dispatch.
 
-## See Also
+## Related work
 
 - [Agent tag protocol](/roadmap/agent-tag-protocol/) — roadmap item this research supports
 - [Agent Orchestration Program](/research/agents/orchestration/program-research/)

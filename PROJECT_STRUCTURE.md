@@ -25,7 +25,7 @@ Docs = single source of truth for *narrative* internals. This file stays terse o
 
 ## Ecosystem repositories
 
-jackin❯ splits across multiple GitHub repos. This repo owns the CLI; siblings own roles, construct-image source, and the Homebrew tap. The docs site lives inside this repo today; see the [documentation repository strategy](https://jackin.tailrocks.com/research/engineering/documentation/repository-strategy/docs-separate-repository/).
+jackin❯ splits across multiple GitHub repos. This repo owns the CLI; siblings own roles, construct-image source, and the Homebrew tap. The docs site lives inside this repo today; see the [documentation repository strategy](https://jackin.tailrocks.com/research/engineering/documentation/repository-strategy/).
 
 | Repository | Owns |
 |---|---|
@@ -44,7 +44,7 @@ Workspace Rust source lives under [crates/](crates/). For what each crate owns, 
 
 ## Documentation site (`docs/`)
 
-Fumadocs site on TanStack Start and Vite. **Lives alongside source today** — update docs in same commit as code (see research [Documentation repository strategy](https://jackin.tailrocks.com/research/engineering/documentation/repository-strategy/docs-separate-repository/)).
+Fumadocs site on TanStack Start and Vite. **Lives alongside source today** — update docs in same commit as code (see research [Documentation repository strategy](https://jackin.tailrocks.com/research/engineering/documentation/repository-strategy/)).
 
 - Published at: <https://jackin.tailrocks.com/>
 - Dev server: `cd docs && bun run dev`

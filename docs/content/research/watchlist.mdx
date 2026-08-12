@@ -1,12 +1,15 @@
 ---
 title: "Research Watchlist"
+description: "External projects, papers, and product documentation to recheck when jackin❯ research or roadmap decisions change."
 ---
 
-This page is the contributor-facing index of external projects, papers, product docs, and implementation references that jackin❯ keeps revisiting when designing roadmap items. It is not an endorsement list and it is not a dependency list. It is a reminder to verify prior art before inventing a local shape, and to record the snapshot date when a roadmap item borrows an idea.
+## Summary
+
+This watchlist prevents old prior-art snapshots from silently becoming current design claims. It is neither an endorsement list nor a dependency list; every use requires a fresh source, license, and issue check.
 
 Use this page before implementation work that touches agent orchestration, runtime status, containment, credentials, desktop surfaces, or automation. Re-check the relevant upstream source, docs, license, and recent issues; then summarize the parts that influenced the jackin❯ design in the specific roadmap item or PR. Do not copy incompatible source, and do not assume a project snapshot from an older roadmap page is still current.
 
-## Agent Runtime Status And Terminal Observability
+## Agent runtime status and terminal observability
 
 | Reference | Watch for | Where it informs jackin❯ |
 |---|---|---|
@@ -39,17 +42,17 @@ Use this page before implementation work that touches agent orchestration, runti
 | Reference | Watch for | Where it informs jackin❯ |
 |---|---|---|
 | [Hazmat](https://github.com/dredozubov/hazmat) | Dedicated user isolation, seatbelt/firewall tiers, integration capability rules, Docker boundary analysis, harnesses, and threat matrix structure. | [Agent Orchestration Program](/research/agents/orchestration/program-research/), [Container credential exposure](/research/platform/security/credential-exposure/container-credential-exposure/), and sandboxing roadmap items. |
-| [Docker Sandboxes](https://docs.docker.com/ai/sandboxes/) | Branch-mode worktrees, signed commits, hypervisor isolation, credential boundaries, and sandbox lifecycle. | [Selectable sandbox backends](/research/platform/security/sandbox-backends/selectable-sandbox-backends/), [Per-mount isolation](/guides/workspaces/#per-mount-isolation), and Docker runtime hardening work. |
+| [Docker Sandboxes](https://docs.docker.com/ai/sandboxes/) | Branch-mode worktrees, signed commits, hypervisor isolation, credential boundaries, and sandbox lifecycle. | [Selectable sandbox backends](/research/platform/security/sandbox-backends/), [Per-mount isolation](/guides/workspaces/#per-mount-isolation), and Docker runtime hardening work. |
 | [OrbStack](https://orbstack.dev/) isolated machines and related issue threads | Fast local VM/container ergonomics, isolated Docker engines, and macOS backend constraints. | [OrbStack isolated machine backend](/research/platform/isolation/orbstack-isolated-machines/) and selectable sandbox backends. |
 | [smolvm](https://github.com/smol-machines/smolvm), smol-machines SDK, and [libkrun](https://github.com/containers/libkrun) | Lightweight VM backend feasibility, filesystem/network constraints, and Rust integration risk. | [smolvm backend research](/research/platform/isolation/smolvm-backend/) and future microVM backend design. |
-| [Zerobox](https://github.com/afshinm/zerobox) and OpenAI Codex CLI sandboxing behavior | Process-level sandbox controls, command mediation, and host/guest trust boundaries. | [Process-level sandboxing](/research/platform/security/process-sandboxing/process-level-sandboxing/) and command-execution safety design. |
+| [Zerobox](https://github.com/afshinm/zerobox) and OpenAI Codex CLI sandboxing behavior | Process-level sandbox controls, command mediation, and host/guest trust boundaries. | [Process-level sandboxing](/research/platform/security/process-sandboxing/) and command-execution safety design. |
 | Claude Code devcontainer guidance and Docker runtime/security docs | Baseline devcontainer patterns, Docker hardening knobs, network/credential limits, and explicit non-goals. | [Devcontainer parity](/research/platform/runtime/devcontainer-parity/), [network egress policy](/roadmap/network-egress-policy/), and Docker runtime hardening. |
 
 ## Desktop, Accounts, And Operator Surfaces
 
 | Reference | Watch for | Where it informs jackin❯ |
 |---|---|---|
-| CodexBar, OpenUsage, RepoBar, and GitHub pull inbox tools | Menu-bar account surfaces, usage counters, repo/PR notifications, and lightweight background status. | [jackin❯ desktop Agent Hub](/research/product/desktop/agent-hub/jackin-desktop-agent-hub/) and token/cost telemetry. |
+| CodexBar, OpenUsage, RepoBar, and GitHub pull inbox tools | Menu-bar account surfaces, usage counters, repo/PR notifications, and lightweight background status. | [jackin❯ desktop Agent Hub](/research/product/desktop/agent-hub/) and token/cost telemetry. |
 | Apple Human Interface Guidelines, menu bar guidance, and Liquid Glass guidance | Native macOS menu bar behavior, status-item constraints, and visual-system expectations. | Desktop Agent Hub UX constraints. |
 | Microsoft APM | Native authentication/account management patterns for agent platforms. | [Native APM role support](/research/agents/runtimes/package-manager-support/native-apm-role-support/) and authentication UX. |
 
@@ -68,7 +71,7 @@ Use this page before implementation work that touches agent orchestration, runti
 | [1Password CLI](https://www.1password.dev/cli), [Doppler](https://docs.doppler.com/docs/start), and [Vault Agent](https://developer.hashicorp.com/vault/docs/agent-and-proxy/agent) | Secret injection patterns, env templating, lease/refresh semantics, and credential sidecar trade-offs. | [Container credential exposure](/research/platform/security/credential-exposure/container-credential-exposure/) and credential-source pattern work. |
 | [rumdl](https://github.com/rvben/rumdl) | Fast Markdown linting, rule coverage, and docs CI ergonomics. | [Docs markdown linting](/roadmap/docs-markdown-linting/). |
 | [zot](https://zotregistry.dev/) | Local registry/cache behavior and OCI distribution mechanics. | [Workspace registry cache](/roadmap/workspace-registry-cache/). |
-| Git `interpret-trailers` and GitHub co-authored-by docs | Trailer parsing, attribution conventions, and generated commit metadata. | [Public attribution and project growth](/research/product/growth/attribution/public-attribution-and-growth/). |
+| Git `interpret-trailers` and GitHub co-authored-by docs | Trailer parsing, attribution conventions, and generated commit metadata. | [Public attribution and project growth](/research/product/growth/). |
 
 ## Maintenance Rules
 

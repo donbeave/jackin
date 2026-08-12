@@ -1,11 +1,17 @@
 ---
 title: "Shared CI compiler-cache study"
-description: "Evidence, backend comparison, topology, and acceptance criteria for cross-runner compiler reuse."
+description: Compares shared compiler-cache backends, deployment topologies, trust boundaries, and acceptance criteria for CI reuse.
 ---
 
-**Research state**: Design study complete; backend bake-off not run.
+**Research state:** Incomplete
 
-## Problem
+## Summary
+
+Shared compiler caches can reduce redundant CI work only when cache keys, trust boundaries, and deployment ownership remain explicit.
+
+The architecture comparison is complete, but the backend bake-off remains unmeasured.
+
+## Research question
 
 The GitHub-hosted and Velnor lanes currently reuse Cargo registry and target
 archives, but neither archive is a dependable compiler-result service shared by
@@ -23,14 +29,12 @@ Cold bootstrap runs remain measurable exceptions until the shared service in
 this item exists; they must populate one cache owner rather than making every
 fan-out job repeat the bootstrap.
 
-### July 2026 cache-capacity evidence
+### Cache-capacity evidence
 
-The July 2026 audit measured 57 active GitHub Actions cache entries totaling
+The audit measured 57 active GitHub Actions cache entries totaling
 10,570,355,881 bytes (9.844 GiB), effectively exhausting the repository's
-10 GiB budget. Four superseded per-target release caches on `main` accounted
-for about 4.8 GiB, while duplicate pull-request/head Rust toolchain entries
-accounted for about 1.7 GiB. Compact input-identical archive sets were only
-tens of MiB, but could still be evicted by those older multi-GiB generations.
+10 GiB budget. Large target archives and duplicate pull-request/head Rust
+toolchain entries can evict compact input-identical archive sets.
 
 This is direct evidence against using GitHub's repository cache as the shared
 compiler backend for either `sccache` or `kache`. Until the remote bake-off is
@@ -112,7 +116,7 @@ Sources: [`sccache` repository and backend documentation](https://github.com/moz
 - Two consecutive warm parity runs keep every required job and the required
   pipeline at or below one minute.
 
-## Tasks
+## Validation plan
 
 1. Build the S3-compatible test backend and OIDC policies outside this change.
 2. Add a pinned `sccache` remote configuration pilot without changing the
@@ -122,13 +126,10 @@ Sources: [`sccache` repository and backend documentation](https://github.com/moz
 5. Roll out to non-release jobs, then preview/release after provenance checks.
 6. Reduce or remove redundant Cargo target archives once remote hit rates prove
    they are unnecessary, preventing another cache-quota eviction cycle.
-7. After the compact release-archive cache contract lands on `main`, retire the
-   four superseded `v0-rust-release-archive-jackin-*-workspace-v2` entries and
-   verify the repository remains below 70% of its GitHub cache budget.
 
 ## Related work
 
 - [Rust build cache hygiene](/roadmap/rust-build-cache-hygiene/) owns local disk
   budgets, visibility, and pruning; this item owns cross-run CI compiler reuse.
 - [CI/CD speed roadmap](/research/engineering/ci/performance/ci-speed-roadmap/)
-  contains the measured history behind the current cache and runner choices.
+  contains the evidence behind the current cache and runner choices.

@@ -1,12 +1,24 @@
 ---
 title: "09 — Current reuse decision matrix"
+description: "Decision matrix for reusing, embedding, adapting, or declining current context-tool mechanisms and dependencies."
 ---
 
-# 09 — Current reuse decision matrix
+## Summary
 
+jackin❯ should reuse proven mechanisms selectively—vendor RTK's reviewed corpus, reimplement documented recovery patterns, and avoid adopting any tool as a wholesale runtime.
 Tool-state cutoff: **2026-08-12**. This page uses only current stable releases and current license boundaries. Version pins are design candidates, not authorization to edit the workspace dependency graph; implementation must re-run source, API, license, supply-chain, and benchmark checks.
 
-## Decision table
+## Question and scope
+
+Which existing tools and repository components should the engine reuse, wrap, evaluate, or reject at each layer?
+
+## Method
+
+The matrix compares current repository primitives and external tools by boundary coverage, determinism, recovery, licensing, maintenance, and measured outcome evidence.
+
+## Findings
+
+### Decision table
 
 | Tool | Current version / license | Current decision | Current reusable surface |
 |---|---|---|---|
@@ -23,7 +35,7 @@ Tool-state cutoff: **2026-08-12**. This page uses only current stable releases a
 
 Current source of truth: [tool comparison](/research/context/tools/05-head-to-head/), [rising tools](/research/context/tools/06-combining/), [evidence](/research/context/tools/07-evidence-and-claims/), and [release register](/research/context/tools/08-current-release-register/).
 
-## Current candidate dependency set
+### Current candidate dependency set
 
 ```toml
 # Design candidates only; confirm again at implementation time.
@@ -36,14 +48,14 @@ mq-markdown      = { version = "=0.8.2", features = ["json"] }
 
 No dependency change is implied by this research update. Exact feature names and transitive licenses must be verified against the current crates before implementation.
 
-## License boundary
+### License boundary
 
 - Apache/MIT-compatible code may be depended on or vendored only with current notices and repository policy checks.
 - Caveman v2's current engine/proxy/MCP path is BSL-1.1. Its readable source does not make it an Apache-compatible code donor today.
 - Context Mode uses Elastic License 2.0 and is not a dependency candidate for the embedded engine.
 - Projects whose GitHub API exposes no SPDX identifier require direct license review before any reuse.
 
-## Current acceptance bar
+### Current acceptance bar
 
 A borrowed mechanism ships only if a current implementation-specific A/B shows:
 
@@ -56,6 +68,22 @@ A borrowed mechanism ships only if a current implementation-specific A/B shows:
 
 Current upstream percentages are not implementation evidence for jackin❯.
 
-## Revalidation triggers
+## Implications for jackin❯
+
+These findings define the current reuse decision matrix contract for jackin❯; any implementation must preserve the acceptance gates and boundaries above.
+
+## Limitations and unknowns
+
+### Revalidation triggers
 
 Re-run this page when any candidate changes stable version, license, published crate boundary, default telemetry, installer behavior, or independent evidence. Replace old conclusions; do not append a release history.
+
+## Sources
+
+Evidence and repository references are cited inline beside the claims they support.
+
+## Related work
+
+- [Context engine dossier](/research/context/engine/)
+- [Token-optimization techniques](/research/context/techniques/)
+- [Token-optimization tools](/research/context/tools/)

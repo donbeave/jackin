@@ -1,10 +1,17 @@
 ---
 title: "Docs markdown linting: rumdl adoption rationale"
+description: Compares Markdown linters and explains the selection, configuration boundaries, and adoption risks of rumdl.
 ---
 
-**Research state**: Reference — captures why rumdl was selected as the mechanical markdown linter for the docs corpus, and the alternatives rejected. See [Docs markdown linting (rumdl)](/roadmap/docs-markdown-linting/) for the current implementation state.
+**Research state:** Reference
 
-## Problem
+## Summary
+
+rumdl best matches the repository's Markdown needs, provided configuration and rollout preserve existing MDX semantics.
+
+This study preserves why rumdl was selected and which alternatives were rejected; [Docs markdown linting](/roadmap/docs-markdown-linting/) owns implementation.
+
+## Research question
 
 The docs site under `docs/content/` has automated gates for structural breakage (the Fumadocs build), broken links (lychee), code-span references to real repo files (`cargo xtask docs repo-links`), and roadmap sidebar completeness (`cargo xtask roadmap audit`). The Rust implementation lives in <RepoFile path="crates/jackin-xtask/src/docs.rs">crates/jackin-xtask/src/docs.rs</RepoFile>. Nothing gates mechanical markdown style — heading hierarchy, code-fence languages, list-marker consistency, line-length policy, emphasis-marker mixing. Each PR's MDX looks fine in isolation; the corpus drifts across contributors and sessions without a deterministic check.
 
@@ -39,7 +46,7 @@ The case is sharper because most docs edits are agent-produced. An agent session
 - **Disabled-rule creep.** Each rule disabled in `.rumdl.toml` is a hole in the lint surface; the list needs to stay small, justified inline, and periodically re-audited.
 - **MDX parser limits.** rumdl's MDX support is good but not perfect on deeply nested JSX expressions; cases that hit this are usually a sign the content should be a React component, not inline MDX.
 
-## Open design questions
+## Limitations and open questions
 
 1. **Initial strictness.** Start from the default rule set (strict, then disable as violations surface) or a minimal set (loose, then add rules as drift is observed)? Default-strict is more honest about what mechanical rules buy; minimal-then-grow is less upfront work but tends to stay minimal in practice.
 2. **Auto-fix in CI.** Should CI ever run `rumdl check --fix` and commit back, or should `--fix` stay local-only with CI strictly verifying? Local-only is the safer default — auto-fix in CI risks committing unreviewed changes, especially from agent-authored PRs.

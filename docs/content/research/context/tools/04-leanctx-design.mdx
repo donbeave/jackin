@@ -1,14 +1,26 @@
 ---
 title: "04 — lean-ctx v3.9.18: current design"
+description: "Current lean-ctx design for repository search, retrieval, memory, compression, recovery, evidence, risks, and best fit."
 ---
 
-# 04 — lean-ctx v3.9.18: current design
+## Summary
 
+lean-ctx is an integrated context runtime rather than a single compressor, giving it broad reach but also the largest behavioral and ownership surface.
 Cutoff: **2026-08-12**. Current stable: [v3.9.18](https://github.com/yvgude/lean-ctx/releases/tag/v3.9.18), released 2026-08-08.
 
 lean-ctx—branded LeanCTX upstream—is an integrated **context runtime**, not one compressor. It controls file views, shell observations, search, code structure, memory, retrieval, policy, recovery, and measurement through one local system. Current v3.9.18 enables a broader cognitive orchestration layer by default.
 
-## Current facts
+## Question and scope
+
+How does lean-ctx v3.9.18 coordinate retrieval, compression, memory, and policy, and what ownership risks follow?
+
+## Method
+
+The review fixes lean-ctx to v3.9.18, maps its retrieval, compression, memory, policy, and recovery surfaces from upstream evidence, and records where outcome attribution remains weak.
+
+## Findings
+
+### Current facts
 
 | Field | Current value |
 |---|---|
@@ -22,7 +34,7 @@ lean-ctx—branded LeanCTX upstream—is an integrated **context runtime**, not 
 
 Metadata source: [GitHub API](https://api.github.com/repos/yvgude/lean-ctx). Current capability counts: [README](https://github.com/yvgude/lean-ctx).
 
-## Current architecture
+### Current architecture
 
 ```text
 repository reads ── map/signatures/lines/full/cache handles ─┐
@@ -35,7 +47,7 @@ policy/ledger ─── permissions, budgets, signed events ──────�
 
 The key benefit is read prevention. A map, signature view, graph query, or cached stub can avoid sending an entire source file. That is architecturally different from compressing bytes after a broad read. Full and bounded modes remain necessary before exact edits.
 
-## What v3.9.18 currently adds
+### What v3.9.18 currently adds
 
 - Full cognitive mode enabled by default.
 - `ctx_cognitive`, bringing the current MCP count to 83.
@@ -45,7 +57,15 @@ The key benefit is read prevention. A map, signature view, graph query, or cache
 
 Release source: [v3.9.18 notes](https://github.com/yvgude/lean-ctx/releases/tag/v3.9.18).
 
-## Benefits
+### Current evidence
+
+The latest independent field report found is [Wavect's 2026-07-27 report](https://wavect.io/blog/lean-ctx-agency-experience/): 64.1% less tracked context, 92.7% MCP compression, and most savings attributed to MCP file-read traffic. The report explicitly labels itself observational, not a controlled productivity study, and does not identify an exact lean-ctx version. It therefore supports the current workflow pattern—compressed discovery, raw verification—but does **not** prove v3.9.18's task-level effect.
+
+No controlled independent accepted-task benchmark explicitly testing **v3.9.18** was found at the cutoff. Current vendor percentages remain first-party.
+
+## Implications for jackin❯
+
+### Benefits
 
 - Broadest integrated reach of the named set.
 - Selective structural reads can prevent large observations instead of summarizing them.
@@ -55,7 +75,21 @@ Release source: [v3.9.18 notes](https://github.com/yvgude/lean-ctx/releases/tag/
 - Explicit policy, savings, and verification machinery.
 - Current release closes several correctness and security defects.
 
-## Costs and risks
+### Best fit
+
+Test lean-ctx on large repositories and long sessions with repeated navigation, source rereads, graph questions, handoffs, or persistent context. Use maps/signatures/search for discovery, then require full or bounded reads, real diffs, tests, and review before exact or high-risk changes.
+
+Avoid it when the task is small, operational minimalism matters, or policy cannot accept broad user-scope integration and persistent local state.
+
+### Current verdict
+
+lean-ctx v3.9.18 is the most capable context-management system here and the least comparable to a small filter. It may provide the largest benefit when repeated repository reads are the bottleneck, but that claim needs a current controlled A/B. Status: **best broad runtime for measured repository-context problems; excessive for narrow token waste**.
+
+Next: [05 — Current objective comparison](/research/context/tools/05-head-to-head/).
+
+## Limitations and unknowns
+
+### Costs and risks
 
 - Widest trusted and operational surface: daemon, databases, dashboard, MCP schema, hooks, proxy, agent integrations, and policies.
 - Current release archives are roughly 22–24 MB compressed; installed/runtime state is larger and persistent.
@@ -66,20 +100,12 @@ Release source: [v3.9.18 notes](https://github.com/yvgude/lean-ctx/releases/tag/
 - Proxy mode expands the integrity and cache-risk boundary.
 - Current release notes contain a self-comparison “Full Changelog” link, a documentation-quality defect.
 
-## Current evidence
+## Sources
 
-The latest independent field report found is [Wavect's 2026-07-27 report](https://wavect.io/blog/lean-ctx-agency-experience/): 64.1% less tracked context, 92.7% MCP compression, and most savings attributed to MCP file-read traffic. The report explicitly labels itself observational, not a controlled productivity study, and does not identify an exact lean-ctx version. It therefore supports the current workflow pattern—compressed discovery, raw verification—but does **not** prove v3.9.18's task-level effect.
+Evidence and repository references are cited inline beside the claims they support.
 
-No controlled independent accepted-task benchmark explicitly testing **v3.9.18** was found at the cutoff. Current vendor percentages remain first-party.
+## Related work
 
-## Best fit
-
-Test lean-ctx on large repositories and long sessions with repeated navigation, source rereads, graph questions, handoffs, or persistent context. Use maps/signatures/search for discovery, then require full or bounded reads, real diffs, tests, and review before exact or high-risk changes.
-
-Avoid it when the task is small, operational minimalism matters, or policy cannot accept broad user-scope integration and persistent local state.
-
-## Current verdict
-
-lean-ctx v3.9.18 is the most capable context-management system here and the least comparable to a small filter. It may provide the largest benefit when repeated repository reads are the bottleneck, but that claim needs a current controlled A/B. Status: **best broad runtime for measured repository-context problems; excessive for narrow token waste**.
-
-Next: [05 — Current objective comparison](/research/context/tools/05-head-to-head/).
+- [Token-optimization tools dossier](/research/context/tools/)
+- [Token-optimization techniques](/research/context/techniques/)
+- [Context engine](/research/context/engine/)

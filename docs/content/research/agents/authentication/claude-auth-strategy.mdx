@@ -1,11 +1,16 @@
 ---
 title: "Reliable Claude Authentication Strategy"
+description: "Compares reliable Claude authentication strategies across host, container, token refresh, and multi-account workflows."
 ---
 
 
-**Research state**: Deferred — needs design work
+**Research state:** Needs refresh
 
-## Problem
+## Summary
+
+A restored, host-owned Claude home remains the simplest authentication baseline, but token refresh and multi-account isolation must be revalidated before this page guides current work.
+
+## Research question
 
 jackin❯ currently optimizes for the simplest happy path: if the operator is already authenticated with Claude Code on the host, a new agent container can start pre-authenticated without requiring `/login` inside the container.
 
@@ -27,7 +32,7 @@ The user-visible failure mode is exactly the one operators report:
 Please run /login · API Error: 401 {"type":"error","error":{"type":"authentication_error","message":"Invalid authentication credentials"}}
 ```
 
-## Why It Matters
+## Why it matters
 
 - jackin❯ value proposition is smooth operator UX when the host is already set up
 - auth that works today but fails tomorrow is worse than auth that is explicit from the start
@@ -35,7 +40,7 @@ Please run /login · API Error: 401 {"type":"error","error":{"type":"authenticat
 - a copied OAuth session is not a stable runtime contract when refresh tokens rotate independently
 - repeated `/login` prompts are especially painful inside isolated runtimes because browser-driven recovery breaks flow
 
-## Current State
+## Current state
 
 Status as of the Token-mode release:
 
@@ -60,7 +65,7 @@ Keep the current convenience goal:
 3. The operator should understand which mode they are using and what tradeoffs it carries.
 4. Multiple active jackin❯ sessions should degrade gracefully rather than surprising the operator with intermittent 401s.
 
-## Non-Goals
+## Non-goals
 
 - Replacing Claude Code's upstream authentication implementation
 - Claiming jackin❯ can fully prevent OAuth refresh races inside Claude Code itself
@@ -250,7 +255,7 @@ At minimum, this design would touch:
 - [config command](/commands/config/) — document setup and mode selection
 - [Configuration](/reference/runtime/configuration/) — config format updates
 
-## Follow-up Proposal
+## Recommended direction
 
 The token-mode release leaves operator setup as a manual five-step
 copy-paste flow. A follow-up design proposal addresses that:
@@ -262,7 +267,7 @@ copy-paste flow. A follow-up design proposal addresses that:
   workspace config, and validates end-to-end. Also covers rotation,
   revocation, expiry banners, and TUI integration.
 
-## Open Questions
+## Limitations and open questions
 
 1. Where should jackin❯ store a long-lived Claude token on macOS and Linux?
    *(Addressed by the [Workspace Claude Token Setup](/roadmap/workspace-claude-token-setup/) proposal:
@@ -271,11 +276,11 @@ copy-paste flow. A follow-up design proposal addresses that:
 3. Is a token-only mode sufficient, or should jackin❯ also support an operator-provided `apiKeyHelper` path for terminal-only workflows?
 4. Should jackin❯ proactively detect likely-auth-drift conditions and recommend `purge` or `sync` before the operator hits a 401?
 
+## Program context
+
+- [Auth reliability and convenience program](/roadmap/auth-reliability-program/) — umbrella program that places this design in context; its Phases 1–4 address the concurrent-session concerns documented here.
+
 ## Related work
-
-- [Auth reliability and convenience program](/roadmap/auth-reliability-program/) — umbrella program placing this item's design history in context; the concurrent-session concerns documented here are addressed across Phases 1–4 of that program.
-
-## Related Files
 
 - <RepoFile path="crates/jackin-config/src/app_config.rs">crates/jackin-config/src/app_config.rs</RepoFile> — `AuthForwardMode` enum, persistence types
 - <RepoFile path="crates/jackin-config/src/app_config/roles.rs">crates/jackin-config/src/app_config/roles.rs</RepoFile> — auth mode resolution

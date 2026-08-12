@@ -22,12 +22,12 @@ The `firewall-apply` Capsule subcommand installs a fail-closed iptables OUTPUT a
 2. **Connection decision telemetry.** No per-connection audit trail exists (timestamp, instance, bounded destination classification, port, protocol, rule matched, allow/deny, enforcement backend). When designed, product audit records use the governed OTLP Logs contract only, follow its address/privacy and volume limits, and retain nothing locally when OTLP is disabled.
 3. **Rule editing surface.** `allowed_hosts` can only be set by hand-editing `config.toml`/`jackin.role.toml`; there is no CLI or `jackin console` flow to add/inspect/remove allowlist entries before launch.
 4. **Service-port policy.** Published container ports, sandbox-to-host aliases, local dev-server/database access, and model-runner endpoints are not modeled as part of network policy.
-5. **Non-Docker backend parity.** No egress enforcement exists yet for OrbStack, smolvm, Kubernetes, or SSH-remote backends; a host-side proxy design for microVM-style backends and a Kubernetes/remote policy mapping remain unstarted. See [Network egress policy design](/research/platform/security/network-egress/network-egress-policy-design/) for the backend strategy and external references behind this.
+5. **Non-Docker backend parity.** No egress enforcement exists yet for OrbStack, smolvm, Kubernetes, or SSH-remote backends; a host-side proxy design for microVM-style backends and a Kubernetes/remote policy mapping remain unstarted. See [Network egress policy design](/research/platform/security/network-egress/) for the backend strategy and external references behind this.
 
 ## Related work
 
-- [Selectable sandbox backends](/research/platform/security/sandbox-backends/selectable-sandbox-backends/) — Docker Sandboxes and microVM comparison this item's backend parity depends on
+- [Selectable sandbox backends](/research/platform/security/sandbox-backends/) — Docker Sandboxes and microVM comparison this item's backend parity depends on
 - [Docker runtime hardening contract](/roadmap/docker-runtime-hardening-contract/) — sibling Docker profile/grant hardening work
 - [Session contract and explain mode](/roadmap/session-contract-explain-mode/) — the operator-visible contract surface this item feeds
 - [Host bridge](/roadmap/host-bridge/) — candidate home for a future host-side egress proxy
-- [Network egress policy design](/research/platform/security/network-egress/network-egress-policy-design/) — design rationale, enforcement-quality vocabulary, and source materials
+- [Network egress policy design](/research/platform/security/network-egress/) — design rationale, enforcement-quality vocabulary, and source materials

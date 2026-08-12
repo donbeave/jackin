@@ -1,16 +1,23 @@
 ---
 title: "Operator Handler System: Design Exploration"
+description: Defines a typed operator-handler system for routing agent requests to visible, controllable host actions.
 ---
 
-**Research state**: Design exploration for [Operator handler system](/roadmap/operator-handler-system/) (Phase 1, [Agent Orchestration Program](/research/agents/orchestration/program-research/)) — not yet implemented
+**Research state:** Incomplete
 
-## Problem
+## Summary
+
+A typed handler registry should route agent requests only to visible, policy-controlled host actions.
+
+This exploration informs [Operator handler system](/roadmap/operator-handler-system/) in the [Agent Orchestration Program](/research/agents/orchestration/program-research/).
+
+## Research question
 
 When an operator wants to act on something the agent produced — review a diff, open the workspace in an IDE, follow a link the agent printed — they have to context-switch to a separate shell, copy the path, run the right launcher manually. Every adjacent tool in this space (multicode, Conductor, Docker Sandboxes) ships an external-launcher abstraction precisely because this friction kills the "left it running overnight" workflow.
 
 jackin❯ has host affordance primitives (safe URL open, verified file export, queued host open/reveal) but no named, operator-configurable handler layer. Each future feature that needs to launch an external tool would otherwise invent its own launcher.
 
-## Why It Matters
+## Why it matters
 
 - The console (today) and any future TUI need to know how to "open" a path, URL, or repo without hardcoding `open` / `xdg-open`.
 - Multiple downstream items in this program need it: [GitHub link tracking](/roadmap/github-link-tracking/) opens issue/PR URLs, [agent tag protocol](/roadmap/agent-tag-protocol/) opens repo paths, [custom operator tools](/roadmap/custom-operator-tools/) expand exec templates that eventually want the same launcher resolution.
@@ -39,7 +46,7 @@ command = "..."   # optional override
 
 The TUI keystrokes `r` (review = open diff viewer for repo) and `e` (open in IDE) call the resolved handler. Both blocks are loaded once at startup; no hot-reload.
 
-## Recommended Shape
+## Recommended shape
 
 One unified `[handler]` block. The `[compare]`-style IDE selector folds in as another handler kind, not a separate block.
 
@@ -99,7 +106,7 @@ Single keystroke per handler when a workspace row is selected: `o` (open in IDE)
 - In-console diff renderer. multicode uses an external viewer; jackin❯ console gets `git diff` in a paged view, that's enough.
 - PTY allocation for the diff handler (`review-pty` in multicode). Defer until someone reports an issue with a TTY-aware diff tool.
 
-## Open Questions
+## Limitations and open questions
 
 - Where does the operator-config file live for handlers? Options: extend the existing operator config under `[handler]`, or a new `~/.config/jackin/handlers.toml`. Recommended default: *extend operator config* — single-file ergonomics matter.
 - Should `jackin diff` default to in-terminal `git diff` (current recommendation) or refuse to run without a configured handler? Recommended default: *in-terminal default*; explicit configuration is a polish, not a prerequisite.

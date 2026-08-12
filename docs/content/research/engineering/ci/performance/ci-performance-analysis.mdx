@@ -1,10 +1,17 @@
 ---
 title: "CI/CD performance: prioritized speedup backlog"
+description: Ranks CI speed opportunities from measured job and step timing, cache behavior, and dependency-work evidence.
 ---
 
-**Research state**: Open — analysis and prioritized backlog. This item is the measured follow-up companion to the [CI/CD speed roadmap](/research/engineering/ci/performance/ci-speed-roadmap/), which tracks the shipped baseline. It ranks the remaining high-leverage levers from highly likely to less likely, grounded in job-level and step-level evidence from the merged PR #641 check suite (June 2026) rather than opinion.
+**Research state:** Needs refresh
 
-## Problem
+## Summary
+
+Measured job timing points first to dependency and cache work, with lane changes justified only by wall-clock evidence.
+
+The ranking uses June 2026 job and step evidence; compare the [CI/CD speed baseline](/research/engineering/ci/performance/ci-speed-roadmap/) and remeasure before prioritizing work.
+
+## Research question
 
 The PR #641 check suite was slow for two separate reasons, and a deeper analysis of where time actually goes points at one dominant cost the existing speed work has not yet eliminated.
 
@@ -27,7 +34,7 @@ The [CI/CD speed roadmap](/research/engineering/ci/performance/ci-speed-roadmap/
 - **A `cargo nextest archive` fan-out experiment built successfully but failed an existing checkout-dependent test** and was reverted. So the build-once/test-many lever below is gated on first making tests relocatable (rely on runtime `CARGO_MANIFEST_DIR` / nextest binary env vars, not baked absolute paths).
 - **`Swatinem/rust-cache` does not dependably cache workspace-crate outputs across jobs** — confirmed when the Docker E2E lane restored the shared exact key yet still recompiled `jackin-capsule` (~7s) and the `docker-e2e` test graph (~32s). This is why the archive handoff, not another target-cache family, is the remaining candidate for removing duplicate workspace compilation.
 
-This item also intersects [Rust CI tooling and dependency hygiene](/research/engineering/ci/rust-tooling/rust-ci-tooling/) (which is adopting `cargo-llvm-cov`, the prerequisite for dynamic test selection) and lists `cargo-hakari` and `cargo-chef` as open.
+This item also intersects [Rust CI tooling and dependency hygiene](/research/engineering/ci/rust-tooling/) (which is adopting `cargo-llvm-cov`, the prerequisite for dynamic test selection) and lists `cargo-hakari` and `cargo-chef` as open.
 
 ## Master priority: highly likely to less likely
 
@@ -55,7 +62,7 @@ Items 2 and 3 are complementary: 2 makes each compile cheaper; 3 makes there be 
 | # | Change | Why | Impact | Confidence | Effort |
 |---|---|---|---|---|---|
 | 6 | Drop blanket `--all-features`; use targeted per-shard features | The non-e2e `jackin` shard compiles `dind_e2e.rs` (1348 lines) and the whole `e2e` graph under `--all-features`, then `docker-e2e` compiles it again | **−20–40s/shard**, cleaner caches | Med | Low–Med |
-| 7 | Static test-impact analysis: skip untouched crate shards; skip the archive build on non-Rust PRs | Extends the existing `changes` / `paths-filter` job to per-shard granularity with safe fallbacks | **−1 full compile per skipped shard** — but largely superseded by #3; residual value is skipping the archive build on non-Rust PRs | Med | Med |
+| 7 | Static test-impact analysis: skip untouched crate shards; skip the archive build on non-Rust PRs | Extends the existing `changes` / `paths-filter` job to per-shard granularity with safe fallbacks | **−1 full compile per skipped shard**; because #3 already covers most shard skipping, the distinct value is avoiding archive builds on non-Rust PRs | Med | Med |
 | 8 | Faster runners for compile-bound jobs (free `ubuntu-24.04-arm`, the existing `velnor` lane, or third-party) | Compilation is CPU-bound; Zed data shows test exec −50% on 16 cores | **−20–40%** on compile-bound jobs | Med | Low–Med (infra) |
 
 ### Tier 4 — lower likelihood, diminishing, or measure-first

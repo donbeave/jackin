@@ -1,12 +1,24 @@
 ---
 title: "05 — Current objective comparison"
+description: "Objective comparison of Caveman, Headroom, RTK, and lean-ctx by reach, workload, safety, evidence, and composition."
 ---
 
-# 05 — Current objective comparison
+## Summary
 
+No current tool dominates every boundary: Caveman best addresses visible output, RTK shell observations, Headroom broad reversible compression, and lean-ctx integrated retrieval and memory.
 Cutoff: **2026-08-12**. This comparison uses only the current stable releases: Caveman v2.0.0, Headroom v0.34.0, RTK v0.45.0, and lean-ctx v3.9.18. It does not carry benchmark outcomes from superseded versions into current verdicts.
 
-## One-screen matrix
+## Question and scope
+
+Which current tool best fits each interception boundary, and where does no tool have adequate outcome evidence?
+
+## Method
+
+The comparison holds releases to the shared cutoff and scores interception boundary, reversibility, recovery, evidence quality, self-cost, and operational ownership without importing older benchmark results.
+
+## Findings
+
+### One-screen matrix
 
 | Axis | Caveman v2.0.0 | Headroom v0.34.0 | RTK v0.45.0 | lean-ctx v3.9.18 |
 |---|---|---|---|---|
@@ -25,7 +37,7 @@ Cutoff: **2026-08-12**. This comparison uses only the current stable releases: C
 | Current independent release-specific A/B | None found | None found | None found | None found |
 | Strongest current evidence | First-party v2 fixture benchmark | Current mechanism/release evidence | Current mechanism/release evidence | Observational field report, exact version undisclosed |
 
-## Reach determines benefit
+### Reach determines benefit
 
 A tool can remove 90% of a payload and still save almost nothing if that payload is a small share of task tokens.
 
@@ -40,7 +52,7 @@ net accepted-task effect
 
 This equation explains the objective ranking: there is no defensible tool order without a workload trace.
 
-## Best tool by measured bottleneck
+### Best tool by measured bottleneck
 
 ### Visible narration dominates
 
@@ -62,7 +74,7 @@ Start with **lean-ctx** or a narrower retrieval tool. Its maps, signatures, grap
 
 Trial **Caveman v2** against Headroom on the local payload mix. Caveman is newer, deterministic, and recoverable; Headroom is more mature and has wider deployment history. The current public evidence cannot choose for every workload.
 
-## Safety comparison
+### Safety comparison
 
 | Risk | Caveman | Headroom | RTK | lean-ctx |
 |---|---|---|---|---|
@@ -75,7 +87,7 @@ Trial **Caveman v2** against Headroom on the local payload mix. Caveman is newer
 
 No lossy summary is authoritative. Tests prove system behavior; raw source proves exact text; compression counters prove neither.
 
-## Objective strengths
+### Objective strengths
 
 ### Caveman
 
@@ -102,7 +114,7 @@ No lossy summary is authoritative. Tests prove system behavior; raw source prove
 - Unique combination of graph, memory, recovery, policy, and ledger.
 - Weakest point: largest operational surface and difficult attribution.
 
-## What “good” means for each
+### What “good” means for each
 
 | Tool | Keep it only if… | Reject it if… |
 |---|---|---|
@@ -112,7 +124,9 @@ No lossy summary is authoritative. Tests prove system behavior; raw source prove
 | RTK | Eligible shell output is material and turns/rereads do not rise | Native tools or quiet commands dominate |
 | lean-ctx | Raw reads fall and edit correctness stays unchanged | Setup/runtime overhead exceeds avoided context |
 
-## Composition verdict
+## Implications for jackin❯
+
+### Composition verdict
 
 Use **one output layer plus, at most, one measured input/retrieval layer**. Caveman's skill is orthogonal to input tools. Caveman v2, Headroom, RTK, and lean-ctx overlap on observations. Blindly stacking them makes failures harder to recover and savings impossible to attribute.
 
@@ -124,3 +138,17 @@ Current recommendation:
 4. output brevity as a separate, independently measured choice.
 
 Next: [06 — Current rising tools and composition](/research/context/tools/06-combining/).
+
+## Limitations and unknowns
+
+Tool behavior, releases, licenses, and outcome evidence can change; reverify the current version and integration boundary before adoption.
+
+## Sources
+
+Evidence and repository references are cited inline beside the claims they support.
+
+## Related work
+
+- [Token-optimization tools dossier](/research/context/tools/)
+- [Token-optimization techniques](/research/context/techniques/)
+- [Context engine](/research/context/engine/)

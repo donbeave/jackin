@@ -39,9 +39,11 @@ fn slug_validation() {
 fn append_page_is_idempotent() {
     let dir = tempfile::tempdir().unwrap();
     let meta = dir.path().join("meta.json");
+    let tree_lock = dir.path().join("tree-meta.json");
     write_meta(&meta, &json!({ "title": "X", "pages": ["index"] })).unwrap();
-    append_page(&meta, "alpha").unwrap();
-    append_page(&meta, "alpha").unwrap();
+    write_meta(&tree_lock, &json!({ "pages": [] })).unwrap();
+    append_page(&meta, &tree_lock, "alpha").unwrap();
+    append_page(&meta, &tree_lock, "alpha").unwrap();
     let pages = read_meta(&meta).unwrap();
     let pages = pages["pages"].as_array().unwrap();
     assert_eq!(pages.len(), 2);
@@ -326,6 +328,7 @@ fn repo_links_ignore_code_fences() {
 fn change_new_in_scaffolds_and_registers() {
     let roadmap = tempfile::tempdir().unwrap();
     let r = roadmap.path();
+    write_meta(&r.join("meta.json"), &json!({ "pages": [] })).unwrap();
     write_meta_mk(
         &r.join("(operator-surface)/meta.json"),
         &json!({ "pages": [] }),
@@ -370,6 +373,7 @@ fn change_new_in_rejects_unknown_group() {
 #[test]
 fn research_scaffold_in_creates_dossier_and_registers() {
     let research = tempfile::tempdir().unwrap();
+    let prompts = tempfile::tempdir().unwrap();
     let r = research.path();
     write_meta(&r.join("meta.json"), &json!({ "pages": [] })).unwrap();
     fs::create_dir_all(r.join("agents")).unwrap();
@@ -377,6 +381,7 @@ fn research_scaffold_in_creates_dossier_and_registers() {
 
     research_scaffold_in(
         r,
+        prompts.path(),
         ResearchScaffoldArgs {
             slug: "my-study".to_owned(),
             group: "agents".to_owned(),
@@ -386,11 +391,277 @@ fn research_scaffold_in_creates_dossier_and_registers() {
     .unwrap();
 
     assert!(r.join("agents/my-study/index.mdx").is_file());
-    assert!(r.join("agents/my-study/prompt.mdx").is_file());
+    assert!(prompts.path().join("agents/my-study.md").is_file());
     let dossier_meta = read_meta(&r.join("agents/my-study/meta.json")).unwrap();
-    assert_eq!(dossier_meta["pages"], json!(["index", "prompt"]));
+    assert_eq!(dossier_meta["pages"], json!(["index"]));
+    let index = fs::read_to_string(r.join("agents/my-study/index.mdx")).unwrap();
+    assert!(index.contains("<RepoFile path=\"prompts/research/agents/my-study.md\" />"));
+    assert!(index.contains("**Research state:** Incomplete"));
+    assert!(index.find("## Headline findings") < index.find("## Method and evidence"));
+    assert!(index.find("## Method and evidence") < index.find("## Limitations and open questions"));
+    assert!(index.find("## Limitations and open questions") < index.find("## How to read"));
     let parent = read_meta(&r.join("agents/meta.json")).unwrap();
     assert_eq!(parent["pages"].as_array().unwrap()[0], "my-study");
+}
+
+#[test]
+fn research_validation_enforces_shared_page_contract() {
+    let research = tempfile::tempdir().unwrap();
+    let r = research.path();
+    write_meta(&r.join("meta.json"), &json!({ "pages": ["bad"] })).unwrap();
+    write(
+        &r.join("bad.mdx"),
+        "---\ntitle: Bad\n---\n\n# Bad\n\n**Research state**: Working\n",
+    );
+
+    let err = validate_tree(r, "research").unwrap_err().to_string();
+    assert!(err.contains("frontmatter `description`"), "{err}");
+    assert!(err.contains("canonical `**Research state:**`"), "{err}");
+    assert!(err.contains("remove the explicit H1"), "{err}");
+}
+
+#[test]
+fn research_validation_rejects_published_prompt() {
+    let research = tempfile::tempdir().unwrap();
+    let r = research.path();
+    write_meta(&r.join("meta.json"), &json!({ "pages": ["prompt"] })).unwrap();
+    write(
+        &r.join("prompt.mdx"),
+        "---\ntitle: Brief\ndescription: A published brief.\n---\n",
+    );
+
+    let err = validate_tree(r, "research").unwrap_err().to_string();
+    assert!(
+        err.contains("briefs belong under prompts/research"),
+        "{err}"
+    );
+}
+
+#[test]
+fn research_validation_rejects_broken_card_target() {
+    let research = tempfile::tempdir().unwrap();
+    let r = research.path();
+    write_meta(&r.join("meta.json"), &json!({ "pages": ["index"] })).unwrap();
+    write(
+        &r.join("index.mdx"),
+        "---\ntitle: Research\ndescription: A valid research landing page.\n---\n\n<Card title=\"Missing\" href=\"/research/missing/\">Missing.</Card>\n",
+    );
+
+    let err = validate_tree(r, "research").unwrap_err().to_string();
+    assert!(err.contains("Card target `/research/missing/`"), "{err}");
+}
+
+#[test]
+fn research_validation_checks_every_card_and_markdown_link() {
+    let research = tempfile::tempdir().unwrap();
+    let r = research.path();
+    write_meta(&r.join("meta.json"), &json!({ "pages": ["index"] })).unwrap();
+    write(
+        &r.join("index.mdx"),
+        "---\ntitle: Research\ndescription: A valid research landing page.\n---\n\n<Card href=\"/research/missing-one/\" /><Card href=\"/research/missing-two/\" />\n\n[Relative](chapter/)\n\n[Missing](/research/missing-three/)\n",
+    );
+
+    let err = validate_tree(r, "research").unwrap_err().to_string();
+    assert!(err.contains("missing-one"), "{err}");
+    assert!(err.contains("missing-two"), "{err}");
+    assert!(err.contains("missing-three"), "{err}");
+    assert!(err.contains("must be site-absolute"), "{err}");
+}
+
+#[test]
+fn research_validation_rejects_literal_ellipsis_and_oversized_page() {
+    let research = tempfile::tempdir().unwrap();
+    let r = research.path();
+    write_meta(&r.join("meta.json"), &json!({ "pages": ["large"] })).unwrap();
+    let body = "line\n".repeat(401);
+    write(
+        &r.join("large.mdx"),
+        &format!("---\ntitle: Large\ndescription: An incomplete description...\n---\n\n{body}"),
+    );
+
+    let err = validate_tree(r, "research").unwrap_err().to_string();
+    assert!(err.contains("informative sentence"), "{err}");
+    assert!(err.contains("more than 400 body lines"), "{err}");
+}
+
+#[test]
+fn research_scaffold_does_not_overwrite_existing_brief() {
+    let research = tempfile::tempdir().unwrap();
+    let prompts = tempfile::tempdir().unwrap();
+    let r = research.path();
+    fs::create_dir_all(r.join("agents")).unwrap();
+    fs::create_dir_all(prompts.path().join("agents")).unwrap();
+    write_meta(
+        &r.join("agents/meta.json"),
+        &json!({ "pages": ["other-study"] }),
+    )
+    .unwrap();
+    let parent_before = fs::read(r.join("agents/meta.json")).unwrap();
+    write(&prompts.path().join("agents/my-study.md"), "keep me\n");
+
+    let err = research_scaffold_in(
+        r,
+        prompts.path(),
+        ResearchScaffoldArgs {
+            slug: "my-study".to_owned(),
+            group: "agents".to_owned(),
+            title: None,
+        },
+    )
+    .unwrap_err()
+    .to_string();
+
+    assert!(err.contains("research brief already exists"), "{err}");
+    assert_eq!(
+        fs::read_to_string(prompts.path().join("agents/my-study.md")).unwrap(),
+        "keep me\n"
+    );
+    assert!(!r.join("agents/my-study").exists());
+    assert_eq!(fs::read(r.join("agents/meta.json")).unwrap(), parent_before);
+}
+
+#[test]
+fn research_scaffold_rolls_back_partial_writes_when_parent_meta_is_invalid() {
+    let research = tempfile::tempdir().unwrap();
+    let prompts = tempfile::tempdir().unwrap();
+    let r = research.path();
+    fs::create_dir_all(r.join("agents")).unwrap();
+    let invalid_meta = b"{ invalid json }\n";
+    fs::write(r.join("agents/meta.json"), invalid_meta).unwrap();
+
+    let err = research_scaffold_in(
+        r,
+        prompts.path(),
+        ResearchScaffoldArgs {
+            slug: "my-study".to_owned(),
+            group: "agents".to_owned(),
+            title: None,
+        },
+    )
+    .unwrap_err()
+    .to_string();
+
+    assert!(err.contains("meta.json"), "{err}");
+    assert!(!r.join("agents/my-study").exists());
+    assert!(!prompts.path().join("agents/my-study.md").exists());
+    assert_eq!(fs::read(r.join("agents/meta.json")).unwrap(), invalid_meta);
+}
+
+#[test]
+fn research_scaffold_rejects_group_traversal_and_multiline_title() {
+    let research = tempfile::tempdir().unwrap();
+    let prompts = tempfile::tempdir().unwrap();
+    let r = research.path();
+    fs::create_dir_all(r.join("agents")).unwrap();
+    write_meta(&r.join("agents/meta.json"), &json!({ "pages": [] })).unwrap();
+
+    for (group, title) in [("../roadmap", None), ("agents", Some("Bad\ntitle"))] {
+        let err = research_scaffold_in(
+            r,
+            prompts.path(),
+            ResearchScaffoldArgs {
+                slug: "my-study".to_owned(),
+                group: group.to_owned(),
+                title: title.map(str::to_owned),
+            },
+        )
+        .unwrap_err()
+        .to_string();
+        assert!(
+            err.contains("invalid") || err.contains("single line"),
+            "{err}"
+        );
+    }
+    assert!(!r.join("my-study").exists());
+}
+
+#[test]
+fn research_scaffold_escapes_quoted_title_in_frontmatter() {
+    let research = tempfile::tempdir().unwrap();
+    let prompts = tempfile::tempdir().unwrap();
+    let r = research.path();
+    write_meta(&r.join("meta.json"), &json!({ "pages": [] })).unwrap();
+    fs::create_dir_all(r.join("agents")).unwrap();
+    write_meta(&r.join("agents/meta.json"), &json!({ "pages": [] })).unwrap();
+
+    research_scaffold_in(
+        r,
+        prompts.path(),
+        ResearchScaffoldArgs {
+            slug: "quoted-study".to_owned(),
+            group: "agents".to_owned(),
+            title: Some("A \"quoted\" study".to_owned()),
+        },
+    )
+    .unwrap();
+
+    let index = fs::read_to_string(r.join("agents/quoted-study/index.mdx")).unwrap();
+    assert!(
+        index.contains("title: \"A \\\"quoted\\\" study\""),
+        "{index}"
+    );
+}
+
+#[test]
+fn research_scaffold_never_removes_preexisting_dossier() {
+    let research = tempfile::tempdir().unwrap();
+    let prompts = tempfile::tempdir().unwrap();
+    let r = research.path();
+    fs::create_dir_all(r.join("agents/my-study")).unwrap();
+    write(&r.join("agents/my-study/keep.md"), "keep me\n");
+    write_meta(&r.join("agents/meta.json"), &json!({ "pages": [] })).unwrap();
+
+    let err = research_scaffold_in(
+        r,
+        prompts.path(),
+        ResearchScaffoldArgs {
+            slug: "my-study".to_owned(),
+            group: "agents".to_owned(),
+            title: None,
+        },
+    )
+    .unwrap_err()
+    .to_string();
+
+    assert!(err.contains("research dossier already exists"), "{err}");
+    assert_eq!(
+        fs::read_to_string(r.join("agents/my-study/keep.md")).unwrap(),
+        "keep me\n"
+    );
+    assert!(!prompts.path().join("agents/my-study.md").exists());
+}
+
+#[test]
+fn concurrent_research_scaffolds_keep_both_sidebar_entries() {
+    let research = tempfile::tempdir().unwrap();
+    let prompts = tempfile::tempdir().unwrap();
+    let r = research.path();
+    write_meta(&r.join("meta.json"), &json!({ "pages": [] })).unwrap();
+    fs::create_dir_all(r.join("agents")).unwrap();
+    write_meta(&r.join("agents/meta.json"), &json!({ "pages": [] })).unwrap();
+    let prompts_path = prompts.path();
+
+    std::thread::scope(|scope| {
+        for slug in ["first-study", "second-study"] {
+            scope.spawn(move || {
+                research_scaffold_in(
+                    r,
+                    prompts_path,
+                    ResearchScaffoldArgs {
+                        slug: slug.to_owned(),
+                        group: "agents".to_owned(),
+                        title: None,
+                    },
+                )
+                .unwrap();
+            });
+        }
+    });
+
+    let meta = read_meta(&r.join("agents/meta.json")).unwrap();
+    let pages = meta["pages"].as_array().unwrap();
+    assert!(pages.iter().any(|page| page == "first-study"));
+    assert!(pages.iter().any(|page| page == "second-study"));
 }
 
 #[test]

@@ -1,12 +1,22 @@
 ---
 title: "08 — Codex follow-ups"
-description: Follow-up evidence for plan labels, account methods, and credential storage
+description: Resolves Codex follow-up questions about plan labels, account methods, credential storage, and quota provenance.
 ---
 
-Questions: (Q1) How does first-party openai/codex render `plan_type` values (`pro`, `prolite`) to user-facing plan names — is `prolite` "Pro 5x" and `pro` "Pro 20x", or plain "Pro"? Can chapter 02's "Pro 5x vs Pro 20x not distinguishable from `plan_type`" and jackin❯ `pro`→"Pro 20x" / `prolite`→"Pro 5x" mapping both be true? (Q2) In `codex-rs/app-server-protocol/src/protocol/` (common.rs and v2/), what are the `account/*` JSON-RPC methods — does `account/read` (called by jackin❯) exist, what does `account/usage/read` (documented in chapter 02) return, and is jackin❯ missing a method or did chapter 02 misname one? (Q3) What is the default value of `cli_auth_credentials_store` and the semantics of `auto` — on a default macOS install, does the token live in `~/.codex/auth.json` or the OS keyring?
-Informs: jackin-desktop
-Method: web + reference read of github.com/openai/codex
-Vetted: 2026-07-24
+## Summary
+
+First-party Codex evidence resolves account methods and credential storage, while marketing multiplier labels remain external mappings.
+
+## Question and scope
+
+(Q1) How does first-party openai/codex render `plan_type` values (`pro`, `prolite`) to user-facing plan names — is `prolite` "Pro 5x" and `pro` "Pro 20x", or plain "Pro"? Can chapter 02's "Pro 5x vs Pro 20x not distinguishable from `plan_type`" and jackin❯ `pro`→"Pro 20x" / `prolite`→"Pro 5x" mapping both be true? (Q2) In `codex-rs/app-server-protocol/src/protocol/` (common.rs and v2/), what are the `account/*` JSON-RPC methods — does `account/read` (called by jackin❯) exist, what does `account/usage/read` (documented in chapter 02) return, and is jackin❯ missing a method or did chapter 02 misname one? (Q3) What is the default value of `cli_auth_credentials_store` and the semantics of `auto` — on a default macOS install, does the token live in `~/.codex/auth.json` or the OS keyring?
+
+This chapter informs jackin-desktop.
+
+## Method
+
+**Method:** web + reference read of github.com/openai/codex
+**Verification cutoff:** 2026-07-24
 
 Reference snapshot: `github.com/openai/codex`, branch `main`, commit `7bafdada8beaad9325ed69218f743f058e3598ab` (shallow clone, 2026-07-24). All `codex-rs/...` paths below refer to that commit. jackin❯ cross-refs are read-only against the working tree at `main` (HEAD `3e6376d`). No CodexBar/OpenUsage source was read (clean-room). No embedded instructions were detected in any fetched source.
 
@@ -32,8 +42,8 @@ Reference snapshot: `github.com/openai/codex`, branch `main`, commit `7bafdada8b
   - Server→client notifications: `account/updated` (1705), `account/rateLimits/updated` (1706), `account/login/completed` (1749–1751).
   - Deprecated v1: `getAuthStatus`, annotated "DEPRECATED in favor of GetAccount" (1204–1208). (confidence: HIGH)
 - `account/read` exists. Params `GetAccountParams { refreshToken: bool }`; response `GetAccountResponse { account: Option<Account>, requiresOpenaiAuth: bool }`, where `Account` is a `type`-tagged enum with wire tags `"apiKey"` (empty), `"chatgpt" { email, planType }`, `"amazonBedrock" { usesCodexManagedCredentials }` — `codex-rs/app-server-protocol/src/protocol/v2/account.rs` lines 20–38 (`Account`), 484–500 (`GetAccountParams`/`GetAccountResponse`) (confidence: HIGH)
-- `account/usage/read` returns **historical/aggregate token statistics, not limit windows**: `GetAccountTokenUsageResponse { summary: AccountTokenUsageSummary { lifetimeTokens, peakDailyTokens, longestRunningTurnSec, currentStreakDays, longestStreakDays }, dailyUsageBuckets: Option<Vec<{ startDate, tokens }>> }` — a per-day token time series plus lifetime/streak gamification stats — `codex-rs/app-server-protocol/src/protocol/v2/account.rs` lines 392–395 and 435–449 (confidence: HIGH)
-- **Settlement.** Neither a missing method nor a misname. jackin❯ calls `account/rateLimits/read` + `account/read` in <RepoFile path="crates/jackin-usage/src/usage/codex.rs" /> (lines 767–785) — both exist. Chapter 02 documented `account/rateLimits/read` + `account/usage/read` (chapter line 20); `account/usage/read` is real but is a *different* method (historical token stats), and chapter 02 simply omitted `account/read` from its app-server enumeration. Note the fit with jackin❯ limits-only rule: `account/usage/read` is precisely the historical-trend payload jackin❯ usage surfaces exclude, and jackin❯ does not call it (confidence: HIGH)
+- `account/usage/read` returns non-limit telemetry rather than quota windows — `codex-rs/app-server-protocol/src/protocol/v2/account.rs` lines 392–395 and 435–449 (confidence: HIGH).
+- **Settlement.** Neither a missing method nor a misname. jackin❯ calls `account/rateLimits/read` + `account/read` in <RepoFile path="crates/jackin-usage/src/usage/codex.rs" /> (lines 767–785); `account/usage/read` is a distinct, out-of-scope method that jackin❯ correctly does not call (confidence: HIGH).
 - Cross-ref divergence observed while verifying: jackin❯ `account/read` decoder `CodexRpcAccountDetails` in <RepoFile path="crates/jackin-usage/src/usage/codex.rs" /> (lines 428–438) accepts tags `"apikey"` and `"chatgpt"` only, while upstream serializes `"apiKey"` (camelCase) and also emits `"amazonBedrock"`. Serde external-tag matching is exact, so `account/read` decode fails for API-key and Bedrock accounts; and although the comment at lines 775–776 says the account label is non-essential, the decode error at lines 786–792 propagates via `?` and fails the whole RPC usage result. Finding only, recorded for the jackin-desktop consumer (confidence: HIGH for the tag mismatch; HIGH for the propagation path as written)
 
 ### Q3 — Credential store default and `auto` semantics
@@ -62,7 +72,7 @@ Reference snapshot: `github.com/openai/codex`, branch `main`, commit `7bafdada8b
 - **Answer.** On a default macOS install (no `cli_auth_credentials_store` set), the ChatGPT OAuth token lives in **`~/.codex/auth.json` (file)**, not the OS keyring. The keyring is used only when the user opts in via `keyring` (hard requirement) or `auto` (keyring-first with file fallback) (confidence: HIGH)
 - Official config reference (fetched live 2026-07-24; `https://developers.openai.com/codex/config-reference` 308-redirects to `https://learn.chatgpt.com/docs/config-file/config-reference`) lists allowed values `file | keyring | auto` for the credentials-store option and documents **no default**; `ephemeral` is absent from the docs — code is ahead of docs (confidence: MED — page fetched, but content summarized by the fetch tool)
 
-## Dead ends and contradictions
+### Dead ends and contradictions
 
 - No first-party multiplier labels: repo-wide search for `"5x"` / `"20x"` in openai/codex found nothing plan-related — a first-party in-code `prolite`→"Pro 5x" mapping does not exist; the identification rests on marketing pages plus checkout-code identifiers (press). Chapter 02 line 21 ("not distinguishable from `plan_type` alone") is contradicted by the enum itself and should be read as "no multiplier label in the enum".
 - `help.openai.com` blocks direct fetch (HTTP 403, Cloudflare) — the Pro-tier multiplier statement from article 9793128 could only be captured via search snippet (hence MED, not HIGH).
@@ -70,9 +80,24 @@ Reference snapshot: `github.com/openai/codex`, branch `main`, commit `7bafdada8b
 - Chapter 02's app-server citations (common.rs lines 1053–1070, 1706) still match this commit exactly; no drift in those line refs.
 - Docs-vs-code contradiction (minor): the official config reference omits both the default value and the `ephemeral` variant that exist in source.
 
-## Open unknowns
+
+## Implications for jackin❯
+
+Separate first-party plan and window identifiers from marketing multipliers, and reuse current app-server contracts without implying undocumented API support.
+
+## Limitations and unknowns
 
 - No single first-party artifact ties wire value `prolite` to the marketing label "Pro 5x" (or `pro` to "Pro 20x"); the mapping is a two-hop inference (pricing page multipliers/prices + $100↔`PROLITE` checkout identifiers). OpenAI could relabel either tier without changing wire values.
 - Whether every $200 Pro subscriber's backend `plan_type` is exactly `pro` (vs. any legacy or regional value) is not observable from the codex source alone; no live account probing was done.
 - Which backend HTTP endpoint `account/usage/read` proxies to, and its availability per plan (`summary` fields and `dailyUsageBuckets` are all optional/nullable), was not traced in this round.
 - Whether OpenAI plans to flip the CLI credential-store default from `file` to `keyring`/`auto` in a future release (the docs' silence on a default leaves room) — no primary statement found.
+
+## Sources
+
+- [OpenAI Codex source](https://github.com/openai/codex)
+- [Codex configuration reference](https://developers.openai.com/codex/config-reference)
+
+## Related work
+
+- [Codex API evidence](/research/product/desktop/usage-provider-apis/02-codex-api/)
+- [Provider API coverage](/research/product/desktop/usage-provider-apis/)

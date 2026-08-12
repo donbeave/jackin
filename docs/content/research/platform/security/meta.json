@@ -2,6 +2,7 @@
   "title": "Security",
   "defaultOpen": false,
   "pages": [
+    "index",
     "sensitive-boundary-code-health-study",
     "credential-exposure",
     "isolation-architecture",

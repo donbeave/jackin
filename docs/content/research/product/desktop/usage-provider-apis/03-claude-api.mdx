@@ -1,13 +1,22 @@
 ---
 title: "03 — Claude usage API"
-description: Claude subscription windows, authentication, account metadata, and presentation gaps
+description: Documents Claude subscription windows, authentication, account metadata, and remaining presentation gaps.
 ---
 
-Questions: (1) Which official Anthropic endpoint(s) expose subscription usage windows for Claude Code OAuth users — Session (5-hour), Weekly (all models), per-model weekly ("Fable only" / previously "Opus only"), percent used/remaining, reset timestamps? (2) Is a "Daily Routines" usage window documented in the subscription usage payload, and under what field names? (3) What auth is required (OAuth access token, scopes, token storage location/type)? (4) Does any official endpoint expose plan label ("Max 20x"), account email, and multi-account data, or is that client-side from stored credentials? (5) Which CodexBar-style display elements have no direct API source for Claude and must be computed client-side?
+## Summary
 
-Informs: jackin-desktop
-Method: web
-Vetted: 2026-07-24
+Claude exposes bounded subscription windows and reset timestamps through OAuth, while plan labeling and cross-account presentation remain client concerns.
+
+## Question and scope
+
+(1) Which official Anthropic endpoint(s) expose subscription usage windows for Claude Code OAuth users — Session (5-hour), Weekly (all models), per-model weekly ("Fable only" / previously "Opus only"), percent used/remaining, reset timestamps? (2) Is a "Daily Routines" usage window documented in the subscription usage payload, and under what field names? (3) What auth is required (OAuth access token, scopes, token storage location/type)? (4) Does any official endpoint expose plan label ("Max 20x"), account email, and multi-account data, or is that client-side from stored credentials? (5) Which CodexBar-style display elements have no direct API source for Claude and must be computed client-side?
+
+This chapter informs jackin-desktop.
+
+## Method
+
+**Method:** web
+**Verification cutoff:** 2026-07-24
 
 Clean-room note: CodexBar/OpenUsage source was not read. A CodexBar Claude documentation page surfaced in one search result; it was deliberately not fetched. All payload-shape claims below come from Anthropic docs, anthropics GitHub issues, independent community observations, and the jackin❯ repo's own live-API mirror fixtures. No embedded instructions were encountered in any fetched page.
 
@@ -57,24 +66,37 @@ Clean-room note: CodexBar/OpenUsage source was not read. A CodexBar Claude docum
 - Also client-side only: plan label and email attribution (from stored credentials, finding 4), window display names ("Session", "Weekly", "Daily Routines" — the API uses raw keys like `five_hour`/`seven_day`), and any cross-account merge. CodexBar's README claims only "session and weekly usage where available" plus reset countdowns as displayed provider data — https://github.com/steipete/codexbar (README prose, concept evidence only) (confidence: MED)
 - Direct API sources DO exist for: percent used per window, reset timestamps, extra-usage/spend money caps (`extra_usage`, `spend`, dollar-budget windows) — same payload sources as above (confidence: MED)
 
-## Dead ends and contradictions
+### Dead ends and contradictions
 
 - Anthropic Admin "Usage and Cost API" (`/v1/organizations/usage_report/messages`) and Enterprise Analytics API: real, documented — but Admin-API-key, API-organization scoped; they do not expose Pro/Max subscription windows — https://platform.claude.com/docs/en/manage-claude/usage-cost-api (checked, ruled out for this use)
 - support.claude.com articles 11647753 ("How do usage and length limits work?") and 14552983 ("Models, usage, and limits in Claude Code") were fetched: neither names concrete window labels or payload fields (ruled out as sources for window naming)
 - Contradiction on weekly reset semantics: support article says "Weekly limits reset at a fixed time each week that is assigned to your account" (https://support.claude.com/en/articles/11049741-what-is-the-max-plan), while an 11-day longitudinal poll of `seven_day.utilization` observed resets every ~72h with `resets_at` NOT predicting fresh allocation (https://gist.github.com/monperrus/3ac4b303a84946bbeaf2b1123ee99491). Unresolved; treat `resets_at` as window-tail metadata, not a refill promise
 - Official-API feature requests are closed "not planned": anthropics/claude-code #45392 and the rate-limit complaint #31637 (`invalid`/`stale`) — no signal of a supported public endpoint coming
 - Host ambiguity: `api.anthropic.com/api/oauth/usage` vs `claude.ai/api/oauth/usage` both observed working in different community reports; canonical host undocumented
-- Claude Code CHANGELOG (fetched via raw.githubusercontent.com) confirms `/usage` cache/rate-limit behavior fixes (2.1.186, 2.1.207, 2.1.211) but names no endpoint or payload fields
 - A CodexBar Claude documentation page appeared in search results; not fetched (clean-room constraint) — nothing from it is used here
 
-## Open unknowns
 
-Round-2 resolutions (see chapter 09, vetted 2026-07-24): the `oauth/profile` endpoint exists (scope-gated `any_of(user:profile, user:office)`, returns account email/uuid + organization uuid); `claude setup-token` tokens are REJECTED by `oauth/usage` (403, `user:inference` only); the single-source payload fields (`weekly_scoped`, `seven_day_cowork`, `amber_ladder`, `seven_day_oauth_apps`) are corroborated by dozens-to-hundreds of independent public repos plus a full public fixture; macOS stores credentials Keychain-ONLY by default (service `Claude Code-credentials`) and even unlinks the credentials file — a macOS Desktop reader needs Keychain access.
+## Implications for jackin❯
+
+Represent Claude’s observed subscription windows and reset metadata without inventing token totals, refill promises, or plan labels the payload does not prove.
+
+## Limitations and unknowns
+
+The `oauth/profile` endpoint exists (scope-gated `any_of(user:profile, user:office)`, returns account email/uuid + organization uuid); `claude setup-token` tokens are rejected by `oauth/usage` (403, `user:inference` only). Payload fields (`weekly_scoped`, `seven_day_cowork`, `amber_ladder`, `seven_day_oauth_apps`) have independent public corroboration, and macOS stores credentials in Keychain by default under `Claude Code-credentials` — see [chapter 09](/research/product/desktop/usage-provider-apis/09-claude-followups/).
 
 - Exact live payload key for the routines window on a routines-active account (`seven_day_routines` vs `seven_day_cowork` vs another key), and the exact UI label ("Daily Routines"?) in claude.ai/settings/usage and `/usage` — needs an operator-authenticated browser session inspecting settings/usage network traffic on an account with routine runs
-- ~~Whether `api.anthropic.com/api/oauth/profile` exists and returns plan label/email~~ RESOLVED → chapter 09 (exists; scope-gated; returns email/uuid; plan-label field still unknown)
+- Whether `oauth/profile` returns a plan-label field remains unknown; its scope-gated email/UUID fields are verified in [chapter 09](/research/product/desktop/usage-provider-apis/09-claude-followups/).
 - Official OAuth scope list for Claude Code (`user:inference`, `user:profile` unconfirmed by any primary source) — capture of the `/login` authorize URL would settle it; chapter 09 adds MED corroboration (dagger's scope constants, issue #79360 scope errors)
-- ~~Whether `claude setup-token` tokens are accepted by the usage endpoint~~ RESOLVED → chapter 09 (rejected: 403 scope error)
 - Documented rate-limit policy for `oauth/usage` (429 without `Retry-After` reported; no official statement)
 - Whether the plan label string ("Max 20x") is ever served server-side (e.g. inside the usage payload's `limits[]`/profile data) or is always client-derived from stored `rateLimitTier`/`organizationType` codes — needs the same authenticated traffic inspection
 - Semantics of `limits[].scope` entries (`weekly_scoped`) for per-model (Fable) windows — first-hand jackin❯ observation only; no second source
+
+## Sources
+
+- [Claude Code authentication](https://code.claude.com/docs/en/authentication.md)
+- [Usage-limit best practices](https://support.claude.com/en/articles/9797557-usage-limit-best-practices)
+
+## Related work
+
+- [Provider API coverage](/research/product/desktop/usage-provider-apis/)
+- [Claude follow-ups](/research/product/desktop/usage-provider-apis/09-claude-followups/)

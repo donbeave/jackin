@@ -1,17 +1,23 @@
 ---
 title: "jackin❯ Context Engine — design spec"
-description: "Design specification for a native, best-in-class token-optimization context engine embedded in jackin❯ — synthesizing the validated levers from caveman, headroom, RTK, lean-ctx, sem, fff, codedb, and mq into one Rust subsystem the runtime enforces instead of the operator disciplining."
+description: "Design for a jackin❯ context engine that combines measured observation, retrieval, output, routing, memory, and verification mechanisms."
 ---
 
-# jackin❯ Context Engine — design spec
+**Research state:** Incomplete
 
-This folder is the **product specification** distilled from the [token-optimization-techniques dossier](/research/context/techniques/) and the [current token-optimization tools hub](/research/context/tools/). External-tool state was refreshed on 2026-08-12 against Caveman v2.0.0, Headroom v0.34.0, RTK v0.45.0, lean-ctx v3.9.18, sem v0.21.0, mq v0.8.2, fff v0.10.3, codedb v0.2.5838, and pxpipe v0.13.1. The current [objective comparison](/research/context/tools/05-head-to-head/), [rising-tools scan](/research/context/tools/06-combining/), [evidence ledger](/research/context/tools/07-evidence-and-claims/), and [release register](/research/context/tools/08-current-release-register/) supersede dated tool snapshots. This specification still requires implementation-time source revalidation; a design donor is not a frozen dependency decision.
+This folder is the **product specification** distilled from the [token-optimization-techniques dossier](/research/context/techniques/) and the [current token-optimization tools hub](/research/context/tools/). External-tool state was refreshed on 2026-08-12 against Caveman v2.0.0, Headroom v0.34.0, RTK v0.45.0, lean-ctx v3.9.18, sem v0.21.0, mq v0.8.2, fff v0.10.3, codedb v0.2.5838, and pxpipe v0.13.1. The current [objective comparison](/research/context/tools/05-head-to-head/), [rising-tools scan](/research/context/tools/06-combining/), [evidence ledger](/research/context/tools/07-evidence-and-claims/), and [release register](/research/context/tools/08-current-release-register/) supersede dated tool snapshots. This specification still requires implementation-time source revalidation; a design donor is not a permanent dependency decision.
 
-## The one-paragraph thesis
+## Research question
+
+What context-engine architecture can reduce tokens and quota per accepted task without weakening quality, recovery, cache behavior, or capsule isolation?
+
+## Headline findings
+
+### Thesis
 
 Every external token-optimization tool fights the same three battles: it must **install itself into an agent environment it does not own**, **infer what the agent is doing from an incomplete interception boundary**, and **measure savings without owning provider billing or the counterfactual task path**. jackin❯ owns the capsule, generates agent configuration, supervises the process, and parses per-session usage records. An embedded engine can therefore adopt reviewed mechanisms without global user-scope installers, overlapping hooks, a provider proxy, or self-reported gross counters.
 
-## What the research says the engine must target
+### Design targets
 
 The dossier's measured invariants bound the design (all sourced in [01 — economics](/research/context/techniques/01-economics-and-measurement/), [02 — baseline audit](/research/context/techniques/02-baseline-audit/), [current evaluation protocol](/research/context/tools/07-evidence-and-claims/)):
 
@@ -21,7 +27,7 @@ The dossier's measured invariants bound the design (all sourced in [01 — econo
 - **Workload split decides the lever**: on this repo's docs-heavy transcripts, 76.2% of observation tokens came through native `Read` (RTK-blind) and only 16.5% through Bash. A code-heavy session inverts this. The engine must cover *both* interception points and measure its own split per capsule.
 - **For subscribers the metric flips to tasks-per-cap** (cache reads ≈0.1× against the cap, T3): prefix stability and request volume outrank everything; style compression is demoted. The engine meters both objectives.
 
-## The six layers
+### Six layers
 
 ```text
         L5  MEMORY & STATE          one reversible store; handoff files; net-accounted injection
@@ -38,7 +44,11 @@ The dossier's measured invariants bound the design (all sourced in [01 — econo
 
 L0 is the foundation, not an afterthought: the 2026-08-12 refresh found **no independent accepted-task A/B for any of the four current stable releases**. Caveman v2.0.0 has a current first-party fixture benchmark; lean-ctx has a current observational report without an exact version; Headroom v0.34.0 and RTK v0.45.0 have current mechanism and vendor evidence only. The engine therefore ships measurement first and treats every compression feature as unproven until its own bounce-netted ledger, quality gates, and current-version task harness say otherwise.
 
-## Provenance: what the engine takes from each tool
+## Method and evidence
+
+The design combines measured session invariants from the techniques dossier with a mechanism-level review of current tools. Each donor is classified as a dependency, port, reimplementation, or method reference; no vendor claim is treated as accepted-task evidence without the proposed harness.
+
+### Mechanism provenance
 
 | Tool | What we take | What we drop | Form |
 |---|---|---|---|
@@ -52,7 +62,7 @@ L0 is the foundation, not an afterthought: the 2026-08-12 refresh found **no ind
 | **Caveman v2.0.0** | MIT output skill's graduated registers and clarity/verbatim guards; deterministic engine patterns as design evidence | Engine/proxy/MCP code reuse under current BSL-1.1 boundary; global wrappers/store | native prompt pack + independent design review |
 | **pxpipe v0.13.1** | Counterfactual accounting and cache-alignment invariants; image representation remains harness-gated | Global proxy and image-only storage of exact text | method donor (MIT) |
 
-## Structural advantages no external tool can copy
+### Structural advantages of capsule integration
 
 1. **No host writes, no installers, no drift.** The engine's hooks, shims, MCP registration, and instruction files are composed at capsule build/launch inside `/jackin/` — the entire installer/self-healing subsystem class disappears, and the host-write ban is satisfied by construction.
 2. **Enforcement instead of discipline.** The adoption roadmap's "automatic beats disciplined" split becomes total: effort tiers, subagent model pins, report registers, and session-boundary routing are generated into agent config per role, not remembered by operators.
@@ -60,7 +70,11 @@ L0 is the foundation, not an afterthought: the 2026-08-12 refresh found **no ind
 4. **Fleet-level economics.** Staggered spawn, pre-warm, `excludeDynamicSections`, workspace-pinned cache lanes, batch-lane scheduling, and per-capsule cap attribution are orchestrator features — none of the seven tools has an orchestrator.
 5. **Honest self-measurement built in.** `crates/jackin-usage` already parses per-agent session JSONL into token-class totals; the engine extends this into the harness the research defined but no tool ships.
 
-## How to read this folder
+## Limitations and open questions
+
+No reviewed tool has an independent, current-release accepted-task A/B that proves its headline savings. The proposed engine is therefore still a design: implementation must revalidate dependency versions, licenses, interception reach, cache effects, recovery behavior, and quality on representative jackin❯ tasks.
+
+## How to read
 
 | Page | Contents |
 |---|---|
@@ -74,3 +88,9 @@ L0 is the foundation, not an afterthought: the 2026-08-12 refresh found **no ind
 | [08 — Measurement and verification](/research/context/engine/08-measurement-and-verification/) | L0: the ledger, thinking estimator, cache-bust detection, harness, canaries, CI linter. |
 | [09 — Reuse decision matrix](/research/context/engine/09-reuse-decision-matrix/) | Per-tool depend/vendor/port/skip decisions with exact crate names, versions, licenses, pins. |
 | [10 — Rollout and validation](/research/context/engine/10-rollout-and-validation/) | Phasing, role-manifest surface, acceptance bars, A/B arms, risks. |
+
+## Related work
+
+- [Token-optimization techniques](/research/context/techniques/) supplies the cost model, mechanism inventory, and validation requirements.
+- [Current token-optimization tools](/research/context/tools/) supplies the release register, tool comparisons, and evidence ledger.
+- [Context research](/research/context/) places this specification in the broader research area.

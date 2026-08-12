@@ -1,9 +1,11 @@
 ---
 title: "10 — Model routing and tiered delegation"
+description: "Model, effort, and delegation strategies that trade token cost, reasoning quality, latency, and coordination overhead."
 ---
 
-# 10 — Model routing and tiered delegation
+## Summary
 
+Explicit task-boundary routing and subagent pins can reduce cost without cache loss; mid-session switches and opaque gateway routing cannot.
 **TL;DR**
 
 - Routing is a shipped, in-product Claude Code surface with four mechanisms: per-subagent `model:` override, the built-in Explore subagent (since Claude Code 2.1.198 it inherits the main session's model, capped at Opus — no longer Haiku-pinned), the `opusplan` plan/execute alias, and the experimental advisor tool. Only the advisor has Anthropic-published end-to-end numbers: **Sonnet-main + Opus-advisor = +2.7pp SWE-bench Multilingual AND −11.9% cost per agentic task vs Sonnet alone** (T1) — escalation measured as NEGATIVE-COST.
@@ -12,7 +14,17 @@ title: "10 — Model routing and tiered delegation"
 - Route at task boundaries: a mid-session `/model` or `/effort` change invalidates the prompt cache and "re-reads the full history without cached context" (T1). ESTIMATE: on a 150K-token history the switch costs ~$0.43 vs $0.075 staying cached — **~9 turns to break even**. Cache-safe channels: subagents, advisor, forks, opusplan-at-the-plan-boundary.
 - Cost-control side: agent teams use **~7x** the tokens of a standard session (plan-mode teammates, T1); use Sonnet — not Haiku — for teammates. External routers are weaker than they sound: RouteLLM's famous "85%" is MT-Bench-only (45% MMLU / 35% GSM8K), Martian's "20–97%" has no public methodology, and per-request gateway routing breaks Claude's model-scoped prompt cache.
 
-## Verified price and capability baseline (all fetched)
+## Question and scope
+
+Which tasks can move to cheaper models or delegated sessions without losing acceptance quality or paying more in retries and context?
+
+## Method
+
+The analysis counts fixed prose, code, rules, and tool-schema samples across model families, then combines price, cold-context, retry, and quality effects under a paired-task acceptance gate.
+
+## Findings
+
+### Verified price and capability baseline (all fetched)
 
 | Model | API ID | $/MTok in / out | Context | Max output | Tokenizer | Quality anchor |
 |---|---|---|---|---|---|---|
@@ -24,9 +36,9 @@ title: "10 — Model routing and tiered delegation"
 
 Pricing matches the dossier reference sheet exactly (platform.claude.com models overview). The 80.8/79.6 pair is a third-party transcription of Anthropic's announcement table (the table renders as an image) — T3 until checked against the model card. Note Haiku's 200k context: you cannot downtier a subagent whose corpus exceeds ~200k Haiku tokens.
 
-## Local measurement: tokenizer divergence across routing tiers
+### Local measurement: tokenizer divergence across routing tiers
 
-Method: deterministic samples piped through the free count_tokens harness (`python3 /tmp/ct.py &lt;model&gt; < sample`), one user message per call. Samples: first 2,000 B of <RepoFile path="crates/jackin-core/src/agent.rs">crates/jackin-core/src/agent.rs</RepoFile>; first 4,096 B and full 6,366 B of this repo's <RepoFile path="AGENTS.md">AGENTS.md</RepoFile>; a fixed 528 B English paragraph; a 558 B JSON tool schema. Counts include a few tokens of message-wrapper overhead (ratios are marginally understated).
+Method: deterministic samples use `python3 docs/content/research/context/techniques/tools/count_tokens.py --model MODEL file sample PATH`, one user message per call. Samples: first 2,000 B of <RepoFile path="crates/jackin-core/src/agent.rs">crates/jackin-core/src/agent.rs</RepoFile>; first 4,096 B and full 6,366 B of <RepoFile path="AGENTS.md">AGENTS.md</RepoFile>; a fixed 528 B English paragraph; and a 558 B JSON tool schema. Counts include a few tokens of message-wrapper overhead, so ratios are marginally understated.
 
 | Sample | Fable 5 | Opus 4.8 | Sonnet 4.6 | Haiku 4.5 | Fable/Sonnet ratio |
 |---|---|---|---|---|---|
@@ -40,7 +52,7 @@ Findings (all local measurement):
 
 - Fable 5 ≡ Opus 4.8 tokenizer (5/5 identical) and Sonnet 4.6 ≡ Haiku 4.5 (5/5 identical). The divergence exists only across the Opus-4.7 tokenizer boundary.
 - **The premium is not universal:** prose measures +35%, but code −3% and CJK −4%; [05 — Tokenizer arbitrage](/research/context/techniques/05-tokenizer-arbitrage/)'s wider battery found Python +15.6%, minified JSON +34%, English prose +59%, and SCREAMING_SNAKE +132%. Treat the Rust rows above as sample-specific, not a code-wide rule. Use per-model `count_tokens` on your own corpus; never reuse one token count across tiers.
-- Phase-0's root <RepoFile path="AGENTS.md">AGENTS.md</RepoFile> measurement (2,738 tok) reproduces as 2,744 on Fable (within 0.2%; wrapper overhead/file drift). The same always-on file is only 1,919 tokens on Sonnet/Haiku — repo instructions are 43% more expensive in tokens on Fable-tier models before the price ratio even applies.
+- Baseline's root <RepoFile path="AGENTS.md">AGENTS.md</RepoFile> measurement (2,738 tok) reproduces as 2,744 on Fable (within 0.2%; wrapper overhead/file drift). The same always-on file is only 1,919 tokens on Sonnet/Haiku — repo instructions are 43% more expensive in tokens on Fable-tier models before the price ratio even applies.
 
 Effective cost multiplier when moving a corpus DOWN a tier = price ratio × token ratio:
 
@@ -53,7 +65,7 @@ Effective cost multiplier when moving a corpus DOWN a tier = price ratio × toke
 
 Claude Sonnet 5 uses the new (Opus 4.7+) tokenizer, so the token-ratio bonus in the downtier multipliers above applies only when the target is Sonnet 4.6 or Haiku 4.5 — Fable 5 → Sonnet 5 is the bare price ratio (5x at $2/$10 intro pricing through 2026-08-31, 3.33x at $3/$15 thereafter). Source: https://platform.claude.com/docs/en/about-claude/pricing + /docs/en/about-claude/models/overview.
 
-## Routing surface map (what ships today)
+### Routing surface map (what ships today)
 
 | Mechanism | Direction | Cache impact | Availability |
 |---|---|---|---|
@@ -64,8 +76,6 @@ Claude Sonnet 5 uses the new (Opus 4.7+) tokenizer, so the token-ratio bonus in 
 | `/effort`, `effort:` frontmatter | intra-model tiering | mid-session change invalidates cache | CLAUDE-CODE-TODAY / SDK |
 | `--fallback-model`, Fable classifier fallback, `availableModels` | availability/content/governance | each switch is cache-cold on target | CLAUDE-CODE-TODAY |
 | RouteLLM / OpenRouter auto / Martian | per-request difficulty routing | breaks model-scoped caching | GATEWAY-OR-SELF-HOST |
-
-## Techniques
 
 ### 1. Per-subagent model downtiering (`model: haiku` frontmatter / per-invocation / `CLAUDE_CODE_SUBAGENT_MODEL`)
 
@@ -86,8 +96,8 @@ Run exploration, log-grinding, doc-fetching, and review subagents on Haiku/Sonne
 Claude Code already routes codebase search to Haiku with zero configuration — so don't build a custom cheap-search agent; learn to trigger this one.
 
 - **Layer:** turn-structure (built-in)
-- **Mechanism:** Explore is documented as "**Model**: Haiku (fast, low-latency)", read-only tools (Write/Edit denied). "Explore and Plan skip your CLAUDE.md files and the parent session's git status to keep research fast and inexpensive" — every other subagent loads both. (Correction to earlier sweep notes: Plan also skips CLAUDE.md, but Plan inherits the main model.) Claude picks a thoroughness level per invocation (quick/medium/very thorough) — effort-like tiering inside the cheap tier. Separately, background functionality (`--resume` summarization etc.) runs on the `ANTHROPIC_DEFAULT_HAIKU_MODEL` alias and costs "typically under $0.04 per session" (T1, costs page).
-- **Expected savings:** unquantified by Anthropic. The lever: exploration corpora bill at $1/$5 instead of $10/$50 and never enter the main context. On the modeled profile, prompt-side tokens are 92.8% cache reads (local phase-0); Explore keeps new exploration off that meter entirely and onto Haiku's.
+- **Mechanism:** Explore is documented as "**Model**: Haiku (fast, low-latency)", read-only tools (Write/Edit denied). "Explore and Plan skip your CLAUDE.md files and the parent session's git status to keep research fast and inexpensive" — every other subagent loads both. Plan also skips CLAUDE.md but inherits the main model. Claude picks a thoroughness level per invocation (quick/medium/very thorough) — effort-like tiering inside the cheap tier. Separately, background functionality (`--resume` summarization etc.) runs on the `ANTHROPIC_DEFAULT_HAIKU_MODEL` alias and costs "typically under $0.04 per session" (T1, costs page).
+- **Expected savings:** unquantified by Anthropic. The lever: exploration corpora bill at $1/$5 instead of $10/$50 and never enter the main context. On the modeled profile, prompt-side tokens are 92.8% cache reads (local baseline); Explore keeps new exploration off that meter entirely and onto Haiku's.
 - **Evidence tier:** T1 (live sub-agents + costs pages).
 - **Quality risk:** NEGATIVE-COST — read-only Haiku exploration is the canonical safe downtier; the docs frame it as cost+speed with no capability caveat. Degradation signature: Explore returns wrong/missing files and the main model re-searches inline. Falsification: `permissions.deny Agent(Explore)` for a week and compare session costs + re-search frequency.
 - **Availability:** CLAUDE-CODE-TODAY (default-on)
@@ -125,12 +135,12 @@ Invert the orchestrator: run the session on Sonnet/Haiku and let it consult Opus
 
 ### 5. Effort-level routing as intra-model tiering (`/effort`, `effort:` frontmatter)
 
-Before changing models, change effort: the same model at lower effort thinks less, preambles less, and makes fewer tool calls — and thinking is 54.8% of output tokens at max effort (local phase-0), billed at 5x input price.
+Before changing models, change effort: the same model at lower effort thinks less, preambles less, and makes fewer tool calls — and thinking is 54.8% of output tokens at max effort (local baseline), billed at 5x input price.
 
 - **Layer:** output (+ turn-structure via tool-call count)
 - **Mechanism:** `output_config.effort` is a behavioral signal affecting ALL tokens, not a strict budget. Levels (model-config): Fable 5/Opus 4.8/4.7 = low/medium/high/xhigh/max; Opus 4.6/Sonnet 4.6 = low/medium/high/max. Default `high` everywhere except Opus 4.7 (`xhigh`). Set via `/effort`, `--effort`, `CLAUDE_CODE_EFFORT_LEVEL`, `effortLevel`, or `effort:` frontmatter in a skill/subagent (overrides session level while active). API effort docs map `low` to delegation ("significant token savings with some capability reduction… such as subagents") and recommend **`medium` for Sonnet 4.6** as "best balance… for most applications" even though the shipped default is `high` — a sanctioned, off-by-default saver. Traps: (1) "The effort scale is calibrated per model" — level names don't transfer; (2) **changing effort mid-session invalidates the prompt cache** (advisor page, verbatim above — same as a model switch); (3) `ultrathink` is an in-context request only, "the effort level sent to the API is unchanged" ("think hard" etc. are NOT recognized keywords); `ultracode` = xhigh + dynamic-workflow orchestration, session-only.
 - **Expected savings:** Anthropic publishes NO per-level percentages — only "significant token savings" at low. Bounding on the modeled day: thinking 20% + visible output 17% = 37% of spend is effort-addressable ($8.1 of $22), plus second-order input savings from fewer tool round-trips. ESTIMATE: high→medium on Sonnet plausibly cuts 10–25% of output tokens; the validation protocol below is the only way to get a real number (this is the biggest quantification hole in the area).
-- **Evidence tier:** T1 mechanics; T4/ESTIMATE magnitudes; thinking share is local measurement (phase-0).
+- **Evidence tier:** T1 mechanics; T4/ESTIMATE magnitudes; thinking share is local measurement (baseline).
 - **Quality risk:** NEUTRAL at medium for Sonnet 4.6 (Anthropic's own recommendation). **QUALITY-TRADE** at low on intelligence-sensitive work ("some capability reduction"; docs reserve low for "short, scoped, latency-sensitive tasks that are not intelligence-sensitive"). Degradation signature: under-thought edits, skipped verification. Falsification: fixed task set at high vs medium; if pass rate drops at medium, the NEUTRAL verdict dies for your workload.
 - **Availability:** CLAUDE-CODE-TODAY / SDK
 - **Effort to adopt:** minutes — one command or frontmatter line.
@@ -147,7 +157,7 @@ Downtiering from Fable 5/Opus 4.8 saves more than the price sheet says; uptierin
 - **Evidence tier:** T1 (official tooltip) + local measurement (method above).
 - **Quality risk:** NEGATIVE-COST — pure accounting, no behavior change. Failure mode is analytical: cost models reusing one token count across tiers are wrong in both directions. Falsification: rerun the table on your corpus; if ratios ≈1.0 the multiplier vanishes.
 - **Availability:** CLAUDE-CODE-TODAY (automatic — it is how billing works)
-- **Effort to adopt:** none for billing; minutes to re-derive your own multipliers with /tmp/ct.py.
+- **Effort to adopt:** none for billing; minutes to re-derive your own multipliers with [checked-in token counter](/research/context/techniques/tools/#count_tokenspy-modes).
 - **Composability:** amplifies techniques 1, 3, 7 when routed content is prose/ASCII-heavy; taxes Fable advisors (technique 4) and Fable uptiers only to the extent their transcript has that mix.
 - **Validation protocol:** corpus-level count_tokens sweep (every file type in the repo, weighted by session-mix) to replace the sample table; report content classes separately and treat near-1.0 code/CJK ratios as expected, not failed measurements.
 
@@ -172,7 +182,7 @@ Anthropic's blessed pattern — Sonnet orchestrating "a team of multiple Haiku 4
 - **Layer:** turn-structure (orchestration)
 - **Mechanism:** two fan-out surfaces: (1) subagents — results return to parent; cost = worker corpora at worker rates + summaries re-read at parent rates; (2) agent teams (`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`) — separate full instances: "**Agent teams use approximately 7x more tokens than standard sessions when teammates run in plan mode**, because each teammate maintains its own context window" (T1, costs page — note the plan-mode qualifier; not a universal multiplier). Official guardrails, verbatim: "**Use Sonnet for teammates**. It balances capability and cost for coordination tasks" (Sonnet, not Haiku — teammates write code); keep teams small; keep spawn prompts focused (each teammate auto-loads CLAUDE.md + MCP + skills — this repo's <RepoFile path="AGENTS.md">AGENTS.md</RepoFile> costs 2,744 Fable / 1,919 Sonnet tokens per teammate, local measurement); "Active teammates continue consuming tokens even if idle."
 - **Expected savings:** a cost-CONTROL technique. Unmanaged: ~7x (teams) or ~Nx (subagents) multiplication — against the documented "$13 per developer per active day" enterprise average, a 7x team day ≈ $91, i.e. ~7 normal days of spend per team-day (ESTIMATE). Managed: downtiered workers convert the multiplier into technique 1's 13x-cheaper-per-worker math.
-- **Evidence tier:** T1 (7x figure, guardrails, $13/day, $150–250/month, &lt;$30/day for 90% of users — costs page); orchestrator quote T1 (Haiku 4.5 announcement, sweep-verified).
+- **Evidence tier:** T1 (7x figure, guardrails, $13/day, $150–250/month, &lt;$30/day for 90% of users — costs page); orchestrator quote T1 (Haiku 4.5 announcement).
 - **Quality risk:** RISKY by default (token multiplication, idle burn); NEUTRAL with the documented guardrails. Degradation signature: /usage attribution showing idle teammates accruing. Falsification: same task solo vs 3-teammate team; if team tokens < 3x solo, the multiplier folklore overstates.
 - **Availability:** CLAUDE-CODE-TODAY (teams experimental, env-gated)
 - **Effort to adopt:** hours — worker model choices in frontmatter/spawn prompts, team-size caps, teardown habits.
@@ -184,8 +194,8 @@ Anthropic's blessed pattern — Sonnet orchestrating "a team of multiple Haiku 4
 Every mid-session `/model` or `/effort` change throws away the prompt cache and re-reads the whole history uncached — downtier via subagents/advisor/new-task instead, and savings stay savings.
 
 - **Layer:** cache + turn-structure (session discipline)
-- **Mechanism:** verified verbatim : the `/model` picker "asks for confirmation when the conversation has prior output, since the next response re-reads the full history without cached context" (model-config); effort changes invalidate too ("Unlike changing model or effort level, toggling /advisor keeps the cached prefix intact" — advisor page, linking the prompt-caching page's "actions that invalidate the cache" anchor). Cache-safe channels: subagents (parent prefix untouched), forks (explicitly reuse parent cache), advisor (explicitly safe), opusplan (one bounded switch per plan cycle). Fallback chains are availability routing, not cost routing — the switch "lasts for the current turn only."
-- **Expected savings:** ESTIMATE (arithmetic): 150K-token cached history on Opus 4.8 = $0.075/turn in cache reads ($0.50/MTok). Switching to Sonnet 4.6: history re-tokenizes to ~115K (÷1.3), one uncached read + 5-min cache write at $3×1.25 = **$0.43**, then $0.035/turn — **~8.9 further turns to break even on input alone** (faster counting output at $15 vs $25/MTok; never pays back if the session ends sooner). Preserves the phase-0 economics where cache reads are 92.8% of prompt tokens and 32% of dollars.
+- **Mechanism:** verified verbatim: the `/model` picker "asks for confirmation when the conversation has prior output, since the next response re-reads the full history without cached context" (model-config); effort changes invalidate too ("Unlike changing model or effort level, toggling /advisor keeps the cached prefix intact" — advisor page, linking the prompt-caching page's "actions that invalidate the cache" anchor). Cache-safe channels: subagents (parent prefix untouched), forks (explicitly reuse parent cache), advisor (explicitly safe), opusplan (one bounded switch per plan cycle). Fallback chains are availability routing, not cost routing — the switch "lasts for the current turn only."
+- **Expected savings:** ESTIMATE (arithmetic): 150K-token cached history on Opus 4.8 = $0.075/turn in cache reads ($0.50/MTok). Switching to Sonnet 4.6: history re-tokenizes to ~115K (÷1.3), one uncached read + 5-min cache write at $3×1.25 = **$0.43**, then $0.035/turn — **~8.9 further turns to break even on input alone** (faster counting output at $15 vs $25/MTok; never pays back if the session ends sooner). Preserves the baseline economics where cache reads are 92.8% of prompt tokens and 32% of dollars.
 - **Evidence tier:** T1 mechanics; ESTIMATE break-even (assumptions stated).
 - **Quality risk:** NEGATIVE-COST — pure waste avoidance, no quality dimension. Degradation signature in violation: an uncached-input spike in Console right after a switch. Falsification: if Console shows no uncached spike after a deliberate mid-session switch, the invalidation claim is wrong (it won't be — it's documented).
 - **Availability:** CLAUDE-CODE-TODAY
@@ -235,7 +245,15 @@ Not a saver per se — routing infrastructure to configure correctly so cost rou
 - **Composability:** interacts with technique 9 (every fallback switch is a cache-cold turn on the target) and with cost dashboards (attribute per-model).
 - **Validation protocol:** simulate by pinning a retired model with a 2-element chain; confirm turn-scoped switching and that an allowlist drops the out-of-list element; in security repos, audit one week of Console usage for silent Fable→Opus sessions.
 
-## Claims to kill
+## Implications for jackin❯
+
+### Techniques
+
+For jackin❯, the model routing and tiered delegation evidence identifies which mechanisms are safe to adopt directly and which still require workload-specific validation.
+
+## Limitations and unknowns
+
+### Claims to kill
 
 | Folklore claim | What's actually true |
 |---|---|
@@ -249,25 +267,25 @@ Not a saver per se — routing infrastructure to configure correctly so cost rou
 | "Haiku for everything cheap, including teammates" | Costs page: "Use Sonnet for teammates" (teammates implement code; the ~6pp Haiku–Sonnet gap costs retry loops). Haiku is for "simple subagent tasks" — task-class-specific, not blanket |
 | "ultrathink raises the effort level" | "The effort level sent to the API is unchanged" — it adds an in-context instruction only; "think hard" variants aren't even recognized keywords (model-config) |
 
-## Gaps — what would upgrade this file
+### Gaps — what would upgrade this file
 
 1. Sonnet/Opus/Fable SWE-bench Verified numbers (80.8 / 79.6 / "95%") are T3 aggregator transcriptions — verify against model cards/PDFs before quoting downstream.
 2. No published end-to-end measurement of Haiku-subagent fan-out savings exists; the 92–93% figure is ESTIMATE arithmetic. A transcript-replay with per-model count_tokens would make it T1.
 3. Anthropic publishes zero per-level effort percentages — technique 5's validation protocol is the highest-value local experiment in this area.
-4. Tokenizer measurements are n=5 here (n=1 per content type in phase-0); prose samples exceed the official 1.35x ceiling — a corpus-level sweep would tighten every multiplier.
-5. The effort-invalidates-cache claim rests on the advisor page's sentence + its link anchor; the prompt-caching page itself was not fetched in this pass.
+4. Tokenizer measurements are n=5 here (n=1 per content type in baseline); prose samples exceed the official 1.35x ceiling — a corpus-level sweep would tighten every multiplier.
+5. The effort-invalidates-cache claim rests on the advisor documentation and its linked cache guidance; the evidence does not include an independent prompt-caching reproduction.
 6. Advisor consult frequency is model-driven and uncapped — worst-case chatty-advisor cost on long transcripts (uncached full reads) is unmeasured.
 7. RouterArena leaderboard specifics (which routers win, at what oracle fraction) were not extracted.
 
-## Verification ledger
+## Sources
 
 | Number / claim | Source or method |
 |---|---|
 | Fable 5 $10/$50; Opus 4.8 $5/$25; Sonnet 4.6 $3/$15; Haiku 4.5 $1/$5 /MTok | https://platform.claude.com/docs/en/about-claude/models/overview.md (fetched, verbatim table) |
 | "roughly 30% more tokens" (Opus-4.7+ tokenizer); 1M = ~555k words (Opus 4.8) vs ~750k (Sonnet 4.6); Haiku context 200k; Fable max output 128k | same page, tooltip text quoted verbatim |
-| Tokenizer table: 830/830/629/629 … 183/183/126/126; ratios 1.320–1.452x | local: `python3 /tmp/ct.py &lt;model&gt; < sample`, samples described in-section |
-| <RepoFile path="AGENTS.md">AGENTS.md</RepoFile> = 2,744 Fable tok (phase-0: 2,738) / 1,919 Sonnet-Haiku tok | local /tmp/ct.py on repo <RepoFile path="AGENTS.md">AGENTS.md</RepoFile> (6,366 B) |
-| Phase-0: thinking 54.8% of output; prompt mix 0.44/6.73/92.83%; dollar split 32/29/20/17/2; ~$22/heavy day | local phase-0 measurement (see [01 — Token Economics and Measurement](/research/context/techniques/01-economics-and-measurement/)) |
+| Tokenizer table: 830/830/629/629 … 183/183/126/126; ratios 1.320–1.452x | Checked-in counter with explicit `--model`; samples described in Method |
+| <RepoFile path="AGENTS.md">AGENTS.md</RepoFile> = 2,744 Fable tok (baseline: 2,738) / 1,919 Sonnet-Haiku tok | local [checked-in token counter](/research/context/techniques/tools/#count_tokenspy-modes) on repo <RepoFile path="AGENTS.md">AGENTS.md</RepoFile> (6,366 B) |
+| Baseline: thinking 54.8% of output; prompt mix 0.44/6.73/92.83%; dollar split 32/29/20/17/2; ~$22/heavy day | local baseline measurement (see [01 — Token Economics and Measurement](/research/context/techniques/01-economics-and-measurement/)) |
 | +2.7pp SWE-bench Multilingual, −11.9% cost/task (Sonnet+Opus-advisor); BrowseComp 41.2% vs 19.7%; −29% score / −85% cost (Haiku+Opus vs Sonnet solo) | https://claude.com/blog/the-advisor-strategy (fetched, sentences quoted verbatim) |
 | Advisor: pairing matrix; Fable-main accepts only Fable; v2.1.98+/v2.1.170+; bills at advisor rates; toggle cache-safe; advisor transcript reads uncached, "anew"; "no setting to cap or force"; Anthropic API only; experimental wording | https://code.claude.com/docs/en/advisor (fetched, verbatim) |
 | Subagent default `inherit`; resolution order (env > per-invocation > frontmatter > main); model values incl. `fable`; `effort:` frontmatter; "Control costs by routing tasks to faster, cheaper models like Haiku"; Explore "Model: Haiku", read-only; "Explore and Plan skip your CLAUDE.md files and the parent session's git status"; fork reuses parent cache, model "Same as main session" | https://code.claude.com/docs/en/sub-agents (fetched, verbatim) |
@@ -283,3 +301,9 @@ Not a saver per se — routing infrastructure to configure correctly so cost rou
 | LiteLLM strategies = load balancing only | https://docs.litellm.ai/docs/routing |
 | Martian "20% to 97%" | https://docs.withmartian.com/ (vendor claim, no methodology) |
 | $2.75 → $0.19–0.28 fan-out (−90/93%); 10x code-heavy and ~13–14.5x prose-heavy effective Fable→Haiku; $0.43 vs $0.075 switch tax, 8.9-turn break-even; $0.75/Opus-consult on 150K transcript; 7×$13 ≈ $91 team-day | local arithmetic from verified prices + measured token ratios (formulas shown in-section) plus independent tokenizer correcti — ESTIMATE |
+
+## Related work
+
+- [Token-optimization techniques dossier](/research/context/techniques/)
+- [Validation harness](/research/context/techniques/16-validation-harness/)
+- [Context engine](/research/context/engine/)

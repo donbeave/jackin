@@ -1,13 +1,12 @@
 ---
 title: "16 — Validation Harness: the No-Quality-Loss Proof Protocol"
+description: "Runnable paired-task protocol for proving token savings, task quality, latency, safety, and statistical confidence."
 ---
 
-# 16 — Validation Harness: the No-Quality-Loss Proof Protocol
+## Summary
 
 This file is a runnable protocol, not a literature review.
 Any technique or stack in this dossier earns "no quality loss" only by passing this harness.
-
-## TL;DR
 
 - **Paired-task A/B**: same ≥12 tasks per arm (baseline vs technique), headless `claude -p`
  runs, objective pass/fail checks, usage read from the JSON result envelope.
@@ -23,7 +22,17 @@ Any technique or stack in this dossier earns "no quality loss" only by passing t
 - A technique is **NEGATIVE-COST** only if it wins cost *and* its success rate is ≥ baseline at
  n≥30 — the bar folklore numbers never clear.
 
-## 1. Design
+## Question and scope
+
+What paired-task protocol can prove lower token use with non-inferior quality, bounded latency, and reliable rollback?
+
+## Method
+
+The protocol runs paired baseline and candidate tasks from identical repository state, records provider usage and latency, applies objective acceptance checks, and rejects any quality regression.
+
+## Findings
+
+### 1. Design
 
 Two arms, identical except for the technique under test:
 
@@ -39,7 +48,7 @@ per round to keep API nondeterminism comparable.
 Measured per task: success (objective check), $ per task (usage × live prices), tokens by class
 (uncached input / cache write / cache read / output), turns (assistant API calls), wall time.
 
-## 2. Task suite (n = 12, objective checks)
+### 2. Task suite (n = 12, objective checks)
 
 Tasks are repo-generic; instantiate against any pinned fixture repo (for this repo, pin a commit
 and use a worktree). Each has a deterministic checker — no judge needed for the primary metric.
@@ -63,7 +72,7 @@ Success = checker exit 0. Tasks 4, 8, 9, 12 use scripted string/set assertions (
 no LLM judge). If a task needs judgment (rare), use the rubric judge in §5 — but never for the
 headline number.
 
-## 3. Canary tasks (compression failure modes)
+### 3. Canary tasks (compression failure modes)
 
 Run in **both arms**; any Arm-B-only failure is a quality regression regardless of the task
 suite score. Exact assertions:
@@ -81,7 +90,7 @@ Rationale: these are precisely what register compression (caveman/wenyan), terse
 summarization, and aggressive pruning are most likely to silently drop — short connectives,
 negations, and qualifiers carry disproportionate meaning per token ([04 — Style and Language Compression — Beyond Caveman](/research/context/techniques/04-style-and-language-compression/)).
 
-## 4. Runner (concrete)
+### 4. Runner (concrete)
 
 Headless driver; one invocation per task per arm. `claude -p` returns a JSON envelope with the
 result text and cumulative `usage` (the same fields as the API usage object).
@@ -111,9 +120,9 @@ rather than config (e.g. "/clear between tasks"), encode the habit in the driver
 Dollars: prefer `total_cost_usd` from the envelope; recompute from `usage` × the price table
 ([01 — Token Economics and Measurement](/research/context/techniques/01-economics-and-measurement/) §1) as a cross-check. Per-call class decomposition when needed:
 enable OTel (`claude_code.token.usage` by `type`) or parse the session JSONL **deduplicating by
-`message.id`** (trap documented in [02 — Baseline Audit of This Environment (Phase 0)](/research/context/techniques/02-baseline-audit/) §1).
+`message.id`** (trap documented in [02 — Baseline audit of the research environment](/research/context/techniques/02-baseline-audit/) §1).
 
-## 5. Judging
+### 5. Judging
 
 - **Primary: objective checkers only** (above). Tests pass, diff correct, string assertions.
 - **Secondary (only where unavoidable):** LLM judge, fixed rubric, judge model ≠ tested model
@@ -122,7 +131,7 @@ enable OTel (`claude_code.token.usage` by `type`) or parse the session JSONL **d
  ties broken by a second judge run with order swapped. Judge verdicts never override an
  objective checker.
 
-## 6. The statistical bar for "no quality loss"
+### 6. The statistical bar for "no quality loss"
 
 Success rates p_A, p_B over n tasks/arm. Declare **no quality loss** when Arm B is
 *non-inferior* with margin δ = 5 percentage points:
@@ -156,7 +165,7 @@ print(f"cost/task A median {sorted(A[i]['cost_usd'] for i in ids)[n//2]:.3f} "
  f"B median {sorted(B[i]['cost_usd'] for i in ids)[n//2]:.3f}")
 ```
 
-## 7. Per-technique falsification experiments
+### 7. Per-technique falsification experiments
 
 Every technique record in files [04 — Style and Language Compression — Beyond Caveman](/research/context/techniques/04-style-and-language-compression/) through [14 — Frontier — unrealistic but maybe real](/research/context/techniques/14-frontier-ideas/) names its falsification experiment; they all reduce to an
 instantiation of this harness:
@@ -173,7 +182,7 @@ instantiation of this harness:
 - **Effort/thinking budget cuts:** the highest-risk class (touches reasoning itself). Confirmation
  n=30 mandatory; include tasks 1, 9, 11, 12 (the reasoning-heavy ones).
 
-## 8. Where to read the numbers (recap)
+### 8. Where to read the numbers (recap)
 
 | Surface | Use |
 |---|---|
@@ -183,11 +192,25 @@ instantiation of this harness:
 | OTel `claude_code.token.usage` / `cost.usage` | fleet dashboards; per-`agent.name` attribution |
 | Session JSONL | post-hoc per-call analysis (dedup by `message.id`; thinking is redacted — infer per 02 §6) |
 
-## Verification ledger
+## Implications for jackin❯
+
+For jackin❯, the validation harness: the no-quality-loss proof protocol evidence identifies which mechanisms are safe to adopt directly and which still require workload-specific validation.
+
+## Limitations and unknowns
+
+Quantitative conclusions are workload- and model-specific. Re-measure volatile provider inputs and validate transfers on representative jackin❯ tasks.
+
+## Sources
 
 | Item | Basis |
 |---|---|
-| `claude -p --output-format json` envelope fields (usage, total_cost_usd, num_turns) | Claude Code headless mode docs — code.claude.com/docs ; field names cross-checked against local CLI output format |
+| `claude -p --output-format json` envelope fields (usage, total_cost_usd, num_turns) | Claude Code headless mode docs — code.claude.com/docs; field names cross-checked against local CLI output format |
 | Price table used for $ math | [01 — Token Economics and Measurement](/research/context/techniques/01-economics-and-measurement/) (live-) |
-| JSONL dedup + thinking-redaction traps | Local measurement, [02 — Baseline Audit of This Environment (Phase 0)](/research/context/techniques/02-baseline-audit/) |
+| JSONL dedup + thinking-redaction traps | Local measurement, [02 — Baseline audit of the research environment](/research/context/techniques/02-baseline-audit/) |
 | δ=5pp, n=12/30, bootstrap procedure | Design choices (stated, not claimed as external standard); power statements are arithmetic over binomial outcomes — ESTIMATE |
+
+## Related work
+
+- [Token-optimization techniques dossier](/research/context/techniques/)
+- [Economics and measurement](/research/context/techniques/01-economics-and-measurement/)
+- [Context engine](/research/context/engine/)

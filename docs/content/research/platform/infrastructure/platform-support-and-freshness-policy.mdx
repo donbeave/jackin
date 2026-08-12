@@ -1,11 +1,14 @@
 ---
 title: "Platform support policy and roadmap freshness tracking — design rationale"
-description: "Why jackin❯ declares macOS as primary and Windows as out of scope, why the construct image is Debian-only, and the design for a roadmap staleness check via last_reviewed frontmatter."
+description: Explains platform-support boundaries and proposes freshness metadata that keeps roadmap claims reviewable.
 ---
 
+## Summary
+
+Platform promises need explicit support boundaries, and freshness metadata is required to keep roadmap claims reviewable.
 This dossier records the design rationale behind the platform support policy and the roadmap freshness-tracking mechanism. The actionable, current-status tracking lives in [Platform support policy & roadmap freshness](/roadmap/platform-support-and-freshness/); this page keeps the "why" out of the roadmap item.
 
-## Problem framing
+## Research question
 
 Two documentation and process gaps motivated this design:
 
@@ -52,7 +55,7 @@ Freshness tracking flags date, not relevance. Archiving stale items risks discar
 - Archiving stale roadmap items — freshness tracking is meant to be sufficient; old items stay visible.
 - Auto-opening GitHub issues for stale items — CI output is enough signal for a solo-maintainer project.
 
-## Open design questions
+## Limitations and open questions
 
 1. Should the platform support page live under `reference/` or under `getting-started/`? Leans `reference/` since it's contributor/advocate-facing policy, not an operator how-to.
 2. What is the staleness threshold? 6 months was the initial guess; adjustable once the script exists and real data comes in.
@@ -63,4 +66,4 @@ Freshness tracking flags date, not relevance. Archiving stale items risks discar
 - [Platform support policy & roadmap freshness](/roadmap/platform-support-and-freshness/) — the tracked roadmap item.
 - [/research/platform/isolation/smolvm-backend/](/research/platform/isolation/smolvm-backend/) — Linux/KVM support affects the platform matrix.
 - [/research/platform/isolation/orbstack-isolated-machines/](/research/platform/isolation/orbstack-isolated-machines/) — macOS-only backend.
-- [/research/platform/security/sandbox-backends/selectable-sandbox-backends/](/research/platform/security/sandbox-backends/selectable-sandbox-backends/) — backend selection affects platform support.
+- [/research/platform/security/sandbox-backends/](/research/platform/security/sandbox-backends/) — backend selection affects platform support.

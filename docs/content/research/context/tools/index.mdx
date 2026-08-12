@@ -1,12 +1,19 @@
 ---
 title: "Token-optimization tools — current objective comparison"
+description: "Current comparison of token-optimization tools, their interception boundaries, evidence quality, composition, and best-fit workloads."
 ---
 
-# Token-optimization tools — current objective comparison
+**Research state:** Current
 
 Current-state research only. **Cutoff: 2026-08-12 UTC.** The active dossier describes the latest stable releases of Caveman, Headroom, RTK, and lean-ctx, plus current fast-growing alternatives. Superseded release snapshots and results tied only to older versions are excluded.
 
-## Bottom line
+## Research question
+
+Which current token-optimization tool best fits a measured agent workload, and what evidence is strong enough to justify adoption?
+
+## Headline findings
+
+### Bottom line
 
 No tool wins every workload because each changes a different part of the agent loop.
 
@@ -20,7 +27,7 @@ No tool wins every workload because each changes a different part of the agent l
 
 Default rule: **measure the reachable token share before installing anything**. Payload compression percentages do not predict task-level savings. Cache behavior, extra turns, rereads, retries, schema rent, and quality can reverse the result.
 
-## Current release snapshot
+### Current release snapshot
 
 | Tool | Latest stable at cutoff | Stars / subscribers | Primary layer | License |
 |---|---:|---:|---|---|
@@ -31,7 +38,7 @@ Default rule: **measure the reachable token share before installing anything**. 
 
 Counts are GitHub API snapshots at the cutoff. “Subscribers” means explicit GitHub watchers; stars measure attention, not correctness, quality, or active installations. See the [current release register](/research/context/tools/08-current-release-register/) for rising tools and source URLs.
 
-## Where each tool acts
+### Where each tool acts
 
 ```text
 model output ───────────────────────────── Caveman skill
@@ -49,25 +56,25 @@ The overlaps matter:
 - Retrieval is usually safer than lossy compression: avoid sending irrelevant material instead of rewriting it after the read.
 - Every lossy transform needs an explicit raw recovery path for edits, errors, configuration, security, and exact identifiers.
 
-## Objective verdicts
+### Objective verdicts
 
-### Caveman
+#### Caveman
 
 The current product is two systems under one name: an output-register skill and a new input-compression stack. The skill is the lightest way to reduce narration. The v2 engine is architecturally serious—type routing, recoverable originals, limits, and pass-through guards—but is too new for a mature independent outcome record. Its split MIT/BSL license must be evaluated component by component.
 
-### Headroom
+#### Headroom
 
 Headroom remains the most mature broad reversible compressor. It is strongest on structured data, logs, RAG payloads, and history where typed routing and recovery matter. It also has the largest dependency/process surface after lean-ctx and now overlaps output verbosity and effort control. Treat “60–95%” as a current payload claim, not a task or quota promise.
 
-### RTK
+#### RTK
 
 RTK is the smallest and most deterministic option. Its value depends entirely on reach: the latest README explicitly says built-in agent Read/Grep/Glob bypass the hook. It is good when supported commands produce a large share of fresh input; it is irrelevant when native tools, quiet commands, or cached history dominate. `rtk gain` is a gross counterfactual, not proof of task-level saving.
 
-### lean-ctx
+#### lean-ctx
 
 lean-ctx is not merely a compressor. It combines selective reads, code structure, shell filtering, persistent state, retrieval, recovery, and verification. That breadth can prevent repeated repository reads, but it creates the widest operational and policy surface. Its current field evidence supports discovery-first use with mandatory raw reads before exact changes; no current controlled independent A/B was found.
 
-## Current rising tools
+#### Current rising tools
 
 The most relevant current alternatives are grouped by mechanism, not ranked by stars:
 
@@ -78,7 +85,15 @@ The most relevant current alternatives are grouped by mechanism, not ranked by s
 
 Their latest versions, current adoption, mechanisms, and caveats are in [06 — Rising tools and composition](/research/context/tools/06-combining/).
 
-## How to read this dossier
+## Method and evidence
+
+The dossier compares latest stable releases at the stated cutoff by interception boundary, recovery model, operational surface, license, and current-version evidence. GitHub counts describe attention only. Vendor payload benchmarks remain vendor evidence; adoption requires paired accepted-task repetitions with cache, turn, reread, latency, and quality accounting.
+
+## Limitations and open questions
+
+No reviewed stable release has an independent current-version end-to-end A/B across representative jackin❯ tasks. Tool reach changes by workload, and provider cache or quota accounting can make payload reduction diverge from task-level savings. The release register and provider-sensitive claims require revalidation before adoption.
+
+## How to read
 
 | Page | Current purpose |
 |---|---|
@@ -92,7 +107,7 @@ Their latest versions, current adoption, mechanisms, and caveats are in [06 — 
 | [07 — Current evidence](/research/context/tools/07-evidence-and-claims/) | Latest-version evidence ledger and neutral bake-off protocol |
 | [08 — Current release register](/research/context/tools/08-current-release-register/) | Dated release/adoption source of truth |
 
-## Decision rule
+### Decision rule
 
 Choose by observed bottleneck:
 
@@ -103,3 +118,9 @@ Choose by observed bottleneck:
 5. Keep the tool only if **tokens or quota per accepted task** falls at unchanged quality.
 
 Current evidence does not justify a blanket “install all four” recommendation.
+
+## Related work
+
+- [Token-optimization techniques](/research/context/techniques/) provides the cost model and full mechanism inventory.
+- [Context engine design](/research/context/engine/) turns reviewed mechanisms into a capsule-native specification.
+- [Context research](/research/context/) links the related dossiers.

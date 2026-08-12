@@ -15,6 +15,7 @@ path = "src/main.rs"
 [dependencies]
 anyhow = { workspace = true }
 clap = { workspace = true, features = ["derive"] }
+fs4 = { workspace = true }
 jackin-process = { workspace = true }
 portable-pty = { workspace = true }
 hex = { workspace = true }

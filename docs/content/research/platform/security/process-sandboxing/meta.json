@@ -1,7 +1,7 @@
 {
-  "title": "Process Sandboxing",
+  "title": "Process sandboxing",
   "defaultOpen": false,
   "pages": [
-    "process-level-sandboxing"
+    "index"
   ]
 }

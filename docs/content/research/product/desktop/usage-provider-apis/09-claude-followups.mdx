@@ -1,18 +1,22 @@
 ---
-title: "09 — Claude follow-ups"
-description: Follow-up evidence for credential storage, payload fields, and window semantics
+title: "09 — Claude account and window semantics"
+description: Documents Claude credential storage, payload fields, profile access, and quota-window semantics.
 ---
 
-Questions:
+## Summary
 
-- **Q1** — On macOS, does Claude Code also write/maintain `~/.claude/.credentials.json` (or Keychain only)? What is the Keychain generic-password service name, corroborated from multiple public tools/issues? Decides whether a macOS Desktop app can obtain Claude credentials without Keychain access.
-- **Q2** — Public corroboration for payload fields chapter 03 held as single-source: `weekly_scoped`, `seven_day_cowork`, `seven_day_routines`, `amber_ladder`, `seven_day_oauth_apps`. Plus: does any public non-banned tool call `api.anthropic.com/api/oauth/profile`, and what does it return?
-- **Q3** — Window boundary semantics from primary/support sources: is the 5-hour session rolling or fixed-start ("session starts with your first message"?); is the weekly window a fixed reset time? Decides validity of a linear-from-window-start projection model.
-- **Q4** — Any public evidence whether `claude setup-token` long-lived tokens are accepted by the `oauth/usage` endpoint (chapter 03 open unknown, line 72)?
+Claude credentials live in Keychain by default on macOS, and OAuth profile plus usage endpoints provide identity and bounded quota metadata.
 
-Informs: jackin-desktop
-Vetted: 2026-07-24
-Method: web (WebSearch/WebFetch + GitHub search API via `gh`, verified live 2026-07-24). Clean-room upheld: no CodexBar/OpenUsage source read; their issue titles cited only as concept evidence. No embedded-instruction/prompt-injection attempts observed in fetched pages (the code.claude.com docs page embeds a benign "fetch llms.txt index" navigation note only).
+## Question and scope
+
+- **Q1** — On macOS, does Claude Code also write/maintain `~/.claude/.credentials.json` (or Keychain only)? What is the Keychain generic-password service name, corroborated from multiple public tools/issues? Decides whether a macOS Desktop app can obtain Claude credentials without Keychain access. - **Q2** — Public corroboration for payload fields chapter 03 held as single-source: `weekly_scoped`, `seven_day_cowork`, `seven_day_routines`, `amber_ladder`, `seven_day_oauth_apps`. Plus: does any public non-banned tool call `api.anthropic.com/api/oauth/profile`, and what does it return? - **Q3** — Window boundary semantics from primary/support sources: is the 5-hour session rolling or fixed-start ("session starts with your first message"?); is the weekly window a fixed reset time? Decides validity of a linear-from-window-start projection model. - **Q4** — Any public evidence whether `claude setup-token` long-lived tokens are accepted by the `oauth/usage` endpoint (chapter 03 open unknown, line 72)?
+
+This chapter informs jackin-desktop.
+
+## Method
+
+**Verification cutoff:** 2026-07-24
+**Method:** web (WebSearch/WebFetch + GitHub search API via `gh`, verified live 2026-07-24). Clean-room upheld: no CodexBar/OpenUsage source read; their issue titles cited only as concept evidence. No embedded-instruction/prompt-injection attempts observed in fetched pages (the code.claude.com docs page embeds a benign "fetch llms.txt index" navigation note only).
 
 ## Findings
 
@@ -41,7 +45,7 @@ All counts are GitHub code-search `total_count` (approximate, indexed files) on 
 - A full public captured `oauth/usage` response matching jackin❯ live fixture structure exists: `five_hour`/`seven_day` with `utilization` + `resets_at`, `limits[]` with `kind: session | weekly_all | weekly_scoped` (the `weekly_scoped` entry scoped `{model: {display_name: "Fable"}}`), `seven_day_cowork: null`, `seven_day_oauth_apps: null`, `amber_ladder: null`, codename keys (`tangelo`, `iguana_necktie`, `nimbus_quill`, `cinder_cove`, `omelette_promotional`), `spend` with `amount_minor`/`currency`/`exponent`, `extra_usage`, `member_dashboard_available` — https://github.com/TopiCsarno/yapcap/blob/152ea67c3abd44776268627d58533003099da951/fixtures/claude/oauth_usage_response.json (confidence: MED-HIGH — independent capture agreeing field-for-field with jackin❯ in-repo live fixture; chapter 03's "single-source" caveats on `weekly_scoped`/`seven_day_cowork`/`amber_ladder`/`seven_day_oauth_apps` can be lifted to multi-source)
 - `api.anthropic.com/api/oauth/profile` **exists and is widely used**: ~518 indexed files. Reputable non-banned callers: `dagger/dagger` defines `oauthProfileURL = "https://api.anthropic.com/api/oauth/profile"` alongside scopes `org:create_api_key user:profile user:inference` — https://github.com/dagger/dagger/blob/main/internal/cmd/dagger/llmconfig/oauth.go; `elizaOS/eliza` calls it with `Authorization: Bearer` + `anthropic-beta: oauth-2025-04-20` and parses response shape `{account: {uuid, email | email_address}, organization: {uuid}}` — https://github.com/elizaOS/eliza/blob/main/packages/auth/src/oauth-flow.ts (confidence: MED-HIGH for existence + account-email/uuid + organization-uuid; LOW/unknown for a plan label field)
 - Official-repo corroboration of the endpoint plus its scope gate: `GET /api/oauth/profile` returns 403 "OAuth token does not meet scope requirement any_of(user:profile, user:office)" for inference-only tokens; the same issue also names `GET /api/oauth/claude_cli/roles` (entitlements/roles) — https://github.com/anthropics/claude-code/issues/79360 (confidence: HIGH for endpoint existence and scope requirement)
-- Chapter 03 lines 47/70 (profile endpoint "could not be verified", open unknown) are now resolved: endpoint exists, requires `user:profile` (or `user:office`) scope, returns account email — sufficient for jackin❯ email attribution without traffic sniffing.
+- The profile endpoint requires `user:profile` or `user:office` scope and returns account email, enabling jackin❯ email attribution without traffic sniffing.
 
 ### Q3 — window boundary semantics
 
@@ -58,18 +62,33 @@ All counts are GitHub code-search `total_count` (approximate, indexed files) on 
 - Concept-level corroboration from tool ecosystems (issue titles only, clean-room): CodexBar issue #1894 proposes a Claude usage source "reading anthropic-ratelimit-unified-* headers (multi-account with setup-tokens / user:inference)" — i.e. header-scraping precisely because setup-tokens cannot use the usage endpoint — https://github.com/steipete/CodexBar/issues/1894; similarly `Nanako0129/TokenBar` #27 "Claude usage limits for setup-token users via ratelimit headers" — https://github.com/Nanako0129/TokenBar/issues/27 (confidence: MED, concept evidence)
 - Chapter 03 line 72 open unknown → closed: `CLAUDE_CODE_OAUTH_TOKEN` setup-tokens are **not** a valid credential for jackin❯ Claude usage polling; only `/login`-minted OAuth credentials (file or Keychain) carry `user:profile`.
 
-## Dead ends and contradictions
+### Dead ends and contradictions
 
 - Issue #44028 states the Keychain item is "service 'Claude Safe Storage' with account 'Claude Key'" — contradicts #9403 and ~3k public tools using `Claude Code-credentials`. "Claude Safe Storage" is the Claude **Desktop** (Electron safeStorage) key name; the reporter almost certainly conflated the two products. Treat `Claude Code-credentials` as canonical for the CLI — https://github.com/anthropics/claude-code/issues/44028 vs https://github.com/anthropics/claude-code/issues/9403
 - #9403 documents a transient v2.0.14 bug where the CLI wrote to `Claude Code-credentials` but read from service `Claude Code` — a version-specific read/write mismatch, not a second canonical name — https://github.com/anthropics/claude-code/issues/9403
 - Weekly-reset contradiction from chapter 03 stands unresolved: support says fixed weekly reset (11049741), while an 11-day longitudinal poll observed `seven_day.utilization` refreshing every ~72h — https://gist.github.com/monperrus/3ac4b303a84946bbeaf2b1123ee99491. Continue treating `resets_at` as window-tail metadata, not a refill promise.
-- Live support.claude.com articles no longer state the session-start trigger anywhere findable ("How do usage and length limits work?" 11647753 contains no session/reset sentences; "Models, usage, and limits in Claude Code" 14552983 only says Enterprise seats meter on a "rolling window" without a duration). The retired 8602283 and 11014257 articles 404. web.archive.org is unreachable from this environment, so the historical wording could not be re-verified first-hand.
+- Current support.claude.com articles do not document a session-start reset trigger. "How do usage and length limits work?" (11647753) contains no session/reset statement, while "Models, usage, and limits in Claude Code" (14552983) says only that Enterprise seats meter on a "rolling window" without specifying its duration.
 - `opgginc/opencode-bar` docs/AI_USAGE_API_REFERENCE.md contains no profile-endpoint section (checked via API) — dead end for profile-shape corroboration; eliza + dagger + #79360 used instead.
 
-## Open unknowns
+
+## Implications for jackin❯
+
+Desktop needs the shared Security.framework credential reader and must classify denial, unavailable interaction, and missing items without bypassing Claude’s file fallback.
+
+## Limitations and unknowns
 
 - Whether `api/oauth/profile` returns a plan/subscription label (eliza parses only `account.uuid`, `account.email`/`email_address`, `organization.uuid`); plan attribution may still need the credential file's `subscriptionType` or the `claude_cli/roles` endpoint — needs an operator-authenticated capture.
 - Which key carries routines data on a routines-active account (`seven_day_routines` vs `seven_day_cowork`); all public captures observed show `seven_day_cowork: null`.
 - The undocumented mechanism by which macOS Claude Code sometimes writes `~/.claude/.credentials.json` after a manual Keychain unlock (#44028 observed it "spontaneously"); do not design around it.
 - A current live primary source for "session starts with your first message" (MED via retired-article echoes only).
 - Whether Anthropic will ship the #22144 credential-export/usage-cache path, which would remove the Keychain-prompt requirement for jackin❯ desktop.
+
+## Sources
+
+- [Claude Code authentication](https://code.claude.com/docs/en/authentication)
+- [Usage-limit best practices](https://support.claude.com/en/articles/9797557-usage-limit-best-practices)
+
+## Related work
+
+- [Claude API evidence](/research/product/desktop/usage-provider-apis/03-claude-api/)
+- [Provider API coverage](/research/product/desktop/usage-provider-apis/)

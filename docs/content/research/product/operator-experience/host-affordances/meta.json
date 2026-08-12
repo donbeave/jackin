@@ -1,7 +1,8 @@
 {
-  "title": "Host Affordances",
+  "title": "Host affordances",
   "defaultOpen": false,
   "pages": [
+    "index",
     "host-affordance-bridge-preflight",
     "custom-operator-tools-design",
     "host-affordance-bridge-design",

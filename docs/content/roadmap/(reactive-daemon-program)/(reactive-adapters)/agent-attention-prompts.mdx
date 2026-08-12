@@ -19,7 +19,7 @@ Everything else — per-container event subscription, click-to-focus, and the co
 1. **`jackin-attention` MCP server** (optional enrichment, not the state source): `attention.note(reason, urgency?)` / `attention.clear()`, baked into the construct image, auto-registered per runtime via the existing `runtime_setup.rs` pattern.
 2. **Daemon adapter**: subscribe to per-container control-channel `blocked` / `done` transitions, track sound-escalation timers, hold per-workspace mute state.
 3. **OS notification dispatch**: macOS Notification Center (`osascript` / `UserNotifications`, sound via `afplay` / `NSSound`) and Linux `notify-send` / libnotify in the same phase; Windows out of scope until jackin❯ supports Windows hosts.
-4. **Click-to-focus**: Ghostty first, matching the [Desktop Agent Hub](/research/product/desktop/agent-hub/jackin-desktop-agent-hub/) v1 contract; other terminals get a notification with no click action until their adapters are added.
+4. **Click-to-focus**: Ghostty first, matching the [Desktop Agent Hub](/research/product/desktop/agent-hub/) v1 contract; other terminals get a notification with no click action until their adapters are added.
 5. **`Notifications` tab** in `jackin console` workspace editor: `attention.enabled`, `attention.urgency_filter`, `attention.sound_escalation_after`, `attention.click_action`, `attention.mute_until`, resolved with the same most-specific-wins precedence (global / workspace / workspace×role×agent) the rest of jackin❯ already uses. No per-role overrides in v1.
 
 ## Out of scope
@@ -34,7 +34,7 @@ Everything else — per-container event subscription, click-to-focus, and the co
 
 - [jackin❯ daemon](/roadmap/jackin-daemon/) — must ship phase 1 before this adapter can be built.
 - [Live bidirectional auth sync](/roadmap/live-auth-sync/) — sibling adapter on the same daemon.
-- [jackin❯ desktop Agent Hub](/research/product/desktop/agent-hub/jackin-desktop-agent-hub/) — owns the first Ghostty click-to-focus UX.
+- [jackin❯ desktop Agent Hub](/research/product/desktop/agent-hub/) — owns the first Ghostty click-to-focus UX.
 - [Agent runtime status authority](/roadmap/agent-runtime-status/) — canonical state source this item consumes.
 - Research: [Agent attention prompts: design exploration](/research/agents/orchestration/agent-attention-prompts-design/) — full UX narrative, MCP contract alternatives, and open design questions behind this item.
 - <RepoFile path="crates/jackin-runtime/src/reactive_daemon.rs">crates/jackin-runtime/src/reactive_daemon.rs</RepoFile> — feature-gated spike adapter.

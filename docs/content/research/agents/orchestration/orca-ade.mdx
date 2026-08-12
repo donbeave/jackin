@@ -1,8 +1,13 @@
 ---
 title: "Orca ADE research"
+description: "Compares Orca's worktree-native agent environment with jackin❯ to identify reusable fleet and desktop interaction patterns."
 ---
 
-**Research state**: Open — proposed research item (benchmarking reference for UX and worktree-native agent orchestration)
+**Research state:** Needs refresh
+
+## Summary
+
+Orca validates worktree-native fleet and desktop interaction patterns, but its weaker isolation boundary makes those UX ideas references rather than an architecture to copy.
 
 ## Goal
 
@@ -65,7 +70,7 @@ Every borrowed idea must survive the values filter from the [Agent Orchestration
 | Embedded Chromium per worktree | Partial | GUI-only; useful as a roadmap target for a future desktop companion, not a CLI feature |
 | Orca CLI (agent-driven pane control) | Yes | Analogous to the [operator handler system](/roadmap/operator-handler-system/) and [agent tag protocol](/roadmap/agent-tag-protocol/); agents signalling state rather than driving UI |
 | 30+ built-in agent runtimes, zero config | Yes | Aligns with [multi-runtime support](/roadmap/multi-runtime-support/) goal; jackin❯ should match this runtime breadth |
-| Mobile companion (monitor, manage) | Yes | Lower priority; relevant to [jackin❯ desktop Agent Hub](/research/product/desktop/agent-hub/jackin-desktop-agent-hub/) |
+| Mobile companion (monitor, manage) | Yes | Lower priority; relevant to [jackin❯ desktop Agent Hub](/research/product/desktop/agent-hub/) |
 | Host-native worktrees as isolation unit | **No** | The core isolation model is the reason jackin❯ uses containers. Host-native agents run as the host user; the hard rule against host-side mutations blocks this as a default |
 | Same-process agent and IDE surface | **No** | Orca runs agents directly on the host machine. The Capsule model is the reason jackin❯ exists |
 
@@ -84,7 +89,7 @@ Every borrowed idea must survive the values filter from the [Agent Orchestration
 | Primary UI | Full desktop GUI with terminal embeds | CLI with `jackin console` as TUI |
 | Agent runtime breadth | 30+ pre-configured, zero config | 5 built-in (Claude Code, Codex, Amp, Kimi, OpenCode); see [multi-runtime](/roadmap/multi-runtime-support/) |
 | Diff review loop | Annotation → batch feedback to agent | Not yet in jackin❯ |
-| Mobile companion | iOS + Android | Not yet; see [jackin❯ desktop Agent Hub](/research/product/desktop/agent-hub/jackin-desktop-agent-hub/) |
+| Mobile companion | iOS + Android | Not yet; see [jackin❯ desktop Agent Hub](/research/product/desktop/agent-hub/) |
 | Port / service visibility | Ports panel per worktree | Not yet explicit; tracked in [network egress policy](/roadmap/network-egress-policy/) |
 | License | MIT, no SaaS | Apache 2.0, no SaaS |
 
@@ -114,7 +119,7 @@ Orca's zero-config 30+ agent support is the user expectation jackin❯ should ma
 
 ### Mobile companion
 
-The iOS/Android companion for remote monitoring and task management is an idea for the [jackin❯ desktop Agent Hub](/research/product/desktop/agent-hub/jackin-desktop-agent-hub/) roadmap item, which uses the daemon as its state/event backend.
+The iOS/Android companion for remote monitoring and task management is an idea for the [jackin❯ desktop Agent Hub](/research/product/desktop/agent-hub/) roadmap item, which uses the daemon as its state/event backend.
 
 ## What is incomplete in Orca
 
@@ -148,7 +153,7 @@ Orca is richer in UX and lighter in isolation. jackin❯ is the reverse. The UX 
 2. **Runtime breadth.** What is the blocking work to reach 10+ supported runtimes in jackin❯? Does it require per-runtime launch config or can a generic exec-based launcher cover most cases?
 3. **Subagent visibility.** How does Orca's hidden-tmux-session problem map to the Capsule model? jackin❯ can observe container process trees; is that sufficient to detect and surface subagent sessions?
 4. **Port panel.** What is the minimum viable port-visibility surface for the console? A ports column in the workspace table? A dedicated pane? A session contract section?
-5. **Self-hosted relay.** Orca's mobile-companion relay is a separate infrastructure concern. Does the jackin❯ daemon design (see [jackin❯ daemon](/roadmap/jackin-daemon/)) make self-hosted relay a natural Phase 2 feature or an unrelated problem?
+5. **Self-hosted relay.** Orca's mobile-companion relay is a separate infrastructure concern. Does the jackin❯ daemon design (see [jackin❯ daemon](/roadmap/jackin-daemon/)) make self-hosted relay a natural later capability or an unrelated problem?
 
 ## Relationship to the research program
 
@@ -163,10 +168,10 @@ The strongest cross-references:
 | Port panel per session | [Session contract and explain mode](/roadmap/session-contract-explain-mode/), [Network egress policy](/roadmap/network-egress-policy/) |
 | Agent-driven callback | [Agent tag protocol](/roadmap/agent-tag-protocol/), [Agent attention prompts](/roadmap/agent-attention-prompts/) |
 | Runtime breadth | [Multi-runtime support](/roadmap/multi-runtime-support/) |
-| Mobile companion | [jackin❯ desktop Agent Hub](/research/product/desktop/agent-hub/jackin-desktop-agent-hub/) |
+| Mobile companion | [jackin❯ desktop Agent Hub](/research/product/desktop/agent-hub/) |
 | Subagent visibility | [jackin-capsule: in-container control plane](/roadmap/jackin-capsule/) |
 
-## Source materials
+## Sources
 
 Research snapshot: May 2026.
 

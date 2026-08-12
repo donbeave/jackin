@@ -1,10 +1,15 @@
 ---
 title: "Console Resource Panel: Design Exploration"
+description: "Designs a console panel for inspecting per-agent CPU, memory, process, storage, and limit state."
 ---
 
-**Research state**: Design exploration for [Console resource panel](/roadmap/console-resource-panel/) (Phase 2, [Agent Orchestration Program](/research/agents/orchestration/program-research/)) — not yet implemented.
+**Research state:** Incomplete
 
-## Problem
+## Summary
+
+The console should expose per-agent consumption, configured ceilings, and host headroom from governed resource data before it offers any control actions.
+
+## Research question
 
 The operator console renders a fixed view: workspace list, agent picker, mounts. It doesn't show *what's happening on the machine*. When five agents are running and one is consuming 14 GiB of RAM, the operator finds out by watching their machine swap, not by looking at the console.
 
@@ -61,17 +66,17 @@ A new optional panel (toggled with a keystroke, e.g. `t` for "telemetry") that s
 
 - Network I/O bytes per agent. Useful but lower-priority.
 - Disk I/O per agent. Same.
-- Historical graphs (sparklines, rolling 5-minute window). Defer until [persistent storage layer](/research/agents/orchestration/memory/persistent-storage-layer/) ships and jackin❯ can keep a rolling sample buffer.
+- Time-series graphs (sparklines, rolling 5-minute window) are outside this design; [usage surfaces](/reference/usage/) expose current provider limits rather than local usage trends.
 - Alert thresholds ("notify me when an agent exceeds 90% of limit"). Defer; operators can watch the cell color in V1.
 - CSV/Prometheus export. Defer.
 
-## Open design questions
+## Limitations and open questions
 
-- **Sampling backend abstraction.** Sample-via-Docker today; sample-via-cgroup-files when [selectable backends](/research/platform/security/sandbox-backends/selectable-sandbox-backends/) lands. Which module owns the abstraction? Candidate: the runtime backend trait owns it, mirroring how each backend already owns mount translation.
+- **Sampling backend abstraction.** Sample-via-Docker today; sample-via-cgroup-files when [selectable backends](/research/platform/security/sandbox-backends/) lands. Which module owns the abstraction? Candidate: the runtime backend trait owns it, mirroring how each backend already owns mount translation.
 - **Always-on vs on-demand sampling.** multicode samples constantly even when the panel isn't visible, because the data feeds usage aggregation. jackin❯ V1 doesn't need that yet — pause-when-closed looks like the right call. Revisit when [Token & Cost Telemetry](/research/agents/telemetry/token-cost-telemetry/) needs a continuous series.
 - **Keystroke choice.** `t` for telemetry, `r` for resources, `m` for metrics — pick once and document. Defer to a console UX review.
 
-## Related files
+## Related work
 
 - New module (e.g. `src/console/panels/resources.rs`) — panel rendering + sampling loop, does not exist yet
 - <RepoFile path="crates/jackin/src/console/adapter.rs" /> — keybinding wiring

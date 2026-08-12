@@ -1,12 +1,24 @@
 ---
 title: "06 — Current rising tools and composition"
+description: "Current scan of rising context tools and safe composition patterns across output, shell, retrieval, memory, and compression layers."
 ---
 
-# 06 — Current rising tools and composition
+## Summary
 
+Composition is safe only when each tool owns a distinct interception boundary and exactly one layer controls recovery, memory, and shell rewriting.
 Cutoff: **2026-08-12**. Inclusion requires current maintenance plus either fast attention growth, material adoption, or a mechanism distinct from the four core tools. Stars are discovery metadata, not an endorsement.
 
-## Current rising set
+## Question and scope
+
+Which rising tools add distinct mechanisms, and under what boundary rules can multiple tools compose safely?
+
+## Method
+
+The scan admits maintained tools with a distinct mechanism or material adoption signal, then maps overlap, recovery authority, schema cost, and failure interaction before considering composition.
+
+## Findings
+
+### Current rising set
 
 | Tool | Current snapshot | Mechanism | Best current fit | Hard caveat |
 |---|---|---|---|---|
@@ -25,7 +37,7 @@ Cutoff: **2026-08-12**. Inclusion requires current maintenance plus either fast 
 
 Metadata sources: [pxpipe](https://api.github.com/repos/teamchong/pxpipe), [Context Mode](https://api.github.com/repos/mksglu/context-mode), [Paritok](https://api.github.com/repos/Paritok-official/paritok-4b-v1), [jCodeMunch](https://api.github.com/repos/jgravelle/jcodemunch-mcp), [Serena](https://api.github.com/repos/oraios/serena), [fff](https://api.github.com/repos/dmtrKovalenko/fff), [codedb](https://api.github.com/repos/justrach/codedb), [sem](https://api.github.com/repos/Ataraxy-Labs/sem), [mq](https://api.github.com/repos/harehare/mq), [Entroly](https://api.github.com/repos/juyterman1000/entroly), [claude-context](https://api.github.com/repos/zilliztech/claude-context), [Repomix](https://api.github.com/repos/yamadashy/repomix).
 
-## Which tools are genuinely different
+### Which tools are genuinely different
 
 ### pxpipe: change modality
 
@@ -43,7 +55,7 @@ Paritok uses a specialized 4B model and semantic tool-schema filtering. It can s
 
 Serena, fff, codedb, sem, jCodeMunch, mq, and claude-context try to return the relevant path, symbol, relationship, entity, section, or semantic match instead of a whole file. They are often safer architectural answers because they reduce irrelevant material without lossy rewriting of selected source. Their risk moves to retrieval recall: a missed dependency can be as harmful as an over-compressed payload.
 
-## Current composition map
+### Current composition map
 
 ```text
 OUTPUT
@@ -62,7 +74,7 @@ ONE-SHOT PACKING
   Repomix
 ```
 
-## Safe composition rules
+### Safe composition rules
 
 1. **One owner per observation.** Do not pass the same shell result through RTK, Headroom, Caveman v2, and lean-ctx without an explicit experiment.
 2. **Output is separate.** Caveman's skill can compose with one input owner, but measure it independently.
@@ -72,8 +84,24 @@ ONE-SHOT PACKING
 6. **Measure cache classes.** Smaller fresh input can still lose when stable cached prefixes are rewritten.
 7. **No star-based default.** Repository attention cannot replace an accepted-task A/B.
 
-## Rising-tool verdict
+## Implications for jackin❯
+
+### Rising-tool verdict
 
 The strongest current growth signals belong to **pxpipe**, **Context Mode**, and **Paritok**, each with a distinct mechanism. The mature “prevent the read” set spans semantic navigation (**Serena**), lexical search (**fff**), structural relationships (**codedb/sem/jCodeMunch**), and documents (**mq**). None has current evidence strong enough to become a universal default.
 
 Next: [07 — Current evidence and evaluation](/research/context/tools/07-evidence-and-claims/).
+
+## Limitations and unknowns
+
+Tool behavior, releases, licenses, and outcome evidence can change; reverify the current version and integration boundary before adoption.
+
+## Sources
+
+Evidence and repository references are cited inline beside the claims they support.
+
+## Related work
+
+- [Token-optimization tools dossier](/research/context/tools/)
+- [Token-optimization techniques](/research/context/techniques/)
+- [Context engine](/research/context/engine/)

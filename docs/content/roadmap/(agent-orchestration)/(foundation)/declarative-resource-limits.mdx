@@ -19,7 +19,7 @@ A one-shot profile override already exists: `jackin load <role> <target> --docke
 ## Remaining work
 
 1. Per-field one-shot CLI overrides (`--memory-max`/`--memory-high`/`--cpus`/`--nofile` on `jackin load`) for "this one launch is on a smaller machine," on top of the existing `--docker-profile` override.
-2. Non-Docker backend translation of the same grants (Apple `container`, or any future backend) — blocked on [selectable sandbox backends](/research/platform/security/sandbox-backends/selectable-sandbox-backends/) landing a second backend to translate into.
+2. Non-Docker backend translation of the same grants (Apple `container`, or any future backend) — blocked on [selectable sandbox backends](/research/platform/security/sandbox-backends/) landing a second backend to translate into.
 3. Push-notified OOM signal in the operator console/TUI. Today OOM is only visible by pulling `jackin status`; there's no proactive banner. Depends on the [console resource panel](/roadmap/console-resource-panel/) (Phase 2), which is still open.
 
 ## Out of scope
@@ -32,6 +32,6 @@ A one-shot profile override already exists: `jackin load <role> <target> --docke
 
 - Guide: [Docker Security Profiles](/guides/docker-profiles/) — full `[docker.grants]` schema, profile table, examples
 - Research: [Declarative resource limits: design alternatives](/research/agents/orchestration/resource-limits/declarative-resource-limits-design/) — multicode inspiration, the backend-neutral `[runtime.limits]` schema that was considered and not adopted, and open naming/inheritance questions
-- [Selectable sandbox backends](/research/platform/security/sandbox-backends/selectable-sandbox-backends/) — cross-backend translator lives here long-term
+- [Selectable sandbox backends](/research/platform/security/sandbox-backends/) — cross-backend translator lives here long-term
 - [Console resource panel](/roadmap/console-resource-panel/) — consumer of the runtime side (current usage vs configured limit) and the natural home for OOM push-notification
 - [Autonomous task queue](/roadmap/autonomous-task-queue/) — queue parallelism limit interacts with per-agent memory limits

@@ -1,10 +1,17 @@
 ---
 title: "Registry Configurations — Design"
+description: Designs secure registry configuration delivery across host, capsule, runtime, and credential-source boundaries.
 ---
 
-**Research state**: Open — design proposal for the roadmap item [Registry configurations](/roadmap/registry-configurations/).
+**Research state:** Incomplete
 
-## Problem
+## Summary
+
+Registry credentials should resolve through the shared credential boundary and reach runtimes without persistent capsule copies.
+
+This proposal informs [Registry configurations](/roadmap/registry-configurations/); implementation commitments remain in the roadmap.
+
+## Research question
 
 Running `jackin` against a role whose `published_image` lives in a **private** registry fails silently and expensively. The operator sees only:
 
@@ -189,7 +196,7 @@ Ship a `jackin registry login <host>` command for discoverable first-run setup. 
 
 A read-only `jackin registry status` (which registries resolve, from which source, ECR token expiry) is a natural companion for visibility and pairs with the auth health/visibility theme — include if cheap, else note as follow-up.
 
-## Open design questions
+## Limitations and open questions
 
 - Network/transient pull-error retry policy.
 - `command` credential kind (post-v1).

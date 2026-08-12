@@ -1,10 +1,13 @@
 ---
 title: "Workspace Skills Mount: Design Options"
+description: "Evaluates a read-only workspace skill mount as a narrow fallback when native agent package managers cannot deliver local skills."
 ---
 
-Exploratory design notes for a possible jackin❯-owned workspace-level skill mount, kept for reference while the [Native APM Support](/research/agents/runtimes/package-manager-support/native-apm-role-support/) decision is pending. See the [Workspace skills mount](/roadmap/workspace-skills-mount/) roadmap item for current status.
+## Summary
 
-## Problem
+A read-only workspace skill mount is only a fallback for local skills that native package managers cannot deliver; it must not become a second package system.
+
+## Research question
 
 Operators lack a clean, workspace-level way to add local or team skills at runtime without rebuilding a role image and without publishing those skills to a marketplace. The original proposal copied multicode's `add-skills-from` shape: configured host directories contain immediate subdirectories, each subdirectory is a skill with `SKILL.md`, and jackin❯ bind-mounts those skill directories read-only into the selected runtime's expected skills location.
 

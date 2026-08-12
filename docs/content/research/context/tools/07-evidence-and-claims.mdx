@@ -1,12 +1,24 @@
 ---
 title: "07 — Current evidence and evaluation"
+description: "Evidence ledger, claim-quality rules, counterfactual limits, and neutral evaluation protocol for token-optimization tools."
 ---
 
-# 07 — Current evidence and evaluation
+## Summary
 
+Current tool claims support mechanism comparisons, not universal savings: accepted-task A/B evidence remains sparse and version-specific.
 Cutoff: **2026-08-12**. This ledger admits tool outcome evidence only when it tests the current stable release or clearly states that the exact version is undisclosed. Older-version outcomes are not treated as current tool evidence.
 
-## Current evidence ledger
+## Question and scope
+
+What current outcome evidence supports each tool, and which claims remain mechanism demonstrations rather than accepted-task proof?
+
+## Method
+
+The ledger accepts current-release outcome evidence or explicitly version-undisclosed field evidence, grades source independence and counterfactual quality, and rejects payload ratios as task savings.
+
+## Findings
+
+### Current evidence ledger
 
 | Tool | Current stable | Current outcome evidence found | Tier | Objective conclusion |
 |---|---:|---|---|---|
@@ -21,14 +33,14 @@ Cutoff: **2026-08-12**. This ledger admits tool outcome evidence only when it te
 
 “No current independent benchmark found” is a research result. It is more accurate than borrowing a result from superseded code.
 
-## Current general evidence
+### Current general evidence
 
 Two recent papers remain relevant because they test mechanisms, not old releases:
 
 - [CAVEWOMAN](https://arxiv.org/abs/2606.24083) separates linguistic input and output compression across eight models, five datasets, and five reduction levels. Output compression usually reduced realized cost; linguistic input compression increased mean net cost and damaged accuracy. This supports treating Caveman's output skill and v2 input engine as different interventions. It does not test tool-aware recoverable coding-agent compression.
 - [Notation Matters](https://arxiv.org/abs/2605.29676) tests TOON/TRON in four agentic benchmarks and five open models. Token reductions came with accuracy loss, and multi-turn parse failures could cascade. This is directly relevant to any current product enabling compact notation, but does not prove a specific implementation unsafe.
 
-## Claim hygiene
+### Claim hygiene
 
 Every percentage must name five things:
 
@@ -40,7 +52,7 @@ Every percentage must name five things:
 
 Without all five, the number is discovery evidence only.
 
-## Why tool counters are insufficient
+### Why tool counters are insufficient
 
 Local counters usually compute something like:
 
@@ -50,7 +62,7 @@ raw payload estimate − emitted payload estimate = gross saved
 
 They cannot see the alternative future. A shorter result may cause extra searches, raw reruns, longer reasoning, changed cache reads, or a wrong edit. A correct task may finish sooner. Only paired task runs measure that net path.
 
-## Current neutral bake-off
+### Current neutral bake-off
 
 Use the exact latest releases in the [current register](/research/context/tools/08-current-release-register/). Pin the agent, model, effort, repository commit, tool configuration, timeouts, and provider cache policy.
 
@@ -100,8 +112,24 @@ AND failure recovery and operational policy pass
 
 Payload ratios, GitHub stars, and gross self-counters are not substitutes.
 
-## Current evidence verdict
+## Implications for jackin❯
+
+### Current evidence verdict
 
 The latest releases are moving faster than independent evaluation. Caveman v2 has the clearest current reproducible fixture benchmark; lean-ctx has the strongest current public field observation, but no exact version; Headroom and RTK have well-inspected current mechanisms without independent latest-release task evidence. Therefore the objective answer remains conditional: **trace, isolate one layer, run a current-version A/B, keep only measured net benefit**.
 
 Next: [08 — Current release register](/research/context/tools/08-current-release-register/).
+
+## Limitations and unknowns
+
+Tool behavior, releases, licenses, and outcome evidence can change; reverify the current version and integration boundary before adoption.
+
+## Sources
+
+Evidence and repository references are cited inline beside the claims they support.
+
+## Related work
+
+- [Token-optimization tools dossier](/research/context/tools/)
+- [Token-optimization techniques](/research/context/techniques/)
+- [Context engine](/research/context/engine/)

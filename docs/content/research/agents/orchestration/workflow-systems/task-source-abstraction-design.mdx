@@ -1,16 +1,21 @@
 ---
 title: "Task Source Abstraction (Design)"
+description: "Designs a provider-neutral task-source contract for discovery, normalization, deduplication, polling, and dispatch."
 ---
 
-**Research state**: Open — research and design proposal (Phase 4, [Agent Orchestration Program](/research/agents/orchestration/program-research/))
+**Research state:** Incomplete
 
-## Problem
+## Summary
+
+A normalized task contract should isolate queue and workflow logic from GitHub, roadmap, file, stdin, and future provider-specific discovery mechanics.
+
+## Research question
 
 The autonomous queue needs something to dispatch, but hardcoding GitHub issues as the only input would make jackin❯ a single-integration queue instead of a general fleet operations layer. The abstraction should let the queue, workflow runner, `jackin console`, persistence, and reporters treat incoming work uniformly whether it came from a GitHub issue, roadmap page, PR, local spec file, stdin prompt, or later issue-tracker adapter.
 
 ## Source evidence
 
-<RepoFile path="crates/jackin/src/cli/config.rs">crates/jackin/src/cli/config.rs</RepoFile> and <RepoFile path="crates/jackin/src/workspace.rs">crates/jackin/src/workspace.rs</RepoFile> currently expose workspace/config schema but no `task_sources` parsing or workspace task-source assignment. <RepoFile path="crates/jackin/src/app.rs">crates/jackin/src/app.rs</RepoFile>, <RepoFile path="crates/jackin/src/cli/usage/store.rs">crates/jackin/src/cli/usage/store.rs</RepoFile>, <RepoFile path="crates/jackin-instance/src/lib.rs">crates/jackin-instance/src/lib.rs</RepoFile>, and <RepoFile path="crates/jackin-protocol/src/control.rs">crates/jackin-protocol/src/control.rs</RepoFile> show the current CLI/runtime/protocol surfaces; source search across those crates found no queue-feed command, workflow-run model, task-source trait, or issue-polling loop. <RepoFile path="crates/jackin-usage/src/usage_snapshot_store.rs">crates/jackin-usage/src/usage_snapshot_store.rs</RepoFile> and <RepoFile path="crates/jackin/src/cli/usage/store.rs">crates/jackin/src/cli/usage/store.rs</RepoFile> implement only the `account_usage_snapshots` storage subset, matching the [persistent storage layer](/research/agents/orchestration/memory/persistent-storage-layer/) partial-implementation note. [Agent workflow orchestration](/research/agents/orchestration/workflow-systems/agent-workflow-orchestration/) still names `WorkItemSource` and a durable run ledger as future design, and explicitly says the next low-regret implementation should be run records plus GitHub reporter rather than full automation.
+<RepoFile path="crates/jackin/src/cli/config.rs">crates/jackin/src/cli/config.rs</RepoFile> and <RepoFile path="crates/jackin/src/workspace.rs">crates/jackin/src/workspace.rs</RepoFile> currently expose workspace/config schema but no `task_sources` parsing or workspace task-source assignment. <RepoFile path="crates/jackin/src/app.rs">crates/jackin/src/app.rs</RepoFile>, <RepoFile path="crates/jackin/src/cli/usage/store.rs">crates/jackin/src/cli/usage/store.rs</RepoFile>, <RepoFile path="crates/jackin-instance/src/lib.rs">crates/jackin-instance/src/lib.rs</RepoFile>, and <RepoFile path="crates/jackin-protocol/src/control.rs">crates/jackin-protocol/src/control.rs</RepoFile> show the current CLI/runtime/protocol surfaces; source search across those crates found no queue-feed command, workflow-run model, task-source trait, or issue-polling loop. <RepoFile path="crates/jackin-usage/src/usage_snapshot_store.rs">crates/jackin-usage/src/usage_snapshot_store.rs</RepoFile> and <RepoFile path="crates/jackin/src/cli/usage/store.rs">crates/jackin/src/cli/usage/store.rs</RepoFile> implement only the `account_usage_snapshots` storage subset, matching the [persistent storage layer](/research/agents/orchestration/memory/) partial-implementation note. [Agent workflow orchestration](/research/agents/orchestration/workflow-systems/agent-workflow-orchestration/) still names `WorkItemSource` and a durable run ledger as future design, and explicitly says the next low-regret implementation should be run records plus GitHub reporter rather than full automation.
 
 ## Recommended shape
 
@@ -62,7 +67,7 @@ Each source should also resolve a `TaskPolicy` so the queue does not smuggle Git
 - Source config hot-reload. Restart the queue/daemon session.
 - Automatic external completion reporting. Require explicit operator approval until reporter policy is mature.
 
-## Open design questions
+## Limitations and open questions
 
 - **Source authentication.** GitHub can reuse the existing credential-forwarding pattern; other trackers should declare credential needs through the [credential source pattern](/roadmap/credential-source-pattern/).
 - **Queue source versus workflow source.** A polled queue source and a one-shot workflow source have overlapping identity needs but different lifecycles. Keep the data model shared, but do not force every workflow input to implement polling.
@@ -75,4 +80,4 @@ Each source should also resolve a `TaskPolicy` so the queue does not smuggle Git
 - [Agent Orchestration Program](/research/agents/orchestration/program-research/)
 - [Agent workflow orchestration](/research/agents/orchestration/workflow-systems/agent-workflow-orchestration/) — workflow-source and run-ledger direction
 - [Autonomous task queue](/roadmap/autonomous-task-queue/) — primary queue consumer
-- [Persistent storage layer](/research/agents/orchestration/memory/persistent-storage-layer/) — task/run storage home
+- [Persistent storage layer](/research/agents/orchestration/memory/) — task/run storage home

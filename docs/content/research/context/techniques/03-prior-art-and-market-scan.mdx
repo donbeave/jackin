@@ -1,22 +1,32 @@
 ---
 title: "03 — Prior art and market scan"
+description: "Comparison of current token-optimization tools, memory systems, formats, infrastructure, and gaps in published evidence."
 ---
 
-# 03 — Prior art and market scan
+## Summary
 
+Current tools concentrate on visible prose and memory while leaving cache reads, cache writes, and thinking—the dominant measured cost buckets—largely untreated.
 **TL;DR**
 
 - All four operator-named tools exist, verified from primary pages: **caveman** (71,891 stars) compresses visible prose; **cavemem** (521) stores pre-compressed memory; **cavekit** (1,014) is a spec-driven build loop; **fff** (8,351) is a resident file-search MCP with latency numbers (3–9 s -> sub-10 ms) but **no published token percentage**.
 - The market crowds onto the two smallest cost buckets of a real heavy session — visible prose (17% of dollars) and memory files (slice of the 2% uncached input) — while **nothing ships** for the big three: cache reads (32%), cache writes (29%), thinking (20%) (local measurement; see [01 — Token Economics and Measurement](/research/context/techniques/01-economics-and-measurement/)).
 - The best-evidenced technique is negative-cost and already a Claude Code default: MCP tool deferral / Tool Search Tool — **85% tool-token cut with accuracy up 49% -> 74%** (Anthropic); locally 1,420 -> ~60 tok (96%) on an 11-tool fleet.
 - Caching is the floor, not free money: on the modeled heavy day it already turns ~$84 into ~$22 (**-74%, ESTIMATE** from local profile + live multipliers) — the remaining bill is 61% cache reads+writes, and any technique that breaks prefix stability must beat ~5.5x compression just to break even (ESTIMATE, record 19).
-- Local kills (fresh, /tmp/ct.py, Fable-family tokenizer): TOON saves **41.2% vs minified JSON**, not "60%" (34.3% of the headline is just minification); caveman's "~75%" replicates as **58.5%** on tokens; the Fable-vs-Sonnet tokenizer gap is content-specific — prose/ASCII gets the premium, but code/CJK probes were near-neutral.
+- Local kills (fresh, [checked-in token counter](/research/context/techniques/tools/#count_tokenspy-modes), Fable-family tokenizer): TOON saves **41.2% vs minified JSON**, not "60%" (34.3% of the headline is just minification); caveman's "~75%" replicates as **58.5%** on tokens; the Fable-vs-Sonnet tokenizer gap is content-specific — prose/ASCII gets the premium, but code/CJK probes were near-neutral.
 
-## Scope and method
+## Question and scope
 
-Scanned: the four operator-named tools, Claude Code's official cost levers, the plugin/MCP ecosystem, gateways, and research-grade prompt compression. Every external claim carries URL +. Local numbers use `/tmp/ct.py` (free `count_tokens` endpoint; the single-user-message wrapper adds a constant 7 tokens — percentages below are conservative by &lt;1 point). Dollar arithmetic uses the modeled heavy-day profile from [01 — Token Economics and Measurement](/research/context/techniques/01-economics-and-measurement/): ~6 sessions/day, ~19 calls/session, 5.5k uncached input, 85k cache-write, 1.17M cache-read, 27k output (54.8% thinking), ~$22/day split 32% cache-read / 29% cache-write / 20% thinking / 17% visible output / 2% uncached input. Validation protocols are designed to run on the harness in [16 — Validation Harness: the No-Quality-Loss Proof Protocol](/research/context/techniques/16-validation-harness/); this machine's own overhead baseline is in [02 — Baseline Audit of This Environment (Phase 0)](/research/context/techniques/02-baseline-audit/).
+Which published tools and techniques reduce end-to-end coding-agent tokens, and which claims collapse under direct measurement?
 
-## Market map 
+## Method
+
+### Scope and method
+
+Scanned: the four operator-named tools, Claude Code's official cost levers, the plugin/MCP ecosystem, gateways, and research-grade prompt compression. Every external claim carries a source URL and evidence tier. Local numbers use [checked-in token counter](/research/context/techniques/tools/#count_tokenspy-modes) (free `count_tokens` endpoint; the single-user-message wrapper adds a constant 7 tokens — percentages below are conservative by &lt;1 point). Dollar arithmetic uses the modeled heavy-day profile from [01 — Token Economics and Measurement](/research/context/techniques/01-economics-and-measurement/): ~6 sessions/day, ~19 calls/session, 5.5k uncached input, 85k cache-write, 1.17M cache-read, 27k output (54.8% thinking), ~$22/day split 32% cache-read / 29% cache-write / 20% thinking / 17% visible output / 2% uncached input. Validation protocols are designed to run on the harness in [16 — Validation Harness: the No-Quality-Loss Proof Protocol](/research/context/techniques/16-validation-harness/); this machine's own overhead baseline is in [02 — Baseline audit of the research environment](/research/context/techniques/02-baseline-audit/).
+
+## Findings
+
+### Market map
 
 | Bucket | Members (record #) |
 |---|---|
@@ -26,7 +36,7 @@ Scanned: the four operator-named tools, Claude Code's official cost levers, the 
 | Engineer-verified facts and patterns | preprocessing/hooks filtering (20), fixed-overhead accounting (21) |
 | Named-tool early adopters (low adoption, weak numbers) | cavemem (02), cavekit (03) |
 
-## Local measurements run for this file (/tmp/ct.py, claude-fable-5)
+### Local measurements run for this file ([checked-in token counter](/research/context/techniques/tools/#count_tokenspy-modes), claude-fable-5)
 
 Serialization — identical 10-row x 4-field uniform dataset, plus a nested-config control:
 
@@ -38,7 +48,7 @@ Serialization — identical 10-row x 4-field uniform dataset, plus a nested-conf
 | Nested config, pretty | 272 | — | — |
 | Nested config, minified | 194 | -28.7% | — |
 
-An independent same-day run (sweep agent, different dataset, same shape) got -60.6%/-40.8%/-33.6% — agreement within ~1 point.
+An independent local measurement with a different dataset of the same shape produced -60.6%/-40.8%/-33.6%, agreeing within about one percentage point.
 
 Tool-result filtering — synthetic 630-line cargo-test log (577 pass, 3 failure blocks), filtered with `grep -B1 -A6 -E "FAILED|panicked|error\[" | head -100`. Repetitive pass-lines are the favorable (and typical) case; the honest general claim stays "80–99%":
 
@@ -54,19 +64,19 @@ Cross-tokenizer, identical fixed text (7-tok wrapper included):
 | English prose, 730 chars | 224 | 157 | 157 | **+42.7%** (+44.7% net of wrapper) |
 | Rust code, 1,800 bytes (<RepoFile path="crates/jackin-build-meta/src/lib.rs">crates/jackin-build-meta/src/lib.rs</RepoFile>) | 777 | 558 | 558 | **+39.2%** (+39.7% net) |
 
-Sonnet 4.6 and Haiku 4.5 return byte-identical counts — shared tokenizer confirmed. Phase-0 (same day, other samples) got +15% (code) / +38% (prose); a tighter probe gives prose +35%, code −3%, CJK −4% — the premium is prose/ASCII-specific, not code-wide. Treat the Rust row above as sample-specific.
+Sonnet 4.6 and Haiku 4.5 return byte-identical counts — shared tokenizer confirmed. Other baseline samples measured +15% for code and +38% for prose; a tighter probe measured prose +35%, code −3%, and CJK −4% — the premium is prose/ASCII-specific, not code-wide. Treat the Rust row above as sample-specific.
 
-Self-cost of the optimizer: the caveman plugin family's always-on skill listing (7 skills, names + descriptions as injected this session) = **940 tokens** of prefix per session — ~0.5% of the modeled day in cache-read rent before it saves anything. Root <RepoFile path="AGENTS.md">AGENTS.md</RepoFile> re-measured at **2,744 tokens** (phase-0: 2,738; 0.2% drift).
+Self-cost of the optimizer: the caveman plugin family's always-on skill listing (7 skills, names + descriptions as injected in the measured environment) = **940 tokens** of prefix per session — ~0.5% of the modeled day in cache-read rent before it saves anything. Root <RepoFile path="AGENTS.md">AGENTS.md</RepoFile> measured at **2,744 tokens**.
 
 ---
 
-## The four operator-named tools
+### The four operator-named tools
 
 ### 01. caveman (JuliusBrussee/caveman) — terse-register output compression: "why use many token when few do trick"; README headline "cuts ~75% of output tokens"; 71,891 stars (gh api)
 
 - **Layer:** output (visible prose only). **Mechanism:** skill-prompt register change — lite/full/ultra strip filler, wenyan variants answer in Classical Chinese; companions: caveman-compress (memory files, "~46% input tokens"), cavecrew subagents ("~60% fewer tokens than vanilla"), caveman-commit/review; sibling caveman-code claims "~2x fewer tokens than Codex".
 - **Expected savings:** visible output = 17% of modeled-day dollars ($3.74). Ultra locally cuts 58.5% of prose tokens; code/diffs pass through verbatim, so realistic whole-bill effect ~4–6%/day (ESTIMATE: 17% x 58.5% x prose share; independent mayhemcode estimate ~4%), hard ceiling ~10%.
-- **Evidence tier:** T3, partially replicated locally. README benchmark : 10 tasks, per-task mean 65% (range 22–87%), pooled 1214 -> 294 = 75.8% — the "~75%" headline is the pooled ratio, 65% the per-task mean, both off one table, against an "Answer concisely." baseline, reproduction scripts in `benchmarks/`. Local : ultra 58.5%; wenyan-full 56.6% tokens (80.9% chars); wenyan-ultra 74.5%.
+- **Evidence tier:** T3, partially replicated locally. README benchmark: 10 tasks, per-task mean 65% (range 22–87%), pooled 1214 -> 294 = 75.8% — the "~75%" headline is the pooled ratio, 65% the per-task mean, both off one table, against an "Answer concisely." baseline, reproduction scripts in `benchmarks/`. Local: ultra 58.5%; wenyan-full 56.6% tokens (80.9% chars); wenyan-ultra 74.5%.
 - **Quality risk:** QUALITY-TRADE at ultra/wenyan (lossy register, unreadable transcripts); ~NEUTRAL at lite/full. The README concedes the economics: "Caveman only affects output tokens — thinking/reasoning tokens untouched... cost savings a bonus", and cites arXiv 2604.00025 (repo-cited, unverified) claiming brevity *improved* accuracy 26 points. Degradation = dropped caveats/rationale; falsify by blind-grading paired answers.
 - **Availability:** CLAUDE-CODE-TODAY (plugin marketplace; installed in this environment). **Effort to adopt:** minutes.
 - **Composability:** stacks with caching/hygiene/deferral; does not touch thinking (54.8% of output tokens locally); its own skill listing costs 940 tok/session of prefix (above); wenyan modes meet an unfavorable CJK tokenizer (~1.47 chars/tok).
@@ -85,7 +95,7 @@ Self-cost of the optimizer: the caveman plugin family's always-on skill listing 
 ### 03. cavekit (JuliusBrussee/cavekit) — spec-driven autonomous build loop; caveman-encoded blueprints "~75% fewer tokens than prose"; 1,014 stars (gh api)
 
 - **Layer:** turn-structure / orchestration artifacts. **Mechanism:** NL -> compressed blueprint kits -> parallel build -> verification; durable repo-root SPEC.md means /clear or compaction does not force re-deriving intent. Token relevance is secondary to the workflow change.
-- **Expected savings:** no end-to-end number exists anywhere . Artifact compression touches a slice of the 2% uncached + write lines; the loop itself can *multiply* total calls — net sign unknown.
+- **Expected savings:** no end-to-end number exists anywhere. Artifact compression touches a slice of the 2% uncached + write lines; the loop itself can *multiply* total calls — net sign unknown.
 - **Evidence tier:** T4 — token claims inherited from caveman encoding; no published cavekit-vs-vanilla measurement.
 - **Quality risk:** RISKY — autonomous iteration can spend far more than it saves; degradation = ballooning call counts per feature. Falsify with the protocol below.
 - **Availability:** CLAUDE-CODE-TODAY (plugin). **Effort to adopt:** hours-to-days (whole-workflow change).
@@ -104,7 +114,7 @@ Self-cost of the optimizer: the caveman plugin family's always-on skill listing 
 
 ---
 
-## Industry standard (automatic or near-universal)
+### Industry standard (automatic or near-universal)
 
 ### 05. Prompt caching — reads 0.1x, writes 1.25x/2x, automatic in Claude Code; the single biggest shipped lever
 
@@ -139,7 +149,7 @@ Self-cost of the optimizer: the caveman plugin family's always-on skill listing 
 ### 08. Model tiering — Fable 5 $10/$50, Opus 4.8 $5/$25, Sonnet 4.6 $3/$15, Haiku 4.5 $1/$5 — with the tokenizer trap
 
 - **Layer:** infra / price-per-token and token count. **Mechanism:** /model switching, plan-on-big/build-on-small, subagent model pinning. Pricing-page note: "Opus 4.7 and later use a new tokenizer... may use up to 35% more tokens for the same fixed text" (platform.claude.com/docs/en/about-claude/pricing).
-- **Expected savings:** independent trace: same session ~$5.50 on Sonnet vs ~$10+ on Opus (dev.to slima4). **Corrected cross-boundary math:** use **3.33x Fable:Sonnet** on code/CJK-heavy text and **~4.3x** on prose/ASCII-heavy text after the tokenizer premium (ESTIMATE; verification). The sweep-agent draft of this file said "effectively ~2.4–2.9x" — that is the same arithmetic *inverted* (division for multiplication); corrected here: downgrades save at least sticker, and prose-heavy downgrades save more.
+- **Expected savings:** independent trace: same session ~$5.50 on Sonnet vs ~$10+ on Opus (dev.to slima4). **Cross-boundary math:** use **3.33x Fable:Sonnet** on code/CJK-heavy text and **~4.3x** on prose/ASCII-heavy text after the tokenizer premium (ESTIMATE; verification). Downgrades save at least the sticker ratio, and prose-heavy downgrades save more.
 - **Evidence tier:** T1 (prices + official note) + local measurement; both fresh local samples *exceed* the official 35% ceiling — flagged.
 - **Quality risk:** QUALITY-TRADE — capability cliff on hard tasks; degradation = failed/looping attempts on the small model (retries can cost more than the discount). Falsify with $-per-solved-task, never $/MTok.
 - **Availability:** CLAUDE-CODE-TODAY. **Effort to adopt:** minutes.
@@ -158,7 +168,7 @@ Self-cost of the optimizer: the caveman plugin family's always-on skill listing 
 
 ### 10. MCP tool deferral / Tool Search Tool — the proven negative-cost optimization, now a Claude Code DEFAULT
 
-- **Layer:** input (tool schemas). **Mechanism:** schemas stay out of context (names only) until needed; API Tool Search Tool queries a registry; Claude Code defers MCP definitions by default ("only tool names enter context until Claude uses a specific tool" — code.claude.com/docs/en/costs). This research session itself runs on ToolSearch.
+- **Layer:** input (tool schemas). **Mechanism:** schemas stay out of context (names only) until needed; API Tool Search Tool queries a registry; Claude Code defers MCP definitions by default ("only tool names enter context until Claude uses a specific tool" — code.claude.com/docs/en/costs).
 - **Expected savings:** vendor: "an 85% reduction in token usage" (context preserved 191,300 vs 122,800 of 200k), MCP-eval accuracy **49% -> 74%** (Opus 4) and 79.5% -> 88.1% (Opus 4.5); five-server example ~55K schema tokens; internal fleets hit 134K pre-optimization (anthropic.com/engineering/advanced-tool-use). Local: 11 schemas = 1,420 tok loaded vs ~60 deferred = **96%** (local measurement). Modeled day: an undeferred 20k fleet = 20k x19 x6 x $1/MTok = **$2.28/day (~10%) read rent** (ESTIMATE).
 - **Evidence tier:** T1 + local reproduction (consistent direction and magnitude).
 - **Quality risk:** NEGATIVE-COST — vendor evals show accuracy *rises* (less irrelevant-tool confusion). Residual failure mode: a needed deferred tool goes unfound; falsify with task suites requiring rare tools.
@@ -168,7 +178,7 @@ Self-cost of the optimizer: the caveman plugin family's always-on skill listing 
 
 ---
 
-## Proven tactics (vendor or peer-reviewed numbers)
+### Proven tactics (vendor or peer-reviewed numbers)
 
 ### 11. Programmatic tool calling / code-execution orchestration — 37% average cut with accuracy gains
 
@@ -203,8 +213,8 @@ Self-cost of the optimizer: the caveman plugin family's always-on skill listing 
 ### 14. Serialization-format engineering: TOON + JSON minification [LOCALLY VERIFIED] — a third of the headline is just minifying
 
 - **Layer:** input (structured data in prompts / tool results). **Mechanism:** TOON replaces repeated JSON keys/braces with a schema header + CSV-like rows.
-- **Expected savings:** LOCAL TABLE ABOVE : TOON -61.4% vs pretty, **-41.2% vs minified**; minification alone -34.3% (tabular) / -28.7% (nested) — free and riskless. Official: 39.9% fewer tokens at equal-or-better retrieval accuracy (76.4% vs 75.0%) (toonformat.dev/guide/benchmarks); nested/irregular reality check: 1.8–20% (dev.to tejas_page). Affects only the structured-data fraction of your prompts.
-- **Evidence tier:** T3 + local reproduction (two independent same-day local runs agree within ~1 point).
+- **Expected savings:** LOCAL TABLE ABOVE: TOON -61.4% vs pretty, **-41.2% vs minified**; minification alone -34.3% (tabular) / -28.7% (nested) — free and riskless. Official: 39.9% fewer tokens at equal-or-better retrieval accuracy (76.4% vs 75.0%) (toonformat.dev/guide/benchmarks); nested/irregular reality check: 1.8–20% (dev.to tejas_page). Affects only the structured-data fraction of your prompts.
+- **Evidence tier:** T3 + local reproduction (two independent local measurements agree within about one percentage point).
 - **Quality risk:** NEUTRAL on uniform data (accuracy equal-or-better in official benchmark); RISKY for deep nesting (format breaks down, less training exposure). Falsify with retrieval-QA over your own TOON-ized payloads.
 - **Availability:** GATEWAY-OR-SELF-HOST for your own MCP servers/hooks; NOT adoptable for Claude Code's native tool results. **Effort to adopt:** hours (own tools); minification is minutes.
 - **Composability:** natural for MCP servers returning tabular data; orthogonal to caching.
@@ -212,7 +222,7 @@ Self-cost of the optimizer: the caveman plugin family's always-on skill listing 
 
 ---
 
-## Significant industry use, weaker or absent numbers
+### Significant industry use, weaker or absent numbers
 
 ### 15. claude-mem (thedotmack/claude-mem) — compressed cross-session memory; adoption king: 81,976 stars (gh api), bigger than caveman
 
@@ -281,27 +291,12 @@ Self-cost of the optimizer: the caveman plugin family's always-on skill listing 
 - **Evidence tier:** T3 (converging independent traces) + T1 (Anthropic's own figures). All cached after first write — overhead seeds the 32% read line, not full-price input (kill K9).
 - **Quality risk:** NEUTRAL (a fact, not an action); mis-reading it as uncached cost overstates the problem 10x.
 - **Availability:** CLAUDE-CODE-TODAY (audit via /context). **Effort to adopt:** minutes to audit.
-- **Composability:** the denominator for every percentage in this file; this machine's own numbers in [02 — Baseline Audit of This Environment (Phase 0)](/research/context/techniques/02-baseline-audit/).
+- **Composability:** the denominator for every percentage in this file; this machine's own numbers in [02 — Baseline audit of the research environment](/research/context/techniques/02-baseline-audit/).
 - **Validation protocol:** /context on this setup; decompose system prompt / tools / memory / skills; reconcile with first-call cache_creation_input_tokens in JSONL; re-audit after applying 07 + 10.
 
 ---
 
-## Claims to kill (folklore ledger)
-
-| # | Claim in the wild | Verdict and corrected number |
-|---|---|---|
-| K1 | "caveman cuts ~75% of your tokens" | Three-layer overstatement. 75% headline = *pooled* benchmark ratio (1214 -> 294 = 75.8%); the same table's per-task mean is 65% (range 22–87%) (README); local replication 58.5% (ultra). And it targets visible prose only = 17% of heavy-session dollars; whole-bill ~4–6% (ESTIMATE; mayhemcode ~4%). The README itself calls cost savings "a bonus". |
-| K2 | "wenyan/Classical-Chinese mode saves ~80%" | Character-token confusion: 80.9% char cut = 56.6% token cut (CJK ~1.47 chars/tok vs 3.35 English; local). Billing is tokens. wenyan-ultra reaches 74.5% tokens at maximum lossiness. |
-| K3 | "TOON cuts 60% of data tokens" | Locally 61.4% only vs *pretty* JSON on uniform tabular; vs minified it is 41.2%, and minification alone is 34.3% (free, riskless). Nested/irregular real payloads: 1.8–20% (independent). |
-| K4 | "Prompt caching saves 90%" | 90% is the best launch-table row (book chat); the multi-turn row is -53%; writes bill 1.25–2x. The local heavy session was already maximally cached (92.83% reads) and reads+writes still cost **61% of dollars**. Modeled-day actual: -74% vs no caching (ESTIMATE). Not an available saving for an already-cached session. |
-| K5 | "Model price ratios = cost ratios" | Partly false: code/CJK-heavy work can be close to sticker ratios, but prose/ASCII-heavy text gets the Opus-4.7+ tokenizer premium. Effective Fable:Sonnet input ratio is ~3.33x for code-heavy probes and ~4.3x for prose-heavy probes. Also kills the sweep-draft's inverted "~2.4–2.9x" (arithmetic error, corrected in record 08). Routers do not tokenizer-normalize. |
-| K6 | "Perplexity dropped MCP citing 72% context waste" | Single secondary source (nevo.systems); no primary statement found. Do not repeat. |
-| K7 | "fff saves X% tokens" | No token percentage exists in the README text — latency numbers and a chart image only. Cite the mechanism, not a number. |
-| K8 | "Semantic caching will cut your coding-agent bill" | LiteLLM's own docs claim no percentage; coding prompts are near-worst-case for similarity caches and hits risk stale code. No published coding-agent hit rate (searched). |
-| K9 | "The 14.3k overhead costs 14.3k input tokens per call" | It is cached: marginal cost 0.1x after first write (~$1.63/day rent on the modeled profile, not ~$16). Directionally real, economically 10x smaller than the naive reading. |
-| K10 | Phase-0 internal note: "caveman's 75% is character-level folklore" | Partially corrected: the repo's benchmark claims Claude-API *token* methodology with reproduction scripts; the 75%-pooled vs 65%-mean distinction explains the headline. The honest kill is K1 ("75 != 65 != 58.5, smallest bucket"), not "they counted characters". |
-
-## White space — what nobody ships 
+### White space — what nobody ships
 
 1. **Thinking-token optimization** — 54.8% of output tokens, 20% of dollars, not disableable on Fable 5; only blunt levers exist (/effort, MAX_THINKING_TOKENS). No per-task-type effort routing, no thinking-waste detection. Caveman's README concedes the bucket explicitly.
 2. **Cache-economics tooling** — reads+writes = 61% of heavy-session dollars; nothing optimizes breakpoint placement, predicts 5-min-vs-1-h TTL value, schedules compaction to minimize write spikes, or reports write amplification (ccusage shows totals, not causes). See [07 — Caching exploitation](/research/context/techniques/07-caching-exploitation/).
@@ -312,20 +307,41 @@ Self-cost of the optimizer: the caveman plugin family's always-on skill listing 
 7. **Independent replication infrastructure** — every vendor self-reports; a public ct.py-style harness re-measuring plugin claims against live tokenizers does not exist (this dossier's method is itself novel prior art; see [16 — Validation Harness: the No-Quality-Loss Proof Protocol](/research/context/techniques/16-validation-harness/)).
 8. **Output brevity with quality gates** — caveman trades readability blindly; nothing compresses output only when a verifier confirms zero information loss.
 
-## Surprising findings
+### Surprising findings
 
 - Token-cutting can be quality-improving, with vendor proof: Tool Search -85% tokens with accuracy 49 -> 74; programmatic calling -37% with accuracy up. Negative-cost optimization is shipped, not theoretical.
 - Anthropic admitted internal tool definitions hit 134K tokens pre-optimization, and cut its own tool-use system prompt 57% (675 -> 290) between model versions — vendor-side overhead shrinks release-over-release.
 - The memory niche out-adopted the compression niche: claude-mem 81,976 stars vs caveman 71,891 — and caveman 5x'd from ~14k in ~10 weeks since early April 2026, the fastest-growing plugin category of 2026.
 - The optimizer taxes itself: caveman's always-on skill listing costs 940 tokens of prefix per session (local), ~0.5% of the modeled day — while plain JSON minification (-34.3%, free) goes unmarketed and one experimental flag (agent teams, ~7x) moves cost more than every compression plugin in this scan combined.
 
-## Verification ledger
+## Implications for jackin❯
+
+For jackin❯, the prior art and market scan evidence identifies which mechanisms are safe to adopt directly and which still require workload-specific validation.
+
+## Limitations and unknowns
+
+### Claims to kill (folklore ledger)
+
+| # | Claim in the wild | Verdict and corrected number |
+|---|---|---|
+| K1 | "caveman cuts ~75% of your tokens" | Three-layer overstatement. 75% headline = *pooled* benchmark ratio (1214 -> 294 = 75.8%); the same table's per-task mean is 65% (range 22–87%) (README); local replication 58.5% (ultra). And it targets visible prose only = 17% of heavy-session dollars; whole-bill ~4–6% (ESTIMATE; mayhemcode ~4%). The README itself calls cost savings "a bonus". |
+| K2 | "wenyan/Classical-Chinese mode saves ~80%" | Character-token confusion: 80.9% char cut = 56.6% token cut (CJK ~1.47 chars/tok vs 3.35 English; local). Billing is tokens. wenyan-ultra reaches 74.5% tokens at maximum lossiness. |
+| K3 | "TOON cuts 60% of data tokens" | Locally 61.4% only vs *pretty* JSON on uniform tabular; vs minified it is 41.2%, and minification alone is 34.3% (free, riskless). Nested/irregular real payloads: 1.8–20% (independent). |
+| K4 | "Prompt caching saves 90%" | 90% is the best launch-table row (book chat); the multi-turn row is -53%; writes bill 1.25–2x. The local heavy session was already maximally cached (92.83% reads) and reads+writes still cost **61% of dollars**. Modeled-day actual: -74% vs no caching (ESTIMATE). Not an available saving for an already-cached session. |
+| K5 | "Model price ratios = cost ratios" | Partly false: code/CJK-heavy work can be close to sticker ratios, but prose/ASCII-heavy text gets the Opus-4.7+ tokenizer premium. Effective Fable:Sonnet input ratio is ~3.33x for code-heavy probes and ~4.3x for prose-heavy probes. Routers do not tokenizer-normalize. |
+| K6 | "Perplexity dropped MCP citing 72% context waste" | Single secondary source (nevo.systems); no primary statement found. Do not repeat. |
+| K7 | "fff saves X% tokens" | No token percentage exists in the README text — latency numbers and a chart image only. Cite the mechanism, not a number. |
+| K8 | "Semantic caching will cut your coding-agent bill" | LiteLLM's own docs claim no percentage; coding prompts are near-worst-case for similarity caches and hits risk stale code. No published coding-agent hit rate (searched). |
+| K9 | "The 14.3k overhead costs 14.3k input tokens per call" | It is cached: marginal cost 0.1x after first write (~$1.63/day rent on the modeled profile, not ~$16). Directionally real, economically 10x smaller than the naive reading. |
+| K10 | Baseline internal note: "caveman's 75% is character-level folklore" | Current evidence: the repo's benchmark claims Claude-API *token* methodology with reproduction scripts; the 75%-pooled vs 65%-mean distinction explains the headline. The honest kill is K1 ("75 != 65 != 58.5, smallest bucket"), not "they counted characters". |
+
+## Sources
 
 | Number | Source / method |
 |---|---|
 | Stars: caveman 71,891; cavemem 521; cavekit 1,014; fff 8,351; claude-mem 81,976; ccusage 16,080; LLMLingua 6,284 | `gh api repos/&lt;repo&gt; --jq .stargazers_count`, run locally |
 | caveman "~75% of output tokens"; mean 65% (range 22–87%); pooled 1214 -> 294 (=75.8%); "Answer concisely." baseline; "thinking... untouched"; "cost savings a bonus"; compress ~46%; cavecrew ~60%; caveman-code "~2x fewer than Codex"; arXiv 2604.00025 "+26 points" (paper not independently verified) | curl of raw.githubusercontent.com/JuliusBrussee/caveman/main/README.md, lines 27/136/151/154/168/126/128/88/170 |
-| caveman local: ultra 58.5%; wenyan-full 56.6% tok / 80.9% chars; wenyan-ultra 74.5%; CJK ~1.47 chars/tok; tool deferral 1,420 -> ~60 (96%); prompt mix 0.44/6.73/92.83%; dollar split 32/29/20/17/2; thinking 54.8% of output; day ~$22 | local measurement (phase-0); profile detailed in [01 — Token Economics and Measurement](/research/context/techniques/01-economics-and-measurement/) |
+| caveman local: ultra 58.5%; wenyan-full 56.6% tok / 80.9% chars; wenyan-ultra 74.5%; CJK ~1.47 chars/tok; tool deferral 1,420 -> ~60 (96%); prompt mix 0.44/6.73/92.83%; dollar split 32/29/20/17/2; thinking 54.8% of output; day ~$22 | local measurement (baseline); profile detailed in [01 — Token Economics and Measurement](/research/context/techniques/01-economics-and-measurement/) |
 | caveman ~4% of session total (independent); ~14k stars April 2026 | mayhemcode.com/2026/04/caveman-claude-code-how-to-save-tokens.html |
 | cavemem "~75% fewer prose tokens", architecture; family positioning | raw cavemem README + getcaveman.dev |
 | fff "3-9 SECONDS per ripgrep spawn and sub-10 ms"; ~26 MB/14k files; "fewer grep roundtrips"; no token % in text | curl of raw fff README lines 22/72/673/714 |
@@ -335,7 +351,7 @@ Self-cost of the optimizer: the caveman plugin family's always-on skill listing 
 | "under 200 lines"; skills 30–100 tok; deferral default; CLI-over-MCP; /effort + MAX_THINKING_TOKENS=8000; Fable 5 thinking not disableable; ~7x teams; $13/day; $150–250/mo; &lt;$30/day for 90%; &lt;$0.04 background; LiteLLM name-check; grep-hook example; /usage attribution | code.claude.com/docs/en/costs |
 | Firecrawl 3,847 -> 312 (91.9%); 41% path-scoping; 38,381 -> 2,788 (94%); 80–99% logs | firecrawl.dev/blog/claude-code-token-efficiency (vendor-interested) |
 | Prices Fable 5 $10/$50, Opus 4.8 $5/$25, Sonnet 4.6 $3/$15, Haiku 4.5 $1/$5; "up to 35% more tokens" note; 675 -> 290 tool-use prompt (-57%); batch 50%; max_content_tokens page scale | platform.claude.com/docs/en/about-claude/pricing |
-| Local tokenizer premium +42.7% prose / +39.2% one Rust sample raw (+44.7%/+39.7% net of 7-tok wrapper); Sonnet=Haiku identical counts; correction: prose premium holds, code/CJK can be near-neutral | /tmp/ct.py on Fable-family / Sonnet-family models, fixed prose + <RepoFile path="crates/jackin-build-meta/src/lib.rs">crates/jackin-build-meta/src/lib.rs</RepoFile> head |
+| Local tokenizer premium +42.7% prose / +39.2% one Rust sample raw (+44.7%/+39.7% net of 7-tok wrapper); Sonnet=Haiku identical counts; prose premium holds; code/CJK can be near-neutral | [checked-in token counter](/research/context/techniques/tools/#count_tokenspy-modes) on Fable-family / Sonnet-family models, fixed prose + <RepoFile path="crates/jackin-build-meta/src/lib.rs">crates/jackin-build-meta/src/lib.rs</RepoFile> head |
 | Effort: 76% fewer output tokens at medium; +4.3 pts at -48% (Opus 4.5-era) | anthropic.com/news/claude-opus-4-5 |
 | Tool Search: "85% reduction"; 191,300 vs 122,800; 49 -> 74; 79.5 -> 88.1; ~55K five-server; 134K internal; programmatic 43,588 -> 27,297 (37%); retrieval 25.6 -> 28.5, GIA 46.5 -> 51.2 | anthropic.com/engineering/advanced-tool-use |
 | Context editing 84% / +39% / +29% (100-turn search eval) | claude.com/blog/context-management |
@@ -345,4 +361,10 @@ Self-cost of the optimizer: the caveman plugin family's always-on skill listing 
 | LiteLLM: 7 cache backends, similarity_threshold 0.8, no savings % | docs.litellm.ai/docs/proxy/caching |
 | LLMLingua: 20x headline; +21.4% RAG at 1/4 tokens; 3–6x speedup; EMNLP'23/ACL'24 venues | github.com/microsoft/LLMLingua README |
 | TOON official 39.9% fewer at 76.4% vs 75.0% accuracy; nested reality check 1.8–20% | toonformat.dev/guide/benchmarks; dev.to/tejas_page/toon-vs-json-when-60-token-savings-becomes-18-a-reality-check-3e60 |
-| Local format table 484/318/187 tabular (-34.3%/-61.4%/-41.2%), 272/194 nested (-28.7%); sweep same-day -60.6/-40.8/-33.6; log filter 10,108 -> 590 (-94.2%, 3/3 failures kept); <RepoFile path="AGENTS.md">AGENTS.md</RepoFile> 2,744 tok (phase-0 2,738); caveman skill listing 940 tok; wrapper constant 7 tok | /tmp/ct.py claude-fable-5 on generated fixtures (/tmp/tok/gen.py), repo <RepoFile path="AGENTS.md">AGENTS.md</RepoFile>, reconstructed skill listing, 1-char probe; grep filter shown above |
+| Local format table 484/318/187 tabular (-34.3%/-61.4%/-41.2%), 272/194 nested (-28.7%); independent local sample -60.6/-40.8/-33.6; log filter 10,108 -> 590 (-94.2%, 3/3 failures kept); <RepoFile path="AGENTS.md">AGENTS.md</RepoFile> 2,744 tok (baseline 2,738); caveman skill listing 940 tok; wrapper constant 7 tok | [checked-in token counter](/research/context/techniques/tools/#count_tokenspy-modes) claude-fable-5 on generated fixtures with reproducible generated fixtures, repo <RepoFile path="AGENTS.md">AGENTS.md</RepoFile>, reconstructed skill listing, 1-char probe; grep filter shown above |
+
+## Related work
+
+- [Token-optimization techniques dossier](/research/context/techniques/)
+- [Validation harness](/research/context/techniques/16-validation-harness/)
+- [Context engine](/research/context/engine/)

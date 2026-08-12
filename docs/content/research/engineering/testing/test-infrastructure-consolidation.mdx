@@ -1,28 +1,31 @@
 ---
 title: "Test infrastructure: shared test-support crate, behavioral specs, and parser fuzzing"
+description: Connects shared test helpers, behavioral specifications, and parser fuzzing into one maintainable verification strategy.
 ---
 
-Historical design rationale for three related testing gaps in the codebase readability program: duplicated test helpers across mega-test-files, missing behavioral specs for major components, and absent property/fuzz testing for parser surfaces. The shared support crate, executable spec coverage, property tests, fuzz targets, deterministic clocks, and CI gates have shipped; this page retains the original "why" and design alternatives. See the [`jackin-test-support` crate](/reference/crates/jackin-test-support/) and [behavioral specs](/reference/developer-reference/specs/) for the durable contracts.
+## Summary
 
-## Problem
+The maintainable verification strategy combines shared test helpers, executable behavioral specifications, property tests, parser fuzzing, deterministic clocks, and CI gates. The [`jackin-test-support` crate](/reference/crates/jackin-test-support/) and [behavioral specs](/reference/developer-reference/specs/) hold the durable implementation contracts.
 
-Three testing gaps increase the risk of silent regressions and block the Phase 2 source-file splits.
+## Research question
 
-**Test file duplication mirrors source duplication.** <RepoFile path="crates/jackin/tests/manager_flow.rs">crates/jackin/tests/manager_flow.rs</RepoFile> and <RepoFile path="crates/jackin/tests/dind_e2e.rs">crates/jackin/tests/dind_e2e.rs</RepoFile> are each 1,500+ lines. Mock runners are independently defined in at least three places (<RepoFile path="crates/jackin/tests/common/mod.rs">crates/jackin/tests/common/mod.rs</RepoFile>'s `FakeRunner`, <RepoFile path="crates/jackin-runtime/src/runtime/test_support.rs">crates/jackin-runtime/src/runtime/test_support.rs</RepoFile>'s `FakeRunner`, and <RepoFile path="crates/jackin/tests/per_mount_isolation_e2e.rs">crates/jackin/tests/per_mount_isolation_e2e.rs</RepoFile>'s `ScriptedRunner`), a `config_with_agents`-family helper is redefined per-crate (`jackin-console`'s editor view tests, `jackin-console`'s workspace tests, and `jackin`'s console editor tests each carry their own copy), and `ResolvedWorkspace { ... }` is constructed inline across at least nine files spanning `jackin-console`, `jackin`, `jackin-runtime`, and `jackin-config`. This blocks the Phase 2 source-file splits: splitting a large source file means rewriting the large test file that depends on it, and every duplicated helper is a place the split has to touch twice.
+Three testing gaps increase the risk of silent regressions and make source-file ownership changes harder to verify.
+
+**Test file duplication mirrors source duplication.** <RepoFile path="crates/jackin/tests/manager_flow.rs">crates/jackin/tests/manager_flow.rs</RepoFile> and <RepoFile path="crates/jackin/tests/dind_e2e.rs">crates/jackin/tests/dind_e2e.rs</RepoFile> are each 1,500+ lines. Mock runners remain independently defined in several places, while configuration and resolved-workspace fixtures recur across `jackin-console`, `jackin`, `jackin-runtime`, and `jackin-config`. The shared <RepoFile path="crates/jackin-test-support/Cargo.toml">`jackin-test-support` crate</RepoFile> establishes the ownership boundary; remaining local duplicates should move there only when their semantics are genuinely shared.
 
 **Behavioral specs are incomplete.** Specs exist for `runtime/launch.rs` and the console `op_picker`, but not for `jackin-capsule`'s daemon (<RepoFile path="crates/jackin-capsule/src/daemon.rs">crates/jackin-capsule/src/daemon.rs</RepoFile> — the in-container PID 1 control plane) or for the operator console's TUI state machine. Behavioral specs should be a general practice for every major component, not a one-off exercise per refactor.
 
 **No property-based or fuzz testing for parser surfaces.** <RepoFile path="crates/jackin-manifest/src/validate.rs">crates/jackin-manifest/src/validate.rs</RepoFile>, <RepoFile path="crates/jackin-env/src/env_resolver.rs">crates/jackin-env/src/env_resolver.rs</RepoFile>, and the migration chains (<RepoFile path="crates/jackin-config/src/migrations.rs">crates/jackin-config/src/migrations.rs</RepoFile>, <RepoFile path="crates/jackin-manifest/src/migrations.rs">crates/jackin-manifest/src/migrations.rs</RepoFile>) all parse operator- or role-author-supplied input, and are tested only by example-based unit tests. An input the developer didn't think of isn't covered. `cargo-fuzz` already exists for `jackin-term` (the `damage_grid_process` target, scheduled nightly in <RepoFile path=".github/workflows/hygiene.yml">.github/workflows/hygiene.yml</RepoFile>); no equivalent exists for any parser crate, and `proptest` is not part of the dependency graph at all.
 
-## Proposal
+## Findings and current evidence
 
-### 1. Test file split + mock consolidation
+### Shared fixtures and focused test files
 
 Rust projects that maintain large integration test suites (tokio, bevy, cargo) commonly extract a dedicated test-support crate rather than let helpers proliferate per test file. Apply the same pattern here:
 
-- **Phase 1 — extract `jackin-test-support`.** No such crate exists yet. Promote the duplicated `FakeRunner`/`ScriptedRunner` mocks, the `config_with_agents` family, `ResolvedWorkspace` builders, and role-seeding helpers into one crate under `crates/jackin-test-support/`, then update every test file to import from it instead of redefining. Expected outcome is a net deletion of duplicated code, not new functionality.
-- **Phase 2 — split the mega-test-files.** `tests/manager_flow.rs` into several files grouped by scenario family; `tests/dind_e2e.rs` into smaller end-to-end groups. This is a companion to each source-file Phase 2 split in the codebase readability program, and should follow the helper extraction so the split files don't re-duplicate mocks.
-- **Phase 3 — snapshot/golden-file infrastructure.** `insta` is already a dev-dependency in several crates (`jackin-image`, `jackin-console`, `jackin`, `jackin-runtime`, `jackin-capsule`) but is not standardized through a shared harness. Route it through the test-support crate so JSON output, derived Dockerfiles, and friendly error blocks can all be snapshotted with one helper, with a shared determinism harness (fixed size/theme/clock, redaction). The styled-SVG visual goldens for TUI screens and CLI output build on this crate but are designed separately in [Visual snapshot testing (CLI & TUI)](/research/engineering/testing/visual-snapshots/visual-snapshot-testing/): that item owns the artifact format, this item owns the shared `jackin-test-support` crate it would live in.
+- <RepoFile path="crates/jackin-test-support/Cargo.toml">`jackin-test-support`</RepoFile> is the shared home for deterministic fixtures, fake runners, workspace builders, and role seeding that have identical semantics across crates. Crate-specific helpers stay with their consumers.
+- Large integration-test files should be divided by scenario ownership. The boundary is useful when each resulting file can name its fixture needs without recreating shared mocks.
+- `insta` already supports several crates. Shared snapshot helpers belong in `jackin-test-support` only for cross-crate determinism concerns such as fixed dimensions, clocks, themes, and redaction. [Visual snapshot testing](/research/engineering/testing/visual-snapshots/) owns artifact format and rendering assertions.
 
 ### 2. Behavioral specs for major components
 
@@ -49,26 +52,24 @@ Two testing layers, neither of which exists today for the parser crates:
 
 ## Non-goals
 
-- Do not block the readability program's Phase 1 work on the test-support crate; Phase 1 splits don't need it yet.
-- Do not add mutation testing yet. Re-evaluate once `cargo-llvm-cov` (from [Rust CI tooling & dependency hygiene](/research/engineering/ci/rust-tooling/rust-ci-tooling/)) shows where coverage is weakest.
+- Do not couple unrelated readability refactors to test-support consolidation; shared helpers are required only where a split would otherwise duplicate them.
+- Do not add mutation testing yet. Re-evaluate once `cargo-llvm-cov` (from [Rust CI tooling & dependency hygiene](/research/engineering/ci/rust-tooling/)) shows where coverage is weakest.
 - Do not fuzz the TUI rendering layer or the Docker client — those surfaces change too fast for fuzzing to be cost-effective.
 
-## Phasing
+## Decision implications
 
-1. Audit every `tests/*.rs` file and inventory helpers and mock structs; research how tokio/bevy/cargo structure their test-support crates; create `crates/jackin-test-support/` with dev-only dependencies from consumers' perspective (`publish = false`); promote one helper family at a time, mounts first; split `tests/manager_flow.rs` last, after helpers are extracted.
-2. Write the capsule daemon behavioral spec, then the console behavioral spec.
-3. Add `proptest` to dev-dependencies; add a `fuzz/` directory with one `cargo-fuzz` target per parser; extend the existing nightly fuzz schedule to cover them.
+- Consolidate helpers by semantic ownership, not by a migration sequence; each move should delete a duplicate and preserve consumer behavior.
+- Contributor-facing behavioral specs remain the durable home for component invariants. Roadmap items own any undelivered Capsule daemon or console coverage.
+- Parser property tests and fuzz targets should join the existing nightly fuzz authority when their invariants and time budgets are explicit.
 
-## Open design questions
+## Limitations and open questions
 
-1. Which exact Rust projects should be studied for test-support crate patterns? (tokio, bevy, cargo, and clap are candidates.)
-2. Should the test-support crate live in `crates/` or alongside the test files it serves?
-3. Should behavioral specs live in the roadmap or in contributor-facing reference docs? (The existing precedent — `runtime-launch`, `op-picker`, `auth-source-folder-sync` — is contributor-facing reference docs under `/reference/developer-reference/specs/`, with a thin roadmap item tracking the link-back task.)
-4. What is the right nightly CI schedule and time budget for the new parser fuzz targets, relative to the existing `jackin-term` target?
+1. Which remaining helpers have truly identical semantics across consumers?
+2. What nightly CI time budget should parser fuzz targets share with the existing `jackin-term` target?
 
 ## Related work
 
 - [`jackin-test-support` crate](/reference/crates/jackin-test-support/) — shared deterministic fixtures and fakes produced by this work
-- [Visual snapshot testing (CLI & TUI)](/research/engineering/testing/visual-snapshots/visual-snapshot-testing/) — the SVG golden-artifact format that would build on the shared test-support crate
-- [Rust CI tooling & dependency hygiene](/research/engineering/ci/rust-tooling/rust-ci-tooling/) — `cargo insta` for snapshot tests, `cargo-llvm-cov` for coverage
-- [runtime/launch Behavioral Spec](/reference/developer-reference/specs/runtime-launch/) — the existing spec this proposal extends to other components
+- [Visual snapshot testing (CLI & TUI)](/research/engineering/testing/visual-snapshots/) — the SVG golden-artifact format that would build on the shared test-support crate
+- [Rust CI tooling & dependency hygiene](/research/engineering/ci/rust-tooling/) — `cargo insta` for snapshot tests, `cargo-llvm-cov` for coverage
+- [runtime/launch Behavioral Spec](/reference/developer-reference/specs/runtime-launch/) — the established format for other component contracts

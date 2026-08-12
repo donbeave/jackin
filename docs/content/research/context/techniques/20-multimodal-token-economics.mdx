@@ -1,26 +1,22 @@
 ---
 title: "20 — Multimodal token economics: images, screenshots, PDFs"
+description: "Measured token costs and practical routing, resizing, cropping, and format choices for images, screenshots, and PDFs."
 ---
 
-# 20 — Multimodal token economics: images, screenshots, PDFs
+## Summary
 
-Volume II area file for blind spot 2 (multimodal), which Volume
-I left near-blank: a grep of all 4,303 dossier lines for image/screenshot/vision/PDF terms returns
-zero substantive hits, the lone adjacent fact being one "~125k tokens per 500 kB PDF" page-size
-estimate in [03 — Prior art and market scan](/research/context/techniques/03-prior-art-and-market-scan/):267` and [12 — Provider-level features, current and beta](/research/context/techniques/12-provider-features/):165`. Every number
-below is either a live primary-doc quote or a local `count_tokens`
-measurement with the method shown. Plain-language writing rules per Volume I §10.
+Images, screenshots, and PDFs have distinct token costs and routing options. Every number below comes from a cited primary source or a reproducible local `count_tokens` measurement with the method shown.
 
 **TL;DR**
 
 - **An image costs `⌈width/28⌉ × ⌈height/28⌉` visual tokens** (28-pixel patches), billed at the
  model's normal input price — confirmed by local `count_tokens` reproducing Anthropic's published
  table to within the ~6-token message wrapper (e.g. 1000×1000 px = 1,296 visual tokens, measured
- 1,304). Volume I never stated the formula.
+ 1,304). The core dossier never stated the formula.
 - **The per-image cap differs ~3× across the two tokenizer families, and it is a routing lever.**
  Docs state Opus 4.8 / Fable 5 cap around **4,784 tokens** (≤2,576 px edge) and Sonnet 4.6 /
  Haiku 4.5 around **1,568 tokens** (≤1,568 px). Local counts include wrapper/envelope effects and
- land around **~4,760 / ~1,520–1,570**, i.e. **~3.0–3.1×**. Haiku 4.5 ≡ Sonnet 4.6 on images (identical counts), extending Volume I's tokenizer-family
+ land around **~4,760 / ~1,520–1,570**, i.e. **~3.0–3.1×**. Haiku 4.5 ≡ Sonnet 4.6 on images (identical counts), extending the core dossier's tokenizer-family
  equality to vision.
 - **A PDF costs ~1,500–3,000 tokens per page and roughly doubles the cost of the same text** —
  because each page is billed as a rendered page-image *plus* extracted text. Measured: the same 50
@@ -34,31 +30,36 @@ measurement with the method shown. Plain-language writing rules per Volume I §1
 - **Net new levers for the stack:** route vision work to Sonnet/Haiku (~3.0–3.1× image saving),
  downsample screenshots client-side to the family cap, prefer text/markdown over screenshots and
  PDFs, and crop to the region of interest. All are `CLAUDE-CODE-TODAY` or hook-level and
- NEGATIVE-COST-to-NEUTRAL on quality. None appear in Volume I.
+ NEGATIVE-COST-to-NEUTRAL on quality. None appear in the core dossier.
 
-Pricing and the modeled session profile are inherited from [01 — Token Economics and Measurement](/research/context/techniques/01-economics-and-measurement/). The
-Fable-family tokenizer is measured on `claude-opus-4-8` (its documented tokenizer twin) because
-`count_tokens` now accepts `claude-fable-5` directly (live probe HTTP 200, count identical to `claude-opus-4-8`); it rejected the id at Volume II research time (see 18), which is why the measurements below were counted on `claude-opus-4-8` — same tokenizer either way, so they stand.
+The measurements below use the exact model identifiers recorded in each table. Revalidate tokenizer-family equivalence before transferring counts to another model.
 
 ---
+
+## Question and scope
+
+When are images, screenshots, or PDFs cheaper and more faithful than text, and how do model-specific visual caps change routing?
 
 ## Method
 
 No image or PDF tooling exists on this machine (no PIL, ImageMagick, or qpdf), so test assets were generated from the Python standard library:
 
-- **PNGs** at controlled dimensions via `zlib` (`/tmp/mkpng.py`): a valid RGB PNG with a gradient
+- **PNGs** at controlled dimensions via Python `zlib`: a valid RGB PNG with a gradient
  (non-degenerate) so token cost reflects dimensions, not blank-image special cases.
-- **PDFs** with byte-offset-correct xref tables via `zlib`/`struct` (`/tmp/mkpdf.py`): N text pages
+- **PDFs** with byte-offset-correct xref tables via Python `zlib`/`struct`: N text pages
  of Helvetica lines, optionally a final embedded-image page (the scanned-PDF case).
-- **Token counts** via the free OAuth `count_tokens` endpoint (`/tmp/ctimg.py`, `/tmp/ctpdf.py`)
- sending real `image` / `document` content blocks. Counts are non-billable and cache-inert (Volume
- I, [07 — Caching exploitation](/research/context/techniques/07-caching-exploitation/)). Raw `input_tokens` includes a constant ~6–8-token user-message wrapper (Volume I
+- **Image token counts** via the checked-in <RepoFile path="docs/content/research/context/techniques/tools/image_tokens.py" /> workflow, which constructs controlled PNGs and sends real `image` content blocks.
+- **PDF token counts** via the same provider endpoint with `document` content blocks. The fixture procedure constructs a PDF 1.4 byte stream with a catalog, pages tree, Helvetica font, one content stream per page, byte-offset-correct xref table, and either 5 or 50 repeated text lines per page; page counts are 1, 3, 10, and 25. The identical 50-line string is also counted as plain text for the tax comparison.
+
+Counts are non-billable and cache-inert (the core dossier, [07 — Caching exploitation](/research/context/techniques/07-caching-exploitation/)). Raw `input_tokens` includes a constant ~6–8-token user-message wrapper (the core dossier
  measured ~6–7); it is left in the tables and noted, never silently subtracted.
 
 Real validation: the five PNGs in `docs/public/` were measured against the synthetic curve and agree
 exactly (512×512 icon = 369 tokens synthetic and real).
 
-## Measured: the image-token curve
+## Findings
+
+### Measured: the image-token curve
 
 Visual tokens = `⌈width/28⌉ × ⌈height/28⌉`, clamped to the model's edge limit and token budget. Raw
 `input_tokens` below includes the wrapper; "patches" is the bare formula.
@@ -90,7 +91,7 @@ versus 1568 tokens per image)." Independent re-measurement found the practical c
 around ~4,761 / ~1,523 after subtracting envelope assumptions, so the safe claim is **~3.0–3.1×**,
 not an exact single-value ratio.
 
-## Measured: the PDF tax
+### Measured: the PDF tax
 
 Each PDF page is billed as a rendered page-image **plus** extracted text (Anthropic PDF docs,
 : "The system converts each page of the document into an image. The text from
@@ -113,7 +114,7 @@ the identical 50 lines of text cost 1,605 tokens raw on Opus but 3,182 as a PDF 
 Sonnet 1,206 → 2,780 (**2.30×**). A sparse page still floors at ~1,700 because you pay the page-image
 even with little text.
 
-## Measured: screenshot vs. text break-even
+### Measured: screenshot vs. text break-even
 
 What a screenshot replaces, as text:
 
@@ -131,16 +132,14 @@ the bias toward text is strongest exactly where the operator is.
 
 ---
 
-## Techniques
-
 ### M1. Vision-tier routing — send screenshots and PDFs to Sonnet/Haiku, not Opus/Fable
 
 The single biggest multimodal lever: the same high-resolution image costs ~3.0–3.1× fewer tokens on
 the Sonnet/Haiku family because it clamps to the lower image-token budget.
 
-- **Coverage-delta:** New. Volume I's routing file (10) and tokenizer file (05) cover the **text**
- premium but never images; "image"/"vision" is absent from both
- . The image cap divergence is a distinct, larger (~3.0–3.1×) effect.
+- **Evidence scope:** The core dossier's routing file (10) and tokenizer file (05) cover the **text**
+  premium but never images; "image"/"vision" is absent from both. The image cap divergence is a distinct,
+  larger (~3.0–3.1×) effect.
 - **Layer:** input (image/document token class) + routing.
 - **Mechanism:** Sonnet 4.6 / Haiku 4.5 downscale any image to ≤1,568 px / ≤1,568 visual tokens;
  Opus 4.8 / Fable 5 allow ≤2,576 px / around ≤4,784 tokens. For screenshot- and PDF-heavy work the cheaper
@@ -148,7 +147,7 @@ the Sonnet/Haiku family because it clamps to the lower image-token budget.
 - **Expected savings:** per full-frame screenshot, roughly 4,760 → 1,520–1,570 tokens = **~−67%** on the image
  token class. A screenshot-driven debugging loop of, say, 20 frames/session shifts roughly
  64k tokens off the expensive family; at cache-read rates that is modest in dollars but
- large in **quota** ([19 — Subscription & quota economics: the metric Volume I optimized was the wrong one for a subscriber](/research/context/techniques/19-subscription-and-quota-economics/)) and in window pressure. A 25-page PDF: 78,806 → 68,804 tokens
+ large in **quota** ([19 — Subscription and quota economics](/research/context/techniques/19-subscription-and-quota-economics/)) and in window pressure. A 25-page PDF: 78,806 → 68,804 tokens
  (−12.7%, the text premium dominates once images are page-sized).
 - **Evidence tier:** T1 — local `count_tokens` (method above) + Anthropic vision docs.
 - **Quality risk:** **QUALITY-TRADE only if the visual needs >1,568-token fidelity** (fine print in a
@@ -157,7 +156,7 @@ the Sonnet/Haiku family because it clamps to the lower image-token budget.
  the vision task on both families and grading whether the answer changed.
 - **Availability:** CLAUDE-CODE-TODAY — pin `model: haiku`/`sonnet` on the vision-handling subagent.
 - **Effort to adopt:** minutes (subagent frontmatter).
-- **Composability:** stacks with Volume I's tokenizer-arbitrage routing (05/10) and subagent fan-out
+- **Composability:** stacks with the core dossier's tokenizer-arbitrage routing (05/10) and subagent fan-out
  (07 tech 4); the image-handling subagent quarantines the pixels off the main prefix.
 - **Validation protocol:** screenshot 10 representative frames; count each on both families; run the
  actual vision task (e.g. "what's wrong in this UI?") on both; require equal task success; report
@@ -168,7 +167,7 @@ the Sonnet/Haiku family because it clamps to the lower image-token budget.
 A 4K screenshot and a 1,456×819 screenshot cost the *same* on Sonnet (both clamp to 1,568) — but the
 4K one wasted bytes and risks the high-res Opus premium. Resize client-side to the cap.
 
-- **Coverage-delta:** New. No resolution/detail control appears anywhere in Volume I (0 hits).
+- **Evidence scope:** No resolution/detail control appears anywhere in the core dossier (0 hits).
 - **Layer:** input (image token class).
 - **Mechanism:** Anthropic resizes server-side to the model's native resolution regardless, so
  sending pixels beyond the cap buys nothing. Pre-resizing to ≤1,568 px long edge (Sonnet/Haiku) or
@@ -193,7 +192,7 @@ A 4K screenshot and a 1,456×819 screenshot cost the *same* on Sonnet (both clam
 Screens of code, logs, DOM, terminal output, and config are 2–6× cheaper as text than as a
 screenshot of the same screen — and text scrolls past one frame.
 
-- **Coverage-delta:** New axis. Volume I's context-architecture file (06) argues "don't send it" for
+- **Evidence scope:** Multimodal axis. The core dossier's context-architecture file (06) argues "don't send it" for
  text (repo maps, grep-first) but never addresses the screenshot-vs-text choice (0 vision hits).
 - **Layer:** input (choosing text class over image class).
 - **Mechanism:** a full-frame screenshot is a flat 1,568–4,784 tokens regardless of how little text
@@ -211,7 +210,7 @@ screenshot of the same screen — and text scrolls past one frame.
  instead of screenshotting; use accessibility-tree/DOM text instead of a browser screenshot when
  available).
 - **Effort to adopt:** minutes (preference); hours to wire text-first browser tools.
-- **Composability:** the multimodal sibling of Volume I's preprocessing/CLI-over-MCP (03 record 20)
+- **Composability:** the multimodal sibling of the core dossier's preprocessing/CLI-over-MCP (03 record 20)
  and repo-maps (06).
 - **Validation protocol:** for 10 tasks where a screenshot was the instinct, try the text path first;
  require equal success; only fall back to pixels when text genuinely cannot carry the signal.
@@ -222,7 +221,7 @@ A PDF bills the rendered page-image plus the extracted text. If the same content
 text/markdown/HTML, sending the PDF roughly doubles the tokens for no quality gain on textual
 documents.
 
-- **Coverage-delta:** New. Volume I's only PDF reference is the "~125k tok/500 kB" page-size estimate
+- **Evidence scope:** The core dossier's only PDF reference is the "~125k tok/500 kB" page-size estimate
  (03:267, 12:165); the per-page mechanism and the text-vs-PDF tax are unmeasured there.
 - **Layer:** input (document token class).
 - **Mechanism:** measured PDF tax of 1.98× (Opus) / 2.30× (Sonnet) over the identical text; a sparse
@@ -249,7 +248,7 @@ documents.
 Visual tokens scale with area; a crop of the relevant pane is a fraction of the patches of a full
 2560×1440 frame.
 
-- **Coverage-delta:** New (no cropping/region discussion in Volume I).
+- **Evidence scope:** no cropping or region-selection discussion appears in the earlier chapters.
 - **Layer:** input (image token class).
 - **Mechanism:** `⌈w/28⌉ × ⌈h/28⌉` is area-proportional below the cap, so a 640×400 crop = ~330
  tokens vs a full 2560×1440 frame at 1,568–4,784. Capture the failing dialog, not the whole desktop.
@@ -268,7 +267,7 @@ Visual tokens scale with area; a crop of the relevant pane is a fraction of the 
 Treat a screenshot as a 1,568–4,784-token tool call, not a free observation; reach for it only after
 text paths (DOM, logs, file reads) are exhausted.
 
-- **Coverage-delta:** New (the lazy-loading idea exists for tools/skills in 06, never for vision).
+- **Evidence scope:** chapter 06 applies lazy loading to tools and skills, not vision inputs.
 - **Layer:** turn-structure (when a vision observation enters context at all).
 - **Mechanism:** each screenshot is the most expensive single observation a coding agent commonly
  emits — more than most tool results. A policy of "text first, pixels last," plus eviction of stale
@@ -289,7 +288,7 @@ text paths (DOM, logs, file reads) are exhausted.
 
 ---
 
-## Surprising findings
+### Surprising findings
 
 - The image-token formula is **patches, not pixels** (`⌈w/28⌉×⌈h/28⌉`), and the "÷750" folklore is a
  coincidental approximation (784 = 28² ≈ 750). Stating it as patches makes the cap behavior obvious.
@@ -299,21 +298,37 @@ text paths (DOM, logs, file reads) are exhausted.
  for fidelity it often does not need.
 - A blank-ish PDF page is not cheap: ~1,700 tokens floor because you pay for the rendered page-image
  regardless of text content. PDFs are the most expensive common input per unit of information.
-- Haiku 4.5 and Sonnet 4.6 return byte-identical image counts, just as Volume I found for text —
+- Haiku 4.5 and Sonnet 4.6 return byte-identical image counts, just as the core dossier found for text —
  the tokenizer family boundary is the same for vision.
 
-## Verification ledger
+## Implications for jackin❯
+
+### Techniques
+
+For jackin❯, the multimodal token economics: images, screenshots, pdfs evidence identifies which mechanisms are safe to adopt directly and which still require workload-specific validation.
+
+## Limitations and unknowns
+
+Quantitative conclusions are workload- and model-specific. Re-measure volatile provider inputs and validate transfers on representative jackin❯ tasks.
+
+## Sources
 
 | # | Number / claim | Source or method |
 |---|---|---|
 | 1 | Image cost = `⌈w/28⌉×⌈h/28⌉` visual tokens; billed at input price | platform.claude.com/docs/en/build-with-claude/vision (live fetch) |
 | 2 | Published caps: Opus 4.8/Fable 5/Opus 4.7 around 4,784 tok / ≤2,576 px edge; other models around 1,568 tok / ≤1,568 px; "~3x more (4784 vs 1568)" | same page |
 | 3 | Doc cost tables (Sonnet 1920×1080=1,560, 2000×1500=1,564, 3840×2160=1,560; Opus 1920×1080=2,691, 2000×1500=3,888, 3840×2160=4,784) | same page |
-| 4 | Measured image curve (256²=108/110 … 1000²=1,304/1,306 … capped rows around Opus ~4,750–4,792 / Sonnet-Haiku ~1,531–1,574; practical divergence ~3.0–3.1×) | `/tmp/mkpng.py` (zlib PNG) → `/tmp/ctimg.py` count_tokens on claude-opus-4-8 / claude-sonnet-4-6 / claude-haiku-4-5; independent re-check in 28 |
+| 4 | Measured image curve (256²=108/110 … 1000²=1,304/1,306 … capped rows around Opus ~4,750–4,792 / Sonnet-Haiku ~1,531–1,574; practical divergence ~3.0–3.1×) | <RepoFile path="docs/content/research/context/techniques/tools/image_tokens.py" /> on claude-opus-4-8 / claude-sonnet-4-6 / claude-haiku-4-5 |
 | 5 | Repo PNGs validate curve: icon 512×512 = 369; og-image 1200×630 = 997/999; og-github 1280×640 = 1,066/1,068 | count_tokens on `docs/public/*.png` |
-| 6 | PDF: 1pg×5ln = 1,742/1,700; 1pg×50ln = 3,182/2,780; 3/10/25 pg = 9,484/31,541/78,806 (Opus, ~3,150 tok/pg); 2txt+1img = 7,886/7,083 | `/tmp/mkpdf.py` (zlib, correct xref) → `/tmp/ctpdf.py` |
+| 6 | PDF: 1pg×5ln = 1,742/1,700; 1pg×50ln = 3,182/2,780; 3/10/25 pg = 9,484/31,541/78,806 (Opus, ~3,150 tok/pg); 2txt+1img = 7,886/7,083 | Reproducible PDF 1.4 construction and `document` counting procedure specified in Method |
 | 7 | PDF tax: same 50 lines raw-text Opus 1,605 / Sonnet 1,206 vs PDF 3,182 / 2,780 = 1.98× / 2.30× | count_tokens on identical text vs its 1-page PDF |
 | 8 | Per-page "1,500–3,000 tokens"; each page = page-image + extracted text; Bedrock text-only ≈1,000 vs full ≈7,000 tok/3 pages; limits 32 MB / 600 pages (100 for 200k-context) | platform.claude.com/docs/en/build-with-claude/pdf-support (live fetch) |
 | 9 | Screenful as text: dense Rust (~2 KB) Opus 765 / Sonnet 593; wide markdown (~4.6 KB) Opus 1,951 / Sonnet 1,468 | count_tokens on real repo files (<RepoFile path="crates/jackin-capsule/src/git_context.rs">crates/jackin-capsule/src/git_context.rs</RepoFile> L100-149; [03 — Prior art and market scan](/research/context/techniques/03-prior-art-and-market-scan/) L1-50) |
 | 10 | Wrapper constant ~6–8 tok ("a" = 7; empty rejected) | count_tokens probe |
 | 11 | Local env runs Opus 4.8 main (465/560 calls) + Haiku subagents (95) | transcript scan, `~/.claude/projects/**/*.jsonl` |
+
+## Related work
+
+- [Token-optimization techniques dossier](/research/context/techniques/)
+- [Validation harness](/research/context/techniques/16-validation-harness/)
+- [Context engine](/research/context/engine/)

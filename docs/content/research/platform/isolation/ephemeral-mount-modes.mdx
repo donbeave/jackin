@@ -1,10 +1,14 @@
 ---
 title: "Ephemeral Mount Modes (`tmpfs`, `ephemeral`)"
+description: Defines `tmpfs` and ephemeral per-mount isolation modes that express storage lifetime independently of Git semantics.
 ---
 
+## Summary
+
+Storage lifetime should be independent of Git isolation, with `tmpfs` and ephemeral modes representing distinct disposable-mount behavior.
 Design proposal for two new [per-mount isolation](/guides/workspaces/#per-mount-isolation) modes — `tmpfs` and `ephemeral` — that cover **storage kind** rather than **git semantics**. Tracked as an open roadmap item: [Ephemeral mount modes](/roadmap/ephemeral-mount-modes/).
 
-## Problem
+## Research question
 
 jackin❯ [per-mount isolation](/guides/workspaces/#per-mount-isolation)
 vocabulary is `shared | worktree | clone`. These modes describe **git
@@ -32,7 +36,7 @@ example `config.toml` declares 7 paths under `isolated` and 1 under
 `tmpfs` — both essential to keeping concurrent agents from corrupting
 each other's caches and to keeping host state clean.
 
-## Why It Matters
+## Why it matters
 
 - **Parallel agents share host caches today.** Two agents both running
   `gradle build` race on `~/.gradle/daemon` because jackin❯ has no way
@@ -85,7 +89,7 @@ The two are subtly different: `isolated` may be backed by disk for
 larger working sets (build artifacts), while `tmpfs` is always memory.
 multicode lets the operator pick.
 
-## Recommended Shape
+## Recommended shape
 
 Extend the [per-mount isolation](/guides/workspaces/#per-mount-isolation)
 enum vocabulary by **two more modes**, plus extend the workspace mount
@@ -136,7 +140,7 @@ V1 enum vocabulary becomes: `shared | worktree | tmpfs | ephemeral`
   per-instance cleanup helper already enumerates Docker volumes by
   label; add a label and reuse it).
 - **Apple container** (when [selectable
-  backends](/research/platform/security/sandbox-backends/selectable-sandbox-backends/) ships):
+  backends](/research/platform/security/sandbox-backends/) ships):
   use the equivalent allocation primitives.
 - **bwrap** (if it ever lands): `--tmpfs` for both modes; the
   ephemeral case is bwrap's natural shape.
@@ -176,7 +180,7 @@ gets the right behavior.
   [shared cache pattern](/guides/workspaces/#setting-isolation-from-the-cli) (a
   shared `~/.gradle` mount overlaid on an isolated source tree).
 
-## Open Questions
+## Limitations and open questions
 
 - **Naming.** `ephemeral` is descriptive but not great. Alternatives:
   `instance` (it's per-instance), `volume` (it's a Docker volume),
@@ -203,7 +207,7 @@ gets the right behavior.
 - [Agent Orchestration Program](/research/agents/orchestration/program-research/)
 - [Per-mount isolation](/guides/workspaces/#per-mount-isolation) —
   the existing modes; this proposal extends the enum vocabulary
-- [Selectable sandbox backends](/research/platform/security/sandbox-backends/selectable-sandbox-backends/) —
+- [Selectable sandbox backends](/research/platform/security/sandbox-backends/) —
   cross-backend translation home
 - [Declarative resource limits](/roadmap/declarative-resource-limits/) —
   shares the size-parsing helper

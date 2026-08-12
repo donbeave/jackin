@@ -1,13 +1,12 @@
 ---
 title: "00 — Executive Summary"
+description: "Key findings, measured savings, quality constraints, and recommended priorities from the token-optimization dossier."
 ---
 
-# 00 — Executive Summary
+## Summary
 
 Every headline number below survived local reproduction, primary-source re-fetch, or
 explicit ESTIMATE arithmetic; sources are in each file's Verification ledger.
-
-## TL;DR
 
 - **No honest 10x** exists at zero quality loss today; current defensible stack math lands at
  ≈2.5x (≈2.4x code-heavy), or ≈5–6.2x only if the routing flip passes the harness.
@@ -18,7 +17,17 @@ explicit ESTIMATE arithmetic; sources are in each file's Verification ledger.
 - **Every serious number needs local validation** because session mix, effort level, and tokenizer
  family change the economics materially.
 
-## The verdict on 10x
+## Question and scope
+
+Which token-reduction techniques have defensible equal-quality evidence, and what total reduction can they honestly support?
+
+## Method
+
+The verdict synthesizes the chapter-level evidence tiers, local measurements, and quality gates. Stack totals include only compatible token classes and keep modeled assumptions separate from measured results.
+
+## Findings
+
+### The verdict on 10x
 
 **Defensible today: ≈2.5x (≈2.4x on code-heavy mixes). Defensible after validation on your task mix: ≈5–6.2x. A true 10x at
 provably equal quality does not exist yet.** The paper path (Sonnet/Haiku main loops with
@@ -29,7 +38,7 @@ only the effort parameter and not-being-the-frontier-model move it; (2) a **cach
 of context the agent genuinely needs; (3) quality risk concentrates exactly where the remaining
 multipliers are. Full math: [15 — Composed Stacks: Conservative / Aggressive / Unbelievable](/research/context/techniques/15-composed-stacks/).
 
-## Where the money actually goes (measured, this environment)
+### Where the money actually goes (measured, this environment)
 
 The measured heavy Fable 5 session decomposes as: **cache reads 32% / cache writes 29% /
 thinking ~20% / visible output ~17% / uncached input 2%** (02). An independent session
@@ -46,7 +55,17 @@ as a profile, not a law. Three consequences the market hasn't priced in:
  $524.23 uncached-equivalent, this very session); MCP schemas defer by default; Edit-diffs are
  default. Most "10x easy wins" advice re-sells these defaults.
 
-## The stack (what to actually run)
+### What we still don't know (highest-value open measurements)
+
+Quality-vs-effort curve for Fable 5 (the 76% transfer); thinking-share by effort level;
+persona-vs-instruction durability over 100+ turns; caveat-drop rates in terse output registers;
+composed-stack quality at n=30 ([16 — Validation Harness: the No-Quality-Loss Proof Protocol](/research/context/techniques/16-validation-harness/) §7 closes all five).
+
+— Read 15 for the math, 17 for the sequence, 16 to prove any of it on your own tasks.
+
+## Implications for jackin❯
+
+### The stack (what to actually run)
 
 **Day 1, riskless (≈1.06–1.3x):** dedup the double-registered caveman hooks (−966 tok/session,
 −118/prompt); pin exploration subagents `model: haiku, effort: low` (÷10 on code-heavy text, up to
@@ -74,7 +93,11 @@ defaults in the launch env assembly, `[token_policy]` in role manifests, model/e
 CapsuleConfig, CI linter failing when always-loaded context grows. Automatic beats disciplined;
 insertion points are mapped in 17.
 
-## Corrections that reorder the field (the graveyard, abridged)
+For jackin❯, the executive summary evidence identifies which mechanisms are safe to adopt directly and which still require workload-specific validation.
+
+## Limitations and unknowns
+
+### Rejected claims that change the decision
 
 Full kill-tables live in files [04 — Style and Language Compression — Beyond Caveman](/research/context/techniques/04-style-and-language-compression/) through [13 — Infrastructure-level (self-hosted / gateway tier)](/research/context/techniques/13-infrastructure-level/); the ones that change decisions:
 
@@ -109,10 +132,12 @@ Full kill-tables live in files [04 — Style and Language Compression — Beyond
  near-neutral while SCREAMING_SNAKE is extreme. Cross-model budgets must re-count, and an open docs contradiction
  on prior-turn thinking retention (12 §TL;DR) is worth real money on long sessions.
 
-## What we still don't know (highest-value open measurements)
+## Sources
 
-Quality-vs-effort curve for Fable 5 (the 76% transfer); thinking-share by effort level;
-persona-vs-instruction durability over 100+ turns; caveat-drop rates in terse output registers;
-composed-stack quality at n=30 ([16 — Validation Harness: the No-Quality-Loss Proof Protocol](/research/context/techniques/16-validation-harness/) §7 closes all five).
+Evidence and repository references are cited inline beside the claims they support.
 
-— Read 15 for the math, 17 for the sequence, 16 to prove any of it on your own tasks.
+## Related work
+
+- [Token-optimization techniques dossier](/research/context/techniques/)
+- [Validation harness](/research/context/techniques/16-validation-harness/)
+- [Context engine](/research/context/engine/)

@@ -1,5 +1,8 @@
 {
   "title": "Future directions",
   "defaultOpen": false,
-  "pages": ["index", "platform-ideas-scan"]
+  "pages": [
+    "index",
+    "platform-ideas-scan"
+  ]
 }

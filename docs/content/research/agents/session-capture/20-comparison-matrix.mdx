@@ -1,12 +1,24 @@
 ---
 title: "20 — Comparison Matrix and Tier List"
+description: "SpecStory is the strongest reusable baseline, but its two-of-six roster overlap and lack of a host-side purge-surviving archive leave the core Déjà Vu gap open."
 ---
 
-# 20 — Comparison Matrix and Tier List
+## Summary
 
-**Research conducted:** 2026-07-03. Tools from [01](/research/agents/session-capture/01-specstory-product/)/[02](/research/agents/session-capture/02-specstory-cli-internals/) (SpecStory), [11](/research/agents/session-capture/11-open-source-exporters/) (OSS), [12](/research/agents/session-capture/12-platforms-and-observability/) (platforms). Tier value = *usefulness to a jackin❯ session-capture effort* — coverage of jackin❯'s six-agent roster × mechanism robustness × output/search/share quality × maintenance health × license reusability. That is deliberately not "best product for an individual developer".
+Ranks session-capture options by agent coverage, capture robustness, content fidelity, search, sharing, health, and license.
+**Verification cutoff:** 2026-07-03. Tools come from [01](/research/agents/session-capture/01-specstory-product/)/[02](/research/agents/session-capture/02-specstory-cli-internals/) (SpecStory), [11](/research/agents/session-capture/11-open-source-exporters/) (OSS), and [12](/research/agents/session-capture/12-platforms-and-observability/) (platforms). Tier value means usefulness to a jackin❯ session-capture capability: roster coverage × mechanism robustness × output/search/share quality × maintenance health × license reusability. It does not rank personal developer products.
 
-## Capability matrix (the contenders)
+
+## Question and scope
+
+Which candidates best fit jackin❯ by roster coverage, extraction mechanism, output, health, and license?
+
+## Method
+
+The matrix scores candidates against evidence in the agent-store, exporter, platform, and SpecStory chapters using the stated capability and mechanism criteria.
+
+## Findings
+### Capability matrix (the contenders)
 
 Capture = how conversation content is acquired. Live = captures during the session vs post-hoc. Content = full conversation (incl. tool calls) vs metrics only.
 
@@ -28,7 +40,7 @@ Capture = how conversation content is acquired. Live = captures during the sessi
 | opencode `/share` (native) | server publish | ✅ | full | web page | ❌ | public links | ❌ | OSS agent, closed share svc | active |
 | ccusage (for contrast) | Claude JSONL | post-hoc | **metrics only** | CLI reports | ❌ | leaderboards | ❌ | MIT | 16.8k★, very active |
 
-## Coverage vs jackin❯'s roster
+### Coverage vs jackin❯'s roster
 
 jackin❯ runs Claude Code, Codex, Amp, Kimi, OpenCode, Grok ([30](/research/agents/session-capture/30-jackin-fit/)). Coverage of that roster by the cross-agent tools:
 
@@ -43,7 +55,7 @@ jackin❯ runs Claude Code, Codex, Amp, Kimi, OpenCode, Grok ([30](/research/age
 
 Two consequences: (a) no off-the-shelf tool solves jackin❯'s roster — best case 3/6; (b) Kimi and Grok providers would be first-in-market, and both turn out to have *good* native surfaces (Kimi versioned `wire.jsonl` + ACP; Grok documented session dirs + ACP `updates.jsonl` — [10](/research/agents/session-capture/10-agent-session-stores/)).
 
-## Mechanism scorecard (matches Déjà Vu's vector taxonomy)
+### Mechanism scorecard (matches Déjà Vu's vector taxonomy)
 
 | Mechanism | Used by | Verdict from field evidence |
 |---|---|---|
@@ -54,7 +66,7 @@ Two consequences: (a) no off-the-shelf tool solves jackin❯'s roster — best c
 | E. Vendor stream/API | Amp `--stream-json`, OpenCode `serve`, Codex `--json` | The correct answer where no file exists (Amp) and the hedge where formats are declared unstable (Codex) |
 | F. Screen scrape | **nobody in the entire market** | Confirms Déjà Vu's last-resort ranking — no shipping product relies on it |
 
-## Tier list
+### Tier list
 
 | Tier | Tool | Rationale (one line each) |
 |---|---|---|
@@ -72,6 +84,26 @@ Two consequences: (a) no off-the-shelf tool solves jackin❯'s roster — best c
 | **C** | Happy · vibe-kanban · Crystal · Conductor | Orchestrator-captive history; category evidence, not reusable components |
 | **F** | cursor-chat-export, cclogviewer, sniffly, claude-code-otel, opcode, omnara, cui, claude-code-exporter | Stale, archived, or upstream-deleted — the graveyard that shows maintenance is the hard part |
 
-## What the matrix says in one paragraph
+### What the matrix says in one paragraph
 
 The market has one production cross-agent capture pipeline (SpecStory, open, 2/6 roster fit), one closed product pointing at the next layer (Mantra's git time-travel), a healthy single-agent Claude ecosystem, thin-to-nonexistent everything else, and zero coverage of Kimi and Grok. Capture mechanism is a solved question (native stores + vendor-stream hedges); differentiation now lives in normalization quality, retrieval, sharing surfaces, and turn↔code attribution. For jackin❯ that reads: nothing to buy, one blueprint to port, two first-mover providers to write, and a defensible position from container ownership that no market player shares ([30](/research/agents/session-capture/30-jackin-fit/)).
+
+## Implications for jackin❯
+
+Use the matrix to prioritize provider and archive capabilities, not as a dependency-selection shortcut.
+
+## Limitations and unknowns
+
+Scores compress uneven evidence and are cutoff-bound; unsupported or closed behavior can change the ranking.
+
+## Sources
+
+- [Agent session stores](/research/agents/session-capture/10-agent-session-stores/)
+- [Open-source exporters](/research/agents/session-capture/11-open-source-exporters/)
+- [Platforms and observability](/research/agents/session-capture/12-platforms-and-observability/)
+- [SpecStory issue 146](https://github.com/specstoryai/getspecstory/issues/146)
+
+## Related work
+
+- [Session-capture dossier](/research/agents/session-capture/)
+- [Déjà Vu conversation-capture design](/research/agents/orchestration/conversation-capture/)

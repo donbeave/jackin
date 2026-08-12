@@ -1,7 +1,8 @@
 {
-  "title": "Ci",
+  "title": "CI",
   "defaultOpen": false,
   "pages": [
+    "index",
     "performance",
     "rust-tooling",
     "pr-verification"

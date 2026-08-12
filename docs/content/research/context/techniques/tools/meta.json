@@ -1,4 +1,7 @@
 {
   "title": "Tools",
-  "pages": ["index"]
+  "pages": [
+    "index"
+  ],
+  "defaultOpen": false
 }

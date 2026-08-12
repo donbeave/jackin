@@ -1,7 +1,8 @@
 {
-  "title": "Resource Limits",
+  "title": "Resource limits",
   "defaultOpen": false,
   "pages": [
+    "index",
     "declarative-resource-limits-design",
     "console-resource-panel-design"
   ]

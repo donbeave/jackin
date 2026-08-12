@@ -4,5 +4,13 @@
   "description": "Evidence, comparisons, experiments, and design rationale that inform jackin❯.",
   "icon": "Microscope",
   "defaultOpen": false,
-  "pages": ["index", "agents", "platform", "product", "engineering", "context", "watchlist"]
+  "pages": [
+    "index",
+    "agents",
+    "platform",
+    "product",
+    "engineering",
+    "context",
+    "watchlist"
+  ]
 }

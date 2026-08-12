@@ -1,12 +1,24 @@
 ---
 title: "08 — Current release register"
+description: "Verification cutoff, stable versions, release dates, source links, and freshness defects for tracked context tools."
 ---
 
-# 08 — Current release register
+## Summary
 
+The release register fixes every comparison to a 2026-08-12 snapshot so superseded versions and stale benchmark claims cannot silently enter current verdicts.
 Authoritative dossier snapshot: **2026-08-12 UTC**. “Latest” means the newest stable GitHub release visible at the cutoff, or newest tag when a project does not publish release objects. Adoption and activity fields come from GitHub's repository API. Stars are not an outcome metric.
 
-## Core tools
+## Question and scope
+
+Which exact stable releases and maintenance signals define the dossier’s current comparison set?
+
+## Method
+
+The register queries release or tag metadata at the stated UTC cutoff, records the newest stable artifact and maintenance signals, and excludes stars from outcome judgments.
+
+## Findings
+
+### Core tools
 
 | Tool | Current release | Published | Current adoption | Last repository push at cutoff | License today |
 |---|---:|---:|---:|---:|---|
@@ -17,7 +29,7 @@ Authoritative dossier snapshot: **2026-08-12 UTC**. “Latest” means the newes
 
 API sources: [Caveman](https://api.github.com/repos/JuliusBrussee/caveman), [Headroom](https://api.github.com/repos/headroomlabs-ai/headroom), [RTK](https://api.github.com/repos/rtk-ai/rtk), [lean-ctx](https://api.github.com/repos/yvgude/lean-ctx).
 
-## Rising and adjacent tools
+### Rising and adjacent tools
 
 | Tool | Current release/tag | Current adoption | Created / active at cutoff | License/current boundary |
 |---|---:|---:|---:|---|
@@ -36,7 +48,17 @@ API sources: [Caveman](https://api.github.com/repos/JuliusBrussee/caveman), [Hea
 
 API sources: [pxpipe](https://api.github.com/repos/teamchong/pxpipe), [Context Mode](https://api.github.com/repos/mksglu/context-mode), [Paritok](https://api.github.com/repos/Paritok-official/paritok-4b-v1), [jCodeMunch](https://api.github.com/repos/jgravelle/jcodemunch-mcp), [Serena](https://api.github.com/repos/oraios/serena), [fff](https://api.github.com/repos/dmtrKovalenko/fff), [codedb](https://api.github.com/repos/justrach/codedb), [sem](https://api.github.com/repos/Ataraxy-Labs/sem), [mq](https://api.github.com/repos/harehare/mq), [Entroly](https://api.github.com/repos/juyterman1000/entroly), [claude-context](https://api.github.com/repos/zilliztech/claude-context), [Repomix](https://api.github.com/repos/yamadashy/repomix).
 
-## Freshness defects found in current upstream docs
+### Update rule
+
+Future edits replace this snapshot; they do not append a release history. A changed stable version requires re-reading the release, current architecture, license, install/telemetry behavior, and evidence before carrying any verdict forward.
+
+## Implications for jackin❯
+
+For jackin❯, the current release register evidence determines whether the mechanism is suitable for reuse, comparison, or rejection.
+
+## Limitations and unknowns
+
+### Freshness defects found in current upstream docs
 
 - RTK's current README verification example names an older version than v0.45.0.
 - RTK's current privacy and disclaimer documents disagree about telemetry default.
@@ -46,6 +68,12 @@ API sources: [pxpipe](https://api.github.com/repos/teamchong/pxpipe), [Context M
 
 These defects do not change the release metadata above. They lower confidence in unaudited prose and justify linking exact release artifacts.
 
-## Update rule
+## Sources
 
-Future edits replace this snapshot; they do not append a release history. A changed stable version requires re-reading the release, current architecture, license, install/telemetry behavior, and evidence before carrying any verdict forward.
+Evidence and repository references are cited inline beside the claims they support.
+
+## Related work
+
+- [Token-optimization tools dossier](/research/context/tools/)
+- [Token-optimization techniques](/research/context/techniques/)
+- [Context engine](/research/context/engine/)

@@ -1,8 +1,11 @@
 ---
 title: "Proven verification commands"
-description: Build, binding, native app, and release commands proven by the Desktop CI stack
+description: Catalogs build, binding, native-app, verification, and release commands proven by the desktop CI stack.
 ---
 
+## Summary
+
+The desktop CI stack establishes the canonical build, binding, native-app, verification, and release command set.
 Questions: exact build/test/lint/verify commands executor plans may cite for
 crates (`jackin-usage`, `jackin-usage-ffi`), the UniFFI bindings drift gate,
 the Swift app, and release verification.
@@ -70,6 +73,6 @@ Vetted: 2026-07-24
 ## Dead ends and contradictions
 - None; commands converge across mise.toml, xtask source, CI, and docs.
 
-## Open unknowns
+## Limitations and open questions
 - None load-bearing; notarization steps need org Apple secrets
   (`release-macos` environment — names only, `native/README.md`).

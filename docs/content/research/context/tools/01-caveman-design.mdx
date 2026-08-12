@@ -1,9 +1,11 @@
 ---
 title: "01 — Caveman v2: current design"
+description: "Current Caveman design, output-compression mechanism, installation boundary, evidence, risks, and best-fit workloads."
 ---
 
-# 01 — Caveman v2: current design
+## Summary
 
+Caveman now combines an effective terse-output register with a broader input stack, but those mechanisms have different evidence, risks, and integration boundaries.
 Cutoff: **2026-08-12**. Current stable: [v2.0.0](https://github.com/JuliusBrussee/caveman/releases/tag/v2.0.0), released 2026-08-11.
 
 Caveman now contains **two distinct token interventions**:
@@ -13,7 +15,17 @@ Caveman now contains **two distinct token interventions**:
 
 Any current assessment must separate these mechanisms and their denominators.
 
-## Current facts
+## Question and scope
+
+What do Caveman v2’s output register and input-compression stack each change, and what evidence supports either mechanism?
+
+## Method
+
+The review fixes Caveman to v2.0.0 at the dossier cutoff, inspects upstream release material and source, separates output and input mechanisms, and grades release-specific outcome evidence independently.
+
+## Findings
+
+### Current facts
 
 | Field | Current value |
 |---|---|
@@ -27,7 +39,7 @@ Any current assessment must separate these mechanisms and their denominators.
 
 Metadata source: [GitHub API](https://api.github.com/repos/JuliusBrussee/caveman). License boundaries: [LICENSING.md](https://github.com/JuliusBrussee/caveman/blob/v2.0.0/LICENSING.md).
 
-## Current architecture
+### Current architecture
 
 ```text
 output path
@@ -52,19 +64,21 @@ The [engine documentation](https://github.com/JuliusBrussee/caveman/blob/v2.0.0/
 
 The [proxy documentation](https://github.com/JuliusBrussee/caveman/blob/v2.0.0/proxy/README.md) describes a local base-URL swap and a record-only pass-through mode. A proxy remains an integrity boundary: it sees requests, may change cache geometry, and must preserve provider semantics.
 
-## Current default stack
+### Current default stack
 
 The v2 README presents `caveman claude` as the full wrapper: structured compression, TOON when smaller, MCP integration, and output shrinking. `--off` provides a pass-through control. Pixel mode re-encodes text as images only for gated models; it inherits model-legibility and modality risks similar to pxpipe.
 
 The output skill and input engine can be enabled independently. That separation is necessary for attribution: otherwise a lower total could come from shorter narration, smaller observations, changed agent behavior, or all three.
 
-## Current evidence
+### Current evidence
 
 The current release ships a reproducible first-party [wrap benchmark](https://github.com/JuliusBrussee/caveman/blob/v2.0.0/docs/WRAP-BENCHMARK.md): six deterministic 60–95 KB tool-output fixtures, three repetitions per fixture, pinned agent/model, and exact-answer checks. The reported Caveman arm reduces provider-reported input 33.2% with 18/18 exact answers. This is useful fixture evidence, not an independent real-repository accepted-task benchmark.
 
 No independent end-to-end evaluation of **v2.0.0** was found by the cutoff. Results tied only to earlier skill releases are intentionally not carried into this current-only dossier.
 
-## Benefits
+## Implications for jackin❯
+
+### Benefits
 
 - Only named tool with a first-class output skill **and** a newly integrated input engine.
 - Deterministic, content-typed compression instead of one generic summarizer.
@@ -73,7 +87,21 @@ No independent end-to-end evaluation of **v2.0.0** was found by the cutoff. Resu
 - Local proxy/engine path; multiple agent wrappers.
 - `--off` and record-only controls support an honest local A/B.
 
-## Costs and risks
+### Best fit
+
+Use the **skill** when visible narration is the measured waste and terse language remains clear. Test the **v2 engine** when large JSON, logs, code/search output, terminal output, or tool schemas dominate fresh input and local recovery is required.
+
+Do not adopt the full stack merely because the two mechanisms share a repository. Enable one layer at a time, compare against `--off`, and require unchanged task acceptance plus successful raw recovery.
+
+### Current verdict
+
+Caveman v2 is the largest architectural change in the named set. It is no longer accurately described as “a prompt, not a program.” The output skill remains the lightest intervention; the input engine is a new, broad competitor to Headroom and lean-ctx. Its current mechanism is credible and well-guarded, but the latest release has only first-party fixture evidence. Status: **promising, test locally, not yet proven generally**.
+
+Next: [02 — Headroom v0.34.0](/research/context/tools/02-headroom-design/).
+
+## Limitations and unknowns
+
+### Costs and risks
 
 - v2.0.0 is one day old at the cutoff; operational maturity is unproven.
 - Product name hides two interventions; combined counters can obscure causality.
@@ -83,14 +111,12 @@ No independent end-to-end evaluation of **v2.0.0** was found by the cutoff. Resu
 - TOON and pixel transforms can change model comprehension even when byte recovery exists outside the active prompt.
 - The current fixture benchmark is vendor-owned and narrow.
 
-## Best fit
+## Sources
 
-Use the **skill** when visible narration is the measured waste and terse language remains clear. Test the **v2 engine** when large JSON, logs, code/search output, terminal output, or tool schemas dominate fresh input and local recovery is required.
+Evidence and repository references are cited inline beside the claims they support.
 
-Do not adopt the full stack merely because the two mechanisms share a repository. Enable one layer at a time, compare against `--off`, and require unchanged task acceptance plus successful raw recovery.
+## Related work
 
-## Current verdict
-
-Caveman v2 is the largest architectural change in the named set. It is no longer accurately described as “a prompt, not a program.” The output skill remains the lightest intervention; the input engine is a new, broad competitor to Headroom and lean-ctx. Its current mechanism is credible and well-guarded, but the latest release has only first-party fixture evidence. Status: **promising, test locally, not yet proven generally**.
-
-Next: [02 — Headroom v0.34.0](/research/context/tools/02-headroom-design/).
+- [Token-optimization tools dossier](/research/context/tools/)
+- [Token-optimization techniques](/research/context/techniques/)
+- [Context engine](/research/context/engine/)

@@ -1,10 +1,17 @@
 ---
 title: "Unifying the Settings and Editor Config Surfaces: Duplication Map and Target Architecture"
+description: Maps duplication between settings and editor configuration surfaces and defines their shared ownership model.
 ---
 
-**Research state**: Historical design rationale for the settings/editor convergence. The input ownership split, shared primitives, validation, and parity coverage shipped; the broader modal-enum and host-trait ideas below remain design options rather than committed roadmap work. Current ownership rules live in the [TUI architecture](/reference/tui/architecture/).
+**Research state:** Reference
 
-## Problem
+## Summary
+
+Settings and workspace editor surfaces should share one configuration model, validation path, and component system.
+
+This page preserves the rationale for shared input ownership, primitives, validation, and parity; current rules live in [TUI architecture](/reference/tui/architecture/).
+
+## Research question
 
 The global **Settings** screen and the **workspace Editor** screen edit the same config domains — auth, mounts, env/secrets, trust, and general options — but are implemented as two largely separate surfaces. The same concepts are coded twice: row models, flatten/validation, rendering, edit flows, modal stacks, footer hints, and mouse hit-testing each exist as a left/right twin. The two screens look and behave *almost* the same, which is exactly the failure mode: any change made to one and not mirrored to the other produces a behavior that exists on one screen and not the other.
 

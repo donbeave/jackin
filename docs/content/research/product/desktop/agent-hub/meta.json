@@ -1,7 +1,10 @@
 {
-  "title": "Agent Hub",
+  "title": "Agent hub",
   "defaultOpen": false,
   "pages": [
-    "jackin-desktop-agent-hub"
+    "index",
+    "01-native-desktop-references",
+    "02-product-surfaces",
+    "03-daemon-integration-architecture"
   ]
 }

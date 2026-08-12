@@ -1,14 +1,26 @@
 ---
 title: "02 — Headroom v0.34.0: current design"
+description: "Current Headroom design, reversible input-compression mechanisms, integration boundaries, evidence, risks, and best fit."
 ---
 
-# 02 — Headroom v0.34.0: current design
+## Summary
 
+Headroom offers the broadest reversible input-compression pipeline in the compared set, but its trained hot-path compressor and proxy boundary require independent quality and reliability proof.
 Cutoff: **2026-08-12**. Current stable: [v0.34.0](https://github.com/headroomlabs-ai/headroom/releases/tag/v0.34.0), released 2026-08-05.
 
 Headroom is the most mature **broad input-compression pipeline** in the named set. It routes each payload to a content-specific compressor, uses a trained model for selected text, stores recoverable originals, and can operate as a library, MCP server, wrapper, or provider-facing proxy. Current Headroom also has opt-in output-verbosity and effort controls, so it is no longer input-only in feature scope.
 
-## Current facts
+## Question and scope
+
+How does Headroom v0.34.0 compress and recover context, and where do its model and proxy boundaries add risk?
+
+## Method
+
+The review fixes Headroom to v0.34.0, traces each compression and recovery boundary through upstream documentation and source, and separates mechanism evidence from accepted-task outcomes.
+
+## Findings
+
+### Current facts
 
 | Field | Current value |
 |---|---|
@@ -22,7 +34,7 @@ Headroom is the most mature **broad input-compression pipeline** in the named se
 
 Metadata source: [GitHub API](https://api.github.com/repos/headroomlabs-ai/headroom). Current architecture and setup: [repository README](https://github.com/headroomlabs-ai/headroom).
 
-## Current pipeline
+### Current pipeline
 
 ```text
 request or tool payload
@@ -44,7 +56,7 @@ The design advantage is specialization. JSON arrays can be typed and sampled; lo
 
 CCR makes lossy compression operationally recoverable. “Recoverable” does not mean the active model saw every omitted detail; it means the agent can request the original when uncertainty or an exact task demands it.
 
-## What v0.34.0 currently provides
+### What v0.34.0 currently provides
 
 - PHP code compression and expanded IDE/agent wrapper support.
 - A marker-free lossless provider seam through `/v1/compress`.
@@ -57,7 +69,15 @@ CCR makes lossy compression operationally recoverable. “Recoverable” does no
 
 Release source: [v0.34.0 notes](https://github.com/headroomlabs-ai/headroom/releases/tag/v0.34.0).
 
-## Benefits
+### Current evidence
+
+The current repository supplies per-payload benchmarks, telemetry machinery, holdout concepts, and compression counters. These are first-party. No independent end-to-end benchmark explicitly testing **v0.34.0** was found at the cutoff, so older-version results are not projected onto this release.
+
+The current Caveman v2 first-party [wrap benchmark](https://github.com/JuliusBrussee/caveman/blob/v2.0.0/docs/WRAP-BENCHMARK.md) includes a Headroom arm, but it is a competitor-owned six-fixture test and cannot establish general Headroom performance.
+
+## Implications for jackin❯
+
+### Benefits
 
 - Broadest mature input reach: structured payloads, logs, source, RAG, history, and provider requests.
 - Content-aware transforms instead of blanket truncation.
@@ -67,7 +87,21 @@ Release source: [v0.34.0 notes](https://github.com/headroomlabs-ai/headroom/rele
 - Apache-2.0 across the repository.
 - Current output/effort controls can reduce separate token classes under one policy layer.
 
-## Costs and risks
+### Best fit
+
+Test Headroom when large JSON, logs, RAG chunks, mixed tool results, or long request history dominate avoidable fresh input and exact recovery is required. Start with the narrowest deployment—library or MCP on selected payloads—before a whole-agent proxy/wrapper.
+
+Avoid a global install when native retrieval already selects small precise slices, latency is critical, or policy forbids local models, telemetry, user-scope config changes, or request interception.
+
+### Current verdict
+
+Headroom v0.34.0 is the best current **broad reversible compressor** in this set. Its 60–95% headline is plausible for selected compressible payloads but unproven as a latest-release accepted-task result. Status: **strong architecture, mature feature set, verify net benefit locally**.
+
+Next: [03 — RTK v0.45.0](/research/context/tools/03-rtk-design/).
+
+## Limitations and unknowns
+
+### Costs and risks
 
 - Larger process and dependency surface than RTK: Python/Rust components, optional model artifacts, proxy/MCP state, and wrapper configuration.
 - A proxy sees full requests and can affect caching, auth, streaming, and provider compatibility.
@@ -77,20 +111,12 @@ Release source: [v0.34.0 notes](https://github.com/headroomlabs-ai/headroom/rele
 - Reversible omission can still cause extra retrieval turns or wrong reasoning before recovery.
 - Current `SECURITY.md` identifies an older release as latest; release metadata and code are more current than that document.
 
-## Current evidence
+## Sources
 
-The current repository supplies per-payload benchmarks, telemetry machinery, holdout concepts, and compression counters. These are first-party. No independent end-to-end benchmark explicitly testing **v0.34.0** was found at the cutoff, so older-version results are not projected onto this release.
+Evidence and repository references are cited inline beside the claims they support.
 
-The current Caveman v2 first-party [wrap benchmark](https://github.com/JuliusBrussee/caveman/blob/v2.0.0/docs/WRAP-BENCHMARK.md) includes a Headroom arm, but it is a competitor-owned six-fixture test and cannot establish general Headroom performance.
+## Related work
 
-## Best fit
-
-Test Headroom when large JSON, logs, RAG chunks, mixed tool results, or long request history dominate avoidable fresh input and exact recovery is required. Start with the narrowest deployment—library or MCP on selected payloads—before a whole-agent proxy/wrapper.
-
-Avoid a global install when native retrieval already selects small precise slices, latency is critical, or policy forbids local models, telemetry, user-scope config changes, or request interception.
-
-## Current verdict
-
-Headroom v0.34.0 is the best current **broad reversible compressor** in this set. Its 60–95% headline is plausible for selected compressible payloads but unproven as a latest-release accepted-task result. Status: **strong architecture, mature feature set, verify net benefit locally**.
-
-Next: [03 — RTK v0.45.0](/research/context/tools/03-rtk-design/).
+- [Token-optimization tools dossier](/research/context/tools/)
+- [Token-optimization techniques](/research/context/techniques/)
+- [Context engine](/research/context/engine/)

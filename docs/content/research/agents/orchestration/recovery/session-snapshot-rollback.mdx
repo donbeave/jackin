@@ -1,10 +1,15 @@
 ---
 title: "Session Snapshot and Rollback Design"
+description: "Designs explicit session snapshots and rollback with safe restore rules, phases, and host-side boundaries."
 ---
 
-**Research state**: Open — design proposal (Containment track, [Agent Orchestration Program](/research/agents/orchestration/program-research/)). Roadmap tracking: [Session snapshot and rollback](/roadmap/session-snapshot-rollback/).
+**Research state:** Incomplete
 
-## Problem
+## Summary
+
+Rollback must use explicit host-owned restore points with preflight safety checks; diagnostic terminal snapshots are not filesystem recovery.
+
+## Research question
 
 Current `Snapshot` / `StatusCapture` control-channel calls are diagnostic capture only: they record state for status/debugging, not a reversible filesystem snapshot and not a rollback mechanism.
 
@@ -49,31 +54,9 @@ Launch output must print:
 - whether restore is available
 - which host paths would be overwritten by restore
 
-## Phases
+## Delivery ownership
 
-### Phase 1 — Metadata-only recovery index
-
-- Record resolved mounts, isolated worktree paths, base commits, dirty status, and cleanup policy in the persistent storage layer.
-- Add `jackin recovery show <instance>` for post-session inspection.
-- Do not copy file contents yet.
-
-### Phase 2 — Project snapshots
-
-- Add opt-in snapshots for non-git mounts and dirty working trees.
-- Use integration-provided excludes from [stack integration contracts](/roadmap/stack-integration-contracts/).
-- Store snapshots under jackin❯ data directory, not inside the project.
-- Add diff/list commands before restore.
-
-### Phase 3 — State snapshots
-
-- Snapshot selected jackin-managed state such as agent config, plugin state, and auth delivery artifacts when the selected auth mode makes that safe.
-- Do not snapshot secret values into a broader-readable archive.
-- Integrate with [container credential exposure](/research/platform/security/credential-exposure/container-credential-exposure/) so secret handling stays explicit.
-
-### Phase 4 — Remote and Kubernetes recovery
-
-- Map the recovery contract onto SSH remote directories and Kubernetes volumes.
-- Prefer platform-native snapshots where available, but keep the same operator-facing contract.
+Delivery sequencing and current status belong to [Session snapshot and rollback](/roadmap/session-snapshot-rollback/). This dossier retains the snapshot layers, restore safeguards, and host-mutation constraints.
 
 ## Restore rules
 
@@ -95,15 +78,15 @@ Before any destructive restore, jackin❯ should snapshot the current state of t
 
 Snapshots write to jackin❯ data directory. Restore mutates host workspace paths and must therefore be opt-in, visible in the session contract, and guarded by interactive confirmation or an explicit destructive flag.
 
-## Related files
+## Related work
 
 - <RepoFile path="crates/jackin-runtime/src/runtime/cleanup.rs">crates/jackin-runtime/src/runtime/cleanup.rs</RepoFile> — cleanup and purge behavior
 - <RepoFile path="crates/jackin-runtime/src/runtime/attach.rs">crates/jackin-runtime/src/runtime/attach.rs</RepoFile> — foreground session finalization
 - <RepoFile path="crates/jackin-config/src/resolve.rs">crates/jackin-config/src/resolve.rs</RepoFile> — resolved workspace mount state
 - [Per-mount isolation](/guides/workspaces/#per-mount-isolation) — isolated worktree/clone design
-- [Persistent storage layer](/research/agents/orchestration/memory/persistent-storage-layer/) — future metadata store
+- [Persistent storage layer](/research/agents/orchestration/memory/) — future metadata store
 
-## Source materials
+## Sources
 
 - [Hazmat README](https://github.com/dredozubov/hazmat) — snapshot and restore positioning
 - [Hazmat verified scope](https://github.com/dredozubov/hazmat/blob/master/tla/VERIFIED.md) — backup/restore safety and setup/rollback verification notes

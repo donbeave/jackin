@@ -1,11 +1,17 @@
 ---
 title: "Rust build-cache hygiene study"
-description: "Disk measurements, root-cause analysis, tool comparison, filesystem behavior, and integration options."
+description: Measures Rust build-cache growth and compares cleanup tools, filesystem behavior, and safe integration options.
 ---
 
-**Research state**: Evidence and design options revised July 2026; implementation tracked separately.
+**Research state:** Current
 
-## Problem
+## Summary
+
+Rust build caches need measured, policy-driven cleanup because filesystem behavior and tool safety differ across environments.
+
+The measurements and design options share a July 2026 verification cutoff; implementation is tracked separately.
+
+## Research question
 
 Rust-heavy jackin❯ work can silently turn host-local cache directories into the largest disk consumer on the machine. The July 2026 operator disk audit found `~/.cache/jackin` at roughly 410 GB, with one jackin❯ project cache target around 402 GB. Separate Rust workspaces also had large local `target/` trees: one non-jackin❯ Rust workspace around 30 GB, this jackin❯ checkout around 18 GB, and another Rust checkout around 13 GB.
 
@@ -18,7 +24,7 @@ A follow-up deep audit the same week found the problem was worse than initially 
 
 The root bug class is not "one bad directory". jackin❯ has multiple places that create or preserve build/cache state for speed, but there is no single Rust build-cache ownership model with quotas, TTLs, eviction order, operator-visible accounting, or an automatic cleanup path. A cache can be created because it improves launch or build latency, then survive indefinitely because no policy owns its lifetime. Worse, concurrent agent builds into shared or overlapping target directories multiply artifacts without deduplication, and incremental-compilation session directories accumulate without garbage collection.
 
-## Why It Matters
+## Why it matters
 
 Agents run many builds across many branches, isolated worktrees, generated checkouts, and PR verification bundles. Rust makes the pressure worse because Cargo stores build output under `target/` by default, and those targets are per-workspace unless explicitly redirected. Compiler-result caches such as `sccache` solve a different layer: they avoid recompiling repeated rustc inputs, but they do not delete every workspace's `target/` directory and they add their own disk cache that needs a size cap.
 
@@ -30,7 +36,7 @@ The fix should be structural: every cache jackin❯ creates or recommends must h
 
 ### Why a comparison is needed
 
-The original design proposal named only `sccache`. Since then, a newer tool — **kache** ([github.com/kunobi-ninja/kache](https://github.com/kunobi-ninja/kache)) — has shipped with a fundamentally different approach to disk usage that directly addresses the problems found in the July 2026 audit. The comparison below covers all credible options so the design decision is evidence-based.
+The credible options differ materially in cache storage and eviction. **kache** ([github.com/kunobi-ninja/kache](https://github.com/kunobi-ninja/kache)) directly addresses the disk-pressure failure mode measured in the July 2026 audit, while `sccache` has broader ecosystem maturity. The comparison below keeps the decision evidence-based.
 
 ### Feature matrix
 
@@ -356,7 +362,7 @@ CARGO_TARGET_DIR="$JACKIN_CACHE/projects/<project-key>/target"
 11. Document operator-facing setup flows (host install) and cleanup flows once behavior ships; keep internal path and policy details in contributor reference docs.
 12. Evaluate kache stability over a 2-4 week trial period in local/container builds before deciding whether to also switch CI from sccache to kache.
 
-## Related Files
+## Related work
 
 - <RepoFile path="crates/jackin-runtime/src/runtime/cleanup.rs" /> — existing prune/delete machinery.
 - <RepoFile path="crates/jackin-runtime/src/runtime/prune_output.rs" /> — current prune output surface.

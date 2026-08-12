@@ -1,5 +1,10 @@
 {
   "title": "Context & efficiency",
   "defaultOpen": false,
-  "pages": ["index", "engine", "techniques", "tools"]
+  "pages": [
+    "index",
+    "engine",
+    "techniques",
+    "tools"
+  ]
 }
