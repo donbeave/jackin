@@ -110,6 +110,13 @@ if matches.count > 1 {
 
 if jsonMode {
     let active = NSWorkspace.shared.frontmostApplication?.processIdentifier == window.pid
+    let activationState = active ? "active" : "inactive"
+    let keyState: String
+    if window.layer == 0 {
+        keyState = active ? "key" : "non-key"
+    } else {
+        keyState = "not-applicable-transient"
+    }
     let object: [String: Any] = [
         "windowID": Int(window.id),
         "ownerPID": Int(window.pid),
@@ -120,7 +127,8 @@ if jsonMode {
         "contentSize": NSNull(),
         "contentSizeNote": "CGWindow exposes frame bounds; content size requires app geometry",
         "onScreen": window.onScreen,
-        "keyStatus": active ? "active" : "inactive",
+        "applicationActivationState": activationState,
+        "keyStatus": keyState,
     ]
     let data = try JSONSerialization.data(
         withJSONObject: object,

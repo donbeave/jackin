@@ -124,11 +124,35 @@ if [ -n "${CAPTURE_TOOLBAR_BUTTON_DESCRIPTION:-}" ]; then
   sleep 1
 fi
 
+requested_activation=active
 if [ -n "${CAPTURE_INACTIVE_APP:-}" ]; then
+  requested_activation=inactive
   open -a "$CAPTURE_INACTIVE_APP"
-  osascript -e "tell application \"$CAPTURE_INACTIVE_APP\" to activate"
-  sleep 1
+  osascript -e \
+    "tell application \"System Events\" to set frontmost of application process \"$CAPTURE_INACTIVE_APP\" to true"
+else
+  osascript -e \
+    "tell application \"System Events\" to set frontmost of application process \"$executable\" to true"
 fi
+
+activation_ok=0
+i=0
+while [ "$i" -lt 10 ]; do
+  is_frontmost=$(osascript -e \
+    "tell application \"System Events\" to get frontmost of application process \"$executable\"" \
+    2>/dev/null || echo unavailable)
+  if { [ "$requested_activation" = active ] && [ "$is_frontmost" = true ]; } \
+    || { [ "$requested_activation" = inactive ] && [ "$is_frontmost" = false ]; }; then
+    activation_ok=1
+    break
+  fi
+  sleep 0.5
+  i=$((i + 1))
+done
+[ "$activation_ok" -eq 1 ] || {
+  echo "application did not reach requested $requested_activation state" >&2
+  exit 1
+}
 
 capture_ok=0
 best_size=0
@@ -198,6 +222,7 @@ plutil -replace appExecutableSHA256 -string "$(shasum -a 256 "$APP/Contents/MacO
 plutil -replace imageSHA256 -string "$(shasum -a 256 "$OUT" | awk '{ print $1 }')" "$SIDECAR"
 plutil -replace fixtureID -string "$fixture_id" "$SIDECAR"
 plutil -replace requestedAppearance -string "$appearance" "$SIDECAR"
+plutil -replace requestedActivationState -string "$requested_activation" "$SIDECAR"
 plutil -replace requestedWindowSize -string "$window_size" "$SIDECAR"
 plutil -replace macOSVersion -string "$(sw_vers -productVersion)" "$SIDECAR"
 plutil -replace macOSBuild -string "$(sw_vers -buildVersion)" "$SIDECAR"
