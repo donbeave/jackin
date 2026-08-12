@@ -77,6 +77,15 @@ public struct UsageWindowRoot: View {
                 .accessibilityIdentifier("usage.sidebar-toggle")
             }
 
+            if store.refreshInProgress {
+                ToolbarItem(placement: .primaryAction) {
+                    ProgressView()
+                        .controlSize(.small)
+                        .accessibilityLabel("Refreshing usage")
+                        .accessibilityIdentifier("usage.refresh-progress")
+                }
+            }
+
             ToolbarItem(placement: .primaryAction) {
                 Button {
                     store.refreshAll()

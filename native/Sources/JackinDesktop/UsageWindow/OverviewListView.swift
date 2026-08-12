@@ -54,6 +54,7 @@ public struct OverviewListView: View {
                                 .accessibilityIdentifier("usage.overview.error.\(row.surfaceId)")
                             Button("Retry") { onRetry(row.surfaceId) }
                                 .controlSize(.small)
+                                .buttonStyle(.bordered)
                                 .accessibilityIdentifier("usage.overview.retry.\(row.surfaceId)")
                         }
                     }

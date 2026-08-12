@@ -43,7 +43,9 @@ public final class StatusBarController: NSObject {
         self.onOpenUsage = onOpenUsage
         self.statusItemMenu = StatusItemMenu(router: menuRouter)
         super.init()
-        popover.behavior = .transient
+        // XCUITest steals application activation while synthesizing scroll gestures. Keep the
+        // real NSPopover alive only in deterministic fixture runs; production remains transient.
+        popover.behavior = compactStatusItems ? .applicationDefined : .transient
         popover.animates = true
         popover.contentSize = PopoverRoot.liveContentSize
         let root = PopoverRoot(store: store) { [weak self] surfaceId in

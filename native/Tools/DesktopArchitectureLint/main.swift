@@ -42,6 +42,10 @@ struct DesktopArchitectureLint {
 
         require(delegate.contains("NSPopover()"), "real NSPopover host")
         require(
+            delegate.contains("compactStatusItems ? .applicationDefined : .transient"),
+            "production popover remains transient with fixture-only automation persistence"
+        )
+        require(
             delegate.contains("NSHostingController(rootView: root)"), "ordinary native popover host"
         )
         require(
@@ -73,7 +77,10 @@ struct DesktopArchitectureLint {
         let usageController = read("UsageWindowController.swift")
         require(
             usageController.contains(".moveToActiveSpace")
-                && read("AppMainMenu.swift").contains("window.orderFrontRegardless()"),
+                && usageController.contains(".canJoinAllSpaces")
+                && usageController.contains("if store.usesFixture")
+                && read("AppMainMenu.swift").contains("NSApp.activate(ignoringOtherApps: true)")
+                && read("AppMainMenu.swift").contains("window.makeKeyAndOrderFront(nil)"),
             "retained Usage window follows explicit reopen to the active Space"
         )
         require(overview.contains("Table("), "Overview uses native Table")

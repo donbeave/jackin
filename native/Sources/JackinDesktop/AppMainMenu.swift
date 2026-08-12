@@ -307,9 +307,8 @@ public enum AppActivation {
             NSApp.setActivationPolicy(.regular)
         }
         DispatchQueue.main.async {
-            window.orderFrontRegardless()
-            window.makeKey()
             NSApp.activate(ignoringOtherApps: true)
+            window.makeKeyAndOrderFront(nil)
         }
     }
 

@@ -58,7 +58,13 @@ public final class UsageWindowController: NSObject, NSWindowDelegate {
         window.title = "Usage"
         window.isReleasedWhenClosed = false
         window.delegate = self
-        window.collectionBehavior.insert(.moveToActiveSpace)
+        if store.usesFixture {
+            // Deterministic UI/visual QA must stay observable when the test runner and app are
+            // assigned to different Spaces by WindowServer between rapid process launches.
+            window.collectionBehavior.insert(.canJoinAllSpaces)
+        } else {
+            window.collectionBehavior.insert(.moveToActiveSpace)
+        }
         window.contentMinSize = NSSize(width: 760, height: 500)
         window.identifier = NSUserInterfaceItemIdentifier("usage-window")
         window.setAccessibilityIdentifier("usage-window")
