@@ -61,8 +61,10 @@ public final class UsageWindowController: NSObject, NSWindowDelegate {
         window.delegate = self
         if store.usesFixture {
             // Deterministic UI/visual QA must stay observable when WindowServer assigns rapid
-            // fixture launches and the test runner to different or full-screen Spaces.
+            // fixture launches and the test runner to different or full-screen Spaces. Floating
+            // prevents the full-screen host from retaking the gesture target between XCTest steps.
             window.collectionBehavior.formUnion([.canJoinAllSpaces, .fullScreenAuxiliary])
+            window.level = .floating
         } else {
             window.collectionBehavior.insert(.moveToActiveSpace)
         }

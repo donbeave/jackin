@@ -581,6 +581,18 @@ final class ArchitectureTests: XCTestCase {
         XCTAssertTrue(focusDrive.contains("activate(options: [.activateAllWindows])"))
     }
 
+    func testFixtureUsageWindowSurvivesForeignFullScreenHosts() throws {
+        let controller =
+            sourcesRoot
+            .appendingPathComponent("JackinDesktop")
+            .appendingPathComponent("UsageWindowController.swift")
+        let text = try String(contentsOf: controller, encoding: .utf8)
+
+        XCTAssertTrue(text.contains("[.canJoinAllSpaces, .fullScreenAuxiliary]"))
+        XCTAssertTrue(text.contains("window.level = .floating"))
+        XCTAssertTrue(text.contains("window.collectionBehavior.insert(.moveToActiveSpace)"))
+    }
+
     /// SB-5 vs FB1-6: bar stays template mono (no severity tint).
     ///
     /// Urgency color
