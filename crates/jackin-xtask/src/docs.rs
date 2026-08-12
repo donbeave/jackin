@@ -1,7 +1,7 @@
 //! Documentation-tree automation: scaffold and validate Fumadocs `meta.json`
 //! sidebars for roadmap items and research dossiers.
 //!
-//! The docs site is Fumadocs; each directory under `docs/content/docs/` carries
+//! The docs site is Fumadocs; each directory under `docs/content/` carries
 //! a `meta.json` whose `pages` array orders the sidebar. These tasks keep that
 //! wiring correct without hand-editing JSON:
 //!
@@ -18,6 +18,7 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
+use std::io::Write as _;
 use std::path::{Component, Path, PathBuf};
 
 use anyhow::{Context, Result, bail};
@@ -32,7 +33,7 @@ mod lychee_cache;
 mod site_links;
 mod specs;
 
-const DOCS_ROOT: &str = "docs/content/docs";
+const DOCS_ROOT: &str = "docs/content";
 const DOCS_MARKDOWN_ROOT: &str = "docs";
 const ROADMAP_REL: &str = "roadmap";
 const RESEARCH_REL: &str = "research";
@@ -124,8 +125,7 @@ pub(crate) struct ChangeNewArgs {
 pub(crate) enum ResearchCommand {
     /// Scaffold a new research dossier folder and register it in the sidebar.
     Scaffold(ResearchScaffoldArgs),
-    /// Validate that every research `meta.json` page resolves and no `.mdx` is
-    /// orphaned.
+    /// Validate research sidebars, frontmatter, state labels, and page-title structure.
     Check(DocsGateArgs),
 }
 
@@ -197,7 +197,7 @@ pub(crate) fn run_docs(command: DocsCommand) -> Result<()> {
         DocsCommand::Specs(args) => run_docs_gate(
             args,
             "specs",
-            "docs/content/docs/contributing/behavioral-specs.mdx",
+            "docs/content/contributing/behavioral-specs.mdx",
             "cite an existing test for every behavioral invariant",
             "cargo xtask docs specs",
             specs::check_specs,
@@ -205,7 +205,7 @@ pub(crate) fn run_docs(command: DocsCommand) -> Result<()> {
         DocsCommand::MapCheck(args) => run_docs_gate(
             args,
             "map-check",
-            "docs/content/docs/reference/getting-oriented/codebase-map.mdx",
+            "docs/content/reference/getting-oriented/codebase-map.mdx",
             "synchronize workspace crate names with the codebase map",
             "cargo xtask docs map-check",
             check_codebase_map,
@@ -233,7 +233,7 @@ fn run_docs_gate(
 /// Recurring map↔workspace gate (R-map-metadata-gate): every `cargo metadata`
 /// workspace member package name must appear as a token in the Codebase Map.
 fn check_codebase_map(root: &Path) -> Result<()> {
-    let map_rel = "docs/content/docs/reference/getting-oriented/codebase-map.mdx";
+    let map_rel = "docs/content/reference/getting-oriented/codebase-map.mdx";
     let map_path = root.join(map_rel);
     let map = fs::read_to_string(&map_path)
         .with_context(|| format!("reading codebase map at {}", map_path.display()))?;
@@ -400,8 +400,8 @@ pub(crate) fn run_research(command: ResearchCommand) -> Result<()> {
         ResearchCommand::Check(args) => report::run_gate(
             args.output.resolved(),
             "research",
-            "docs/content/docs/research/",
-            "repair meta.json page entries and orphaned research pages",
+            "docs/content/research/",
+            "repair research sidebars or normalize page metadata and structure",
             "cargo xtask research check",
             || validate_tree(&research_dir()?, "research"),
         ),
@@ -413,7 +413,7 @@ pub(crate) fn run_roadmap(command: RoadmapCommand) -> Result<()> {
         RoadmapCommand::Audit(args) => report::run_gate(
             args.output.resolved(),
             "roadmap",
-            "docs/content/docs/roadmap/",
+            "docs/content/roadmap/",
             "repair meta.json page entries and orphaned roadmap pages",
             "cargo xtask roadmap audit",
             || validate_tree(&roadmap_dir()?, "roadmap"),
@@ -430,7 +430,7 @@ pub(crate) fn run_roadmap(command: RoadmapCommand) -> Result<()> {
 // ---------------------------------------------------------------------------
 
 /// Walk up from the current directory to the repo root (the directory that
-/// contains `docs/content/docs`).
+/// contains `docs/content`).
 pub(crate) fn repo_root() -> Result<PathBuf> {
     let start = std::env::current_dir().context("resolving current directory")?;
     for dir in start.ancestors() {
@@ -468,11 +468,26 @@ fn write_meta(path: &Path, value: &Value) -> Result<()> {
     let mut text = serde_json::to_string_pretty(value)
         .with_context(|| format!("serializing {}", path.display()))?;
     text.push('\n');
-    fs::write(path, text).with_context(|| format!("writing {}", path.display()))
+    let file_name = path
+        .file_name()
+        .and_then(|name| name.to_str())
+        .unwrap_or("meta.json");
+    let staged = path.with_file_name(format!(".{file_name}.{}.tmp", std::process::id()));
+    fs::write(&staged, text).with_context(|| format!("writing {}", staged.display()))?;
+    fs::rename(&staged, path).with_context(|| format!("replacing {}", path.display()))
 }
 
 /// Append `entry` to a `meta.json`'s `pages` array if not already present.
-fn append_page(meta_path: &Path, entry: &str) -> Result<()> {
+#[expect(
+    clippy::disallowed_methods,
+    reason = "synchronous CLI locks the research tree before atomically updating sidebar metadata"
+)]
+fn append_page(meta_path: &Path, tree_lock_path: &Path, entry: &str) -> Result<()> {
+    let tree_lock = fs::File::open(tree_lock_path)
+        .with_context(|| format!("opening {}", tree_lock_path.display()))?;
+    fs4::FileExt::lock(&tree_lock)
+        .with_context(|| format!("locking {}", tree_lock_path.display()))?;
+
     let mut meta = read_meta(meta_path)?;
     let pages = meta
         .get_mut("pages")
@@ -560,21 +575,65 @@ fn change_new_in(roadmap: &Path, args: ChangeNewArgs) -> Result<()> {
     fs::write(&item_path, body).with_context(|| format!("writing {}", item_path.display()))?;
 
     // Group meta references siblings in the parent roadmap dir as `../<slug>`.
-    append_page(&group_meta, &format!("../{}", args.slug))?;
+    append_page(
+        &group_meta,
+        &roadmap.join("meta.json"),
+        &format!("../{}", args.slug),
+    )?;
 
     report_created(&[item_path.as_path(), group_meta.as_path()]);
     Ok(())
 }
 
 fn research_scaffold(args: ResearchScaffoldArgs) -> Result<()> {
-    research_scaffold_in(&research_dir()?, args)
+    let root = repo_root()?;
+    research_scaffold_in(
+        &root.join(DOCS_ROOT).join(RESEARCH_REL),
+        &root.join("prompts/research"),
+        args,
+    )
 }
 
-fn research_scaffold_in(research: &Path, args: ResearchScaffoldArgs) -> Result<()> {
+struct ResearchScaffoldRollback {
+    dossier: PathBuf,
+    prompt: PathBuf,
+    prompt_owned: bool,
+    committed: bool,
+}
+
+impl Drop for ResearchScaffoldRollback {
+    fn drop(&mut self) {
+        if self.committed {
+            return;
+        }
+        if self.prompt_owned {
+            drop(fs::remove_file(&self.prompt));
+        }
+        drop(fs::remove_dir_all(&self.dossier));
+    }
+}
+
+#[expect(
+    clippy::disallowed_methods,
+    reason = "jackin-xtask is a synchronous CLI; exclusive creation prevents scaffold races"
+)]
+fn research_scaffold_in(research: &Path, prompts: &Path, args: ResearchScaffoldArgs) -> Result<()> {
     validate_slug(&args.slug)?;
     let title = args.title.unwrap_or_else(|| title_from_slug(&args.slug));
+    if title.contains(['\n', '\r']) {
+        bail!("research title must be a single line");
+    }
+    let title_yaml = serde_json::to_string(&title).context("serializing research title")?;
 
     let group = args.group.trim_matches(['(', ')'].as_ref());
+    if !matches!(
+        group,
+        "agents" | "platform" | "product" | "engineering" | "context"
+    ) {
+        bail!(
+            "research group `{group}` is invalid — choose agents, platform, product, engineering, or context"
+        );
+    }
     let group_dir = research.join(group);
     let group_meta = group_dir.join("meta.json");
     if !group_meta.is_file() {
@@ -583,49 +642,90 @@ fn research_scaffold_in(research: &Path, args: ResearchScaffoldArgs) -> Result<(
             group_dir.display()
         );
     }
+    let parent = read_meta(&group_meta)?;
+    parent
+        .get("pages")
+        .and_then(Value::as_array)
+        .with_context(|| format!("`pages` is not an array in {}", group_meta.display()))?;
 
     let dossier = group_dir.join(&args.slug);
-    if dossier.exists() {
-        bail!("research dossier already exists: {}", dossier.display());
+    let prompt_dir = prompts.join(group);
+    let prompt = prompt_dir.join(format!("{}.md", args.slug));
+    fs::create_dir_all(&prompt_dir)
+        .with_context(|| format!("creating {}", prompt_dir.display()))?;
+    match fs::create_dir(&dossier) {
+        Ok(()) => {}
+        Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => {
+            bail!("research dossier already exists: {}", dossier.display());
+        }
+        Err(error) => {
+            return Err(error).with_context(|| format!("creating {}", dossier.display()));
+        }
     }
-    fs::create_dir_all(&dossier).with_context(|| format!("creating {}", dossier.display()))?;
+    let mut rollback = ResearchScaffoldRollback {
+        dossier: dossier.clone(),
+        prompt: prompt.clone(),
+        prompt_owned: false,
+        committed: false,
+    };
 
     let index = dossier.join("index.mdx");
     fs::write(
         &index,
         format!(
-            "---\ntitle: \"{title}\"\ndescription: \"<!-- One-sentence research question. -->\"\n---\n\n\
-             **Research state**: Working — specification: [`prompt`](prompt/).\n\n\
+            "---\ntitle: {title_yaml}\ndescription: \"<!-- One-sentence research question. -->\"\n---\n\n\
+             **Research state:** Incomplete\n\n\
+             **Research brief:** <RepoFile path=\"prompts/research/{}/{}.md\" />\n\n\
              ## Research question\n\n<!-- What must this dossier establish? -->\n\n\
-             ## Method and evidence\n\n<!-- Sources, measurements, dates, and confidence limits. -->\n\n\
              ## Headline findings\n\n<!-- Key findings, each with a source. -->\n\n\
+             ## Method and evidence\n\n<!-- Sources, measurements, dates, and confidence limits. -->\n\n\
+             ## Limitations and open questions\n\n<!-- What remains uncertain? -->\n\n\
              ## How to read\n\n<!-- Chapter map and recommended order. -->\n\n\
-             ## Roadmap implications\n\n<!-- Link implementation outcomes; do not schedule work here. -->\n"
+             ## Related work\n\n<!-- Link research, reference, and roadmap pages without scheduling work here. -->\n",
+            group,
+            args.slug
         ),
     )
     .with_context(|| format!("writing {}", index.display()))?;
 
-    let prompt = dossier.join("prompt.mdx");
-    fs::write(
-        &prompt,
-        format!(
-            "---\ntitle: \"{title} brief\"\ndescription: \"Reproducible research specification for {title}.\"\n---\n\n\
-             > **How to run this file:** `/goal Follow {}`. You are the researcher; \
-             this brief is your full specification.\n\n\
-             ## Mission\n\n<!-- What to produce, the evidence bar, the chapter list. -->\n",
+    let prompt_result = fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(&prompt);
+    let mut prompt_file = match prompt_result {
+        Ok(file) => file,
+        Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => {
+            bail!("research brief already exists: {}", prompt.display());
+        }
+        Err(error) => {
+            return Err(error).with_context(|| format!("creating {}", prompt.display()));
+        }
+    };
+    rollback.prompt_owned = true;
+    prompt_file
+        .write_all(
+            format!(
+            "# {title} research brief\n\n## Mission\n\n<!-- What to establish and why. -->\n\n\
+             ## Scope\n\n<!-- In scope, out of scope, and evidence cutoff. -->\n\n\
+             ## Evidence requirements\n\n<!-- Primary sources, local measurements, confidence labels, and freshness rules. -->\n\n\
+             ## Required output\n\n<!-- Chapter list and completion criteria. -->\n\n\
+             ## Run\n\n`/goal Follow prompts/research/{}/{}.md`\n",
+            group,
             args.slug
-        ),
-    )
-    .with_context(|| format!("writing {}", prompt.display()))?;
+        )
+            .as_bytes(),
+        )
+        .with_context(|| format!("writing {}", prompt.display()))?;
 
     let meta = dossier.join("meta.json");
     write_meta(
         &meta,
-        &json!({ "title": title, "defaultOpen": false, "pages": ["index", "prompt"] }),
+        &json!({ "title": title, "defaultOpen": false, "pages": ["index"] }),
     )?;
 
     // Register the dossier in its domain sidebar.
-    append_page(&group_meta, &args.slug)?;
+    append_page(&group_meta, &research.join("meta.json"), &args.slug)?;
+    rollback.committed = true;
 
     report_created(&[
         index.as_path(),
@@ -1196,6 +1296,12 @@ fn validate_tree(root: &Path, label: &str) -> Result<()> {
             problems.push(format!("{}: missing `pages` array", meta_path.display()));
             continue;
         };
+        if label == "research" && pages.first().and_then(Value::as_str) != Some("index") {
+            problems.push(format!(
+                "{}: research navigation must list `index` first",
+                meta_path.display()
+            ));
+        }
         for page in pages {
             let Some(entry) = page.as_str() else {
                 problems.push(format!("{}: non-string page entry", meta_path.display()));
@@ -1216,14 +1322,17 @@ fn validate_tree(root: &Path, label: &str) -> Result<()> {
     // Orphan check: every `.mdx` in the subtree must be referenced.
     let mut mdx_files = Vec::new();
     collect_mdx_files(root, &mut mdx_files)?;
-    for mdx in mdx_files {
-        let canonical = fs::canonicalize(&mdx).unwrap_or(mdx.clone());
+    for mdx in &mdx_files {
+        let canonical = fs::canonicalize(mdx).unwrap_or(mdx.clone());
         if !referenced.contains(&canonical) {
             problems.push(format!(
                 "{}: not referenced by any meta.json (orphaned sidebar page)",
                 mdx.display()
             ));
         }
+    }
+    if label == "research" {
+        validate_research_pages(root, &mdx_files, &mut problems)?;
     }
 
     if problems.is_empty() {
@@ -1236,6 +1345,224 @@ fn validate_tree(root: &Path, label: &str) -> Result<()> {
         problems.len(),
         problems.join("\n  ")
     );
+}
+
+/// Enforce the reader-facing contract that makes the research corpus scan as
+/// one collection instead of a pile of unrelated Markdown shapes.
+fn validate_research_pages(
+    research_root: &Path,
+    files: &[PathBuf],
+    problems: &mut Vec<String>,
+) -> Result<()> {
+    for path in files {
+        let stem = path
+            .file_stem()
+            .and_then(|name| name.to_str())
+            .unwrap_or_default()
+            .to_ascii_lowercase();
+        if matches!(stem.as_str(), "prompt" | "brief")
+            || stem.ends_with("-prompt")
+            || stem.ends_with("-brief")
+        {
+            problems.push(format!(
+                "{}: research briefs belong under prompts/research/, not published docs",
+                path.display()
+            ));
+        }
+
+        let text = fs::read_to_string(path)
+            .with_context(|| format!("reading research page {}", path.display()))?;
+        let Some(rest) = text.strip_prefix("---\n") else {
+            problems.push(format!("{}: missing YAML frontmatter", path.display()));
+            continue;
+        };
+        let Some((frontmatter, body)) = rest.split_once("\n---\n") else {
+            problems.push(format!("{}: unterminated YAML frontmatter", path.display()));
+            continue;
+        };
+
+        for field in ["title", "description"] {
+            let prefix = format!("{field}:");
+            let value = frontmatter
+                .lines()
+                .find_map(|line| line.strip_prefix(&prefix))
+                .map(str::trim)
+                .unwrap_or_default();
+            if value.is_empty() || value.contains("<!--") {
+                problems.push(format!(
+                    "{}: frontmatter `{field}` must be present and non-placeholder",
+                    path.display()
+                ));
+            }
+            if field == "description" && !value.is_empty() {
+                let description = value.trim_matches(['"', '\'']);
+                if description.chars().count() > 160
+                    || description.contains('…')
+                    || description.contains("...")
+                    || description.starts_with("Evidence and analysis for ")
+                    || !description.ends_with(['.', '?', '!'])
+                {
+                    problems.push(format!(
+                        "{}: frontmatter `description` must be an informative sentence of at most 160 characters",
+                        path.display()
+                    ));
+                }
+            }
+        }
+
+        if body.contains("**Research state**:") {
+            problems.push(format!(
+                "{}: use canonical `**Research state:**` punctuation",
+                path.display()
+            ));
+        }
+        for line in body
+            .lines()
+            .filter(|line| line.starts_with("**Research state:**"))
+        {
+            let value = line.trim_start_matches("**Research state:**").trim();
+            if !matches!(
+                value,
+                "Current" | "Needs refresh" | "Incomplete" | "Reference"
+            ) {
+                problems.push(format!(
+                    "{}: research state must be Current, Needs refresh, Incomplete, or Reference",
+                    path.display()
+                ));
+            }
+        }
+
+        let mut in_fence = false;
+        for (line_index, line) in body.lines().enumerate() {
+            if line.trim_start().starts_with("```") || line.trim_start().starts_with("~~~") {
+                in_fence = !in_fence;
+                continue;
+            }
+            if !in_fence && line.starts_with("# ") {
+                problems.push(format!(
+                    "{}:{}: remove the explicit H1; frontmatter renders the page title",
+                    path.display(),
+                    line_index + frontmatter.lines().count() + 3
+                ));
+            }
+            if in_fence {
+                continue;
+            }
+            let source_line = line_index + frontmatter.lines().count() + 3;
+            for href in quoted_attribute_values(line, "href") {
+                validate_research_href(
+                    research_root,
+                    path,
+                    source_line,
+                    href,
+                    "Card target",
+                    problems,
+                );
+            }
+            for href in markdown_link_targets(line) {
+                validate_research_href(
+                    research_root,
+                    path,
+                    source_line,
+                    href,
+                    "Markdown link",
+                    problems,
+                );
+            }
+        }
+        if body.lines().count() > 400 {
+            problems.push(format!(
+                "{}: research page has more than 400 body lines; split independent reader questions into chapters",
+                path.display()
+            ));
+        }
+    }
+    Ok(())
+}
+
+fn quoted_attribute_values<'a>(line: &'a str, attribute: &str) -> Vec<&'a str> {
+    let marker = format!("{attribute}=\"");
+    let mut values = Vec::new();
+    let mut rest = line;
+    while let Some((_, after)) = rest.split_once(&marker) {
+        let Some((value, tail)) = after.split_once('"') else {
+            break;
+        };
+        values.push(value);
+        rest = tail;
+    }
+    values
+}
+
+fn markdown_link_targets(line: &str) -> Vec<&str> {
+    let mut targets = Vec::new();
+    let mut rest = line;
+    while let Some((_, after)) = rest.split_once("](") {
+        let Some((target, tail)) = after.split_once(')') else {
+            break;
+        };
+        targets.push(target.split_whitespace().next().unwrap_or(target));
+        rest = tail;
+    }
+    targets
+}
+
+fn validate_research_href(
+    research_root: &Path,
+    source: &Path,
+    line: usize,
+    href: &str,
+    kind: &str,
+    problems: &mut Vec<String>,
+) {
+    if href.starts_with("http://")
+        || href.starts_with("https://")
+        || href.starts_with("mailto:")
+        || href.starts_with('#')
+    {
+        return;
+    }
+    if let Some(route) = href.strip_prefix("/research/") {
+        let route = route
+            .split('#')
+            .next()
+            .unwrap_or(route)
+            .trim_end_matches('/');
+        let page = research_root.join(format!("{route}.mdx"));
+        let index = research_root.join(route).join("index.mdx");
+        if !page.is_file() && !index.is_file() {
+            problems.push(format!(
+                "{}:{line}: research {kind} `{href}` does not resolve",
+                source.display()
+            ));
+        }
+        return;
+    }
+    if href.starts_with('/') {
+        return;
+    }
+
+    let path_part = href.split('#').next().unwrap_or(href);
+    let is_asset = matches!(
+        Path::new(path_part)
+            .extension()
+            .and_then(|extension| extension.to_str()),
+        Some("png" | "jpg" | "jpeg" | "gif" | "webp" | "svg")
+    );
+    if is_asset {
+        let asset = source.parent().unwrap_or(research_root).join(path_part);
+        if !asset.is_file() {
+            problems.push(format!(
+                "{}:{line}: research asset `{href}` does not resolve",
+                source.display()
+            ));
+        }
+    } else {
+        problems.push(format!(
+            "{}:{line}: published documentation links must be site-absolute; found `{href}`",
+            source.display()
+        ));
+    }
 }
 
 /// Resolve a `pages` entry relative to its `meta.json` directory to an existing

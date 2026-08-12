@@ -1,0 +1,89 @@
+---
+title: "09 — Current reuse decision matrix"
+description: "Decision matrix for reusing, embedding, adapting, or declining current context-tool mechanisms and dependencies."
+---
+
+## Summary
+
+jackin❯ should reuse proven mechanisms selectively—vendor RTK's reviewed corpus, reimplement documented recovery patterns, and avoid adopting any tool as a wholesale runtime.
+Tool-state cutoff: **2026-08-12**. This page uses only current stable releases and current license boundaries. Version pins are design candidates, not authorization to edit the workspace dependency graph; implementation must re-run source, API, license, supply-chain, and benchmark checks.
+
+## Question and scope
+
+Which existing tools and repository components should the engine reuse, wrap, evaluate, or reject at each layer?
+
+## Method
+
+The matrix compares current repository primitives and external tools by boundary coverage, determinism, recovery, licensing, maintenance, and measured outcome evidence.
+
+## Findings
+
+### Decision table
+
+| Tool | Current version / license | Current decision | Current reusable surface |
+|---|---|---|---|
+| **RTK** | v0.45.0 / Apache-2.0 | **VENDOR reviewed declarative corpus; PORT selected kernels** | Current command/filter corpus, classification shape, shorter-only guard, exit preservation, raw recovery. Skip hook installers, telemetry, approximate gain ledger, and current-outcome assumptions. |
+| **Headroom** | v0.34.0 / Apache-2.0 | **REIMPLEMENT documented mechanisms** | Typed content routing, CCR recovery, lossless seam, cache-aware request policy, holdout design. Skip global proxy, Python runtime, and Kompress dependency in the deterministic core. No stable published Rust library boundary was verified. |
+| **lean-ctx** | v3.9.18 / Apache-2.0 | **PORT selected kernels; optional sidecar experiment** | Read modes, cached handles, deterministic crushers, tree-sitter views, recovery doctrine, graph scoring, self-overhead gates. Skip daemon/dashboard/global installers/proxy/default cognitive behavior in the embedded path. |
+| **sem** | v0.21.0 / MIT OR Apache-2.0 | **DEPEND on reviewed `sem-core` + native ledger** | Entity extraction/graph, structural diff, bounded context surfaces. Generalize the attention-ledger concept at the jackin❯ boundary. Disable cloud, telemetry, self-update, and global git/hook mutation. |
+| **fff** | v0.10.3 / MIT | **DEPEND after current API review** | `fff-search` and `fff-query-parser` for resident lexical search. Disable unneeded native/egress surfaces; verify current dependency tree and features before pinning. |
+| **codedb** | v0.2.5838 / BSD-3-Clause | **DESIGN DONOR** | Query/output grammar, budget packing, pagination/escalation patterns, warm-index economics. Reimplement in Rust; do not adopt broad installer or MCP policy. |
+| **mq** | v0.8.2 / MIT | **DEPEND after current API review** | `mq-lang` and `mq-markdown` for structural Markdown selection. Keep HTTP/process features off unless a concrete requirement passes review. |
+| **Caveman** | v2.0.0 / MIT interfaces + BSL-1.1 engine-side components | **NATIVE PROMPT PACK; design review only for engine** | Reuse/adapt current MIT output-skill register concepts and clarity/verbatim guards. Do not copy BSL engine/proxy/MCP code into Apache-licensed jackin❯; treat deterministic routing/recovery patterns as architectural evidence only. |
+| **pxpipe** | v0.13.1 / MIT | **METHOD DONOR** | Counterfactual accounting and cache-alignment invariants. Keep text-to-image representation behind a model-specific harness; never make pixels the only source for exact text. |
+| **Serena** | v1.7.0 / MIT | **OPTIONAL SIDECAR / protocol donor** | Language-server symbol retrieval and exact editing verbs. Prefer established language servers directly where jackin❯ already owns the runtime boundary. |
+
+Current source of truth: [tool comparison](/research/context/tools/05-head-to-head/), [rising tools](/research/context/tools/06-combining/), [evidence](/research/context/tools/07-evidence-and-claims/), and [release register](/research/context/tools/08-current-release-register/).
+
+### Current candidate dependency set
+
+```toml
+# Design candidates only; confirm again at implementation time.
+fff-search       = { version = "=0.10.3", default-features = false }
+fff-query-parser = { version = "=0.10.3", default-features = false }
+sem-core         = { version = "=0.21.0", default-features = false }
+mq-lang          = { version = "=0.8.2", features = ["sync"] }
+mq-markdown      = { version = "=0.8.2", features = ["json"] }
+```
+
+No dependency change is implied by this research update. Exact feature names and transitive licenses must be verified against the current crates before implementation.
+
+### License boundary
+
+- Apache/MIT-compatible code may be depended on or vendored only with current notices and repository policy checks.
+- Caveman v2's current engine/proxy/MCP path is BSL-1.1. Its readable source does not make it an Apache-compatible code donor today.
+- Context Mode uses Elastic License 2.0 and is not a dependency candidate for the embedded engine.
+- Projects whose GitHub API exposes no SPDX identifier require direct license review before any reuse.
+
+### Current acceptance bar
+
+A borrowed mechanism ships only if a current implementation-specific A/B shows:
+
+1. accepted-task quality is non-inferior;
+2. total tokens or subscription quota per accepted task falls at least 20%, net of self-overhead;
+3. cache-read continuity does not regress unexpectedly;
+4. raw recovery succeeds for every lossy transform;
+5. hook/config behavior stays inside `/jackin/` and preserves jackin❯ host-write rules;
+6. dependency/license/supply-chain checks pass.
+
+Current upstream percentages are not implementation evidence for jackin❯.
+
+## Implications for jackin❯
+
+These findings define the current reuse decision matrix contract for jackin❯; any implementation must preserve the acceptance gates and boundaries above.
+
+## Limitations and unknowns
+
+### Revalidation triggers
+
+Re-run this page when any candidate changes stable version, license, published crate boundary, default telemetry, installer behavior, or independent evidence. Replace old conclusions; do not append a release history.
+
+## Sources
+
+Evidence and repository references are cited inline beside the claims they support.
+
+## Related work
+
+- [Context engine dossier](/research/context/engine/)
+- [Token-optimization techniques](/research/context/techniques/)
+- [Token-optimization tools](/research/context/tools/)

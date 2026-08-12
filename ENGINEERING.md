@@ -69,7 +69,7 @@ Severity reflects meaning: INFO for lifecycle and state change, WARN for handled
 
 Use bounded operation guards for work with latency and outcome. Never create lifetime spans for a process, console, screen, session, tab, or pane. Joined work inherits context; detached, blocking, cycle, stream, and prewarm work uses the matching ownership helper so parentage and links remain honest. Every failure and cancellation path closes its guard.
 
-Operator output is a separate port. `--debug`, compact notices, and explicit evidence exports help a human troubleshoot; they do not bypass the registry or create a telemetry sink. `RunDiagnostics` is bounded current-invocation UI state, not history. Durable observability goes directly over OTLP and the backend owns history. See [Application observability](docs/content/docs/reference/runtime/diagnostics.mdx).
+Operator output is a separate port. `--debug`, compact notices, and explicit evidence exports help a human troubleshoot; they do not bypass the registry or create a telemetry sink. `RunDiagnostics` is bounded current-invocation UI state, not history. Durable observability goes directly over OTLP and the backend owns history. See [Application observability](docs/content/reference/runtime/diagnostics.mdx).
 
 ## Code comments — explain only what is not obvious
 

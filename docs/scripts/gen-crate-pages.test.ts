@@ -46,7 +46,7 @@ describe('siblingCrateRoute', () => {
 describe('docsContentRoute', () => {
   test('maps docs content path to site route', () => {
     expect(
-      docsContentRoute('../../docs/content/docs/reference/capsule/index.mdx'),
+      docsContentRoute('../../docs/content/reference/capsule/index.mdx'),
     ).toBe('/reference/capsule/')
   })
 })

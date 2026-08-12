@@ -112,7 +112,7 @@ key = "clippy::disallowed_methods@jackin-usage"
 bound = 4
 [[family.entry]]
 key = "clippy::disallowed_methods@jackin-xtask"
-bound = 2
+bound = 4
 [[family.entry]]
 key = "clippy::duration_suboptimal_units@jackin"
 bound = 1
@@ -503,10 +503,10 @@ mode = "enforce"
 cap = 0
 [[family.entry]]
 key = "AGENTS.md"
-bound = 7288
+bound = 7278
 [[family.entry]]
 key = "CLAUDE.md"
-bound = 7288
+bound = 7278
 [[family.entry]]
 key = "crates/AGENTS.md"
 bound = 14740
@@ -521,7 +521,7 @@ key = "crates/jackin-build-meta/README.md"
 bound = 628
 [[family.entry]]
 key = "crates/jackin-capsule/README.md"
-bound = 6348
+bound = 6343
 [[family.entry]]
 key = "crates/jackin-config/README.md"
 bound = 2892
@@ -581,13 +581,13 @@ key = "crates/jackin-protocol/README.md"
 bound = 2275
 [[family.entry]]
 key = "crates/jackin-runtime/README.md"
-bound = 3652
+bound = 3647
 [[family.entry]]
 key = "crates/jackin-telemetry/README.md"
 bound = 2149
 [[family.entry]]
 key = "crates/jackin-term/README.md"
-bound = 2915
+bound = 2905
 [[family.entry]]
 key = "crates/jackin-test-support/README.md"
 bound = 2633

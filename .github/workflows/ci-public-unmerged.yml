@@ -471,7 +471,10 @@ jobs:
 
   cargo-registry-warmup:
     needs: [changes]
-    if: needs.changes.outputs.rust == 'true' && needs.changes.outputs.result-reuse != 'true'
+    if: >-
+      needs.changes.outputs.rust == 'true' &&
+      (needs.changes.outputs.result-reuse != 'true' ||
+       github.event_name == 'workflow_dispatch')
     strategy:
       fail-fast: false
       matrix:
@@ -619,7 +622,7 @@ jobs:
           retention-days: 7
           include-hidden-files: true
       - name: Publish input-identical CI xtask
-        if: env.CI_XTASK_HIT != 'true' && matrix.config.cache_writer
+        if: matrix.config.artifact_writer
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: ci-xtask-${{ runner.os }}-${{ runner.arch }}-${{ needs.changes.outputs.ci-xtask-contract }}
@@ -628,7 +631,7 @@ jobs:
           retention-days: 7
           include-hidden-files: true
       - name: Publish Docs-compatible CI xtask
-        if: matrix.config.cache_writer
+        if: matrix.config.artifact_writer
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: ci-xtask-${{ runner.os }}-${{ runner.arch }}-${{ needs.changes.outputs.docs-xtask-contract }}

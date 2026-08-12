@@ -86,7 +86,7 @@ Agent PR extras (base branch, force-push, CI-green, squash format) are documente
 
 ## TUI
 
-Read [TUI Design](docs/content/docs/reference/tui/index.mdx) before any TUI change. Label/keybinding/modal rules → [RULES.md](RULES.md).
+Read [TUI Design](docs/content/reference/tui/index.mdx) before any TUI change. Label/keybinding/modal rules → [RULES.md](RULES.md).
 
 | Surface | Directory |
 |---|---|
@@ -95,7 +95,7 @@ Read [TUI Design](docs/content/docs/reference/tui/index.mdx) before any TUI chan
 | Host console | `src/console/tui/` |
 | Lookbook | [TermRock catalog](https://github.com/tailrocks/termrock/tree/main/docs) |
 
-Cross-cutting TUI behaviour (focusability, navigation, color, modal sizing, hints) → matching page under `docs/content/docs/reference/tui/` same PR.
+Cross-cutting TUI behaviour (focusability, navigation, color, modal sizing, hints) → matching page under `docs/content/reference/tui/` same PR.
 
 ## Topic file index
 

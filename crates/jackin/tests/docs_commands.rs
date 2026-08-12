@@ -358,7 +358,7 @@ fn shell_split(input: &str) -> Vec<String> {
 }
 
 fn docs_root() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("../../docs/content/docs")
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("../../docs/content")
 }
 
 fn is_research_path(path: &Path) -> bool {
@@ -663,7 +663,7 @@ fn config_reference_matches_public_schema_fields() -> anyhow::Result<()> {
         manifest.join("../jackin-config/src/app_config.rs"),
         manifest.join("../jackin-config/src/auth.rs"),
     ];
-    let docs_path = manifest.join("../../docs/content/docs/reference/runtime/configuration.mdx");
+    let docs_path = manifest.join("../../docs/content/reference/runtime/configuration.mdx");
     let mut schema = BTreeSet::new();
     for path in &schema_paths {
         schema.extend(schema_config_keys(&fs::read_to_string(path)?)?);

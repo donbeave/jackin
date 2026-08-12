@@ -25,13 +25,10 @@ docs/.lycheecache
 docs/superpowers/plans/
 .claude/worktrees/
 
-# Engineering prompts used while iterating on a rewrite — local-only,
-# same reasoning as docs/superpowers/plans/ above.
-/prompts/
 .claude/
 
 PR-576-review.md
 
 # Generated crate docs pages (see docs/scripts/gen-crate-pages.ts)
-docs/content/docs/reference/crates/*.mdx
+docs/content/reference/crates/*.mdx
 .termrock/

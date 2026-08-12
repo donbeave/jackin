@@ -200,7 +200,7 @@ pedantic = { level = "warn", priority = -1 }
 cargo = { level = "warn", priority = -1 }
 # Bare-allow floor is 0 (ratchet bare-allow-per-crate); deny allows without reason.
 # Prefer #[expect] so suppressions self-retire when the lint stops firing
-# (census: docs/content/docs/reference/developer-reference/lint-policy.mdx).
+# (census: docs/content/reference/developer-reference/lint-policy.mdx).
 allow_attributes_without_reason = "deny"
 allow_attributes = "deny"
 dbg_macro = "deny"
@@ -226,7 +226,7 @@ panic = "deny"
 manual_assert = "deny"
 manual_let_else = "warn"
 match_bool = "warn"
-# allow census: docs/content/docs/reference/developer-reference/lint-policy.mdx
+# allow census: docs/content/reference/developer-reference/lint-policy.mdx
 needless_pass_by_value = "allow"
 trivially_copy_pass_by_ref = "warn"
 large_enum_variant = "warn"

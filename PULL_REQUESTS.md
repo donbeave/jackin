@@ -140,13 +140,13 @@ Missing or stale fixtures under `tests/fixtures/migrations/` break smooth-migrat
 
 ### Accepted-exceptions catalog
 
-Do not flag items listed under "Accepted exceptions" on the [Open review findings](<docs/content/docs/roadmap/(isolation-security)/open-review-findings.mdx>) roadmap catalog. Those items retained intentionally + reviewed.
+Do not flag items listed under "Accepted exceptions" on the [Open review findings](<docs/content/roadmap/(isolation-security)/open-review-findings.mdx>) roadmap catalog. Those items retained intentionally + reviewed.
 
 Catalog forward-looking backlog — consult on demand when review task calls for it. Not operational context; don't load at session start.
 
 ### Always check the PR against the jackin❯ design principles
 
-Every PR review must explicitly verify change against jackin❯ [design principles](docs/content/docs/getting-started/design-principles.mdx). Read that page before producing review output. If change appears to contradict any principle (most commonly: *never mutate the host machine silently*, *operator-only configuration boundaries*, *container is the trust boundary, not the prompt*), flag loudly in review with specific reference to which principle at risk.
+Every PR review must explicitly verify change against jackin❯ [design principles](docs/content/getting-started/design-principles.mdx). Read that page before producing review output. If change appears to contradict any principle (most commonly: *never mutate the host machine silently*, *operator-only configuration boundaries*, *container is the trust boundary, not the prompt*), flag loudly in review with specific reference to which principle at risk.
 
 Don't silently let principle violation pass because diff small or operator seemed to want shortcut. Operators rely on principles across every feature — quietly-merged exception erodes that contract for every future PR.
 
@@ -158,7 +158,7 @@ Operator's call decides outcome — agent's job to ask question, not silently ap
 
 ### Always check TUI changes against the TUI design decisions
 
-Every PR review touching console, capsule, or any terminal UI surface must explicitly verify change against jackin❯ [TUI design decisions](docs/content/docs/reference/tui/index.mdx). Read those pages before producing review output. Reviewers must reject or flag TUI changes that miss documented interaction cues: long-running or background work needs explicit in-surface progress/status state; clickable targets need distinct resting style, visible hover style change, pointer-shape feedback where supported; active keys need footer hints; focus + scroll geometry must use shared rules.
+Every PR review touching console, capsule, or any terminal UI surface must explicitly verify change against jackin❯ [TUI design decisions](docs/content/reference/tui/index.mdx). Read those pages before producing review output. Reviewers must reject or flag TUI changes that miss documented interaction cues: long-running or background work needs explicit in-surface progress/status state; clickable targets need distinct resting style, visible hover style change, pointer-shape feedback where supported; active keys need footer hints; focus + scroll geometry must use shared rules.
 
 For every TUI action that can wait on I/O, Docker, git, network, background worker, token generation, or any noticeably slow operation, review must answer: after operator commits action, what visible state tells them work happening before result appears? If answer "screen stays unchanged until it finishes," PR violates TUI design decisions + must be fixed before landing.
 
@@ -179,7 +179,7 @@ Practices designed for multi-developer teams (CODEOWNERS, mandatory second-human
 
 ## Roadmap freshness — check before marking any PR ready
 
-Before marking any PR ready to land, and again whenever operator asks to merge PR, check whether change ships, advances, defers, or invalidates anything under `docs/content/docs/roadmap/`. If yes, update the roadmap item's `**Status**`, current-state boundary, remaining work, and links in the same PR, then update exactly one status view: [In progress](docs/content/docs/roadmap/in-progress.mdx), [Planned](docs/content/docs/roadmap/planned.mdx), or [Ideas & deferred](docs/content/docs/roadmap/ideas.mdx).
+Before marking any PR ready to land, and again whenever operator asks to merge PR, check whether change ships, advances, defers, or invalidates anything under `docs/content/roadmap/`. If yes, update the roadmap item's `**Status**`, current-state boundary, remaining work, and links in the same PR, then update exactly one status view: [In progress](docs/content/roadmap/in-progress.mdx), [Planned](docs/content/roadmap/planned.mdx), or [Ideas & deferred](docs/content/roadmap/ideas.mdx).
 
 Do this check even when PR mostly code, tests, CI, or rule changes. Roadmap operator-facing source of truth, not retrospective cleanup task. Feature landing without moving its roadmap item leaves stale planning docs behind + should be treated as incomplete. If merge request reveals stale roadmap state, stop before merging, update roadmap + PR description, only then continue normal merge verification.
 

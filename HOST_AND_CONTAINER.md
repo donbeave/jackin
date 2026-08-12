@@ -12,7 +12,7 @@ What rule blocks:
 - Running `gh auth setup-git` on host as part of `jackin` command. Container can run it; host stays untouched.
 - Editing `~/.gitconfig`, `~/.ssh/config`, or any user dotfile during launch, refresh, or "fix it for me" path. Suggest in launch summary; do not apply.
 - Force-pushing, fetching, pulling, pruning host git repo as provisioning side effect. Only host-side git commands CLI runs today are operator-opted-in (`git_pull_on_entry`, `worktree add` under `isolation = "worktree"`), scoped to workspace mounted repos.
-- Writing host `~/.config/gh/hosts.yml` from container in-session `gh auth login`. In-container token rotation must not flow back to host without explicit operator-controlled bidirectional-sync opt-in (tracked under [GitHub CLI auth strategy](<docs/content/docs/roadmap/(agent-runtimes-authentication)/github-cli-auth-strategy.mdx>) follow-ups).
+- Writing host `~/.config/gh/hosts.yml` from container in-session `gh auth login`. In-container token rotation must not flow back to host without explicit operator-controlled bidirectional-sync opt-in (tracked under [GitHub CLI auth strategy](<docs/content/roadmap/(agent-runtimes-authentication)/github-cli-auth-strategy.mdx>) follow-ups).
 
 **Read paths against host fine.** `gh auth token --hostname github.com`, parsing `~/.config/gh/hosts.yml`, reading `~/.claude.json`, looking up host git user.email — all read-only. Forbidden direction: host-side *writes* triggered by jackin❯ without explicit operator opt-in.
 
