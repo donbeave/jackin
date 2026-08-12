@@ -10,7 +10,7 @@ This ledger applies the original objective's DONE criteria to current authoritat
 |---|---|---|
 | Operator approved a design direction | PROVEN | [`DecisionLog.md`](DecisionLog.md), D-001: operator selected A1. |
 | Operator confirmed the runnable native concept | PROVEN | [`DecisionLog.md`](DecisionLog.md), D-004 records `I confirm the runnable A1 native concept.` |
-| Both native surfaces implement the confirmed design | PROVEN | Clean pushed source `2be951e5e834e787bc64eaf9bf6202ed123da116`, 36 core captures, eight accessibility captures, and 15/15 real-host tests cover the Usage window and provider popover. |
+| Both native surfaces implement the confirmed design | PROVEN | Clean pushed source `c69a237b0b80c62164df34a39edd6578d78d81c9`, 36 core captures, eight accessibility captures, and 15/15 real-host tests cover the Usage window and provider popover. |
 | Visible regions are classified NATIVE, NATIVE-COMPOSED, or approved CUSTOM | PROVEN | [`NativeComponentMap.md`](NativeComponentMap.md); approved CUSTOM count is zero. |
 | Visible regions are classified CONTENT or FUNCTIONAL | PROVEN | [`LayerMap.md`](LayerMap.md). |
 | No HTML/CSS material recipe remains authoritative | PROVEN | [`README.md`](README.md), [`DRIFT_REPORT.md`](DRIFT_REPORT.md), and native architecture tests establish live macOS rendering as authority. |
@@ -30,7 +30,7 @@ This ledger applies the original objective's DONE criteria to current authoritat
 
 | Criterion | Status | Authoritative evidence |
 |---|---|---|
-| All required fixtures and interaction states work | PROVEN | F00–F14 have both real surfaces captured; 68 Swift package tests plus two generated-baseline tests and 15/15 real-host tests pass at source `2be951e5` with zero runtime warnings. |
+| All required fixtures and interaction states work | PROVEN | F00–F14 have both real surfaces captured; 68 Swift package tests plus two generated-baseline tests and 15/15 real-host tests pass at source `c69a237b` with zero runtime warnings. |
 | Real captures cover the required matrix | PROVEN | [`evidence/final/`](evidence/final/) contains 36 core and eight accessibility captures with exact source/application/image hashes and `failures=0` provenance validation. |
 | Accessibility audit passes | PROVEN | Branch-head real-host tests pass audits for popover, Overview, and provider detail; four real setting pairs have byte-identical restoration receipts. |
 | A08 clear preference is operator-verified | PENDING | macOS exposes no public preference API; operator-owned manual capture and receipt required. |
