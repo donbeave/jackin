@@ -1,6 +1,6 @@
 # Confirmed A1 production plan
 
-Status: **authorized by D-004; execution in progress**
+Status: **P1–P3 complete; P4 final gates and PR reconciliation in progress**
 
 ## Authority and stop line
 
@@ -46,6 +46,13 @@ Stop and return to the operator if a required visible region needs a CUSTOM cont
 | Runtime QA | Real concept captures with window-ID metadata and restored settings | Regenerate a complete `evidence/final/` matrix from final branch HEAD; concept screenshots cannot prove final code |
 | Documentation | Approved design artifacts and concept handoff exist | Operator guide, native README, ADR, roadmap state, and PR body describe retired architecture and pending confirmation |
 | Repository readiness | Focused desktop gates pass at confirmation commit | Run `mise install`, desktop gates, docs gates, `cargo xtask ci --fast`, and `cargo xtask ci` at final branch HEAD; reconcile remote checks without weakening failures |
+
+## Execution record
+
+- **P1 complete:** visible popover Refresh owns Command-R; Usage retains valid provider/account/sidebar/frame state; removed providers normalize at the state owner; local/global Retry stays native; production names replace concept/card-era names; model and real-host tests cover continuity, commands, scrolling, context routing, menu order, destructive-action absence, and all three accessibility surfaces.
+- **P2 complete:** the release lane uses macOS 26 and Xcode 26.6; the Xcode project regenerates cleanly; operator and contributor docs describe the focused popover, two-column Usage window, fixed leading sidebar control, limits-only contract, and current platform floor; roadmap state retains only external release and capture-gated work.
+- **P3 complete within authoritative tool limits:** 36 hashed real-host captures cover Light, Dark, active, inactive, F00–F14, minimum/default/expanded geometry, sidebar collapse, long content, errors, recovery, and real popover overflow. AX logs cover native focus and Escape dismissal. Settings wrappers prove restoration. Host capture-service failure and operator-owned clear/tinted preference observations are explicit; no surrogate rendering or false pass is used.
+- **P4 in progress:** final repository gates and draft-PR reconciliation remain.
 
 ## Slice P1 — Production state and interaction correctness
 

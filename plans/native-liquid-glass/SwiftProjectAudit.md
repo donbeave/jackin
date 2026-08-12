@@ -1,6 +1,6 @@
 # Phase 2 Swift project audit
 
-Status: **audit complete; concept migration implemented; production baseline reconciliation in progress**
+Status: **audit complete; production baseline reconciled**
 
 Audit mode is read-only. The current app builds, but it does not satisfy the
 approved current-native project baseline needed for a runnable A1 proof and
@@ -232,3 +232,9 @@ not a false-green hosted-runner checkbox.
 The runnable A1 concept cannot honestly pass Phase 4 using the current
 package-only app/test arrangement. Project migration is part of Phase 3 proof,
 not deferred production polish.
+
+## Production reconciliation
+
+`native/project.yml` now declares synchronized Swift modules, the macOS 26 application, unit tests, UI tests, strict Swift 6 concurrency, ad-hoc local signing, bundle metadata, and schemes. Canonical mise tasks generate the ignored Xcode project, run strict formatting and SwiftLint, run Periphery, execute Rust/FFI/Swift/UI tests, build the application, and verify the bundle. Deterministic F00–F14 launch fixtures remain isolated from live bridge, credential, and network paths. The release workflow uses the current `macos-26` runner and `/Applications/Xcode_26.6.app` with no older fallback.
+
+The app bundle is built under the repository-owned native paths and copied to `native/dist/JackinDesktop.app`; no temporary FHS path is an authority. UI tests target the real application and assert native hosting, commands, continuity, scrolling, fixed sidebar-toggle coordinates, and all three accessibility surfaces. Final native capture sidecars record the exact app hash, source commit, runtime, Xcode, SDK, window identity, layer, geometry, and settings.

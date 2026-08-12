@@ -1,6 +1,8 @@
 # Required states and evidence matrix
 
-Status: **approved A1 requirements; runnable concept confirmed; final production evidence in progress**
+Status: **production matrix recorded; capturable rows complete; host/operator-only observations explicitly preserved**
+
+Current evidence lives in [`evidence/final/`](evidence/final/). A01–A04, I01–I08, C01–C13, S01–S10, and R01–R06 have native captures, focus logs, UI tests, model tests, or source/action audits as named by the final evidence index. A05–A07 image capture is unavailable because the host capture service failed after applying and safely restoring Reduce Transparency; implementation proof remains system-owned and the blocked record is explicit. A08–A09 remain operator-owned because macOS exposes no public clear/tinted preference API. No placeholder or offscreen rendering substitutes for these states.
 
 Every row remains mandatory before production completion. A screenshot alone
 does not prove keyboard, accessibility, or restoration behavior; use the named
@@ -28,8 +30,8 @@ not branch on guessed defaults.
 
 | ID | State | Required behavior | Later evidence |
 |---|---|---|---|
-| `I01` | Keyboard focus in popover | Initial focus reaches first actionable control; Tab follows account picker → limit scroller → Refresh → Open Usage; Escape dismisses | Automated key events + focus log + screenshot with focus ring |
-| `I02` | Keyboard focus in Usage | Sidebar, Overview table, account picker, detail scroller, toolbar, and links are reachable in native order | Accessibility tree + key-event test |
+| `I01` | Keyboard focus in popover | With macOS Keyboard Navigation enabled, the account picker, limit scroller, Refresh, and Open Usage participate in the native focus graph; AppKit owns exact cycling and Escape dismisses | Automated key events + AX focus log + dismissal assertion |
+| `I02` | Keyboard focus in Usage | Sidebar/content structure, scrolling, fixed toggle, Refresh, account picker, and provider actions participate in the native focus graph without a custom focus engine | Accessibility tree + AX key-event log + UI tests |
 | `I03` | Menu commands | Command-R refreshes; Command-comma opens Settings; Command-W closes; selected Usage shortcut opens/focuses the window | Command-dispatch tests |
 | `I04` | Context menu | Secondary click exposes native Open Usage, Refresh, and Quit ordering; Settings remains in the standard app menu because no context-specific recovery path needs it | Real status-item interaction + pure menu-model inspection |
 | `I05` | Pointer hover/press | Native buttons, rows, status items, menus, and links own hover/press; no hover-only action | Interaction test + capture where stable |
@@ -53,7 +55,7 @@ not branch on guessed defaults.
 | `C10` | Permission denied | F09 | No fabricated account/quota; exact error and valid recovery action | Capture + text assertion |
 | `C11` | Offline cached | F10 | Cached value, stale state, age, and local error remain together | Capture + text assertion |
 | `C12` | Global bridge error | F14 | Native unavailable state and Retry replace domain content, not window chrome | Capture + retry test |
-| `C13` | No destructive actions | F15 | No destructive control exists | Accessibility tree/menu audit |
+| `C13` | No destructive actions | Not applicable | No destructive control exists; F15 remains intentionally absent | Source/action scan + menu-model audit |
 
 ## Sizing, scrolling, and overflow
 

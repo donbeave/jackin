@@ -1,6 +1,6 @@
 # Phase 2 Liquid Glass audit
 
-Status: **audit complete; A1 concept confirmed; final production remediation in progress**
+Status: **audit and production remediation complete; no accepted exception**
 
 The inventory below records the pre-remediation Phase 2 baseline. The runnable
 A1 concept now removes every explicit custom-glass surface named here and passes
@@ -232,3 +232,9 @@ The runnable concept must:
 7. add no CUSTOM component without a new operator-approved contract.
 
 This audit has no accepted exception.
+
+## Production reconciliation
+
+Production removed every explicit glass helper, custom popover host mutation, app-owned material, custom content card, custom progress track, forced scroll-edge effect, and pre-macOS-26 visual lane identified above. Current source scans report zero `glassEffect`, `GlassEffectContainer`, `NSGlassEffectView`, `NSVisualEffectView`, material, blur, or custom-glass uses in application sources. The real app evidence records system `NSPopover`, `NavigationSplitView`, toolbar, sidebar, table, list/form, picker, button, and progress behavior across Light, Dark, active, inactive, minimum, default, expanded, collapsed, long-content, loading, stale, error, partial-failure, and recovery states.
+
+The generated jackin❯ wordmark is a noninteractive sidebar-footer content asset. Adaptive phosphor appears only on healthy native quota progress. System accent owns selection and controls; warning/danger remain textual plus system semantic color. [Final evidence](evidence/final/) records the remaining host-only accessibility captures and operator-owned clear/tinted observations without granting an exception to material architecture.

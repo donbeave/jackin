@@ -8,6 +8,7 @@ com.apple.universalaccess|reduceMotion
 com.apple.universalaccess|differentiateWithoutColor
 NSGlobalDomain|AppleInterfaceStyle
 NSGlobalDomain|AppleInterfaceStyleSwitchesAutomatically
+NSGlobalDomain|AppleKeyboardUIMode
 SystemEvents|darkMode'
 
 read_value() {
@@ -70,6 +71,7 @@ apply_state() {
     differentiate-without-color)
       write_verified com.apple.universalaccess differentiateWithoutColor -bool 1
       ;;
+    keyboard-navigation) write_verified NSGlobalDomain AppleKeyboardUIMode -int 3 ;;
     dark) set_dark_mode true ;;
     light) set_dark_mode false ;;
     *)
@@ -96,11 +98,11 @@ restore() {
         return 1
       }
     else
-      if [ "$key" = AppleInterfaceStyle ]; then
-        type=-string
-      else
-        type=-bool
-      fi
+      case "$key" in
+        AppleInterfaceStyle) type=-string ;;
+        AppleKeyboardUIMode) type=-int ;;
+        *) type=-bool ;;
+      esac
       write_value=$value
       if [ "$type" = -bool ]; then
         [ "$value" = 1 ] && write_value=true || write_value=false

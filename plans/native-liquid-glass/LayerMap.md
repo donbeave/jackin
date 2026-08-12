@@ -1,6 +1,6 @@
 # Liquid Glass layer map
 
-Status: **approved A1 layer map; runnable proof explicitly confirmed; production conformance in progress**
+Status: **approved A1 layer map; production conformance complete**
 
 ## Governing rule
 

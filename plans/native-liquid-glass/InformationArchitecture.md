@@ -1,6 +1,6 @@
 # Information architecture
 
-Status: **approved A1 information architecture; runnable concept explicitly confirmed; production conformance in progress**
+Status: **approved A1 information architecture; production conformance complete**
 
 ## Rust-owned object model
 

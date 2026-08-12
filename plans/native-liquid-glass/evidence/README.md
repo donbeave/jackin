@@ -1,4 +1,8 @@
-# Runnable A1 concept evidence
+# A1 native evidence
+
+[`final/`](final/) contains production application captures, per-image metadata, interaction/accessibility results, host-setting restoration receipts, and explicit blocked-state records. These are the current implementation evidence.
+
+## Runnable concept gate
 
 `concept/` contains native window and popover captures plus JSON sidecars from
 the deterministic F00–F14 fixture catalog. Sidecars record resolved window

@@ -190,4 +190,17 @@ final class VisualQAFixturesTests: XCTestCase {
         XCTAssertTrue(text.contains("keyboardShortcut(\"r\""))
         XCTAssertFalse(text.contains(".hidden()"))
     }
+
+    func testRefreshingStatusUsesAccessibleNonfocusedProgress() throws {
+        let source = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .appendingPathComponent("Sources/JackinDesktop/PopoverRoot.swift")
+        let text = try String(contentsOf: source, encoding: .utf8)
+
+        XCTAssertTrue(text.contains("if provider.isRefreshing"))
+        XCTAssertTrue(text.contains(".accessibilityLabel(provider.statusLabel)"))
+        XCTAssertFalse(text.contains("accessibilityFocused"))
+    }
 }

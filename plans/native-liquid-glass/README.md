@@ -1,6 +1,6 @@
 # Native Liquid Glass redesign
 
-Status: **A1 runnable concept confirmed by the operator on 2026-08-12; production execution in progress**
+Status: **A1 production implementation and capturable native evidence complete; final repository gates in progress**
 
 These files are the design authority for the native jackin❯ desktop redesign. The A1 selection authorized Phase 2 audits and the smallest runnable Phase 3 proof; D-004 separately authorizes production implementation of that confirmed direction.
 
