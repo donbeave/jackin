@@ -225,7 +225,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
-          MISE_CONFIG_FILE=docs/mise.toml mise exec -- lychee \
+          lychee \
             --config docs/lychee.toml \
             --cache=false \
             --remap 'https://jackin.tailrocks.com/research/ file://${{ github.workspace }}/docs/content/research/index.mdx' \
@@ -741,6 +741,7 @@ jobs:
         with:
           needs-json: ${{ toJSON(needs) }}
           workflow-label: docs
+
       - name: Audit every Docs job's performance
         if: always()
         env:
@@ -769,4 +770,3 @@ jobs:
           path: docs-result.txt
           compression-level: 0
           retention-days: 7
-
