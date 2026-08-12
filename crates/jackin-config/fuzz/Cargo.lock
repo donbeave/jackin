@@ -222,7 +222,7 @@ dependencies = [
 
 [[package]]
 name = "jackin-config"
-version = "0.6.1"
+version = "0.6.2"
 dependencies = [
  "anyhow",
  "directories",
@@ -245,7 +245,7 @@ dependencies = [
 
 [[package]]
 name = "jackin-core"
-version = "0.6.1"
+version = "0.6.2"
 dependencies = [
  "anyhow",
  "directories",
@@ -257,7 +257,7 @@ dependencies = [
 
 [[package]]
 name = "jackin-telemetry"
-version = "0.6.1"
+version = "0.6.2"
 dependencies = [
  "opentelemetry",
  "opentelemetry-semantic-conventions",

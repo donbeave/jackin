@@ -206,7 +206,7 @@ jobs:
           version: "2026.7.12"
           cache_key_prefix: "mise-v2"
           cache_save: false
-          install_args: "cargo-binstall rust cargo:cargo-nextest"
+          install_args: "cargo-binstall rust aqua:nextest-rs/nextest/cargo-nextest"
           github_token: ${{ secrets.GH_READONLY_TOKEN }}
       - uses: ./.github/actions/cache-cargo-registry
       - run: cargo nextest run --workspace --locked --no-fail-fast
@@ -427,7 +427,7 @@ jobs:
           version: "2026.7.12"
           cache_key_prefix: "mise-v2"
           cache_save: ${{ github.ref == 'refs/heads/main' }}
-          install_args: "cargo-binstall rust cosign syft cargo:cargo-nextest"
+          install_args: "cargo-binstall rust cosign syft aqua:nextest-rs/nextest/cargo-nextest"
           github_token: ${{ secrets.GH_READONLY_TOKEN }}
 
       - uses: ./.github/actions/cache-cargo-registry
