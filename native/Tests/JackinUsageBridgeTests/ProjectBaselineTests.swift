@@ -14,4 +14,22 @@ struct ProjectBaselineTests {
         #expect(outcome == .provider("codex"))
         #expect(StatusPopoverFocus.popoverSelection(for: outcome) == "codex")
     }
+
+    @Test("Status-item context menu keeps native command order")
+    func statusItemContextMenuOrder() {
+        #expect(
+            StatusItemMenuModel.rows.map(\.title) == [
+                "Open Usage Window",
+                "Refresh",
+                "Quit jackin❯ desktop",
+            ]
+        )
+        #expect(
+            StatusItemMenuModel.rows.map(\.action) == [
+                .openUsageWindow,
+                .refresh,
+                .quit,
+            ]
+        )
+    }
 }

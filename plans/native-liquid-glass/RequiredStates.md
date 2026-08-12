@@ -31,7 +31,7 @@ not branch on guessed defaults.
 | `I01` | Keyboard focus in popover | Initial focus reaches first actionable control; Tab follows account picker → limit scroller → Refresh → Open Usage; Escape dismisses | Automated key events + focus log + screenshot with focus ring |
 | `I02` | Keyboard focus in Usage | Sidebar, Overview table, account picker, detail scroller, toolbar, and links are reachable in native order | Accessibility tree + key-event test |
 | `I03` | Menu commands | Command-R refreshes; Command-comma opens Settings; Command-W closes; selected Usage shortcut opens/focuses the window | Command-dispatch tests |
-| `I04` | Context menu | Secondary click exposes native Open Usage, Refresh, applicable Settings, and Quit ordering | Real status-item capture + menu inspection |
+| `I04` | Context menu | Secondary click exposes native Open Usage, Refresh, and Quit ordering; Settings remains in the standard app menu because no context-specific recovery path needs it | Real status-item interaction + pure menu-model inspection |
 | `I05` | Pointer hover/press | Native buttons, rows, status items, menus, and links own hover/press; no hover-only action | Interaction test + capture where stable |
 | `I06` | VoiceOver labels | Status items name provider and glance values; controls have concise labels; decorative marks hidden; full long values exposed | Accessibility audit dump + assertions |
 | `I07` | Non-color state | F04–F10 remain distinguishable through text/value/status, not only hue | Semantic assertions + monochrome/manual review |
