@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import XCTest
+
 @testable import JackinUsageBridge
 
 final class OverviewInventoryTests: XCTestCase {
@@ -59,16 +60,21 @@ final class OverviewInventoryTests: XCTestCase {
             glance(id: "codex", label: "OpenAI", account: "a1", bar: "57%", pct: 57),
         ]
         let accounts = [
-            account(surface: "codex", key: "a1", label: "alexey@chainargos.com", pct: 57, selected: true),
-            account(surface: "codex", key: "a2", label: "alexey@zhokhov.com", pct: 0, selected: false),
+            account(
+                surface: "codex", key: "a1", label: "alexey@chainargos.com", pct: 57, selected: true
+            ),
+            account(
+                surface: "codex", key: "a2", label: "alexey@zhokhov.com", pct: 0, selected: false),
             account(surface: "claude", key: "p1", label: "Personal", pct: 12, selected: true),
         ]
         let rows = OverviewInventory.rows(accounts: accounts, glanceRows: glances)
-        XCTAssertEqual(rows.map(\.id), [
-            "claude#p1",
-            "codex#a1",
-            "codex#a2",
-        ])
+        XCTAssertEqual(
+            rows.map(\.id),
+            [
+                "claude#p1",
+                "codex#a1",
+                "codex#a2",
+            ])
         XCTAssertEqual(rows[0].title, "Anthropic · Personal")
         XCTAssertEqual(rows[1].title, "OpenAI · alexey@chainargos.com")
         XCTAssertEqual(rows[2].barLabel, "0%")
@@ -95,7 +101,7 @@ final class OverviewInventoryTests: XCTestCase {
                 pct: 57,
                 resetLabel: "Resets in 3d",
                 exactReset: "(15 Aug 2026, 17:02)"
-            ),
+            )
         ]
         let accounts = [
             account(
@@ -142,7 +148,7 @@ final class OverviewInventoryTests: XCTestCase {
                 pct: 57,
                 resetLabel: "Resets in 3d",
                 exactReset: "(15 Aug 2026, 17:02)"
-            ),
+            )
         ]
         let rows = OverviewInventory.rows(accounts: [], glanceRows: glances)
         XCTAssertEqual(rows.count, 1)

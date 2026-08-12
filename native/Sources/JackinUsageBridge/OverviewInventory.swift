@@ -15,7 +15,9 @@ public struct OverviewInventoryRow: Identifiable, Equatable, Sendable {
     /// Glance remaining from account row or glance row (Rust only).
     public let remainingPercent: UInt8?
     public let barLabel: String
-    /// OV-5: relative reset and calendar date when known (newline-separated).
+    /// OV-5: relative reset and calendar date when known.
+    ///
+    /// The two values are newline-separated.
     /// Rust strings only — composed by ``overviewResetDisplay``.
     public let resetLabel: String?
     public let severity: String
@@ -55,23 +57,27 @@ public func overviewResetDisplay(resetLabel: String?, exactReset: String?) -> St
         .trimmingCharacters(in: .whitespacesAndNewlines)
     var calendar = exactReset?
         .trimmingCharacters(in: .whitespacesAndNewlines)
-    if let c = calendar, c.hasPrefix("("), c.hasSuffix(")") {
-        calendar = c.count > 2
-            ? String(c.dropFirst().dropLast())
+    if let calendarValue = calendar,
+        calendarValue.hasPrefix("("),
+        calendarValue.hasSuffix(")")
+    {
+        calendar =
+            calendarValue.count > 2
+            ? String(calendarValue.dropFirst().dropLast())
                 .trimmingCharacters(in: .whitespacesAndNewlines)
             : ""
     }
-    let r = (relative?.isEmpty == false) ? relative : nil
-    let c = (calendar?.isEmpty == false) ? calendar : nil
-    switch (r, c) {
-    case let (rel?, cal?) where !rel.isEmpty && !cal.isEmpty:
+    let relativeValue = (relative?.isEmpty == false) ? relative : nil
+    let calendarValue = (calendar?.isEmpty == false) ? calendar : nil
+    switch (relativeValue, calendarValue) {
+    case (let rel?, let cal?) where !rel.isEmpty && !cal.isEmpty:
         // Avoid duplicate if one already embeds the other.
         if rel.localizedCaseInsensitiveContains(cal) { return rel }
         if cal.localizedCaseInsensitiveContains(rel) { return cal }
         return "\(rel)\n\(cal)"
-    case let (rel?, _):
+    case (let rel?, _):
         return rel
-    case let (_, cal?):
+    case (_, let cal?):
         return cal
     default:
         return nil
@@ -92,7 +98,8 @@ public enum OverviewInventory: Sendable {
         glanceRows: [PresentationStore.GlanceProviderRow]
     ) -> [OverviewInventoryRow] {
         if !accounts.isEmpty {
-            let glanceBySurface = Dictionary(uniqueKeysWithValues: glanceRows.map { ($0.surfaceId, $0) })
+            let glanceBySurface = Dictionary(
+                uniqueKeysWithValues: glanceRows.map { ($0.surfaceId, $0) })
             // Preserve glance provider order, then accounts within each surface as listed.
             var out: [OverviewInventoryRow] = []
             let surfaceOrder = glanceRows.map(\.surfaceId)
@@ -108,8 +115,11 @@ public enum OverviewInventory: Sendable {
                     let bar: String
                     if let pct {
                         bar = "\(pct)%"
-                    } else if account.selected, let g = glance?.barLabel, !g.isEmpty {
-                        bar = g
+                    } else if account.selected,
+                        let glanceBar = glance?.barLabel,
+                        !glanceBar.isEmpty
+                    {
+                        bar = glanceBar
                     } else {
                         bar = "–"
                     }
@@ -131,7 +141,8 @@ public enum OverviewInventory: Sendable {
                             accountKey: account.accountKey,
                             title: "\(providerName) · \(account.accountLabel)",
                             planLabel: account.planLabel,
-                            remainingPercent: pct ?? (account.selected ? glance?.glanceRemainingPercent : nil),
+                            remainingPercent: pct
+                                ?? (account.selected ? glance?.glanceRemainingPercent : nil),
                             barLabel: bar,
                             resetLabel: reset,
                             // Per-account nest severity (HTML a-meter mid/low/high), not provider glance only.

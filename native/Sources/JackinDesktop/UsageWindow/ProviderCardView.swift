@@ -1,330 +1,168 @@
 // SPDX-FileCopyrightText: 2026 Alexey Zhokhov
 // SPDX-License-Identifier: Apache-2.0
 
-import AppKit
 import JackinUsageBridge
 import SwiftUI
 
-/// Provider detail — **content layer only** (LG-A2: no Liquid Glass on data).
+/// Native provider detail.
 ///
-/// Renders Rust ``UsageDetailPresentation`` rows mechanically.
-/// Account switching lives in the **sidebar nest** under the selected provider
-/// (FB1-48) — no duplicate chip strip here.
-/// Official usage console: ``ProviderUsageLinks`` (browser escape hatch).
+/// Content remains on standard list surfaces.
 public struct ProviderCardView: View {
     public let content: UsageWindowModel.Content
+    public let providerError: String?
+    public var onSelectAccount: (String, String) -> Void
 
-    public init(content: UsageWindowModel.Content) {
+    public init(
+        content: UsageWindowModel.Content,
+        providerError: String? = nil,
+        onSelectAccount: @escaping (String, String) -> Void = { _, _ in }
+    ) {
         self.content = content
+        self.providerError = providerError
+        self.onSelectAccount = onSelectAccount
     }
 
     public var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 14) {
-                // HTML `.detail-head` — provider mark + name + account · plan (VS-11 primary).
-                detailHead
+        List {
+            Section {
+                providerIdentity
+            }
 
-                if ProviderUsageLinks.usagePageURL(surfaceId: content.surfaceId) != nil {
-                    openUsagePageControl
-                }
-
-                // Group metadata then buckets for scan hierarchy (VS-11).
-                // Skip rows already shown in page chrome / sidebar (header, account, plan).
-                let meta = content.detail.rows.filter { row in
-                    row.kind != .bucket && !Self.sidebarDuplicatedMetaIds.contains(row.rowId)
-                }
-
-                if !meta.isEmpty {
-                    VStack(alignment: .leading, spacing: 0) {
-                        ForEach(Array(meta.enumerated()), id: \.element.id) { index, row in
-                            if index > 0 {
-                                Divider().opacity(0.45)
-                            }
-                            metadataRow(row)
-                                .padding(.vertical, 8)
+            if content.accounts.count > 1 {
+                Section {
+                    Picker("Account", selection: accountSelection) {
+                        ForEach(content.accounts) { account in
+                            Text(account.accountLabel)
+                                .tag(account.accountKey)
                         }
                     }
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 4)
-                    .background {
-                        GlassFallbacks.contentCardBackground()
-                    }
+                    .pickerStyle(.menu)
+                    .accessibilityLabel("Account")
+                    .accessibilityIdentifier("usage.account-picker")
+                } header: {
+                    sectionHeader("Account")
                 }
-
-                limitList
             }
-            .padding(20)
+
+            let metadataRows = content.detail.rows.filter { $0.kind != .bucket }
+            if !metadataRows.isEmpty {
+                Section {
+                    ForEach(metadataRows) { row in
+                        LabeledContent(row.label, value: row.displayLabel)
+                            .accessibilityLabel("\(row.label), \(row.displayLabel)")
+                    }
+                } header: {
+                    sectionHeader("Details")
+                }
+            }
+
+            let limitRows = content.detail.rows.filter { $0.kind == .bucket }
+            if !limitRows.isEmpty {
+                Section {
+                    ForEach(limitRows) { row in
+                        limitRow(row)
+                    }
+                } header: {
+                    sectionHeader("Limits")
+                }
+            } else if providerError == nil {
+                Section {
+                    Text("No limit details available")
+                        .foregroundStyle(.secondary)
+                } header: {
+                    sectionHeader("Limits")
+                }
+            }
+
+            if let providerError {
+                Section {
+                    Label(providerError, systemImage: "exclamationmark.triangle")
+                        .accessibilityIdentifier("usage.provider-error")
+                } header: {
+                    sectionHeader("Provider status")
+                }
+            }
+
+            if let url = ProviderUsageLinks.usagePageURL(surfaceId: content.surfaceId) {
+                Section {
+                    Link(destination: url) {
+                        Label(ProviderUsageLinks.openUsagePageTitle, systemImage: "arrow.up.right")
+                    }
+                    .accessibilityIdentifier("usage.open-provider-page")
+                }
+            }
         }
-        // LG-A7: soft edges under floating glass chrome (Tahoe).
-        .modifier(GlassFallbacks.SoftScrollEdges())
-        .accessibilityElement(children: .contain)
+        .listStyle(.inset)
+        .accessibilityLabel("\(content.displayLabel) usage details")
+        .accessibilityIdentifier("usage.provider.\(content.surfaceId)")
     }
 
-    /// Identity head above Open usage (matches index.html `.page-head` / `.detail-head`).
-    private var detailHead: some View {
-        HStack(alignment: .center, spacing: 12) {
-            providerLogoPlate(iconKey: content.iconKey, size: 36)
-            VStack(alignment: .leading, spacing: 3) {
+    private var providerIdentity: some View {
+        HStack(spacing: 12) {
+            if let iconKey = content.iconKey,
+                let mark = ProviderMarks.swiftUIImage(forIconKey: iconKey)
+            {
+                mark
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 32, height: 32)
+                    .accessibilityHidden(true)
+            }
+            VStack(alignment: .leading, spacing: 2) {
                 Text(content.displayLabel)
-                    .font(.title3.weight(.semibold))
-                    .lineLimit(1)
-                if let sub = headSubtitle, !sub.isEmpty {
-                    Text(sub)
-                        .font(.caption)
+                    .font(.title2)
+                if let account = content.headAccount {
+                    Text(accountSubtitle(account))
                         .foregroundStyle(.secondary)
-                        .lineLimit(2)
                 }
             }
-            Spacer(minLength: 0)
         }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel(
-            [content.displayLabel, headSubtitle].compactMap { $0 }.joined(separator: ", ")
+        .accessibilityIdentifier("usage.provider-identity")
+    }
+
+    private var accountSelection: Binding<String> {
+        Binding(
+            get: {
+                content.accounts.first(where: \.selected)?.accountKey
+                    ?? content.accounts.first?.accountKey
+                    ?? ""
+            },
+            set: { onSelectAccount(content.surfaceId, $0) }
         )
     }
 
-    /// Account · plan from selected account (Rust labels only).
-    private var headSubtitle: String? {
-        guard let account = content.headAccount else { return nil }
-        var parts: [String] = []
-        if !account.accountLabel.isEmpty { parts.append(account.accountLabel) }
-        if let plan = account.planLabel, !plan.isEmpty { parts.append(plan) }
-        return parts.isEmpty ? nil : parts.joined(separator: " · ")
+    private func accountSubtitle(_ account: PresentationStore.AccountRow) -> String {
+        guard let plan = account.planLabel, !plan.isEmpty else { return account.accountLabel }
+        return "\(account.accountLabel) · \(plan)"
     }
 
-    /// Opens the provider’s official usage page (external browser) — HTML `.open-usage` pill.
-    private var openUsagePageControl: some View {
-        Button {
-            if let url = ProviderUsageLinks.usagePageURL(surfaceId: content.surfaceId) {
-                NSWorkspace.shared.open(url)
+    private func limitRow(_ row: UsageDetailRow) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            LabeledContent(row.label) {
+                Text(row.layoutLines.first?.leading ?? row.displayLabel)
+                    .monospacedDigit()
+                    .foregroundStyle(.primary)
             }
-        } label: {
-            HStack(spacing: 6) {
-                Text(ProviderUsageLinks.openUsagePageTitle)
-                    .font(.subheadline.weight(.semibold))
-                Image(systemName: "arrow.up.right")
-                    .font(.caption.weight(.semibold))
+            if let percent = row.meterPercent {
+                ProgressView(value: Double(percent), total: 100)
+                    .accessibilityHidden(true)
             }
-            .foregroundStyle(Color.jackinPhosphor)
-            .padding(.horizontal, 14)
-            .padding(.vertical, 9)
-            .background {
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .fill(Color.jackinPhosphor.opacity(0.08))
-                    .overlay {
-                        RoundedRectangle(cornerRadius: 10, style: .continuous)
-                            .strokeBorder(Color.jackinPhosphor.opacity(0.32), lineWidth: 0.5)
-                    }
-            }
-        }
-        .buttonStyle(.plain)
-        .help("Open this provider’s official usage page in your browser")
-        .accessibilityLabel(ProviderUsageLinks.openUsagePageTitle)
-    }
-
-    /// One inset list owns all limit rows, matching HTML `.limit-list` structure.
-    private var limitList: some View {
-        let bucketRows = content.detail.rows.filter { $0.kind == .bucket }
-
-        return VStack(alignment: .leading, spacing: 0) {
-            ForEach(Array(bucketRows.enumerated()), id: \.element.id) { index, row in
-                if index > 0 {
-                    Divider().opacity(0.55)
-                }
-                if row.label == "Limit Reset Credits" {
-                    limitResetCreditsRow(row)
-                } else {
-                    bucketRow(row)
+            ForEach(Array(row.layoutLines.dropFirst().enumerated()), id: \.offset) { _, line in
+                if let value = line.leading ?? line.trailing {
+                    Text(value)
+                        .font(.callout)
+                        .foregroundStyle(.primary)
                 }
             }
-        }
-        .background {
-            GlassFallbacks.contentCardBackground()
-        }
-    }
-
-    /// Bound bucket: show every Rust layout line as labeled detail (count, next expiry, …).
-    private func limitResetCreditsRow(_ row: UsageDetailRow) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            // Prefer structured lines from presentation; fall back to displayLabel split.
-            let lines = row.layoutLines.isEmpty
-                ? row.displayLabel.split(separator: " · ").map { String($0) }
-                : row.layoutLines.compactMap { $0.leading ?? $0.trailing }
-            HStack(alignment: .firstTextBaseline, spacing: 12) {
-                Text(row.label)
-                    .font(.subheadline.weight(.semibold))
-                Spacer(minLength: 8)
-                if let count = lines.first {
-                    Text(count)
-                        .font(.subheadline.weight(.semibold))
-                        .multilineTextAlignment(.trailing)
-                }
-            }
-            if lines.isEmpty {
-                Text(row.displayLabel)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            } else {
-                VStack(alignment: .leading, spacing: 6) {
-                    ForEach(Array(lines.enumerated()), id: \.offset) { index, text in
-                        HStack(alignment: .firstTextBaseline, spacing: 8) {
-                            Text(limitResetFieldLabel(index: index, text: text))
-                                .font(.caption.weight(.semibold))
-                                .foregroundStyle(.secondary)
-                                .frame(width: 96, alignment: .leading)
-                            Text(text)
-                                .font(.caption.monospacedDigit())
-                                .foregroundStyle(.primary)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                        }
-                    }
-                }
-            }
-        }
-        .padding(14)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(row.label) \(row.displayLabel)")
-    }
-
-    /// Quiet field titles for Limit Reset Credits (geometry only; values stay Rust).
-    private func limitResetFieldLabel(index: Int, text: String) -> String {
-        let lower = text.lowercased()
-        if lower.contains("manual reset") { return "Available" }
-        if lower.hasPrefix("next expires") || lower.contains("expires") { return "Next expires" }
-        if index == 0 { return "Available" }
-        if index == 1 { return "Next expires" }
-        return "Detail"
-    }
-
-    /// Meta already carried by detail head + sidebar nest; omit to de-dupe.
-    private static let sidebarDuplicatedMetaIds: Set<String> = [
-        "focused", "header", "provider", "account", "username", "plan",
-    ]
-
-    /// Logo plate for provider identity (HTML `.plogo` role — official mark preferred).
-    @ViewBuilder
-    private func providerLogoPlate(iconKey: String?, size: CGFloat) -> some View {
-        let tint = desktopProviderBrandChrome(iconKey: iconKey)
-        ZStack {
-            RoundedRectangle(cornerRadius: size * 0.28, style: .continuous)
-                .fill(tint.opacity(0.18))
-            if let iconKey, let mark = ProviderMarks.swiftUIImage(forIconKey: iconKey) {
-                mark
-                    .resizable()
-                    .interpolation(.high)
-                    .scaledToFit()
-                    .frame(width: size * 0.52, height: size * 0.52)
-                    .colorMultiply(tint)
-            } else if let iconKey, let symbol = desktopProviderSystemImage(iconKey: iconKey) {
-                Image(systemName: symbol)
-                    .font(.system(size: size * 0.42, weight: .semibold))
-                    .foregroundStyle(tint)
-            } else {
-                Image(systemName: "circle.grid.cross")
-                    .font(.system(size: size * 0.42, weight: .semibold))
-                    .foregroundStyle(tint)
-            }
-        }
-        .frame(width: size, height: size)
-    }
-
-    private func metadataRow(_ row: UsageDetailRow) -> some View {
-        HStack(alignment: .firstTextBaseline, spacing: 8) {
-            Text(row.label)
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.secondary)
-            Spacer(minLength: 8)
-            VStack(alignment: .trailing, spacing: 2) {
-                ForEach(Array(row.layoutLines.enumerated()), id: \.offset) { _, line in
-                    lineView(line, trailingStyle: .primary)
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .trailing)
         }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(row.label) \(row.displayLabel)")
+        .accessibilityLabel("\(row.label), \(row.displayLabel)")
+        .accessibilityIdentifier("usage.limit.\(row.rowId)")
     }
 
-    /// Limit card — label + hero remaining (primary), pace/reset secondary, meter last
-    /// (matches `index.html` Usage `.limit` anatomy / VS-11).
-    private func bucketRow(_ row: UsageDetailRow) -> some View {
-        let hero = row.layoutLines.compactMap(\.leading).first
-        let secondaryLeadings = Array(row.layoutLines.dropFirst().compactMap(\.leading))
-        let resetTrailings = row.layoutLines.compactMap(\.trailing)
-
-        return VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .firstTextBaseline, spacing: 12) {
-                Text(row.label)
-                    .font(.subheadline.weight(.semibold))
-                Spacer(minLength: 8)
-                if let hero {
-                    Text(hero)
-                        .font(.title2.weight(.semibold).monospacedDigit())
-                        .foregroundStyle(severityTint(row.severity))
-                        .multilineTextAlignment(.trailing)
-                }
-            }
-
-            ForEach(Array(secondaryLeadings.enumerated()), id: \.offset) { _, text in
-                Text(text)
-                    .font(.caption.weight(.medium))
-                    .foregroundStyle(.secondary)
-            }
-            ForEach(Array(resetTrailings.enumerated()), id: \.offset) { _, text in
-                Text(text)
-                    .font(.caption)
-                    .foregroundStyle(.tertiary)
-                    .monospacedDigit()
-            }
-
-            if let meter = row.meterPercent {
-                // Geometry from Rust only (1:1). 0% = empty track — no fake sliver.
-                let frac = Double(meter) / 100.0
-                GeometryReader { geo in
-                    ZStack(alignment: .leading) {
-                        Capsule().fill(Color.primary.opacity(0.10))
-                        if frac > 0 {
-                            Capsule()
-                                .fill(severityTint(row.severity))
-                                .frame(width: geo.size.width * frac)
-                        }
-                    }
-                }
-                .frame(height: 5)
-            }
-        }
-        .padding(14)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(row.label) \(row.displayLabel)")
-    }
-
-    @ViewBuilder
-    private func lineView(
-        _ line: UsagePresentationLine,
-        trailingStyle: HierarchicalShapeStyle,
-        leadingTint: Color? = nil
-    ) -> some View {
-        HStack(alignment: .firstTextBaseline, spacing: 8) {
-            if let leading = line.leading {
-                Text(leading)
-                    .font(.caption.weight(.semibold))
-                    .monospacedDigit()
-                    .foregroundStyle(leadingTint ?? .primary)
-            }
-            if line.leading != nil, line.trailing != nil {
-                Spacer(minLength: 8)
-            } else if line.trailing != nil {
-                Spacer(minLength: 0)
-            }
-            if let trailing = line.trailing {
-                Text(trailing)
-                    .font(.caption)
-                    .monospacedDigit()
-                    .foregroundStyle(trailingStyle)
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .trailing)
+    private func sectionHeader(_ title: String) -> some View {
+        Text(title)
+            .accessibilityLabel(title)
     }
 }

@@ -2,9 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import XCTest
+
 @testable import JackinUsageBridge
 
-/// Shipped ``StatusPopoverFocus`` rules — left-click status → popover tab.
+/// Shipped ``StatusPopoverFocus`` rules — left-click status → focused provider.
 final class StatusPopoverFocusTests: XCTestCase {
     func testProviderClickSelectsSurface() {
         let outcome = StatusPopoverFocus.outcome(surfaceId: "claude", isFallbackItem: false)
@@ -27,15 +28,21 @@ final class StatusPopoverFocusTests: XCTestCase {
         // Retain NSObject for ObjectIdentifier lifetime (avoids free/reuse alias flake).
         let buttonA = NSObject()
         let buttonB = NSObject()
-        let a = ObjectIdentifier(buttonA)
-        let b = ObjectIdentifier(buttonB)
-        let map = ["codex": a, "claude": b]
+        let identityA = ObjectIdentifier(buttonA)
+        let identityB = ObjectIdentifier(buttonB)
+        let map = ["codex": identityA, "claude": identityB]
         XCTAssertEqual(
-            StatusPopoverFocus.surfaceId(matchingButtonIdentity: b, providerButtonIdentities: map),
+            StatusPopoverFocus.surfaceId(
+                matchingButtonIdentity: identityB,
+                providerButtonIdentities: map
+            ),
             "claude"
         )
         XCTAssertEqual(
-            StatusPopoverFocus.surfaceId(matchingButtonIdentity: a, providerButtonIdentities: map),
+            StatusPopoverFocus.surfaceId(
+                matchingButtonIdentity: identityA,
+                providerButtonIdentities: map
+            ),
             "codex"
         )
         let other = NSObject()

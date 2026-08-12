@@ -27,9 +27,13 @@ hyperfine = "1.20.0"
 shellcheck = "0.11.0"
 node = "24.18.0"
 python = "3.14"
+periphery = "3.8.0"
+swiftlint = "0.65.0"
 uv = "0.11.29"
 "pipx:reuse" = { version = "6.2.0", extras = "charset-normalizer", depends = ["python"] }
 syft = "1.46.0"
+xcodegen = "2.46.0"
+xcbeautify = "3.2.1"
 zig = "0.16.0"
 # rust is read from `rust-toolchain.toml` via the `idiomatic_version_file`
 # setting below — single source of truth for the toolchain channel and components.
@@ -99,6 +103,34 @@ run = "cargo xtask desktop bindings"
 [tasks.desktop-xcframework]
 description = "Build the arm64 static JackinUsageFFI XCFramework"
 run = "cargo xtask desktop xcframework"
+
+[tasks.desktop-generate]
+description = "Regenerate the jackin❯ desktop Xcode project"
+run = "xcodegen generate --spec native/project.yml"
+
+[tasks.desktop-format]
+description = "Format handwritten jackin❯ desktop Swift sources"
+run = "cd native && find Sources Tests UITests Tools Scripts -name '*.swift' ! -name 'jackin_usage_ffi.swift' -print0 | xargs -0 xcrun swift-format format --configuration .swift-format --in-place --parallel"
+
+[tasks.desktop-format-check]
+description = "Fail on jackin❯ desktop Swift formatting violations"
+run = "cd native && find Sources Tests UITests Tools Scripts -name '*.swift' ! -name 'jackin_usage_ffi.swift' -print0 | xargs -0 xcrun swift-format lint --configuration .swift-format --strict --parallel"
+
+[tasks.desktop-lint]
+description = "Fail on jackin❯ desktop SwiftLint violations"
+run = "cd native && swiftlint lint --strict --config .swiftlint.yml"
+
+[tasks.desktop-test-ui]
+description = "Run jackin❯ desktop UI tests against the real app host"
+run = "set -o pipefail && xcodebuild test -project native/JackinDesktop.xcodeproj -scheme JackinDesktop -destination 'platform=macOS' -only-testing:JackinDesktopUITests -derivedDataPath native/DerivedData | xcbeautify"
+
+[tasks.desktop-deadcode]
+description = "Scan jackin❯ desktop for unused declarations"
+run = "cd native && periphery scan --project JackinDesktop.xcodeproj --schemes JackinDesktop --retain-public --retain-objc-accessible --retain-assign-only-properties --report-exclude '**/jackin_usage_ffi.swift' --strict --quiet"
+
+[tasks.desktop-build-next]
+description = "Forward-build jackin❯ desktop against the next macOS SDK"
+run = "test -x /Applications/Xcode-beta.app/Contents/Developer/usr/bin/xcodebuild && DEVELOPER_DIR=/Applications/Xcode-beta.app/Contents/Developer xcodebuild -version && DEVELOPER_DIR=/Applications/Xcode-beta.app/Contents/Developer xcodebuild -showsdks | grep -q macosx27 && set -o pipefail && DEVELOPER_DIR=/Applications/Xcode-beta.app/Contents/Developer xcodebuild -project native/JackinDesktop.xcodeproj -scheme JackinDesktop -configuration Debug -derivedDataPath native/DerivedData-next build | xcbeautify"
 
 [tasks.desktop-build]
 description = "Build JackinDesktop.app (prints absolute path + how to run)"

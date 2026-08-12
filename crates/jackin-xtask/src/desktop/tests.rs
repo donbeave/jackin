@@ -1,7 +1,4 @@
-use super::{
-    APP_EXECUTABLE, BUNDLE_ID, BUNDLE_NAME, MIN_OS, app_info_plist, minos_newer_than_14,
-    validate_build, validate_version,
-};
+use super::{MIN_OS, minos_matches_target, validate_build, validate_version};
 
 #[test]
 fn version_accepts_dotted_numeric() {
@@ -27,22 +24,10 @@ fn build_accepts_numeric_only() {
 }
 
 #[test]
-fn minos_compare_rejects_newer_than_14() {
-    assert!(!minos_newer_than_14("14.0"));
-    assert!(!minos_newer_than_14("14.0.0"));
-    assert!(!minos_newer_than_14("13.5"));
-    assert!(minos_newer_than_14("14.1"));
-    assert!(minos_newer_than_14("15.0"));
-}
-
-#[test]
-fn info_plist_embeds_identity_and_versions() {
-    let plist = app_info_plist("0.6.0", "1");
-    assert!(plist.contains(BUNDLE_ID));
-    assert!(plist.contains(BUNDLE_NAME));
-    assert!(plist.contains(APP_EXECUTABLE));
-    assert!(plist.contains(MIN_OS));
-    assert!(plist.contains("<string>0.6.0</string>"));
-    assert!(plist.contains("<string>1</string>"));
-    assert!(plist.contains("<key>LSUIElement</key>"));
+fn minos_must_match_current_baseline() {
+    assert!(minos_matches_target("26.0", MIN_OS));
+    assert!(minos_matches_target("26.0.0", MIN_OS));
+    assert!(!minos_matches_target("25.0", MIN_OS));
+    assert!(!minos_matches_target("26.1", MIN_OS));
+    assert!(!minos_matches_target("27.0", MIN_OS));
 }

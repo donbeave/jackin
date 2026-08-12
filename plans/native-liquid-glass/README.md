@@ -29,6 +29,8 @@ proof. It does not authorize full production implementation.
   signing, test, CI, and agent-integration audit
 - [ConceptMigrationPlan.md](ConceptMigrationPlan.md) — bounded migration plan
   for the runnable A1 proof
+- [ConceptHandoff.md](ConceptHandoff.md) — runnable build, fixture, component,
+  AppKit-boundary, and verification handoff for the A1 proof
 
 ## Gate
 

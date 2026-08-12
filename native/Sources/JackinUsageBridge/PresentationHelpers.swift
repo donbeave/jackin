@@ -23,10 +23,10 @@ public func severityTint(_ severity: String) -> Color {
 /// 0→depleted (empty track). Maps to Rust severity keys for ``severityTint``.
 /// Geometry only — does not invent a remaining percent.
 public func remainingPercentMeterSeverity(_ remaining: UInt8) -> String {
-    if remaining == 0 { return "normal" } // depleted: no fill; color unused
-    if remaining <= 20 { return "danger" } // HTML `low`
-    if remaining <= 60 { return "warn" } // HTML `mid`
-    return "normal" // HTML `high`
+    if remaining == 0 { return "normal" }  // depleted: no fill; color unused
+    if remaining <= 20 { return "danger" }  // HTML `low`
+    if remaining <= 60 { return "warn" }  // HTML `mid`
+    return "normal"  // HTML `high`
 }
 
 /// Resolve account meter severity: explicit Rust/fixture key, else remaining band.
@@ -82,7 +82,9 @@ public enum OverviewGlanceBody: Equatable, Sendable {
     case statusWord(String)
 }
 
-public func overviewGlanceBody(headline: String, resetLabel: String?, statusWord: String)
+public func overviewGlanceBody(
+    headline: String, resetLabel: String?, statusWord: String
+)
     -> OverviewGlanceBody
 {
     if !headline.isEmpty {
@@ -177,6 +179,7 @@ public let desktopProviderIconKeys = [
 ]
 
 /// Frozen product/limit role shown in popover Overview group headers.
+///
 /// Subscription plan belongs to account rows; it is not provider identity.
 public func desktopProviderOverviewRole(iconKey: String) -> String? {
     switch iconKey {
@@ -215,13 +218,17 @@ public func selectStatusBarGlanceRows(
     )
 }
 
-/// SB-13: status-item **visual** order follows creation order. When ranked
+/// SB-13: status-item **visual** order follows creation order.
+///
+/// When ranked
 /// surface ids change, `StatusBarController` must remove+recreate items.
 public func statusBarOrderRequiresRebuild(previous: [String], next: [String]) -> Bool {
     previous != next
 }
 
-/// SF Symbol name for a Desktop provider status item. Rejects any key outside
+/// SF Symbol name for a Desktop provider status item.
+///
+/// Rejects any key outside
 /// `desktopProviderIconKeys` (so `opencode` and unknown keys return `nil`),
 /// then delegates to the existing `statusItemSystemImage` mapping. Performs no
 /// usage formatting or provider detection.
@@ -309,12 +316,13 @@ public func statusItemPercentToken(
     remainingPercent: UInt8,
     percentStyle: String = "left"
 ) -> String {
-    var s = String(statusItemDisplayPercent(
-        remainingPercent: remainingPercent,
-        percentStyle: percentStyle
-    ))
-    s.append("%")
-    return s
+    var token = String(
+        statusItemDisplayPercent(
+            remainingPercent: remainingPercent,
+            percentStyle: percentStyle
+        ))
+    token.append("%")
+    return token
 }
 
 /// OpenUsage primary metric line under a capacity bar (`81% left` / `19% used`).
@@ -353,7 +361,7 @@ public func bucketMetricPrimaryLabel(
     percentStyle: String = "left"
 ) -> String {
     if let remaining = remainingPercent, remaining == 0,
-       let reset = resetLabel, !reset.isEmpty
+        let reset = resetLabel, !reset.isEmpty
     {
         return statusItemResetCountdownLine(compactLabel: reset) ?? reset
     }
@@ -418,7 +426,7 @@ public func accountPillLabel(
 /// come from `bucket.label`.
 public func isMachineStatusSlot(_ statusSlot: String?) -> Bool {
     guard let raw = statusSlot?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased(),
-          !raw.isEmpty
+        !raw.isEmpty
     else {
         return false
     }
@@ -440,7 +448,7 @@ public func bucketGaugeSecondaryLimitLabel(
     remainingPercent: UInt8? = nil
 ) -> String? {
     guard let limit = limitLabel?.trimmingCharacters(in: .whitespacesAndNewlines),
-          !limit.isEmpty
+        !limit.isEmpty
     else {
         return nil
     }
@@ -543,8 +551,8 @@ public struct StatusItemSurfaceSnapshot: Sendable, Equatable {
 
     public var drivingSeverity: String {
         guard let minRem = drivingRemaining,
-              let idx = remainings.firstIndex(of: minRem),
-              idx < severities.count
+            let idx = remainings.firstIndex(of: minRem),
+            idx < severities.count
         else {
             return severities.first ?? "ok"
         }
@@ -637,10 +645,12 @@ public func buildStatusItemChips(
         // Session 0 + Weekly 79 still qualifies via max remaining > 0.
         // Empty remainings (no data yet) are not "depleted" — includeAllEnabled
         // may still show a honest "—" placeholder for enabled surfaces.
-        let positive = surface.remainings.contains { $0 > 0 }
+        let positive =
+            surface.remainings.contains { $0 > 0 }
             || (surface.remainings.isEmpty
                 && (surface.drivingRemaining ?? 0) > 0)
-        let depleted = !surface.remainings.isEmpty
+        let depleted =
+            !surface.remainings.isEmpty
             && surface.remainings.allSatisfy { $0 == 0 }
             && (surface.drivingRemaining ?? 0) == 0
         if depleted { return false }
@@ -650,9 +660,9 @@ public func buildStatusItemChips(
     if preferWorstFirst {
         // Prefer higher remaining when times unknown (SB-17 tie-break only).
         candidates.sort { lhs, rhs in
-            let l = lhs.drivingRemaining ?? 0
-            let r = rhs.drivingRemaining ?? 0
-            if l != r { return l > r }
+            let lhsRemaining = lhs.drivingRemaining ?? 0
+            let rhsRemaining = rhs.drivingRemaining ?? 0
+            if lhsRemaining != rhsRemaining { return lhsRemaining > rhsRemaining }
             return false
         }
     }

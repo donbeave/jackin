@@ -3,8 +3,9 @@
 
 import Foundation
 
-/// Official provider usage / quota pages for “Open usage page” (browser escape
-/// hatch). Product boundary: `plans/previews/desktop-ui/SPECIFICATION.md`.
+/// Official provider usage / quota pages for “Open usage page” (browser escape hatch).
+///
+/// Product boundary: `plans/native-liquid-glass/InformationArchitecture.md`.
 ///
 /// Keys are host `surface_id` values (`codex`, `claude`, …) from
 /// `DESKTOP_PROVIDER_ORDER`. No string synthesis beyond this map.
@@ -48,7 +49,10 @@ public enum ProviderUsageLinks {
     /// True when every desktop provider has a non-empty official usage URL.
     public static var desktopProviderURLsComplete: Bool {
         desktopProviderOrder.allSatisfy { id in
-            guard let s = usagePageString(surfaceId: id), !s.isEmpty, URL(string: s) != nil else {
+            guard let urlString = usagePageString(surfaceId: id),
+                !urlString.isEmpty,
+                URL(string: urlString) != nil
+            else {
                 return false
             }
             return true

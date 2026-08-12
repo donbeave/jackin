@@ -5,8 +5,9 @@ import AppKit
 import JackinUsageBridge
 import SwiftUI
 
-/// Lazily creates and retains the AppKit Usage window hosting the existing
-/// `UsageWindowRoot`. Plan 008 owns the window's content; this controller only
+/// Lazily creates and retains the AppKit Usage window hosting `UsageWindowRoot`.
+///
+/// The approved A1 concept owns the window's content; this controller only
 /// owns its lifecycle and focus.
 ///
 /// Showing the window promotes the process to `.regular` so the **system menu
@@ -29,10 +30,13 @@ public final class UsageWindowController: NSObject, NSWindowDelegate {
 
     /// Show the Usage window, focused on a provider surface id (`nil` = Overview),
     /// creating it on first use and reusing it afterward.
-    public func show(focusOn surfaceId: String?) {
+    public func show(focusOn surfaceId: String?, size: CGSize? = nil) {
         store.selectUsageSurface(surfaceId)
         let window = window ?? makeWindow()
         self.window = window
+        if let size {
+            window.setContentSize(size)
+        }
         window.makeKeyAndOrderFront(nil)
         AppActivation.presentWindows()
     }
@@ -47,14 +51,17 @@ public final class UsageWindowController: NSObject, NSWindowDelegate {
         window.title = "jackin❯ desktop"
         window.isReleasedWhenClosed = false
         window.delegate = self
-        window.setFrameAutosaveName("jackin.desktop.usage-window")
+        window.contentMinSize = NSSize(width: 760, height: 500)
+        window.identifier = NSUserInterfaceItemIdentifier("usage-window")
+        window.setAccessibilityIdentifier("usage-window")
+        if !store.usesFixture {
+            window.setFrameAutosaveName("jackin.desktop.usage-window")
+        }
 
         // Unified titlebar + toolbar (system NSToolbar — not a custom chrome strip).
         window.toolbarStyle = .unified
         window.titlebarAppearsTransparent = false
-        // Custom SwiftUI `.principal` item owns the centered branded title.
-        // Keep NSWindow title for Window menu/accessibility without duplicating it at leading.
-        window.titleVisibility = .hidden
+        window.titleVisibility = .visible
         window.titlebarSeparatorStyle = .automatic
 
         // Hosting *controller* is required for SwiftUI toolbar → NSToolbar.

@@ -35,14 +35,17 @@ public final class RefreshScheduler: @unchecked Sendable {
     }
 
     /// Run one bridge operation on the serial queue and await its result on the
-    /// calling actor. Throws `SchedulerError.invalidated` once shut down.
+    /// calling actor.
+    ///
+    /// Throws `SchedulerError.invalidated` once shut down.
     public func run<T: Sendable>(
         _ operation: @escaping @Sendable (UsageMenuBarBridge) throws -> T
     ) async throws -> T {
         if isInvalidated() {
             throw SchedulerError.invalidated
         }
-        return try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<T, Error>) in
+        return try await withCheckedThrowingContinuation {
+            (continuation: CheckedContinuation<T, Error>) in
             queue.async {
                 if self.isInvalidated() {
                     continuation.resume(throwing: SchedulerError.invalidated)
@@ -58,7 +61,9 @@ public final class RefreshScheduler: @unchecked Sendable {
     }
 
     /// Mark the scheduler invalid and shut the bridge down on the serial queue
-    /// behind any in-flight operation. Never blocks the caller (no `@MainActor`
+    /// behind any in-flight operation.
+    ///
+    /// Never blocks the caller (no `@MainActor`
     /// wait on the Rust mutex during termination); later `run` calls are rejected.
     public func invalidateAndShutdown() {
         stateLock.lock()

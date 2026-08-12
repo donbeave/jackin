@@ -79,8 +79,11 @@ struct DesktopSoTParityHarness {
             ),
         ]
         let accounts = [
-            account(surface: "codex", key: "a1", label: "alexey@chainargos.com", pct: 57, selected: true),
-            account(surface: "codex", key: "a2", label: "alexey@zhokhov.com", pct: 0, selected: false),
+            account(
+                surface: "codex", key: "a1", label: "alexey@chainargos.com", pct: 57, selected: true
+            ),
+            account(
+                surface: "codex", key: "a2", label: "alexey@zhokhov.com", pct: 0, selected: false),
             account(surface: "claude", key: "p1", label: "Personal", pct: 12, selected: true),
         ]
         let multi = OverviewInventory.rows(accounts: accounts, glanceRows: glances)
@@ -138,7 +141,7 @@ struct DesktopSoTParityHarness {
             "status context menu three rows",
             StatusItemMenuModel.rows.count == 3
                 && StatusItemMenuModel.rows.map(\.action)
-                == [.openUsageWindow, .refresh, .quit]
+                    == [.openUsageWindow, .refresh, .quit]
         )
 
         print("---")

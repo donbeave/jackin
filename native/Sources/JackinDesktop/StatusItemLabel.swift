@@ -21,7 +21,7 @@ public enum StatusItemRendering {
             return official
         }
         if let symbol = desktopProviderSystemImage(iconKey: iconKey),
-           let image = NSImage(systemSymbolName: symbol, accessibilityDescription: nil)
+            let image = NSImage(systemSymbolName: symbol, accessibilityDescription: nil)
         {
             image.isTemplate = true
             return image
@@ -33,7 +33,7 @@ public enum StatusItemRendering {
     /// and for any non-provider icon key.
     public static func fallbackIcon() -> NSImage {
         if let url = Bundle.main.url(forResource: "JackinMark", withExtension: "pdf"),
-           let image = NSImage(contentsOf: url)
+            let image = NSImage(contentsOf: url)
         {
             image.isTemplate = true
             return image
@@ -45,6 +45,7 @@ public enum StatusItemRendering {
     }
 
     /// Dual-stack title: compact reset (top) + `barLabel` (bottom).
+    ///
     /// When no reset is available, falls back to a single-line `barLabel`.
     public static func title(barLabel: String, resetLabel: String?) -> NSAttributedString {
         let paragraph = NSMutableParagraphStyle()
@@ -97,11 +98,12 @@ public enum StatusItemRendering {
     }
 
     /// Compacts Rust `reset_label` for the menu bar top line.
+    ///
     /// Does not invent durations — only trims known prefixes / separators.
     /// Examples: `"Resets in 3d"` → `"3d"`; `"Resets in 2h 14m · …"` → `"2h 14m"`.
     public static func compactResetCountdown(_ resetLabel: String?) -> String? {
         guard var text = resetLabel?.trimmingCharacters(in: .whitespacesAndNewlines),
-              !text.isEmpty
+            !text.isEmpty
         else {
             return nil
         }

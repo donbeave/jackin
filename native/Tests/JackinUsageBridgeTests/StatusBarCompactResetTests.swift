@@ -3,13 +3,14 @@
 
 import XCTest
 
-/// Pure string compacting for status-bar dual-stack (LG-A1 dual stack).
+/// Pure string compacting for status-bar dual-stack.
+///
 /// Mirrors `StatusItemRendering.compactResetCountdown` logic so the bridge
 /// test target can verify without AppKit / JackinDesktop linkage.
 final class StatusBarCompactResetTests: XCTestCase {
     private func compact(_ resetLabel: String?) -> String? {
         guard var text = resetLabel?.trimmingCharacters(in: .whitespacesAndNewlines),
-              !text.isEmpty
+            !text.isEmpty
         else {
             return nil
         }

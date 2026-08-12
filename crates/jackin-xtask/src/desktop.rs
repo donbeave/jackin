@@ -25,8 +25,8 @@ use crate::docs;
 
 const APP_EXECUTABLE: &str = "JackinDesktop";
 const BUNDLE_ID: &str = "com.jackin-project.desktop";
-const BUNDLE_NAME: &str = "Jackin Desktop";
-const MIN_OS: &str = "14.0";
+const BUNDLE_NAME: &str = "jackin❯ desktop";
+const MIN_OS: &str = "26.0";
 const FRAMEWORK_NAME: &str = "JackinUsageFFI";
 const MODULE_NAME: &str = "jackin_usage_ffiFFI";
 const STATIC_LIB: &str = "libjackin_usage_ffi.a";
@@ -440,7 +440,7 @@ fn build_xcframework(root: &Path) -> Result<()> {
     require_macos("desktop xcframework")?;
 
     progress(format!(
-        "==> building staticlib for {HOST_TARGET} (macOS 14 floor)"
+        "==> building staticlib for {HOST_TARGET} (macOS {MIN_OS} floor)"
     ));
     let mut rustup = cmd::command("rustup");
     rustup.args(["target", "add", HOST_TARGET]);
@@ -546,63 +546,59 @@ fn build_app(root: &Path, version: &str, build: &str) -> Result<()> {
     }
 
     let native = root.join("native");
-    progress(format!("==> swift build ({ARCH})"));
-    let mut swift = cmd::command("swift");
-    swift.current_dir(&native).args([
-        "build",
-        "-c",
-        "release",
-        "--product",
+    let manifest = native.join("project.yml");
+    if !manifest.is_file() {
+        bail!("missing XcodeGen manifest {}", manifest.display());
+    }
+
+    let xcodegen = which("xcodegen")
+        .context("xcodegen not on PATH; install pinned tools via `mise install`")?;
+    progress("==> xcodegen generate");
+    let mut generate = cmd::command(&xcodegen);
+    generate
+        .current_dir(&native)
+        .args(["generate", "--spec", "project.yml"]);
+    cmd::run_streaming(&mut generate)?;
+
+    let derived_data = native.join("DerivedData");
+    progress(format!("==> xcodebuild Release ({ARCH}, macOS {MIN_OS})"));
+    let mut xcodebuild = cmd::command("xcodebuild");
+    xcodebuild.current_dir(&native).args([
+        "-project",
+        "JackinDesktop.xcodeproj",
+        "-scheme",
         APP_EXECUTABLE,
-        "--arch",
-        ARCH,
-        "-Xswiftc",
-        "-target",
-        "-Xswiftc",
-        &format!("{ARCH}-apple-macosx{MIN_OS}"),
+        "-configuration",
+        "Release",
+        "-destination",
+        "platform=macOS,arch=arm64",
+        "-derivedDataPath",
+        derived_data.to_str().context("derived data path utf-8")?,
+        &format!("MARKETING_VERSION={version}"),
+        &format!("CURRENT_PROJECT_VERSION={build}"),
+        "build",
     ]);
-    cmd::run_streaming(&mut swift)?;
+    cmd::run_streaming(&mut xcodebuild)?;
 
-    let bin_dir = swift_bin_path(&native, ARCH)?;
-    let mut bin = bin_dir.join(APP_EXECUTABLE);
-    if !bin.is_file() {
-        let fallback = swift_bin_path(&native, "")?;
-        bin = fallback.join(APP_EXECUTABLE);
+    let built_app = derived_data.join("Build/Products/Release/JackinDesktop.app");
+    if !built_app.is_dir() {
+        bail!("missing Xcode product {}", built_app.display());
     }
-    if !bin.is_file() {
-        bail!("missing Swift product for {ARCH}");
-    }
-
-    let got = lipo_archs(&bin)?;
-    if !got.split_whitespace().any(|a| a == ARCH) {
-        bail!("expected {ARCH} in {}, got: {got}", bin.display());
-    }
-    if got.split_whitespace().any(|a| a == "x86_64") {
-        bail!("unexpected x86_64 slice in arm64-only build: {got}");
-    }
-
     if dist.exists() {
         fs::remove_dir_all(&dist)?;
     }
-    fs::create_dir_all(dist.join("Contents/MacOS"))?;
-    fs::create_dir_all(dist.join("Contents/Resources"))?;
-    let app_bin = dist.join(format!("Contents/MacOS/{APP_EXECUTABLE}"));
-    fs::copy(&bin, &app_bin)?;
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::PermissionsExt;
-        let mut perms = fs::metadata(&app_bin)?.permissions();
-        perms.set_mode(0o755);
-        fs::set_permissions(&app_bin, perms)?;
-    }
+    fs::create_dir_all(dist.parent().context("desktop dist parent")?)?;
+    let mut ditto = cmd::command("ditto");
+    ditto.args([
+        built_app.to_str().context("built app path utf-8")?,
+        dist.to_str().context("dist app path utf-8")?,
+    ]);
+    cmd::run(&mut ditto)?;
 
-    let resource_bundle = find_resource_bundle(&bin_dir)?;
-    copy_dir_all(
-        &resource_bundle,
-        &dist
-            .join("Contents/Resources")
-            .join(resource_bundle.file_name().context("bundle name")?),
-    )?;
+    let app_bin = dist.join(format!("Contents/MacOS/{APP_EXECUTABLE}"));
+    if !app_bin.is_file() {
+        bail!("missing Xcode app executable {}", app_bin.display());
+    }
 
     let archs = lipo_archs(&app_bin)?;
     progress(format!("  executable archs: {archs}"));
@@ -612,9 +608,6 @@ fn build_app(root: &Path, version: &str, build: &str) -> Result<()> {
     if archs.split_whitespace().any(|a| a == "x86_64") {
         bail!("final app must be arm64-only (got {archs})");
     }
-
-    let plist = dist.join("Contents/Info.plist");
-    fs::write(&plist, app_info_plist(version, build))?;
 
     assert_no_embedded_libs(&dist)?;
     assert_no_absolute_ffi_link(&app_bin)?;
@@ -649,7 +642,8 @@ pub(super) fn verify_app(
 
     let bin = app.join(format!("Contents/MacOS/{APP_EXECUTABLE}"));
     let plist = app.join("Contents/Info.plist");
-    let resource_bundle = app.join("Contents/Resources/JackinDesktop_JackinDesktop.bundle");
+    let app_mark = app.join("Contents/Resources/JackinMark.pdf");
+    let provider_marks = app.join("Contents/Resources/ProviderMarks");
 
     if !bin.is_file() {
         bail!("missing executable {}", bin.display());
@@ -657,11 +651,11 @@ pub(super) fn verify_app(
     if !plist.is_file() {
         bail!("missing {}", plist.display());
     }
-    if !resource_bundle.is_dir() {
-        bail!(
-            "missing SwiftPM resource bundle {}",
-            resource_bundle.display()
-        );
+    if !app_mark.is_file() {
+        bail!("missing app mark {}", app_mark.display());
+    }
+    if !provider_marks.is_dir() {
+        bail!("missing provider marks {}", provider_marks.display());
     }
 
     assert_plist_string(&plist, "CFBundleIdentifier", BUNDLE_ID)?;
@@ -805,21 +799,22 @@ fn check_vtool_minos(bin: &Path) -> Result<()> {
             continue;
         }
         let minos = line.split_whitespace().last().unwrap_or("");
-        if minos.is_empty() || minos == "14.0" || minos == "14.0.0" {
-            continue;
-        }
-        if minos_newer_than_14(minos) {
-            bail!("slice arm64 minos {minos} newer than 14.0");
+        if !minos_matches_target(minos, MIN_OS) {
+            bail!("slice arm64 minos {minos} (expected {MIN_OS})");
         }
     }
     Ok(())
 }
 
-fn minos_newer_than_14(minos: &str) -> bool {
-    let mut parts = minos.split('.');
-    let major: u32 = parts.next().and_then(|s| s.parse().ok()).unwrap_or(0);
-    let minor: u32 = parts.next().and_then(|s| s.parse().ok()).unwrap_or(0);
-    major > 14 || (major == 14 && minor > 0)
+fn minos_matches_target(minos: &str, target: &str) -> bool {
+    fn major_minor(version: &str) -> Option<(u32, u32)> {
+        let mut parts = version.split('.');
+        let major = parts.next()?.parse().ok()?;
+        let minor = parts.next().unwrap_or("0").parse().ok()?;
+        Some((major, minor))
+    }
+
+    major_minor(minos) == major_minor(target)
 }
 
 pub(super) fn assert_no_embedded_libs(app: &Path) -> Result<()> {
@@ -855,71 +850,6 @@ fn assert_no_absolute_ffi_link(bin: &Path) -> Result<()> {
         }
     }
     Ok(())
-}
-
-fn swift_bin_path(native: &Path, arch: &str) -> Result<PathBuf> {
-    let mut swift = cmd::command("swift");
-    swift
-        .current_dir(native)
-        .args(["build", "-c", "release", "--show-bin-path"]);
-    if !arch.is_empty() {
-        swift.args(["--arch", arch]);
-    }
-    let path = cmd::output_string(&mut swift)?.trim().to_owned();
-    Ok(PathBuf::from(path))
-}
-
-fn find_resource_bundle(bin_dir: &Path) -> Result<PathBuf> {
-    for name in ["JackinDesktop_JackinDesktop.bundle", "JackinDesktop.bundle"] {
-        let candidate = bin_dir.join(name);
-        if candidate.is_dir() {
-            return Ok(candidate);
-        }
-    }
-    for path in walk_dirs(bin_dir)? {
-        if path.file_name().and_then(|s| s.to_str()) == Some("JackinDesktop_JackinDesktop.bundle") {
-            // Prefer shallow matches under bin_dir (maxdepth-ish: path components).
-            if path
-                .strip_prefix(bin_dir)
-                .ok()
-                .is_some_and(|rel| rel.components().count() <= 3)
-            {
-                return Ok(path);
-            }
-        }
-    }
-    bail!(
-        "missing SwiftPM resource bundle JackinDesktop_JackinDesktop.bundle under {}",
-        bin_dir.display()
-    )
-}
-
-fn app_info_plist(version: &str, build: &str) -> String {
-    format!(
-        r#"<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-  <key>CFBundleExecutable</key>
-  <string>{APP_EXECUTABLE}</string>
-  <key>CFBundleIdentifier</key>
-  <string>{BUNDLE_ID}</string>
-  <key>CFBundleName</key>
-  <string>{BUNDLE_NAME}</string>
-  <key>CFBundlePackageType</key>
-  <string>APPL</string>
-  <key>CFBundleShortVersionString</key>
-  <string>{version}</string>
-  <key>CFBundleVersion</key>
-  <string>{build}</string>
-  <key>LSUIElement</key>
-  <true/>
-  <key>LSMinimumSystemVersion</key>
-  <string>{MIN_OS}</string>
-</dict>
-</plist>
-"#
-    )
 }
 
 const XCFRAMEWORK_INFO_PLIST: &str = r#"<?xml version="1.0" encoding="UTF-8"?>
@@ -969,20 +899,6 @@ pub(super) fn tempfile_dir(prefix: &str) -> Result<PathBuf> {
     }
     fs::create_dir_all(&base)?;
     Ok(base)
-}
-
-fn copy_dir_all(src: &Path, dst: &Path) -> Result<()> {
-    fs::create_dir_all(dst)?;
-    for entry in crate::fs_util::read_dir_sorted(src)? {
-        let ty = entry.file_type()?;
-        let to = dst.join(entry.file_name());
-        if ty.is_dir() {
-            copy_dir_all(&entry.path(), &to)?;
-        } else if ty.is_file() {
-            fs::copy(entry.path(), &to)?;
-        }
-    }
-    Ok(())
 }
 
 fn walk_files(root: &Path) -> Result<Vec<PathBuf>> {

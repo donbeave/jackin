@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import XCTest
+
 @testable import JackinUsageBridge
 
 final class ProviderUsageLinksTests: XCTestCase {
@@ -11,10 +12,11 @@ final class ProviderUsageLinksTests: XCTestCase {
             "every DESKTOP_PROVIDER_ORDER surface must have OFFICIAL_USAGE_URLS entry"
         )
         for id in ProviderUsageLinks.desktopProviderOrder {
-            let s = ProviderUsageLinks.usagePageString(surfaceId: id)
-            XCTAssertNotNil(s, id)
+            guard let urlString = ProviderUsageLinks.usagePageString(surfaceId: id) else {
+                return XCTFail("missing usage URL for \(id)")
+            }
             XCTAssertNotNil(ProviderUsageLinks.usagePageURL(surfaceId: id), id)
-            XCTAssertTrue(s!.hasPrefix("https://"), id)
+            XCTAssertTrue(urlString.hasPrefix("https://"), id)
         }
     }
 

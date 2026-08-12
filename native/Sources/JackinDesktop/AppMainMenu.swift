@@ -6,16 +6,12 @@ import JackinUsageBridge
 import SwiftUI
 
 /// System **menu bar** for jackin❯ desktop when a document window is front
-/// (Usage / Settings). Accessory status-item mode has no app menu chrome;
+/// (Usage / Settings).
+///
+/// Accessory status-item mode has no app menu chrome;
 /// switching to `.regular` reveals  + these menus.
 ///
-/// Now (lean, standard macOS):
-/// - **App menu** — About, Settings…, Hide, Quit
-/// - **Edit** — standard cut/copy/paste (text fields, future forms)
-/// - **View** — Refresh (same action as Usage toolbar ⌘R)
-/// - **Window** — Minimize / Zoom / Usage
-///
-/// Not now: Help, File, multi-window document model, Services clutter.
+/// Standard macOS menu citizenship for the Usage window.
 @MainActor
 public final class AppMainMenu: NSObject {
     private let store: PresentationStore
@@ -35,10 +31,12 @@ public final class AppMainMenu: NSObject {
         let main = NSMenu()
 
         main.addItem(wrap(appMenu(), title: appMenuTitle))
+        main.addItem(wrap(fileMenu(), title: "File"))
         main.addItem(wrap(editMenu(), title: "Edit"))
         main.addItem(wrap(viewMenu(), title: "View"))
         let window = windowMenu()
         main.addItem(wrap(window, title: "Window"))
+        main.addItem(wrap(helpMenu(), title: "Help"))
         NSApp.windowsMenu = window
 
         NSApp.mainMenu = main
@@ -59,7 +57,15 @@ public final class AppMainMenu: NSObject {
         menu.addItem(.separator())
         menu.addItem(owned("Settings…", #selector(openSettings(_:)), key: ","))
         menu.addItem(.separator())
-        menu.addItem(routed("Hide \(appMenuTitle)", #selector(NSApplication.hide(_:)), key: "h", target: NSApp))
+        let services = NSMenu(title: "Services")
+        let servicesItem = NSMenuItem(title: "Services", action: nil, keyEquivalent: "")
+        servicesItem.submenu = services
+        menu.addItem(servicesItem)
+        NSApp.servicesMenu = services
+        menu.addItem(.separator())
+        menu.addItem(
+            routed(
+                "Hide \(appMenuTitle)", #selector(NSApplication.hide(_:)), key: "h", target: NSApp))
         menu.addItem(
             routed(
                 "Hide Others",
@@ -89,6 +95,12 @@ public final class AppMainMenu: NSObject {
         return menu
     }
 
+    private func fileMenu() -> NSMenu {
+        let menu = NSMenu(title: "File")
+        menu.addItem(firstResponder("Close Window", #selector(NSWindow.performClose(_:)), key: "w"))
+        return menu
+    }
+
     private func editMenu() -> NSMenu {
         // Target nil → first-responder chain (standard macOS Edit menu).
         let menu = NSMenu(title: "Edit")
@@ -111,13 +123,23 @@ public final class AppMainMenu: NSObject {
 
     private func viewMenu() -> NSMenu {
         let menu = NSMenu(title: "View")
+        menu.addItem(
+            firstResponder(
+                "Toggle Sidebar",
+                #selector(NSSplitViewController.toggleSidebar(_:)),
+                key: "s",
+                modifiers: [.command, .control]
+            )
+        )
+        menu.addItem(.separator())
         menu.addItem(owned("Refresh", #selector(refreshAll(_:)), key: "r"))
         return menu
     }
 
     private func windowMenu() -> NSMenu {
         let menu = NSMenu(title: "Window")
-        menu.addItem(firstResponder("Minimize", #selector(NSWindow.performMiniaturize(_:)), key: "m"))
+        menu.addItem(
+            firstResponder("Minimize", #selector(NSWindow.performMiniaturize(_:)), key: "m"))
         menu.addItem(firstResponder("Zoom", #selector(NSWindow.performZoom(_:)), key: ""))
         menu.addItem(.separator())
         menu.addItem(owned("Usage", #selector(showUsageWindow(_:)), key: "0"))
@@ -133,9 +155,22 @@ public final class AppMainMenu: NSObject {
         return menu
     }
 
+    private func helpMenu() -> NSMenu {
+        let menu = NSMenu(title: "Help")
+        menu.addItem(
+            routed(
+                "jackin❯ desktop Help",
+                #selector(NSApplication.showHelp(_:)),
+                key: "?",
+                target: NSApp
+            )
+        )
+        return menu
+    }
+
     // MARK: - Actions
 
-    @objc private func orderFrontAbout(_ sender: Any?) {
+    @objc private func orderFrontAbout(_: Any?) {
         NSApp.orderFrontStandardAboutPanel(options: [
             .applicationName: appMenuTitle,
             .credits: NSAttributedString(
@@ -144,7 +179,7 @@ public final class AppMainMenu: NSObject {
         ])
     }
 
-    @objc private func openSettings(_ sender: Any?) {
+    @objc private func openSettings(_: Any?) {
         if let existing = settingsWindow {
             existing.makeKeyAndOrderFront(nil)
             AppActivation.presentWindows()
@@ -180,11 +215,11 @@ public final class AppMainMenu: NSObject {
         AppActivation.presentWindows()
     }
 
-    @objc private func refreshAll(_ sender: Any?) {
+    @objc private func refreshAll(_: Any?) {
         store.refreshAll()
     }
 
-    @objc private func showUsageWindow(_ sender: Any?) {
+    @objc private func showUsageWindow(_: Any?) {
         openUsage()
     }
 
@@ -253,7 +288,7 @@ private final class SettingsWindowCloseProxy: NSObject, NSWindowDelegate {
         super.init()
     }
 
-    public func windowWillClose(_ notification: Notification) {
+    func windowWillClose(_ notification: Notification) {
         DispatchQueue.main.async { [onClose] in
             onClose()
         }
