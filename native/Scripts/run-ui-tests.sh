@@ -70,9 +70,14 @@ test -f "$result/Info.plist" || {
 }
 
 summary=$(xcrun xcresulttool get test-results summary --path "$result")
+tests=$(xcrun xcresulttool get test-results tests --path "$result")
 total=$(printf '%s' "$summary" | plutil -extract totalTestCount raw -)
 failed=$(printf '%s' "$summary" | plutil -extract failedTests raw -)
 passed=$(printf '%s' "$summary" | plutil -extract passedTests raw -)
+runtime_warnings=$(
+  printf '%s' "$tests" \
+    | awk '/"nodeType" : "Runtime Warning"/ { count++ } END { print count + 0 }'
+)
 
 test "$total" -eq "$expected" || {
   echo "UI test count mismatch: expected $expected, executed $total" >&2
@@ -84,6 +89,12 @@ test "$failed" -eq 0 || {
 }
 test "$passed" -eq "$expected" || {
   echo "UI tests did not all pass: expected $expected, passed $passed" >&2
+  exit 1
+}
+test "$runtime_warnings" -eq 0 || {
+  echo "UI tests emitted runtime warnings: $runtime_warnings" >&2
+  printf '%s' "$tests" \
+    | awk '/"nodeType" : "Runtime Warning"/ { print previous } { previous = $0 }' >&2
   exit 1
 }
 

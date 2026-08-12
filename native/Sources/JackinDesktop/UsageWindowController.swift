@@ -20,6 +20,7 @@ import SwiftUI
 @MainActor
 public final class UsageWindowController: NSObject, NSWindowDelegate {
     private let store: PresentationStore
+    private let navigationState = UsageWindowNavigationState()
     private var window: NSWindow?
     private var hostingController: NSHostingController<UsageWindowRoot>?
 
@@ -59,8 +60,8 @@ public final class UsageWindowController: NSObject, NSWindowDelegate {
         window.isReleasedWhenClosed = false
         window.delegate = self
         if store.usesFixture {
-            // Deterministic UI/visual QA must stay observable when the test runner and app are
-            // assigned to different Spaces by WindowServer between rapid process launches.
+            // Deterministic UI/visual QA must stay observable when WindowServer assigns rapid
+            // fixture launches and the test runner to different Spaces.
             window.collectionBehavior.insert(.canJoinAllSpaces)
         } else {
             window.collectionBehavior.insert(.moveToActiveSpace)
@@ -79,7 +80,7 @@ public final class UsageWindowController: NSObject, NSWindowDelegate {
         window.titlebarSeparatorStyle = .automatic
 
         // Hosting *controller* is required for SwiftUI toolbar → NSToolbar.
-        let root = UsageWindowRoot(store: store)
+        let root = UsageWindowRoot(store: store, navigationState: navigationState)
         let host = NSHostingController(rootView: root)
         hostingController = host
         window.contentViewController = host
@@ -102,6 +103,14 @@ public final class UsageWindowController: NSObject, NSWindowDelegate {
         hostingController = nil
         window = nil
     }
+
+    public func toggleSidebar() {
+        navigationState.toggleSidebar()
+    }
+
+    var isSidebarVisible: Bool { navigationState.isSidebarVisible }
+
+    var isKeyWindow: Bool { window?.isKeyWindow == true }
 
     /// Visual QA: the live `NSWindow` after `show` (nil if never shown).
     public var qiWindow: NSWindow? { window }

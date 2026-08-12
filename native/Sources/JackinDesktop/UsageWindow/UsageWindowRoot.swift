@@ -4,6 +4,19 @@
 import JackinUsageBridge
 import SwiftUI
 
+@MainActor
+public final class UsageWindowNavigationState: ObservableObject {
+    @Published var columnVisibility: NavigationSplitViewVisibility = .all
+
+    var isSidebarVisible: Bool {
+        columnVisibility != .detailOnly
+    }
+
+    func toggleSidebar() {
+        columnVisibility = isSidebarVisible ? .detailOnly : .all
+    }
+}
+
 /// A1 two-column Usage window with system-owned sidebar and toolbar chrome.
 public struct UsageWindowRoot: View {
     private enum Destination: Hashable {
@@ -12,11 +25,12 @@ public struct UsageWindowRoot: View {
     }
 
     @ObservedObject public var store: PresentationStore
+    @ObservedObject private var navigationState: UsageWindowNavigationState
     @Environment(\.dismiss) private var dismiss
-    @State private var columnVisibility: NavigationSplitViewVisibility = .all
 
-    public init(store: PresentationStore) {
+    public init(store: PresentationStore, navigationState: UsageWindowNavigationState) {
         self.store = store
+        self.navigationState = navigationState
     }
 
     private var model: UsageWindowModel {
@@ -29,7 +43,7 @@ public struct UsageWindowRoot: View {
     }
 
     public var body: some View {
-        NavigationSplitView(columnVisibility: $columnVisibility) {
+        NavigationSplitView(columnVisibility: $navigationState.columnVisibility) {
             VStack(spacing: 0) {
                 List(selection: destination) {
                     Label("Overview", systemImage: "rectangle.grid.2x2")
@@ -69,7 +83,7 @@ public struct UsageWindowRoot: View {
         .toolbar {
             ToolbarItem(id: "usage.sidebar-toggle", placement: .navigation) {
                 Button {
-                    columnVisibility = isSidebarVisible ? .detailOnly : .all
+                    navigationState.toggleSidebar()
                 } label: {
                     Label(sidebarToggleLabel, systemImage: "sidebar.left")
                 }
@@ -110,22 +124,23 @@ public struct UsageWindowRoot: View {
         Binding(
             get: { store.usageSelection.map(Destination.provider) ?? .overview },
             set: { value in
+                let surfaceId: String?
                 switch value {
                 case .overview, .none:
-                    store.selectUsageSurface(nil)
-                case .provider(let surfaceId):
+                    surfaceId = nil
+                case .provider(let selectedSurfaceId):
+                    surfaceId = selectedSurfaceId
+                }
+                guard surfaceId != store.usageSelection else { return }
+                Task { @MainActor [store] in
                     store.selectUsageSurface(surfaceId)
                 }
             }
         )
     }
 
-    private var isSidebarVisible: Bool {
-        columnVisibility != .detailOnly
-    }
-
     private var sidebarToggleLabel: String {
-        isSidebarVisible ? "Hide Sidebar" : "Show Sidebar"
+        navigationState.isSidebarVisible ? "Hide Sidebar" : "Show Sidebar"
     }
 
     @ViewBuilder

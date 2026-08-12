@@ -367,19 +367,27 @@ public final class DesktopAppDelegate: NSObject, NSApplicationDelegate {
     }
 
     public func applicationWillFinishLaunching(_ notification: Notification) {
-        NSApp.setActivationPolicy(.accessory)
+        NSApp.setActivationPolicy(initialActivationPolicy)
     }
 
     public func applicationDidFinishLaunching(_ notification: Notification) {
-        NSApp.setActivationPolicy(.accessory)
+        NSApp.setActivationPolicy(initialActivationPolicy)
         applyVisualQAAppearance()
         let fixture = applyVisualQAFixtureIfRequested()
         let usageWindow = UsageWindowController(store: store)
         self.usageWindow = usageWindow
 
-        let menu = AppMainMenu(store: store) { [weak usageWindow] in
-            usageWindow?.show()
-        }
+        let menu = AppMainMenu(
+            store: store,
+            openUsage: { [weak usageWindow] in usageWindow?.show() },
+            toggleUsageSidebar: { [weak usageWindow] in usageWindow?.toggleSidebar() },
+            isUsageSidebarVisible: { [weak usageWindow] in
+                usageWindow?.isSidebarVisible ?? true
+            },
+            canToggleUsageSidebar: { [weak usageWindow] in
+                usageWindow?.isKeyWindow ?? false
+            }
+        )
         menu.install()
         self.mainMenu = menu
 
@@ -480,6 +488,15 @@ public final class DesktopAppDelegate: NSObject, NSApplicationDelegate {
         case .dark:
             NSApp.appearance = NSAppearance(named: .darkAqua)
         }
+    }
+
+    private var initialActivationPolicy: NSApplication.ActivationPolicy {
+        if visualQALaunchOptions.openUsage || visualQALaunchOptions.openPopover
+            || visualQALaunchOptions.invalidFixtureID != nil
+        {
+            return .regular
+        }
+        return .accessory
     }
 
     private func applyVisualQAFixtureIfRequested() -> VisualQAFixture? {

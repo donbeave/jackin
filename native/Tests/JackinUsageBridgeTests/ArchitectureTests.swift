@@ -534,15 +534,37 @@ final class ArchitectureTests: XCTestCase {
         XCTAssertFalse(text.contains("Capsule"), "A1 Overview must not paint custom meters")
     }
 
-    func testOverviewTableCellTextUsesPrimarySystemForeground() throws {
+    func testOverviewPrimaryValuesUseSystemForeground() throws {
         let overview =
             sourcesRoot
             .appendingPathComponent("JackinDesktop")
             .appendingPathComponent("UsageWindow/OverviewListView.swift")
         let text = try String(contentsOf: overview, encoding: .utf8)
 
-        XCTAssertFalse(text.contains(".foregroundStyle(.secondary)"))
+        XCTAssertTrue(
+            text.contains(
+                "Text(row.planLabel ?? row.statusLabel ?? \"—\")\n"
+                    + "                            .foregroundStyle(.primary)")
+        )
+        XCTAssertTrue(
+            text.contains(
+                "Text(row.resetLabel ?? \"—\")\n"
+                    + "                        .foregroundStyle(.primary)")
+        )
         XCTAssertFalse(text.contains("Color("))
+    }
+
+    func testFinalCaptureMatrixBuildsCleanBranchHeadApp() throws {
+        let script =
+            sourcesRoot
+            .deletingLastPathComponent()
+            .appendingPathComponent("Scripts/VisualQA/capture-final-matrix.sh")
+        let text = try String(contentsOf: script, encoding: .utf8)
+
+        XCTAssertTrue(text.contains("git -C \"$repo\" status --porcelain"))
+        XCTAssertTrue(text.contains("mise -C \"$repo\" run desktop-build"))
+        XCTAssertTrue(text.contains("mise -C \"$repo\" run desktop-verify"))
+        XCTAssertTrue(text.contains("final evidence requires the canonical branch-head app"))
     }
 
     /// SB-5 vs FB1-6: bar stays template mono (no severity tint).

@@ -13,16 +13,28 @@ import SwiftUI
 ///
 /// Standard macOS menu citizenship for the Usage window.
 @MainActor
-public final class AppMainMenu: NSObject {
+public final class AppMainMenu: NSObject, NSMenuItemValidation {
     private let store: PresentationStore
     private let openUsage: () -> Void
+    private let toggleUsageSidebar: () -> Void
+    private let isUsageSidebarVisible: () -> Bool
+    private let canToggleUsageSidebar: () -> Bool
     private var settingsWindow: NSWindow?
     /// Strong: `NSWindow.delegate` is weak.
     private var settingsCloseProxy: SettingsWindowCloseProxy?
 
-    init(store: PresentationStore, openUsage: @escaping () -> Void) {
+    init(
+        store: PresentationStore,
+        openUsage: @escaping () -> Void,
+        toggleUsageSidebar: @escaping () -> Void,
+        isUsageSidebarVisible: @escaping () -> Bool,
+        canToggleUsageSidebar: @escaping () -> Bool
+    ) {
         self.store = store
         self.openUsage = openUsage
+        self.toggleUsageSidebar = toggleUsageSidebar
+        self.isUsageSidebarVisible = isUsageSidebarVisible
+        self.canToggleUsageSidebar = canToggleUsageSidebar
         super.init()
     }
 
@@ -124,13 +136,12 @@ public final class AppMainMenu: NSObject {
     private func viewMenu() -> NSMenu {
         let menu = NSMenu(title: "View")
         menu.addItem(
-            firstResponder(
-                "Toggle Sidebar",
-                #selector(NSSplitViewController.toggleSidebar(_:)),
+            owned(
+                "Hide Sidebar",
+                #selector(toggleSidebar(_:)),
                 key: "s",
                 modifiers: [.command, .control]
-            )
-        )
+            ))
         menu.addItem(.separator())
         menu.addItem(owned("Refresh", #selector(refreshAll(_:)), key: "r"))
         return menu
@@ -221,8 +232,18 @@ public final class AppMainMenu: NSObject {
         store.refreshAll()
     }
 
+    @objc private func toggleSidebar(_: Any?) {
+        toggleUsageSidebar()
+    }
+
     @objc private func showUsageWindow(_: Any?) {
         openUsage()
+    }
+
+    public func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
+        guard menuItem.action == #selector(toggleSidebar(_:)) else { return true }
+        menuItem.title = isUsageSidebarVisible() ? "Hide Sidebar" : "Show Sidebar"
+        return canToggleUsageSidebar()
     }
 
     // MARK: - Helpers
@@ -303,11 +324,14 @@ public enum AppActivation {
     /// Promote before ordering the window; AppKit may otherwise register an accessory-process
     /// window in its Window menu without making that window visible on the active Space.
     static func present(_ window: NSWindow) {
-        if NSApp.activationPolicy() != .regular {
-            NSApp.setActivationPolicy(.regular)
+        if NSApp.activationPolicy() == .regular {
+            NSApp.activate()
+            window.makeKeyAndOrderFront(nil)
+            return
         }
+        NSApp.setActivationPolicy(.regular)
         DispatchQueue.main.async {
-            NSApp.activate(ignoringOtherApps: true)
+            NSApp.activate()
             window.makeKeyAndOrderFront(nil)
         }
     }

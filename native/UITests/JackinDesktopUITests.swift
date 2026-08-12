@@ -180,7 +180,9 @@ final class JackinDesktopUITests: XCTestCase {
         XCTAssertEqual(toggle.label, "Show Sidebar")
         let expectedFrame = usageWindow.frame
 
-        application.typeKey("w", modifierFlags: .command)
+        let close = usageWindow.buttons["_XCUI:CloseWindow"]
+        XCTAssertTrue(close.isHittable)
+        close.click()
         XCTAssertTrue(usageWindow.waitForNonExistence(timeout: 3))
         DistributedNotificationCenter.default().postNotificationName(
             Notification.Name("com.jackin-project.desktop.visual-qa.show-usage"),
@@ -227,27 +229,30 @@ final class JackinDesktopUITests: XCTestCase {
         XCTAssertTrue(element("popover.open-usage").isHittable)
     }
 
-    func testStandardCommandsUseNativeWindowsAndResponderChain() {
+    func testStandardCommandsAndMenusShareNativeState() {
         defer { application.terminate() }
         guard launchUsage(fixture: "F02-catalog-normal", selection: "overview", size: "920x620")
         else { return }
 
-        let usageWindow = application.windows["usage-window"]
-        let sidebarToggle = usageWindow.buttons["usage.sidebar-toggle"]
-        XCTAssertEqual(sidebarToggle.label, "Hide Sidebar")
-
         application.typeKey(",", modifierFlags: .command)
         let settingsWindow = application.windows["settings-window"]
-        XCTAssertTrue(settingsWindow.waitForExistence(timeout: 3), application.debugDescription)
+        XCTAssertTrue(
+            settingsWindow.waitForExistence(timeout: 3),
+            application.debugDescription
+        )
         application.typeKey("w", modifierFlags: .command)
         XCTAssertTrue(settingsWindow.waitForNonExistence(timeout: 3))
-        XCTAssertTrue(usageWindow.exists)
-        usageWindow.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.08)).click()
+
+        let usageWindow = application.windows["usage-window"]
+        usageWindow.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.03)).click()
+        let sidebarToggle = usageWindow.buttons["usage.sidebar-toggle"]
+        XCTAssertEqual(sidebarToggle.label, "Hide Sidebar")
 
         application.typeKey("s", modifierFlags: [.command, .control])
         XCTAssertTrue(
             sidebarToggle.waitForLabel("Show Sidebar", timeout: 3), application.debugDescription)
-        application.typeKey("s", modifierFlags: [.command, .control])
+        application.menuBars.menuBarItems["View"].click()
+        application.menuItems["Show Sidebar"].click()
         XCTAssertTrue(sidebarToggle.waitForLabel("Hide Sidebar", timeout: 3))
 
         application.typeKey("r", modifierFlags: .command)
@@ -309,6 +314,12 @@ final class JackinDesktopUITests: XCTestCase {
         }
         XCTAssertTrue(opened, application.debugDescription)
         guard opened else { return false }
+        DistributedNotificationCenter.default().postNotificationName(
+            Notification.Name("com.jackin-project.desktop.visual-qa.show-usage"),
+            object: nil,
+            userInfo: nil,
+            deliverImmediately: true
+        )
         application.activate()
         let foreground = application.wait(for: .runningForeground, timeout: 5)
         XCTAssertTrue(foreground, application.debugDescription)
@@ -339,10 +350,7 @@ final class JackinDesktopUITests: XCTestCase {
         }
         XCTAssertTrue(opened, application.debugDescription)
         guard opened else { return false }
-        application.activate()
-        let foreground = application.wait(for: .runningForeground, timeout: 5)
-        XCTAssertTrue(foreground, application.debugDescription)
-        return foreground
+        return true
     }
 
     private func element(_ identifier: String) -> XCUIElement {

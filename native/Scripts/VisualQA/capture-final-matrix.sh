@@ -11,6 +11,42 @@ notification_tool="$repo/native/.build/final-notification-drive"
 capture="$here/capture.sh"
 owner="jackin❯ desktop"
 
+source_paths=(
+  Cargo.lock
+  Cargo.toml
+  crates/jackin-usage
+  crates/jackin-usage-ffi
+  crates/jackin-xtask
+  mise.toml
+  native/Generated
+  native/Package.swift
+  native/Scripts
+  native/Sources
+  native/Support
+  native/Tests
+  native/Tools
+  native/UITests
+  native/project.yml
+  rust-toolchain.toml
+)
+require_clean_sources() {
+  source_status=$(git -C "$repo" status --porcelain -- "${source_paths[@]}")
+  test -z "$source_status" || {
+    echo "refusing to label captures as branch-head evidence with dirty desktop sources:" >&2
+    printf '%s\n' "$source_status" >&2
+    exit 2
+  }
+}
+require_clean_sources
+
+canonical_app="$repo/native/dist/JackinDesktop.app"
+test "$app" = "$canonical_app" || {
+  echo "final evidence requires the canonical branch-head app: $canonical_app" >&2
+  exit 2
+}
+mise -C "$repo" run desktop-build
+mise -C "$repo" run desktop-verify
+require_clean_sources
 test -d "$app" || {
   echo "app bundle not found: $app" >&2
   exit 2

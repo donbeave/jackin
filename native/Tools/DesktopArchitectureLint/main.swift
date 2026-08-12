@@ -49,6 +49,12 @@ struct DesktopArchitectureLint {
             delegate.contains("NSHostingController(rootView: root)"), "ordinary native popover host"
         )
         require(
+            delegate.contains("NSApp.setActivationPolicy(initialActivationPolicy)")
+                && delegate.contains("visualQALaunchOptions.openUsage")
+                && delegate.contains("return .accessory"),
+            "fixture windows launch regular while production menu-bar mode stays accessory"
+        )
+        require(
             !delegate.contains("popover.appearance =")
                 && !delegate.contains("popover.contentViewController?.view.wantsLayer"),
             "system popover appearance preserved"
@@ -75,13 +81,27 @@ struct DesktopArchitectureLint {
         require(
             usage.contains("ToolbarItem(placement: .primaryAction)"), "Usage uses native toolbar")
         let usageController = read("UsageWindowController.swift")
+        let mainMenu = read("AppMainMenu.swift")
         require(
             usageController.contains(".moveToActiveSpace")
                 && usageController.contains(".canJoinAllSpaces")
                 && usageController.contains("if store.usesFixture")
-                && read("AppMainMenu.swift").contains("NSApp.activate(ignoringOtherApps: true)")
-                && read("AppMainMenu.swift").contains("window.makeKeyAndOrderFront(nil)"),
-            "retained Usage window follows explicit reopen to the active Space"
+                && mainMenu.contains("NSApp.activate()")
+                && mainMenu.contains("window.makeKeyAndOrderFront(nil)"),
+            "retained Usage window follows explicit reopen to active Space"
+        )
+        require(
+            mainMenu.contains("owned(\"Settings…\", #selector(openSettings(_:)), key: \",\")")
+                && mainMenu.contains(
+                    "firstResponder(\"Close Window\", #selector(NSWindow.performClose(_:)), key: \"w\")"
+                )
+                && mainMenu.contains("#selector(toggleSidebar(_:))")
+                && mainMenu.contains(
+                    "isUsageSidebarVisible() ? \"Hide Sidebar\" : \"Show Sidebar\""
+                )
+                && mainMenu.contains("modifiers: [.command, .control]")
+                && mainMenu.contains("owned(\"Refresh\", #selector(refreshAll(_:)), key: \"r\")"),
+            "standard command key equivalents remain native menu-owned"
         )
         require(overview.contains("Table("), "Overview uses native Table")
         require(provider.contains("List {"), "provider detail uses native List")
