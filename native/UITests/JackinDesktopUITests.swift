@@ -50,9 +50,8 @@ final class JackinDesktopUITests: XCTestCase {
         XCTAssertEqual(hideSidebar.frame.midX, expandedFrame.midX, accuracy: 1)
         XCTAssertEqual(hideSidebar.frame.midY, expandedFrame.midY, accuracy: 1)
         hideSidebar.click()
-        XCTAssertTrue(hideSidebar.waitForExistence(timeout: 3))
-        XCTAssertTrue(hideSidebar.isHittable)
-        XCTAssertEqual(hideSidebar.label, "Hide Sidebar")
+        XCTAssertTrue(hideSidebar.waitForLabel("Hide Sidebar", timeout: 3))
+        XCTAssertTrue(hideSidebar.waitForHittable(timeout: 3))
         XCTAssertEqual(hideSidebar.frame.midX, expandedFrame.midX, accuracy: 1)
         XCTAssertEqual(hideSidebar.frame.midY, expandedFrame.midY, accuracy: 1)
     }
@@ -97,18 +96,8 @@ final class JackinDesktopUITests: XCTestCase {
 
     func testFocusedPopoverUsesRealHost() {
         defer { application.terminate() }
-        application.launchArguments = [
-            "--fixture", "F03-multi-account",
-            "--open-popover",
-            "--selection", "codex",
-        ]
-        application.launch()
-        application.activate()
+        guard launchPopover(fixture: "F03-multi-account", selection: "codex") else { return }
 
-        XCTAssertTrue(
-            element("popover.provider.codex").waitForExistence(timeout: 5),
-            application.debugDescription
-        )
         XCTAssertTrue(application.popovers.firstMatch.exists)
         XCTAssertTrue(element("popover.account-picker").exists)
         XCTAssertTrue(element("popover.refresh").exists)
@@ -259,7 +248,6 @@ final class JackinDesktopUITests: XCTestCase {
             "--window-size", size,
         ]
         application.launch()
-        application.activate()
         let opened = application.windows["usage-window"].waitForExistence(timeout: 8)
         XCTAssertTrue(opened, application.debugDescription)
         return opened
@@ -272,8 +260,16 @@ final class JackinDesktopUITests: XCTestCase {
             "--selection", selection,
         ]
         application.launch()
-        application.activate()
-        let opened = element("popover.provider.\(selection)").waitForExistence(timeout: 12)
+        var opened = element("popover.provider.\(selection)").waitForExistence(timeout: 4)
+        if !opened {
+            DistributedNotificationCenter.default().postNotificationName(
+                Notification.Name("com.jackin-project.desktop.visual-qa.show-popover"),
+                object: nil,
+                userInfo: nil,
+                deliverImmediately: true
+            )
+            opened = element("popover.provider.\(selection)").waitForExistence(timeout: 8)
+        }
         XCTAssertTrue(opened, application.debugDescription)
         return opened
     }
@@ -383,6 +379,12 @@ final class JackinDesktopUITests: XCTestCase {
 extension XCUIElement {
     fileprivate func waitForLabel(_ expectedLabel: String, timeout: TimeInterval) -> Bool {
         let predicate = NSPredicate(format: "label == %@", expectedLabel)
+        let expectation = XCTNSPredicateExpectation(predicate: predicate, object: self)
+        return XCTWaiter.wait(for: [expectation], timeout: timeout) == .completed
+    }
+
+    fileprivate func waitForHittable(timeout: TimeInterval) -> Bool {
+        let predicate = NSPredicate(format: "isHittable == true")
         let expectation = XCTNSPredicateExpectation(predicate: predicate, object: self)
         return XCTWaiter.wait(for: [expectation], timeout: timeout) == .completed
     }

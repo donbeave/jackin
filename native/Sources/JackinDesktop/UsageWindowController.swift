@@ -45,8 +45,7 @@ public final class UsageWindowController: NSObject, NSWindowDelegate {
         if let size {
             window.setContentSize(size)
         }
-        window.makeKeyAndOrderFront(nil)
-        AppActivation.presentWindows()
+        AppActivation.present(window)
     }
 
     private func makeWindow() -> NSWindow {

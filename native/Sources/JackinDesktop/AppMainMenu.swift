@@ -183,8 +183,7 @@ public final class AppMainMenu: NSObject {
 
     @objc private func openSettings(_: Any?) {
         if let existing = settingsWindow {
-            existing.makeKeyAndOrderFront(nil)
-            AppActivation.presentWindows()
+            AppActivation.present(existing)
             return
         }
         let window = NSWindow(
@@ -215,8 +214,7 @@ public final class AppMainMenu: NSObject {
         window.center()
         window.setFrameAutosaveName("jackin.desktop.settings-window")
         settingsWindow = window
-        window.makeKeyAndOrderFront(nil)
-        AppActivation.presentWindows()
+        AppActivation.present(window)
     }
 
     @objc private func refreshAll(_: Any?) {
@@ -302,12 +300,16 @@ private final class SettingsWindowCloseProxy: NSObject, NSWindowDelegate {
 /// Activation policy bridge: accessory (status bar only) ↔ regular (menu bar + Dock).
 @MainActor
 public enum AppActivation {
-    /// Show system menu bar ( + app menus) and allow Dock focus while windows are open.
-    static func presentWindows() {
+    /// Promote before ordering the window; AppKit may otherwise register an accessory-process
+    /// window in its Window menu without making that window visible on the active Space.
+    static func present(_ window: NSWindow) {
         if NSApp.activationPolicy() != .regular {
             NSApp.setActivationPolicy(.regular)
         }
-        NSApp.activate(ignoringOtherApps: true)
+        DispatchQueue.main.async {
+            window.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+        }
     }
 
     /// Back to menu-bar agent when no app windows remain visible.

@@ -19,10 +19,8 @@ Display-only Swift shell over `jackin-usage-ffi` (UniFFI). Product: **jackin❯ 
   - Buy Credits or other commercial write actions
   OpenUsage/CodexBar may include those — **do not copy them**. See root
   product limits-only rules and the `jackin-usage` crate agent rules.
-- **Liquid Glass** only in `GlassFallbacks.swift` for navigation chrome; content
-  cards use standard materials (HIG).
-- **Frozen host catalog only** — Claude, Codex, Amp, Grok Build, GLM/Z.AI, Kimi,
-  MiniMax, OpenCode. No Cursor/Gemini/Copilot zoo.
+- **System-owned Liquid Glass only.** `NSPopover`, `NavigationSplitView`, toolbar, sidebar, controls, and menus own material. No explicit glass, custom material, custom blur, content glass, or fallback visual lane.
+- **Frozen desktop provider contract only** — Codex, Claude, Amp, Grok Build, GLM/Z.AI, Kimi, and MiniMax in Rust order. OpenCode belongs to the wider host universe but is intentionally excluded from jackin❯ desktop.
 - Build/verify/run: `mise run desktop-*` / `cargo xtask desktop` only (no shell
   assembly scripts).
 - **Test display parity:** after Desktop UI changes run `mise run desktop-test`

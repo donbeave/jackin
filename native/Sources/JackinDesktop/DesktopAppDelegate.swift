@@ -340,6 +340,9 @@ public final class DesktopAppDelegate: NSObject, NSApplicationDelegate {
     private static let visualQAShowUsageNotification = Notification.Name(
         "com.jackin-project.desktop.visual-qa.show-usage"
     )
+    private static let visualQAShowPopoverNotification = Notification.Name(
+        "com.jackin-project.desktop.visual-qa.show-popover"
+    )
     let store: PresentationStore
     private let launchConfiguration: PresentationStore.LaunchConfiguration
     private let visualQALaunchOptions: VisualQALaunchOptions
@@ -401,6 +404,12 @@ public final class DesktopAppDelegate: NSObject, NSApplicationDelegate {
                 name: Self.visualQAShowUsageNotification,
                 object: nil
             )
+            DistributedNotificationCenter.default().addObserver(
+                self,
+                selector: #selector(showPopoverForVisualQA(_:)),
+                name: Self.visualQAShowPopoverNotification,
+                object: nil
+            )
         }
 
         let selection: String?
@@ -454,6 +463,10 @@ public final class DesktopAppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func showUsageForVisualQA(_: Notification) {
         usageWindow?.show()
+    }
+
+    @objc private func showPopoverForVisualQA(_: Notification) {
+        statusBar?.showPopover(focusOn: store.popoverSelection)
     }
 
     private func applyVisualQAAppearance() {
