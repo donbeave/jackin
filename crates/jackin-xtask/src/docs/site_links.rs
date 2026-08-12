@@ -26,6 +26,7 @@ fn command(site_url: &str, workspace: &Path, blob_url: &str, edit_url: &str) -> 
         .env("MISE_CONFIG_FILE", workspace.join("docs/mise.toml"))
         .arg("--config")
         .arg("docs/lychee.toml")
+        .arg("--verbose")
         .arg("--include-fragments")
         .arg("--remap")
         .arg(format!(
