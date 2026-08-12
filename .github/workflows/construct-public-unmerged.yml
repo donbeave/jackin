@@ -248,7 +248,7 @@ jobs:
           path: docker/construct/prebuilt
           key: shellfirm-${{ runner.os }}-${{ runner.arch }}-${{ steps.versions.outputs.shellfirm-version }}-${{ needs.changes.outputs.rustup-contract }}
       - name: Log in to Docker Hub
-        if: env.DOCKERHUB_USERNAME != '' && env.DOCKERHUB_TOKEN != ''
+        if: needs.changes.outputs.is_publish == 'true' && env.DOCKERHUB_USERNAME != '' && env.DOCKERHUB_TOKEN != ''
         uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
         with:
           username: ${{ env.DOCKERHUB_USERNAME }}
@@ -491,4 +491,3 @@ jobs:
           path: construct-result.txt
           compression-level: 0
           retention-days: 7
-
