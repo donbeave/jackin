@@ -91,16 +91,35 @@ struct DesktopArchitectureLint {
             "retained Usage window follows explicit reopen to active Space"
         )
         require(
-            mainMenu.contains("owned(\"Settings…\", #selector(openSettings(_:)), key: \",\")")
+            mainMenu.contains("static let settingsKeyEquivalent = \",\"")
                 && mainMenu.contains(
-                    "firstResponder(\"Close Window\", #selector(NSWindow.performClose(_:)), key: \"w\")"
+                    "static let settingsKeyModifiers: NSEvent.ModifierFlags = [.command]"
                 )
+                && mainMenu.contains("static let closeKeyEquivalent = \"w\"")
+                && mainMenu.contains(
+                    "static let closeKeyModifiers: NSEvent.ModifierFlags = [.command]"
+                )
+                && mainMenu.contains("static let sidebarKeyEquivalent = \"s\"")
+                && mainMenu.contains(
+                    "static let sidebarKeyModifiers: NSEvent.ModifierFlags = [.command, .control]"
+                )
+                && mainMenu.contains("static let refreshKeyEquivalent = \"r\"")
+                && mainMenu.contains(
+                    "static let refreshKeyModifiers: NSEvent.ModifierFlags = [.command]"
+                )
+                && mainMenu.contains("key: Self.settingsKeyEquivalent")
+                && mainMenu.contains("modifiers: Self.settingsKeyModifiers")
+                && mainMenu.contains("key: Self.closeKeyEquivalent")
+                && mainMenu.contains("modifiers: Self.closeKeyModifiers")
                 && mainMenu.contains("#selector(toggleSidebar(_:))")
                 && mainMenu.contains(
                     "isUsageSidebarVisible() ? \"Hide Sidebar\" : \"Show Sidebar\""
                 )
-                && mainMenu.contains("modifiers: [.command, .control]")
-                && mainMenu.contains("owned(\"Refresh\", #selector(refreshAll(_:)), key: \"r\")"),
+                && mainMenu.contains("key: Self.sidebarKeyEquivalent")
+                && mainMenu.contains("modifiers: Self.sidebarKeyModifiers")
+                && mainMenu.contains("#selector(refreshAll(_:))")
+                && mainMenu.contains("key: Self.refreshKeyEquivalent")
+                && mainMenu.contains("modifiers: Self.refreshKeyModifiers"),
             "standard command key equivalents remain native menu-owned"
         )
         require(overview.contains("Table("), "Overview uses native Table")
