@@ -134,9 +134,16 @@ drive_activation() {
       "tell application \"System Events\" to set frontmost of application process \"$CAPTURE_INACTIVE_APP\" to true" \
       >/dev/null 2>&1 || true
   else
-    osascript -e \
-      "tell application \"System Events\" to set frontmost of application process \"$executable\" to true" \
-      >/dev/null 2>&1 || true
+    if [ -n "$WINDOW_NAME" ] && [ "$window_onscreen" != true ]; then
+      # AppleScript can report a cross-Space app as frontmost while its key window remains
+      # offscreen. Opening the exact bundle activates that existing window on the active Space.
+      open "$APP" >/dev/null 2>&1 || true
+      sleep 2
+    else
+      osascript -e \
+        "tell application \"System Events\" to set frontmost of application process \"$executable\" to true" \
+        >/dev/null 2>&1 || true
+    fi
   fi
 }
 
