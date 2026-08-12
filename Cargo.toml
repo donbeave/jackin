@@ -39,7 +39,7 @@ exclude = ["crates/jackin-lints"]
 resolver = "3"
 
 [workspace.package]
-version = "0.6.0-dev"
+version = "0.6.0"
 edition = "2024"
 rust-version = "1.97"
 license = "Apache-2.0"
@@ -67,31 +67,31 @@ futures-util = "0.3"
 hyper-util = { version = "0.1", features = ["tokio"] }
 hex = "0.4"
 insta = "=1.48.0"
-jackin-build-meta = { version = "0.6.0-dev", path = "crates/jackin-build-meta" }
-jackin-brand = { version = "0.6.0-dev", path = "crates/jackin-brand" }
-jackin-agent-status = { version = "0.6.0-dev", path = "crates/jackin-agent-status" }
-jackin-config = { version = "0.6.0-dev", path = "crates/jackin-config" }
-jackin-console = { version = "0.6.0-dev", path = "crates/jackin-console" }
-jackin-oppicker = { version = "0.6.0-dev", path = "crates/jackin-oppicker" }
-jackin-core = { version = "0.6.0-dev", path = "crates/jackin-core" }
-jackin-diagnostics = { version = "0.6.0-dev", path = "crates/jackin-diagnostics" }
-jackin-docker = { version = "0.6.0-dev", path = "crates/jackin-docker" }
-jackin-env = { version = "0.6.0-dev", path = "crates/jackin-env" }
-jackin-host = { version = "0.6.0-dev", path = "crates/jackin-host" }
-jackin-image = { version = "0.6.0-dev", path = "crates/jackin-image" }
-jackin-instance = { version = "0.6.0-dev", path = "crates/jackin-instance" }
-jackin-isolation = { version = "0.6.0-dev", path = "crates/jackin-isolation" }
-jackin-launch = { version = "0.6.0-dev", path = "crates/jackin-launch" }
-jackin-manifest = { version = "0.6.0-dev", path = "crates/jackin-manifest" }
-jackin-otlp-testbed = { version = "0.6.0-dev", path = "crates/jackin-otlp-testbed" }
-jackin-process = { version = "0.6.0-dev", path = "crates/jackin-process" }
-jackin-protocol = { version = "0.6.0-dev", path = "crates/jackin-protocol" }
-jackin-runtime = { version = "0.6.0-dev", path = "crates/jackin-runtime" }
-jackin-telemetry = { version = "0.6.0-dev", path = "crates/jackin-telemetry" }
-jackin-term = { version = "0.6.0-dev", path = "crates/jackin-term" }
-jackin-tui = { version = "0.6.0-dev", path = "crates/jackin-tui" }
-jackin-test-support = { version = "0.6.0-dev", path = "crates/jackin-test-support" }
-jackin-usage = { version = "0.6.0-dev", path = "crates/jackin-usage" }
+jackin-build-meta = { version = "0.6.0", path = "crates/jackin-build-meta" }
+jackin-brand = { version = "0.6.0", path = "crates/jackin-brand" }
+jackin-agent-status = { version = "0.6.0", path = "crates/jackin-agent-status" }
+jackin-config = { version = "0.6.0", path = "crates/jackin-config" }
+jackin-console = { version = "0.6.0", path = "crates/jackin-console" }
+jackin-oppicker = { version = "0.6.0", path = "crates/jackin-oppicker" }
+jackin-core = { version = "0.6.0", path = "crates/jackin-core" }
+jackin-diagnostics = { version = "0.6.0", path = "crates/jackin-diagnostics" }
+jackin-docker = { version = "0.6.0", path = "crates/jackin-docker" }
+jackin-env = { version = "0.6.0", path = "crates/jackin-env" }
+jackin-host = { version = "0.6.0", path = "crates/jackin-host" }
+jackin-image = { version = "0.6.0", path = "crates/jackin-image" }
+jackin-instance = { version = "0.6.0", path = "crates/jackin-instance" }
+jackin-isolation = { version = "0.6.0", path = "crates/jackin-isolation" }
+jackin-launch = { version = "0.6.0", path = "crates/jackin-launch" }
+jackin-manifest = { version = "0.6.0", path = "crates/jackin-manifest" }
+jackin-otlp-testbed = { version = "0.6.0", path = "crates/jackin-otlp-testbed" }
+jackin-process = { version = "0.6.0", path = "crates/jackin-process" }
+jackin-protocol = { version = "0.6.0", path = "crates/jackin-protocol" }
+jackin-runtime = { version = "0.6.0", path = "crates/jackin-runtime" }
+jackin-telemetry = { version = "0.6.0", path = "crates/jackin-telemetry" }
+jackin-term = { version = "0.6.0", path = "crates/jackin-term" }
+jackin-tui = { version = "0.6.0", path = "crates/jackin-tui" }
+jackin-test-support = { version = "0.6.0", path = "crates/jackin-test-support" }
+jackin-usage = { version = "0.6.0", path = "crates/jackin-usage" }
 nix = "0.31"
 opentelemetry_sdk = "0.32"
 opentelemetry-semantic-conventions = { version = "=0.32.1", default-features = false }

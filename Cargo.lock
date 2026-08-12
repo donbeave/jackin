@@ -2874,7 +2874,7 @@ checksum = "8f42a60cbdf9a97f5d2305f08a87dc4e09308d1276d28c869c684d7777685682"
 
 [[package]]
 name = "jackin"
-version = "0.6.0-dev"
+version = "0.6.0"
 dependencies = [
  "anyhow",
  "assert_cmd",
@@ -2924,7 +2924,7 @@ dependencies = [
 
 [[package]]
 name = "jackin-agent-status"
-version = "0.6.0-dev"
+version = "0.6.0"
 dependencies = [
  "anyhow",
  "jackin-core",
@@ -2940,21 +2940,21 @@ dependencies = [
 
 [[package]]
 name = "jackin-brand"
-version = "0.6.0-dev"
+version = "0.6.0"
 dependencies = [
  "owo-colors 4.3.0",
 ]
 
 [[package]]
 name = "jackin-build-meta"
-version = "0.6.0-dev"
+version = "0.6.0"
 dependencies = [
  "jackin-process",
 ]
 
 [[package]]
 name = "jackin-capsule"
-version = "0.6.0-dev"
+version = "0.6.0"
 dependencies = [
  "anyhow",
  "chrono",
@@ -2998,7 +2998,7 @@ dependencies = [
 
 [[package]]
 name = "jackin-config"
-version = "0.6.0-dev"
+version = "0.6.0"
 dependencies = [
  "anyhow",
  "criterion",
@@ -3019,7 +3019,7 @@ dependencies = [
 
 [[package]]
 name = "jackin-console"
-version = "0.6.0-dev"
+version = "0.6.0"
 dependencies = [
  "anyhow",
  "crossterm",
@@ -3047,7 +3047,7 @@ dependencies = [
 
 [[package]]
 name = "jackin-core"
-version = "0.6.0-dev"
+version = "0.6.0"
 dependencies = [
  "anyhow",
  "directories",
@@ -3071,7 +3071,7 @@ dependencies = [
 
 [[package]]
 name = "jackin-diagnostics"
-version = "0.6.0-dev"
+version = "0.6.0"
 dependencies = [
  "anyhow",
  "crossterm",
@@ -3108,7 +3108,7 @@ dependencies = [
 
 [[package]]
 name = "jackin-docker"
-version = "0.6.0-dev"
+version = "0.6.0"
 dependencies = [
  "anyhow",
  "bollard",
@@ -3131,7 +3131,7 @@ dependencies = [
 
 [[package]]
 name = "jackin-env"
-version = "0.6.0-dev"
+version = "0.6.0"
 dependencies = [
  "anyhow",
  "chrono",
@@ -3156,7 +3156,7 @@ dependencies = [
 
 [[package]]
 name = "jackin-host"
-version = "0.6.0-dev"
+version = "0.6.0"
 dependencies = [
  "anyhow",
  "fs4",
@@ -3175,7 +3175,7 @@ dependencies = [
 
 [[package]]
 name = "jackin-image"
-version = "0.6.0-dev"
+version = "0.6.0"
 dependencies = [
  "anyhow",
  "base64 0.22.1",
@@ -3207,7 +3207,7 @@ dependencies = [
 
 [[package]]
 name = "jackin-instance"
-version = "0.6.0-dev"
+version = "0.6.0"
 dependencies = [
  "anyhow",
  "chrono",
@@ -3232,7 +3232,7 @@ dependencies = [
 
 [[package]]
 name = "jackin-isolation"
-version = "0.6.0-dev"
+version = "0.6.0"
 dependencies = [
  "anyhow",
  "directories",
@@ -3254,7 +3254,7 @@ dependencies = [
 
 [[package]]
 name = "jackin-launch"
-version = "0.6.0-dev"
+version = "0.6.0"
 dependencies = [
  "anyhow",
  "crossterm",
@@ -3274,7 +3274,7 @@ dependencies = [
 
 [[package]]
 name = "jackin-manifest"
-version = "0.6.0-dev"
+version = "0.6.0"
 dependencies = [
  "anyhow",
  "criterion",
@@ -3290,7 +3290,7 @@ dependencies = [
 
 [[package]]
 name = "jackin-oppicker"
-version = "0.6.0-dev"
+version = "0.6.0"
 dependencies = [
  "anyhow",
  "crossterm",
@@ -3303,7 +3303,7 @@ dependencies = [
 
 [[package]]
 name = "jackin-otlp-testbed"
-version = "0.6.0-dev"
+version = "0.6.0"
 dependencies = [
  "jackin-telemetry",
  "opentelemetry-proto",
@@ -3313,7 +3313,7 @@ dependencies = [
 
 [[package]]
 name = "jackin-pr-trailers"
-version = "0.6.0-dev"
+version = "0.6.0"
 dependencies = [
  "anyhow",
  "clap",
@@ -3324,7 +3324,7 @@ dependencies = [
 
 [[package]]
 name = "jackin-process"
-version = "0.6.0-dev"
+version = "0.6.0"
 dependencies = [
  "anyhow",
  "tokio",
@@ -3332,7 +3332,7 @@ dependencies = [
 
 [[package]]
 name = "jackin-protocol"
-version = "0.6.0-dev"
+version = "0.6.0"
 dependencies = [
  "anyhow",
  "jackin-core",
@@ -3344,7 +3344,7 @@ dependencies = [
 
 [[package]]
 name = "jackin-runtime"
-version = "0.6.0-dev"
+version = "0.6.0"
 dependencies = [
  "anyhow",
  "criterion",
@@ -3386,7 +3386,7 @@ dependencies = [
 
 [[package]]
 name = "jackin-telemetry"
-version = "0.6.0-dev"
+version = "0.6.0"
 dependencies = [
  "criterion",
  "dhat",
@@ -3402,7 +3402,7 @@ dependencies = [
 
 [[package]]
 name = "jackin-term"
-version = "0.6.0-dev"
+version = "0.6.0"
 dependencies = [
  "compact_str 0.10.0",
  "criterion",
@@ -3418,7 +3418,7 @@ dependencies = [
 
 [[package]]
 name = "jackin-test-support"
-version = "0.6.0-dev"
+version = "0.6.0"
 dependencies = [
  "anyhow",
  "jackin-core",
@@ -3427,7 +3427,7 @@ dependencies = [
 
 [[package]]
 name = "jackin-tui"
-version = "0.6.0-dev"
+version = "0.6.0"
 dependencies = [
  "crossterm",
  "jackin-brand",
@@ -3437,7 +3437,7 @@ dependencies = [
 
 [[package]]
 name = "jackin-usage"
-version = "0.6.0-dev"
+version = "0.6.0"
 dependencies = [
  "anyhow",
  "base64 0.22.1",
@@ -3464,7 +3464,7 @@ dependencies = [
 
 [[package]]
 name = "jackin-usage-ffi"
-version = "0.6.0-dev"
+version = "0.6.0"
 dependencies = [
  "jackin-protocol",
  "jackin-usage",
@@ -3474,7 +3474,7 @@ dependencies = [
 
 [[package]]
 name = "jackin-xtask"
-version = "0.6.0-dev"
+version = "0.6.0"
 dependencies = [
  "anyhow",
  "clap",
