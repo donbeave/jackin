@@ -72,7 +72,8 @@ struct DesktopArchitectureLint {
             usage.contains("ToolbarItem(placement: .primaryAction)"), "Usage uses native toolbar")
         let usageController = read("UsageWindowController.swift")
         require(
-            usageController.contains(".moveToActiveSpace"),
+            usageController.contains(".moveToActiveSpace")
+                && read("AppMainMenu.swift").contains("window.orderFrontRegardless()"),
             "retained Usage window follows explicit reopen to the active Space"
         )
         require(overview.contains("Table("), "Overview uses native Table")
