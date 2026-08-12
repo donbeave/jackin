@@ -61,8 +61,8 @@ public final class UsageWindowController: NSObject, NSWindowDelegate {
         window.delegate = self
         if store.usesFixture {
             // Deterministic UI/visual QA must stay observable when WindowServer assigns rapid
-            // fixture launches and the test runner to different Spaces.
-            window.collectionBehavior.insert(.canJoinAllSpaces)
+            // fixture launches and the test runner to different or full-screen Spaces.
+            window.collectionBehavior.formUnion([.canJoinAllSpaces, .fullScreenAuxiliary])
         } else {
             window.collectionBehavior.insert(.moveToActiveSpace)
         }
