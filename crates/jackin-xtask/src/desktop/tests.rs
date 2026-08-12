@@ -60,5 +60,5 @@ fn resource_bundle_is_named_for_owning_swift_target() {
 fn executable_target_bundle_name_is_rejected() {
     let root = tempfile::tempdir().unwrap();
     fs::create_dir(root.path().join("JackinDesktop_JackinDesktop.bundle")).unwrap();
-    assert!(find_resource_bundle(root.path()).is_err());
+    find_resource_bundle(root.path()).unwrap_err();
 }
