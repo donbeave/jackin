@@ -57,6 +57,14 @@ if [ ! -x "$TOOL" ]; then
   }
   swiftc -O "$HERE/window-id.swift" -o "$TOOL"
 fi
+DRIVE_TOOL=${NOTIFICATION_DRIVE_TOOL:-"${TMPDIR:-/tmp}/tailrocks-notification-drive"}
+if [ ! -x "$DRIVE_TOOL" ]; then
+  command -v swiftc >/dev/null 2>&1 || {
+    echo "swiftc missing; set NOTIFICATION_DRIVE_TOOL" >&2
+    exit 2
+  }
+  swiftc -O "$HERE/notification-drive.swift" -o "$DRIVE_TOOL"
+fi
 
 EXEC="$APP/Contents/MacOS/"
 matched=$(pgrep -f "$EXEC" 2>/dev/null | wc -l | tr -d ' ')
@@ -131,7 +139,7 @@ fi
 
 drive_activation() {
   if [ -n "$WINDOW_NAME" ]; then
-    open "$APP" >/dev/null 2>&1 || true
+    "$DRIVE_TOOL" "com.jackin-project.desktop.visual-qa.show-usage"
   fi
   if [ "$requested_activation" = inactive ]; then
     open -a "$CAPTURE_INACTIVE_APP" >/dev/null 2>&1 || true

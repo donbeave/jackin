@@ -7,6 +7,7 @@ repo=$(cd "$here/../../.." && pwd -P)
 app=${1:-"$repo/native/dist/JackinDesktop.app"}
 output="$repo/plans/native-liquid-glass/evidence/final"
 window_tool="$repo/native/.build/final-window-id"
+notification_tool="$repo/native/.build/final-notification-drive"
 capture="$here/capture.sh"
 owner="jackin❯ desktop"
 
@@ -16,6 +17,7 @@ test -d "$app" || {
 }
 mkdir -p "$repo/native/.build" "$output"
 swiftc -O "$here/window-id.swift" -o "$window_tool"
+swiftc -O "$here/notification-drive.swift" -o "$notification_tool"
 
 cleanup() {
   status=$?
@@ -29,7 +31,10 @@ trap cleanup EXIT INT TERM HUP
 
 usage() {
   local file=$1 fixture=$2 appearance=$3 size=$4 state=${5:-active} collapsed=${6:-no}
-  local -a environment=("WINDOW_ID_TOOL=$window_tool")
+  local -a environment=(
+    "WINDOW_ID_TOOL=$window_tool"
+    "NOTIFICATION_DRIVE_TOOL=$notification_tool"
+  )
   if [[ "$state" == inactive ]]; then
     environment+=("CAPTURE_INACTIVE_APP=Finder")
   fi
@@ -42,7 +47,8 @@ usage() {
 
 popover() {
   local file=$1 fixture=$2 appearance=$3
-  env WINDOW_ID_TOOL="$window_tool" WINDOW_LAYER_MODE=all \
+  env WINDOW_ID_TOOL="$window_tool" NOTIFICATION_DRIVE_TOOL="$notification_tool" \
+    WINDOW_LAYER_MODE=all \
     "$capture" "$app" "$owner" "$output/$file" "" \
     --fixture "$fixture" --open-popover --appearance "$appearance"
 }
