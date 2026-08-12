@@ -1,6 +1,6 @@
 # A1 runnable-concept migration plan
 
-Status: **Phase 2 plan; execution not started**
+Status: **executed through the confirmed runnable-concept gate; superseded for production by [ProductionPlan.md](ProductionPlan.md)**
 
 This plan is limited to the smallest real native proof required for the second
 operator gate. It is not the final production implementation.

@@ -1,6 +1,6 @@
 # Phase 2 Swift project audit
 
-Status: **audit complete; migration required**
+Status: **audit complete; concept migration implemented; production baseline reconciliation in progress**
 
 Audit mode is read-only. The current app builds, but it does not satisfy the
 approved current-native project baseline needed for a runnable A1 proof and

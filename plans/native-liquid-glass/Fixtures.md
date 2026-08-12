@@ -1,6 +1,6 @@
 # Deterministic fixtures
 
-Status: **approved fixture requirements for the A1 native concept**
+Status: **approved deterministic fixture requirements for final A1 production QA**
 
 ## Contract
 

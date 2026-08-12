@@ -1,6 +1,6 @@
 # Native component map
 
-Status: **approved A1 component map; runnable proof verified; operator confirmation pending**
+Status: **approved A1 component map; runnable proof explicitly confirmed; production conformance in progress**
 
 Classification:
 

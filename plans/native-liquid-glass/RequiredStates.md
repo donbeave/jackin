@@ -1,6 +1,6 @@
 # Required states and evidence matrix
 
-Status: **approved A1 requirements; runnable-concept evidence captured; production evidence pending operator confirmation**
+Status: **approved A1 requirements; runnable concept confirmed; final production evidence in progress**
 
 Every row remains mandatory before production completion. A screenshot alone
 does not prove keyboard, accessibility, or restoration behavior; use the named
@@ -93,5 +93,4 @@ not branch on guessed defaults.
   appearance, accessibility settings, window geometry, and key-window state.
 - Scripts that modify macOS settings snapshot old values first and restore them
   on success, failure, and interruption.
-- Runnable-concept captures support the operator confirmation gate. Full
-  production evidence review begins only after that separate confirmation.
+- Runnable-concept captures supported the operator confirmation gate. Final captures must be regenerated from production branch HEAD and cannot inherit proof from the concept commit.

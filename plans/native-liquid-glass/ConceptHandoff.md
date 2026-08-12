@@ -1,6 +1,6 @@
 # A1 runnable concept handoff
 
-Status: **implemented; awaiting running-concept confirmation**
+Status: **implemented and explicitly confirmed by the operator on 2026-08-12**
 
 ## Run
 
@@ -78,5 +78,4 @@ mise run desktop-test-ui
 mise run desktop-verify
 ```
 
-Full production implementation remains blocked until the operator confirms this
-runnable concept from real captures.
+The operator passed this gate with `I confirm the runnable A1 native concept.` Production execution is tracked in [ProductionPlan.md](ProductionPlan.md).

@@ -1,10 +1,8 @@
 # Native Liquid Glass redesign
 
-Status: **A1 runnable concept verified on 2026-08-12 — awaiting operator confirmation**
+Status: **A1 runnable concept confirmed by the operator on 2026-08-12; production execution in progress**
 
-These files are the design authority for the native jackin❯ desktop redesign.
-The A1 selection authorizes Phase 2 audits and the smallest runnable Phase 3
-proof. It does not authorize full production implementation.
+These files are the design authority for the native jackin❯ desktop redesign. The A1 selection authorized Phase 2 audits and the smallest runnable Phase 3 proof; D-004 separately authorizes production implementation of that confirmed direction.
 
 ## Evidence and decisions
 
@@ -33,12 +31,11 @@ proof. It does not authorize full production implementation.
   for the runnable A1 proof
 - [ConceptHandoff.md](ConceptHandoff.md) — runnable build, fixture, component,
   AppKit-boundary, and verification handoff for the A1 proof
+- [ProductionPlan.md](ProductionPlan.md) — post-confirmation coverage ledger, zero-context slices, verification, recovery, and completion conditions
 
 ## Gate
 
-The operator selected A1. Phase 2 audits and a runnable native concept may now
-proceed. Production implementation remains blocked until the operator separately
-confirms the running concept and its real captures.
+The operator selected A1 and explicitly confirmed the runnable native concept with `I confirm the runnable A1 native concept.` Production work is authorized only when it preserves A1 plus D-002 and D-003. Publication and merge remain separately controlled.
 
 ## Product invariants
 

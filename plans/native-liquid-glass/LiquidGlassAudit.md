@@ -1,6 +1,6 @@
 # Phase 2 Liquid Glass audit
 
-Status: **audit complete; A1 concept remediation verified; production confirmation pending**
+Status: **audit complete; A1 concept confirmed; final production remediation in progress**
 
 The inventory below records the pre-remediation Phase 2 baseline. The runnable
 A1 concept now removes every explicit custom-glass surface named here and passes

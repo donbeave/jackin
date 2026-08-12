@@ -59,3 +59,13 @@ not treat this design selection as confirmation of that concept.
 - **Reason:** Apple's automatic item moves to the trailing detail group when the sidebar collapses. Explicit navigation placement preserves the requested invariant while keeping rendering and interaction system-owned.
 - **Rejected:** duplicate toggles, a control that migrates into the detail group, hand-drawn icon, colored/custom-glass button, conditional placement, and a logo that acts like a sidebar control.
 - **Scope:** A1 concept refinement. Production gate remains closed.
+
+## D-004 — Runnable A1 concept confirmed
+
+- **Date:** 2026-08-12
+- **Decision maker:** Operator
+- **Operator statement:** `I confirm the runnable A1 native concept.`
+- **Decision:** The rendered A1 concept, including D-002 identity placement and D-003 fixed sidebar-toggle behavior, is the production design authority.
+- **Reason:** The operator explicitly passed the second non-delegable gate after receiving the runnable app path, exact branch commit, real Light/Dark and expanded/collapsed captures, fixture descriptions, component mapping, accessibility results, and known limitations.
+- **Authorized next work:** Production planning, implementation, final material remediation, complete running-app visual/accessibility QA, design review, documentation reconciliation, full repository gates, and PR evidence reconciliation.
+- **Not authorized:** Silent redesign, custom visible components, custom glass, new provider semantics, prices/trends/analytics, publication, PR merge, Apple credential provisioning, or the separately capture-gated Amp work.
