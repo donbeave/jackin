@@ -24,6 +24,9 @@ use crate::cmd;
 use crate::docs;
 
 const APP_EXECUTABLE: &str = "JackinDesktop";
+// SwiftPM names resource bundles from the package and the target that owns
+// the resources. Resources live in JackinDesktopUI, not the executable target.
+const APP_RESOURCE_BUNDLE: &str = "JackinDesktop_JackinDesktopUI.bundle";
 const BUNDLE_ID: &str = "com.jackin-project.desktop";
 const BUNDLE_NAME: &str = "Jackin Desktop";
 const MIN_OS: &str = "14.0";
@@ -649,7 +652,7 @@ pub(super) fn verify_app(
 
     let bin = app.join(format!("Contents/MacOS/{APP_EXECUTABLE}"));
     let plist = app.join("Contents/Info.plist");
-    let resource_bundle = app.join("Contents/Resources/JackinDesktop_JackinDesktop.bundle");
+    let resource_bundle = app.join("Contents/Resources").join(APP_RESOURCE_BUNDLE);
 
     if !bin.is_file() {
         bail!("missing executable {}", bin.display());
@@ -870,14 +873,12 @@ fn swift_bin_path(native: &Path, arch: &str) -> Result<PathBuf> {
 }
 
 fn find_resource_bundle(bin_dir: &Path) -> Result<PathBuf> {
-    for name in ["JackinDesktop_JackinDesktop.bundle", "JackinDesktop.bundle"] {
-        let candidate = bin_dir.join(name);
-        if candidate.is_dir() {
-            return Ok(candidate);
-        }
+    let candidate = bin_dir.join(APP_RESOURCE_BUNDLE);
+    if candidate.is_dir() {
+        return Ok(candidate);
     }
     for path in walk_dirs(bin_dir)? {
-        if path.file_name().and_then(|s| s.to_str()) == Some("JackinDesktop_JackinDesktop.bundle") {
+        if path.file_name().and_then(|s| s.to_str()) == Some(APP_RESOURCE_BUNDLE) {
             // Prefer shallow matches under bin_dir (maxdepth-ish: path components).
             if path
                 .strip_prefix(bin_dir)
@@ -889,7 +890,7 @@ fn find_resource_bundle(bin_dir: &Path) -> Result<PathBuf> {
         }
     }
     bail!(
-        "missing SwiftPM resource bundle JackinDesktop_JackinDesktop.bundle under {}",
+        "missing SwiftPM resource bundle {APP_RESOURCE_BUNDLE} under {}",
         bin_dir.display()
     )
 }
