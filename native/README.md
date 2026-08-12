@@ -1,166 +1,140 @@
-# jackin❯ desktop (native macOS usage menu bar)
+# jackin❯ desktop
 
-Display-only Swift shell over `jackin-usage-ffi` (UniFFI). Product identity:
-**jackin❯ desktop** (`JackinDesktop.app`, bundle ID `com.jackin-project.desktop`).
-Rust owns probes, cache, severity, and `status_bar_label`. CodexBar is a visual
-reference only (clean-room).
+Native macOS limits display over `jackin-usage-ffi` (UniFFI). Product identity is **jackin❯ desktop** (`JackinDesktop.app`, bundle id `com.jackin-project.desktop`). Rust owns probes, provider ordering, accounts, quota semantics, refresh policy, severity, and every domain string. Swift owns AppKit/SwiftUI presentation and OS integration.
 
-**Product scope:** **usage limits only** — remaining/used %, resets, plan/status,
-multi-account. **Never** token unit prices or historical usage/spend trends
-(sparklines, donuts, 30-day series).
+Product scope is limits only: remaining/used percentages, resets, plan/status, multi-account selection, and provider-supplied quota caps. Never add token unit prices, session-cost estimates, historical spend/usage, trends, sparklines, or aggregate charts.
+
+## Shipping baseline
+
+- Deployment target and release floor: **macOS 26.0**.
+- Release toolchain: **Xcode 26.6** on GitHub's `macos-26` image.
+- Architecture: Apple Silicon (`arm64`) static XCFramework assembly.
+- Swift language mode: Swift 6 strict concurrency.
+- No compatibility branch, custom material, explicit `glassEffect`, or `GlassEffectContainer` exists in production UI.
+
+Liquid Glass is owned by the system hosts and standard functional chrome: `NSPopover`, unified `NSToolbar`, `NavigationSplitView`, sidebar/list/table, menus, pickers, buttons, and window titlebars. Quota content uses ordinary `Form`, `List`, `Section`, `LabeledContent`, `Table`, and `ProgressView` surfaces. The status bar remains template monochrome. jackin❯ phosphor appears only as adaptive identity/healthy-state emphasis; warning and danger retain textual state plus system semantic color.
+
+## Native surfaces
+
+### Status items and popover
+
+`StatusBarController` owns native `NSStatusItem` instances selected from the Rust projection. A primary click opens one real transient `NSPopover` focused on that provider. The popover contains:
+
+- provider identity and status;
+- a native account menu when multiple identities are known;
+- Rust-owned detail and limit rows;
+- visible Retry actions for global/provider failures;
+- visible Refresh (Command-R) and Open Usage actions.
+
+There is no cross-provider navigation inside the popover. A secondary click opens the fixed native menu: Open Usage Window, Refresh, Quit jackin❯ desktop.
+
+### Usage window
+
+`UsageWindowController` lazily creates and retains one normal `NSWindow`. `UsageWindowRoot` uses a two-column `NavigationSplitView`:
+
+- sidebar: Overview plus Rust-ordered providers;
+- quiet footer: generated `jackin❯ by tailrocks` wordmark;
+- Overview: native account inventory `Table`;
+- provider detail: native list/sections, account menu, quota meters, recovery;
+- toolbar: one fixed leading sidebar button and a native Refresh action.
+
+The system-supplied split-view toggle is removed so exactly one button owns the leading slot. Its coordinates remain stable while hiding/showing the sidebar and across retained-window reopen. The title is hidden; no `Usage` heading is drawn in content or titlebar. Reopening preserves valid destination, account, sidebar state, and frame. A removed/disabled provider normalizes to Overview at `PresentationStore`, not in a view-only fallback.
+
+Standard commands: Command-R Refresh, Command-comma Settings, Command-W Close, Control-Command-S Toggle Sidebar, Escape Close.
+
+### Settings
+
+Settings is a standard titled `NSWindow` containing a grouped `Form`. It owns menu-bar display selection, percent/reset preferences, screen-sharing privacy, launch at login, enabled surfaces, and refresh floor. It does not render quota data or create custom Liquid Glass.
 
 ## Layout
 
 | Path | Role |
 |---|---|
-| `../crates/jackin-usage` | Host probes + `HostUsageRuntime` |
+| `../crates/jackin-usage` | Host probes and `HostUsageRuntime` |
 | `../crates/jackin-usage-ffi` | Synchronous UniFFI facade |
-| `Generated/` | UniFFI C header + module map (regenerate) |
-| `Sources/JackinUsageBridge` | Generated Swift + `PresentationStore` + pure display helpers |
-| `Sources/JackinDesktop/` | Split UI: `StatusItemLabel`, `PopoverRoot`, Settings, Usage window, glass, logomark |
-| `cargo xtask desktop …` / `mise run desktop-*` | Canonical build, verify, XCFramework, bindings, sign/notarize, release-state, secrets bootstrap |
+| `Generated/` | Generated UniFFI C header/module map |
+| `Sources/JackinUsageBridge` | Generated Swift, `PresentationStore`, pure projections |
+| `Sources/JackinDesktop` | AppKit hosts and SwiftUI native surfaces |
+| `Sources/JackinDesktop/VisualQAFixtures.swift` | Explicit synthetic F00–F14 visual-QA states |
+| `UITests/JackinDesktopUITests.swift` | Real-host interaction and accessibility audits |
 
-## SDK requirement
-
-Deployment target stays **macOS 14+** for compile. **Craft target + release SDK = latest stable macOS (Tahoe 26)**. `GlassFallbacks.swift` is the only file allowed to contain `#available(macOS 26, *)` / `glassEffect`.
-
-Liquid Glass (Apple Adopting Liquid Glass / LG-A1–A12): **navigation layer only** — glance popover shell, floating Usage sidebar (system LG; do not stack custom glass), footer dock, toolbar, glass control islands. **Content** (provider cards, overview, meters, auth) = standard materials. Status bar items stay **template mono** (no glass chips). Soft scroll edges under chrome on Tahoe. Pre-26 / Reduce Transparency = material fallbacks only — not a second design.
-
-## Apple Silicon (arm64) static assembly (source of truth)
-
-One path builds the local, PR, and release app:
-
-1. **Pinned tools** via `mise.toml` (`cargo:uniffi` provides `uniffi-bindgen`; `mise install`).
-2. **Static XCFramework** — `cargo xtask desktop xcframework` (or as part of build) produces `target/xcframework/JackinUsageFFI.xcframework` with Clang module `jackin_usage_ffiFFI`.
-3. **SwiftPM** — `native/Package.swift` consumes that XCFramework as a `binaryTarget` (no host `target/release` dylib path).
-4. **App** — `mise run desktop-build -- <version> <build>` produces a **arm64 (Apple Silicon)** `JackinDesktop.app` with no embedded dylib/framework/XCFramework, then ad-hoc signs.
-5. **Verify** — `mise run desktop-verify` (optional ZIP via `cargo xtask desktop verify <app> <zip>`). `--release` requires Developer ID + notarization/staple/Gatekeeper.
+## Build and verify
 
 ```bash
 mise install
 
-# One-shot local smoke (build + verify + launch menu-bar app)
+# Build + verify + launch.
 mise run desktop
 
-# Or step by step:
-mise run desktop-build -- 0.6.0 1   # prints absolute path + DESKTOP_APP=…
-mise run desktop-verify             # fail-closed bundle checks
-mise run desktop-run                # launch (LSUIElement — no Dock icon; look at menu bar)
-
-# equivalent cargo:
-#   cargo xtask desktop build --version 0.6.0 --build 1
-#   cargo xtask desktop verify
-#   cargo xtask desktop run
+# Individual steps.
+mise run desktop-generate
+mise run desktop-build -- 0.6.0 1
+mise run desktop-verify
+mise run desktop-run
 ```
 
-Build/verify/run each print a clear banner with the **absolute** app path (`DESKTOP_APP=…` for grepping). The default bundle is `native/dist/JackinDesktop.app`.
+The default bundle is `native/dist/JackinDesktop.app`. Build/verify/run print its absolute path and `DESKTOP_APP=…`. The app begins as an `LSUIElement` status-item process; opening a normal window temporarily gives it regular app menu/window citizenship.
 
-Swift tests (full Xcode): after the XCFramework exists, `cd native && swift test -c release`.
-
-### Automated testing (macOS Desktop)
-
-OpenUsage/CodexBar **limits-only** display matrix + architecture gates:
+## Tests
 
 ```bash
-# Canonical (host nextest + three pure Swift harnesses; no full Xcode required)
+mise run desktop-format-check
+mise run desktop-lint
+mise run desktop-deadcode
 mise run desktop-test
-# or: cargo xtask desktop test
+mise run desktop-test-ui
 
-# Individual harnesses (after XCFramework exists)
 cd native
-swift run -c release StatusItemChipHarness        # multi-provider chips, dual-bucket, depleted
-swift run -c release DesktopArchitectureLint      # bans Swift-composed usage tokens on UI sources
-swift run -c release DesktopParityMatrixHarness   # full 8-surface displayable matrix vs OpenUsage/CodexBar
-
-# Full XCTest suite (requires full Xcode, not Command Line Tools alone)
 swift test -c release
 ```
 
-Default status-item display is one item per auto-detected provider: template icon + the selected account's Rust-owned glance percentage (**Weekly remaining** for six providers; **Amp Free Daily remaining** for Amp). Empty data shows `—`; stale or unavailable last-known data stays visible and dimmed. **Never** token unit prices or historical usage/spend charts.
+`desktop-test` covers 251 Rust/FFI tests plus native architecture/parity harnesses. SwiftPM tests protect ownership, navigation normalization, native component confinement, brand tokens, and visual-QA fixture isolation. The UI suite runs the real app host and audits popover, Overview, provider detail, sidebar coordinates, commands, scrolling, recovery, and retained context.
 
-| Operator entry | Rust implementation |
+Explicit visual-QA launch flags (`--fixture`, `--open-popover`, `--open-usage`, `--selection`, `--window-size`, `--appearance`) never activate unless a fixture is named and never call the bridge or real credentials.
+
+## Static assembly
+
+One path builds local, PR, and release apps:
+
+1. `mise install` installs pinned tools.
+2. `cargo xtask desktop xcframework` creates the arm64 static `target/xcframework/JackinUsageFFI.xcframework`.
+3. `native/Package.swift` consumes it as a binary target.
+4. `mise run desktop-build -- <version> <build>` generates bindings/project, builds `JackinDesktop.app`, and ad-hoc signs local/validation output.
+5. `mise run desktop-verify` proves bundle architecture, metadata, dependency, and signature shape. Release verification additionally requires Developer ID, notarization, staple, and Gatekeeper acceptance.
+
+## CI and release contract
+
+| Surface | Contract |
 |---|---|
-| `mise run desktop` | build + verify + run (local smoke) |
-| `mise run desktop-build -- <ver> <build>` | `cargo xtask desktop build` |
-| `mise run desktop-verify` | `cargo xtask desktop verify` |
-| `mise run desktop-run` | `cargo xtask desktop run` |
-| `mise run desktop-run -- --verify` | `cargo xtask desktop run --verify` |
-| `mise run desktop-xcframework` | `cargo xtask desktop xcframework` |
-| `mise run desktop-bindings` | `cargo xtask desktop bindings` |
-| `mise run desktop-sign-notarize` | `cargo xtask desktop sign-notarize` |
-| `mise run desktop-release-state -- <ver>` | `cargo xtask desktop release-state` |
-| `mise run desktop-bootstrap-secrets -- …` | `cargo xtask desktop bootstrap-secrets` |
+| PR/local validation | macOS 26.0, Xcode 26.6, arm64 static app, tests and bundle verification |
+| Secret-free release validation | fixture version, ad-hoc rejection by release verifier, read-only reconciliation |
+| Publication | `main`/tag only, environment `release-macos`, GitHub-hosted macOS only |
+| Artifact | `jackin-desktop-<VERSION>-aarch64-apple-darwin.zip` plus SHA-256, Sigstore bundle, SBOM, attestation |
+| Homebrew | formula and `Casks/jackin-desktop.rb` in one independently reviewed tap PR |
 
-## CI / release contracts (secret **names** only)
+Required `release-macos` secret names:
 
-| Surface | Detail |
-|---|---|
-| PR gate | CI job `Native usage menu bar` — assembly, verify, Swift tests, soft launch |
-| Validate release | `workflow_dispatch` **Release** with `mode=validate` — secret-free fixture `0.0.0`/`1`, ad-hoc must fail `--release`, reconciliation read-only |
-| Publish release | `mode=publish` or tag `vX.Y.Z` on main — environment **`release-macos`**, GitHub-hosted macOS only |
-| Secrets (env `release-macos`) | `DEVELOPER_ID_APPLICATION_P12_BASE64`, `DEVELOPER_ID_APPLICATION_P12_PASSWORD`, `APP_STORE_CONNECT_API_KEY_P8`, `APP_STORE_CONNECT_KEY_ID`, `APP_STORE_CONNECT_ISSUER_ID` |
-| Variables (repo) | `JACKIN_DEVELOPER_ID_TEAM_ID`, `JACKIN_DEVELOPER_ID_CERT_SHA256` |
-| Artifact | `jackin-desktop-<VERSION>-aarch64-apple-darwin.zip` + `.sha256` + `.bundle` + `.sbom.json` + GitHub attestation |
-| Tap | Formula + `Casks/jackin-desktop.rb` in one PR; **first cask never auto-merged** |
+- `DEVELOPER_ID_APPLICATION_P12_BASE64`
+- `DEVELOPER_ID_APPLICATION_P12_PASSWORD`
+- `APP_STORE_CONNECT_API_KEY_P8`
+- `APP_STORE_CONNECT_KEY_ID`
+- `APP_STORE_CONNECT_ISSUER_ID`
 
-### Local notarization rehearsal
+Required repository variables:
+
+- `JACKIN_DEVELOPER_ID_TEAM_ID`
+- `JACKIN_DEVELOPER_ID_CERT_SHA256`
+
+Credential material is never committed. CI removes temporary signing/notary material before supply-chain tooling runs. Until an operator provisions these values and performs the first notarized publication/cask proof, validation is complete but public distribution remains externally gated.
+
+## Local notarization rehearsal
 
 ```bash
 export DEVELOPER_ID_APPLICATION='Developer ID Application: Your Name (TEAMID)'
-export NOTARY_PROFILE=jackin-notary   # or set APP_STORE_CONNECT_* path/key/issuer
+export NOTARY_PROFILE=jackin-notary
 export JACKIN_APP_VERSION=0.6.0 JACKIN_APP_BUILD=1
 mise run desktop-build -- 0.6.0 1
 mise run desktop-sign-notarize
-# final ZIP: native/dist/jackin-desktop-0.6.0-aarch64-apple-darwin.zip
 ```
 
-Credential material must never be committed. CI deletes PKCS#12/API key material before cosign/syft/attestation.
-
-## Activating the first notarized release (creative paths)
-
-Apple Developer ID material is **org-provisioned**, not inventable in CI. Three ways to finish distribution:
-
-### Path A — Bootstrap secrets (preferred)
-
-1. Enroll / use an **Apple Developer Program** team that can create a **Developer ID Application** certificate.
-2. Export the cert as PKCS#12 + create an App Store Connect **Team** API key (`.p8` + key id + issuer).
-3. Load them into GitHub without printing values:
-
-```bash
-# From local files:
-cargo xtask desktop bootstrap-secrets \
-  --p12 ./DeveloperID.p12 --p12-password-env P12_PASS \
-  --p8 ./AuthKey_XXXXXX.p8 --key-id XXXXXX --issuer <issuer-uuid> \
-  --team-id <TEAMID> --cert-sha256 <sha256-hex>
-
-# Or from unlocked 1Password:
-cargo xtask desktop bootstrap-secrets \
-  --op-p12 'op://Vault/Item/p12file' \
-  --op-p12-password 'op://Vault/Item/password' \
-  --op-p8 'op://Vault/Item/notesPlain' \
-  --key-id XXXXXX --issuer <issuer-uuid> \
-  --team-id <TEAMID>
-```
-
-4. Land this PR, cut a **non-dev** version on `main` (not `*-dev`), then:
-
-```bash
-gh workflow run release.yml --ref main -f mode=publish -f lanes=github
-```
-
-5. Approve/merge the tap PR after `cask-validation` (first cask is never auto-merged).
-6. Complete the [roadmap production proof](<../docs/content/roadmap/(operator-surface)/native-macos-usage-menu-bar.mdx>): `cargo xtask release-verify` on the public ZIP + `brew install --cask` on Apple Silicon (arm64).
-
-### Path B — First stable jackin❯ release rides the same tag
-
-Menu-bar artifacts are part of the existing Release workflow. The first non-dev tag after secrets exist publishes CLI + capsule **and** the notarized menu-bar ZIP + formula/cask PR atomically. No separate product release track.
-
-### Path C — Validate forever until Path A
-
-`mode=validate` (secret-free) already proves assembly, release-mode negative check, and reconciliation. That is the merge gate. Production bytes wait on Path A/B only.
-
-### Offline reconciliation fixtures
-
-```bash
-cargo nextest run -p jackin-xtask --locked desktop::release_state
-```
+See the public macOS guide, ADR-011, and the [native Liquid Glass design artifacts](../plans/native-liquid-glass/README.md) for operator behavior, architecture, and the approved A1 evidence contract.

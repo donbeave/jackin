@@ -1,97 +1,92 @@
 ---
-title: "ADR-011: Native macOS agent-usage menu bar (Rust truth, Swift shell)"
-description: "Host menu-bar usage app reuses jackin-usage probes via UniFFI; Swift is display-only; Agent::ALL + existing UsageSurface only."
+title: "ADR-011: Native macOS limits app (Rust truth, Swift shell)"
+description: "jackin❯ desktop reuses Rust usage projections through UniFFI and limits Swift to native macOS presentation."
 ---
 
 **Status**: Accepted
 
-The macOS agent-usage menu bar is a **host process** that shows account quota / spend windows for jackin❯-supported agents without requiring an open Capsule session. **Rust owns all probing, cache, cooldown, severity, and view shaping** (`jackin-usage` + `jackin-protocol` contracts). **Swift owns only display and OS integration** (menu bar, popover, Settings, a11y, signing). The UniFFI facade is TableRock-shaped: synchronous coarse commands over a staticlib → XCFramework, with Swift polling immutable snapshots.
+## Decision
 
-## Why this is recorded
+jackin❯ desktop is a host process that displays account quota limits without a running Capsule. Rust owns provider probing, credential resolution, account selection, host-wide snapshot coordination, cooldowns, refresh policy, quota semantics, severity, provider ordering, and every displayed domain string. Swift owns AppKit/SwiftUI presentation, accessibility, lifecycle, settings, signing, and other macOS integration.
 
-CodexBar proves demand for a menu-bar usage product, but a pure-Swift probe stack would diverge from Capsule truth and double maintenance. TableRock already established the correct split for tailrocks native apps. This ADR freezes that split for jackin❯ and the hard agent/surface scope so contributors do not reintroduce provider sprawl or second probe matrices.
+The boundary is a synchronous coarse-grained UniFFI facade compiled as a static library and assembled into an arm64 XCFramework. Swift polls immutable DTO snapshots through an off-main-actor scheduler; it never implements HTTP/RPC/OAuth/CLI probes or a second provider matrix.
 
-## Agent and surface scope (hard)
+## Product and platform bounds
 
-Only `jackin_core::Agent::ALL`: `claude`, `codex`, `amp`, `kimi`, `opencode`, `grok`.
+- Desktop display domain: Claude, Codex, Amp, Grok, Z.AI, Kimi, MiniMax.
+- Display: remaining/used percentage, reset timing, plan/status, multi-account identity, and provider-supplied quota caps.
+- Excluded: token unit prices, inferred cost, usage/spend history, trends, charts, forecasts, analytics, and unrelated providers.
+- Deployment target: macOS 26.0.
+- Release toolchain: Xcode 26.6 on a fixed `macos-26` GitHub runner.
+- Release architecture: Apple Silicon arm64.
 
-Usage surfaces: existing `jackin_usage` surfaces — Claude, Codex, Amp, Grok, OpenCode, Kimi, plus **Z.AI / GLM** and **MiniMax** when modeled for routed providers. Never Cursor, Gemini, Copilot, or CodexBar’s provider zoo.
+Before 1.0 this is latest-only engineering. There is no macOS 14/15 UI lane, compatibility renderer, custom material, or alternate design.
 
-## Host credential roots (Phase 0 inventory)
+## Native hierarchy and Liquid Glass
 
-Probes already prefer **host homes first**, container handoff paths last. Menu-bar process runs with a normal operator `HOME`.
+Liquid Glass is system-owned functional chrome, never content decoration. Production UI contains zero explicit `glassEffect`, zero `GlassEffectContainer`, zero app-owned material, and zero custom-glass helper.
 
-| Surface | Host credential roots | Env / other | Container handoff (last resort) |
-|---|---|---|---|
-| Claude | `$CLAUDE_CONFIG_DIR` / `~/.claude/.credentials.json`, `~/.claude.json` | `ANTHROPIC_API_KEY`, `ANTHROPIC_AUTH_TOKEN` | `/jackin/claude/credentials.json` |
-| Codex | `$CODEX_HOME/auth.json` / `~/.codex/auth.json` | — | `/jackin/codex/auth.json` |
-| Amp | Amp secrets under home / handoff secrets | Amp API key loaders | `/jackin/amp/secrets.json` |
-| Grok | `~/.grok` auth + binary under `~/.grok/bin` | — | `/jackin/grok/auth.json` |
-| Kimi | `~/.kimi-code`, `~/.kimi` local tokens | `KIMI_AUTH_TOKEN`, `KIMI_CODE_API_KEY` | `/jackin/kimi-code` |
-| OpenCode | OpenCode home paths used by existing probe | — | — |
-| Z.AI / GLM | — | `ZAI_API_KEY` / `Z_AI_API_KEY` (+ provider_keys map) | — |
-| MiniMax | — | `MINIMAX_CODING_API_KEY` / `MINIMAX_API_KEY` | — |
+| Region | Host/component | Classification |
+|---|---|---|
+| Provider status | `NSStatusItem` / `NSStatusBarButton` | native functional chrome, template monochrome |
+| Provider glance | transient `NSPopover` hosting SwiftUI `Form` | native host; focused provider content |
+| Usage shell | retained `NSWindow`, unified `NSToolbar`, `NavigationSplitView` | native functional hierarchy |
+| Usage sidebar | sidebar `List` plus noninteractive generated wordmark | native navigation plus identity |
+| Overview | SwiftUI `Table` | native content |
+| Provider detail | `List`, `Section`, `LabeledContent`, `Picker`, `ProgressView` | native content/actions |
+| Settings | titled `NSWindow` plus grouped `Form` | native configuration |
 
-Shared host coordination root (one tree for host processes and every container):
+jackin❯ phosphor is an adaptive identity/healthy-state token. Warning and danger retain text plus system semantic color. Provider marks come from the canonical generated SVG assets. The quiet sidebar wordmark is `jackin❯ by tailrocks`; it is hidden from accessibility because it is not an action.
 
-Host processes and containers coordinate through **`~/.jackin/data/usage-shared/{snapshots,cooldowns,locks}`** (containers bind-mount the same root at `/jackin/usage-shared` and set `JACKIN_USAGE_{SNAPSHOTS,COOLDOWN,LOCK}_DIR`). At most one probe per account host-wide; every surface reads the same per-account snapshot. Env vars override the defaults for tests only.
+## Interaction architecture
 
-- `~/.jackin/data/usage-shared/cooldowns` (`JACKIN_USAGE_COOLDOWN_DIR`)
-- `~/.jackin/data/usage-shared/snapshots` (`JACKIN_USAGE_SNAPSHOTS_DIR`)
-- `~/.jackin/data/usage-shared/locks` (`JACKIN_USAGE_LOCK_DIR`)
+`StatusBarController` reconciles native status items from the Rust projection. A primary click opens one real transient `NSPopover` focused on that provider. The popover has no cross-provider navigation. It shows provider identity, native account selection, Rust-owned detail/limit rows, visible recovery, Refresh, and Open Usage. A secondary click opens the fixed AppKit menu: Open Usage Window, Refresh, Quit jackin❯ desktop.
 
-Menu-bar durable store (host-only, not container paths):
+Cross-provider navigation belongs in the Usage window. `UsageWindowController` lazily creates and retains one `NSWindow`. `UsageWindowRoot` uses a two-column `NavigationSplitView`: Overview and Rust-ordered providers in the sidebar, native `Table` Overview, and native provider detail. It removes the framework's automatic sidebar toolbar item and installs exactly one `.navigation` toolbar button so the control remains visible and stationary in expanded/collapsed states. The window hides its redundant `Usage` title.
 
-- `~/.jackin/data/usage-menu-bar/snapshots.db`
-- `~/.jackin/data/usage-menu-bar/accounts.json`
-- Preferences: enable set + refresh floor under app Support / UserDefaults (policy defaults from Rust)
+Window entry is intentional:
 
-## Public probe entry points (`jackin-usage`)
+- `show(focusOn:)` explicitly selects Overview or a provider.
+- `show()` reopens the retained window without changing a valid destination.
+- popover Open Usage calls the explicit provider path.
+- App menu/Dock reopen calls the preserving path.
 
-| Entry | Role |
-|---|---|
-| `usage::{claude,codex,amp,grok,kimi,minimax,zai}_snapshot` (+ OpenCode) | Provider probes (crate-internal; host runtime calls via refresh) |
-| `UsageCache::refresh_active_account_snapshots` | Parallel probes, locks, cooldown, shared snapshot write |
-| `UsageCache::focused_snapshot` / `focused_status_bar_label` | Cached views + honest `refreshing` / `unavailable` |
-| `UsageCache::request_account_refresh` | Force-due one surface |
-| `usage::host::HostUsageRuntime` | Capsule-free host orchestration for menu bar + CLI |
-| `run_claude_usage_diagnostic` | Existing Claude diagnostic helper |
+`PresentationStore` owns selection validity. Provider removal/disablement normalizes Usage to Overview and moves stale popover focus to the first valid provider. Views do not conceal invalid owner state with local fallback.
 
-Presentation never invents percentages: only render `FocusedUsageView` / bucket fields; `unavailable` / `refreshing` / `stale` stay honest.
+Standard commands use the native app menu and responder chain: Command-R, Command-comma, Command-W, Control-Command-S, and Escape.
 
-## Architecture
+## Rust presentation ownership
 
-```text
-Swift `LSUIElement` menu bar (display only)
-  → @MainActor presentation from immutable DTOs
-  → UniFFI jackin-usage-ffi (staticlib / XCFramework)
-  → HostUsageRuntime + jackin-usage probes (Rust)
-```
+Rust builds the ordered `UsageDetailPresentation` consumed by Capsule and jackin❯ desktop. Each row has stable position-derived identity, Rust-owned label/display text, grouped layout lines, and geometry-only meter percentage and severity. Swift iterates these rows mechanically; it does not split pace copy, join quota strings, inspect raw provider buckets, or invent missing-field text.
 
-Swift must not own HTTP/RPC/OAuth/CLI scrapes or a second provider matrix.
+The same rule applies to status items, focused popover, Overview inventory, and account menus: provider membership, order, labels, reset text, status, and quota values originate in Rust. Screen-sharing privacy may hide a projected status-item value but cannot replace it with new semantics.
 
-The glance popover is a display-only SwiftUI composition — a tab grid over the Rust glance rows, an Overview tab (one row per provider), a provider tab (header + account chips + a generic `displaySegments` bucket path), and a Refresh-only footer — hosted in the status item's transient `NSPopover`. Every provider, order, label, number, and segment comes from Rust; the `onOpenUsage` header seam is bound by plan 007.
+Loading, empty, refreshing, fresh, stale-last-good, depleted-with-reset, needs-login, unsupported, provider failure, and global bridge failure remain separate states. Refresh failures preserve last-good data. Global and provider failures expose native Retry actions.
 
-Window entry paths are AppKit-only (plan 007). A pure, testable menu contract lives in the bridge target: `StatusItemMenuModel` fixes the static three-row context menu (Open Usage Window · Refresh · Quit) and `StatusItemMenuRouter` maps each row — plus a provider-header click — to injected host handlers with no AppKit dependency. `StatusBarController` installs one `NSStatusBar` button action per item sending on both mouse-up phases: a left-click toggles the transient popover on that provider, a right-click pops the static `NSMenu` built by `StatusItemMenu`. The menu's Refresh row invokes the exact same forced `PresentationStore.refreshAll()` the popover footer calls; Open Usage Window opens/focuses the window on its current selection (never re-selecting a provider — the menu is identical for every item); Quit terminates. A provider-header click routes through the `onOpenUsage` seam to `UsageWindowController.show(focusOn:)`, which sets `PresentationStore.selectUsageSurface(_:)`, lazily builds and retains the single `NSWindow` hosting `UsageWindowRoot`, and dismisses the popover. The window stays an accessory (`LSUIElement`) surface with no Dock icon.
+## Credential and snapshot ownership
 
-The Usage window is Capsule-parity by construction (plan 008). Rust owns one `usage_detail_presentation(&FocusedUsageView)` builder producing an ordered `UsageDetailPresentation` — fixed `focused`/`header`/`provider`/`account`/`status`/`updated` rows, optional `username`/`plan`/`auth`, one position-based `bucket:<i>` row per source bucket (so duplicate provider labels stay distinct), then an optional `detail` row for `last_error`. Each row carries a Rust-owned `label`, already-grouped `layout_lines` (`leading`/`trailing`), a `display_label` equal to the joined line fields, and geometry-only `meter_percent`/`severity`. Both the Capsule usage dialog and the Desktop Usage window consume that single model verbatim: Capsule maps each row to a `ContainerInfoRow`, and the window's `ProviderCardView` renders `content.detail.rows` and their lines mechanically — no Swift splits `paceLabel`, indexes `displaySegments`, joins strings, or invents field/fallback copy. The pure `UsageWindowModel` (in the bridge target) resolves the Rust sidebar order and the incoming `usageSelection` to the selected surface's detail rows and account rows, falling back to Overview for a disabled/invalid selection. This removes the prior dual presentation model where Capsule and Swift assembled provider detail independently, so source scans can no longer let the two renderers drift.
+Host credentials are resolved by Rust, preferring normal host roots and using container handoff paths only as a last resort. Important roots include Claude Keychain/file credentials, Codex `~/.codex/auth.json`, provider home sessions, and Z.AI/MiniMax environment keys.
 
-The status bar is one AppKit `NSStatusItem` per auto-detected provider, reconciled from the Rust-owned seven-provider glance list (`provider_glance_rows`): an `@main` AppKit bootstrap + `StatusBarController` create/update/remove items by Rust `surfaceId` in canonical order, show a single jackin❯ fallback item when none is detected, dim stale/error, and host one transient popover. Each item displays the Rust `barLabel` verbatim — no SwiftUI `MenuBarExtra`, severity tint, mini meter, or percent math in Swift.
+Host processes and containers coordinate through `~/.jackin/data/usage-shared/{snapshots,cooldowns,locks}`; containers mount the same tree under `/jackin/usage-shared`. At most one probe per account owns a refresh. Durable menu-bar account/snapshot state lives under `~/.jackin/data/usage-menu-bar/`.
 
-Rust owns semantic status-bar glance slots via `StatusSlot` (`session`, `daily`, `weekly`, `spend`); `daily` carries Amp Free's daily allowance. Amp's API and CLI paths share one `displayText` parser producing that Daily glance bucket, with individual/workspace credit balances as detail-only quota bounds — never a glance percentage or inferred plan.
+Claude Keychain reads use the shared `claude_keychain_scope` helper. Explicit denial is terminal for that service for the process, prevents repeated prompts, and does not affect other providers. Missing/headless-interaction results still permit file/environment fallback according to Rust policy.
 
-The status-bar pace line can carry a Rust-produced Variant A run-out composite (`<pace> · Runs out in <duration>`), emitted only when the linear projection from the window start runs out before the reset; the TUI and Swift splitters split on `" · "` unchanged.
+## Verification boundaries
 
-Grok's plan label comes from server-resolved truth (`x.ai/billing.subscription_tier`), not a client `auth_mode` heuristic — a Free-tier browser login is no longer mislabeled SuperGrok. One current decoder reads the nested `config` (preferred `creditUsagePercent`/`currentPeriod`, fallback `monthlyLimit`/`used`/billing period), emits exactly one Weekly headline with pace when the window is derivable (RPC path only), and exposes prepaid balance + on-demand cap/used as N3-permitted quota bounds (never a price or trend).
+Synthetic F00–F14 visual-QA fixtures activate only through explicit launch arguments and never call the bridge, network, or real credentials. They drive the same production AppKit/SwiftUI hosts as live data.
 
-Claude credential resolution is Rust-only and reads the macOS Keychain before any file/env credential. The generic-password service is derived from the effective `CLAUDE_CONFIG_DIR` by one shared `jackin-core` helper (`claude_keychain_scope`) reused by instance provisioning and the usage probe — the default `~/.claude` uses the bare `Claude Code-credentials` service; a custom config uses `Claude Code-credentials-<sha256(path)[..8]>`, and a custom scope never reads the default account. The Keychain payload is the same `claudeAiOauth` JSON the file carries, parsed by the one existing parser. Reads serialize; an explicit operator denial is terminal for that service for the process (no prompt storm) and is a typed **local-only** resolution — like a missing credential or an anonymous credential with no proven identity, it blocks cached-quota restoration, shared adoption/coordination, persisted snapshots, and account materialization, with zero effect on other providers. A *missing* Keychain item is never cached, so a new `claude /login` is picked up without an app restart. A headless `errSecInteractionNotAllowed` result is absence (file/env fallback stays available), not denial.
+Architecture tests enforce no custom glass/material, no Swift-composed domain strings, no hard-coded provider display names outside fixtures, and no probe imports. Real-host UI tests verify native commands, focused-popover routing, fixed sidebar position, retained window context, minimum-size scrolling, visible recovery, and accessibility audits for popover, Overview, and provider detail.
 
 ## Distribution
 
-Immutable GitHub Release artifact `jackin-desktop-<VERSION>-aarch64-apple-darwin.zip` (exactly `JackinDesktop.app`), produced only after Developer ID codesign (hardened runtime + secure timestamp), notarytool `Accepted`, staple, and Gatekeeper assessment. Supply-chain sidecars match CLI archives: `.sha256`, cosign `.bundle`, CycloneDX `.sbom.json`, plus a separate GitHub build-provenance attestation. Homebrew cask `jackin-desktop` advances with the stable formula in one tap PR; the first cask is never auto-merged. Identity supersession (2026-07-22): product is **jackin❯ desktop** (`Jackin Desktop` / `com.jackin-project.desktop`); the previous pre-release names `JackinUsageMenuBar` / `jackin-usage-menu-bar` never shipped as a notarized release. Uninstall leaves no root daemon. v1 does **not** require the jackin❯ daemon.
+Release output is `jackin-desktop-<VERSION>-aarch64-apple-darwin.zip` containing exactly `JackinDesktop.app`. Publication requires Developer ID hardened-runtime signing, notarytool acceptance, staple, Gatekeeper assessment, SHA-256 sidecar, Sigstore bundle, CycloneDX SBOM, and GitHub provenance attestation. The first Homebrew cask update is independently reviewed and never auto-merged.
+
+Secret-free release validation proves assembly, bundle verification, release-mode rejection of ad-hoc output, and read-only reconciliation. Public distribution remains externally gated until an operator provisions Apple credentials and completes the first notarized/cask proof.
 
 ## Consequences
 
-- Capsule TUI usage dialog remains; both consumers share Rust views.
-- New agents land via `Agent` / `UsageSurface` growth in Rust, then appear in the menu bar automatically through `HostUsageRuntime` surface lists.
-- Notarization secrets may be operator-gated residual; host library + UniFFI + app shell ship without them.
+- Capsule and jackin❯ desktop cannot drift in quota wording or order without a shared Rust contract/test failure.
+- Native macOS behavior owns navigation, focus, toolbar, popover, and material.
+- Cross-provider comparison stays in Usage; the popover stays provider-focused.
+- New display behavior requires a Rust projection or an explicit architecture decision, not Swift-side inference.
+- Capture-gated provider wire formats remain unimplemented until authentic operator-owned evidence exists.

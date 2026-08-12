@@ -1,71 +1,67 @@
 ---
-title: "jackin❯ desktop — native macOS usage status bar"
+title: "jackin❯ desktop — native macOS limits app"
 ---
 
 **Status**: Partially implemented
 
-**Current state**: jackin❯ desktop ships one native status item per auto-detected provider, a focused usage popover, the Capsule-parity Usage window, host-global snapshot coordination, and secret-free release validation. This implementation is deliberately accepted as a functional baseline, not as the final native experience. The operator selected the A1 focused-popover and two-column Usage direction for the redesign; its runnable native proof and production implementation remain gated on separate confirmation. Public notarized distribution and production acceptance also remain unfinished, so this item cannot retire yet.
+**Current state**: The in-repository A1 native redesign is implemented for the macOS 26 production baseline. It uses provider-focused native popovers, a two-column Usage window, a fixed leading sidebar control, the generated `jackin❯ by tailrocks` sidebar identity, visible native recovery, retained window context, and system-owned Liquid Glass only. Rust remains authoritative for providers, accounts, quota semantics, refresh policy, and domain strings.
+
+The roadmap remains partially implemented because the first Developer ID publication/Homebrew proof and capture-gated Amp paid-plan work require external operator evidence. Those external gates are not substituted by a green PR.
 
 ## Decisions
 
-- **2026-08-12 — Select A1: focused provider popover plus two-column Usage.** The operator accepted the recommended structure after reviewing eight native alternatives. A primary status-item click keeps the clicked provider as popover context. Cross-provider comparison belongs in the Usage window, which uses Overview plus provider sidebar navigation and provider-scoped account selection. The reason is to preserve provider-click context, remove duplicate custom navigation, and let standard macOS components own hierarchy and behavior. Final pixels remain subject to the separately confirmed runnable native proof.
+- **2026-08-12 — Select A1.** The operator selected a focused provider popover plus two-column Usage. Cross-provider comparison belongs in Usage, not a custom tab system inside the popover.
+- **2026-08-12 — Approve identity and sidebar behavior.** The generated `jackin❯ by tailrocks` wordmark belongs in the quiet sidebar footer. Exactly one native sidebar button remains in the leading toolbar slot while expanded or collapsed.
+- **2026-08-12 — Confirm runnable A1 for production.** The operator confirmed the native proof. Production implementation preserves A1 hierarchy, system-owned material, Rust/Swift ownership, and the two identity/sidebar decisions.
 
-## Shipped baseline
+## Implemented baseline
 
-- Rust owns provider probes, account selection, shared snapshots, quota semantics, severity, and every displayed usage string. Swift is a native display shell over UniFFI.
-- One status item per detected provider shows the Rust-selected glance window; the popover provides Overview/provider tabs and Refresh; the Usage window renders the shared Capsule detail presentation.
-- Stale-last-good, refreshing, unavailable, unsupported, authentication, and provider-error states remain distinct. Failed refreshes do not erase last-good data.
-- macOS 26 Liquid Glass gates stay centralized in the native fallback layer; macOS 14–15 and Reduce Transparency use system materials.
-- The release workflow can build and validate the arm64 static app, generate the future cask, reconcile partial release states, and run install-proof automation without Apple credentials.
+- macOS 26.0 deployment target; Xcode 26.6 release toolchain; arm64 static XCFramework app assembly.
+- Native `NSStatusItem` provider items and a real transient `NSPopover` focused on the clicked provider.
+- Native account menu, Rust-owned detail/limit rows, visible Retry/Refresh/Open Usage actions, and no cross-provider popover navigation.
+- Retained native Usage `NSWindow` with `NavigationSplitView`, Overview table, provider detail list, native toolbar/menu commands, hidden redundant title, and stable sidebar-button coordinates.
+- Valid destination/account/sidebar/frame continuity across close/reopen; provider removal or disablement normalizes at `PresentationStore`.
+- Generated responsive brand assets; adaptive phosphor for identity/healthy emphasis; textual state plus system semantic warning/danger color.
+- Zero custom UI regions, explicit glass effects, glass containers, or app-owned materials in production sources.
+- Deterministic F00–F14 visual-QA states isolated from bridge/network/real credentials.
+- Real-host UI coverage for commands, routing, scrolling, recovery, retained context, fixed sidebar control, and accessibility audits of popover, Overview, and provider detail.
+- Secret-free release validation and fail-closed release-state reconciliation.
 
-Operator behavior lives in [macOS agent-usage menu bar](/guides/macos-usage-menu-bar/). Architecture and release boundaries live in [ADR-011](/reference/adrs/adr-011-native-macos-usage-menu-bar/) and <RepoFile path="native/README.md" />.
+Operator behavior lives in [jackin❯ desktop for macOS](/guides/macos-usage-menu-bar/). Architecture and release boundaries live in [ADR-011](/reference/adrs/adr-011-native-macos-usage-menu-bar/) and <RepoFile path="native/README.md" />.
 
 ## Remaining work
 
-### Production activation and proof
+### Production activation and public proof
 
-As of 2026-08-09, the `release-macos` environment has none of the five required Apple secrets, the repository has neither required signing variable, no jackin❯ desktop release asset exists, and the Homebrew tap has no `jackin-desktop` cask. Secret-free validation passing does not satisfy these production requirements.
+1. Provision the Developer ID Application certificate, App Store Connect notarization key, team id, and pinned certificate fingerprint in the protected `release-macos` environment.
+2. Cut the first non-development release from `main`; sign, notarize, staple, Gatekeeper-validate, and publish the immutable ZIP plus SHA-256, Sigstore, SBOM, and GitHub attestation.
+3. Advance the stable formula and `jackin-desktop` cask in one independently reviewed tap PR. The first cask must not auto-merge.
+4. On Apple Silicon macOS 26+, install the public cask, run the status item, popover, Usage, and Settings surfaces, uninstall cleanly, and prove a completed-version release rerun performs no writes.
+5. Verify the downloaded public artifact with `cargo xtask release-verify` and reconcile observed production behavior in durable release docs.
 
-1. Provision the Developer ID Application certificate, App Store Connect notarization key, team id, and pinned certificate fingerprint through the documented operator path. Credentials must remain confined to the GitHub-hosted macOS release environment and be deleted before supply-chain tooling runs.
-2. Cut the first non-development release from `main`; run publish mode; sign, notarize, staple, and Gatekeeper-validate `JackinDesktop.app`; then publish the immutable ZIP, SHA-256 sidecar, Sigstore bundle, SBOM, and GitHub attestation. Verify the downloaded artifact with `cargo xtask release-verify`.
-3. Advance the stable formula and `jackin-desktop` cask in one independently checked tap PR. The first cask requires operator review and merge; it must not auto-merge from the credentials-bearing workflow.
-4. On Apple Silicon macOS 14+, install from the public cask, launch the installed app, exercise the status item/popover/Usage window, uninstall cleanly, and prove a completed-version release rerun makes no writes. Retain partial/conflict fail-closed behavior.
-5. Reconcile durable operator, architecture, and release-verification docs with observed production behavior. Only then retire this roadmap page; canonical docs and Git history retain the shipped record.
+### Operator-owned visual preference observation
 
-### Native interaction and visual acceptance
+macOS exposes no public API for reading the user's clear/tinted Liquid Glass preference. Final automated evidence can prove system-owned material under light/dark, active/inactive, Increase Contrast, Reduce Transparency, and Reduce Motion. A human observation of both clear and tinted preference choices remains operator-owned and must not be simulated with private defaults.
 
-Live current-stable macOS behavior, Apple guidance, the approved native design artifacts under `plans/native-liquid-glass/`, and the operator-confirmed runnable native proof are the visual and behavioral authority. Files under `plans/previews/desktop-ui/` remain historical information-architecture and fixture inputs only. Structural tests, pure Swift harnesses, build verification, detached previews, and HTML screenshots do not approve live Liquid Glass.
+### Capture-gated Amp work
 
-- Build and review A1 as a runnable native proof before production implementation. Keep the popover provider-focused; put cross-provider Overview and provider navigation in the two-column Usage window; use standard components before native composition and avoid custom glass.
+Capture authenticated Amp Megawatt, Gigawatt, and linked-subscription `displayText` or `userDisplayBalanceInfo` responses. Add paid-plan/monthly parsing only from authentic operator-owned wire evidence; guessed shapes remain forbidden. Amp Free Daily behavior must not regress.
 
-- Run real Apple Silicon acceptance on the selected latest-stable macOS baseline, covering light/dark appearance, active/inactive windows, Increase Contrast, Reduce Transparency, Reduce Motion, mouse, keyboard-only navigation, VoiceOver, and screen-sharing privacy transitions.
-- Exercise no providers, one provider, all detected providers, dual and many-window quotas, multi-account selection, very long labels, refreshing, fresh, stale-last-good, depleted-with-reset, needs-login, unsupported, and provider-error states at minimum and large window sizes. Include remembered sizing, repeated open/close, and simultaneous popover/Usage-window behavior.
-- Compare jackin❯ desktop, Capsule, and `jackin usage` from the same serialized snapshots; every quota/account string and ordering decision must agree. Retain redacted evidence.
-- Compare the running native status items, focused provider popover, Usage Overview/sidebar/detail structure, and state families with the approved A1 artifacts and confirmed native proof. HTML may identify retained data inventory but cannot dictate native geometry, material, controls, navigation, or pixels. Current source-confinement and presentation harnesses prove ownership and structure, not live appearance.
+### Deferred candidates
 
-### Capture-gated provider work
+These remain separate product decisions, not unfinished A1 work:
 
-- Capture authenticated Amp Megawatt, Gigawatt, and linked-subscription `displayText` or `userDisplayBalanceInfo` responses, then add paid-plan/monthly parsing without regressing Amp Free Daily. This remains blocked on a real operator-owned capture; guessed wire shapes are not acceptable.
-
-### Deferred product candidates
-
-These came from the superseded screen roadmap and remain ideas, not part of the shipped v1 contract:
-
-- an All Accounts Usage view showing deterministic account winners across live, durable, and shared sources;
-- a Status & Sources Usage view for freshness, credential origin, last success, and last-good/error state;
-- Rust-owned provider quick links, incident metadata, reset-credit expiry details, collapsible secondary quota metrics, and segmented capacity markers;
-- a future configuration UI. The old single-status-item display modes and Settings-centric provider toggles were superseded by auto-detected per-provider items and must not be revived without a new design decision.
-
-## Superseded plan work
-
-The old native program's main-actor bridge, shared-snapshot authority, Rust-owned presentation, CI, compact-glance, state, terminology, and Usage-detail defects were resolved by the shipped jackin❯ desktop program. Its single-item/Settings screen contract was deliberately replaced. Only production activation/proof, live visual acceptance, capture-gated Amp work, and the explicitly deferred candidates above remain.
+- All Accounts Usage and Status & Sources destinations;
+- incident metadata, reset-credit expiry, collapsible secondary metrics, or segmented capacity markers;
+- additional providers or commercial actions;
+- any new custom navigation/material system.
 
 ## Completion gate
 
-Keep this item **Partially implemented** until every production-activation step and live acceptance requirement above has authoritative evidence. A rejected or unauthorized publish attempt is not completion; it names the external authority still required.
+Do not retire this roadmap item until public Developer ID/cask proof and the capture-gated provider requirement have authoritative evidence. The native A1 implementation may be complete inside the repository while the broader delivery item remains **Partially implemented**.
 
 ## Related work
 
 - [Auth health and operator visibility](/roadmap/auth-health-and-visibility/)
-- [jackin❯ daemon](/roadmap/jackin-daemon/) — optional later live focus; not a v1 dependency
-- Capsule usage overlay — in-session consumer of the same Rust presentation
+- [jackin❯ daemon](/roadmap/jackin-daemon/) — optional later focus support, not an A1 dependency
+- Capsule usage overlay — another consumer of the same Rust presentation
