@@ -177,6 +177,21 @@ final class JackinDesktopUITests: XCTestCase {
         XCTAssertTrue(lastLimit.isHittable)
     }
 
+    func testMaximumPopoverContentRemainsScrollable() {
+        defer { application.terminate() }
+        guard launchPopover(fixture: "F12-layout-envelope", selection: "claude") else { return }
+
+        let provider = element("popover.provider.claude")
+        let lastLimit = element("popover.limit.bucket:layout-long")
+        XCTAssertTrue(lastLimit.waitForExistence(timeout: 3))
+        for _ in 0..<8 where !lastLimit.isHittable {
+            provider.swipeUp()
+        }
+        XCTAssertTrue(lastLimit.isHittable)
+        XCTAssertTrue(element("popover.refresh").isHittable)
+        XCTAssertTrue(element("popover.open-usage").isHittable)
+    }
+
     func testStandardCommandsUseNativeWindowsAndResponderChain() {
         defer { application.terminate() }
         guard launchUsage(fixture: "F02-catalog-normal", selection: "overview", size: "920x620")

@@ -8,6 +8,24 @@ OUT=${3:?output path required}
 WINDOW_NAME=${4:-}
 shift 4
 HERE=$(cd "$(dirname "$0")" && pwd -P)
+REPO=$(cd "$HERE/../../.." && pwd -P)
+
+fixture_id=live
+appearance=system
+window_size=default
+argument_key=
+for argument in "$@"; do
+  case "$argument_key" in
+    fixture) fixture_id=$argument; argument_key=; continue ;;
+    appearance) appearance=$argument; argument_key=; continue ;;
+    window-size) window_size=$argument; argument_key=; continue ;;
+  esac
+  case "$argument" in
+    --fixture) argument_key=fixture ;;
+    --appearance) argument_key=appearance ;;
+    --window-size) argument_key=window-size ;;
+  esac
+done
 
 app_dir=$(cd "$(dirname "$APP")" 2>/dev/null && pwd -P) || {
   echo "app directory not found" >&2
@@ -159,11 +177,11 @@ done
   exit 1
 }
 dims=$(sips -g pixelWidth -g pixelHeight "$OUT" 2>/dev/null)
-echo "$dims" | grep -Eq 'pixelWidth: [1-9][0-9]*' \
-  && echo "$dims" | grep -Eq 'pixelHeight: [1-9][0-9]*' || {
+if ! echo "$dims" | grep -Eq 'pixelWidth: [1-9][0-9]*' \
+  || ! echo "$dims" | grep -Eq 'pixelHeight: [1-9][0-9]*'; then
     echo "capture has zero dimensions" >&2
     exit 1
-  }
+fi
 pixel_width=$(echo "$dims" | awk '/pixelWidth:/ { print $2 }')
 pixel_height=$(echo "$dims" | awk '/pixelHeight:/ { print $2 }')
 SIDECAR="$OUT.json"
@@ -177,4 +195,22 @@ frame_width=$(plutil -extract frameSize.width raw "$SIDECAR")
 scale=$(awk -v pixels="$pixel_width" -v points="$frame_width" \
   'BEGIN { if (points > 0) printf "%.3f", pixels / points; else print "0" }')
 plutil -replace backingScale -float "$scale" "$SIDECAR"
+plutil -replace captureTimestampUTC -string "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" "$SIDECAR"
+plutil -replace sourceCommit -string "$(git -C "$REPO" rev-parse HEAD)" "$SIDECAR"
+plutil -replace appBundlePath -string "$APP" "$SIDECAR"
+plutil -replace appExecutableSHA256 -string "$(shasum -a 256 "$APP/Contents/MacOS/$executable" | awk '{ print $1 }')" "$SIDECAR"
+plutil -replace imageSHA256 -string "$(shasum -a 256 "$OUT" | awk '{ print $1 }')" "$SIDECAR"
+plutil -replace fixtureID -string "$fixture_id" "$SIDECAR"
+plutil -replace requestedAppearance -string "$appearance" "$SIDECAR"
+plutil -replace requestedWindowSize -string "$window_size" "$SIDECAR"
+plutil -replace macOSVersion -string "$(sw_vers -productVersion)" "$SIDECAR"
+plutil -replace macOSBuild -string "$(sw_vers -buildVersion)" "$SIDECAR"
+plutil -replace xcodeVersion -string "$(xcodebuild -version | head -1)" "$SIDECAR"
+plutil -replace xcodeBuild -string "$(xcodebuild -version | awk '/Build version/ { print $3 }')" "$SIDECAR"
+plutil -replace macOSSDK -string "$(xcrun --sdk macosx --show-sdk-version)" "$SIDECAR"
+plutil -insert accessibilitySettings -json '{}' "$SIDECAR"
+for setting in increaseContrast reduceTransparency reduceMotion differentiateWithoutColor; do
+  setting_value=$(defaults read com.apple.universalaccess "$setting" 2>/dev/null || echo ABSENT)
+  plutil -replace "accessibilitySettings.$setting" -string "$setting_value" "$SIDECAR"
+done
 echo "$OUT"
