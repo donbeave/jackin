@@ -57,11 +57,18 @@ final class JackinDesktopUITests: XCTestCase {
             )
         else { return }
 
-        let progress = element("usage.refresh-progress")
-        XCTAssertTrue(progress.waitForExistence(timeout: 5))
-        XCTAssertEqual(progress.label, "Refreshing usage")
-        XCTAssertFalse(element("usage.refresh").isEnabled)
+        let refresh = element("usage.refresh")
+        XCTAssertTrue(refresh.waitForExistence(timeout: 5))
+        XCTAssertEqual(refresh.label, "Refreshing usage")
+        XCTAssertEqual(refresh.value as? String, "In progress")
+        XCTAssertFalse(refresh.isEnabled)
         XCTAssertTrue(element("usage.overview.table").exists)
+
+        let usageWindow = application.windows["usage-window"]
+        let sidebar = element("usage.sidebar")
+        XCTAssertTrue(sidebar.exists)
+        XCTAssertTrue(usageWindow.frame.contains(sidebar.frame))
+        XCTAssertTrue(usageWindow.frame.contains(refresh.frame))
     }
 
     func testNativeSidebarToggleKeepsLeadingToolbarSlot() {

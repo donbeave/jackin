@@ -91,23 +91,26 @@ public struct UsageWindowRoot: View {
                 .accessibilityIdentifier("usage.sidebar-toggle")
             }
 
-            if store.refreshInProgress {
-                ToolbarItem(placement: .primaryAction) {
-                    ProgressView()
-                        .controlSize(.small)
-                        .accessibilityLabel("Refreshing usage")
-                        .accessibilityIdentifier("usage.refresh-progress")
-                }
-            }
-
             ToolbarItem(placement: .primaryAction) {
                 Button {
                     store.refreshAll()
                 } label: {
-                    Label("Refresh", systemImage: "arrow.clockwise")
+                    Label {
+                        Text(store.refreshInProgress ? "Refreshing usage" : "Refresh")
+                    } icon: {
+                        ZStack {
+                            Image(systemName: "arrow.clockwise")
+                                .opacity(store.refreshInProgress ? 0 : 1)
+                            ProgressView()
+                                .controlSize(.small)
+                                .opacity(store.refreshInProgress ? 1 : 0)
+                        }
+                        .frame(width: 16, height: 16)
+                    }
                 }
                 .keyboardShortcut("r", modifiers: [.command])
                 .disabled(store.refreshInProgress)
+                .accessibilityValue(store.refreshInProgress ? "In progress" : "")
                 .accessibilityIdentifier("usage.refresh")
             }
         }
