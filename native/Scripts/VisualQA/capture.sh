@@ -142,7 +142,7 @@ drive_activation() {
 
 activation_ok=0
 i=0
-while [ "$i" -lt 20 ]; do
+while [ "$i" -lt 60 ]; do
   drive_activation
   sleep 0.5
   is_frontmost=$(osascript -e \
