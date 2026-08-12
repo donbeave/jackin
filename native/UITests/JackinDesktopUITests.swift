@@ -112,14 +112,17 @@ final class JackinDesktopUITests: XCTestCase {
         XCTAssertTrue(picker.waitForExistence(timeout: 3))
         XCTAssertTrue(picker.waitForHittable(timeout: 5), application.debugDescription)
         picker.click()
-        let personal = application.menuItems["personal@example.test"]
-        if !personal.waitForExistence(timeout: 3) {
+        application.typeKey(.upArrow, modifierFlags: [])
+        application.typeKey(.return, modifierFlags: [])
+        if !picker.waitForValue("personal@example.test", timeout: 3) {
             application.activate()
             XCTAssertTrue(picker.waitForHittable(timeout: 3), application.debugDescription)
             picker.click()
+            application.typeKey(.upArrow, modifierFlags: [])
+            application.typeKey(.return, modifierFlags: [])
         }
-        XCTAssertTrue(personal.waitForExistence(timeout: 5), application.debugDescription)
-        application.typeKey(.escape, modifierFlags: [])
+        XCTAssertTrue(
+            picker.waitForValue("personal@example.test", timeout: 5), application.debugDescription)
         XCTAssertFalse(application.staticTexts["Accounts"].exists)
     }
 
@@ -501,6 +504,12 @@ extension XCUIElement {
 
     fileprivate func waitForHittable(timeout: TimeInterval) -> Bool {
         let predicate = NSPredicate(format: "isHittable == true")
+        let expectation = XCTNSPredicateExpectation(predicate: predicate, object: self)
+        return XCTWaiter.wait(for: [expectation], timeout: timeout) == .completed
+    }
+
+    fileprivate func waitForValue(_ expectedValue: String, timeout: TimeInterval) -> Bool {
+        let predicate = NSPredicate(format: "value == %@", expectedValue)
         let expectation = XCTNSPredicateExpectation(predicate: predicate, object: self)
         return XCTWaiter.wait(for: [expectation], timeout: timeout) == .completed
     }
