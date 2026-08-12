@@ -127,17 +127,29 @@ fi
 requested_activation=active
 if [ -n "${CAPTURE_INACTIVE_APP:-}" ]; then
   requested_activation=inactive
-  open -a "$CAPTURE_INACTIVE_APP"
-  osascript -e \
-    "tell application \"System Events\" to set frontmost of application process \"$CAPTURE_INACTIVE_APP\" to true"
-else
-  osascript -e \
-    "tell application \"System Events\" to set frontmost of application process \"$executable\" to true"
 fi
+
+drive_activation() {
+  if [ -n "$WINDOW_NAME" ]; then
+    open "$APP" >/dev/null 2>&1 || true
+  fi
+  if [ "$requested_activation" = inactive ]; then
+    open -a "$CAPTURE_INACTIVE_APP" >/dev/null 2>&1 || true
+    osascript -e \
+      "tell application \"System Events\" to set frontmost of application process \"$CAPTURE_INACTIVE_APP\" to true" \
+      >/dev/null 2>&1 || true
+  else
+    osascript -e \
+      "tell application \"System Events\" to set frontmost of application process \"$executable\" to true" \
+      >/dev/null 2>&1 || true
+  fi
+}
 
 activation_ok=0
 i=0
-while [ "$i" -lt 10 ]; do
+while [ "$i" -lt 20 ]; do
+  drive_activation
+  sleep 0.5
   is_frontmost=$(osascript -e \
     "tell application \"System Events\" to get frontmost of application process \"$executable\"" \
     2>/dev/null || echo unavailable)
@@ -146,7 +158,6 @@ while [ "$i" -lt 10 ]; do
     activation_ok=1
     break
   fi
-  sleep 0.5
   i=$((i + 1))
 done
 [ "$activation_ok" -eq 1 ] || {
@@ -158,10 +169,12 @@ capture_ok=0
 best_size=0
 best_metadata="$OUT.capture-metadata.json"
 attempt=0
-while [ "$attempt" -lt 10 ]; do
+while [ "$attempt" -lt 20 ]; do
+  drive_activation
   sleep 0.5
   candidate="$OUT.capture-$attempt.png"
   candidate_metadata="$OUT.capture-$attempt.json"
+  candidate_post_metadata="$OUT.capture-$attempt-post.json"
   if [ -n "$WINDOW_NAME" ]; then
     "$TOOL" "$OWNER" "$WINDOW_NAME" --json > "$candidate_metadata" 2>/dev/null || {
       rm -f "$candidate_metadata"
@@ -175,8 +188,36 @@ while [ "$attempt" -lt 10 ]; do
       continue
     }
   fi
+  actual_activation=$(plutil -extract applicationActivationState raw "$candidate_metadata")
+  actual_key=$(plutil -extract keyStatus raw "$candidate_metadata")
+  actual_onscreen=$(plutil -extract onScreen raw "$candidate_metadata")
+  expected_key=key
+  [ "$requested_activation" = inactive ] && expected_key=non-key
+  [ -z "$WINDOW_NAME" ] && expected_key=not-applicable-transient
+  if [ "$actual_activation" != "$requested_activation" ] \
+    || [ "$actual_key" != "$expected_key" ] || [ "$actual_onscreen" != true ]; then
+    rm -f "$candidate_metadata"
+    attempt=$((attempt + 1))
+    continue
+  fi
   WID=$(plutil -extract windowID raw "$candidate_metadata")
   if screencapture -x -o -l "$WID" "$candidate"; then
+    if [ -n "$WINDOW_NAME" ]; then
+      "$TOOL" "$OWNER" "$WINDOW_NAME" --json > "$candidate_post_metadata" 2>/dev/null || true
+    else
+      "$TOOL" "$OWNER" --json > "$candidate_post_metadata" 2>/dev/null || true
+    fi
+    post_id=$(plutil -extract windowID raw "$candidate_post_metadata" 2>/dev/null || echo unavailable)
+    post_activation=$(plutil -extract applicationActivationState raw "$candidate_post_metadata" 2>/dev/null || echo unavailable)
+    post_key=$(plutil -extract keyStatus raw "$candidate_post_metadata" 2>/dev/null || echo unavailable)
+    post_onscreen=$(plutil -extract onScreen raw "$candidate_post_metadata" 2>/dev/null || echo unavailable)
+    if [ "$post_id" != "$WID" ] || [ "$post_activation" != "$requested_activation" ] \
+      || [ "$post_key" != "$expected_key" ] || [ "$post_onscreen" != true ]; then
+      rm -f "$candidate" "$candidate_metadata" "$candidate_post_metadata"
+      attempt=$((attempt + 1))
+      continue
+    fi
+    rm -f "$candidate_post_metadata"
     capture_ok=1
     candidate_size=$(wc -c < "$candidate")
     if [ "$candidate_size" -gt "$best_size" ]; then
@@ -189,7 +230,7 @@ while [ "$attempt" -lt 10 ]; do
     attempt=$((attempt + 1))
     continue
   fi
-  rm -f "$candidate" "$candidate_metadata"
+  rm -f "$candidate" "$candidate_metadata" "$candidate_post_metadata"
   attempt=$((attempt + 1))
 done
 [ "$capture_ok" -eq 1 ] || {
