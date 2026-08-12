@@ -238,7 +238,7 @@ jobs:
           MISE_CONFIG_FILE=docs/mise.toml mise exec -- lychee \
             --config docs/lychee.toml \
             --cache=false \
-            --remap 'https://jackin.tailrocks.com/research/ file://${{ github.workspace }}/docs/content/docs/research/index.mdx' \
+            --remap 'https://jackin.tailrocks.com/research/ file://${{ github.workspace }}/docs/content/research/index.mdx' \
             --root-dir "${{ github.workspace }}" \
             README.md
 

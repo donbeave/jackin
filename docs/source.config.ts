@@ -3,8 +3,9 @@ import rehypeExternalLinks from 'rehype-external-links'
 import rehypeJk from './scripts/rehype-jk'
 
 export const docs = defineDocs({
-  dir: 'content/docs',
+  dir: 'content',
   docs: {
+    files: ['**/*.mdx'],
     postprocess: {
       includeProcessedMarkdown: true,
       extractLinkReferences: true,

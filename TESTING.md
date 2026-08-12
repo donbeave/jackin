@@ -81,7 +81,7 @@ result.
 
 A cold bootstrap is recorded as a cache miss, not hidden by raising the target.
 Fan-out jobs stay offline and consume the warmup result. Cross-run compiler
-result sharing is deferred to the [Shared CI compiler cache](<docs/content/docs/roadmap/(infrastructure)/shared-ci-compiler-cache.mdx>)
+result sharing is deferred to the [Shared CI compiler cache](<docs/content/roadmap/(infrastructure)/shared-ci-compiler-cache.mdx>)
 roadmap item. `jackin-xtask affected-crates` reads the
 Cargo metadata graph and maps a diff to changed crates plus their transitive
 reverse workspace dependents. Workspace-wide inputs and unrecognized Rust paths

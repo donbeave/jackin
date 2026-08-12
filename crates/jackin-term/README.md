@@ -1,6 +1,6 @@
 # jackin-term
 
-Owned terminal model for the `jackin-capsule` re-emitting PTY multiplexer — the grid, parser-perform sink, damage tracking, passthrough events, and snapshot/observation APIs behind the [Capsule Terminal Model](../../docs/content/docs/reference/capsule/terminal-model.mdx).
+Owned terminal model for the `jackin-capsule` re-emitting PTY multiplexer — the grid, parser-perform sink, damage tracking, passthrough events, and snapshot/observation APIs behind the [Capsule Terminal Model](../../docs/content/reference/capsule/terminal-model.mdx).
 
 The full design record — why `vt100` was retired, the candidate survey, the borrow/re-implement ledger, the current Ratatui/emit contract, scrollback-retention semantics, and the correctness guarantees — lives in that doc. This README is the current-state map of the crate.
 
@@ -42,4 +42,4 @@ cargo bench --bench scroll_throughput -p jackin-term -- --quick
 cargo bench --bench present_frame -p jackin-term -- --quick
 ```
 
-Design rationale and prior art: [Capsule Terminal Model](../../docs/content/docs/reference/capsule/terminal-model.mdx).
+Design rationale and prior art: [Capsule Terminal Model](../../docs/content/reference/capsule/terminal-model.mdx).

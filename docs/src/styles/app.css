@@ -8,7 +8,7 @@
 @import '../components/landing/styles.css';
 @import '../components/landing/hero-nav.css';
 
-@source '../../content/docs/**/*.{md,mdx}';
+@source '../../content/**/*.{md,mdx}';
 @source '../**/*.{ts,tsx}';
 @source '../../node_modules/fumadocs-ui/dist/**/*.{js,mjs}';
 

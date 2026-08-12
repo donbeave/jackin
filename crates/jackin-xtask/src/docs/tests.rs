@@ -114,7 +114,7 @@ fn repo_link_fixture(page_body: &str) -> tempfile::TempDir {
         "pub fn open() {}\n",
     );
     write(&root.join("Cargo.toml"), "[workspace]\n");
-    write(&root.join("docs/content/docs/guide.mdx"), page_body);
+    write(&root.join("docs/content/guide.mdx"), page_body);
     repo
 }
 
@@ -143,7 +143,7 @@ fn repo_links_scan_root_and_docs_markdown_files() {
         err.contains("docs/AGENTS.md")
             && err.contains("PROJECT_STRUCTURE.md")
             && err.contains("TODO.md"),
-        "should include docs markdown outside content/docs: {err}"
+        "should include docs markdown outside content: {err}"
     );
 }
 
@@ -182,7 +182,7 @@ fn repo_links_reject_repo_file_component_outside_fumadocs_content() {
         .to_string();
 
     assert!(
-        err.contains("<RepoFile> is only allowed under docs/content/docs"),
+        err.contains("<RepoFile> is only allowed under docs/content"),
         "should reject Fumadocs-only component outside Fumadocs content: {err}"
     );
 }
@@ -202,7 +202,7 @@ fn repo_links_ignore_docs_local_paths_that_are_not_repo_files() {
         .to_string();
 
     assert!(
-        err.contains("docs/content/docs/guide.mdx") && !err.contains("docs/AGENTS.md"),
+        err.contains("docs/content/guide.mdx") && !err.contains("docs/AGENTS.md"),
         "should not treat docs-local paths as repo-root files: {err}"
     );
 }
@@ -296,7 +296,7 @@ fn codebase_map_inventory_rejects_non_members() {
 fn repo_links_reject_repo_file_component_traversal() {
     let repo = repo_link_fixture(
         "---\ntitle: Guide\n---\n\n\
-         See <RepoFile path=\"docs/content/docs/../../Cargo.toml\" />.\n",
+         See <RepoFile path=\"docs/content/../../Cargo.toml\" />.\n",
     );
 
     let err = check_repo_links_in(repo.path(), &repo.path().join(DOCS_ROOT))
@@ -305,7 +305,7 @@ fn repo_links_reject_repo_file_component_traversal() {
 
     assert!(
         err.contains("RepoFile path does not exist")
-            && err.contains("docs/content/docs/../../Cargo.toml"),
+            && err.contains("docs/content/../../Cargo.toml"),
         "should reject non-normal repo paths: {err}"
     );
 }
@@ -401,7 +401,7 @@ fn line_references_slug_is_boundary_safe() {
     assert!(!line_references_slug("nothing here", "auth"));
 }
 
-/// Build a `docs/content/docs` shape with one roadmap item colocated with its
+/// Build a `docs/content` shape with one roadmap item colocated with its
 /// group metadata, plus optional extra files. Returns the docs-root temp dir.
 fn roadmap_fixture(extra: &[(&str, &str)]) -> tempfile::TempDir {
     let docs = tempfile::tempdir().unwrap();

@@ -1,6 +1,6 @@
 # Project Structure
 
-Quick nav for AI agents and human contributors. **Canonical detailed module map lives in docs** ([`reference/getting-oriented/codebase-map`](https://jackin.tailrocks.com/reference/getting-oriented/codebase-map/), served from [docs/content/docs/reference/getting-oriented/codebase-map.mdx](docs/content/docs/reference/getting-oriented/codebase-map.mdx)). This file is the short pointer agents land on first; covers **multi-repo ecosystem** and per-PR **code ↔ docs contract**, sends you to docs for rest.
+Quick nav for AI agents and human contributors. **Canonical detailed module map lives in docs** ([`reference/getting-oriented/codebase-map`](https://jackin.tailrocks.com/reference/getting-oriented/codebase-map/), served from [docs/content/reference/getting-oriented/codebase-map.mdx](docs/content/reference/getting-oriented/codebase-map.mdx)). This file is the short pointer agents land on first; covers **multi-repo ecosystem** and per-PR **code ↔ docs contract**, sends you to docs for rest.
 
 **For what a specific crate is for, its tier/allowed dependencies, its `src/` structure, and its public API, read that crate's README and AGENTS rules file directly** — they are the authoritative, always-current per-crate record (every `crates/*/` member carries both, plus a `CLAUDE.md` symlink, enforced by `cargo xtask lint agents`). The Codebase Map is the ecosystem/tier overview; the per-crate detail lives in the crate that owns it.
 
@@ -89,7 +89,7 @@ Changing behaviour: update both sides in same PR. This table = **per-PR contract
 
 | Code change in | Update docs in |
 |---|---|
-| [crates/jackin/src/cli/](crates/jackin/src/cli/) (command flags or help text) | `docs/content/docs/commands/<cmd>.mdx` |
+| [crates/jackin/src/cli/](crates/jackin/src/cli/) (command flags or help text) | `docs/content/commands/<cmd>.mdx` |
 | [crates/jackin/src/workspace/](crates/jackin/src/workspace/) (mount logic) | `docs/.../guides/workspaces.mdx`, `docs/.../guides/mounts.mdx` |
 | [crates/jackin-config/src/](crates/jackin-config/src/) (config format) | `docs/.../reference/runtime/configuration.mdx` |
 | [crates/jackin-runtime/src/runtime/](crates/jackin-runtime/src/runtime/) (container lifecycle) | `docs/.../reference/getting-oriented/architecture.mdx`, `docs/.../reference/runtime/runtime-instance-model.mdx` |

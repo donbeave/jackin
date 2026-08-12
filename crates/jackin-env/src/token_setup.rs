@@ -23,7 +23,7 @@
 //! Production callers use [`run_setup`]; tests inject mocks via the
 //! crate-private `run_setup_with_runner` helper.
 //!
-//! Roadmap: `docs/content/docs/roadmap/(agent-runtimes-authentication)/workspace-claude-token-setup.mdx`
+//! Roadmap: `docs/content/roadmap/(agent-runtimes-authentication)/workspace-claude-token-setup.mdx`
 
 use crate::host_claude;
 use crate::op_cli::OpCli;

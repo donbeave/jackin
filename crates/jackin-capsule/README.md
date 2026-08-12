@@ -4,7 +4,7 @@ In-container control plane for jackin❯ role containers.
 
 `jackin-capsule` is copied into derived role images and runs as PID 1 under `/jackin/runtime/jackin-capsule`. It owns the terminal sessions, PTYs, pane layout, status bar, attach socket, runtime setup, and the in-container git trailer hook. The host `jackin` binary starts containers detached and attaches through the Capsule client so the operator sees the multiplexer instead of raw container logs.
 
-Design rationale and cross-cutting capsule behaviour live under [Capsule reference](../../docs/content/docs/reference/capsule/index.mdx) — this README is the crate orientation record only.
+Design rationale and cross-cutting capsule behaviour live under [Capsule reference](../../docs/content/reference/capsule/index.mdx) — this README is the crate orientation record only.
 
 ## What this crate owns
 

@@ -7,7 +7,7 @@ import { defineConfig } from 'vite'
 import { readdirSync } from 'node:fs'
 import { join, relative, sep } from 'node:path'
 
-const CONTENT_ROOT = join(import.meta.dirname, 'content', 'docs')
+const CONTENT_ROOT = join(import.meta.dirname, 'content')
 
 function docsSlugs(dir = CONTENT_ROOT): string[] {
   const entries = readdirSync(dir, { withFileTypes: true })

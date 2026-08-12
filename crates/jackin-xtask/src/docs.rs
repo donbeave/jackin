@@ -1,7 +1,7 @@
 //! Documentation-tree automation: scaffold and validate Fumadocs `meta.json`
 //! sidebars for roadmap items and research dossiers.
 //!
-//! The docs site is Fumadocs; each directory under `docs/content/docs/` carries
+//! The docs site is Fumadocs; each directory under `docs/content/` carries
 //! a `meta.json` whose `pages` array orders the sidebar. These tasks keep that
 //! wiring correct without hand-editing JSON:
 //!
@@ -32,7 +32,7 @@ mod lychee_cache;
 mod site_links;
 mod specs;
 
-const DOCS_ROOT: &str = "docs/content/docs";
+const DOCS_ROOT: &str = "docs/content";
 const DOCS_MARKDOWN_ROOT: &str = "docs";
 const ROADMAP_REL: &str = "roadmap";
 const RESEARCH_REL: &str = "research";
@@ -197,7 +197,7 @@ pub(crate) fn run_docs(command: DocsCommand) -> Result<()> {
         DocsCommand::Specs(args) => run_docs_gate(
             args,
             "specs",
-            "docs/content/docs/contributing/behavioral-specs.mdx",
+            "docs/content/contributing/behavioral-specs.mdx",
             "cite an existing test for every behavioral invariant",
             "cargo xtask docs specs",
             specs::check_specs,
@@ -205,7 +205,7 @@ pub(crate) fn run_docs(command: DocsCommand) -> Result<()> {
         DocsCommand::MapCheck(args) => run_docs_gate(
             args,
             "map-check",
-            "docs/content/docs/reference/getting-oriented/codebase-map.mdx",
+            "docs/content/reference/getting-oriented/codebase-map.mdx",
             "synchronize workspace crate names with the codebase map",
             "cargo xtask docs map-check",
             check_codebase_map,
@@ -233,7 +233,7 @@ fn run_docs_gate(
 /// Recurring map↔workspace gate (R-map-metadata-gate): every `cargo metadata`
 /// workspace member package name must appear as a token in the Codebase Map.
 fn check_codebase_map(root: &Path) -> Result<()> {
-    let map_rel = "docs/content/docs/reference/getting-oriented/codebase-map.mdx";
+    let map_rel = "docs/content/reference/getting-oriented/codebase-map.mdx";
     let map_path = root.join(map_rel);
     let map = fs::read_to_string(&map_path)
         .with_context(|| format!("reading codebase map at {}", map_path.display()))?;
@@ -400,7 +400,7 @@ pub(crate) fn run_research(command: ResearchCommand) -> Result<()> {
         ResearchCommand::Check(args) => report::run_gate(
             args.output.resolved(),
             "research",
-            "docs/content/docs/research/",
+            "docs/content/research/",
             "repair meta.json page entries and orphaned research pages",
             "cargo xtask research check",
             || validate_tree(&research_dir()?, "research"),
@@ -413,7 +413,7 @@ pub(crate) fn run_roadmap(command: RoadmapCommand) -> Result<()> {
         RoadmapCommand::Audit(args) => report::run_gate(
             args.output.resolved(),
             "roadmap",
-            "docs/content/docs/roadmap/",
+            "docs/content/roadmap/",
             "repair meta.json page entries and orphaned roadmap pages",
             "cargo xtask roadmap audit",
             || validate_tree(&roadmap_dir()?, "roadmap"),
@@ -430,7 +430,7 @@ pub(crate) fn run_roadmap(command: RoadmapCommand) -> Result<()> {
 // ---------------------------------------------------------------------------
 
 /// Walk up from the current directory to the repo root (the directory that
-/// contains `docs/content/docs`).
+/// contains `docs/content`).
 pub(crate) fn repo_root() -> Result<PathBuf> {
     let start = std::env::current_dir().context("resolving current directory")?;
     for dir in start.ancestors() {

@@ -22,7 +22,7 @@
 //!    [`secrecy::SecretString`] for the rest of its life — never
 //!    on stdout, never on argv, never on disk.
 //!
-//! Roadmap: `docs/content/docs/roadmap/(agent-runtimes-authentication)/workspace-claude-token-setup.mdx`
+//! Roadmap: `docs/content/roadmap/(agent-runtimes-authentication)/workspace-claude-token-setup.mdx`
 
 const CLAUDE_DEFAULT_BIN: &str = "claude";
 const CLAUDE_PROBE_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(3);
