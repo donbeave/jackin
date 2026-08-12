@@ -29,16 +29,20 @@ public struct PopoverRoot: View {
     }
 
     public var body: some View {
+        let height: CGFloat = qiFullPlate ? 1_100 : 520
         VStack(spacing: 0) {
             content
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .frame(width: 380, height: height - 49)
+                .clipped()
 
             Divider()
 
             controls
-                .padding(12)
+                .padding(.horizontal, 12)
+                .frame(height: 48)
+                .background(.bar)
         }
-        .frame(width: 380, height: qiFullPlate ? 1_100 : 520)
+        .frame(width: 380, height: height)
         .accessibilityLabel("Provider usage")
     }
 
