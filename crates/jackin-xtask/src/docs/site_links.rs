@@ -16,7 +16,7 @@ pub(crate) fn run() -> Result<()> {
     let workspace = PathBuf::from(required("GITHUB_WORKSPACE")?);
     let blob_url = required("JACKIN_REPO_BLOB_URL")?;
     let edit_url = required("JACKIN_REPO_EDIT_URL")?;
-    cmd::run(&mut command(&site_url, &workspace, &blob_url, &edit_url))
+    cmd::run_streaming(&mut command(&site_url, &workspace, &blob_url, &edit_url))
 }
 
 fn command(site_url: &str, workspace: &Path, blob_url: &str, edit_url: &str) -> Command {
@@ -26,6 +26,7 @@ fn command(site_url: &str, workspace: &Path, blob_url: &str, edit_url: &str) -> 
         .env("MISE_CONFIG_FILE", workspace.join("docs/mise.toml"))
         .arg("--config")
         .arg("docs/lychee.toml")
+        .arg("--verbose")
         .arg("--include-fragments")
         .arg("--remap")
         .arg(format!(
