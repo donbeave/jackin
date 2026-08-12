@@ -98,6 +98,11 @@ fi
 
 open -n "$APP" --args "$@"
 sleep 3
+pid=$(pgrep -f "$EXEC" | head -1 || true)
+[ -n "$pid" ] || {
+  echo "application exited before capture setup" >&2
+  exit 1
+}
 executable=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$APP/Contents/Info.plist")
 if [ -n "${CAPTURE_STATUS_ITEM_INDEX:-}" ]; then
   if [ "${CAPTURE_STATUS_ITEM_BUTTON:-left}" = right ]; then
@@ -105,7 +110,6 @@ if [ -n "${CAPTURE_STATUS_ITEM_INDEX:-}" ]; then
     if [ ! -x "$STATUS_TOOL" ]; then
       swiftc -O "$HERE/status-item-drive.swift" -o "$STATUS_TOOL"
     fi
-    pid=$(pgrep -f "$EXEC" | head -1)
     "$STATUS_TOOL" "$pid" "$CAPTURE_STATUS_ITEM_INDEX" right
   else
     osascript -e \
@@ -143,7 +147,6 @@ drive_activation() {
       >/dev/null 2>&1 || true
   else
     if [ -n "$WINDOW_NAME" ]; then
-      pid=$(pgrep -f "$EXEC" | head -1)
       # AppKit's default activation can report success while a window remains on another Space.
       # activateAllWindows moves the existing Usage window onto the active Space.
       "$FOCUS_TOOL" "$pid" 0 >/dev/null
@@ -158,6 +161,10 @@ drive_activation() {
 activation_ok=0
 i=0
 while [ "$i" -lt 60 ]; do
+  kill -0 "$pid" 2>/dev/null || {
+    echo "application exited before reaching requested $requested_activation state" >&2
+    exit 1
+  }
   drive_activation
   sleep 0.5
   is_frontmost=$(osascript -e \

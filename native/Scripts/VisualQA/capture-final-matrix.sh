@@ -11,6 +11,12 @@ notification_tool="$repo/native/.build/final-notification-drive"
 focus_tool="$repo/native/.build/final-focus-drive"
 capture="$here/capture.sh"
 owner="jackin❯ desktop"
+inactive_app=${CAPTURE_INACTIVE_APP:-$(osascript -e \
+  'tell application "System Events" to get name of first application process whose frontmost is true')}
+test -n "$inactive_app" && test "$inactive_app" != JackinDesktop || {
+  echo "front a non-jackin❯ application before capturing inactive states" >&2
+  exit 2
+}
 
 source_paths=(
   Cargo.lock
@@ -75,7 +81,7 @@ usage() {
     "FOCUS_DRIVE_TOOL=$focus_tool"
   )
   if [[ "$state" == inactive ]]; then
-    environment+=("CAPTURE_INACTIVE_APP=Finder")
+    environment+=("CAPTURE_INACTIVE_APP=$inactive_app")
   fi
   if [[ "$collapsed" == yes ]]; then
     environment+=("CAPTURE_TOOLBAR_BUTTON_DESCRIPTION=Hide Sidebar")
