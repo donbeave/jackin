@@ -140,6 +140,12 @@ fi
 drive_activation() {
   if [ -n "$WINDOW_NAME" ]; then
     "$DRIVE_TOOL" "com.jackin-project.desktop.visual-qa.show-usage"
+  else
+    popover_onscreen=$(WINDOW_LAYER_MODE=all "$TOOL" "$OWNER" --json 2>/dev/null \
+      | plutil -extract onScreen raw - 2>/dev/null || echo false)
+    if [ "$popover_onscreen" != true ]; then
+      "$DRIVE_TOOL" "com.jackin-project.desktop.visual-qa.show-popover"
+    fi
   fi
   if [ "$requested_activation" = inactive ]; then
     open -a "$CAPTURE_INACTIVE_APP" >/dev/null 2>&1 || true
