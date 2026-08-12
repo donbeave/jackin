@@ -197,12 +197,15 @@ on preserving a second handcrafted visual lane.
 
 ### Provider catalog
 
-- `native/AGENTS.md` freezes eight hosts including OpenCode.
+- `native/AGENTS.md` names the eight-entry host universe, which includes
+  OpenCode.
+- Rust separately defines the desktop contract as the seven-entry
+  `DESKTOP_PROVIDER_ORDER` and intentionally excludes OpenCode.
 - Provider marks, usage links, preview fixtures, and the primary native visual
-  fixture cover seven providers and omit OpenCode.
+  fixture follow that seven-provider desktop contract.
 
-Rust remains the catalog authority. Design work must not resolve this by
-inventing a Swift catalog.
+Rust remains the catalog authority. Design work must preserve the explicit
+desktop order instead of promoting the broader host universe into Swift UI.
 
 ### Product and delivery artifacts
 
@@ -225,5 +228,5 @@ Liquid Glass architecture. Root problems are structural:
   accessibility matrix.
 
 Production Swift must remain unchanged until the operator approves a native
-design alternative. Phase 1 also requires the mandatory
-`tailrocks-macos-design` workflow to be available and invoked.
+design alternative. Phase 1 must use the mandatory `tailrocks-macos-design`
+workflow and remain artifact-only.
