@@ -149,7 +149,7 @@ gh workflow run release.yml --ref main -f mode=publish -f lanes=github
 ```
 
 5. Approve/merge the tap PR after `cask-validation` (first cask is never auto-merged).
-6. Complete the [roadmap production proof](<../docs/content/docs/roadmap/(operator-surface)/native-macos-usage-menu-bar.mdx>): `cargo xtask release-verify` on the public ZIP + `brew install --cask` on Apple Silicon (arm64).
+6. Complete the [roadmap production proof](<../docs/content/roadmap/(operator-surface)/native-macos-usage-menu-bar.mdx>): `cargo xtask release-verify` on the public ZIP + `brew install --cask` on Apple Silicon (arm64).
 
 ### Path B — First stable jackin❯ release rides the same tag
 

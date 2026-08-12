@@ -81,22 +81,22 @@ bun install --frozen-lockfile
 ### Operator console
 
 - **`jackin console` is canonical name for the TUI.** Use everywhere — prose, comparisons, examples, screenshots — including second and later mentions on same page.
-- **Bare `jackin` shortcut explained exactly once**, in console command page (`docs/content/docs/commands/console.mdx`), as sugar that opens console on an interactive terminal. No other page explains it, mentions it inline, or uses dual-form `(\`jackin\` or \`jackin console\`)` / `\`jackin\` / \`jackin console\``. Both forms confuse readers, imply separate commands.
+- **Bare `jackin` shortcut explained exactly once**, in console command page (`docs/content/commands/console.mdx`), as sugar that opens console on an interactive terminal. No other page explains it, mentions it inline, or uses dual-form `(\`jackin\` or \`jackin console\`)` / `\`jackin\` / \`jackin console\``. Both forms confuse readers, imply separate commands.
 - **`jackin console` is deliberately less featured than `jackin load`** (and other CLI subcommands). Console is simplified front for common day-to-day flows. Niche flags + detail options land on CLI first, often exclusively. When comparing, make relationship explicit — don't imply feature-equivalence.
 
 ## Content Notes
 
-- Docs content under `content/docs/` as MDX files.
+- Docs content under `content/` as MDX files.
 - Content source defined in `source.config.ts`, loaded via `src/lib/source.ts`.
-- File-based routing: `content/docs/foo/bar.mdx` → `/foo/bar`. Parenthesized group dirs (e.g. `content/docs/(role-authoring)/`) are organizational, absent from URLs.
+- File-based routing: `content/foo/bar.mdx` → `/foo/bar`. Parenthesized group dirs (e.g. `content/(role-authoring)/`) are organizational, absent from URLs.
 - Link docs pages with site-absolute routes (e.g. `/guides/mounts/`). Generated-site lychee check is authoritative guard, including fragments.
-- No GitHub blob links or repository-file component links for pages published under `content/docs/`. Use site route instead (e.g. `/roadmap/per-mount-isolation/`). GitHub only for external repos and repo files not rendered as docs.
-- In MDX under `docs/content/docs`, link non-doc repo files with the Fumadocs repository-file component, not plain code spans, when reader should open the file. The component renders GitHub `blob/main` URL; CI link check remaps to PR checkout, so renames/deletions fail before merge. Avoid `tree/main` directory links unless a concrete file is impossible.
+- No GitHub blob links or repository-file component links for pages published under `content/`. Use site route instead (e.g. `/roadmap/per-mount-isolation/`). GitHub only for external repos and repo files not rendered as docs.
+- In MDX under `docs/content`, link non-doc repo files with the Fumadocs repository-file component, not plain code spans, when reader should open the file. The component renders GitHub `blob/main` URL; CI link check remaps to PR checkout, so renames/deletions fail before merge. Avoid `tree/main` directory links unless a concrete file is impossible.
 - Plain inline-code refs to existing repo files under `crates/`, `src/`, `docs/`, `docker/`, `.github/`, and `scripts/` fail `cargo xtask docs repo-links`; link them. Published docs pages → docs route. Non-doc repo files in Fumadocs MDX → repository-file component. Non-Fumadocs Markdown → ordinary Markdown links. Future files not yet existing may stay code spans.
 - `check:repo-links` exists because lychee only checks real links in rendered HTML. Plain code spans containing repo paths aren't links, so lychee can't detect renames/deletions. The source check forces checked links, then lychee verifies the generated URL.
 - `mailto:` links are lychee-checked; use real intentional addresses, not placeholders.
 - Sidebar + top-nav configured via `meta.json` files and `src/lib/layout.shared.tsx`.
-- **Roadmap sidebar discipline.** Every MDX file under `content/docs/roadmap/` must be referenced in at least one `meta.json` under the roadmap tree (nested group structure: root `meta.json` points to group dirs; each group's `meta.json` points to pages stored in that same category/subcategory directory). On any add/rename/delete/status-change of a roadmap item — or directory restructure — verify sidebar still matches directory contents in same PR. Operators discover open work via sidebar (not overview prose), so an item reachable only via direct URL or overview is effectively hidden. Audit from `docs/`:
+- **Roadmap sidebar discipline.** Every MDX file under `content/roadmap/` must be referenced in at least one `meta.json` under the roadmap tree (nested group structure: root `meta.json` points to group dirs; each group's `meta.json` points to pages stored in that same category/subcategory directory). On any add/rename/delete/status-change of a roadmap item — or directory restructure — verify sidebar still matches directory contents in same PR. Operators discover open work via sidebar (not overview prose), so an item reachable only via direct URL or overview is effectively hidden. Audit from `docs/`:
 
   ```sh
   cargo xtask roadmap audit
@@ -104,8 +104,8 @@ bun install --frozen-lockfile
   ```
 
   Scripts report any MDX file with no matching `meta.json` entry and any entry with no matching MDX file. Both directions must be clean.
-- **Research sidebar discipline.** Research is a separate root at `content/docs/research/`, grouped under `agents`, `platform`, `product`, `engineering`, and `context`. Every research MDX file must be reachable through nested `meta.json` entries. Research pages use `**Research state**`, never roadmap `**Status**`; evidence, comparisons, experiments, and design rationale stay here, while implementation commitment stays under `/roadmap/`. New dossiers use `cargo xtask research scaffold <slug> --group <domain>`.
-- **Roadmap overview discipline.** `content/docs/roadmap/index.mdx` explains the planning contract. `in-progress.mdx`, `planned.mdx`, and `ideas.mdx` are the status views. Sidebar groups every item by product area. The Roadmap contains no completed archive and no research evidence.
+- **Research sidebar discipline.** Research is a separate root at `content/research/`, grouped under `agents`, `platform`, `product`, `engineering`, and `context`. Every research MDX file must be reachable through nested `meta.json` entries. Research pages use `**Research state**`, never roadmap `**Status**`; evidence, comparisons, experiments, and design rationale stay here, while implementation commitment stays under `/roadmap/`. New dossiers use `cargo xtask research scaffold <slug> --group <domain>`.
+- **Roadmap overview discipline.** `content/roadmap/index.mdx` explains the planning contract. `in-progress.mdx`, `planned.mdx`, and `ideas.mdx` are the status views. Sidebar groups every item by product area. The Roadmap contains no completed archive and no research evidence.
 
   On any add/rename/delete/`**Status**`-change of a roadmap item, update the matching status view:
 
@@ -122,9 +122,9 @@ bun install --frozen-lockfile
   Audit which roadmap items are missing from overview:
 
   ```sh
-  find docs/content/docs/roadmap -name '*.mdx' \
+  find docs/content/roadmap -name '*.mdx' \
     | xargs -n1 basename -s .mdx | grep -v '^index$' | sort > /tmp/roadmap-files
-  grep -hoE 'roadmap/[a-z0-9-]+' docs/content/docs/roadmap/{in-progress,planned,ideas}.mdx \
+  grep -hoE 'roadmap/[a-z0-9-]+' docs/content/roadmap/{in-progress,planned,ideas}.mdx \
     | sed 's|roadmap/||' | sort -u > /tmp/roadmap-overview
   comm -23 /tmp/roadmap-files /tmp/roadmap-overview
   ```
@@ -135,7 +135,7 @@ bun install --frozen-lockfile
 - **Do not hard-wrap MDX prose, or any markdown the docs site renders, or AGENTS.md / PULL_REQUESTS.md / CLAUDE.md / README.md / CHANGELOG.md / any other prose markdown in the repo.** Each paragraph = one long line. Fumadocs, GitHub's renderer, every reasonable editor wrap at display width; hard-wrapping at ~70 cols makes one-word edits touch every line and splits sentences across meaningless boundaries. Exception: content with meaningful line breaks — code fences, list bullets, table cells, frontmatter values. Unwrap existing hard-wrapped paragraphs as part of the edit that brings you there. The PR-body rule in [PULL_REQUESTS.md](../PULL_REQUESTS.md) is the same rule applied to every prose markdown surface.
 - Self-hosted fonts via fontsource (`src/styles/fonts.css`) — no third-party font CDN.
 - Keep docs and code aligned; when they differ, code is source of truth.
-- **Never reference open pull requests in published documentation.** No link of form `https://github.com/jackin-project/<repo>/pull/<N>` or prose like "PR #123" / "in flight in #123" in `content/docs/**.mdx`. Open PRs are ephemeral (closed, rebased, force-pushed, retitled, split, replaced) — pointing at one bakes a transient URL into a long-lived page. For features *under development*, describe **state** ("under active development", "in flight", "design in progress") without naming the PR. The landing PR updates docs to say it landed; until then docs describe steady-state user-visible reality, not in-progress engineering. Closed/merged PRs and issues may appear when they're the canonical record of a *resolved* design discussion or known limitation — existing pattern in `roadmap/*.mdx`, fine. Applies equally to README, AGENTS files outside `docs/`, any other published artefact.
+- **Never reference open pull requests in published documentation.** No link of form `https://github.com/jackin-project/<repo>/pull/<N>` or prose like "PR #123" / "in flight in #123" in `content/**.mdx`. Open PRs are ephemeral (closed, rebased, force-pushed, retitled, split, replaced) — pointing at one bakes a transient URL into a long-lived page. For features *under development*, describe **state** ("under active development", "in flight", "design in progress") without naming the PR. The landing PR updates docs to say it landed; until then docs describe steady-state user-visible reality, not in-progress engineering. Closed/merged PRs and issues may appear when they're the canonical record of a *resolved* design discussion or known limitation — existing pattern in `roadmap/*.mdx`, fine. Applies equally to README, AGENTS files outside `docs/`, any other published artefact.
 - **The site has three audiences, not two.** Classify every docs change against this list before writing:
   1. **Operator** (sidebar groups: *Getting Started*, *Operator Guide*, *Commands*) — uses jackin❯ as a product via CLI/TUI. Never asked to know on-disk paths, TOML schemas, internals.
   2. **Role author** (sidebar group: *Role Authoring* — pages under `guides/role-repos.mdx` and `developing/*`) — **also user-facing**. Builds own role repos with own toolchain + plugins. Needs no jackin❯ implementation knowledge to follow. Only concession: `developing/construct-image.mdx` has a contributor lower half for `mise run construct-build-local` / CI workflow.

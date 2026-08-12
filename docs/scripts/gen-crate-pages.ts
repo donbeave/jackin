@@ -1,6 +1,6 @@
 /**
  * Build-time pipeline: render each crate README as a Fumadocs page under
- * content/docs/reference/crates/. The README is the source of truth; generated
+ * content/reference/crates/. The README is the source of truth; generated
  * pages are gitignored.
  */
 import { existsSync, statSync } from 'node:fs'
@@ -10,7 +10,7 @@ import { join, normalize, relative, sep } from 'node:path'
 const docsRoot = join(import.meta.dirname, '..')
 const repoRoot = join(docsRoot, '..')
 const cratesRoot = join(repoRoot, 'crates')
-const outDir = join(docsRoot, 'content', 'docs', 'reference', 'crates')
+const outDir = join(docsRoot, 'content', 'reference', 'crates')
 const metaPath = join(outDir, 'meta.json')
 
 export type CrateReadme = { name: string; body: string }
@@ -59,7 +59,7 @@ export function normalizeRepoPath(
   if (sibling) return null
 
   // Docs content path → site route, not RepoFile.
-  if (href.includes('docs/content/docs/') || href.startsWith('../../docs/')) {
+  if (href.includes('docs/content/') || href.startsWith('../../docs/')) {
     return null
   }
 
@@ -115,7 +115,7 @@ export function siblingCrateRoute(href: string): string | null {
 
 /** Docs MDX relative path → site-absolute route. */
 export function docsContentRoute(href: string): string | null {
-  const m = href.match(/(?:^|\/)docs\/content\/docs\/(.+?)(?:\.mdx)?(?:#.*)?$/)
+  const m = href.match(/(?:^|\/)docs\/content\/(.+?)(?:\.mdx)?(?:#.*)?$/)
   if (!m) return null
   let slug = m[1]
     .split('/')

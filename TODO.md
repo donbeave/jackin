@@ -70,10 +70,10 @@ Markers without TODO.md entry OK for transient in-flight work, but anything outl
 
 ## Roadmap
 
-Roadmap items are unfinished implementation outcomes only. Evidence and design rationale live under [Research](docs/content/docs/research/index.mdx). See:
+Roadmap items are unfinished implementation outcomes only. Evidence and design rationale live under [Research](docs/content/research/index.mdx). See:
 
-- Overview: [`docs/content/docs/roadmap/index.mdx`](docs/content/docs/roadmap/index.mdx)
-- Per-item design docs: [`docs/content/docs/roadmap/`](docs/content/docs/roadmap/)
+- Overview: [`docs/content/roadmap/index.mdx`](docs/content/roadmap/index.mdx)
+- Per-item design docs: [`docs/content/roadmap/`](docs/content/roadmap/)
 - Browsable: <https://jackin.tailrocks.com/roadmap/>
 
 To add an item, use `cargo xtask change new <slug> --group <group>`, then fill the outcome, current state, remaining work, completion gate, and related research. Register it in exactly one status view: `in-progress.mdx`, `planned.mdx`, or `ideas.mdx`. Run `cargo xtask roadmap audit` and `cargo xtask research check` after structural changes.
@@ -100,17 +100,17 @@ Docs rot silently. Every PR must include a one-pass verification structure-sensi
 
 ### When your PR touches CLI behavior
 
-- [ ] Did you add, rename, or remove a CLI flag, subcommand, or change default behavior? If yes, matching `docs/content/docs/(public)/commands/<cmd>.mdx` needs updating in same PR.
-- [ ] Did you change `jackin.role.toml` schema or validation rules? If yes, update [`docs/content/docs/(public)/(role-authoring)/developing/role-manifest.mdx`](<docs/content/docs/(public)/(role-authoring)/developing/role-manifest.mdx>).
-- [ ] Did you change `config.toml` shape? If yes, update [`docs/content/docs/reference/runtime/configuration.mdx`](docs/content/docs/reference/runtime/configuration.mdx).
-- [ ] Did you change auth-forward, Keychain, symlink, or file-permission behavior in [`crates/jackin-instance/src/auth.rs`](crates/jackin-instance/src/auth.rs)? If yes, update [`docs/content/docs/(public)/guides/authentication/index.mdx`](<docs/content/docs/(public)/guides/authentication/index.mdx>) and [`docs/content/docs/(public)/guides/security-model.mdx`](<docs/content/docs/(public)/guides/security-model.mdx>).
+- [ ] Did you add, rename, or remove a CLI flag, subcommand, or change default behavior? If yes, matching `docs/content/(public)/commands/<cmd>.mdx` needs updating in same PR.
+- [ ] Did you change `jackin.role.toml` schema or validation rules? If yes, update [`docs/content/(public)/(role-authoring)/developing/role-manifest.mdx`](<docs/content/(public)/(role-authoring)/developing/role-manifest.mdx>).
+- [ ] Did you change `config.toml` shape? If yes, update [`docs/content/reference/runtime/configuration.mdx`](docs/content/reference/runtime/configuration.mdx).
+- [ ] Did you change auth-forward, Keychain, symlink, or file-permission behavior in [`crates/jackin-instance/src/auth.rs`](crates/jackin-instance/src/auth.rs)? If yes, update [`docs/content/(public)/guides/authentication/index.mdx`](<docs/content/(public)/guides/authentication/index.mdx>) and [`docs/content/(public)/guides/security-model.mdx`](<docs/content/(public)/guides/security-model.mdx>).
 
 ### When your PR touches a roadmap item
 
-- [ ] If the PR advances an item under `docs/content/docs/roadmap/`, update its exact status, current-state boundary, remaining work, completion gate, and links in the same PR. If all work ships, retire the item.
+- [ ] If the PR advances an item under `docs/content/roadmap/`, update its exact status, current-state boundary, remaining work, completion gate, and links in the same PR. If all work ships, retire the item.
 - [ ] If the PR references source paths that have since moved (e.g., a roadmap doc mentions the old monolith runtime path and the code now lives in the `crates/jackin-runtime` runtime module tree), fix those path references.
-- [ ] If the PR adds, renames, deletes, or moves a roadmap MDX file between status sections, update the matching `meta.json` file under [`docs/content/docs/roadmap/`](docs/content/docs/roadmap/) so the roadmap sidebar matches the directory. Run `cargo xtask roadmap audit` to confirm the sidebar is in sync.
-- [ ] If the PR adds a roadmap item or changes its `**Status**`, update exactly one of [`in-progress.mdx`](docs/content/docs/roadmap/in-progress.mdx), [`planned.mdx`](docs/content/docs/roadmap/planned.mdx), or [`ideas.mdx`](docs/content/docs/roadmap/ideas.mdx). Retired items disappear; there is no Completed section.
+- [ ] If the PR adds, renames, deletes, or moves a roadmap MDX file between status sections, update the matching `meta.json` file under [`docs/content/roadmap/`](docs/content/roadmap/) so the roadmap sidebar matches the directory. Run `cargo xtask roadmap audit` to confirm the sidebar is in sync.
+- [ ] If the PR adds a roadmap item or changes its `**Status**`, update exactly one of [`in-progress.mdx`](docs/content/roadmap/in-progress.mdx), [`planned.mdx`](docs/content/roadmap/planned.mdx), or [`ideas.mdx`](docs/content/roadmap/ideas.mdx). Retired items disappear; there is no Completed section.
 
 ### How to verify
 

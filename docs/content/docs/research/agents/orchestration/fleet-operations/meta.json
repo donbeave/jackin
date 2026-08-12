@@ -1,7 +1,0 @@
-{
-  "title": "Fleet Operations",
-  "defaultOpen": false,
-  "pages": [
-    "autonomous-task-queue-design"
-  ]
-}

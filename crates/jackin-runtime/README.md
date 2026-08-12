@@ -29,7 +29,7 @@ This crate is broad by design; the code-health program tracks decomposing it int
 
 ## Public API
 
-The launch entry points (`launch_role_runtime`, `load_role_with`, `run_launch_core`) consumed by the `jackin` CLI. The [runtime/launch behavioral spec](../../docs/content/docs/reference/developer-reference/specs/runtime-launch.mdx) is the oracle for any extraction.
+The launch entry points (`launch_role_runtime`, `load_role_with`, `run_launch_core`) consumed by the `jackin` CLI. The [runtime/launch behavioral spec](../../docs/content/reference/developer-reference/specs/runtime-launch.mdx) is the oracle for any extraction.
 
 `run_launch_core` is a linear chain of typed `#[must_use]` phase tokens (validation → image classification → materialization → instance prepare → environment → trust → workspace materialize → run → finalize → cleanup classification). Boundary harnesses live in `runtime/launch/launch_pipeline/tests.rs` (`LaunchCore` fixture builder + suite-A / finalize-error cleanup proofs). Pipeline Criterion scenario: `benches/launch_pipeline.rs` (`run_launch_core_e2e_fakedocker`).
 

@@ -61,7 +61,7 @@ const KINDS: &[SchemaKind] = &[
     },
 ];
 
-const SCHEMA_VERSIONS_DOC: &str = "docs/content/docs/reference/runtime/schema-versions.mdx";
+const SCHEMA_VERSIONS_DOC: &str = "docs/content/reference/runtime/schema-versions.mdx";
 
 #[expect(
     clippy::print_stdout,

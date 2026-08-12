@@ -12,10 +12,10 @@ on:
       mode:
         description: |
           validate = secret-free assembly + reconciliation fixtures (feature branch OK).
-          publish = credentialed notarized menu-bar + release (main only).
+          Stable publication is tag-triggered only.
         type: choice
         default: validate
-        options: [validate, publish]
+        options: [validate]
       lanes:
         description: |
           Which runner(s) to run on for Linux CLI/capsule builds. Default github; use both for parity runs.
@@ -100,12 +100,6 @@ jobs:
           MODE: ${{ steps.mode.outputs.mode }}
         run: |
           set -euo pipefail
-          if [[ "$MODE" == "publish" && "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            test "${GITHUB_REF}" = "refs/heads/main" || {
-              echo "::error::publish mode workflow_dispatch must run from main"
-              exit 1
-            }
-          fi
           if [[ "$MODE" == "validate" ]]; then
             echo "validate mode: feature branches allowed; no secrets; no external writes"
           fi
@@ -602,6 +596,7 @@ jobs:
       contents: write
       id-token: write
     outputs:
+      version: ${{ needs.check-version.outputs.version }}
       arm64_macos: ${{ steps.shas.outputs.arm64_macos }}
       x86_macos: ${{ steps.shas.outputs.x86_macos }}
       arm64_linux: ${{ steps.shas.outputs.arm64_linux }}
@@ -619,12 +614,6 @@ jobs:
           pattern: release-GitHub-*
           path: artifacts
           merge-multiple: true
-
-      - name: Create tag
-        if: github.event_name == 'workflow_dispatch'
-        run: |
-          git tag "v${VERSION}"
-          git push origin "v${VERSION}"
 
       - name: Read platform SHA256s
         id: shas
@@ -654,6 +643,78 @@ jobs:
           x86-sha: ${{ steps.shas.outputs.capsule_x86_linux }}
           github-token: ${{ github.token }}
 
+      - name: Assemble consumer release manifest and independent checksums
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          subjects=(
+            artifacts/jackin-${VERSION}-*.tar.gz
+            artifacts/jackin-capsule-${VERSION}-*.tar.gz
+            artifacts/jackin-desktop-${VERSION}-*.zip
+          )
+          test "${#subjects[@]}" -eq 7
+          : > artifacts/SHA256SUMS
+          : > assets.jsonl
+          for subject in "${subjects[@]}"; do
+            name=$(basename "$subject")
+            digest=$(sha256sum "$subject" | awk '{print $1}')
+            printf '%s  %s\n' "$digest" "$name" >> artifacts/SHA256SUMS
+            jq -cn --arg name "$name" --arg sha256 "$digest" \
+              '{name:$name,sha256:$sha256}' >> assets.jsonl
+          done
+          jq -S -n \
+            --arg source_repository "$GITHUB_REPOSITORY" \
+            --arg source_ref "refs/tags/v${VERSION}" \
+            --arg source_commit "$GITHUB_SHA" \
+            --arg version "$VERSION" \
+            --slurpfile assets assets.jsonl \
+            '{schema:"velnor.package-release.v1",source_repository:$source_repository,source_ref:$source_ref,source_commit:$source_commit,version:$version,assets:$assets}' \
+            > artifacts/release-manifest.json
+          (cd artifacts && sha256sum --check --strict SHA256SUMS)
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: package-release-assets
+          path: artifacts
+          if-no-files-found: error
+
+  sign-packages:
+    needs: release
+    strategy:
+      fail-fast: false
+      matrix:
+        subject:
+          - jackin-${{ needs.release.outputs.version }}-aarch64-apple-darwin.tar.gz
+          - jackin-${{ needs.release.outputs.version }}-x86_64-apple-darwin.tar.gz
+          - jackin-${{ needs.release.outputs.version }}-aarch64-unknown-linux-gnu.tar.gz
+          - jackin-${{ needs.release.outputs.version }}-x86_64-unknown-linux-gnu.tar.gz
+          - jackin-capsule-${{ needs.release.outputs.version }}-aarch64-unknown-linux-gnu.tar.gz
+          - jackin-capsule-${{ needs.release.outputs.version }}-x86_64-unknown-linux-gnu.tar.gz
+          - jackin-desktop-${{ needs.release.outputs.version }}-aarch64-apple-darwin.zip
+    permissions:
+      attestations: write
+      contents: read
+      id-token: write
+    uses: jackin-project/velnor-actions/.github/workflows/package-signer.yml@a1ff41d323ab0d87bcb6407e14aee406b32a6cb0 # 2026.8.6
+    with:
+      artifact-name: package-release-assets
+      subject-path: ${{ matrix.subject }}
+      source-ref: refs/tags/v${{ needs.release.outputs.version }}
+
+  publish-release:
+    needs: [release, sign-packages]
+    runs-on: ubuntu-26.04
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    env:
+      VERSION: ${{ needs.release.outputs.version }}
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: package-release-assets
+          path: artifacts
+
       - name: Create or repair GitHub Release (no clobber)
         env:
           GH_TOKEN: ${{ github.token }}
@@ -661,6 +722,8 @@ jobs:
           set -euo pipefail
           tag="v${VERSION}"
           upload_args=(
+            artifacts/release-manifest.json
+            artifacts/SHA256SUMS
             artifacts/jackin-[0-9]*.tar.gz
             artifacts/jackin-[0-9]*.tar.gz.sha256
             artifacts/jackin-[0-9]*.tar.gz.bundle
@@ -700,185 +763,3 @@ jobs:
               --title "$tag" \
               --generate-notes
           fi
-
-  homebrew:
-    # Explicit success gate so a future change to the `release` job
-    # that turns a failure into a soft-error / continue-on-error path
-    # cannot silently ship a formula update for an unreleased version.
-    if: needs.release.result == 'success'
-    needs: [check-version, release]
-    runs-on: ubuntu-26.04
-    timeout-minutes: 60
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          repository: jackin-project/homebrew-tap
-          ref: main
-          token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
-          path: homebrew-tap
-
-      - name: Rewrite stable formula
-        env:
-          VERSION: ${{ needs.check-version.outputs.version }}
-          ARM64_SHA256: ${{ needs.release.outputs.arm64_macos }}
-          X86_SHA256: ${{ needs.release.outputs.x86_macos }}
-          LINUX_ARM64_SHA256: ${{ needs.release.outputs.arm64_linux }}
-          LINUX_X86_SHA256: ${{ needs.release.outputs.x86_linux }}
-          CAPSULE_ARM64_SHA256: ${{ needs.release.outputs.capsule_arm64_linux }}
-          CAPSULE_X86_SHA256: ${{ needs.release.outputs.capsule_x86_linux }}
-        run: |
-          # shellcheck disable=SC2016
-          cat > homebrew-tap/Formula/jackin.rb <<EOF
-          class Jackin < Formula
-            desc "CLI for orchestrating autonomous AI coding agents in isolated sandboxed environments — reproducible, scoped, and fully under your control"
-            homepage "https://github.com/jackin-project/jackin"
-            version "${VERSION}"
-            license "Apache-2.0"
-
-            on_macos do
-              on_arm do
-                url "https://github.com/jackin-project/jackin/releases/download/v${VERSION}/jackin-${VERSION}-aarch64-apple-darwin.tar.gz"
-                sha256 "${ARM64_SHA256}"
-              end
-              on_intel do
-                url "https://github.com/jackin-project/jackin/releases/download/v${VERSION}/jackin-${VERSION}-x86_64-apple-darwin.tar.gz"
-                sha256 "${X86_SHA256}"
-              end
-            end
-
-            on_linux do
-              on_arm do
-                url "https://github.com/jackin-project/jackin/releases/download/v${VERSION}/jackin-${VERSION}-aarch64-unknown-linux-gnu.tar.gz"
-                sha256 "${LINUX_ARM64_SHA256}"
-              end
-              on_intel do
-                url "https://github.com/jackin-project/jackin/releases/download/v${VERSION}/jackin-${VERSION}-x86_64-unknown-linux-gnu.tar.gz"
-                sha256 "${LINUX_X86_SHA256}"
-              end
-            end
-
-            resource "jackin-capsule-aarch64-unknown-linux-gnu" do
-              url "https://github.com/jackin-project/jackin/releases/download/v${VERSION}/jackin-capsule-${VERSION}-aarch64-unknown-linux-gnu.tar.gz"
-              sha256 "${CAPSULE_ARM64_SHA256}"
-            end
-
-            resource "jackin-capsule-x86_64-unknown-linux-gnu" do
-              url "https://github.com/jackin-project/jackin/releases/download/v${VERSION}/jackin-capsule-${VERSION}-x86_64-unknown-linux-gnu.tar.gz"
-              sha256 "${CAPSULE_X86_SHA256}"
-            end
-
-            conflicts_with "jackin-project/tap/jackin-preview", because: "stable and preview install the same binary"
-
-            def install
-              bin.install "jackin"
-              bin.install "jackin-role"
-
-              capsule_target = Hardware::CPU.arm? ? "aarch64-unknown-linux-gnu" : "x86_64-unknown-linux-gnu"
-              capsule_arch = Hardware::CPU.arm? ? "arm64" : "amd64"
-              resource("jackin-capsule-#{capsule_target}").stage do
-                capsule_dir = libexec/"jackin-capsule/linux-#{capsule_arch}"
-                capsule_dir.install "jackin-capsule"
-                chmod 0755, capsule_dir/"jackin-capsule"
-              end
-            end
-
-            test do
-              system "#{bin}/jackin", "--version"
-            end
-          end
-          EOF
-
-      - name: Write usage menu-bar cask when release asset SHA is present
-        id: cask
-        env:
-          VERSION: ${{ needs.check-version.outputs.version }}
-          APP_SHA256: ${{ needs.release.outputs.app_sha256 }}
-        run: |
-          # shellcheck disable=SC2016
-          set -euo pipefail
-          if [[ -z "${APP_SHA256:-}" ]]; then
-            echo "has_cask=false" >> "$GITHUB_OUTPUT"
-            echo "No menu-bar ZIP SHA — formula-only tap update"
-            exit 0
-          fi
-          mkdir -p homebrew-tap/Casks
-          cat > homebrew-tap/Casks/jackin-desktop.rb <<EOF
-          cask "jackin-desktop" do
-            version "${VERSION}"
-            sha256 "${APP_SHA256}"
-
-            url "https://github.com/jackin-project/jackin/releases/download/v${VERSION}/jackin-desktop-${VERSION}-aarch64-apple-darwin.zip"
-            name "jackin❯ Desktop"
-            desc "Native macOS menu bar app for AI agent subscription usage limits"
-            homepage "https://github.com/jackin-project/jackin"
-
-            depends_on macos: ">= :sonoma"
-
-            app "JackinDesktop.app"
-          end
-          EOF
-          echo "has_cask=true" >> "$GITHUB_OUTPUT"
-
-      - name: Open tap PR (first cask never auto-merged)
-        working-directory: homebrew-tap
-        env:
-          GH_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
-          VERSION: ${{ needs.check-version.outputs.version }}
-          HAS_CASK: ${{ steps.cask.outputs.has_cask }}
-        run: |
-          set -euo pipefail
-          git add Formula/jackin.rb
-          if [[ "$HAS_CASK" == "true" ]]; then
-            git add Casks/jackin-desktop.rb
-          fi
-          if git diff --cached --quiet --exit-code; then
-            echo "Stable formula/cask already up to date"
-            exit 0
-          fi
-          branch="release/jackin-${VERSION}"
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          # Reuse existing PR branch when present.
-          if git ls-remote --exit-code --heads origin "$branch" >/dev/null 2>&1; then
-            git fetch origin "$branch"
-            git switch -C "$branch" "origin/$branch"
-            git add Formula/jackin.rb
-            [[ "$HAS_CASK" == "true" ]] && git add Casks/jackin-desktop.rb
-            if git diff --cached --quiet --exit-code; then
-              echo "Tap branch already current"
-              exit 0
-            fi
-            git commit -m "jackin ${VERSION}"
-            git push origin "$branch"
-          else
-            git switch -c "$branch"
-            git commit -m "jackin ${VERSION}"
-            git push -u origin "$branch"
-          fi
-          body_file="${RUNNER_TEMP}/homebrew-pr-body.md"
-          {
-            printf 'Automated stable tap update for **jackin %s**.\n\n' "$VERSION"
-            printf -- '- Release: https://github.com/jackin-project/jackin/releases/tag/v%s\n' "$VERSION"
-            printf -- '- Formula + matching jackin-capsule Linux resources.\n'
-            if [[ "$HAS_CASK" == "true" ]]; then
-              printf -- '- Cask jackin-desktop (arm64 notarized ZIP).\n'
-              printf -- '- First/structural cask: do not auto-merge — operator approval required after cask-validation checks.\n'
-            fi
-          } > "$body_file"
-          existing_pr=$(gh pr list --head "$branch" --base main --json url --jq '.[0].url' || true)
-          if [[ -n "$existing_pr" ]]; then
-            echo "Updated existing PR: $existing_pr"
-            exit 0
-          fi
-          pr_url=$(gh pr create \
-            --title "jackin ${VERSION}" \
-            --body-file "$body_file" \
-            --base main \
-            --head "$branch")
-          echo "Opened PR: $pr_url"
-          # Formula-only mechanical bumps may still be merged by operators/automation later.
-          # Never auto-merge when a cask is part of the PR (first-cask / structural safety).
-          if [[ "$HAS_CASK" != "true" ]]; then
-            echo "Formula-only PR opened; operator may enable auto-merge policy separately"
-          fi
-          gh pr merge "$pr_url" --squash --delete-branch

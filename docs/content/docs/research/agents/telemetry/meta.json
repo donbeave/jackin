@@ -1,8 +1,0 @@
-{
-  "title": "Agent Telemetry",
-  "defaultOpen": false,
-  "pages": [
-    "parallax-observability-findings",
-    "token-cost-telemetry"
-  ]
-}

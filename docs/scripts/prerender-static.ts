@@ -4,7 +4,7 @@ import { availableParallelism } from 'node:os'
 import { dirname, join, relative, sep } from 'node:path'
 
 const root = join(import.meta.dirname, '..')
-const contentRoot = join(root, 'content', 'docs')
+const contentRoot = join(root, 'content')
 const outDir = join(root, '.output', 'public')
 const host = '127.0.0.1'
 const port = 4173

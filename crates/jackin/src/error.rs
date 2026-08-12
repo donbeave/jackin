@@ -11,7 +11,7 @@ use thiserror::Error;
 
 /// Stable error codes for `jackin` operator-visible failures.
 ///
-/// Each code maps to a docs page at `docs/content/docs/reference/errors/<code>.mdx`.
+/// Each code maps to a docs page at `docs/content/reference/errors/<code>.mdx`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ErrorCode {
     E001,

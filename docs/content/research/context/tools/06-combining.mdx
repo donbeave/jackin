@@ -1,0 +1,107 @@
+---
+title: "06 — Current rising tools and composition"
+description: "Current scan of rising context tools and safe composition patterns across output, shell, retrieval, memory, and compression layers."
+---
+
+## Summary
+
+Composition is safe only when each tool owns a distinct interception boundary and exactly one layer controls recovery, memory, and shell rewriting.
+Cutoff: **2026-08-12**. Inclusion requires current maintenance plus either fast attention growth, material adoption, or a mechanism distinct from the four core tools. Stars are discovery metadata, not an endorsement.
+
+## Question and scope
+
+Which rising tools add distinct mechanisms, and under what boundary rules can multiple tools compose safely?
+
+## Method
+
+The scan admits maintained tools with a distinct mechanism or material adoption signal, then maps overlap, recovery authority, schema cost, and failure interaction before considering composition.
+
+## Findings
+
+### Current rising set
+
+| Tool | Current snapshot | Mechanism | Best current fit | Hard caveat |
+|---|---|---|---|---|
+| [pxpipe](https://github.com/teamchong/pxpipe) | [v0.13.1](https://github.com/teamchong/pxpipe/releases/tag/v0.13.1); 7,055★ / 25 subscribers; created 2026-05-20 | Re-encodes dense stable text/history/tool output into image pages behind a proxy | Very long, model-gated contexts where vision representation is cheaper and proven legible | Lossy modality transform; young project; current outcome evidence is first-party |
+| [Context Mode](https://github.com/mksglu/context-mode) | [v1.0.169](https://github.com/mksglu/context-mode/releases/tag/v1.0.169); 19,802★ / 86; created 2026-02-23 | Keeps raw tool data in a sandbox; exposes summaries plus SQLite FTS5/BM25 retrieval | Data/research sessions that need searchable local artifacts rather than raw dumps | Elastic License 2.0; mandatory routing changes agent behavior; no current independent latest-release A/B found |
+| [Paritok](https://github.com/Paritok-official/paritok-4b-v1) | tag [v1.3.3](https://github.com/Paritok-official/paritok-4b-v1/tree/v1.3.3); 1,031★ / 78; created 2026-07-15 | 4B coding-context compressor, tool-schema semantic filtering, history summarization, recovery references | Long read-heavy or MCP-heavy sessions with local GPU capacity | Current first-party result reports 86.5% quality retained at 25.7% compression ratio—real quality loss; 24GB-class bf16 deployment |
+| [jCodeMunch MCP](https://github.com/jgravelle/jcodemunch-mcp) | [v1.108.271](https://github.com/jgravelle/jcodemunch-mcp/releases/tag/v1.108.271); 2,542★ / 19 | Indexes code and retrieves precise symbols/relationships | Symbol-centric navigation across many languages | MCP/index overhead; current release reports its own Codex net-token benchmark as negative/inconclusive |
+| [Serena](https://github.com/oraios/serena) | [v1.7.0](https://github.com/oraios/serena/releases/tag/v1.7.0); 27,874★ / 86 | Language-server-backed semantic retrieval and editing | Prevent broad source reads with exact symbol operations | Context engineering, not automatic compression; language-server quality varies |
+| [fff](https://github.com/dmtrKovalenko/fff) | [v0.10.3](https://github.com/dmtrKovalenko/fff/releases/tag/v0.10.3); 9,949★ / 20 | Resident typo-tolerant path/content search with frecency and git-aware ranking | Fast repeated lexical discovery without broad file reads | Retrieval, not compression; very low subscriber depth; current task-level token effect unproven |
+| [codedb](https://github.com/justrach/codedb) | [v0.2.5838](https://github.com/justrach/codedb/releases/tag/v0.2.5838); 1,357★ / 9 | Indexed symbols, outlines, callers, dependencies, and task-shaped context | Structural relationship queries that lexical search cannot answer | Broad MCP/installer policy surface; current outcome evidence is first-party |
+| [sem](https://github.com/Ataraxy-Labs/sem) | [v0.21.0](https://github.com/Ataraxy-Labs/sem/releases/tag/v0.21.0); 3,294★ / 6 | Entity-level diff/history/impact plus context attention ledger | Avoid unchanged entity rereads and retrieve structural history | Extremely low subscriber depth; current outcome claims remain first-party |
+| [mq](https://github.com/harehare/mq) | [v0.8.2](https://github.com/harehare/mq/releases/tag/v0.8.2); 1,005★ / 2 | jq-like structural query/transform language for Markdown | Fetch TOCs, sections, tables, and code blocks instead of whole docs | Retrieval primitive, not automatic task optimization |
+| [Entroly](https://github.com/juyterman1000/entroly) | 435★ / 6; active 2026-08-11 | Budgeted context selection, code intelligence, recoverable receipts | Experimental local evaluation where recoverability matters | Small project; current self-benchmark discloses an accuracy drop |
+| [claude-context](https://github.com/zilliztech/claude-context) | no tagged release; 12,384★ / 57; active 2026-07-14 | Embedding/vector retrieval for code through MCP | Semantic code search when exact symbol tools are insufficient | No stable release contract; embedding model/vector-store overhead; not a compressor |
+| [Repomix](https://github.com/yamadashy/repomix) | [v1.18.0](https://github.com/yamadashy/repomix/releases/tag/v1.18.0); 27,776★ / 70 | Packs a repository into one AI-friendly artifact | One-shot review, audit, archival handoff, offline prompt assembly | Packer, not adaptive per-turn optimization; can create a huge prompt |
+
+Metadata sources: [pxpipe](https://api.github.com/repos/teamchong/pxpipe), [Context Mode](https://api.github.com/repos/mksglu/context-mode), [Paritok](https://api.github.com/repos/Paritok-official/paritok-4b-v1), [jCodeMunch](https://api.github.com/repos/jgravelle/jcodemunch-mcp), [Serena](https://api.github.com/repos/oraios/serena), [fff](https://api.github.com/repos/dmtrKovalenko/fff), [codedb](https://api.github.com/repos/justrach/codedb), [sem](https://api.github.com/repos/Ataraxy-Labs/sem), [mq](https://api.github.com/repos/harehare/mq), [Entroly](https://api.github.com/repos/juyterman1000/entroly), [claude-context](https://api.github.com/repos/zilliztech/claude-context), [Repomix](https://api.github.com/repos/yamadashy/repomix).
+
+### Which tools are genuinely different
+
+### pxpipe: change modality
+
+pxpipe does not summarize text. It renders selected stable context into dense images and relies on a model's vision encoder. This can attack a context region text compressors treat differently, but correctness is model-specific. A legibility test with exact identifiers, tables, code, and punctuation is mandatory.
+
+### Context Mode: keep raw data outside context
+
+Context Mode places tool execution and raw artifacts inside a sandbox, then gives the model summaries and retrieval tools. This is closer to a session-local data plane than a compressor. Its key question is behavioral: does mandatory retrieval reduce data exposure without adding searches and turns?
+
+### Paritok: spend local inference to compress remote context
+
+Paritok uses a specialized 4B model and semantic tool-schema filtering. It can shrink a broader class of content than rules alone, but adds hardware, latency, model-quality risk, and cache questions. Its current benchmark openly reports less than full quality retention.
+
+### Retrieval tools: prevent the read
+
+Serena, fff, codedb, sem, jCodeMunch, mq, and claude-context try to return the relevant path, symbol, relationship, entity, section, or semantic match instead of a whole file. They are often safer architectural answers because they reduce irrelevant material without lossy rewriting of selected source. Their risk moves to retrieval recall: a missed dependency can be as harmful as an over-compressed payload.
+
+### Current composition map
+
+```text
+OUTPUT
+  Caveman skill
+
+OBSERVATION / INPUT — overlapping; select one primary owner
+  Caveman v2 | Headroom | RTK | lean-ctx
+
+PREVENT THE READ
+  Serena | fff | codedb | sem | jCodeMunch | mq | claude-context
+
+REPRESENTATION / DATA PLANE
+  pxpipe | Context Mode | Paritok
+
+ONE-SHOT PACKING
+  Repomix
+```
+
+### Safe composition rules
+
+1. **One owner per observation.** Do not pass the same shell result through RTK, Headroom, Caveman v2, and lean-ctx without an explicit experiment.
+2. **Output is separate.** Caveman's skill can compose with one input owner, but measure it independently.
+3. **Retrieval before compression.** Select the right symbol/section first; compress only a still-large result.
+4. **Raw escalation is mandatory.** Exact edits, errors, config, security, and identifiers require original or bounded authoritative input.
+5. **Preserve attribution.** Every layer needs a bypass/control mode and separate counters.
+6. **Measure cache classes.** Smaller fresh input can still lose when stable cached prefixes are rewritten.
+7. **No star-based default.** Repository attention cannot replace an accepted-task A/B.
+
+## Implications for jackin❯
+
+### Rising-tool verdict
+
+The strongest current growth signals belong to **pxpipe**, **Context Mode**, and **Paritok**, each with a distinct mechanism. The mature “prevent the read” set spans semantic navigation (**Serena**), lexical search (**fff**), structural relationships (**codedb/sem/jCodeMunch**), and documents (**mq**). None has current evidence strong enough to become a universal default.
+
+Next: [07 — Current evidence and evaluation](/research/context/tools/07-evidence-and-claims/).
+
+## Limitations and unknowns
+
+Tool behavior, releases, licenses, and outcome evidence can change; reverify the current version and integration boundary before adoption.
+
+## Sources
+
+Evidence and repository references are cited inline beside the claims they support.
+
+## Related work
+
+- [Token-optimization tools dossier](/research/context/tools/)
+- [Token-optimization techniques](/research/context/techniques/)
+- [Context engine](/research/context/engine/)

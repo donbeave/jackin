@@ -1,6 +1,6 @@
 //! Spec↔test linkage gate: `cargo xtask docs specs`.
 //!
-//! Every INV row in `docs/content/docs/reference/developer-reference/specs/*.mdx`
+//! Every INV row in `docs/content/reference/developer-reference/specs/*.mdx`
 //! must carry a `Tests` cell. Cited test paths use the greppable form
 //! `crate::module::tests::fn_name`. Broken citations fail; `MISSING` cells fail
 //! (no warning-only escape hatch — add a real test or drop the row).
@@ -15,7 +15,7 @@ use syn::parse::Parser as _;
 use syn::punctuated::Punctuated;
 use syn::{Attribute, Item, Meta, Token};
 
-const SPECS_REL: &str = "docs/content/docs/reference/developer-reference/specs";
+const SPECS_REL: &str = "docs/content/reference/developer-reference/specs";
 
 pub(super) fn check_specs(root: &Path) -> Result<()> {
     let specs_dir = root.join(SPECS_REL);

@@ -55,7 +55,7 @@ fn auto_prep_ignores_docs_only_changes() {
     let repo = test_repo_root();
     let auto = auto_prep(
         &repo,
-        &["docs/content/docs/roadmap/(operator-surface)/pr-verification.mdx".to_owned()],
+        &["docs/content/roadmap/(operator-surface)/pr-verification.mdx".to_owned()],
     )
     .unwrap();
 
@@ -118,7 +118,7 @@ fn auto_prep_construct_triggers() {
 #[test]
 fn construct_decision_explains_triggering_files() {
     let decision = construct_build_decision(&[
-        "docs/content/docs/getting-started/concepts.mdx".to_owned(),
+        "docs/content/getting-started/concepts.mdx".to_owned(),
         "docker-bake.hcl".to_owned(),
         "crates/jackin-xtask/src/construct.rs".to_owned(),
     ]);

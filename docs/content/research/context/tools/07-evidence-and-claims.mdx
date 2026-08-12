@@ -1,0 +1,135 @@
+---
+title: "07 — Current evidence and evaluation"
+description: "Evidence ledger, claim-quality rules, counterfactual limits, and neutral evaluation protocol for token-optimization tools."
+---
+
+## Summary
+
+Current tool claims support mechanism comparisons, not universal savings: accepted-task A/B evidence remains sparse and version-specific.
+Cutoff: **2026-08-12**. This ledger admits tool outcome evidence only when it tests the current stable release or clearly states that the exact version is undisclosed. Older-version outcomes are not treated as current tool evidence.
+
+## Question and scope
+
+What current outcome evidence supports each tool, and which claims remain mechanism demonstrations rather than accepted-task proof?
+
+## Method
+
+The ledger accepts current-release outcome evidence or explicitly version-undisclosed field evidence, grades source independence and counterfactual quality, and rejects payload ratios as task savings.
+
+## Findings
+
+### Current evidence ledger
+
+| Tool | Current stable | Current outcome evidence found | Tier | Objective conclusion |
+|---|---:|---|---|---|
+| Caveman | v2.0.0 | Current first-party six-fixture [wrap benchmark](https://github.com/JuliusBrussee/caveman/blob/v2.0.0/docs/WRAP-BENCHMARK.md): pinned setup, three reps, exact-answer checks, 33.2% reported input reduction | T4 outcome; T1 mechanism | Useful reproducible fixture evidence; no independent current accepted-task A/B |
+| Headroom | v0.34.0 | Current release tests, payload benchmarks, counters, and a competitor-owned arm in Caveman's current benchmark | T4 outcome; T1 mechanism | Broad mechanism established; no independent v0.34.0 end-to-end result found |
+| RTK | v0.45.0 | Current command examples and gross `gain` counter | T4 outcome; T1 mechanism | Filtering works; no independent v0.45.0 accepted-task result found |
+| lean-ctx | v3.9.18 | Current public [field report](https://wavect.io/blog/lean-ctx-agency-experience/) is observational and does not name exact version | T3, version-unspecified | Supports discovery/raw-verification workflow; does not prove v3.9.18 causality |
+| pxpipe | v0.13.1 | Current repository counters and vendor tests | T4 outcome; T1 mechanism | Modality mechanism is inspectable; current independent task proof absent |
+| Context Mode | v1.0.169 | Current repository claims/counters | T4 outcome; T1 mechanism | Sandbox/retrieval mechanism is clear; current independent release-specific proof absent |
+| Paritok | v1.3.3 tag | Current first-party model card/SWE-bench compression result | T4 | Reports both compression and quality loss; independent replication absent |
+| jCodeMunch | v1.108.271 | Current release's Codex net-token benchmark is negative/inconclusive | T4, negative | Do not convert payload-retrieval ratios into current task savings |
+
+“No current independent benchmark found” is a research result. It is more accurate than borrowing a result from superseded code.
+
+### Current general evidence
+
+Two recent papers remain relevant because they test mechanisms, not old releases:
+
+- [CAVEWOMAN](https://arxiv.org/abs/2606.24083) separates linguistic input and output compression across eight models, five datasets, and five reduction levels. Output compression usually reduced realized cost; linguistic input compression increased mean net cost and damaged accuracy. This supports treating Caveman's output skill and v2 input engine as different interventions. It does not test tool-aware recoverable coding-agent compression.
+- [Notation Matters](https://arxiv.org/abs/2605.29676) tests TOON/TRON in four agentic benchmarks and five open models. Token reductions came with accuracy loss, and multi-turn parse failures could cascade. This is directly relevant to any current product enabling compact notation, but does not prove a specific implementation unsafe.
+
+### Claim hygiene
+
+Every percentage must name five things:
+
+1. **version** — exact tool build;
+2. **denominator** — payload, fresh input, total tokens, bill, quota, or accepted task;
+3. **coverage** — which traffic the tool could touch;
+4. **quality gate** — tests, correctness, human review, or non-inferiority bound;
+5. **counterfactual** — same task/model/cache/repository state without the tool.
+
+Without all five, the number is discovery evidence only.
+
+### Why tool counters are insufficient
+
+Local counters usually compute something like:
+
+```text
+raw payload estimate − emitted payload estimate = gross saved
+```
+
+They cannot see the alternative future. A shorter result may cause extra searches, raw reruns, longer reasoning, changed cache reads, or a wrong edit. A correct task may finish sooner. Only paired task runs measure that net path.
+
+### Current neutral bake-off
+
+Use the exact latest releases in the [current register](/research/context/tools/08-current-release-register/). Pin the agent, model, effort, repository commit, tool configuration, timeouts, and provider cache policy.
+
+### Arms
+
+```text
+A  no optimization tool
+B  Caveman skill only
+C  Caveman v2 input only
+D  Headroom selected-input mode
+E  RTK
+F  lean-ctx selected-read mode
+G  one rising tool justified by the traced bottleneck
+```
+
+Do not test stacked tools until individual arms establish benefit.
+
+### Workload
+
+- Real tasks sampled across small fixes, repository discovery, test/build failure, refactor, docs, structured-data inspection, and long-session continuation.
+- Same starting repository state per run.
+- Randomized arm order and multiple repetitions.
+- Network and tool permissions identical.
+- Predeclared acceptance tests plus review of exact diff behavior.
+
+### Measurements
+
+| Class | Required measurement |
+|---|---|
+| Quality | Accepted-task rate, tests, review, regression severity |
+| Tokens | Fresh input, cache write, cache read, reasoning, visible output |
+| Behavior | Turns, tool calls, raw recoveries, rereads, retries, compactions |
+| Runtime | Wall time, compressor latency, local CPU/GPU/RAM, store growth |
+| Self-cost | Skill prompt, MCP schema, injected metadata, daemon/proxy traffic |
+| Reliability | Bypass success, failure passthrough, exact recovery, hook conflicts |
+| Statistics | Paired median delta, dispersion/confidence interval, failure examples |
+
+### Decision metric
+
+Keep a tool only when:
+
+```text
+tokens or subscription quota per accepted task decreases
+AND quality is non-inferior
+AND failure recovery and operational policy pass
+```
+
+Payload ratios, GitHub stars, and gross self-counters are not substitutes.
+
+## Implications for jackin❯
+
+### Current evidence verdict
+
+The latest releases are moving faster than independent evaluation. Caveman v2 has the clearest current reproducible fixture benchmark; lean-ctx has the strongest current public field observation, but no exact version; Headroom and RTK have well-inspected current mechanisms without independent latest-release task evidence. Therefore the objective answer remains conditional: **trace, isolate one layer, run a current-version A/B, keep only measured net benefit**.
+
+Next: [08 — Current release register](/research/context/tools/08-current-release-register/).
+
+## Limitations and unknowns
+
+Tool behavior, releases, licenses, and outcome evidence can change; reverify the current version and integration boundary before adoption.
+
+## Sources
+
+Evidence and repository references are cited inline beside the claims they support.
+
+## Related work
+
+- [Token-optimization tools dossier](/research/context/tools/)
+- [Token-optimization techniques](/research/context/techniques/)
+- [Context engine](/research/context/engine/)
