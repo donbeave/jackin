@@ -58,6 +58,7 @@ public final class UsageWindowController: NSObject, NSWindowDelegate {
         window.title = "Usage"
         window.isReleasedWhenClosed = false
         window.delegate = self
+        window.collectionBehavior.insert(.moveToActiveSpace)
         window.contentMinSize = NSSize(width: 760, height: 500)
         window.identifier = NSUserInterfaceItemIdentifier("usage-window")
         window.setAccessibilityIdentifier("usage-window")

@@ -109,29 +109,6 @@ else
   sleep 1
 fi
 
-if [ -n "${CAPTURE_TOOLBAR_BUTTON_DESCRIPTION:-}" ]; then
-  [ -n "$WINDOW_NAME" ] || {
-    echo "toolbar driving requires a window title" >&2
-    exit 2
-  }
-  toolbar_ok=0
-  i=0
-  while [ "$i" -lt 10 ]; do
-    if osascript -e \
-      "tell application \"System Events\" to tell application process \"$executable\" to tell front window to click first button of toolbar 1 whose description is \"$CAPTURE_TOOLBAR_BUTTON_DESCRIPTION\""; then
-      toolbar_ok=1
-      break
-    fi
-    sleep 0.5
-    i=$((i + 1))
-  done
-  [ "$toolbar_ok" -eq 1 ] || {
-    echo "toolbar button did not become available: $CAPTURE_TOOLBAR_BUTTON_DESCRIPTION" >&2
-    exit 1
-  }
-  sleep 1
-fi
-
 requested_activation=active
 if [ -n "${CAPTURE_INACTIVE_APP:-}" ]; then
   requested_activation=inactive
@@ -178,6 +155,32 @@ done
   echo "application did not reach requested $requested_activation state" >&2
   exit 1
 }
+
+if [ -n "${CAPTURE_TOOLBAR_BUTTON_DESCRIPTION:-}" ]; then
+  [ -n "$WINDOW_NAME" ] || {
+    echo "toolbar driving requires a window title" >&2
+    exit 2
+  }
+  toolbar_ok=0
+  i=0
+  while [ "$i" -lt 40 ]; do
+    drive_activation
+    window_onscreen=$("$TOOL" "$OWNER" "$WINDOW_NAME" --json 2>/dev/null \
+      | plutil -extract onScreen raw - 2>/dev/null || echo false)
+    if [ "$window_onscreen" = true ] && osascript -e \
+      "tell application \"System Events\" to tell application process \"$executable\" to tell front window to click first button of toolbar 1 whose description is \"$CAPTURE_TOOLBAR_BUTTON_DESCRIPTION\""; then
+      toolbar_ok=1
+      break
+    fi
+    sleep 0.5
+    i=$((i + 1))
+  done
+  [ "$toolbar_ok" -eq 1 ] || {
+    echo "toolbar button did not become available: $CAPTURE_TOOLBAR_BUTTON_DESCRIPTION" >&2
+    exit 1
+  }
+  sleep 1
+fi
 
 capture_ok=0
 best_size=0
