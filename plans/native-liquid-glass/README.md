@@ -23,6 +23,12 @@ proof. It does not authorize full production implementation.
   interaction, sizing, and restoration states
 - [Alternatives.md](Alternatives.md) — eight structural alternatives and the
   current recommendation
+- [LiquidGlassAudit.md](LiquidGlassAudit.md) — Phase 2 region, mechanics,
+  availability, anti-pattern, and acceptance audit
+- [SwiftProjectAudit.md](SwiftProjectAudit.md) — Phase 2 project, toolchain,
+  signing, test, CI, and agent-integration audit
+- [ConceptMigrationPlan.md](ConceptMigrationPlan.md) — bounded migration plan
+  for the runnable A1 proof
 
 ## Gate
 
