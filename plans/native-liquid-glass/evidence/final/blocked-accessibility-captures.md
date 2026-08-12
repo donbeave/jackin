@@ -1,14 +1,16 @@
 # Blocked native setting evidence
 
-Status: **implementation complete; host-only captures unavailable without restarting the macOS GUI session**
+Status: **historical blocker cleared; final branch-head regeneration still required**
 
 ## Accessibility setting captures
 
-The capture harness successfully applied Reduce Transparency through `state.sh with`, launched the exact validated app, resolved the real Usage window, and then received `could not create image from window` from `screencapture` on all three attempts. The wrapper restored every snapshotted setting before returning failure. A baseline window capture then failed the same way, so further Increase Contrast, Reduce Motion, and Differentiate Without Color image attempts could not add trustworthy evidence.
+An earlier run applied Reduce Transparency through `state.sh with`, launched the validated app, resolved the real Usage window, and then received `could not create image from window` from `screencapture` on all three attempts. The wrapper restored every snapshotted setting before returning failure. A baseline window capture then failed the same way, so that session could not add trustworthy accessibility images.
 
-Full-screen `screencapture` returned an all-black image. ScreenCaptureKit returned `SCStreamErrorDomain Code=-3811` (`Failed to start stream due to audio/video capture failure`). Region capture returned `could not create image from rect`. These failures establish a macOS capture-service state, not an application rendering failure. The earlier 36 native captures remain valid, hashed, and tied to the exact app executable.
+Full-screen `screencapture` returned an all-black image. ScreenCaptureKit returned `SCStreamErrorDomain Code=-3811` (`Failed to start stream due to audio/video capture failure`). Region capture returned `could not create image from rect`. These failures establish a macOS capture-service state, not an application rendering failure. The earlier 36 native captures remained intact, hashed, and tied to their exact app executable, but no longer prove the current source.
 
-XCTest remained the permission-independent fallback, but the host test runner then failed before launching any test with `LocalAuthentication Code=-4` (`System authentication is running`). Restarting only the per-user LocalAuthentication UI agent and daemon did not clear the system-owned authentication state. Restarting the full GUI session or host would be an external destructive interruption and was not performed.
+XCTest then failed before launching any test with `LocalAuthentication Code=-4` (`System authentication is running`). Restarting only the per-user LocalAuthentication UI agent and daemon did not clear the system-owned authentication state. Restarting the full GUI session or host would have been an external destructive interruption and was not performed.
+
+The host services later recovered without a GUI restart. Real Usage and popover captures now exist for Reduce Transparency, Increase Contrast, Reduce Motion, and Differentiate Without Color under [`accessibility/`](accessibility/). All five accessibility setting receipts share SHA-256 `821f1c28b1034fbfb139830116d71472b21a168334a353b2bc7b87ff7ca0be07`, proving restoration. Because source changed afterward, these images remain provisional until the clean branch-head matrix regenerates them.
 
 Code does not branch on these settings and contains no custom material, glass, blur, opacity, motion, glow, custom progress track, or color-only status. Standard `NSPopover`, `NavigationSplitView`, `Table`, `List`, `Form`, `Section`, `Picker`, `Button`, and `ProgressView` components therefore retain system ownership of accessibility adaptation. Default-state UI audits passed on Overview, provider detail, and the real popover before the host service entered this state.
 

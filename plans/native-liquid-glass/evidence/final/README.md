@@ -1,6 +1,8 @@
 # Final A1 native evidence
 
-These captures record the production A1 application from source commit `6026479f5d78b3b2f94ef6a09f9fa29cc89006bf`. Later commits through `967be1d6` changed tests and evidence text only. Every capture sidecar records the same application executable SHA-256, `f0a72bd5e39cea3d4753e585597602c9de1a1198b900d7195de7ec7c1de0f060`.
+Status: **provisional; regenerate from the final clean pushed branch head before acceptance**
+
+The files here prove the real-host capture workflow and required state coverage, but current source corrections postdate their recorded source commit and application hash. They are not final branch-head evidence. The fail-closed capture matrix now refuses dirty desktop inputs, rebuilds the canonical application, verifies it, and records fresh provenance before these files may be accepted.
 
 The host was macOS 26.5.2 (`25F84`) with Xcode 26.6 (`17F113`) and the macOS 26.5 SDK. All 36 PNGs came from the real `JackinDesktop.app`: Usage evidence resolves the real layer-0 `NSWindow`; popover evidence resolves the real layer-25 `NSPopover`. Each JSON sidecar records fixture, requested appearance and size, window identity, layer, geometry, active state, app path and hash, image hash, source commit, runtime, toolchain, SDK, timestamp, and accessibility-setting values.
 
@@ -45,10 +47,10 @@ The F08 OpenAI popover is intentionally byte-identical to F02: the partial failu
 
 Real-host UI tests cover provider navigation, the fixed sidebar control and stable coordinates, native account picker behavior, distinct empty/loading/error states, real popover hosting, provider-context routing into Usage, retained-window continuity, minimum-size Usage scrolling, constrained popover scrolling, Command-R, Command-comma, Command-W, Control-Command-S, and accessibility audits for Overview, provider detail, and popover. [Native focus and dismissal evidence](focus-and-dismissal-log.md) separately proves keyboard reachability and Escape behavior with macOS Keyboard Navigation enabled. Pure model tests cover provider removal, account fallback, menu order, status-item focus, all F00–F14 fixtures, long labels, non-color status text, nonfocused accessible refresh progress, and absence of destructive controls.
 
-The last complete 12-test real-host suite and all three accessibility audits passed on the application source commit. The subsequently added constrained-popover test passed focused. A later host LocalAuthentication failure prevented one combined 13-test rerun; [the blocked-state record](blocked-accessibility-captures.md) preserves that limitation instead of reporting a false pass.
+Earlier real-host suites and all three accessibility audits passed against their recorded application sources. The final complete suite must pass again against the final pushed branch head with zero runtime warnings; earlier results cannot substitute.
 
 ## Host-setting restoration
 
 [`settings-before.txt`](settings-before.txt) is the captured baseline. An initial outer-shell trap failed to restore Reduce Transparency; [`settings-after-failed-attempt.txt`](settings-after-failed-attempt.txt) detected the retained value immediately. Explicit restoration produced [`settings-after-recovery.txt`](settings-after-recovery.txt), byte-identical to the baseline. The repository-owned `state.sh with` wrapper was then exercised with a failing child command and produced [`settings-after-trap-test.txt`](settings-after-trap-test.txt), also byte-identical. [`settings-current.txt`](settings-current.txt) independently confirms no tested accessibility or appearance setting remains changed.
 
-Reduce Transparency, Increase Contrast, Reduce Motion, Differentiate Without Color, and clear/tinted Liquid Glass preference evidence that could not be captured honestly is recorded in [blocked-accessibility-captures.md](blocked-accessibility-captures.md). No placeholder or offscreen renderer is accepted as native material proof.
+Reduce Transparency, Increase Contrast, Reduce Motion, and Differentiate Without Color have provisional real-host captures under [`accessibility/`](accessibility/) with byte-identical before/after setting receipts. [The historical blocker record](blocked-accessibility-captures.md) explains the earlier host failure. Clear/tinted Liquid Glass preference observations remain operator-owned. No placeholder or offscreen renderer is accepted as native material proof.

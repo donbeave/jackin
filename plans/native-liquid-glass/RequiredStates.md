@@ -1,8 +1,8 @@
 # Required states and evidence matrix
 
-Status: **production matrix recorded; capturable rows complete; host/operator-only observations explicitly preserved**
+Status: **production matrix recorded; final branch-head proof in progress**
 
-Current evidence lives in [`evidence/final/`](evidence/final/). A01–A04, I01–I08, C01–C13, S01–S10, and R01–R06 have native captures, focus logs, UI tests, model tests, or source/action audits as named by the final evidence index. A05–A07 image capture is unavailable because the host capture service failed after applying and safely restoring Reduce Transparency; implementation proof remains system-owned and the blocked record is explicit. A08–A09 remain operator-owned because macOS exposes no public clear/tinted preference API. No placeholder or offscreen rendering substitutes for these states.
+Current provisional evidence lives in [`evidence/final/`](evidence/final/). The harness has captured the 36-state core matrix plus Reduce Transparency, Increase Contrast, Reduce Motion, and Differentiate Without Color on both native surfaces, with byte-identical before/after setting receipts. Those captures predate the latest source corrections and therefore do not yet prove the final branch head. A08–A09 remain operator-owned because macOS exposes no public clear/tinted preference API. No placeholder or offscreen rendering substitutes for these states.
 
 Every row remains mandatory before production completion. A screenshot alone
 does not prove keyboard, accessibility, or restoration behavior; use the named

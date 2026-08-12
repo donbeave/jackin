@@ -1,6 +1,6 @@
 # Confirmed A1 production plan
 
-Status: **P1–P3 complete; P4 final gates and PR reconciliation in progress**
+Status: **P1–P2 complete; P3 branch-head evidence regeneration and P4 final gates in progress**
 
 ## Authority and stop line
 
@@ -51,8 +51,8 @@ Stop and return to the operator if a required visible region needs a CUSTOM cont
 
 - **P1 complete:** visible popover Refresh owns Command-R; Usage retains valid provider/account/sidebar/frame state; removed providers normalize at the state owner; local/global Retry stays native; production names replace concept/card-era names; model and real-host tests cover continuity, commands, scrolling, context routing, menu order, destructive-action absence, and all three accessibility surfaces.
 - **P2 complete:** the release lane uses macOS 26 and Xcode 26.6; the Xcode project regenerates cleanly; operator and contributor docs describe the focused popover, two-column Usage window, fixed leading sidebar control, limits-only contract, and current platform floor; roadmap state retains only external release and capture-gated work.
-- **P3 complete within authoritative tool limits:** 36 hashed real-host captures cover Light, Dark, active, inactive, F00–F14, minimum/default/expanded geometry, sidebar collapse, long content, errors, recovery, and real popover overflow. AX logs cover native focus and Escape dismissal. Settings wrappers prove restoration. Host capture-service failure and operator-owned clear/tinted preference observations are explicit; no surrogate rendering or false pass is used.
-- **P4 in progress:** final repository gates and draft-PR reconciliation remain.
+- **P3 in progress:** 36 core and eight accessibility real-host captures prove the harness and required settings can be exercised safely, but they predate the latest source corrections. The fail-closed matrix now requires a clean canonical branch-head build. Regeneration, final UI/accessibility tests, A08/A09 operator observations, and design review remain.
+- **P4 in progress:** DCO repair, final branch-head gates, clean-tree proof, and draft-PR reconciliation remain. [`CompletionAudit.md`](CompletionAudit.md) is the authoritative DONE-criteria ledger.
 
 ## Slice P1 — Production state and interaction correctness
 

@@ -1,6 +1,6 @@
 # Native Liquid Glass redesign
 
-Status: **A1 production implementation and capturable native evidence complete; final repository gates in progress**
+Status: **A1 production implementation in progress; final branch-head evidence and repository gates pending**
 
 These files are the design authority for the native jackin❯ desktop redesign. The A1 selection authorized Phase 2 audits and the smallest runnable Phase 3 proof; D-004 separately authorizes production implementation of that confirmed direction.
 
@@ -32,6 +32,7 @@ These files are the design authority for the native jackin❯ desktop redesign. 
 - [ConceptHandoff.md](ConceptHandoff.md) — runnable build, fixture, component,
   AppKit-boundary, and verification handoff for the A1 proof
 - [ProductionPlan.md](ProductionPlan.md) — post-confirmation coverage ledger, zero-context slices, verification, recovery, and completion conditions
+- [CompletionAudit.md](CompletionAudit.md) — authoritative DONE-criteria ledger and exact remaining proof
 
 ## Gate
 
