@@ -1,7 +1,8 @@
 use super::{
-    APP_EXECUTABLE, BUNDLE_ID, BUNDLE_NAME, MIN_OS, app_info_plist, minos_newer_than_14,
-    validate_build, validate_version,
+    APP_EXECUTABLE, APP_RESOURCE_BUNDLE, BUNDLE_ID, BUNDLE_NAME, MIN_OS, app_info_plist,
+    find_resource_bundle, minos_newer_than_14, validate_build, validate_version,
 };
+use std::fs;
 
 #[test]
 fn version_accepts_dotted_numeric() {
@@ -45,4 +46,19 @@ fn info_plist_embeds_identity_and_versions() {
     assert!(plist.contains("<string>0.6.0</string>"));
     assert!(plist.contains("<string>1</string>"));
     assert!(plist.contains("<key>LSUIElement</key>"));
+}
+
+#[test]
+fn resource_bundle_is_named_for_owning_swift_target() {
+    let root = tempfile::tempdir().unwrap();
+    let expected = root.path().join(APP_RESOURCE_BUNDLE);
+    fs::create_dir(&expected).unwrap();
+    assert_eq!(find_resource_bundle(root.path()).unwrap(), expected);
+}
+
+#[test]
+fn executable_target_bundle_name_is_rejected() {
+    let root = tempfile::tempdir().unwrap();
+    fs::create_dir(root.path().join("JackinDesktop_JackinDesktop.bundle")).unwrap();
+    assert!(find_resource_bundle(root.path()).is_err());
 }
