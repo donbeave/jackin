@@ -97,8 +97,7 @@ if [ -n "${CAPTURE_STATUS_ITEM_INDEX:-}" ]; then
   fi
   sleep 1
 else
-  # Re-activate before resolving; activation can replace the target window.
-  open "$APP"
+  # The product owns activation. Reopening here can replace a transient popover.
   sleep 1
 fi
 
@@ -125,26 +124,6 @@ if [ -n "${CAPTURE_TOOLBAR_BUTTON_DESCRIPTION:-}" ]; then
   sleep 1
 fi
 
-WID=""
-i=0
-while [ "$i" -lt 10 ]; do
-  if [ -n "$WINDOW_NAME" ]; then
-    WID=$("$TOOL" "$OWNER" "$WINDOW_NAME" || true)
-  else
-    WID=$("$TOOL" "$OWNER" || true)
-  fi
-  [ -n "$WID" ] && break
-  sleep 1
-  i=$((i + 1))
-done
-case "$WID" in
-  '' | *[!0-9]*)
-    echo "no numeric window id resolved for $OWNER" >&2
-    "$TOOL" "$OWNER" --list >&2 || true
-    exit 1
-    ;;
-esac
-
 if [ -n "${CAPTURE_INACTIVE_APP:-}" ]; then
   open -a "$CAPTURE_INACTIVE_APP"
   osascript -e "tell application \"$CAPTURE_INACTIVE_APP\" to activate"
@@ -153,32 +132,40 @@ fi
 
 capture_ok=0
 best_size=0
+best_metadata="$OUT.capture-metadata.json"
 attempt=0
-while [ "$attempt" -lt 3 ]; do
-  sleep 1
+while [ "$attempt" -lt 10 ]; do
+  sleep 0.5
   candidate="$OUT.capture-$attempt.png"
+  candidate_metadata="$OUT.capture-$attempt.json"
+  if [ -n "$WINDOW_NAME" ]; then
+    "$TOOL" "$OWNER" "$WINDOW_NAME" --json > "$candidate_metadata" 2>/dev/null || {
+      rm -f "$candidate_metadata"
+      attempt=$((attempt + 1))
+      continue
+    }
+  else
+    "$TOOL" "$OWNER" --json > "$candidate_metadata" 2>/dev/null || {
+      rm -f "$candidate_metadata"
+      attempt=$((attempt + 1))
+      continue
+    }
+  fi
+  WID=$(plutil -extract windowID raw "$candidate_metadata")
   if screencapture -x -o -l "$WID" "$candidate"; then
     capture_ok=1
     candidate_size=$(wc -c < "$candidate")
     if [ "$candidate_size" -gt "$best_size" ]; then
       mv -f "$candidate" "$OUT"
+      mv -f "$candidate_metadata" "$best_metadata"
       best_size=$candidate_size
     else
-      rm -f "$candidate"
+      rm -f "$candidate" "$candidate_metadata"
     fi
     attempt=$((attempt + 1))
     continue
   fi
-  rm -f "$candidate"
-  if [ -n "$WINDOW_NAME" ]; then
-    WID=$("$TOOL" "$OWNER" "$WINDOW_NAME" || true)
-  else
-    WID=$("$TOOL" "$OWNER" || true)
-  fi
-  case "$WID" in
-    '' | *[!0-9]*) WID="" ;;
-  esac
-  [ -n "$WID" ] || break
+  rm -f "$candidate" "$candidate_metadata"
   attempt=$((attempt + 1))
 done
 [ "$capture_ok" -eq 1 ] || {
@@ -198,11 +185,7 @@ fi
 pixel_width=$(echo "$dims" | awk '/pixelWidth:/ { print $2 }')
 pixel_height=$(echo "$dims" | awk '/pixelHeight:/ { print $2 }')
 SIDECAR="$OUT.json"
-if [ -n "$WINDOW_NAME" ]; then
-  "$TOOL" "$OWNER" "$WINDOW_NAME" --json > "$SIDECAR"
-else
-  "$TOOL" "$OWNER" --json > "$SIDECAR"
-fi
+mv -f "$best_metadata" "$SIDECAR"
 plutil -replace pixelDimensions -json "{\"width\":$pixel_width,\"height\":$pixel_height}" "$SIDECAR"
 frame_width=$(plutil -extract frameSize.width raw "$SIDECAR")
 scale=$(awk -v pixels="$pixel_width" -v points="$frame_width" \
