@@ -125,7 +125,6 @@ deny = [
 # or added here with rationale.
 skip = [
     { crate = "allocator-api2@0.2.21", reason = "Existing duplicate-version debt; keep highest current version visible for future drift." },
-    { crate = "anstyle-parse@0.2.7", reason = "TermRock retains the stable ANSI parser line while the CLI stack uses 1.x." },
     { crate = "base64@0.21.7", reason = "Existing duplicate-version debt; keep highest current version visible for future drift." },
     { crate = "bindgen@0.69.5", reason = "Existing duplicate-version debt; keep highest current version visible for future drift." },
     { crate = "bitflags@1.3.2", reason = "Existing duplicate-version debt; keep highest current version visible for future drift." },

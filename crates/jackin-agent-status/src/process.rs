@@ -43,26 +43,14 @@ mod procfs {
             }
 
             // Stub mirrors the Linux `procfs` Process API surface so call sites stay shared.
-            #[expect(
-                clippy::unused_self,
-                reason = "non-Linux stub mirrors procfs Process method receivers used on Linux"
-            )]
             pub(crate) fn stat(&self) -> Result<Stat, ()> {
                 match *self {}
             }
 
-            #[expect(
-                clippy::unused_self,
-                reason = "non-Linux stub mirrors procfs Process method receivers used on Linux"
-            )]
             pub(crate) fn exe(&self) -> Result<PathBuf, ()> {
                 match *self {}
             }
 
-            #[expect(
-                clippy::unused_self,
-                reason = "non-Linux stub mirrors procfs Process method receivers used on Linux"
-            )]
             pub(crate) fn cmdline(&self) -> Result<Vec<String>, ()> {
                 match *self {}
             }

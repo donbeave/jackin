@@ -396,9 +396,6 @@ bound = 1
 key = "clippy::unused_async@jackin-image"
 bound = 1
 [[family.entry]]
-key = "clippy::unused_self@jackin-agent-status"
-bound = 3
-[[family.entry]]
 key = "clippy::unwrap_used@jackin"
 bound = 12
 [[family.entry]]
