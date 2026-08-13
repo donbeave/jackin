@@ -121,8 +121,12 @@ pub(super) fn run_in_pty_until_file(
 
     let deadline = Instant::now() + sentinel.timeout;
     while Instant::now() < deadline {
-        if std::fs::read_to_string(sentinel.path)
-            .is_ok_and(|contents| contents.contains(sentinel.text))
+        let stop_requested = sentinel
+            .stop_after
+            .is_some_and(|completed| completed.load(Ordering::Acquire));
+        if stop_requested
+            || std::fs::read_to_string(sentinel.path)
+                .is_ok_and(|contents| contents.contains(sentinel.text))
         {
             drop(child.kill());
             let status = child.wait().expect("script must finish");
@@ -146,8 +150,11 @@ pub(super) fn run_in_pty_until_file(
                 stdout: buffer_bytes(&stdout_buf),
                 stderr: buffer_bytes(&stderr_buf),
             };
+            let fault_expected = sentinel
+                .accept_early_exit_after
+                .is_some_and(|started| started.load(Ordering::Acquire));
             assert!(
-                status.success(),
+                status.success() || fault_expected,
                 "script exited before sentinel file appeared\nstdout:\n{}\nstderr:\n{}",
                 String::from_utf8_lossy(&output.stdout),
                 String::from_utf8_lossy(&output.stderr),
@@ -293,6 +300,8 @@ pub(super) struct PtyFileSentinel<'a> {
     pub(super) path: &'a Path,
     pub(super) text: &'a str,
     pub(super) timeout: Duration,
+    pub(super) accept_early_exit_after: Option<&'a AtomicBool>,
+    pub(super) stop_after: Option<&'a AtomicBool>,
 }
 
 pub(super) const fn scripted_sentinel_launch_input() -> [PtyScriptStep; 8] {
