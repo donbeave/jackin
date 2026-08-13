@@ -9,7 +9,10 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const WAIT_MILLISECONDS = 2_000;
-const DEADLINE_MILLISECONDS = 120_000;
+// A cold producer installs the complete mise toolchain before publishing the
+// shared xtask. Consumers are separate workflows, so this poll is their
+// explicit completion barrier rather than a cache-timing assumption.
+export const DEADLINE_MILLISECONDS = 10 * 60_000;
 const REQUIRED_TOOLS = [
   "sccache",
   "cargo-nextest",

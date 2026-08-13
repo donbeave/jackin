@@ -6,6 +6,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
 import {
+  DEADLINE_MILLISECONDS,
   exportPrepared,
   latestArtifact,
   preparedToolsComplete,
@@ -13,6 +14,10 @@ import {
   validateContracts,
   waitForArtifact,
 } from "../src/index.js";
+
+test("waits long enough for a cold shared xtask producer", () => {
+  assert.equal(DEADLINE_MILLISECONDS, 10 * 60_000);
+});
 
 const REQUIRED_TOOLS = [
   "sccache",
