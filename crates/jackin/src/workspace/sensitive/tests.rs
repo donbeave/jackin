@@ -85,6 +85,45 @@ fn handles_trailing_slash_on_sensitive_mount() {
 }
 
 #[test]
+fn sensitive_descendant_and_new_credential_files_are_detected() {
+    for src in [
+        "/home/user/.ssh/known_hosts",
+        "/home/user/.config/gh/hosts.yml",
+        "/home/user/.netrc",
+        "/home/user/.npmrc",
+        "/home/user/.git-credentials",
+        "/home/user/.config/op/config",
+    ] {
+        assert_eq!(find_sensitive_mounts(&[mount(src)]).len(), 1, "{src}");
+    }
+}
+
+#[test]
+fn sensitive_dot_parent_and_tilde_spellings_are_normalized() {
+    assert_eq!(
+        resolved_sensitive_mounts(&[mount("/home/user/work/../.ssh/./known_hosts")]).len(),
+        1
+    );
+    assert_eq!(resolved_sensitive_mounts(&[mount("~/.ssh")]).len(), 1);
+}
+
+#[cfg(unix)]
+#[test]
+fn sensitive_symlink_alias_is_canonicalized() {
+    use std::os::unix::fs::symlink;
+
+    let dir = tempfile::tempdir().expect("tempdir");
+    let credentials = dir.path().join(".ssh");
+    std::fs::create_dir_all(&credentials).expect("credentials dir");
+    let alias = dir.path().join("credentials-alias");
+    symlink(&credentials, &alias).expect("symlink");
+    assert_eq!(
+        resolved_sensitive_mounts(&[mount(&alias.display().to_string())]).len(),
+        1
+    );
+}
+
+#[test]
 fn does_not_match_partial_name() {
     // ".sshd" should NOT match ".ssh"
     let hits = find_sensitive_mounts(&[mount("/home/user/.sshd")]);

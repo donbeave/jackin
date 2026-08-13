@@ -1589,35 +1589,34 @@ where
             },
         mut cleanup,
     } = input;
-    match backend {
-        super::super::super::Backend::Docker => {}
-        super::super::super::Backend::AppleContainer => {
-            cleanup.run(docker).await;
-            let mount_pairs = super::super::super::build_workspace_mount_pairs(&materialized);
-            crate::runtime::apple_container::launch(
-                crate::runtime::apple_container::AppleContainerLaunch {
-                    paths,
-                    container_name,
-                    image: &image,
-                    workspace_name: workspace_name.as_deref(),
-                    workspace_label: workspace.label.as_str(),
-                    workdir: &workspace.workdir,
-                    role_key,
-                    role_display_name: agent_display_name,
-                    agent,
-                    role_source_git: &source.git,
-                    role_source_ref: opts.role_branch.as_deref(),
-                    image_tag: &image,
-                    env_pairs: &resolved_env.vars,
-                    mount_pairs: &mount_pairs,
-                    host_workdir_fingerprint: &host_workdir_fingerprint,
-                    capsule_config: &launch_config,
-                    debug: opts.debug,
-                },
-            )
-            .await?;
-            return Ok(RuntimeDispatch::AppleContainer(container_name.to_owned()));
-        }
+    if backend == super::super::super::Backend::AppleContainer {
+        let mounts = super::super::super::build_workspace_mounts(&materialized)?;
+        cleanup.run(docker).await;
+        crate::runtime::apple_container::launch(
+            crate::runtime::apple_container::AppleContainerLaunch {
+                paths,
+                container_name,
+                image: &image,
+                workspace_name: workspace_name.as_deref(),
+                workspace_label: workspace.label.as_str(),
+                workdir: &workspace.workdir,
+                role_key,
+                role_display_name: agent_display_name,
+                agent,
+                role_source_git: &source.git,
+                role_source_ref: opts.role_branch.as_deref(),
+                image_tag: &image,
+                env_pairs: &resolved_env.vars,
+                mounts: &mounts,
+                host_workdir_fingerprint: &host_workdir_fingerprint,
+                capsule_config: &launch_config,
+                state: &state,
+                resolved_env,
+                debug: opts.debug,
+            },
+        )
+        .await?;
+        return Ok(RuntimeDispatch::AppleContainer(container_name.to_owned()));
     }
     let reuse_staleness_sentinel = reuse_sentinel(
         selected_image_reused,

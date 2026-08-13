@@ -242,7 +242,77 @@ pub(crate) fn codex_snapshot(
     })
 }
 
-#[derive(Debug, Clone)]
+/// Read-only explicit-profile probe used by host discovery. It intentionally
+/// does not refresh or rewrite `auth.json`; the agent remains credential owner.
+pub(crate) fn codex_profile_snapshot(
+    agent: &str,
+    credentials: &CodexOAuthCredentials,
+    codex_home: &Path,
+    now: i64,
+) -> FocusedUsageView {
+    let (quota, error) = split_fetch(Some(fetch_codex_oauth_usage(credentials, codex_home)));
+    let status = if quota.is_some() {
+        UsageSnapshotStatus::Fresh
+    } else if error.as_deref().is_some_and(usage_error_is_unauthorized) {
+        UsageSnapshotStatus::NeedsLogin
+    } else {
+        UsageSnapshotStatus::Stale
+    };
+    let buckets = quota
+        .as_ref()
+        .map(|usage| usage.buckets(now))
+        .filter(|buckets| !buckets.is_empty())
+        .unwrap_or_else(|| {
+            vec![
+                bucket(
+                    "Session",
+                    None,
+                    None,
+                    None,
+                    None,
+                    error.as_deref().or(Some("provider quota pending")),
+                    status,
+                ),
+                bucket(
+                    "Weekly",
+                    None,
+                    None,
+                    None,
+                    None,
+                    error.as_deref().or(Some("provider quota pending")),
+                    status,
+                ),
+            ]
+        });
+    usage_view(UsageViewInput {
+        agent,
+        provider: Some("OpenAI"),
+        surface: UsageSurface::Codex,
+        account_label: credentials.account_label.clone().unwrap_or_default(),
+        username: None,
+        plan_label: quota
+            .as_ref()
+            .and_then(|usage| usage.plan_type.as_deref())
+            .and_then(codex_plan_display_name),
+        credential_origin: Some("OAuth · configured profile".to_owned()),
+        buckets,
+        status,
+        source: if quota.is_some() {
+            UsageSource::ProviderApi
+        } else {
+            UsageSource::None
+        },
+        confidence: if quota.is_some() {
+            UsageConfidence::Authoritative
+        } else {
+            UsageConfidence::None
+        },
+        now,
+        last_error: error,
+    })
+}
+
+#[derive(Clone)]
 pub(crate) struct CodexOAuthCredentials {
     pub(crate) access_token: String,
     pub(crate) account_id: Option<String>,
@@ -251,6 +321,12 @@ pub(crate) struct CodexOAuthCredentials {
     /// `access_token` in place for a single retry (see
     /// `fetch_codex_oauth_usage_refreshing`).
     pub(crate) refresh_token: Option<String>,
+}
+
+impl std::fmt::Debug for CodexOAuthCredentials {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter.write_str("CodexOAuthCredentials(REDACTED)")
+    }
 }
 
 #[cfg(test)]

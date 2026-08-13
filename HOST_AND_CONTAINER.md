@@ -22,6 +22,16 @@ Reason: host machine is where operator works. Surprise mutations break flow, sur
 
 Host root for jackin-owned paths is `~/.jackin/`, with own subdirectory layout (`~/.jackin/{data,cache,sockets,roles,run}/`).
 
+## Credential transport
+
+Forwarded credential values cross the runtime boundary through a temporary host-only env file with mode `0600`; only non-sensitive `JACKIN_*` launch metadata may appear in process arguments. On-demand literal values remain in the host-side allowlist, while the container-visible config carries only a fixed redacted marker. The runtime removes the env file immediately after the container launch command returns. Secrets must never appear in runtime argv or container-visible config.
+
+Rotate any credential previously configured as an on-demand literal. Older launches exposed that value through the container filesystem even when exec approval was still required.
+
+## Runtime backend mount enforcement
+
+Both supported backends enforce read-only mounts. Docker receives its existing `:ro` bind options; the apple-container backend emits the same option through Apple `container` v0.11.0 or newer for directory mounts. Apple `container` rejects the single-file bind mounts required by worktree isolation, so that combination fails closed before cleanup or launch; use Docker or shared isolation. A backend must reject a launch instead of silently dropping an operator-selected mount restriction.
+
 ## Container path convention: everything jackin❯ owns lives under `/jackin/` (hard rule)
 
 **Every path jackin❯ creates, mounts, or owns inside role container must live under `/jackin/`.** No FHS-borrowed top-level directories (`/run/jackin/`, `/var/lib/jackin/`, `/opt/jackin/`, `/etc/jackin/`), no scattered locations to discover one-by-one. Operator running `ls /jackin/` inside any role container must see complete map of jackin-owned state in one place.

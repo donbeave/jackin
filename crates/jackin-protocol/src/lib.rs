@@ -21,6 +21,7 @@ pub mod control;
 pub mod provider_adapter;
 pub mod snapshot;
 pub mod telemetry_context;
+pub mod usage_broker;
 
 pub use telemetry_context::TelemetryContext;
 
@@ -54,7 +55,8 @@ pub struct ExecBinding {
     pub name: String,
     /// `kind` field.
     pub kind: ExecKind,
-    /// `source` field.
+    /// Host-owned source. Capsule-facing projections replace literal values
+    /// with the fixed `literal` marker; `op` and env references remain intact.
     pub source: String,
 }
 
@@ -160,10 +162,11 @@ pub struct CapsuleConfig {
     /// start by the capsule.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub claude_plugins: Vec<String>,
-    /// On-demand credential bindings (`jackin-exec`). Carries the
-    /// `(name, kind, source)` triples the host credential resolver allow-lists;
-    /// the container only learns the names (via `JACKIN_EXEC_BINDINGS`), never
-    /// resolved values. Empty when the workspace declares no on-demand vars.
+    /// On-demand credential bindings (`jackin-exec`). The host keeps exact
+    /// `(name, kind, source)` allowlist entries. The serialized Capsule copy
+    /// redacts literal sources to the fixed `literal` marker; `op` and env
+    /// references remain so the picker can identify them. Resolved values never
+    /// enter this data contract. Empty when no on-demand vars are declared.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub exec_bindings: Vec<ExecBinding>,
     /// Resolved dirty-exit policy (`"ask"` | `"keep"` | `"discard"`). The

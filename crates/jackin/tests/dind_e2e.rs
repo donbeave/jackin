@@ -17,6 +17,10 @@
     )
 )]
 #![cfg(feature = "e2e")]
+use std::sync::{
+    Arc,
+    atomic::{AtomicBool, Ordering},
+};
 use std::time::Duration;
 
 use jackin_runtime::instance::naming::is_dns_label;
@@ -126,6 +130,8 @@ fn jackin_load_agent_smith_can_reach_its_dind_daemon_with_proxy_env() {
             path: &report_path,
             text: TESTCONTAINERS_SMOKE_OK,
             timeout: Duration::from_mins(6),
+            accept_early_exit_after: None,
+            stop_after: None,
         },
     );
 
@@ -243,6 +249,8 @@ fn jackin_load_sentinel_role_runs_hooks_and_keeps_build_output_off_screen() {
             path: &report_path,
             text: "JACKIN_SENTINEL_REPORT_END",
             timeout: Duration::from_mins(5),
+            accept_early_exit_after: None,
+            stop_after: None,
         },
     );
 
@@ -405,6 +413,8 @@ fn chaos_launch_until_report(
     home: &std::path::Path,
     workspace_dir: &std::path::Path,
     role_source: &std::path::Path,
+    fault_started: &AtomicBool,
+    fault_applied: &AtomicBool,
 ) -> std::process::Output {
     write_config(&home.join(".config/jackin/config.toml"), role_source);
     seed_claude_installer_stub(home);
@@ -431,6 +441,8 @@ fn chaos_launch_until_report(
             path: &report_path,
             text: TESTCONTAINERS_SMOKE_OK,
             timeout: Duration::from_mins(6),
+            accept_early_exit_after: Some(fault_started),
+            stop_after: Some(fault_applied),
         },
     )
 }
@@ -475,7 +487,13 @@ fn chaos_kill_container_mid_session() {
     let home_c = home.clone();
     let ws_c = workspace_dir.clone();
     let rs_c = role_source.clone();
-    let handle = std::thread::spawn(move || chaos_launch_until_report(&home_c, &ws_c, &rs_c));
+    let fault_started = Arc::new(AtomicBool::new(false));
+    let fault_started_c = Arc::clone(&fault_started);
+    let fault_applied = Arc::new(AtomicBool::new(false));
+    let fault_applied_c = Arc::clone(&fault_applied);
+    let handle = std::thread::spawn(move || {
+        chaos_launch_until_report(&home_c, &ws_c, &rs_c, &fault_started_c, &fault_applied_c)
+    });
 
     let start = std::time::Instant::now();
     let container = loop {
@@ -494,7 +512,9 @@ fn chaos_kill_container_mid_session() {
         Duration::from_mins(3),
     );
     std::thread::sleep(planned.delay);
+    fault_started.store(true, Ordering::Release);
     chaos::apply_fault(planned.fault, &container);
+    fault_applied.store(true, Ordering::Release);
 
     let _output = handle.join().expect("launch thread panicked");
     chaos::wait_until_no_running(ROLE_KEY, Duration::from_secs(60));
@@ -528,7 +548,13 @@ fn chaos_sigkill_capsule() {
     let home_c = home.clone();
     let ws_c = workspace_dir.clone();
     let rs_c = role_source.clone();
-    let handle = std::thread::spawn(move || chaos_launch_until_report(&home_c, &ws_c, &rs_c));
+    let fault_started = Arc::new(AtomicBool::new(false));
+    let fault_started_c = Arc::clone(&fault_started);
+    let fault_applied = Arc::new(AtomicBool::new(false));
+    let fault_applied_c = Arc::clone(&fault_applied);
+    let handle = std::thread::spawn(move || {
+        chaos_launch_until_report(&home_c, &ws_c, &rs_c, &fault_started_c, &fault_applied_c)
+    });
 
     let start = std::time::Instant::now();
     let container = loop {
@@ -542,7 +568,9 @@ fn chaos_sigkill_capsule() {
         std::thread::sleep(Duration::from_millis(500));
     };
     std::thread::sleep(planned.delay);
+    fault_started.store(true, Ordering::Release);
     chaos::apply_fault(planned.fault, &container);
+    fault_applied.store(true, Ordering::Release);
 
     let _output = handle.join().expect("launch thread panicked");
     chaos::wait_until_no_running(ROLE_KEY, Duration::from_secs(90));
@@ -575,7 +603,13 @@ fn chaos_drop_control_socket() {
     let home_c = home.clone();
     let ws_c = workspace_dir.clone();
     let rs_c = role_source.clone();
-    let handle = std::thread::spawn(move || chaos_launch_until_report(&home_c, &ws_c, &rs_c));
+    let fault_started = Arc::new(AtomicBool::new(false));
+    let fault_started_c = Arc::clone(&fault_started);
+    let fault_applied = Arc::new(AtomicBool::new(false));
+    let fault_applied_c = Arc::clone(&fault_applied);
+    let handle = std::thread::spawn(move || {
+        chaos_launch_until_report(&home_c, &ws_c, &rs_c, &fault_started_c, &fault_applied_c)
+    });
 
     let start = std::time::Instant::now();
     let container = loop {
@@ -589,7 +623,9 @@ fn chaos_drop_control_socket() {
         std::thread::sleep(Duration::from_millis(500));
     };
     std::thread::sleep(planned.delay);
+    fault_started.store(true, Ordering::Release);
     chaos::apply_fault(planned.fault, &container);
+    fault_applied.store(true, Ordering::Release);
 
     let _output = handle.join().expect("launch thread panicked");
     cleanup_role(ROLE_KEY, ROLE_CONTAINER_PREFIX);

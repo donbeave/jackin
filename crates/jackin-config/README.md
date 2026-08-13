@@ -1,44 +1,40 @@
 # jackin-config
 
-Configuration schema, validation, migration, and workspace resolution for jackin❯. Owns the shape of `config.toml` / per-workspace config and turns it into resolved, validated structures the rest of the system consumes.
-
-Merges the former `config/` and `workspace/` concerns into one crate to dissolve the config↔workspace mutual cycle that previously blocked clean crate extraction.
+Configuration schema, validation, migration, persistence, and workspace resolution for jackin❯.
 
 ## What this crate owns
 
-- The config and workspace schema (`schema`, `app_config`, `mounts`), sensitive-value handling (`sensitive`), and auth model (`auth`).
-- Resolution (`resolve`, `planner`) and persistence (`persist`, `paths`) of operator + workspace configuration.
-- Versioned migrations (`migrations`, `versions`) and validation (`validation`).
-- `test_support` builders for deterministic config fixtures.
+- Config/workspace schema, auth, mounts, and sensitive-path classification.
+- Resolution, planning, validation, persistence, and versioned migrations.
+- Deterministic config test builders.
 
 ## Architecture tier and allowed dependencies
 
-**L0 domain (schema).** Allowed workspace dependencies: `jackin-core`. No presentation, no infrastructure adapters, no observability — those live above.
+**L0 domain (schema).** No presentation or infrastructure adapters.
 
 ## Structure
 
-| Module | Owns | Tests |
-|---|---|---|
-| [`lib.rs`](src/lib.rs) | crate root, re-exports | — |
-| [`schema.rs`](src/schema.rs) | config + workspace schema | — |
-| [`app_config.rs`](src/app_config.rs) · [`app_config/`](src/app_config) | app-config model | [`tests.rs`](src/app_config/tests.rs) |
-| [`mounts.rs`](src/mounts.rs) · [`mounts/`](src/mounts) | mounts schema | [`tests.rs`](src/mounts/tests.rs) |
-| [`auth.rs`](src/auth.rs) | auth model | — |
-| [`sensitive.rs`](src/sensitive.rs) | sensitive-value handling | — |
-| [`resolve.rs`](src/resolve.rs) · [`resolve/`](src/resolve) | resolution | [`tests.rs`](src/resolve/tests.rs) |
-| [`planner.rs`](src/planner.rs) | planning | — |
-| [`persist.rs`](src/persist.rs) | persistence | — |
-| [`paths.rs`](src/paths.rs) · [`paths/`](src/paths) | config paths | [`tests.rs`](src/paths/tests.rs) |
-| [`migrations.rs`](src/migrations.rs) · [`migrations/`](src/migrations) | versioned migrations | [`tests.rs`](src/migrations/tests.rs) |
-| [`versions.rs`](src/versions.rs) | version constants | — |
-| [`validation.rs`](src/validation.rs) | validation | — |
-| [`telemetry.rs`](src/telemetry.rs) · [`telemetry/`](src/telemetry) | bounded config telemetry ownership | [`tests.rs`](src/telemetry/tests.rs) |
-| [`editor.rs`](src/editor.rs) · [`editor/`](src/editor) | editor config | [`tests.rs`](src/editor/tests.rs) |
-| [`test_support.rs`](src/test_support.rs) | deterministic config builders | — |
+| Module | Owns |
+|---|---|
+| `schema`, `app_config`, `auth` | persisted model and auth layers |
+| `mounts`, `paths`, `sensitive` | mount/path parsing and classification |
+| `resolve`, `planner`, `validation` | pure resolution and validation |
+| `persist`, `editor` | atomic I/O and comment-preserving edits |
+| `migrations`, `versions` | schema migration chain |
+| `telemetry` | bounded config telemetry ownership |
+| `test_support` | deterministic fixtures |
 
 ## Public API
 
-Resolved config/workspace types and the resolution + migration entry points consumed by `jackin-runtime`, `jackin-instance`, `jackin-isolation`, and the CLI. Schema changes are versioned — see `migrations` and the workspace schema-versioning rules.
+Resolved config/workspace types plus resolution and migration entry points. Schema changes follow the repository's versioned-config rules.
+
+## Persistence and validation guarantees
+
+- `ConfigEditor` owns an exclusive OS lock on sibling `config.lock` through save/drop. Snapshot readers use `acquire_config_read_lock`. The persistent file never grants ownership; the OS lock does.
+- `load_read_only_config_snapshot` is the host-discovery path: it parses global and split/legacy workspace files, applies supported migrations in memory, validates the resulting model, and computes a content generation without creating, migrating, or rewriting anything. It retries a torn tree and reports typed source diagnostics.
+- Saves validate, stage, and sync every file before renaming. Staging failure cleans temporary files and preserves the prior tree.
+- Unix writes use mode `0600`; all platforms explicitly open, write, and sync staged files. Parent directories are synced after rename.
+- Mount validation rejects explicit `.`/`..`. Repo identity, isolation ancestry, and sensitive paths use normalized components; existing host paths are canonicalized by I/O-owning callers.
 
 ## How to verify
 

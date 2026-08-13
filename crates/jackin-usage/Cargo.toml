@@ -21,13 +21,14 @@ default = []
 
 [dependencies]
 jackin-core = { workspace = true }
+jackin-config = { workspace = true }
 jackin-protocol = { workspace = true }
 jackin-diagnostics = { workspace = true }
 jackin-telemetry = { workspace = true }
 base64 = { workspace = true }
 chrono = { workspace = true, features = ["clock"] }
 fs4 = { workspace = true }
-nix = { workspace = true, features = ["term"] }
+nix = { workspace = true, features = ["fs", "signal", "term", "user"] }
 reqwest = { workspace = true, features = ["blocking", "json", "rustls"] }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
@@ -35,6 +36,7 @@ tokio = { workspace = true, features = ["rt", "sync", "macros", "time", "net"] }
 tower = { workspace = true }
 tracing = { workspace = true }
 turso = { workspace = true }
+thiserror = { workspace = true }
 url = { workspace = true }
 
 [target.'cfg(target_os = "macos")'.dependencies]

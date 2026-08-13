@@ -5,6 +5,7 @@
 use super::*;
 use crate::{CURRENT_CONFIG_VERSION, CURRENT_WORKSPACE_VERSION};
 use jackin_core::JackinPaths;
+use std::path::Path;
 use tempfile::tempdir;
 
 fn wait_for_mtime_tick() {
@@ -632,4 +633,278 @@ fn load_workspace_files_ignores_leftover_staged_files() {
     let map = load_workspace_files(&paths.workspaces_dir).unwrap();
     assert!(map.contains_key("real"));
     assert_eq!(map.len(), 1);
+}
+
+fn disc_workspace_toml(version: &str, workdir: &str) -> String {
+    format!(
+        "version = \"{version}\"\nworkdir = \"{workdir}\"\n\n[[mounts]]\nsrc = \"/host/source\"\ndst = \"{workdir}\"\n"
+    )
+}
+
+fn disc_write_tree(paths: &JackinPaths) {
+    std::fs::create_dir_all(&paths.workspaces_dir).unwrap();
+    std::fs::write(
+        &paths.config_file,
+        format!("version = \"{CURRENT_CONFIG_VERSION}\"\n\n[claude]\nauth_forward = \"sync\"\n"),
+    )
+    .unwrap();
+    std::fs::write(
+        paths.workspaces_dir.join("alpha.toml"),
+        disc_workspace_toml(CURRENT_WORKSPACE_VERSION, "/workspace/alpha"),
+    )
+    .unwrap();
+}
+
+#[derive(Debug, PartialEq, Eq)]
+struct DiscFileStamp {
+    bytes: Vec<u8>,
+    len: u64,
+    modified: std::time::SystemTime,
+    #[cfg(unix)]
+    mode: u32,
+}
+
+fn disc_file_stamp(path: &Path) -> DiscFileStamp {
+    let metadata = std::fs::metadata(path).unwrap();
+    DiscFileStamp {
+        bytes: std::fs::read(path).unwrap(),
+        len: metadata.len(),
+        modified: metadata.modified().unwrap(),
+        #[cfg(unix)]
+        mode: {
+            use std::os::unix::fs::PermissionsExt as _;
+            metadata.permissions().mode()
+        },
+    }
+}
+
+fn disc_dir_entries(path: &Path) -> Vec<String> {
+    let mut entries = std::fs::read_dir(path)
+        .unwrap()
+        .map(|entry| entry.unwrap().file_name().to_string_lossy().into_owned())
+        .collect::<Vec<_>>();
+    entries.sort();
+    entries
+}
+
+#[test]
+fn disc_read_only_current_and_older_workspace_migrate_in_memory() {
+    let temp = tempdir().unwrap();
+    let paths = JackinPaths::for_tests(temp.path());
+    std::fs::create_dir_all(&paths.workspaces_dir).unwrap();
+    std::fs::write(
+        &paths.config_file,
+        format!("version = \"{CURRENT_CONFIG_VERSION}\"\n"),
+    )
+    .unwrap();
+    std::fs::write(
+        paths.workspaces_dir.join("current.toml"),
+        disc_workspace_toml(CURRENT_WORKSPACE_VERSION, "/workspace/current"),
+    )
+    .unwrap();
+    std::fs::write(
+        paths.workspaces_dir.join("older.toml"),
+        disc_workspace_toml("v1alpha7", "/workspace/older"),
+    )
+    .unwrap();
+
+    let snapshot = load_read_only_config_snapshot(&paths).unwrap();
+
+    assert!(
+        snapshot.diagnostics.is_empty(),
+        "{:?}",
+        snapshot.diagnostics
+    );
+    assert_eq!(snapshot.config.version, CURRENT_CONFIG_VERSION);
+    assert_eq!(snapshot.config.workspaces.len(), 2);
+    assert_eq!(
+        snapshot.config.workspaces["older"].version,
+        CURRENT_WORKSPACE_VERSION
+    );
+}
+
+#[test]
+fn disc_read_only_legacy_embedded_workspace_stays_in_memory() {
+    let temp = tempdir().unwrap();
+    let paths = JackinPaths::for_tests(temp.path());
+    std::fs::create_dir_all(&paths.config_dir).unwrap();
+    std::fs::write(
+        &paths.config_file,
+        r#"[workspaces.legacy]
+workdir = "/workspace/legacy"
+
+[[workspaces.legacy.mounts]]
+src = "/host/source"
+dst = "/workspace/legacy"
+"#,
+    )
+    .unwrap();
+    let before = disc_dir_entries(&paths.config_dir);
+
+    let snapshot = load_read_only_config_snapshot(&paths).unwrap();
+
+    assert!(
+        snapshot.diagnostics.is_empty(),
+        "{:?}",
+        snapshot.diagnostics
+    );
+    assert!(snapshot.config.workspaces.contains_key("legacy"));
+    assert_eq!(disc_dir_entries(&paths.config_dir), before);
+    assert!(!paths.workspaces_dir.exists());
+}
+
+#[test]
+fn disc_read_only_missing_config_creates_nothing() {
+    let temp = tempdir().unwrap();
+    let paths = JackinPaths::for_tests(temp.path());
+
+    let snapshot = load_read_only_config_snapshot(&paths).unwrap();
+
+    assert!(snapshot.diagnostics.is_empty());
+    assert!(snapshot.config.workspaces.is_empty());
+    assert!(!paths.config_dir.exists());
+    assert!(!paths.config_file.with_file_name("config.lock").exists());
+}
+
+#[test]
+fn disc_read_only_malformed_workspace_preserves_unrelated_sources() {
+    let temp = tempdir().unwrap();
+    let paths = JackinPaths::for_tests(temp.path());
+    disc_write_tree(&paths);
+    std::fs::write(
+        paths.workspaces_dir.join("broken.toml"),
+        "version = [not-toml",
+    )
+    .unwrap();
+
+    let snapshot = load_read_only_config_snapshot(&paths).unwrap();
+
+    assert!(snapshot.config.workspaces.contains_key("alpha"));
+    assert!(!snapshot.config.workspaces.contains_key("broken"));
+    assert!(snapshot.diagnostics.contains(&ConfigSourceDiagnostic {
+        scope: ConfigSourceScope::Workspace("broken".to_owned()),
+        issue: ConfigSourceIssue::Malformed,
+    }));
+}
+
+#[test]
+fn disc_read_only_newer_version_is_typed_and_sanitized() {
+    let temp = tempdir().unwrap();
+    let paths = JackinPaths::for_tests(temp.path());
+    std::fs::create_dir_all(&paths.config_dir).unwrap();
+    std::fs::write(&paths.config_file, "version = \"v99alpha1\"\n").unwrap();
+
+    let snapshot = load_read_only_config_snapshot(&paths).unwrap();
+
+    assert_eq!(
+        snapshot.diagnostics,
+        vec![ConfigSourceDiagnostic {
+            scope: ConfigSourceScope::Global,
+            issue: ConfigSourceIssue::UnsupportedVersion,
+        }]
+    );
+    assert!(
+        format!("{:?}", snapshot.diagnostics)
+            .find(temp.path().to_str().unwrap())
+            .is_none()
+    );
+}
+
+#[test]
+fn disc_read_only_leaves_bytes_metadata_permissions_and_entries_unchanged() {
+    let temp = tempdir().unwrap();
+    let paths = JackinPaths::for_tests(temp.path());
+    disc_write_tree(&paths);
+    let workspace_file = paths.workspaces_dir.join("alpha.toml");
+
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt as _;
+        std::fs::set_permissions(&paths.config_file, std::fs::Permissions::from_mode(0o400))
+            .unwrap();
+        std::fs::set_permissions(&workspace_file, std::fs::Permissions::from_mode(0o400)).unwrap();
+        std::fs::set_permissions(
+            &paths.workspaces_dir,
+            std::fs::Permissions::from_mode(0o500),
+        )
+        .unwrap();
+        std::fs::set_permissions(&paths.config_dir, std::fs::Permissions::from_mode(0o500))
+            .unwrap();
+    }
+
+    let config_before = disc_file_stamp(&paths.config_file);
+    let workspace_before = disc_file_stamp(&workspace_file);
+    let config_entries_before = disc_dir_entries(&paths.config_dir);
+    let workspace_entries_before = disc_dir_entries(&paths.workspaces_dir);
+
+    let snapshot = load_read_only_config_snapshot(&paths).unwrap();
+
+    assert!(
+        snapshot.diagnostics.is_empty(),
+        "{:?}",
+        snapshot.diagnostics
+    );
+    assert_eq!(disc_file_stamp(&paths.config_file), config_before);
+    assert_eq!(disc_file_stamp(&workspace_file), workspace_before);
+    assert_eq!(disc_dir_entries(&paths.config_dir), config_entries_before);
+    assert_eq!(
+        disc_dir_entries(&paths.workspaces_dir),
+        workspace_entries_before
+    );
+    assert!(!paths.config_file.with_file_name("config.lock").exists());
+
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt as _;
+        std::fs::set_permissions(&paths.config_dir, std::fs::Permissions::from_mode(0o700))
+            .unwrap();
+        std::fs::set_permissions(
+            &paths.workspaces_dir,
+            std::fs::Permissions::from_mode(0o700),
+        )
+        .unwrap();
+    }
+}
+
+#[test]
+fn disc_read_only_generation_is_content_based() {
+    let temp = tempdir().unwrap();
+    let paths = JackinPaths::for_tests(temp.path());
+    disc_write_tree(&paths);
+    let first = load_read_only_config_snapshot(&paths).unwrap();
+    let bytes = std::fs::read(&paths.config_file).unwrap();
+    std::fs::write(&paths.config_file, bytes).unwrap();
+
+    let second = load_read_only_config_snapshot(&paths).unwrap();
+
+    assert_eq!(first.generation, second.generation);
+    assert_eq!(first.generation.as_str().len(), 64);
+}
+
+#[test]
+fn disc_read_only_repeated_torn_tree_returns_only_transient_diagnostic() {
+    let temp = tempdir().unwrap();
+    let paths = JackinPaths::for_tests(temp.path());
+    disc_write_tree(&paths);
+
+    let snapshot = load_read_only_config_snapshot_with_hook(&paths, |attempt| {
+        std::fs::write(
+            &paths.config_file,
+            format!(
+                "version = \"{CURRENT_CONFIG_VERSION}\"\nrole_repo_refresh_ttl_seconds = {}\n",
+                attempt + 1
+            ),
+        )
+        .unwrap();
+    })
+    .unwrap();
+
+    assert!(snapshot.config.workspaces.is_empty());
+    assert_eq!(
+        snapshot.diagnostics,
+        vec![ConfigSourceDiagnostic {
+            scope: ConfigSourceScope::Workspaces,
+            issue: ConfigSourceIssue::TransientConflict,
+        }]
+    );
 }

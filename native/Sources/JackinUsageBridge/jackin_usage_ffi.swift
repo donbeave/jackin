@@ -620,6 +620,16 @@ public protocol UsageMenuBarBridgeProtocol: AnyObject, Sendable {
     func compactStatusBarStrip(max: UInt32) throws  -> String
     
     /**
+     * Atomic, Rust-ordered provider/account projection for jackin❯ desktop.
+     */
+    func desktopInventory() throws  -> DesktopInventoryDto
+    
+    /**
+     * Sanitized discovery diagnostics for the current catalog generation.
+     */
+    func discoveryDiagnostics() throws  -> [DiscoveryDiagnosticDto]
+    
+    /**
      * List known accounts for one surface (`Some`) or all surfaces (`None`).
      */
     func listAccounts(surfaceId: String?) throws  -> [AccountDescriptorDto]
@@ -688,6 +698,11 @@ public protocol UsageMenuBarBridgeProtocol: AnyObject, Sendable {
      */
     func refreshFloorSecs() throws  -> UInt64
     
+    /**
+     * True while at least one Rust broker generation is queued/updating.
+     */
+    func refreshInProgress() throws  -> Bool
+
     /**
      * Enable or disable a surface for bar + refresh.
      */
@@ -833,6 +848,30 @@ open func compactStatusBarStrip(max: UInt32)throws  -> String  {
     uniffi_jackin_usage_ffi_fn_method_usagemenubarbridge_compact_status_bar_strip(
             self.uniffiCloneHandle(),
         FfiConverterUInt32.lower(max),uniffiCallStatus
+    )
+})
+}
+    
+    /**
+     * Atomic, Rust-ordered provider/account projection for jackin❯ desktop.
+     */
+open func desktopInventory()throws  -> DesktopInventoryDto  {
+    return try  FfiConverterTypeDesktopInventoryDto_lift(try rustCallWithError(FfiConverterTypeUsageBridgeError_lift) {
+        uniffiCallStatus in
+    uniffi_jackin_usage_ffi_fn_method_usagemenubarbridge_desktop_inventory(
+            self.uniffiCloneHandle(),uniffiCallStatus
+    )
+})
+}
+    
+    /**
+     * Sanitized discovery diagnostics for the current catalog generation.
+     */
+open func discoveryDiagnostics()throws  -> [DiscoveryDiagnosticDto]  {
+    return try  FfiConverterSequenceTypeDiscoveryDiagnosticDto.lift(try rustCallWithError(FfiConverterTypeUsageBridgeError_lift) {
+        uniffiCallStatus in
+    uniffi_jackin_usage_ffi_fn_method_usagemenubarbridge_discovery_diagnostics(
+            self.uniffiCloneHandle(),uniffiCallStatus
     )
 })
 }
@@ -994,6 +1033,18 @@ open func refreshFloorSecs()throws  -> UInt64  {
 }
     
     /**
+     * True while at least one Rust broker generation is queued/updating.
+     */
+open func refreshInProgress()throws  -> Bool  {
+    return try  FfiConverterBool.lift(try rustCallWithError(FfiConverterTypeUsageBridgeError_lift) {
+        uniffiCallStatus in
+    uniffi_jackin_usage_ffi_fn_method_usagemenubarbridge_refresh_in_progress(
+            self.uniffiCloneHandle(),uniffiCallStatus
+    )
+})
+}
+
+    /**
      * Enable or disable a surface for bar + refresh.
      */
 open func setEnabled(surfaceId: String, enabled: Bool)throws   {try rustCallWithError(FfiConverterTypeUsageBridgeError_lift) {
@@ -1153,19 +1204,45 @@ public struct AccountDescriptorDto: Equatable, Hashable {
     public var accountLabel: String
     public var planLabel: String?
     public var selected: Bool
+    public var lifecycle: String
+    public var provenance: [String]
+    public var provenanceLabel: String
+    public var planOrStatusLabel: String
     public var remainingPercent: UInt8?
+    public var remainingLabel: String
+    public var headline: String
+    public var resetLabel: String?
+    public var exactReset: String?
     public var statusWord: String
+    public var statusLabel: String
+    public var severity: String
+    public var updatedLabel: String
+    public var lastError: String?
+    public var dimmed: Bool
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(surfaceId: String, accountKey: String, accountLabel: String, planLabel: String?, selected: Bool, remainingPercent: UInt8?, statusWord: String) {
+    public init(surfaceId: String, accountKey: String, accountLabel: String, planLabel: String?, selected: Bool, lifecycle: String, provenance: [String], provenanceLabel: String, planOrStatusLabel: String, remainingPercent: UInt8?, remainingLabel: String, headline: String, resetLabel: String?, exactReset: String?, statusWord: String, statusLabel: String, severity: String, updatedLabel: String, lastError: String?, dimmed: Bool) {
         self.surfaceId = surfaceId
         self.accountKey = accountKey
         self.accountLabel = accountLabel
         self.planLabel = planLabel
         self.selected = selected
+        self.lifecycle = lifecycle
+        self.provenance = provenance
+        self.provenanceLabel = provenanceLabel
+        self.planOrStatusLabel = planOrStatusLabel
         self.remainingPercent = remainingPercent
+        self.remainingLabel = remainingLabel
+        self.headline = headline
+        self.resetLabel = resetLabel
+        self.exactReset = exactReset
         self.statusWord = statusWord
+        self.statusLabel = statusLabel
+        self.severity = severity
+        self.updatedLabel = updatedLabel
+        self.lastError = lastError
+        self.dimmed = dimmed
     }
 
     
@@ -1189,8 +1266,21 @@ public struct FfiConverterTypeAccountDescriptorDto: FfiConverterRustBuffer {
                 accountLabel: FfiConverterString.read(from: &buf), 
                 planLabel: FfiConverterOptionString.read(from: &buf), 
                 selected: FfiConverterBool.read(from: &buf), 
+                lifecycle: FfiConverterString.read(from: &buf), 
+                provenance: FfiConverterSequenceString.read(from: &buf), 
+                provenanceLabel: FfiConverterString.read(from: &buf), 
+                planOrStatusLabel: FfiConverterString.read(from: &buf), 
                 remainingPercent: FfiConverterOptionUInt8.read(from: &buf), 
-                statusWord: FfiConverterString.read(from: &buf)
+                remainingLabel: FfiConverterString.read(from: &buf), 
+                headline: FfiConverterString.read(from: &buf), 
+                resetLabel: FfiConverterOptionString.read(from: &buf), 
+                exactReset: FfiConverterOptionString.read(from: &buf), 
+                statusWord: FfiConverterString.read(from: &buf), 
+                statusLabel: FfiConverterString.read(from: &buf), 
+                severity: FfiConverterString.read(from: &buf), 
+                updatedLabel: FfiConverterString.read(from: &buf), 
+                lastError: FfiConverterOptionString.read(from: &buf), 
+                dimmed: FfiConverterBool.read(from: &buf)
         )
     }
 
@@ -1200,8 +1290,21 @@ public struct FfiConverterTypeAccountDescriptorDto: FfiConverterRustBuffer {
         FfiConverterString.write(value.accountLabel, into: &buf)
         FfiConverterOptionString.write(value.planLabel, into: &buf)
         FfiConverterBool.write(value.selected, into: &buf)
+        FfiConverterString.write(value.lifecycle, into: &buf)
+        FfiConverterSequenceString.write(value.provenance, into: &buf)
+        FfiConverterString.write(value.provenanceLabel, into: &buf)
+        FfiConverterString.write(value.planOrStatusLabel, into: &buf)
         FfiConverterOptionUInt8.write(value.remainingPercent, into: &buf)
+        FfiConverterString.write(value.remainingLabel, into: &buf)
+        FfiConverterString.write(value.headline, into: &buf)
+        FfiConverterOptionString.write(value.resetLabel, into: &buf)
+        FfiConverterOptionString.write(value.exactReset, into: &buf)
         FfiConverterString.write(value.statusWord, into: &buf)
+        FfiConverterString.write(value.statusLabel, into: &buf)
+        FfiConverterString.write(value.severity, into: &buf)
+        FfiConverterString.write(value.updatedLabel, into: &buf)
+        FfiConverterOptionString.write(value.lastError, into: &buf)
+        FfiConverterBool.write(value.dimmed, into: &buf)
     }
 }
 
@@ -1218,6 +1321,274 @@ public func FfiConverterTypeAccountDescriptorDto_lift(_ buf: RustBuffer) throws 
 #endif
 public func FfiConverterTypeAccountDescriptorDto_lower(_ value: AccountDescriptorDto) -> RustBuffer {
     return FfiConverterTypeAccountDescriptorDto.lower(value)
+}
+
+
+/**
+ * Atomic Rust-owned Desktop inventory.
+ */
+public struct DesktopInventoryDto: Equatable, Hashable {
+    public var groups: [DesktopProviderGroupDto]
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(groups: [DesktopProviderGroupDto]) {
+        self.groups = groups
+    }
+
+    
+
+    
+}
+
+#if compiler(>=6)
+extension DesktopInventoryDto: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeDesktopInventoryDto: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> DesktopInventoryDto {
+        return
+            try DesktopInventoryDto(
+                groups: FfiConverterSequenceTypeDesktopProviderGroupDto.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: DesktopInventoryDto, into buf: inout [UInt8]) {
+        FfiConverterSequenceTypeDesktopProviderGroupDto.write(value.groups, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeDesktopInventoryDto_lift(_ buf: RustBuffer) throws -> DesktopInventoryDto {
+    return try FfiConverterTypeDesktopInventoryDto.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeDesktopInventoryDto_lower(_ value: DesktopInventoryDto) -> RustBuffer {
+    return FfiConverterTypeDesktopInventoryDto.lower(value)
+}
+
+
+/**
+ * One Rust-ordered provider group in the atomic Desktop inventory.
+ */
+public struct DesktopProviderGroupDto: Equatable, Hashable {
+    public var surfaceId: String
+    public var displayLabel: String
+    public var iconKey: String
+    public var fallbackGlyph: String
+    public var usageUrl: String?
+    public var accounts: [AccountDescriptorDto]
+    public var emptyState: DesktopProviderStateDto?
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(surfaceId: String, displayLabel: String, iconKey: String, fallbackGlyph: String, usageUrl: String?, accounts: [AccountDescriptorDto], emptyState: DesktopProviderStateDto?) {
+        self.surfaceId = surfaceId
+        self.displayLabel = displayLabel
+        self.iconKey = iconKey
+        self.fallbackGlyph = fallbackGlyph
+        self.usageUrl = usageUrl
+        self.accounts = accounts
+        self.emptyState = emptyState
+    }
+
+    
+
+    
+}
+
+#if compiler(>=6)
+extension DesktopProviderGroupDto: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeDesktopProviderGroupDto: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> DesktopProviderGroupDto {
+        return
+            try DesktopProviderGroupDto(
+                surfaceId: FfiConverterString.read(from: &buf), 
+                displayLabel: FfiConverterString.read(from: &buf), 
+                iconKey: FfiConverterString.read(from: &buf), 
+                fallbackGlyph: FfiConverterString.read(from: &buf), 
+                usageUrl: FfiConverterOptionString.read(from: &buf), 
+                accounts: FfiConverterSequenceTypeAccountDescriptorDto.read(from: &buf), 
+                emptyState: FfiConverterOptionTypeDesktopProviderStateDto.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: DesktopProviderGroupDto, into buf: inout [UInt8]) {
+        FfiConverterString.write(value.surfaceId, into: &buf)
+        FfiConverterString.write(value.displayLabel, into: &buf)
+        FfiConverterString.write(value.iconKey, into: &buf)
+        FfiConverterString.write(value.fallbackGlyph, into: &buf)
+        FfiConverterOptionString.write(value.usageUrl, into: &buf)
+        FfiConverterSequenceTypeAccountDescriptorDto.write(value.accounts, into: &buf)
+        FfiConverterOptionTypeDesktopProviderStateDto.write(value.emptyState, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeDesktopProviderGroupDto_lift(_ buf: RustBuffer) throws -> DesktopProviderGroupDto {
+    return try FfiConverterTypeDesktopProviderGroupDto.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeDesktopProviderGroupDto_lower(_ value: DesktopProviderGroupDto) -> RustBuffer {
+    return FfiConverterTypeDesktopProviderGroupDto.lower(value)
+}
+
+
+/**
+ * Provider state when no stable account identity exists yet.
+ */
+public struct DesktopProviderStateDto: Equatable, Hashable {
+    public var statusWord: String
+    public var statusLabel: String
+    public var updatedLabel: String
+    public var lastError: String?
+    public var isRefreshing: Bool
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(statusWord: String, statusLabel: String, updatedLabel: String, lastError: String?, isRefreshing: Bool) {
+        self.statusWord = statusWord
+        self.statusLabel = statusLabel
+        self.updatedLabel = updatedLabel
+        self.lastError = lastError
+        self.isRefreshing = isRefreshing
+    }
+
+    
+
+    
+}
+
+#if compiler(>=6)
+extension DesktopProviderStateDto: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeDesktopProviderStateDto: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> DesktopProviderStateDto {
+        return
+            try DesktopProviderStateDto(
+                statusWord: FfiConverterString.read(from: &buf), 
+                statusLabel: FfiConverterString.read(from: &buf), 
+                updatedLabel: FfiConverterString.read(from: &buf), 
+                lastError: FfiConverterOptionString.read(from: &buf), 
+                isRefreshing: FfiConverterBool.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: DesktopProviderStateDto, into buf: inout [UInt8]) {
+        FfiConverterString.write(value.statusWord, into: &buf)
+        FfiConverterString.write(value.statusLabel, into: &buf)
+        FfiConverterString.write(value.updatedLabel, into: &buf)
+        FfiConverterOptionString.write(value.lastError, into: &buf)
+        FfiConverterBool.write(value.isRefreshing, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeDesktopProviderStateDto_lift(_ buf: RustBuffer) throws -> DesktopProviderStateDto {
+    return try FfiConverterTypeDesktopProviderStateDto.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeDesktopProviderStateDto_lower(_ value: DesktopProviderStateDto) -> RustBuffer {
+    return FfiConverterTypeDesktopProviderStateDto.lower(value)
+}
+
+
+/**
+ * Sanitized config/credential discovery failure. Contains no source path or secret.
+ */
+public struct DiscoveryDiagnosticDto: Equatable, Hashable {
+    public var surfaceId: String?
+    public var scopeLabel: String
+    public var issue: String
+    public var message: String
+    public var displayLabel: String
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(surfaceId: String?, scopeLabel: String, issue: String, message: String, displayLabel: String) {
+        self.surfaceId = surfaceId
+        self.scopeLabel = scopeLabel
+        self.issue = issue
+        self.message = message
+        self.displayLabel = displayLabel
+    }
+
+    
+
+    
+}
+
+#if compiler(>=6)
+extension DiscoveryDiagnosticDto: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeDiscoveryDiagnosticDto: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> DiscoveryDiagnosticDto {
+        return
+            try DiscoveryDiagnosticDto(
+                surfaceId: FfiConverterOptionString.read(from: &buf), 
+                scopeLabel: FfiConverterString.read(from: &buf), 
+                issue: FfiConverterString.read(from: &buf), 
+                message: FfiConverterString.read(from: &buf), 
+                displayLabel: FfiConverterString.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: DiscoveryDiagnosticDto, into buf: inout [UInt8]) {
+        FfiConverterOptionString.write(value.surfaceId, into: &buf)
+        FfiConverterString.write(value.scopeLabel, into: &buf)
+        FfiConverterString.write(value.issue, into: &buf)
+        FfiConverterString.write(value.message, into: &buf)
+        FfiConverterString.write(value.displayLabel, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeDiscoveryDiagnosticDto_lift(_ buf: RustBuffer) throws -> DiscoveryDiagnosticDto {
+    return try FfiConverterTypeDiscoveryDiagnosticDto.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeDiscoveryDiagnosticDto_lower(_ value: DiscoveryDiagnosticDto) -> RustBuffer {
+    return FfiConverterTypeDiscoveryDiagnosticDto.lower(value)
 }
 
 
@@ -1287,9 +1658,13 @@ public func FfiConverterTypeMoneyDto_lower(_ value: MoneyDto) -> RustBuffer {
  */
 public struct OpenConfig: Equatable, Hashable {
     /**
-     * Absolute jackin data directory (`~/.jackin/data`).
+     * Optional data-dir override for hermetic tests/smoke only. Production is `None`.
      */
-    public var dataDir: String
+    public var dataDirOverride: String?
+    /**
+     * Optional config-root override for hermetic tests/fixtures only. Production is `None`.
+     */
+    public var configRootOverride: String?
     /**
      * Refresh floor seconds (clamped ≥ 60 in Rust).
      */
@@ -1308,8 +1683,11 @@ public struct OpenConfig: Equatable, Hashable {
     // declare one manually.
     public init(
         /**
-         * Absolute jackin data directory (`~/.jackin/data`).
-         */dataDir: String, 
+         * Optional data-dir override for hermetic tests/smoke only. Production is `None`.
+         */dataDirOverride: String?, 
+        /**
+         * Optional config-root override for hermetic tests/fixtures only. Production is `None`.
+         */configRootOverride: String?, 
         /**
          * Refresh floor seconds (clamped ≥ 60 in Rust).
          */refreshFloorSecs: UInt64, 
@@ -1320,7 +1698,8 @@ public struct OpenConfig: Equatable, Hashable {
          * Whether live provider probes may dispatch. `false` = smoke/defense mode
          * (no credential/file/env/CLI/network/Keychain resolution). Not persisted.
          */allowLiveProbes: Bool) {
-        self.dataDir = dataDir
+        self.dataDirOverride = dataDirOverride
+        self.configRootOverride = configRootOverride
         self.refreshFloorSecs = refreshFloorSecs
         self.enabledSurfaceIds = enabledSurfaceIds
         self.allowLiveProbes = allowLiveProbes
@@ -1342,7 +1721,8 @@ public struct FfiConverterTypeOpenConfig: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> OpenConfig {
         return
             try OpenConfig(
-                dataDir: FfiConverterString.read(from: &buf), 
+                dataDirOverride: FfiConverterOptionString.read(from: &buf), 
+                configRootOverride: FfiConverterOptionString.read(from: &buf), 
                 refreshFloorSecs: FfiConverterUInt64.read(from: &buf), 
                 enabledSurfaceIds: FfiConverterSequenceString.read(from: &buf), 
                 allowLiveProbes: FfiConverterBool.read(from: &buf)
@@ -1350,7 +1730,8 @@ public struct FfiConverterTypeOpenConfig: FfiConverterRustBuffer {
     }
 
     public static func write(_ value: OpenConfig, into buf: inout [UInt8]) {
-        FfiConverterString.write(value.dataDir, into: &buf)
+        FfiConverterOptionString.write(value.dataDirOverride, into: &buf)
+        FfiConverterOptionString.write(value.configRootOverride, into: &buf)
         FfiConverterUInt64.write(value.refreshFloorSecs, into: &buf)
         FfiConverterSequenceString.write(value.enabledSurfaceIds, into: &buf)
         FfiConverterBool.write(value.allowLiveProbes, into: &buf)
@@ -1458,6 +1839,8 @@ public func FfiConverterTypeOverviewRowDto_lower(_ value: OverviewRowDto) -> Rus
 public struct ProviderGlanceRowDto: Equatable, Hashable {
     public var surfaceId: String
     public var iconKey: String
+    public var fallbackGlyph: String
+    public var usageUrl: String?
     public var displayLabel: String
     public var accountLabel: String
     public var planLabel: String?
@@ -1476,9 +1859,11 @@ public struct ProviderGlanceRowDto: Equatable, Hashable {
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(surfaceId: String, iconKey: String, displayLabel: String, accountLabel: String, planLabel: String?, glanceRemainingPercent: UInt8?, barLabel: String, headline: String, resetLabel: String?, exactReset: String?, statusWord: String, isRefreshing: Bool, statusLabel: String, severity: String, updatedLabel: String, lastError: String?, dimmed: Bool) {
+    public init(surfaceId: String, iconKey: String, fallbackGlyph: String, usageUrl: String?, displayLabel: String, accountLabel: String, planLabel: String?, glanceRemainingPercent: UInt8?, barLabel: String, headline: String, resetLabel: String?, exactReset: String?, statusWord: String, isRefreshing: Bool, statusLabel: String, severity: String, updatedLabel: String, lastError: String?, dimmed: Bool) {
         self.surfaceId = surfaceId
         self.iconKey = iconKey
+        self.fallbackGlyph = fallbackGlyph
+        self.usageUrl = usageUrl
         self.displayLabel = displayLabel
         self.accountLabel = accountLabel
         self.planLabel = planLabel
@@ -1514,6 +1899,8 @@ public struct FfiConverterTypeProviderGlanceRowDto: FfiConverterRustBuffer {
             try ProviderGlanceRowDto(
                 surfaceId: FfiConverterString.read(from: &buf), 
                 iconKey: FfiConverterString.read(from: &buf), 
+                fallbackGlyph: FfiConverterString.read(from: &buf), 
+                usageUrl: FfiConverterOptionString.read(from: &buf), 
                 displayLabel: FfiConverterString.read(from: &buf), 
                 accountLabel: FfiConverterString.read(from: &buf), 
                 planLabel: FfiConverterOptionString.read(from: &buf), 
@@ -1535,6 +1922,8 @@ public struct FfiConverterTypeProviderGlanceRowDto: FfiConverterRustBuffer {
     public static func write(_ value: ProviderGlanceRowDto, into buf: inout [UInt8]) {
         FfiConverterString.write(value.surfaceId, into: &buf)
         FfiConverterString.write(value.iconKey, into: &buf)
+        FfiConverterString.write(value.fallbackGlyph, into: &buf)
+        FfiConverterOptionString.write(value.usageUrl, into: &buf)
         FfiConverterString.write(value.displayLabel, into: &buf)
         FfiConverterString.write(value.accountLabel, into: &buf)
         FfiConverterOptionString.write(value.planLabel, into: &buf)
@@ -2492,6 +2881,30 @@ fileprivate struct FfiConverterOptionString: FfiConverterRustBuffer {
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
+fileprivate struct FfiConverterOptionTypeDesktopProviderStateDto: FfiConverterRustBuffer {
+    typealias SwiftType = DesktopProviderStateDto?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterTypeDesktopProviderStateDto.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterTypeDesktopProviderStateDto.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterOptionTypeMoneyDto: FfiConverterRustBuffer {
     typealias SwiftType = MoneyDto?
 
@@ -2558,6 +2971,56 @@ fileprivate struct FfiConverterSequenceTypeAccountDescriptorDto: FfiConverterRus
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
             seq.append(try FfiConverterTypeAccountDescriptorDto.read(from: &buf))
+        }
+        return seq
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterSequenceTypeDesktopProviderGroupDto: FfiConverterRustBuffer {
+    typealias SwiftType = [DesktopProviderGroupDto]
+
+    public static func write(_ value: [DesktopProviderGroupDto], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterTypeDesktopProviderGroupDto.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [DesktopProviderGroupDto] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [DesktopProviderGroupDto]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            seq.append(try FfiConverterTypeDesktopProviderGroupDto.read(from: &buf))
+        }
+        return seq
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterSequenceTypeDiscoveryDiagnosticDto: FfiConverterRustBuffer {
+    typealias SwiftType = [DiscoveryDiagnosticDto]
+
+    public static func write(_ value: [DiscoveryDiagnosticDto], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterTypeDiscoveryDiagnosticDto.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [DiscoveryDiagnosticDto] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [DiscoveryDiagnosticDto]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            seq.append(try FfiConverterTypeDiscoveryDiagnosticDto.read(from: &buf))
         }
         return seq
     }
@@ -2762,6 +3225,12 @@ private let initializationResult: InitializationResult = {
     if (uniffi_jackin_usage_ffi_checksum_method_usagemenubarbridge_compact_status_bar_strip() != 29560) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_jackin_usage_ffi_checksum_method_usagemenubarbridge_desktop_inventory() != 41481) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_jackin_usage_ffi_checksum_method_usagemenubarbridge_discovery_diagnostics() != 20128) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_jackin_usage_ffi_checksum_method_usagemenubarbridge_list_accounts() != 28969) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -2796,6 +3265,9 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_jackin_usage_ffi_checksum_method_usagemenubarbridge_refresh_floor_secs() != 21503) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_jackin_usage_ffi_checksum_method_usagemenubarbridge_refresh_in_progress() != 41303) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_jackin_usage_ffi_checksum_method_usagemenubarbridge_set_enabled() != 59390) {

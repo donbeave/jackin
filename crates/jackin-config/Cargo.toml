@@ -26,6 +26,9 @@ anyhow = { workspace = true }
 toml_edit = { workspace = true }
 toml = { workspace = true }
 directories = { workspace = true }
+fs4 = { workspace = true }
+hex = { workspace = true }
+sha2 = { workspace = true }
 
 [dev-dependencies]
 criterion = { workspace = true, features = ["html_reports"] }

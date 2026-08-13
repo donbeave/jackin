@@ -876,7 +876,7 @@ pub(crate) async fn launch_role_runtime(
     // file itself gets 0o600 from inside the capsule. The same directory
     // carries Capsule's normalized launch config.
     let socket_dir = paths.jackin_home.join("sockets").join(*container_name);
-    let capsule_config_contents = toml::to_string(capsule_config)
+    let capsule_config_contents = super::capsule_config_contents(capsule_config)
         .context("serializing Capsule launch config for /jackin/run/agent.toml")?;
     // Runtime passwd/group entries for the host UID/GID so `getpwuid`/`$HOME`
     // resolve to the `agent` user inside the container even though the image
@@ -905,13 +905,6 @@ pub(crate) async fn launch_role_runtime(
     // runtime is built without the `fs` feature here, and blocking on
     // a slow / NFS host parks the worker driving the docker-run RPC
     // for every other future scheduled on it.
-    // Host-shared usage cache dir, mounted into every container so the
-    // account-keyed snapshot/cooldown (and refresh lock) coordinate across
-    // instances — a new instance reads the prior state and only one instance
-    // refreshes a given account (Class III). Shared (no container_name), owned by
-    // the host UID like the socket dir so the container can write it.
-    let usage_shared_dir = paths.jackin_home.join("data").join("usage-shared");
-    let usage_shared_dir_for_mkdir = usage_shared_dir.clone();
     let socket_dir_for_mkdir = socket_dir.clone();
     let capsule_config_contents_for_write = capsule_config_contents.clone();
     let extrausers_passwd_for_write = extrausers_passwd.clone();
@@ -924,12 +917,7 @@ pub(crate) async fn launch_role_runtime(
     );
     let prepare_socket_dir_result =
         jackin_telemetry::spawn::joined_blocking(move || -> std::io::Result<()> {
-            std::fs::create_dir_all(&socket_dir_for_mkdir)?;
-            std::fs::create_dir_all(&usage_shared_dir_for_mkdir)?;
-            std::fs::write(
-                socket_dir_for_mkdir.join(jackin_protocol::CAPSULE_CONFIG_FILENAME),
-                capsule_config_contents_for_write,
-            )?;
+            super::prepare_socket_dir(&socket_dir_for_mkdir, &capsule_config_contents_for_write)?;
             if let Some((passwd_line, group_line)) = extrausers_entries_for_write {
                 if let Some(parent) = extrausers_passwd_for_write.parent() {
                     std::fs::create_dir_all(parent)?;
@@ -967,6 +955,20 @@ pub(crate) async fn launch_role_runtime(
         },
     );
     prepare_socket_dir_result?;
+    let _usage_relay_guard =
+        crate::usage_relay::prepare_for_container(crate::usage_relay::UsageRelayLaunch {
+            paths,
+            workspace_name: (!sibling_auth_prewarm.workspace_name.is_empty())
+                .then_some(sibling_auth_prewarm.workspace_name),
+            role_key: sibling_auth_prewarm.role_key,
+            forwarded_sources: crate::usage_relay::forwarded_sources_from_launch(
+                state,
+                resolved_env,
+            ),
+            socket_dir: socket_dir.clone(),
+        })
+        .await
+        .context("starting scoped usage relay")?;
     // Start the jackin-exec host credential resolver for this container's
     // on-demand bindings. Its socket lands in the dir just prepared (bind-
     // mounted to /jackin/run), so the in-container capsule reaches it at
@@ -980,38 +982,8 @@ pub(crate) async fn launch_role_runtime(
             &ctx.capsule_config.exec_bindings,
         ));
     }
-    // `Display` is lossy on non-UTF-8 paths — docker would silently mount a
-    // different host dir than the one we just created. Bail rather than
-    // smuggle U+FFFD into a `-v` argument.
-    let socket_dir_str = socket_dir.to_str().ok_or_else(|| {
-        anyhow::anyhow!(
-            "socket dir {} contains non-UTF-8 bytes; cannot pass to docker -v",
-            socket_dir.display(),
-        )
-    })?;
-    let socket_mount = format!("{socket_dir_str}:/jackin/run");
+    let socket_mount = crate::usage_relay::docker_runtime_mount(&socket_dir)?;
     run_args.extend_from_slice(&["-v", &socket_mount]);
-    // Bind the host-shared usage cache RW and point the capsule's shared-dir env
-    // at subdirectories under it, so the account-keyed snapshot/cooldown/lock
-    // files live on one host-shared volume across all containers (Class III). The capsule
-    // `create_dir_all`s the subdirectories on first write.
-    let usage_shared_str = usage_shared_dir.to_str().ok_or_else(|| {
-        anyhow::anyhow!(
-            "usage-shared dir {} contains non-UTF-8 bytes; cannot pass to docker -v",
-            usage_shared_dir.display(),
-        )
-    })?;
-    let usage_shared_mount = format!("{usage_shared_str}:/jackin/usage-shared");
-    run_args.extend_from_slice(&[
-        "-v",
-        &usage_shared_mount,
-        "-e",
-        "JACKIN_USAGE_SNAPSHOTS_DIR=/jackin/usage-shared/snapshots",
-        "-e",
-        "JACKIN_USAGE_COOLDOWN_DIR=/jackin/usage-shared/cooldowns",
-        "-e",
-        "JACKIN_USAGE_LOCK_DIR=/jackin/usage-shared/locks",
-    ]);
     // Mount the host UID/GID entries where libnss-extrausers reads them.
     let extrausers_mounts = if extrausers_entries.is_some() {
         let passwd_mount = extrausers_passwd
@@ -1027,11 +999,16 @@ pub(crate) async fn launch_role_runtime(
     for mount in &extrausers_mounts {
         run_args.extend_from_slice(&["-v", mount.as_str()]);
     }
+    let host_env_transport =
+        super::prepare_host_env_transport(&paths.jackin_home, container_name, &mut run_args)
+            .context("creating private host runtime environment")?;
+    host_env_transport.append_arguments(&mut run_args);
     if *debug {
         jackin_diagnostics::emit_debug_line(
             "launch",
             &format!(
-                "prepared host socket dir {socket_dir_str} (owned by host UID, default umask) and Capsule config for bind-mount at /jackin/run"
+                "prepared private host socket dir {} and redacted Capsule config for bind-mount at /jackin/run",
+                socket_dir.display(),
             ),
         );
     }
@@ -1051,6 +1028,7 @@ pub(crate) async fn launch_role_runtime(
     } else {
         run_role.await
     };
+    drop(host_env_transport);
     jackin_diagnostics::active_timing_done(
         jackin_diagnostics::DiagnosticStage::Capsule,
         "docker_run_role",

@@ -7,15 +7,19 @@ use jackin_protocol::control::{
     FocusedUsageView, Money, QuotaBucketView, UsageConfidence, UsageSnapshotStatus, UsageSource,
 };
 use jackin_usage::host::{
-    HostAccountDescriptor, HostEventBatch, HostOverviewRow, HostSurfaceDescriptor, HostUsageEvent,
+    HostAccountDescriptor, HostDesktopInventory, HostDesktopProviderGroup,
+    HostDesktopProviderState, HostEventBatch, HostOverviewRow, HostSurfaceDescriptor,
+    HostUsageEvent, UsageDiscoveryDiagnostic,
 };
 use jackin_usage::usage::{PercentStyle, ResetStyle, UsageFormatPrefs, estimate_caption};
 
 /// Open configuration from Swift (paths only — no credentials).
 #[derive(Debug, Clone, uniffi::Record)]
 pub struct OpenConfig {
-    /// Absolute jackin data directory (`~/.jackin/data`).
-    pub data_dir: String,
+    /// Optional data-dir override for hermetic tests/smoke only. Production is `None`.
+    pub data_dir_override: Option<String>,
+    /// Optional config-root override for hermetic tests/fixtures only. Production is `None`.
+    pub config_root_override: Option<String>,
     /// Refresh floor seconds (clamped ≥ 60 in Rust).
     pub refresh_floor_secs: u64,
     /// Enabled surface ids; empty = all.
@@ -33,6 +37,30 @@ pub struct SurfaceDescriptorDto {
     pub agent: String,
     pub provider: Option<String>,
     pub enabled: bool,
+}
+
+/// Sanitized config/credential discovery failure. Contains no source path or secret.
+#[derive(Debug, Clone, uniffi::Record)]
+pub struct DiscoveryDiagnosticDto {
+    pub surface_id: Option<String>,
+    pub scope_label: String,
+    pub issue: String,
+    pub message: String,
+    pub display_label: String,
+}
+
+pub(crate) fn discovery_diagnostic_dto(
+    diagnostic: UsageDiscoveryDiagnostic,
+) -> DiscoveryDiagnosticDto {
+    let message = diagnostic.issue.display_message().to_owned();
+    let display_label = format!("{}: {message}", diagnostic.scope_label);
+    DiscoveryDiagnosticDto {
+        surface_id: diagnostic.surface_id,
+        scope_label: diagnostic.scope_label,
+        issue: diagnostic.issue.id().to_owned(),
+        message,
+        display_label,
+    }
 }
 
 /// Monetary amount (minor units).
@@ -106,6 +134,8 @@ pub struct UsageDetailPresentationDto {
 pub struct ProviderGlanceRowDto {
     pub surface_id: String,
     pub icon_key: String,
+    pub fallback_glyph: String,
+    pub usage_url: Option<String>,
     pub display_label: String,
     pub account_label: String,
     pub plan_label: Option<String>,
@@ -129,6 +159,8 @@ pub(crate) fn provider_glance_row_dto(
     ProviderGlanceRowDto {
         surface_id: row.surface_id,
         icon_key: row.icon_key,
+        fallback_glyph: row.fallback_glyph,
+        usage_url: row.usage_url,
         display_label: row.display_label,
         account_label: row.account_label,
         plan_label: row.plan_label,
@@ -201,8 +233,21 @@ pub struct AccountDescriptorDto {
     pub account_label: String,
     pub plan_label: Option<String>,
     pub selected: bool,
+    pub lifecycle: String,
+    pub provenance: Vec<String>,
+    pub provenance_label: String,
+    pub plan_or_status_label: String,
     pub remaining_percent: Option<u8>,
+    pub remaining_label: String,
+    pub headline: String,
+    pub reset_label: Option<String>,
+    pub exact_reset: Option<String>,
     pub status_word: String,
+    pub status_label: String,
+    pub severity: String,
+    pub updated_label: String,
+    pub last_error: Option<String>,
+    pub dimmed: bool,
 }
 
 pub(crate) fn account_dto(row: HostAccountDescriptor) -> AccountDescriptorDto {
@@ -212,8 +257,81 @@ pub(crate) fn account_dto(row: HostAccountDescriptor) -> AccountDescriptorDto {
         account_label: row.account_label,
         plan_label: row.plan_label,
         selected: row.selected,
+        lifecycle: row.lifecycle,
+        provenance: row.provenance,
+        provenance_label: row.provenance_label,
+        plan_or_status_label: row.plan_or_status_label,
         remaining_percent: row.remaining_percent,
+        remaining_label: row.remaining_label,
+        headline: row.headline,
+        reset_label: row.reset_label,
+        exact_reset: row.exact_reset,
         status_word: row.status_word,
+        status_label: row.status_label,
+        severity: row.severity,
+        updated_label: row.updated_label,
+        last_error: row.last_error,
+        dimmed: row.dimmed,
+    }
+}
+
+/// Provider state when no stable account identity exists yet.
+#[derive(Debug, Clone, uniffi::Record)]
+pub struct DesktopProviderStateDto {
+    pub status_word: String,
+    pub status_label: String,
+    pub updated_label: String,
+    pub last_error: Option<String>,
+    pub is_refreshing: bool,
+}
+
+/// One Rust-ordered provider group in the atomic Desktop inventory.
+#[derive(Debug, Clone, uniffi::Record)]
+pub struct DesktopProviderGroupDto {
+    pub surface_id: String,
+    pub display_label: String,
+    pub icon_key: String,
+    pub fallback_glyph: String,
+    pub usage_url: Option<String>,
+    pub accounts: Vec<AccountDescriptorDto>,
+    pub empty_state: Option<DesktopProviderStateDto>,
+}
+
+/// Atomic Rust-owned Desktop inventory.
+#[derive(Debug, Clone, uniffi::Record)]
+pub struct DesktopInventoryDto {
+    pub groups: Vec<DesktopProviderGroupDto>,
+}
+
+pub(crate) fn desktop_inventory_dto(inventory: HostDesktopInventory) -> DesktopInventoryDto {
+    DesktopInventoryDto {
+        groups: inventory
+            .groups
+            .into_iter()
+            .map(desktop_provider_group_dto)
+            .collect(),
+    }
+}
+
+fn desktop_provider_group_dto(group: HostDesktopProviderGroup) -> DesktopProviderGroupDto {
+    DesktopProviderGroupDto {
+        surface_id: group.surface_id,
+        display_label: group.display_label,
+        icon_key: group.icon_key,
+        fallback_glyph: group.fallback_glyph,
+        usage_url: group.usage_url,
+        accounts: group.accounts.into_iter().map(account_dto).collect(),
+        empty_state: group.empty_state.map(desktop_provider_state_dto),
+    }
+}
+
+fn desktop_provider_state_dto(state: HostDesktopProviderState) -> DesktopProviderStateDto {
+    DesktopProviderStateDto {
+        status_word: state.status_word,
+        status_label: state.status_label,
+        updated_label: state.updated_label,
+        last_error: state.last_error,
+        is_refreshing: state.is_refreshing,
     }
 }
 
@@ -420,9 +538,22 @@ fn confidence_label(confidence: UsageConfidence) -> &'static str {
 }
 
 /// Build open config for the host runtime.
-pub(crate) fn to_host_config(config: OpenConfig) -> jackin_usage::host::HostRuntimeConfig {
-    jackin_usage::host::HostRuntimeConfig {
-        data_dir: std::path::PathBuf::from(config.data_dir),
+pub(crate) fn to_host_config(
+    config: OpenConfig,
+) -> Result<jackin_usage::host::HostRuntimeConfig, String> {
+    let paths = jackin_core::JackinPaths::detect()
+        .map_err(|_| "host path discovery unavailable".to_owned())?;
+    let data_dir_override = config.data_dir_override.map(std::path::PathBuf::from);
+    let operator_home = data_dir_override
+        .clone()
+        .unwrap_or_else(|| paths.home_dir.clone());
+    let data_dir = data_dir_override.unwrap_or(paths.data_dir);
+    let config_root = config
+        .config_root_override
+        .map(std::path::PathBuf::from)
+        .unwrap_or(paths.config_dir);
+    Ok(jackin_usage::host::HostRuntimeConfig {
+        data_dir,
         refresh_floor_secs: config.refresh_floor_secs,
         enabled_surface_ids: config.enabled_surface_ids,
         probe_policy: if config.allow_live_probes {
@@ -430,5 +561,9 @@ pub(crate) fn to_host_config(config: OpenConfig) -> jackin_usage::host::HostRunt
         } else {
             jackin_usage::host::HostProbePolicy::Disabled
         },
-    }
+        discovery_scope: jackin_usage::host::UsageDiscoveryScope::HostDesktop {
+            config_root,
+            operator_home,
+        },
+    })
 }

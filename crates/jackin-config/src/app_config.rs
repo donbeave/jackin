@@ -92,25 +92,15 @@ pub struct AppConfig {
 impl AppConfig {
     /// Validates that no configured agent uses an auth mode unsupported by that agent.
     ///
-    /// Preserves the "`OAuthToken` not supported" check formerly enforced by the
-    /// per-agent serde newtypes.
+    /// Drives the complete agent catalog so new agents cannot bypass validation.
     pub fn validate_auth_modes(&self) -> crate::ConfigResult<()> {
-        let pairs: &[(Agent, Option<&AgentAuthConfig>)] = &[
-            (Agent::Codex, self.codex.as_ref()),
-            (Agent::Amp, self.amp.as_ref()),
-            (Agent::Kimi, self.kimi.as_ref()),
-            (Agent::Opencode, self.opencode.as_ref()),
-        ];
-        for (agent, cfg) in pairs {
-            if cfg.is_some_and(|c| {
-                c.auth_forward == AuthForwardMode::OAuthToken
-                    && !agent
-                        .supported_modes()
-                        .contains(&AuthForwardMode::OAuthToken)
-            }) {
+        for agent in Agent::ALL.iter().copied() {
+            if let Some(mode) = self.auth_forward_for(agent)
+                && !agent.supported_modes().contains(&mode)
+            {
                 return Err(ConfigError::msg(format!(
-                    "auth_forward 'oauth_token' is not supported for {}",
-                    agent.slug()
+                    "auth_forward '{mode}' is not supported for {}",
+                    agent.slug(),
                 )));
             }
         }

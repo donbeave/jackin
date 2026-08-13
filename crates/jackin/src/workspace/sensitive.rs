@@ -7,10 +7,17 @@
 //! implemented in `jackin-config` and re-exported here. `confirm_sensitive_mounts`
 //! lives here because it depends on `crate::tui` and `dialoguer`.
 
-pub use jackin_config::{SensitiveMount, find_sensitive_mounts};
+pub use jackin_config::{
+    MountConfig, SensitiveMount, find_sensitive_mounts, normalize_sensitive_mount_sources,
+};
 
-#[cfg(test)]
-use crate::workspace::MountConfig;
+/// Normalize and canonicalize mount sources before sensitive classification.
+#[must_use]
+pub fn resolved_sensitive_mounts(mounts: &[MountConfig]) -> Vec<SensitiveMount> {
+    let resolved =
+        normalize_sensitive_mount_sources(mounts, |path| std::fs::canonicalize(path).ok());
+    find_sensitive_mounts(&resolved)
+}
 
 /// Display a warning for sensitive mounts and ask the operator to confirm.
 /// Returns `Ok(true)` when the operator confirms, `Ok(false)` when they

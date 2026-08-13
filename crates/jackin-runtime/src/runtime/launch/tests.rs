@@ -6,6 +6,7 @@
     unused_qualifications,
     reason = "documented residual allow; prefer expect when site is lint-true"
 )]
+use super::mounts::AppleContainerMountError;
 use super::*;
 use crate::runtime::launch::launch_runtime::{
     CapsuleAuth, CapsuleEndpoint, CapsuleNetwork, capsule_export_coverage,
@@ -1160,6 +1161,133 @@ fn exec_binding_names_joins_names_in_order() {
 }
 
 #[test]
+fn capsule_config_redacts_literal_exec_binding_source_only() {
+    let secret = "literal-secret-must-not-reach-agent-toml";
+    let config = jackin_protocol::CapsuleConfig {
+        exec_bindings: vec![
+            jackin_protocol::ExecBinding {
+                name: "LITERAL_TOKEN".to_owned(),
+                kind: jackin_protocol::ExecKind::Literal,
+                source: secret.to_owned(),
+            },
+            jackin_protocol::ExecBinding {
+                name: "OP_TOKEN".to_owned(),
+                kind: jackin_protocol::ExecKind::Op,
+                source: "op://vault/item/field".to_owned(),
+            },
+            jackin_protocol::ExecBinding {
+                name: "ENV_TOKEN".to_owned(),
+                kind: jackin_protocol::ExecKind::Env,
+                source: "$HOST_TOKEN".to_owned(),
+            },
+        ],
+        ..Default::default()
+    };
+
+    let serialized = capsule_config_contents(&config).unwrap();
+    assert!(!serialized.contains(secret));
+    let projected: jackin_protocol::CapsuleConfig = toml::from_str(&serialized).unwrap();
+    assert_eq!(projected.exec_bindings[0].source, "literal");
+    assert_eq!(projected.exec_bindings[1].source, "op://vault/item/field");
+    assert_eq!(projected.exec_bindings[2].source, "$HOST_TOKEN");
+    assert_eq!(config.exec_bindings[0].source, secret);
+}
+
+#[cfg(unix)]
+#[test]
+fn socket_dir_is_private_with_zero_exec_bindings() {
+    use std::os::unix::fs::PermissionsExt as _;
+
+    let temp = tempdir().unwrap();
+    let socket_dir = temp.path().join("sockets").join("zero-bindings");
+    prepare_socket_dir(&socket_dir, "role = 'fixture'\n").unwrap();
+
+    let mode = std::fs::metadata(&socket_dir).unwrap().permissions().mode() & 0o777;
+    assert_eq!(mode, 0o700);
+    assert!(
+        socket_dir
+            .join(jackin_protocol::CAPSULE_CONFIG_FILENAME)
+            .is_file()
+    );
+}
+
+#[test]
+fn launch_args_move_every_non_jackin_value_to_host_env_file() {
+    let token = "fake-github-token-for-argv-test";
+    let token_entry = format!("GH_TOKEN={token}");
+    let headers_entry = "OTEL_EXPORTER_OTLP_HEADERS=authorization=fake".to_owned();
+    let mut args = vec![
+        "run",
+        "-e",
+        "JACKIN_ROLE=fixture",
+        "-e",
+        token_entry.as_str(),
+        "-e",
+        headers_entry.as_str(),
+    ];
+
+    let host_only = extract_host_env_entries(&mut args).unwrap();
+
+    assert_eq!(args, ["run", "-e", "JACKIN_ROLE=fixture"]);
+    assert!(!args.join(" ").contains(token));
+    assert_eq!(
+        host_only,
+        [
+            ("GH_TOKEN".to_owned(), token.to_owned()),
+            (
+                "OTEL_EXPORTER_OTLP_HEADERS".to_owned(),
+                "authorization=fake".to_owned()
+            )
+        ]
+    );
+}
+
+#[cfg(unix)]
+#[test]
+fn env_file_is_private_host_only_and_removed_on_success_and_error_drop() {
+    use std::os::unix::fs::PermissionsExt as _;
+
+    let temp = tempdir().unwrap();
+    let jackin_home = temp.path().join("jackin-home");
+    let socket_dir = jackin_home.join("sockets").join("fixture");
+    let file = create_host_env_file(
+        &jackin_home,
+        "fixture",
+        &[("GH_TOKEN".to_owned(), "fake-secret".to_owned())],
+    )
+    .unwrap()
+    .unwrap();
+    let path = file.path().to_path_buf();
+
+    assert!(path.is_file());
+    assert!(!path.starts_with(socket_dir));
+    assert_eq!(
+        std::fs::read_to_string(&path).unwrap(),
+        "GH_TOKEN=fake-secret\n"
+    );
+    let mode = std::fs::metadata(&path).unwrap().permissions().mode() & 0o777;
+    assert_eq!(mode, 0o600);
+
+    drop(file);
+    assert!(!path.exists());
+
+    let error_file = create_host_env_file(
+        &jackin_home,
+        "fixture",
+        &[("GH_TOKEN".to_owned(), "other-fake-secret".to_owned())],
+    )
+    .unwrap()
+    .unwrap();
+    let error_path = error_file.path().to_path_buf();
+    let result: std::io::Result<()> = {
+        let _guard = error_file;
+        Err(std::io::Error::other("simulated runtime failure"))
+    };
+    assert!(result.is_err());
+    assert!(!error_path.exists());
+}
+
+#[test]
 fn resolve_backend_defaults_docker_and_workspace_overrides_config() {
     let mut config = jackin_config::AppConfig::default();
     // No selection anywhere → Docker.
@@ -1482,6 +1610,84 @@ async fn build_workspace_mount_strings_preserves_readonly_on_user_facing_mount()
 
     let strings = build_workspace_mount_strings(&mat);
     assert_eq!(strings, vec!["/host/cache:/workspace/cache:ro".to_owned()]);
+}
+
+#[test]
+fn build_workspace_mounts_preserves_plain_read_write_mount() {
+    let workspace = MaterializedWorkspace {
+        workdir: "/workspace".into(),
+        mounts: vec![MaterializedMount {
+            bind_src: "/host/source".into(),
+            dst: "/workspace/source".into(),
+            readonly: false,
+            isolation: MountIsolation::Shared,
+            worktree_aux: None,
+        }],
+        keep_awake_enabled: false,
+    };
+
+    let mounts = build_workspace_mounts(&workspace).unwrap();
+
+    assert_eq!(mounts.len(), 1);
+    assert_eq!(mounts[0].source, Path::new("/host/source"));
+    assert_eq!(mounts[0].target, Path::new("/workspace/source"));
+    assert!(!mounts[0].readonly);
+}
+
+#[test]
+fn build_workspace_mounts_preserves_operator_readonly_mount() {
+    let workspace = MaterializedWorkspace {
+        workdir: "/workspace".into(),
+        mounts: vec![MaterializedMount {
+            bind_src: "/host/cache".into(),
+            dst: "/workspace/cache".into(),
+            readonly: true,
+            isolation: MountIsolation::Shared,
+            worktree_aux: None,
+        }],
+        keep_awake_enabled: false,
+    };
+
+    let mounts = build_workspace_mounts(&workspace).unwrap();
+
+    assert_eq!(mounts.len(), 1);
+    assert_eq!(mounts[0].target, Path::new("/workspace/cache"));
+    assert!(mounts[0].readonly);
+}
+
+#[test]
+fn build_workspace_mounts_rejects_worktree_file_overlays() {
+    let workspace = MaterializedWorkspace {
+        workdir: "/workspace".into(),
+        mounts: vec![MaterializedMount {
+            bind_src: "/state/worktree".into(),
+            dst: "/workspace/repo".into(),
+            readonly: false,
+            isolation: MountIsolation::Worktree,
+            worktree_aux: Some(WorktreeAuxMounts {
+                host_git_dir: "/host/repo/.git".into(),
+                host_git_target: "/jackin/host/workspace/repo/.git".into(),
+                git_file_override: "/state/overrides/.git".into(),
+                git_file_target: "/workspace/repo/.git".into(),
+                gitdir_back_override: "/state/overrides/gitdir".into(),
+                gitdir_back_target: "/jackin/host/workspace/repo/.git/worktrees/role/gitdir".into(),
+            }),
+        }],
+        keep_awake_enabled: false,
+    };
+
+    let error = build_workspace_mounts(&workspace).unwrap_err();
+
+    assert_eq!(
+        error,
+        AppleContainerMountError::WorktreeFileOverlays {
+            destination: "/workspace/repo".into()
+        }
+    );
+    let message = error.to_string();
+    assert!(message.contains("/workspace/repo"));
+    assert!(message.contains("single-file bind mounts"));
+    assert!(message.contains("docker backend"));
 }
 
 #[tokio::test]
@@ -1809,6 +2015,63 @@ fn arg_after(command: &str, flag: &str) -> String {
         }
     }
     String::new()
+}
+
+#[derive(Clone, Debug)]
+struct ObservedHostEnvFile {
+    path: std::path::PathBuf,
+    contents: String,
+    #[cfg(unix)]
+    mode: u32,
+}
+
+fn observe_host_env_file(
+    runner: &mut FakeRunner,
+    paths: &JackinPaths,
+) -> std::sync::Arc<std::sync::Mutex<Option<ObservedHostEnvFile>>> {
+    let observed = std::sync::Arc::new(std::sync::Mutex::new(None));
+    let output = std::sync::Arc::clone(&observed);
+    let directory = paths.jackin_home.join("runtime-env");
+    runner.side_effects.push((
+        "docker run -d --name".to_owned(),
+        Box::new(move || {
+            let files = std::fs::read_dir(&directory)
+                .unwrap()
+                .map(|entry| entry.unwrap().path())
+                .filter(|path| path.extension().is_some_and(|extension| extension == "env"))
+                .collect::<Vec<_>>();
+            assert_eq!(files.len(), 1, "one host env file must exist at launch");
+            let path = files[0].clone();
+            let contents = std::fs::read_to_string(&path).unwrap();
+            #[cfg(unix)]
+            let mode = {
+                use std::os::unix::fs::PermissionsExt as _;
+                std::fs::metadata(&path).unwrap().permissions().mode() & 0o777
+            };
+            *output.lock().unwrap() = Some(ObservedHostEnvFile {
+                path,
+                contents,
+                #[cfg(unix)]
+                mode,
+            });
+        }),
+    ));
+    observed
+}
+
+fn assert_host_env_file_outside_mounts(command: &str, env_file: &Path) {
+    let mut arguments = command.split_whitespace();
+    while let Some(argument) = arguments.next() {
+        if argument != "-v" {
+            continue;
+        }
+        let mount = arguments.next().expect("mount flag must have a value");
+        let host_source = mount.split(':').next().expect("mount must have a source");
+        assert!(
+            !env_file.starts_with(host_source),
+            "host env file must be outside every mounted source"
+        );
+    }
 }
 
 fn launched_role_container_name(runner: &FakeRunner) -> String {
@@ -2945,7 +3208,6 @@ async fn load_agent_uses_resolved_workspace_mounts_and_workdir() {
         String::new(),
         "jk-agent-smith".to_owned(),
     ]);
-
     let repo_dir = jackin_manifest::repo::CachedRepo::new(&paths, &selector).repo_dir;
     std::fs::create_dir_all(&repo_dir).unwrap();
     std::fs::write(
@@ -4313,6 +4575,7 @@ async fn load_agent_skips_unused_github_env_resolution() {
         "main".to_owned(),
         "abc123".to_owned(),
     ]);
+    let observed_env = observe_host_env_file(&mut runner, &paths);
     let opts = LoadOptions {
         agent: Some(agent),
         op_runner: Some(Box::new(FailingUnusedGithubOpRunner)),
@@ -4337,13 +4600,28 @@ async fn load_agent_skips_unused_github_env_resolution() {
         .find(|call| call.contains("docker run -d") && call.contains("jackin.kind=role"))
         .unwrap();
     assert!(
-        run_cmd.contains("-e GH_TOKEN=ghp_test"),
-        "required GitHub token must still inject; got: {run_cmd}"
+        run_cmd.contains("--env-file") && !run_cmd.contains("ghp_test"),
+        "required GitHub token must use the host env file; got: {run_cmd}"
     );
     assert!(
         !run_cmd.contains("UNUSED_GITHUB_SECRET"),
         "unused GitHub env keys are not runtime env; got: {run_cmd}"
     );
+    let observed = observed_env.lock().unwrap().clone().unwrap();
+    assert!(
+        observed
+            .contents
+            .lines()
+            .any(|line| line == "GH_TOKEN=ghp_test")
+    );
+    assert!(
+        observed
+            .contents
+            .lines()
+            .any(|line| line == "GITHUB_TOKEN=ghp_test")
+    );
+    assert!(!observed.contents.contains("UNUSED_GITHUB_SECRET"));
+    assert!(!observed.path.exists());
 }
 
 #[tokio::test]
@@ -5507,7 +5785,6 @@ async fn load_agent_checks_dind_readiness() {
         String::new(),
         "jk-agent-smith".to_owned(),
     ]);
-
     let repo_dir = jackin_manifest::repo::CachedRepo::new(&paths, &selector).repo_dir;
     std::fs::create_dir_all(&repo_dir).unwrap();
     std::fs::write(
@@ -5592,6 +5869,7 @@ async fn load_agent_configures_dind_with_tls() {
         String::new(),
         "jk-agent-smith".to_owned(),
     ]);
+    let observed_env = observe_host_env_file(&mut runner, &paths);
 
     let repo_dir = jackin_manifest::repo::CachedRepo::new(&paths, &selector).repo_dir;
     std::fs::create_dir_all(&repo_dir).unwrap();
@@ -5669,26 +5947,41 @@ plugins = []
         .iter()
         .find(|call| call.contains("docker run -d") && call.contains("jackin.kind=role"))
         .unwrap();
+    let observed = observed_env.lock().unwrap().clone().unwrap();
     assert!(
-        run_cmd.contains(&format!("DOCKER_HOST=tcp://{dind}:2376")),
+        observed
+            .contents
+            .lines()
+            .any(|line| line == format!("DOCKER_HOST=tcp://{dind}:2376")),
         "role must use TLS port 2376"
     );
     assert!(
-        run_cmd.contains(&format!("TESTCONTAINERS_HOST_OVERRIDE={dind}")),
+        observed
+            .contents
+            .lines()
+            .any(|line| line == format!("TESTCONTAINERS_HOST_OVERRIDE={dind}")),
         "Testcontainers must receive the same DNS-safe DinD hostname"
     );
     assert!(
-        run_cmd.contains("DOCKER_TLS_VERIFY=1"),
+        observed
+            .contents
+            .lines()
+            .any(|line| line == "DOCKER_TLS_VERIFY=1"),
         "role must verify TLS"
     );
     assert!(
-        run_cmd.contains("DOCKER_CERT_PATH=/jackin/run/dind-certs/client"),
+        observed
+            .contents
+            .lines()
+            .any(|line| line == "DOCKER_CERT_PATH=/jackin/run/dind-certs/client"),
         "role must know cert path"
     );
     assert!(
         run_cmd.contains(&format!("{certs_volume}:/jackin/run/dind-certs/client:ro")),
         "role must mount cert volume read-only"
     );
+    assert!(!run_cmd.contains("DOCKER_HOST="));
+    assert!(!observed.path.exists());
 }
 
 #[tokio::test]
@@ -5713,6 +6006,7 @@ async fn load_agent_adds_dind_to_no_proxy_when_proxy_is_configured() {
         String::new(),
         "jk-agent-smith".to_owned(),
     ]);
+    let observed_env = observe_host_env_file(&mut runner, &paths);
 
     let repo_dir = jackin_manifest::repo::CachedRepo::new(&paths, &selector).repo_dir;
     std::fs::create_dir_all(&repo_dir).unwrap();
@@ -5752,45 +6046,87 @@ plugins = []
         .find(|call| call.contains("docker run -d") && call.contains("jackin.kind=role"))
         .unwrap();
     let dind = dind_env_from_run_cmd(run_cmd);
-    assert!(run_cmd.contains("HTTPS_PROXY=http://proxy.internal:8305"));
+    let observed = observed_env.lock().unwrap().clone().unwrap();
+    assert!(
+        observed
+            .contents
+            .lines()
+            .any(|line| line == "HTTPS_PROXY=http://proxy.internal:8305")
+    );
     // Both casings carry the merged list — operator's localhost,127.0.0.1
     // must survive into the lowercase synthesized variant for tools that
     // only read `no_proxy`.
-    assert!(run_cmd.contains(&format!("NO_PROXY=localhost,127.0.0.1,{dind}")));
-    assert!(run_cmd.contains(&format!("no_proxy=localhost,127.0.0.1,{dind}")));
+    assert!(
+        observed
+            .contents
+            .lines()
+            .any(|line| line == format!("NO_PROXY=localhost,127.0.0.1,{dind}"))
+    );
+    assert!(
+        observed
+            .contents
+            .lines()
+            .any(|line| line == format!("no_proxy=localhost,127.0.0.1,{dind}"))
+    );
+    assert!(!run_cmd.contains("proxy.internal"));
+    assert!(!observed.path.exists());
 }
 
 #[tokio::test]
 async fn load_agent_synthesizes_both_no_proxy_casings_when_only_proxy_set() {
-    let (run_cmd, _temp) =
+    let (run_cmd, env_file, _temp) =
         run_load_with_env(&[("HTTPS_PROXY", "http://proxy.internal:8305")]).await;
     let dind = dind_env_from_run_cmd(&run_cmd);
-    assert!(run_cmd.contains(&format!("NO_PROXY={dind}")));
-    assert!(run_cmd.contains(&format!("no_proxy={dind}")));
+    assert!(
+        env_file
+            .lines()
+            .any(|line| line == format!("NO_PROXY={dind}"))
+    );
+    assert!(
+        env_file
+            .lines()
+            .any(|line| line == format!("no_proxy={dind}"))
+    );
 }
 
 #[tokio::test]
 async fn load_agent_mirrors_no_proxy_to_missing_lower_casing() {
-    let (run_cmd, _temp) = run_load_with_env(&[
+    let (run_cmd, env_file, _temp) = run_load_with_env(&[
         ("HTTPS_PROXY", "http://proxy.internal:8305"),
         ("NO_PROXY", "internal.corp"),
     ])
     .await;
     let dind = dind_env_from_run_cmd(&run_cmd);
-    assert!(run_cmd.contains(&format!("NO_PROXY=internal.corp,{dind}")));
-    assert!(run_cmd.contains(&format!("no_proxy=internal.corp,{dind}")));
+    assert!(
+        env_file
+            .lines()
+            .any(|line| line == format!("NO_PROXY=internal.corp,{dind}"))
+    );
+    assert!(
+        env_file
+            .lines()
+            .any(|line| line == format!("no_proxy=internal.corp,{dind}"))
+    );
 }
 
 #[tokio::test]
 async fn load_agent_mirrors_lower_no_proxy_to_missing_upper_casing() {
-    let (run_cmd, _temp) = run_load_with_env(&[
+    let (run_cmd, env_file, _temp) = run_load_with_env(&[
         ("https_proxy", "http://proxy.internal:8305"),
         ("no_proxy", "internal.corp"),
     ])
     .await;
     let dind = dind_env_from_run_cmd(&run_cmd);
-    assert!(run_cmd.contains(&format!("NO_PROXY=internal.corp,{dind}")));
-    assert!(run_cmd.contains(&format!("no_proxy=internal.corp,{dind}")));
+    assert!(
+        env_file
+            .lines()
+            .any(|line| line == format!("NO_PROXY=internal.corp,{dind}"))
+    );
+    assert!(
+        env_file
+            .lines()
+            .any(|line| line == format!("no_proxy=internal.corp,{dind}"))
+    );
 }
 
 #[tokio::test]
@@ -5798,20 +6134,28 @@ async fn load_agent_synthesizes_both_casings_when_only_no_proxy_declared() {
     // Operator may have proxy injected by /etc/environment, transparent
     // proxy, or container-injected vars; jackin only sees NO_PROXY.
     // Both casings must still receive the DinD bypass.
-    let (run_cmd, _temp) = run_load_with_env(&[("NO_PROXY", "internal.corp")]).await;
+    let (run_cmd, env_file, _temp) = run_load_with_env(&[("NO_PROXY", "internal.corp")]).await;
     let dind = dind_env_from_run_cmd(&run_cmd);
-    assert!(run_cmd.contains(&format!("NO_PROXY=internal.corp,{dind}")));
-    assert!(run_cmd.contains(&format!("no_proxy=internal.corp,{dind}")));
+    assert!(
+        env_file
+            .lines()
+            .any(|line| line == format!("NO_PROXY=internal.corp,{dind}"))
+    );
+    assert!(
+        env_file
+            .lines()
+            .any(|line| line == format!("no_proxy=internal.corp,{dind}"))
+    );
 }
 
 #[tokio::test]
 async fn load_agent_omits_no_proxy_when_no_proxy_env_declared() {
-    let (run_cmd, _temp) = run_load_with_env(&[]).await;
-    assert!(!run_cmd.contains("NO_PROXY="));
-    assert!(!run_cmd.contains("no_proxy="));
+    let (_run_cmd, env_file, _temp) = run_load_with_env(&[]).await;
+    assert!(!env_file.lines().any(|line| line.starts_with("NO_PROXY=")));
+    assert!(!env_file.lines().any(|line| line.starts_with("no_proxy=")));
 }
 
-async fn run_load_with_env(entries: &[(&str, &str)]) -> (String, tempfile::TempDir) {
+async fn run_load_with_env(entries: &[(&str, &str)]) -> (String, String, tempfile::TempDir) {
     let temp = tempdir().unwrap();
     let paths = JackinPaths::for_tests(temp.path());
     crate::runtime::test_support::install_all_test_stubs(&paths);
@@ -5831,6 +6175,7 @@ async fn run_load_with_env(entries: &[(&str, &str)]) -> (String, tempfile::TempD
         String::new(),
         "jk-agent-smith".to_owned(),
     ]);
+    let observed_env = observe_host_env_file(&mut runner, &paths);
 
     let repo_dir = jackin_manifest::repo::CachedRepo::new(&paths, &selector).repo_dir;
     std::fs::create_dir_all(&repo_dir).unwrap();
@@ -5870,7 +6215,9 @@ plugins = []
         .find(|call| call.contains("docker run -d") && call.contains("jackin.kind=role"))
         .unwrap()
         .clone();
-    (run_cmd, temp)
+    let observed = observed_env.lock().unwrap().clone().unwrap();
+    assert!(!observed.path.exists());
+    (run_cmd, observed.contents, temp)
 }
 
 #[tokio::test]
@@ -6084,6 +6431,7 @@ async fn load_agent_sets_claude_env_to_jackin() {
         String::new(),
         "jk-agent-smith".to_owned(),
     ]);
+    let observed_env = observe_host_env_file(&mut runner, &paths);
 
     let repo_dir = jackin_manifest::repo::CachedRepo::new(&paths, &selector).repo_dir;
     std::fs::create_dir_all(&repo_dir).unwrap();
@@ -6123,11 +6471,20 @@ plugins = []
         .find(|call| call.contains("docker run -d") && call.contains("jackin.kind=role"))
         .unwrap();
     let dind = dind_env_from_run_cmd(run_cmd);
-    assert!(run_cmd.contains("-e JACKIN=1"));
     assert!(run_cmd.contains(&format!("-e JACKIN_DIND_HOSTNAME={dind}")));
     assert!(run_cmd.contains("-e JACKIN_CONTAINER_NAME="));
     assert!(run_cmd.contains("-e JACKIN_INSTANCE_ID="));
-    assert!(run_cmd.contains(&format!("-e TESTCONTAINERS_HOST_OVERRIDE={dind}")));
+    let observed = observed_env.lock().unwrap().clone().unwrap();
+    assert!(observed.contents.lines().any(|line| line == "JACKIN=1"));
+    assert!(!run_cmd.contains("-e JACKIN=1"));
+    assert!(
+        observed
+            .contents
+            .lines()
+            .any(|line| line == format!("TESTCONTAINERS_HOST_OVERRIDE={dind}"))
+    );
+    assert!(!run_cmd.contains("TESTCONTAINERS_HOST_OVERRIDE="));
+    assert!(!observed.path.exists());
     assert!(!run_cmd.contains("JACKIN_DEBUG"));
 }
 
@@ -6494,6 +6851,7 @@ async fn load_agent_injects_global_operator_env_literal() {
         &paths.config_file,
         r#"[env]
 OPERATOR_SMOKE = "smoke-literal"
+ON_DEMAND_LITERAL = { value = "on-demand-literal-secret", on_demand = true }
 
 [roles.agent-smith]
 git = "https://github.com/jackin-project/jackin-agent-smith.git"
@@ -6511,6 +6869,7 @@ trusted = true
         String::new(),
         "jk-agent-smith".to_owned(),
     ]);
+    let observed_env = observe_host_env_file(&mut runner, &paths);
 
     let repo_dir = jackin_manifest::repo::CachedRepo::new(&paths, &selector).repo_dir;
     std::fs::create_dir_all(&repo_dir).unwrap();
@@ -6550,9 +6909,32 @@ plugins = []
         .find(|call| call.contains("docker run -d") && call.contains("jackin.kind=role"))
         .unwrap();
     assert!(
-        run_cmd.contains("-e OPERATOR_SMOKE=smoke-literal"),
-        "docker run must inject operator env; got: {run_cmd}"
+        run_cmd.contains("--env-file") && !run_cmd.contains("smoke-literal"),
+        "operator env must use the host env file; got: {run_cmd}"
     );
+    let observed = observed_env.lock().unwrap().clone().unwrap();
+    assert!(
+        observed
+            .contents
+            .lines()
+            .any(|line| line == "OPERATOR_SMOKE=smoke-literal")
+    );
+    assert!(!observed.path.exists());
+    assert_host_env_file_outside_mounts(run_cmd, &observed.path);
+
+    let container_name = launched_role_container_name(&runner);
+    let socket_dir = paths.jackin_home.join("sockets").join(container_name);
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt as _;
+        let mode = std::fs::metadata(&socket_dir).unwrap().permissions().mode() & 0o777;
+        assert_eq!(mode, 0o700);
+    }
+    let capsule_config =
+        std::fs::read_to_string(socket_dir.join(jackin_protocol::CAPSULE_CONFIG_FILENAME)).unwrap();
+    assert!(!capsule_config.contains("on-demand-literal-secret"));
+    assert!(capsule_config.contains("name = \"ON_DEMAND_LITERAL\""));
+    assert!(capsule_config.contains("source = \"literal\""));
 }
 
 #[tokio::test]
@@ -6583,6 +6965,7 @@ trusted = true
         String::new(),
         "jk-agent-smith".to_owned(),
     ]);
+    let observed_env = observe_host_env_file(&mut runner, &paths);
 
     let repo_dir = jackin_manifest::repo::CachedRepo::new(&paths, &selector).repo_dir;
     std::fs::create_dir_all(&repo_dir).unwrap();
@@ -6642,8 +7025,22 @@ plugins = []
         .find(|call| call.contains("docker run -d") && call.contains("jackin.kind=role"))
         .unwrap();
     assert!(
-        run_cmd.contains("-e ZAI_API_KEY=super-secret-zai-key"),
-        "ZAI_API_KEY should still reach the container process env; got: {run_cmd}"
+        run_cmd.contains("--env-file") && !run_cmd.contains("super-secret-zai-key"),
+        "ZAI_API_KEY must reach the env file without entering argv; got: {run_cmd}"
+    );
+    let observed = observed_env.lock().unwrap().clone().unwrap();
+    assert!(
+        observed
+            .contents
+            .lines()
+            .any(|line| line == "ZAI_API_KEY=super-secret-zai-key")
+    );
+    #[cfg(unix)]
+    assert_eq!(observed.mode, 0o600);
+    assert_host_env_file_outside_mounts(run_cmd, &observed.path);
+    assert!(
+        !observed.path.exists(),
+        "env file must be removed after run"
     );
 }
 
@@ -6679,6 +7076,7 @@ dst = "/workspace"
         String::new(),
         "jk-agent-smith".to_owned(),
     ]);
+    let observed_env = observe_host_env_file(&mut runner, &paths);
 
     let repo_dir = jackin_manifest::repo::CachedRepo::new(&paths, &selector).repo_dir;
     std::fs::create_dir_all(&repo_dir).unwrap();
@@ -6740,11 +7138,14 @@ plugins = []
         .find(|call| call.contains("docker run -d") && call.contains("jackin.kind=role"))
         .unwrap();
     assert!(
-        run_cmd.contains(
-            "-e MISE_TRUSTED_CONFIG_PATHS=/workspace:/workspace/homebrew-tap:/workspace/jackin"
-        ),
-        "workspace must inject mise trusted paths; got: {run_cmd}"
+        run_cmd.contains("--env-file") && !run_cmd.contains("MISE_TRUSTED_CONFIG_PATHS="),
+        "workspace paths must stay out of argv; got: {run_cmd}"
     );
+    let observed = observed_env.lock().unwrap().clone().unwrap();
+    assert!(observed.contents.lines().any(|line| {
+        line == "MISE_TRUSTED_CONFIG_PATHS=/workspace:/workspace/homebrew-tap:/workspace/jackin"
+    }));
+    assert!(!observed.path.exists());
 }
 
 #[tokio::test]
@@ -6753,7 +7154,7 @@ async fn load_agent_operator_env_overrides_manifest_env() {
     // env, operator wins. The manifest below declares OPERATOR_SMOKE
     // as a literal "manifest-default"; the global operator env
     // declares the same key as "operator-wins". The docker run
-    // command must inject the operator value.
+    // env file must inject the operator value.
     //
     // The `[env.OPERATOR_SMOKE]` manifest shape below matches the
     // existing EnvEntry schema in `src/env_model.rs` — if that
@@ -6787,6 +7188,7 @@ trusted = true
         String::new(),
         "jk-agent-smith".to_owned(),
     ]);
+    let observed_env = observe_host_env_file(&mut runner, &paths);
 
     let repo_dir = jackin_manifest::repo::CachedRepo::new(&paths, &selector).repo_dir;
     std::fs::create_dir_all(&repo_dir).unwrap();
@@ -6829,13 +7231,18 @@ plugins = []
         .find(|call| call.contains("docker run -d") && call.contains("jackin.kind=role"))
         .unwrap();
     assert!(
-        run_cmd.contains("-e OPERATOR_SMOKE=operator-wins"),
-        "operator env must win over manifest env on conflict; got: {run_cmd}"
+        run_cmd.contains("--env-file") && !run_cmd.contains("operator-wins"),
+        "operator env must stay out of argv; got: {run_cmd}"
     );
+    let observed = observed_env.lock().unwrap().clone().unwrap();
     assert!(
-        !run_cmd.contains("-e OPERATOR_SMOKE=manifest-default"),
-        "manifest value must NOT leak when operator overrides it; got: {run_cmd}"
+        observed
+            .contents
+            .lines()
+            .any(|line| line == "OPERATOR_SMOKE=operator-wins")
     );
+    assert!(!observed.contents.contains("manifest-default"));
+    assert!(!observed.path.exists());
 }
 
 #[tokio::test]
@@ -6871,6 +7278,7 @@ trusted = true
         String::new(),
         "jk-agent-smith".to_owned(),
     ]);
+    let observed_env = observe_host_env_file(&mut runner, &paths);
 
     let repo_dir = jackin_manifest::repo::CachedRepo::new(&paths, &selector).repo_dir;
     std::fs::create_dir_all(&repo_dir).unwrap();
@@ -6921,9 +7329,17 @@ plugins = []
         .find(|call| call.contains("docker run -d") && call.contains("jackin.kind=role"))
         .unwrap();
     assert!(
-        run_cmd.contains("-e FROM_HOST=from-host-env"),
-        "host-ref operator env must resolve and inject; got: {run_cmd}"
+        run_cmd.contains("--env-file") && !run_cmd.contains("from-host-env"),
+        "host-ref operator env must stay out of argv; got: {run_cmd}"
     );
+    let observed = observed_env.lock().unwrap().clone().unwrap();
+    assert!(
+        observed
+            .contents
+            .lines()
+            .any(|line| line == "FROM_HOST=from-host-env")
+    );
+    assert!(!observed.path.exists());
 }
 
 #[cfg(unix)]
@@ -6972,6 +7388,7 @@ trusted = true
         String::new(),
         "jk-agent-smith".to_owned(),
     ]);
+    let observed_env = observe_host_env_file(&mut runner, &paths);
 
     let repo_dir = jackin_manifest::repo::CachedRepo::new(&paths, &selector).repo_dir;
     std::fs::create_dir_all(&repo_dir).unwrap();
@@ -7024,9 +7441,17 @@ plugins = []
         .find(|call| call.contains("docker run -d") && call.contains("jackin.kind=role"))
         .unwrap();
     assert!(
-        run_cmd.contains("-e OPERATOR_TOKEN=resolved-op-token"),
-        "op:// ref must resolve via the injected OpCli and inject; got: {run_cmd}"
+        run_cmd.contains("--env-file") && !run_cmd.contains("resolved-op-token"),
+        "op:// ref must resolve without entering argv; got: {run_cmd}"
     );
+    let observed = observed_env.lock().unwrap().clone().unwrap();
+    assert!(
+        observed
+            .contents
+            .lines()
+            .any(|line| line == "OPERATOR_TOKEN=resolved-op-token")
+    );
+    assert!(!observed.path.exists());
 }
 
 // ── claim_container_name tests ────────────────────────────────────────────

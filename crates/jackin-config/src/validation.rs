@@ -4,8 +4,9 @@
 //! Pure workspace validation helpers: isolation layout and workspace config.
 
 use crate::ConfigError;
-use jackin_core::MountIsolation;
-use jackin_core::WorkspaceName;
+use jackin_core::{MountIsolation, WorkspaceName};
+use std::io::ErrorKind;
+use std::path::{Path, PathBuf};
 
 use crate::schema::{MountConfig, WorkspaceConfig, validate_mount_specs};
 
@@ -41,7 +42,7 @@ pub fn validate_isolation_layout(mounts: &[MountConfig]) -> crate::ConfigResult<
             }
             if matches!(ma.isolation, MountIsolation::Worktree)
                 && matches!(mb.isolation, MountIsolation::Worktree)
-                && same_host_repo(&ma.src, &mb.src)
+                && same_host_repo(&ma.src, &mb.src)?
             {
                 return Err(ConfigError::msg(format!(
                     "isolated mounts `{}` and `{}` cannot share the same host repository `{}`; \
@@ -103,21 +104,28 @@ pub fn validate_workspace_config(
     Ok(())
 }
 
-fn same_host_repo(a: &str, b: &str) -> bool {
-    let ca = std::fs::canonicalize(a).ok();
-    let cb = std::fs::canonicalize(b).ok();
-    match (ca, cb) {
-        (Some(x), Some(y)) => x == y,
-        _ => a == b,
+fn same_host_repo(a: &str, b: &str) -> crate::ConfigResult<bool> {
+    let a = PathBuf::from(crate::paths::resolve_path(a));
+    let b = PathBuf::from(crate::paths::resolve_path(b));
+    match (canonicalize_if_present(&a)?, canonicalize_if_present(&b)?) {
+        (Some(x), Some(y)) => Ok(x == y),
+        _ => Ok(a == b),
     }
 }
 
 fn is_strict_ancestor(parent: &str, child: &str) -> bool {
-    let parent = parent.trim_end_matches('/');
-    let child = child.trim_end_matches('/');
-    if parent == child {
-        return false;
-    }
-    let prefix = format!("{parent}/");
-    child.starts_with(&prefix)
+    let parent = PathBuf::from(crate::paths::resolve_path(parent));
+    let child = PathBuf::from(crate::paths::resolve_path(child));
+    parent != child && child.starts_with(parent)
 }
+
+fn canonicalize_if_present(path: &Path) -> crate::ConfigResult<Option<PathBuf>> {
+    match std::fs::canonicalize(path) {
+        Ok(path) => Ok(Some(path)),
+        Err(err) if err.kind() == ErrorKind::NotFound => Ok(None),
+        Err(err) => Err(err.into()),
+    }
+}
+
+#[cfg(test)]
+mod tests;

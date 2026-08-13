@@ -2,6 +2,11 @@
 
 Native macOS limits display over `jackin-usage-ffi` (UniFFI). Product identity is **jackin❯ desktop** (`JackinDesktop.app`, bundle id `com.jackin-project.desktop`). Rust owns probes, provider ordering, accounts, quota semantics, refresh policy, severity, and every domain string. Swift owns AppKit/SwiftUI presentation and OS integration.
 
+Production Swift passes no config, home, or data paths. Rust derives canonical host
+paths, loads the global/workspace/role configuration read-only, resolves configured
+credential sources, deduplicates accounts, and exports only immutable sanitized
+inventory/diagnostic DTOs. Swift never scans configuration or handles credentials.
+
 Product scope is limits only: remaining/used percentages, resets, plan/status, multi-account selection, and provider-supplied quota caps. Never add token unit prices, session-cost estimates, historical spend/usage, trends, sparklines, or aggregate charts.
 
 ## Shipping baseline

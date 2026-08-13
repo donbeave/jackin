@@ -412,43 +412,25 @@ impl WorkspaceConfig {
     /// Mirrors `AppConfig::validate_auth_modes` for the workspace layer.
     /// Checks both the workspace-level config and every per-role override.
     pub fn validate_auth_modes(&self) -> crate::ConfigResult<()> {
-        let workspace_pairs: &[(Agent, Option<&AgentAuthConfig>)] = &[
-            (Agent::Codex, self.codex.as_ref()),
-            (Agent::Amp, self.amp.as_ref()),
-            (Agent::Kimi, self.kimi.as_ref()),
-            (Agent::Opencode, self.opencode.as_ref()),
-        ];
-        for (agent, cfg) in workspace_pairs {
-            if cfg.is_some_and(|c| {
-                c.auth_forward == AuthForwardMode::OAuthToken
-                    && !agent
-                        .supported_modes()
-                        .contains(&AuthForwardMode::OAuthToken)
-            }) {
+        for agent in Agent::ALL.iter().copied() {
+            if let Some(mode) = self.auth_forward_for(agent)
+                && !agent.supported_modes().contains(&mode)
+            {
                 return Err(ConfigError::msg(format!(
-                    "auth_forward 'oauth_token' is not supported for {}",
-                    agent.slug()
+                    "auth_forward '{mode}' is not supported for {}",
+                    agent.slug(),
                 )));
             }
         }
         for (role, override_cfg) in &self.roles {
-            let role_pairs: &[(Agent, Option<&AgentAuthConfig>)] = &[
-                (Agent::Codex, override_cfg.codex.as_ref()),
-                (Agent::Amp, override_cfg.amp.as_ref()),
-                (Agent::Kimi, override_cfg.kimi.as_ref()),
-                (Agent::Opencode, override_cfg.opencode.as_ref()),
-            ];
-            for (agent, cfg) in role_pairs {
-                if cfg.is_some_and(|c| {
-                    c.auth_forward == AuthForwardMode::OAuthToken
-                        && !agent
-                            .supported_modes()
-                            .contains(&AuthForwardMode::OAuthToken)
-                }) {
+            for agent in Agent::ALL.iter().copied() {
+                if let Some(mode) = override_cfg.auth_forward_for(agent)
+                    && !agent.supported_modes().contains(&mode)
+                {
                     return Err(ConfigError::msg(format!(
-                        "auth_forward 'oauth_token' is not supported for {} in role {}",
+                        "auth_forward '{mode}' is not supported for {} in role {}",
                         agent.slug(),
-                        role
+                        role,
                     )));
                 }
             }
@@ -624,11 +606,28 @@ pub fn validate_mount_specs(mounts: &[MountConfig]) -> crate::ConfigResult<()> {
         if !mount.dst.starts_with('/') {
             return Err(ConfigError::MountDstNotAbsolute(mount.dst.clone()));
         }
+        if has_dot_component(&mount.src) {
+            return Err(ConfigError::msg(format!(
+                "mount source must not contain `.` or `..` components: {}",
+                mount.src
+            )));
+        }
+        if has_dot_component(&mount.dst) {
+            return Err(ConfigError::msg(format!(
+                "mount destination must not contain `.` or `..` components: {}",
+                mount.dst
+            )));
+        }
         if !seen_dst.insert(mount.dst.clone()) {
             return Err(ConfigError::DuplicateMountDst(mount.dst.clone()));
         }
     }
     Ok(())
+}
+
+fn has_dot_component(path: &str) -> bool {
+    path.split(['/', '\\'])
+        .any(|component| matches!(component, "." | ".."))
 }
 
 /// Filesystem validation: checks that mount sources exist on disk.
@@ -711,3 +710,6 @@ impl GitConfig {
 // jackin-config happens in Phase 2 after JackinPaths is extractable.
 // This note documents the deliberate deferral so the next agent doesn't
 // redo the analysis.
+
+#[cfg(test)]
+mod tests;

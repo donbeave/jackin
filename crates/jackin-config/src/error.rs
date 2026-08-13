@@ -94,6 +94,12 @@ pub enum ConfigError {
     /// Internal: no resolution attempts were recorded.
     #[error("no attempts made")]
     NoAttemptsMade,
+    /// Timed out waiting for the config tree's advisory lock.
+    #[error("another jackin❯ process is editing the config{holder}")]
+    ConfigLockTimeout {
+        /// Optional diagnostic suffix containing the recorded writer PID.
+        holder: String,
+    },
 }
 
 /// Typed result returned by jackin-config public APIs.

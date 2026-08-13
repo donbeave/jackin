@@ -145,12 +145,10 @@ fn bind_listener(sock_path: &Path) -> Result<UnixListener> {
     drop(std::fs::remove_file(sock_path));
     if let Some(parent) = sock_path.parent() {
         std::fs::create_dir_all(parent)?;
-        // host.sock is the credential-resolution boundary: any process that can
-        // connect and send an allow-listed (name,kind,source) triple gets the
-        // secret resolved. Neither launch path tightens this dir — both create
-        // it under the default umask via `prepare_socket_dir` — so the listener
-        // is the single choke point that locks it to 0o700, restricting the
-        // socket to the operator's UID.
+        // host.sock is the credential-resolution boundary. Launch creates this
+        // directory at 0o700 before writing container-visible config; repeat
+        // the restriction here so independently started listeners preserve the
+        // same operator-only boundary.
         #[cfg(unix)]
         {
             use std::os::unix::fs::PermissionsExt;
@@ -235,11 +233,12 @@ async fn handle_connection(
     // Reject any ref that wasn't explicitly configured — this prevents a
     // compromised in-container process from escalating privileges by requesting
     // arbitrary op:// URIs or host env vars.
-    for r in &req.refs {
+    let mut approved_refs = Vec::with_capacity(req.refs.len());
+    for requested in &req.refs {
         let approved = allowed_bindings
             .iter()
-            .any(|b| b.name == r.name && b.kind == r.kind && b.source == r.source);
-        if !approved {
+            .find(|allowed| binding_matches_request(allowed, requested));
+        let Some(approved) = approved else {
             record_rpc_error(operation.as_ref());
             let reply = CredReply::Error {
                 error: "credential reference is not approved".to_owned(),
@@ -253,10 +252,11 @@ async fn handle_connection(
             }
             drop(write_result);
             return Ok(());
-        }
+        };
+        approved_refs.push(approved.clone());
     }
 
-    let reply = if let Ok(values) = resolve_all(&req.refs).await {
+    let reply = if let Ok(values) = resolve_all(&approved_refs).await {
         CredReply::Ok { values }
     } else {
         CredReply::Error {
@@ -283,6 +283,16 @@ async fn handle_connection(
     }
     drop(write_result);
     Ok(())
+}
+
+fn binding_matches_request(allowed: &ExecBinding, requested: &ExecBinding) -> bool {
+    if allowed.name != requested.name || allowed.kind != requested.kind {
+        return false;
+    }
+    match allowed.kind {
+        ExecKind::Op | ExecKind::Env => allowed.source == requested.source,
+        ExecKind::Literal => true,
+    }
 }
 
 fn complete_local_rpc_failure(attrs: &[jackin_telemetry::Attr<'_>]) {

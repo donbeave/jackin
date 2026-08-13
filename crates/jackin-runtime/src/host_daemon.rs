@@ -1020,11 +1020,23 @@ pub fn notification_command_for_host(title: &str, body: &str) -> Option<Notifica
     } else if cfg!(target_os = "linux") {
         Some(NotificationCommand {
             program: "notify-send".to_owned(),
-            args: vec![title.to_owned(), body.to_owned()],
+            args: linux_notify_args(title, body),
         })
     } else {
         None
     }
+}
+
+fn linux_notify_args(title: &str, body: &str) -> Vec<String> {
+    fn sanitize(value: &str) -> String {
+        value
+            .chars()
+            .filter(|character| !character.is_control())
+            .take(200)
+            .collect()
+    }
+
+    vec!["--".to_owned(), sanitize(title), sanitize(body)]
 }
 
 fn apple_script_string(value: &str) -> String {

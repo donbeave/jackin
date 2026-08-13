@@ -50,6 +50,8 @@ pub const AGENT_STATUS_HOOKS_DIR: &str = "/jackin/runtime/agent-status/hooks";
 pub const CAPSULE_SOCKET: &str = "/jackin/run/jackin.sock";
 /// Host↔capsule control socket path as seen inside the container.
 pub const HOST_SOCK: &str = "/jackin/run/host.sock";
+/// Scoped per-container usage broker relay.
+pub const USAGE_SOCK: &str = "/jackin/run/usage.sock";
 /// Per-session agent config materialised for the capsule.
 pub const CAPSULE_CONFIG: &str = "/jackin/run/agent.toml";
 /// Clipboard staging directory under the run tree.

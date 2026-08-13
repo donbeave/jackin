@@ -67,7 +67,7 @@ pub fn attach_proxy_exec_args(container_name: &str) -> Vec<String> {
 /// targets (macOS/BSD = 104, Linux = 108). A socket path at or above this cannot
 /// be `connect`ed directly — the kernel rejects it — so the direct transport is
 /// impossible regardless of whether the socket exists.
-const MAX_UNIX_SOCKET_PATH_LEN: usize = 104;
+pub(crate) const MAX_UNIX_SOCKET_PATH_LEN: usize = 104;
 
 pub fn select_host_attach_transport(
     paths: &JackinPaths,

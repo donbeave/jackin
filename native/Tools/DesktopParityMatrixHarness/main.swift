@@ -43,25 +43,15 @@ struct DesktopParityMatrixHarness {
         )
         check("percent lines eligible for mini bars", statusItemLineShowsMiniBar("100%"))
 
-        // --- Catalog ---
-        check("frozen catalog has 8 surfaces", frozenHostSurfaceIds.count == 8)
-        check(
-            "catalog order matches HostSurfaceId::ALL",
-            frozenHostSurfaceIds == [
-                "claude", "codex", "amp", "grok", "zai", "kimi", "minimax", "opencode",
-            ]
-        )
+        // Synthetic incoming rows exercise layout only. Rust owns catalog membership.
+        let syntheticSurfaceIds = ["claude", "codex", "amp", "grok"]
         check(
             "desktop Overview roles match HTML provider identity",
             desktopProviderIconKeys.compactMap(desktopProviderOverviewRole) == [
                 "Codex", "Claude", "Daily", "Grok", "GLM", "Kimi Code", "MiniMax",
             ]
         )
-        check(
-            "every frozen surface has SF Symbol (displayable icon)",
-            allFrozenHostSurfacesHaveSystemImages()
-        )
-        for id in frozenHostSurfaceIds {
+        for id in syntheticSurfaceIds {
             check(
                 "icon \(id)",
                 statusItemSystemImage(surfaceId: id) != nil
@@ -83,7 +73,7 @@ struct DesktopParityMatrixHarness {
             "minimax": [91],
             "opencode": [100],
         ]
-        let surfaces: [StatusItemSurfaceSnapshot] = frozenHostSurfaceIds.map { id in
+        let surfaces: [StatusItemSurfaceSnapshot] = syntheticSurfaceIds.map { id in
             let rems = dualRemainings[id] ?? [50]
             let drive = rems.min() ?? 50
             let prefix = statusItemFallbackGlyph(surfaceId: id)
@@ -110,7 +100,7 @@ struct DesktopParityMatrixHarness {
         check("strip hard-caps at 3 (SB-3)", strip.count == 3, "count=\(strip.count)")
         check(
             "strip ids catalog order prefix",
-            strip.map(\.surfaceId) == Array(frozenHostSurfaceIds.prefix(3)),
+            strip.map(\.surfaceId) == Array(syntheticSurfaceIds.prefix(3)),
             "ids=\(strip.map(\.surfaceId))"
         )
         for chip in strip {
@@ -236,7 +226,7 @@ struct DesktopParityMatrixHarness {
             includeAllEnabled: true
         )
         // Rebuild: all surfaces but amp empty
-        let mixed = frozenHostSurfaceIds.map { id -> StatusItemSurfaceSnapshot in
+        let mixed = syntheticSurfaceIds.map { id -> StatusItemSurfaceSnapshot in
             if id == "amp" {
                 return emptyAmp
             }

@@ -497,6 +497,7 @@ pub(crate) enum ClaudeWaveResolution {
     Missing,
 }
 
+#[derive(Clone)]
 pub(crate) struct ClaudeResolved {
     pub(crate) access_token: String,
     pub(crate) subscription_type: Option<String>,

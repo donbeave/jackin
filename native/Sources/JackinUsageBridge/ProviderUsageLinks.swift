@@ -9,6 +9,7 @@ import Foundation
 ///
 /// Keys are host `surface_id` values (`codex`, `claude`, …) from
 /// `DESKTOP_PROVIDER_ORDER`. No string synthesis beyond this map.
+/// Deprecated: replaced by Rust DTO fields — removed in Plan 005.
 public enum ProviderUsageLinks {
     /// Canonical HTTPS URL for the provider’s own usage console, if known.
     public static func usagePageURL(surfaceId: String) -> URL? {

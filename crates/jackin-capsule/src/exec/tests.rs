@@ -67,6 +67,24 @@ fn selected_refs_wire_shape_is_stable() {
 }
 
 #[test]
+fn exec_binding_literal_picker_never_renders_source() {
+    let secret = "literal-secret-must-stay-host-side";
+    let state = ExecPickerState::from_bindings(
+        "tool".to_owned(),
+        Vec::new(),
+        &[jackin_protocol::ExecBinding {
+            name: "SERVICE_TOKEN".to_owned(),
+            kind: jackin_protocol::ExecKind::Literal,
+            source: secret.to_owned(),
+        }],
+    );
+
+    assert_eq!(state.items.len(), 1);
+    assert_eq!(state.items[0].display, "SERVICE_TOKEN");
+    assert!(!state.items[0].display.contains(secret));
+}
+
+#[test]
 fn exec_command_uses_control_request_codec() {
     let framed = frame(&exec_control_request(
         "gh".to_owned(),

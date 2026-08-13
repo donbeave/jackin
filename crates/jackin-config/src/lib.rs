@@ -47,8 +47,9 @@ pub use app_config::AppConfig;
 pub use app_config::DEFAULT_ROLE_REPO_REFRESH_TTL_SECONDS;
 pub use app_config::mounts::{GlobalMountRow, WorkspaceGlobalMountRows};
 pub use app_config::persist::{
-    config_needs_split_migration, load_split_config, load_workspace_files,
-    validate_reserved_env_names,
+    ConfigGeneration, ConfigSourceDiagnostic, ConfigSourceIssue, ConfigSourceScope,
+    ReadOnlyConfigSnapshot, config_needs_split_migration, load_read_only_config_snapshot,
+    load_split_config, load_workspace_files, validate_reserved_env_names,
 };
 pub use app_config::roles::{
     BUILTIN_ROLES, build_github_env_layers, resolve_github_mode, resolve_mode,
@@ -66,7 +67,9 @@ pub use migrations::{
 };
 pub use mounts::{covers, parse_mount_spec, parse_mount_spec_resolved};
 pub use paths::{expand_tilde, resolve_path};
-pub use persist::{atomic_write, validate_workspace_file_stem};
+pub use persist::{
+    ConfigReadGuard, acquire_config_read_lock, atomic_write, validate_workspace_file_stem,
+};
 pub use planner::{
     CollapseError, CollapsePlan, Removal, WorkspaceCreatePlan, WorkspaceEditPlan,
     apply_isolation_overrides, plan_collapse, plan_create, plan_edit,
@@ -82,7 +85,7 @@ pub use schema::{
     WorkspaceRoleOverride, WorkspaceRuntimeConfig, validate_mount_paths, validate_mount_specs,
     validate_mounts,
 };
-pub use sensitive::{SensitiveMount, find_sensitive_mounts};
+pub use sensitive::{SensitiveMount, find_sensitive_mounts, normalize_sensitive_mount_sources};
 pub use validation::{validate_isolation_layout, validate_workspace_config};
 pub use versions::{
     CURRENT_CONFIG_VERSION, CURRENT_WORKSPACE_VERSION, LEGACY_VERSION, current_config_version,

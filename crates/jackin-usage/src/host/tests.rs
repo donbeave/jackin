@@ -9,6 +9,7 @@ use jackin_protocol::control::{
     FocusedAccountHeader, FocusedUsageView, Money, QuotaBucketView, StatusSlot, UsageConfidence,
     UsageSeverity, UsageSnapshotStatus, UsageSource,
 };
+use std::sync::atomic::{AtomicUsize, Ordering};
 
 fn open_runtime(dir: &Path) -> HostUsageRuntime {
     let mut runtime = HostUsageRuntime::new();
@@ -68,6 +69,227 @@ fn codex_fixture_view() -> FocusedUsageView {
         tabs: Vec::new(),
         last_error: None,
     }
+}
+
+#[derive(Default)]
+struct DiscoveryRefreshResolver {
+    manual_retries: AtomicUsize,
+    resolutions: AtomicUsize,
+    refreshes: AtomicUsize,
+}
+
+impl ProviderCredentialEnvResolver for DiscoveryRefreshResolver {
+    fn begin_manual_retry(&self) {
+        self.manual_retries.fetch_add(1, Ordering::SeqCst);
+    }
+
+    fn resolve_provider_credentials(
+        &self,
+        _config: &jackin_config::AppConfig,
+        _workspace: Option<&jackin_core::WorkspaceName>,
+        _role: Option<&str>,
+        _keys: &[jackin_core::UsageCredentialEnvName],
+    ) -> Vec<ProviderCredentialEnvResolution> {
+        self.resolutions.fetch_add(1, Ordering::SeqCst);
+        Vec::new()
+    }
+
+    fn refresh_provider_credential(
+        &self,
+        _surface: HostSurfaceId,
+        _key: &str,
+        _handle: &OpaqueCredentialHandle,
+    ) -> ProviderCredentialRefreshOutcome {
+        self.refreshes.fetch_add(1, Ordering::SeqCst);
+        ProviderCredentialRefreshOutcome::Snapshot(Box::new(codex_fixture_view()))
+    }
+}
+
+struct AnonymousDiscoveryRefreshResolver;
+
+impl ProviderCredentialEnvResolver for AnonymousDiscoveryRefreshResolver {
+    fn resolve_provider_credentials(
+        &self,
+        _config: &jackin_config::AppConfig,
+        _workspace: Option<&jackin_core::WorkspaceName>,
+        _role: Option<&str>,
+        _keys: &[jackin_core::UsageCredentialEnvName],
+    ) -> Vec<ProviderCredentialEnvResolution> {
+        Vec::new()
+    }
+
+    fn refresh_provider_credential(
+        &self,
+        _surface: HostSurfaceId,
+        _key: &str,
+        _handle: &OpaqueCredentialHandle,
+    ) -> ProviderCredentialRefreshOutcome {
+        let mut view = codex_fixture_view();
+        view.account.account_label = "Current host login".to_owned();
+        view.confidence = UsageConfidence::PresenceOnly;
+        ProviderCredentialRefreshOutcome::Snapshot(Box::new(view))
+    }
+}
+
+#[test]
+fn disc_refresh_uses_explicit_binding_once_and_background_respects_floor() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let mut runtime = open_runtime(dir.path());
+    let identity = CanonicalAccountIdentity {
+        surface: HostSurfaceId::Codex,
+        subject: CanonicalAccountSubject::AuthenticatedLabel("codex@example.com".to_owned()),
+    };
+    runtime.discovery = Some(ValidatedUsageDiscovery {
+        config_generation: Some("generation".to_owned()),
+        accounts: vec![DiscoveredAccountDescriptor {
+            surface_id: "codex".to_owned(),
+            account_key: identity.account_key(),
+            account_label: "codex@example.com".to_owned(),
+            provenance: vec!["workspace sample".to_owned()],
+            source_ids: vec!["source-0001".to_owned()],
+            identity: identity.clone(),
+        }],
+        diagnostics: Vec::new(),
+        candidates: Vec::new(),
+        bindings: ["source-0001", "source-0002"]
+            .into_iter()
+            .map(|source_id| discovery::ValidatedCredentialBinding {
+                surface: HostSurfaceId::Codex,
+                identity: Some(identity.clone()),
+                source_id: source_id.to_owned(),
+                provenance: std::collections::BTreeSet::from(["workspace sample".to_owned()]),
+                source: discovery::ValidatedCredentialSource::Env {
+                    handle: OpaqueCredentialHandle::new(source_id),
+                    key: "OPENAI_API_KEY".to_owned(),
+                },
+            })
+            .collect(),
+    });
+    runtime.discovery_scope = None;
+    let resolver = DiscoveryRefreshResolver::default();
+
+    runtime
+        .refresh_with_discovery(Some("codex"), false, &resolver)
+        .expect("first refresh");
+    runtime
+        .refresh_with_discovery(Some("codex"), false, &resolver)
+        .expect("floor-limited refresh");
+
+    assert_eq!(resolver.refreshes.load(Ordering::SeqCst), 1);
+    let accounts = runtime.list_accounts(Some("codex")).expect("accounts");
+    assert_eq!(accounts.len(), 1);
+    assert_eq!(accounts[0].remaining_percent, Some(60));
+    assert!(
+        accounts[0]
+            .provenance
+            .iter()
+            .any(|value| value == "workspace sample")
+    );
+}
+
+#[test]
+fn disc_successful_anonymous_refresh_emits_snapshot_updated() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let mut runtime = open_runtime(dir.path());
+    runtime.discovery = Some(ValidatedUsageDiscovery {
+        config_generation: Some("generation".to_owned()),
+        accounts: Vec::new(),
+        diagnostics: Vec::new(),
+        candidates: Vec::new(),
+        bindings: vec![discovery::ValidatedCredentialBinding {
+            surface: HostSurfaceId::Codex,
+            identity: None,
+            source_id: "source-0001".to_owned(),
+            provenance: std::collections::BTreeSet::new(),
+            source: discovery::ValidatedCredentialSource::Env {
+                handle: OpaqueCredentialHandle::new("source-0001"),
+                key: "OPENAI_API_KEY".to_owned(),
+            },
+        }],
+    });
+    runtime.discovery_scope = None;
+
+    runtime
+        .refresh_with_discovery(Some("codex"), false, &AnonymousDiscoveryRefreshResolver)
+        .expect("refresh");
+
+    let events = runtime.next_events(0, 32).expect("events").events;
+    assert!(events.iter().any(|event| event.kind == "snapshot_updated"));
+    assert!(!events.iter().any(|event| event.kind == "probe_failed"));
+}
+
+#[test]
+fn disc_refresh_manual_reconciles_once_and_background_does_not_rescan() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let config_root = dir.path().join("config");
+    let operator_home = dir.path().join("home");
+    std::fs::create_dir_all(&config_root).expect("config root");
+    let config_path = config_root.join("config.toml");
+    let config = format!(
+        r#"version = "{}"
+
+[claude]
+auth_forward = "ignore"
+[codex]
+auth_forward = "ignore"
+[amp]
+auth_forward = "ignore"
+[kimi]
+auth_forward = "ignore"
+[grok]
+auth_forward = "ignore"
+[opencode]
+auth_forward = "ignore"
+
+[env]
+ZAI_API_KEY = "fixture-value"
+"#,
+        jackin_config::CURRENT_CONFIG_VERSION
+    );
+    std::fs::write(&config_path, &config).expect("config");
+    let resolver = DiscoveryRefreshResolver::default();
+    let mut runtime = HostUsageRuntime::new();
+    runtime
+        .open_with_discovery(
+            HostRuntimeConfig {
+                data_dir: dir.path().join("data"),
+                refresh_floor_secs: 60,
+                enabled_surface_ids: Vec::new(),
+                probe_policy: HostProbePolicy::Live,
+                discovery_scope: UsageDiscoveryScope::HostDesktop {
+                    config_root,
+                    operator_home,
+                },
+            },
+            &resolver,
+        )
+        .expect("open");
+    let initial_generation = runtime
+        .discovery
+        .as_ref()
+        .and_then(|discovery| discovery.config_generation.clone());
+    let resolution_count = resolver.resolutions.load(Ordering::SeqCst);
+
+    runtime
+        .refresh_with_discovery(None, false, &resolver)
+        .expect("background refresh");
+    assert_eq!(
+        resolver.resolutions.load(Ordering::SeqCst),
+        resolution_count
+    );
+    std::fs::write(&config_path, format!("{config}\n# changed\n")).expect("edit");
+    runtime
+        .refresh_with_discovery(None, true, &resolver)
+        .expect("manual refresh");
+
+    assert_eq!(resolver.manual_retries.load(Ordering::SeqCst), 1);
+    assert_ne!(
+        runtime
+            .discovery
+            .as_ref()
+            .and_then(|discovery| discovery.config_generation.clone()),
+        initial_generation
+    );
 }
 
 #[test]
@@ -408,6 +630,9 @@ fn refresh_floor_skips_non_forced_calls() {
             refresh_floor_secs: 60,
             enabled_surface_ids: vec!["codex".to_owned()],
             probe_policy: HostProbePolicy::Live,
+            discovery_scope: UsageDiscoveryScope::Capsule {
+                forwarded_accounts: Vec::new(),
+            },
         })
         .expect("open");
     assert!(runtime.refresh_due());
@@ -684,10 +909,7 @@ fn next_refresh_label_due_and_countdown() {
     let mut runtime = open_runtime(dir.path());
     assert_eq!(runtime.next_refresh_label(), "Next update due");
     runtime.set_refresh_floor_secs(300).expect("floor");
-    // Force a refresh mark without network by simulating last_refresh via
-    // a non-forced path: inject is not a refresh. Use set_refresh after open:
-    // calling refresh with force on empty targets still stamps last_refresh.
-    runtime.refresh(None, true).expect("refresh stamp");
+    runtime.last_refresh = Some(Instant::now());
     let label = runtime.next_refresh_label();
     assert!(
         label.starts_with("Next update in ") || label == "Next update due",
@@ -822,7 +1044,7 @@ fn multi_account_list_select_and_snapshot() {
         limit_money: None,
         severity: UsageSeverity::Normal,
     }];
-    let key_a = account_key_for_view(&account_a);
+    let key_a = account_key_for_view(&account_a).expect("canonical key A");
     let store = host_snapshot_store_path(dir.path());
     store_usage_snapshot(&store, &account_a).expect("store A");
 
@@ -832,7 +1054,7 @@ fn multi_account_list_select_and_snapshot() {
     account_b.status_bar_label = "20% left".to_owned();
     account_b.buckets[0].remaining_percent = Some(20);
     account_b.buckets[0].used_label = Some("80% used".to_owned());
-    let key_b = account_key_for_view(&account_b);
+    let key_b = account_key_for_view(&account_b).expect("canonical key B");
     runtime
         .inject_snapshot("claude", account_b)
         .expect("inject live B");
@@ -840,11 +1062,7 @@ fn multi_account_list_select_and_snapshot() {
     let listed = runtime
         .list_accounts(Some("claude"))
         .expect("list accounts");
-    assert!(
-        listed.len() >= 2,
-        "expected ≥2 accounts (store A + live B), got {}: {listed:?}",
-        listed.len()
-    );
+    assert_eq!(listed.len(), 2, "store A + live B: {listed:?}");
     assert!(listed.iter().any(|a| a.account_key == key_a));
     assert!(listed.iter().any(|a| a.account_key == key_b));
     assert!(listed.iter().any(|a| a.account_label.contains("work@")));
@@ -956,6 +1174,385 @@ fn glance_view(
         tabs: Vec::new(),
         last_error: None,
     }
+}
+
+#[test]
+fn canon_alias_table_never_uses_probe_routing_as_ownership() {
+    assert_eq!(
+        HostSurfaceId::from_provider_alias("OpenAI / Codex"),
+        Some(HostSurfaceId::Codex)
+    );
+    assert_eq!(
+        HostSurfaceId::from_provider_alias("Anthropic"),
+        Some(HostSurfaceId::Claude)
+    );
+    assert_eq!(
+        HostSurfaceId::from_provider_alias("xAI / Grok"),
+        Some(HostSurfaceId::Grok)
+    );
+    assert_eq!(
+        HostSurfaceId::from_provider_alias("GLM / Z.AI"),
+        Some(HostSurfaceId::Zai)
+    );
+    assert_eq!(
+        HostSurfaceId::from_provider_alias("MiniMax"),
+        Some(HostSurfaceId::Minimax)
+    );
+    assert_eq!(HostSurfaceId::from_provider_alias("OpenAI Z.AI"), None);
+    assert_eq!(HostSurfaceId::Zai.agent_slug(), "codex");
+    assert_eq!(HostSurfaceId::Minimax.agent_slug(), "codex");
+}
+
+#[test]
+fn canon_openai_account_never_appears_under_routed_providers() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let mut runtime = open_runtime(dir.path());
+    runtime
+        .inject_snapshot(
+            "codex",
+            glance_view(
+                "OpenAI / Codex",
+                Some("OAuth"),
+                vec![glance_weekly_bucket(66)],
+                UsageSnapshotStatus::Fresh,
+            ),
+        )
+        .expect("inject");
+    assert_eq!(
+        runtime
+            .list_accounts(Some("codex"))
+            .expect("codex accounts")
+            .len(),
+        1
+    );
+    assert!(
+        runtime
+            .list_accounts(Some("zai"))
+            .expect("zai accounts")
+            .is_empty()
+    );
+    assert!(
+        runtime
+            .list_accounts(Some("minimax"))
+            .expect("minimax accounts")
+            .is_empty()
+    );
+}
+
+#[test]
+fn canon_same_account_label_on_two_providers_remains_two_accounts() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let mut runtime = open_runtime(dir.path());
+    let email = "same@example.com";
+    let mut codex = glance_view(
+        "OpenAI / Codex",
+        Some("OAuth"),
+        vec![glance_weekly_bucket(66)],
+        UsageSnapshotStatus::Fresh,
+    );
+    codex.account.account_label = email.to_owned();
+    let mut claude = glance_view(
+        "Anthropic / Claude",
+        Some("OAuth"),
+        vec![glance_weekly_bucket(77)],
+        UsageSnapshotStatus::Fresh,
+    );
+    claude.account.account_label = email.to_owned();
+    let codex_key = account_key_for_view(&codex).expect("Codex key");
+    let claude_key = account_key_for_view(&claude).expect("Claude key");
+    assert_ne!(codex_key, claude_key);
+    runtime
+        .inject_snapshot("codex", codex)
+        .expect("inject Codex");
+    runtime
+        .inject_snapshot("claude", claude)
+        .expect("inject Claude");
+    let rows = runtime.list_accounts(None).expect("Desktop accounts");
+    assert_eq!(
+        rows.iter().filter(|row| row.account_label == email).count(),
+        2
+    );
+}
+
+#[test]
+fn canon_presence_only_state_is_not_an_account() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let mut runtime = open_runtime(dir.path());
+    let mut presence = glance_view(
+        "Amp",
+        Some("local Amp auth"),
+        Vec::new(),
+        UsageSnapshotStatus::Unavailable,
+    );
+    presence.account.account_label = "local Amp auth".to_owned();
+    presence.confidence = UsageConfidence::PresenceOnly;
+    runtime.inject_snapshot("amp", presence).expect("inject");
+    assert!(
+        runtime
+            .list_accounts(Some("amp"))
+            .expect("amp accounts")
+            .is_empty()
+    );
+    let inventory = runtime.desktop_inventory().expect("inventory");
+    let amp = inventory
+        .groups
+        .iter()
+        .find(|group| group.surface_id == "amp")
+        .expect("detected Amp state");
+    assert!(amp.accounts.is_empty());
+    assert!(amp.empty_state.is_some());
+}
+
+#[test]
+fn canon_sel_rejects_unknown_and_cross_surface_keys() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let mut runtime = open_runtime(dir.path());
+    let view = glance_view(
+        "OpenAI / Codex",
+        Some("OAuth"),
+        vec![glance_weekly_bucket(66)],
+        UsageSnapshotStatus::Fresh,
+    );
+    let key = account_key_for_view(&view).expect("canonical key");
+    runtime.inject_snapshot("codex", view).expect("inject");
+    assert!(
+        runtime
+            .set_selected_account("codex", "sha256:unknown")
+            .is_err()
+    );
+    assert!(runtime.set_selected_account("zai", &key).is_err());
+    runtime
+        .set_selected_account("codex", &key)
+        .expect("same-surface selection");
+    let rows = runtime.list_accounts(Some("codex")).expect("selected rows");
+    assert_eq!(rows.iter().filter(|row| row.selected).count(), 1);
+}
+
+#[test]
+fn canon_sel_stale_persisted_key_is_reconciled_to_visible_current_account() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let mut selected = HashMap::new();
+    selected.insert("codex".to_owned(), "sha256:unknown".to_owned());
+    accounts::save_selected_accounts(&accounts::selected_accounts_path(dir.path()), &selected)
+        .expect("seed stale selection");
+
+    let mut runtime = open_runtime(dir.path());
+    let view = glance_view(
+        "OpenAI / Codex",
+        Some("OAuth"),
+        vec![glance_weekly_bucket(66)],
+        UsageSnapshotStatus::Fresh,
+    );
+    let key = account_key_for_view(&view).expect("canonical key");
+    runtime.inject_snapshot("codex", view).expect("inject");
+    let rows = runtime
+        .list_accounts(Some("codex"))
+        .expect("reconciled accounts");
+    assert_eq!(rows.len(), 1);
+    assert!(rows[0].selected);
+    assert_eq!(rows[0].account_key, key);
+    let persisted = accounts::load_selected_accounts(&accounts::selected_accounts_path(dir.path()));
+    assert_eq!(persisted.get("codex"), Some(&key));
+}
+
+#[test]
+fn canon_sel_valid_historical_choice_survives_reopen() {
+    use crate::usage_snapshot_store::store_usage_snapshot;
+
+    let dir = tempfile::tempdir().expect("tempdir");
+    let view = glance_view(
+        "OpenAI / Codex",
+        Some("OAuth"),
+        vec![glance_weekly_bucket(44)],
+        UsageSnapshotStatus::Fresh,
+    );
+    let key = account_key_for_view(&view).expect("canonical key");
+    store_usage_snapshot(&host_snapshot_store_path(dir.path()), &view).expect("store history");
+
+    let mut first = open_runtime(dir.path());
+    first
+        .set_selected_account("codex", &key)
+        .expect("select history explicitly");
+    drop(first);
+
+    let mut reopened = open_runtime(dir.path());
+    let rows = reopened
+        .list_accounts(Some("codex"))
+        .expect("reopened accounts");
+    assert_eq!(rows.len(), 1);
+    assert!(rows[0].selected);
+    assert_eq!(rows[0].lifecycle, "historical");
+}
+
+#[test]
+fn canon_amp_presence_does_not_promote_durable_history() {
+    use crate::usage_snapshot_store::store_usage_snapshot;
+
+    let dir = tempfile::tempdir().expect("tempdir");
+    let mut history = glance_view(
+        "Amp",
+        Some("OAuth"),
+        vec![glance_daily_bucket(73)],
+        UsageSnapshotStatus::Fresh,
+    );
+    history.account.account_label = "amp@example.com".to_owned();
+    store_usage_snapshot(&host_snapshot_store_path(dir.path()), &history).expect("store history");
+
+    let mut presence = glance_view(
+        "Amp",
+        Some("local Amp auth"),
+        Vec::new(),
+        UsageSnapshotStatus::Unavailable,
+    );
+    presence.account.account_label = "local Amp auth".to_owned();
+    presence.confidence = UsageConfidence::PresenceOnly;
+    let mut runtime = open_runtime(dir.path());
+    runtime.inject_snapshot("amp", presence).expect("inject");
+    let rows = runtime.list_accounts(Some("amp")).expect("accounts");
+    assert_eq!(rows.len(), 1);
+    assert_eq!(rows[0].account_label, "amp@example.com");
+    assert_eq!(rows[0].lifecycle, "historical");
+    assert!(!rows[0].selected, "history must not be selected implicitly");
+}
+
+#[test]
+fn canon_each_account_retains_its_own_status_limit_and_error() {
+    use crate::usage_snapshot_store::store_usage_snapshot;
+
+    let dir = tempfile::tempdir().expect("tempdir");
+    let mut history = glance_view(
+        "Anthropic / Claude",
+        Some("OAuth"),
+        vec![glance_weekly_bucket(11)],
+        UsageSnapshotStatus::Stale,
+    );
+    history.account.account_label = "history@example.com".to_owned();
+    history.buckets[0].status = UsageSnapshotStatus::Stale;
+    history.last_error = Some("history unavailable".to_owned());
+    store_usage_snapshot(&host_snapshot_store_path(dir.path()), &history).expect("store history");
+
+    let mut current = glance_view(
+        "Anthropic / Claude",
+        Some("OAuth"),
+        vec![glance_weekly_bucket(88)],
+        UsageSnapshotStatus::Fresh,
+    );
+    current.account.account_label = "current@example.com".to_owned();
+    let mut runtime = open_runtime(dir.path());
+    runtime
+        .inject_snapshot("claude", current)
+        .expect("inject current");
+    let rows = runtime.list_accounts(Some("claude")).expect("accounts");
+    let history = rows
+        .iter()
+        .find(|row| row.account_label == "history@example.com")
+        .expect("history row");
+    let current = rows
+        .iter()
+        .find(|row| row.account_label == "current@example.com")
+        .expect("current row");
+    assert_eq!(history.remaining_percent, Some(11));
+    assert_eq!(history.status_word, "stale");
+    assert_eq!(history.last_error.as_deref(), Some("history unavailable"));
+    assert_eq!(current.remaining_percent, Some(88));
+    assert_eq!(current.status_word, "fresh");
+    assert_eq!(current.last_error, None);
+}
+
+#[test]
+fn canon_projection_reports_malformed_shared_snapshot() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let shared = dir.path().join("usage-shared").join("snapshots");
+    std::fs::create_dir_all(&shared).expect("shared dir");
+    std::fs::write(shared.join("usage-broken.snapshot.json"), "not-json").expect("broken snapshot");
+    let mut runtime = open_runtime(dir.path());
+    let error = runtime
+        .desktop_inventory()
+        .expect_err("typed projection error");
+    assert!(error.starts_with("parse shared usage snapshot:"), "{error}");
+}
+
+#[test]
+fn canon_open_rejects_unknown_surface_and_resets_changed_profile() {
+    let first = tempfile::tempdir().expect("first tempdir");
+    let second = tempfile::tempdir().expect("second tempdir");
+    let mut runtime = open_runtime(first.path());
+    runtime
+        .inject_snapshot(
+            "codex",
+            glance_view(
+                "OpenAI / Codex",
+                Some("OAuth"),
+                vec![glance_weekly_bucket(66)],
+                UsageSnapshotStatus::Fresh,
+            ),
+        )
+        .expect("inject");
+    let mut invalid = HostRuntimeConfig::under_data_dir(second.path());
+    invalid.enabled_surface_ids = vec!["typo".to_owned()];
+    assert!(runtime.open(invalid).is_err());
+    runtime
+        .open(HostRuntimeConfig::under_data_dir(second.path()))
+        .expect("reopen");
+    assert!(
+        runtime
+            .list_accounts(Some("codex"))
+            .expect("second profile")
+            .is_empty()
+    );
+}
+
+#[test]
+fn canon_desktop_inventory_is_grouped_and_complete() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let mut runtime = open_runtime(dir.path());
+    runtime
+        .inject_snapshot(
+            "codex",
+            glance_view(
+                "OpenAI / Codex",
+                Some("OAuth"),
+                vec![glance_weekly_bucket(57)],
+                UsageSnapshotStatus::Fresh,
+            ),
+        )
+        .expect("inject");
+    runtime
+        .inject_snapshot(
+            "opencode",
+            glance_view(
+                "OpenCode",
+                Some("OAuth"),
+                vec![glance_weekly_bucket(90)],
+                UsageSnapshotStatus::Fresh,
+            ),
+        )
+        .expect("inject");
+    let inventory = runtime.desktop_inventory().expect("inventory");
+    assert_eq!(inventory.groups.len(), 1);
+    let codex = &inventory.groups[0];
+    assert_eq!(codex.surface_id, "codex");
+    assert_eq!(codex.display_label, "OpenAI");
+    assert_eq!(codex.fallback_glyph, "Cx");
+    assert!(
+        codex
+            .usage_url
+            .as_deref()
+            .is_some_and(|url| url.contains("usage"))
+    );
+    assert_eq!(codex.accounts.len(), 1);
+    let account = &codex.accounts[0];
+    assert!(account.selected);
+    assert_eq!(account.lifecycle, "current");
+    assert_eq!(account.remaining_label, "57%");
+    assert_eq!(account.headline, "57% left");
+    assert_eq!(account.status_word, "fresh");
+    assert!(
+        inventory
+            .groups
+            .iter()
+            .all(|group| group.surface_id != "opencode")
+    );
 }
 
 #[test]
@@ -1342,6 +1939,9 @@ fn disabled_probe_policy_skips_dispatch_and_is_never_due() {
             refresh_floor_secs: 60,
             enabled_surface_ids: Vec::new(),
             probe_policy: HostProbePolicy::Disabled,
+            discovery_scope: UsageDiscoveryScope::Capsule {
+                forwarded_accounts: Vec::new(),
+            },
         })
         .expect("open");
     runtime.refresh(None, false).expect("non-forced refresh");

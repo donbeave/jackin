@@ -15,6 +15,37 @@ fn workspace_file_contents(paths: &JackinPaths, name: &str) -> String {
 }
 
 #[test]
+fn config_lock_fresh_editor_bootstraps_without_recursive_acquisition() {
+    let temp = tempdir().unwrap();
+    let paths = JackinPaths::for_tests(temp.path());
+    let editor = ConfigEditor::open(&paths).unwrap();
+    editor.save().unwrap();
+    assert!(paths.config_file.exists());
+    assert!(paths.config_file.with_file_name("config.lock").exists());
+}
+
+#[test]
+fn config_lock_competing_editors_serialize() {
+    use std::sync::mpsc;
+    use std::time::Duration;
+
+    let temp = tempdir().unwrap();
+    let paths = JackinPaths::for_tests(temp.path());
+    let first = ConfigEditor::open(&paths).unwrap();
+    let (opened_tx, opened_rx) = mpsc::channel();
+    let second_paths = paths.clone();
+    let waiter = std::thread::spawn(move || {
+        let second = ConfigEditor::open(&second_paths).unwrap();
+        opened_tx.send(()).unwrap();
+        second
+    });
+    assert!(opened_rx.recv_timeout(Duration::from_millis(20)).is_err());
+    drop(first);
+    opened_rx.recv_timeout(Duration::from_secs(1)).unwrap();
+    drop(waiter.join().unwrap());
+}
+
+#[test]
 fn set_env_var_creates_global_env_table() {
     let temp = tempdir().unwrap();
     let paths = JackinPaths::for_tests(temp.path());
@@ -563,6 +594,82 @@ fn save_rejects_reserved_name_candidate_and_preserves_on_disk_config() {
         after, baseline,
         "rejected save must not touch on-disk config"
     );
+}
+
+#[test]
+fn editor_save_atomic_staging_failure_preserves_every_original_file() {
+    let temp = tempdir().unwrap();
+    let paths = JackinPaths::for_tests(temp.path());
+    paths.ensure_base_dirs().unwrap();
+    std::fs::write(&paths.config_file, "[env]\nGLOBAL = \"before\"\n").unwrap();
+    std::fs::create_dir_all(&paths.workspaces_dir).unwrap();
+    let workspace_path = paths.workspaces_dir.join("prod.toml");
+    std::fs::write(
+        &workspace_path,
+        "workdir = \"/workspace/prod\"\n\n[[mounts]]\nsrc = \"/workspace/prod\"\ndst = \"/workspace/prod\"\n",
+    )
+    .unwrap();
+
+    AppConfig::load_or_init(&paths).unwrap();
+    let global_before = std::fs::read(&paths.config_file).unwrap();
+    let workspace_before = std::fs::read(&workspace_path).unwrap();
+    let mut editor = ConfigEditor::open(&paths).unwrap();
+    editor
+        .set_env_var(&EnvScope::Global, "GLOBAL", "after".into())
+        .unwrap();
+    editor
+        .set_env_var(
+            &EnvScope::Workspace("prod".to_owned()),
+            "LOCAL",
+            "after".into(),
+        )
+        .unwrap();
+
+    let mut stage_number = 0;
+    let err = editor
+        .save_with_stager(|path, contents| {
+            stage_number += 1;
+            if stage_number == 2 {
+                return Err(std::io::Error::other("injected second-stage failure").into());
+            }
+            stage_atomic_write(path, contents)
+        })
+        .unwrap_err();
+    assert!(err.to_string().contains("injected second-stage failure"));
+    assert_eq!(std::fs::read(&paths.config_file).unwrap(), global_before);
+    assert_eq!(std::fs::read(&workspace_path).unwrap(), workspace_before);
+    let staged_leaks: Vec<_> = std::fs::read_dir(&paths.config_dir)
+        .unwrap()
+        .chain(std::fs::read_dir(&paths.workspaces_dir).unwrap())
+        .filter_map(Result::ok)
+        .filter(|entry| entry.file_name().to_string_lossy().contains(".tmp."))
+        .collect();
+    assert!(
+        staged_leaks.is_empty(),
+        "leftover staged files: {staged_leaks:?}"
+    );
+}
+
+#[test]
+fn editor_save_rejects_invalid_workspace_stem_before_any_write() {
+    let temp = tempdir().unwrap();
+    let paths = JackinPaths::for_tests(temp.path());
+    paths.ensure_base_dirs().unwrap();
+    std::fs::write(&paths.config_file, "[env]\nSAFE = \"before\"\n").unwrap();
+    AppConfig::load_or_init(&paths).unwrap();
+    let before = std::fs::read(&paths.config_file).unwrap();
+
+    let mut editor = ConfigEditor::open(&paths).unwrap();
+    editor
+        .set_env_var(
+            &EnvScope::Workspace("../escape".to_owned()),
+            "VALUE",
+            "after".into(),
+        )
+        .unwrap();
+    editor.save().unwrap_err();
+    assert_eq!(std::fs::read(&paths.config_file).unwrap(), before);
+    assert!(!paths.config_dir.join("escape.toml").exists());
 }
 
 // ---- mount tests ----

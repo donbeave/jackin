@@ -20,7 +20,10 @@ use crate::app_config::AppConfig;
 use crate::app_config::persist::{load_split_config, validate_reserved_env_names};
 use crate::auth::GithubAuthMode;
 use crate::migrations;
-use crate::persist::{atomic_write, validate_workspace_file_stem};
+use crate::persist::{
+    ConfigWriteGuard, StagedWrite, acquire_config_write_lock, atomic_write, stage_atomic_write,
+    validate_workspace_file_stem,
+};
 use crate::schema::{MountConfig, WorkspaceConfig, WorkspaceEdit};
 
 /// Which env map a setter/remover targets in the config tree.
@@ -60,6 +63,7 @@ pub enum EnvScope {
 /// Comment-preserving mutator for `config.toml` and split workspace files.
 #[derive(Debug)]
 pub struct ConfigEditor {
+    _lock: ConfigWriteGuard,
     doc: DocumentMut,
     path: PathBuf,
     workspaces_dir: PathBuf,
@@ -71,17 +75,20 @@ impl ConfigEditor {
     /// Loads the existing config file as a `DocumentMut`. Performs both
     /// schema-version and split-workspace migration before reading, so the
     /// on-disk result matches what `AppConfig::load_or_init` would produce.
-    /// The recursion-when-missing branch covers the fresh-install case
-    /// where the file does not yet exist.
+    /// Fresh installs are bootstrapped directly while this editor already owns
+    /// the write lock, avoiding recursive editor acquisition.
     pub fn open(paths: &JackinPaths) -> crate::ConfigResult<Self> {
-        if paths.config_file.exists() {
-            migrations::migrate_config_file_if_needed(&paths.config_file)?;
-            let raw = std::fs::read_to_string(&paths.config_file)
-                .with_context(|| format!("reading {}", paths.config_file.display()))?;
-            drop(load_split_config(paths, Some(raw))?);
-        } else {
-            AppConfig::load_or_init(paths)?;
+        let lock = acquire_config_write_lock(&paths.config_file)?;
+        paths.ensure_base_dirs()?;
+        if !paths.config_file.exists() {
+            let mut initial = AppConfig::default();
+            initial.sync_builtin_agents();
+            atomic_write(&paths.config_file, &toml::to_string_pretty(&initial)?)?;
         }
+        migrations::migrate_config_file_if_needed(&paths.config_file)?;
+        let raw = std::fs::read_to_string(&paths.config_file)
+            .with_context(|| format!("reading {}", paths.config_file.display()))?;
+        drop(load_split_config(paths, Some(raw))?);
         let raw = std::fs::read_to_string(&paths.config_file)
             .with_context(|| format!("reading {}", paths.config_file.display()))?;
         let doc: DocumentMut = raw
@@ -89,6 +96,7 @@ impl ConfigEditor {
             .with_context(|| format!("parsing {}", paths.config_file.display()))?;
         let workspace_docs = load_workspace_docs(paths)?;
         Ok(Self {
+            _lock: lock,
             doc,
             path: paths.config_file.clone(),
             workspaces_dir: paths.workspaces_dir.clone(),
@@ -109,6 +117,20 @@ impl ConfigEditor {
     /// that `load_or_init` ran once at `open` time, so builtins are
     /// already in place.
     pub fn save(self) -> crate::ConfigResult<AppConfig> {
+        self.save_with_stager(stage_atomic_write)
+    }
+
+    fn save_with_stager<F>(self, mut stage: F) -> crate::ConfigResult<AppConfig>
+    where
+        F: FnMut(&Path, &str) -> crate::ConfigResult<StagedWrite>,
+    {
+        for name in self
+            .workspace_docs
+            .keys()
+            .chain(self.removed_workspaces.iter())
+        {
+            validate_workspace_file_stem(name)?;
+        }
         let global_contents = self.doc.to_string();
 
         let candidate = validate_candidate(&global_contents, &self.workspace_docs).map_err(|err| {
@@ -127,13 +149,14 @@ impl ConfigEditor {
             jackin_telemetry::schema::enums::ConfigScope::Global,
             jackin_telemetry::schema::enums::ConfigOperation::Save,
             (|| {
-                atomic_write(&self.path, &global_contents)?;
                 std::fs::create_dir_all(&self.workspaces_dir)?;
-                for name in self.workspace_docs.keys() {
-                    validate_workspace_file_stem(name)?;
-                }
+                let mut staged = Vec::with_capacity(self.workspace_docs.len() + 1);
+                staged.push(stage(&self.path, &global_contents)?);
                 for (name, doc) in &self.workspace_docs {
-                    atomic_write(&self.workspace_file(name), &doc.to_string())?;
+                    staged.push(stage(&self.workspace_file(name), &doc.to_string())?);
+                }
+                for write in staged {
+                    write.commit()?;
                 }
                 for removed in &self.removed_workspaces {
                     let path = self.workspace_file(removed);
@@ -663,8 +686,6 @@ impl ConfigEditor {
     }
 
     fn workspace_doc_mut(&mut self, workspace: &str) -> &mut DocumentMut {
-        // `.ok().is_some()` avoids assertions_on_result_states vs redundant_pattern_matching.
-        debug_assert!(validate_workspace_file_stem(workspace).ok().is_some());
         self.removed_workspaces.remove(workspace);
         self.workspace_docs.entry(workspace.to_owned()).or_default()
     }

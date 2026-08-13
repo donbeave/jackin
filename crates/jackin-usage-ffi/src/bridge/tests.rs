@@ -1,28 +1,222 @@
 // SPDX-FileCopyrightText: 2026 Alexey Zhokhov
 // SPDX-License-Identifier: Apache-2.0
 
-use std::sync::Arc;
+use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::{Arc, Condvar, Mutex};
+use std::time::{Duration, Instant};
 
 use super::*;
 use jackin_protocol::control::{
     FocusedAccountHeader, FocusedUsageView, QuotaBucketView, StatusSlot, UsageConfidence,
     UsageSeverity, UsageSnapshotStatus, UsageSource,
 };
+use jackin_usage::coordinator::{ProviderProbeOutcome, UsageProviderExecutor};
 use jackin_usage::host::HostUsageRuntime;
+use jackin_usage::host::{
+    ForwardedUsageAccount, HostProbePolicy, HostRuntimeConfig, UsageDiscoveryScope,
+    ensure_usage_broker_with_executor, usage_broker_capabilities,
+};
 
 use crate::dto::UsageFormatPrefsDto;
 
+fn write_isolated_config(config_root: &std::path::Path) {
+    std::fs::create_dir_all(config_root).expect("config root");
+    std::fs::write(
+        config_root.join("config.toml"),
+        format!(
+            r#"version = "{}"
+
+[claude]
+auth_forward = "ignore"
+[codex]
+auth_forward = "ignore"
+[amp]
+auth_forward = "ignore"
+[kimi]
+auth_forward = "ignore"
+[grok]
+auth_forward = "ignore"
+[opencode]
+auth_forward = "ignore"
+"#,
+            jackin_config::CURRENT_CONFIG_VERSION
+        ),
+    )
+    .expect("global config");
+}
+
 fn open_bridge(dir: &std::path::Path) -> Arc<UsageMenuBarBridge> {
+    let config_root = dir.join("config");
+    if !config_root.join("config.toml").exists() {
+        write_isolated_config(&config_root);
+    }
     let bridge = UsageMenuBarBridge::create();
     bridge
         .open_runtime(OpenConfig {
-            data_dir: dir.display().to_string(),
+            data_dir_override: Some(dir.display().to_string()),
+            config_root_override: Some(config_root.display().to_string()),
             refresh_floor_secs: 120,
             enabled_surface_ids: vec!["codex".to_owned(), "claude".to_owned()],
             allow_live_probes: true,
         })
         .expect("open");
     bridge
+}
+
+struct BlockingBrokerExecutor {
+    calls: AtomicUsize,
+    started: (Mutex<bool>, Condvar),
+    released: (Mutex<bool>, Condvar),
+}
+
+impl BlockingBrokerExecutor {
+    fn new() -> Self {
+        Self {
+            calls: AtomicUsize::new(0),
+            started: (Mutex::new(false), Condvar::new()),
+            released: (Mutex::new(false), Condvar::new()),
+        }
+    }
+
+    fn wait_started(&self) {
+        let (lock, changed) = &self.started;
+        let started = lock.lock().unwrap();
+        let (started, wait) = changed
+            .wait_timeout_while(started, Duration::from_secs(2), |started| !*started)
+            .unwrap();
+        assert!(*started && !wait.timed_out());
+    }
+
+    fn release(&self) {
+        let (lock, changed) = &self.released;
+        *lock.lock().unwrap() = true;
+        changed.notify_all();
+    }
+}
+
+impl UsageProviderExecutor for BlockingBrokerExecutor {
+    fn probe(
+        &self,
+        _capability: &jackin_protocol::usage_broker::UsageAccountCapability,
+        _generation: u64,
+    ) -> ProviderProbeOutcome {
+        self.calls.fetch_add(1, Ordering::SeqCst);
+        let (started, changed) = &self.started;
+        *started.lock().unwrap() = true;
+        changed.notify_all();
+        let (released, changed) = &self.released;
+        let released = released.lock().unwrap();
+        drop(changed.wait_while(released, |released| !*released).unwrap());
+        let mut view = FocusedUsageView::unavailable("fixture", 1);
+        view.status = UsageSnapshotStatus::Fresh;
+        view.source = UsageSource::ProviderApi;
+        view.confidence = UsageConfidence::Authoritative;
+        view.account.provider_label = "Anthropic / Claude".to_owned();
+        view.account.account_label = "broker@example.test".to_owned();
+        view.buckets = vec![QuotaBucketView {
+            label: "Weekly".to_owned(),
+            used_label: None,
+            limit_label: None,
+            remaining_percent: Some(64),
+            reset_label: None,
+            resets_at: None,
+            status_slot: Some(StatusSlot::Weekly),
+            pace_label: None,
+            status: UsageSnapshotStatus::Fresh,
+            used_money: None,
+            limit_money: None,
+            severity: UsageSeverity::Normal,
+        }];
+        ProviderProbeOutcome::success(view)
+    }
+}
+
+#[test]
+fn broker_client_refresh_returns_immediately_and_joins_one_generation() {
+    let dir = tempfile::tempdir().unwrap();
+    let bridge = UsageMenuBarBridge::create();
+    let discovery_scope = UsageDiscoveryScope::Capsule {
+        forwarded_accounts: vec![ForwardedUsageAccount {
+            surface_id: "claude".to_owned(),
+            capability_id: "fixture-capability".to_owned(),
+            account_label: Some("broker@example.test".to_owned()),
+        }],
+    };
+    let runtime_config = HostRuntimeConfig {
+        data_dir: dir.path().join("runtime"),
+        refresh_floor_secs: 60,
+        enabled_surface_ids: vec!["claude".to_owned()],
+        probe_policy: HostProbePolicy::Live,
+        discovery_scope: discovery_scope.clone(),
+    };
+    {
+        bridge
+            .inner
+            .lock()
+            .unwrap()
+            .open_with_discovery(runtime_config, bridge.credential_resolver.as_ref())
+            .unwrap();
+    }
+    let discovery = bridge.inner.lock().unwrap().validated_discovery().unwrap();
+    let capabilities = usage_broker_capabilities(&discovery);
+    let executor = Arc::new(BlockingBrokerExecutor::new());
+    let concrete = Arc::clone(&executor);
+    let broker_executor: Arc<dyn UsageProviderExecutor> = concrete;
+    let broker_config = UsageBrokerConfig::for_data_dir(dir.path().join("broker"));
+    let client = ensure_usage_broker_with_executor(broker_config.clone(), broker_executor).unwrap();
+    *bridge.broker.lock().unwrap() = Some(DesktopBroker {
+        client,
+        capabilities,
+        config: broker_config,
+        scope: discovery_scope,
+    });
+
+    let started = Instant::now();
+    bridge.refresh(None, true).unwrap();
+    assert!(started.elapsed() < Duration::from_secs(1));
+    executor.wait_started();
+    assert!(bridge.refresh_in_progress().unwrap());
+    bridge.refresh(None, true).unwrap();
+    executor.release();
+
+    let deadline = Instant::now() + Duration::from_secs(3);
+    while bridge.refresh_in_progress().unwrap() && Instant::now() < deadline {
+        std::thread::park_timeout(Duration::from_millis(10));
+    }
+    assert!(!bridge.refresh_in_progress().unwrap());
+    assert_eq!(executor.calls.load(Ordering::SeqCst), 1);
+    let snapshot = bridge.snapshot("claude".to_owned()).unwrap();
+    assert_eq!(snapshot.account_label, "broker@example.test");
+    assert_eq!(snapshot.buckets[0].remaining_percent, Some(64));
+}
+
+#[test]
+fn disc_diagnostics_export_only_sanitized_scope_and_copy() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let config = dir.path().join("config");
+    let workspaces = config.join("workspaces");
+    write_isolated_config(&config);
+    std::fs::create_dir_all(&workspaces).expect("workspaces");
+    std::fs::write(
+        workspaces.join("broken.toml"),
+        "{fixture-secret op://vault/item",
+    )
+    .expect("workspace");
+
+    let bridge = open_bridge(dir.path());
+    let diagnostics = bridge.discovery_diagnostics().expect("diagnostics");
+    let debug = format!("{diagnostics:?}");
+
+    assert!(diagnostics.iter().any(|diagnostic| {
+        diagnostic.scope_label == "workspace broken" && diagnostic.issue == "config_invalid"
+    }));
+    for forbidden in [
+        "fixture-secret",
+        "op://",
+        dir.path().to_string_lossy().as_ref(),
+    ] {
+        assert!(!debug.contains(forbidden), "leaked {forbidden}");
+    }
 }
 
 #[test]
@@ -265,6 +459,7 @@ fn provider_glance_rows_via_bridge_project_rust_rows() {
         view.account.provider_label = "OpenAI / Codex".to_owned();
         view.account.account_label = "codex@example.com".to_owned();
         view.account.credential_origin = Some("OAuth · ~/.codex/auth.json".to_owned());
+        view.last_error = None;
         view.buckets = vec![QuotaBucketView {
             label: "Weekly".to_owned(),
             used_label: None,
@@ -287,9 +482,33 @@ fn provider_glance_rows_via_bridge_project_rust_rows() {
         .find(|row| row.surface_id == "codex")
         .expect("codex glance row");
     assert_eq!(codex.icon_key, "codex");
+    assert_eq!(codex.fallback_glyph, "Cx");
+    assert!(
+        codex
+            .usage_url
+            .as_deref()
+            .is_some_and(|url| url.contains("usage"))
+    );
     assert_eq!(codex.bar_label, "57%");
     assert_eq!(codex.glance_remaining_percent, Some(57));
     assert!(!codex.is_refreshing);
+
+    let inventory = bridge.desktop_inventory().expect("desktop inventory");
+    assert_eq!(inventory.groups.len(), 1);
+    let codex = &inventory.groups[0];
+    assert_eq!(codex.surface_id, "codex");
+    assert_eq!(codex.display_label, "OpenAI");
+    assert_eq!(codex.accounts.len(), 1);
+    let account = &codex.accounts[0];
+    assert_eq!(account.account_label, "codex@example.com");
+    assert!(account.selected);
+    assert_eq!(account.lifecycle, "current");
+    assert_eq!(account.provenance, ["Live host"]);
+    assert_eq!(account.remaining_percent, Some(57));
+    assert_eq!(account.remaining_label, "57%");
+    assert_eq!(account.headline, "57% left");
+    assert_eq!(account.status_word, "fresh");
+    assert_eq!(account.last_error, None);
 }
 
 #[test]

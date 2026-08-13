@@ -8,7 +8,9 @@ Display-only Swift shell over `jackin-usage-ffi` (UniFFI). Product: **jackin❯ 
 ## Hard rules
 
 - **Display-only Swift.** No HTTP/OAuth/CLI scrapes, no second provider matrix, no
-  inventing percentages. Numbers and limit strings come from UniFFI / Rust only.
+  config/workspace discovery, credential/path resolution, account deduplication, or
+  inventing percentages. Numbers, identities, provenance, diagnostics, and limit
+  strings come from UniFFI / Rust only. Production passes no host paths to the bridge.
 - **Limits only — never token price or historical usage trend.** The status item,
   glance popover, Usage window, and Settings show **subscription / quota limits
   only** (remaining or used %, dual-bucket stacks, resets, plan/status, multi-
@@ -27,5 +29,6 @@ Display-only Swift shell over `jackin-usage-ffi` (UniFFI). Product: **jackin❯ 
   (or `cargo xtask desktop test`). That drives host nextest + pure Swift harnesses
   (`StatusItemChipHarness`, `DesktopArchitectureLint`, `DesktopParityMatrixHarness`)
   proving multi-provider remaining % strips, dual-bucket, depleted countdown, and
-  full frozen catalog displayability without inventing token prices or trends.
+  displayability of Rust-supplied Desktop catalog fixtures without inventing token
+  prices or trends.
   Full Xcode CI may also run `cd native && swift test -c release`.

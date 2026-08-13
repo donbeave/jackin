@@ -139,25 +139,9 @@ public struct StatusItemChip: Identifiable, Equatable, Sendable {
     }
 }
 
-/// Frozen host surface ids in catalog order (matches Rust `HostSurfaceId::ALL`).
-///
-/// OpenUsage/CodexBar-style multi-provider strip must be able to show each of
-/// these when enabled — never non-jackin third-party IDE agent products.
-public let frozenHostSurfaceIds: [String] = [
-    "claude",
-    "codex",
-    "amp",
-    "grok",
-    "zai",
-    "kimi",
-    "minimax",
-    "opencode",
-]
-
 /// SF Symbol for a known host surface id (status-item / tile layout only).
 ///
-/// Every frozen host surface has a distinct mark so the OpenUsage-style strip
-/// always shows a provider icon even when the compact glyph is empty.
+/// Deprecated: replaced by Rust DTO fields — removed in Plan 005.
 public func statusItemSystemImage(surfaceId: String) -> String? {
     switch surfaceId {
     case "claude": return "sparkles"
@@ -174,6 +158,8 @@ public func statusItemSystemImage(surfaceId: String) -> String? {
 
 /// The exact seven-provider Desktop icon domain (canonical order). `opencode`
 /// is intentionally excluded from the Desktop status-item contract.
+///
+/// Deprecated: replaced by Rust DTO fields — removed in Plan 005.
 public let desktopProviderIconKeys = [
     "codex", "claude", "amp", "grok", "zai", "kimi", "minimax",
 ]
@@ -181,6 +167,7 @@ public let desktopProviderIconKeys = [
 /// Frozen product/limit role shown in popover Overview group headers.
 ///
 /// Subscription plan belongs to account rows; it is not provider identity.
+/// Deprecated: replaced by Rust DTO fields — removed in Plan 005.
 public func desktopProviderOverviewRole(iconKey: String) -> String? {
     switch iconKey {
     case "codex": return "Codex"
@@ -239,12 +226,9 @@ public func desktopProviderSystemImage(iconKey: String) -> String? {
     return statusItemSystemImage(surfaceId: iconKey)
 }
 
-/// Whether every frozen host surface has a status-item system image (displayable strip).
-public func allFrozenHostSurfacesHaveSystemImages() -> Bool {
-    frozenHostSurfaceIds.allSatisfy { statusItemSystemImage(surfaceId: $0) != nil }
-}
-
 /// Stable two-letter mark when SF Symbol is unavailable (matches Rust compact prefixes).
+///
+/// Deprecated: replaced by Rust DTO fields — removed in Plan 005.
 public func statusItemFallbackGlyph(surfaceId: String) -> String {
     switch surfaceId {
     case "claude": return "Cl"

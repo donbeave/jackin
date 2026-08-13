@@ -18,6 +18,9 @@ use jackin_core::{EnvValue, OpRef, WorkspaceName};
 /// Constructed at the resolve boundary and either returned directly (pure
 /// validation paths) or attached as an `anyhow` source so classification
 /// survives `?` and is recovered by `downcast_ref` (mixed port-error paths).
+///
+/// Security note: releases before this redaction could echo rejected credential
+/// values. Credentials observed in historical error logs should be rotated.
 #[derive(Debug, thiserror::Error)]
 pub enum OperatorEnvError {
     /// Operator env declares reserved runtime names that cannot be overridden.
@@ -33,25 +36,19 @@ pub enum OperatorEnvError {
         details: String,
     },
     /// Value is not an `op://` reference.
-    #[error("not an op:// reference: {value}")]
-    NotOpRef {
-        /// The rejected input value.
-        value: String,
-    },
+    #[error("not an op:// reference")]
+    NotOpRef,
     /// Shell variable substitution inside an `op://` URI is unsupported.
     #[error(
-        "jackin does not support shell variable substitution inside `op://` URIs \
-         (`{value}`). Use a plain string value, or substitute before passing."
+        "jackin does not support shell variable substitution inside `op://` URIs. \
+         Use a plain string value, or substitute before passing."
     )]
-    ShellVarInRef {
-        /// The rejected URI containing shell substitution.
-        value: String,
-    },
+    ShellVarInRef,
     /// `op://` URI path segment count is not 3 or 4.
-    #[error("malformed op:// URI (expected 3 or 4 path segments): {value}")]
+    #[error("malformed op:// URI (expected 3 or 4 path segments, received {segment_count})")]
     MalformedRef {
-        /// The malformed URI.
-        value: String,
+        /// Non-secret path shape used for diagnostics.
+        segment_count: usize,
     },
     /// Named or id vault could not be found.
     #[error("vault not found: {vault:?}")]
@@ -102,6 +99,70 @@ pub enum OperatorEnvError {
         /// Multi-line summary of failures.
         summary: String,
     },
+}
+
+/// Secret-free result category for one attributed operator-env key.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum OperatorEnvKeyStatus {
+    /// Value resolved successfully; access it only through
+    /// [`OperatorEnvKeyResolution::resolved_value`].
+    Resolved,
+    /// Referenced host environment value is absent.
+    Missing,
+    /// 1Password or another protected source denied access or was unavailable.
+    DeniedOrUnavailable,
+    /// Declared value could not be interpreted.
+    Malformed,
+    /// Credential is explicitly deferred to an operator-approved exec action.
+    InteractionRequired,
+}
+
+/// One independently resolved operator-env key.
+///
+/// `Debug` is intentionally omitted: the optional resolved value is secret.
+pub struct OperatorEnvKeyResolution {
+    key: String,
+    status: OperatorEnvKeyStatus,
+    value: Option<String>,
+    detail: Option<String>,
+}
+
+impl std::fmt::Debug for OperatorEnvKeyResolution {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter
+            .debug_struct("OperatorEnvKeyResolution")
+            .field("key", &self.key)
+            .field("status", &self.status)
+            .field("has_value", &self.value.is_some())
+            .finish_non_exhaustive()
+    }
+}
+
+impl OperatorEnvKeyResolution {
+    /// Exact governed key name.
+    #[must_use]
+    pub fn key(&self) -> &str {
+        &self.key
+    }
+
+    /// Secret-free result category.
+    #[must_use]
+    pub const fn status(&self) -> OperatorEnvKeyStatus {
+        self.status
+    }
+
+    /// Resolved secret value for Rust composition code only.
+    ///
+    /// Callers must not log, persist, or project this value into a DTO.
+    #[must_use]
+    pub fn resolved_value(&self) -> Option<&str> {
+        self.value.as_deref()
+    }
+}
+
+struct OperatorEnvResolutionBatch {
+    resolutions: Vec<OperatorEnvKeyResolution>,
+    probe_error: Option<anyhow::Error>,
 }
 
 /// Reject operator env maps that declare any reserved runtime name.
@@ -164,10 +225,6 @@ pub fn validate_reserved_names(config: &AppConfig) -> Result<(), OperatorEnvErro
 /// `None` when the call has no account context (e.g. ambient
 /// `op://...` resolution where the operator has not pinned an
 /// account).
-#[expect(
-    clippy::too_many_lines,
-    reason = "URI parsing + multi-protocol op:// resolution; split would obscure the single algorithm"
-)]
 pub fn resolve_op_uri_to_ref(
     input: &str,
     op: &dyn OpStructRunner,
@@ -176,14 +233,10 @@ pub fn resolve_op_uri_to_ref(
     // Port errors from OpStructRunner stay as raw anyhow; validation failures
     // are typed sources so pickers can downcast without substring matching.
     if !input.starts_with("op://") {
-        return Err(anyhow::Error::new(OperatorEnvError::NotOpRef {
-            value: input.to_owned(),
-        }));
+        return Err(anyhow::Error::new(OperatorEnvError::NotOpRef));
     }
     if input.contains("${") {
-        return Err(anyhow::Error::new(OperatorEnvError::ShellVarInRef {
-            value: input.to_owned(),
-        }));
+        return Err(anyhow::Error::new(OperatorEnvError::ShellVarInRef));
     }
 
     // Peel off optional `?attribute=...` / `?attr=...` / `?ssh-format=...` suffix.
@@ -191,9 +244,7 @@ pub fn resolve_op_uri_to_ref(
         .find('?')
         .map_or((input, None), |i| (&input[..i], Some(&input[i..])));
     let Some(body) = path_part.strip_prefix("op://") else {
-        return Err(anyhow::Error::new(OperatorEnvError::NotOpRef {
-            value: input.to_owned(),
-        }));
+        return Err(anyhow::Error::new(OperatorEnvError::NotOpRef));
     };
     let segs: Vec<&str> = body.split('/').collect();
     let (vault_seg, item_seg, section_seg, field_seg) = match segs.as_slice() {
@@ -201,7 +252,7 @@ pub fn resolve_op_uri_to_ref(
         [v, i, s, f] => (*v, *i, Some(*s), *f),
         _ => {
             return Err(anyhow::Error::new(OperatorEnvError::MalformedRef {
-                value: input.to_owned(),
+                segment_count: segs.len(),
             }));
         }
     };
@@ -460,6 +511,22 @@ pub fn lookup_operator_env_raw(
         .map(|(_, value)| value.as_display_str().to_owned())
 }
 
+/// Look up the winning typed declaration for one operator-env key.
+///
+/// This is a Rust-only composition seam for source-equality caching before a
+/// protected read. The returned value can contain credential material and must
+/// never be logged, persisted, or projected across FFI.
+pub fn lookup_operator_env_declaration(
+    config: &AppConfig,
+    role_selector: Option<&str>,
+    workspace_name: Option<&WorkspaceName>,
+    key: &str,
+) -> Option<EnvValue> {
+    build_attributed_layers(config, role_selector, workspace_name)
+        .remove(key)
+        .map(|(_, value)| value)
+}
+
 /// Env var Claude Code reads for the long-lived OAuth token.
 ///
 /// Centralised so token-setup, launch diagnostics, and agent
@@ -584,79 +651,37 @@ where
     H: Fn(&str) -> Result<String, std::env::VarError> + Send + Sync,
     F: Fn(&str) -> bool,
 {
-    let mut attributed = build_attributed_layers(config, role_selector, workspace_name);
-    attributed.retain(|key, _| include_key(key));
-    // On-demand credentials are never resolved at launch — that would run
-    // `op read` (and a Touch ID prompt) for a value the agent should only get
-    // through the operator picker at `jackin-exec` time. Drop them here so they
-    // are not injected into the container env; the names are surfaced separately
-    // via `collect_on_demand_bindings` for the host resolver.
-    attributed.retain(|_, (_, v)| !v.is_on_demand());
-
+    let batch = resolve_operator_env_per_key_internal(
+        config,
+        role_selector,
+        workspace_name,
+        op_runner,
+        host_env,
+        include_key,
+    );
+    if let Some(source) = batch.probe_error {
+        return Err(anyhow::Error::new(OperatorEnvError::Aborted { source }));
+    }
     let mut resolved = std::collections::BTreeMap::new();
     let mut errors: Vec<String> = Vec::new();
-
-    // Probe op CLI once up front when any value is an OpRef, so a
-    // missing op surfaces as one install-link error not N.
-    let uses_op = attributed
-        .values()
-        .any(|(_, v)| matches!(v, EnvValue::OpRef(_)));
-    if uses_op && let Err(e) = op_runner.probe() {
-        return Err(anyhow::Error::new(OperatorEnvError::Aborted { source: e }));
-    }
-
-    std::thread::scope(|scope| {
-        let mut handles = Vec::with_capacity(attributed.len());
-        for (key, (layer, value)) in &attributed {
-            let host_env = &host_env;
-            handles.push(jackin_telemetry::spawn::thread_scoped_joined(
-                scope,
-                move || {
-                    let layer_label = format!("{layer}");
-                    let timing_name = format!("operator_env:{key}");
-                    let value_kind = ValueKind::of_env_value(value).as_timing_detail();
-                    jackin_diagnostics::active_timing_started(
-                        jackin_diagnostics::DiagnosticStage::Credentials,
-                        &timing_name,
-                        Some(value_kind),
-                    );
-                    let result = resolve_env_value(&layer_label, key, value, op_runner, |name| {
-                        host_env(name)
-                    });
-                    match result {
-                        Ok(value) => {
-                            jackin_diagnostics::active_timing_done(
-                                jackin_diagnostics::DiagnosticStage::Credentials,
-                                &timing_name,
-                                Some(value_kind),
-                            );
-                            (key.clone(), Ok(value))
-                        }
-                        Err(error) => {
-                            jackin_diagnostics::active_timing_done(
-                                jackin_diagnostics::DiagnosticStage::Credentials,
-                                &timing_name,
-                                Some("error"),
-                            );
-                            (key.clone(), Err(error))
-                        }
-                    }
-                },
-            ));
-        }
-
-        for handle in handles {
-            match handle
-                .join()
-                .unwrap_or_else(|panic| std::panic::resume_unwind(panic))
-            {
-                (key, Ok(value)) => {
-                    resolved.insert(key, value);
+    for resolution in batch.resolutions {
+        match resolution.status {
+            OperatorEnvKeyStatus::Resolved => {
+                if let Some(value) = resolution.value {
+                    resolved.insert(resolution.key, value);
                 }
-                (_, Err(error)) => errors.push(format!("  - {error}")),
+            }
+            // Preserve launch behavior: on-demand entries are omitted, not errors.
+            OperatorEnvKeyStatus::InteractionRequired => {}
+            OperatorEnvKeyStatus::Missing
+            | OperatorEnvKeyStatus::DeniedOrUnavailable
+            | OperatorEnvKeyStatus::Malformed => {
+                if let Some(detail) = resolution.detail {
+                    errors.push(format!("  - {detail}"));
+                }
             }
         }
-    });
+    }
 
     if errors.is_empty() {
         return Ok(resolved);
@@ -666,6 +691,148 @@ where
         count: errors.len(),
         summary: errors.join("\n"),
     }))
+}
+
+/// Resolve selected operator-env keys independently using production host and
+/// 1Password adapters.
+///
+/// Successful values remain accessible only to Rust composition code. Failure
+/// categories are isolated per key so one denied source does not discard other
+/// resolved provider credentials.
+pub fn resolve_operator_env_per_key_matching<F>(
+    config: &AppConfig,
+    role_selector: Option<&str>,
+    workspace_name: Option<&WorkspaceName>,
+    include_key: F,
+) -> Vec<OperatorEnvKeyResolution>
+where
+    F: Fn(&str) -> bool,
+{
+    let runner = OpCli::new_launch_env();
+    resolve_operator_env_per_key_with_matching(
+        config,
+        role_selector,
+        workspace_name,
+        &runner,
+        |name| std::env::var(name),
+        include_key,
+    )
+}
+
+/// Injected variant of [`resolve_operator_env_per_key_matching`] for composition
+/// tests and non-default protected-source runners.
+pub fn resolve_operator_env_per_key_with_matching<R, H, F>(
+    config: &AppConfig,
+    role_selector: Option<&str>,
+    workspace_name: Option<&WorkspaceName>,
+    op_runner: &R,
+    host_env: H,
+    include_key: F,
+) -> Vec<OperatorEnvKeyResolution>
+where
+    R: OpRunner + ?Sized,
+    H: Fn(&str) -> Result<String, std::env::VarError> + Send + Sync,
+    F: Fn(&str) -> bool,
+{
+    resolve_operator_env_per_key_internal(
+        config,
+        role_selector,
+        workspace_name,
+        op_runner,
+        host_env,
+        include_key,
+    )
+    .resolutions
+}
+
+fn resolve_operator_env_per_key_internal<R, H, F>(
+    config: &AppConfig,
+    role_selector: Option<&str>,
+    workspace_name: Option<&WorkspaceName>,
+    op_runner: &R,
+    host_env: H,
+    include_key: F,
+) -> OperatorEnvResolutionBatch
+where
+    R: OpRunner + ?Sized,
+    H: Fn(&str) -> Result<String, std::env::VarError> + Send + Sync,
+    F: Fn(&str) -> bool,
+{
+    let mut attributed = build_attributed_layers(config, role_selector, workspace_name);
+    attributed.retain(|key, _| include_key(key));
+    let uses_op = attributed
+        .values()
+        .any(|(_, value)| matches!(value, EnvValue::OpRef(_)) && !value.is_on_demand());
+    let probe_error = uses_op.then(|| op_runner.probe()).and_then(Result::err);
+
+    let mut resolutions = Vec::with_capacity(attributed.len());
+    for (key, (layer, value)) in attributed {
+        if value.is_on_demand() {
+            resolutions.push(OperatorEnvKeyResolution {
+                key,
+                status: OperatorEnvKeyStatus::InteractionRequired,
+                value: None,
+                detail: None,
+            });
+            continue;
+        }
+        if probe_error.is_some() && matches!(value, EnvValue::OpRef(_)) {
+            resolutions.push(OperatorEnvKeyResolution {
+                key,
+                status: OperatorEnvKeyStatus::DeniedOrUnavailable,
+                value: None,
+                detail: None,
+            });
+            continue;
+        }
+        let layer_label = format!("{layer}");
+        let timing_name = format!("operator_env:{key}");
+        let value_kind = ValueKind::of_env_value(&value).as_timing_detail();
+        jackin_diagnostics::active_timing_started(
+            jackin_diagnostics::DiagnosticStage::Credentials,
+            &timing_name,
+            Some(value_kind),
+        );
+        let result =
+            resolve_env_value(&layer_label, &key, &value, op_runner, |name| host_env(name));
+        let resolution = match result {
+            Ok(resolved) => {
+                jackin_diagnostics::active_timing_done(
+                    jackin_diagnostics::DiagnosticStage::Credentials,
+                    &timing_name,
+                    Some(value_kind),
+                );
+                OperatorEnvKeyResolution {
+                    key,
+                    status: OperatorEnvKeyStatus::Resolved,
+                    value: Some(resolved),
+                    detail: None,
+                }
+            }
+            Err(error) => {
+                jackin_diagnostics::active_timing_done(
+                    jackin_diagnostics::DiagnosticStage::Credentials,
+                    &timing_name,
+                    Some("error"),
+                );
+                let status = match value {
+                    EnvValue::OpRef(_) => OperatorEnvKeyStatus::DeniedOrUnavailable,
+                    EnvValue::Plain(_) | EnvValue::Extended(_) => OperatorEnvKeyStatus::Missing,
+                };
+                OperatorEnvKeyResolution {
+                    key,
+                    status,
+                    value: None,
+                    detail: Some(error.to_string()),
+                }
+            }
+        };
+        resolutions.push(resolution);
+    }
+    OperatorEnvResolutionBatch {
+        resolutions,
+        probe_error,
+    }
 }
 
 /// Print a launch diagnostic to stderr. Values are NEVER printed —

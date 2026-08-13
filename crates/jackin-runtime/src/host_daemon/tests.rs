@@ -604,6 +604,30 @@ fn notification_command_uses_supported_host_backend() {
     }
 }
 
+#[test]
+fn linux_notify_args_put_hostile_positionals_after_sentinel() {
+    let args = linux_notify_args("--version\n", "body\ttext");
+
+    assert_eq!(args, ["--", "--version", "bodytext"]);
+}
+
+#[test]
+fn linux_notify_args_strip_controls_and_clamp_by_character() {
+    let long_title = format!("{}\r\n", "界".repeat(201));
+    let long_body = format!("{}\u{0007}", "b".repeat(201));
+
+    let args = linux_notify_args(&long_title, &long_body);
+
+    assert_eq!(args.len(), 3);
+    assert_eq!(args[1].chars().count(), 200);
+    assert_eq!(args[2].chars().count(), 200);
+    assert!(
+        args[1..]
+            .iter()
+            .all(|value| !value.chars().any(char::is_control))
+    );
+}
+
 fn snapshot(state: AgentState) -> InstanceSnapshot {
     InstanceSnapshot {
         active_tab: 0,

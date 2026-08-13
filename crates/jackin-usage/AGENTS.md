@@ -14,3 +14,5 @@ Usage probes, host runtime, snapshot store, and Capsule/Desktop view shaping.
   - “Buy credits” or other commercial write actions on usage surfaces
 - Internal probe/token-monitor math may still need provider pricing tables for **limit arithmetic** when a provider only reports money against a cap — that is not a product “price for tokens” surface. Never surface price tables, trend series, or cost dashboards to Desktop/Capsule as features.
 - Host Desktop / UniFFI path: same ban applies to every field exported for display. Prefer dropping a field over inventing a trend or unit price for the UI.
+- Rust owns Desktop account discovery, exact provider/account identity, deduplication, lifecycle/provenance, refresh scheduling, shared-cache policy, and single-flight coordination. Probe-routing slugs and display labels never decide account ownership. Swift receives immutable, non-secret projections and renders them.
+- The Desktop catalog is exactly Codex/OpenAI, Claude/Anthropic, Amp, Grok/xAI, Z.AI, Kimi, and MiniMax in Rust `DESKTOP_PROVIDER_ORDER`. OpenCode remains a wider host surface, not a Desktop provider.

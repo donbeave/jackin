@@ -248,7 +248,7 @@ impl Multiplexer {
     /// poll cycle. (The daemon already owns this moment via `SpawnRequest`, so no
     /// separate launch proxy is needed.)
     fn note_agent_started(&mut self) {
-        self.spawn_active_usage_account_refresh(std::time::Instant::now());
+        self.spawn_active_usage_account_refresh();
     }
 
     pub(super) fn session_launch(

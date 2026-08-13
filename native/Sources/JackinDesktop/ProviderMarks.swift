@@ -8,6 +8,7 @@ import SwiftUI
 /// Provider identity chrome only.
 ///
 /// Never use these colors for quota state.
+/// Deprecated: replaced by Rust DTO fields — removed in Plan 005.
 public func desktopProviderBrandChrome(iconKey: String?) -> Color {
     switch iconKey {
     case "codex": Color(red: 0.12, green: 0.72, blue: 0.52)
@@ -29,6 +30,8 @@ public func desktopProviderBrandChrome(iconKey: String?) -> Color {
 @MainActor
 public enum ProviderMarks {
     /// Bundled PDF resource base name for a Desktop provider icon key.
+    ///
+    /// Deprecated: replaced by Rust DTO fields — removed in Plan 005.
     public static func resourceName(forIconKey iconKey: String) -> String? {
         switch iconKey {
         case "codex": return "codex"

@@ -363,9 +363,6 @@ bound = 7
 key = "clippy::too_many_lines@jackin-console"
 bound = 7
 [[family.entry]]
-key = "clippy::too_many_lines@jackin-env"
-bound = 1
-[[family.entry]]
 key = "clippy::too_many_lines@jackin-launch"
 bound = 2
 [[family.entry]]
@@ -521,7 +518,7 @@ key = "crates/jackin-capsule/README.md"
 bound = 6343
 [[family.entry]]
 key = "crates/jackin-config/README.md"
-bound = 2892
+bound = 2229
 [[family.entry]]
 key = "crates/jackin-oppicker/README.md"
 bound = 1575
@@ -575,10 +572,10 @@ key = "crates/jackin-otlp-testbed/README.md"
 bound = 1122
 [[family.entry]]
 key = "crates/jackin-protocol/README.md"
-bound = 2275
+bound = 2500
 [[family.entry]]
 key = "crates/jackin-runtime/README.md"
-bound = 3647
+bound = 3809
 [[family.entry]]
 key = "crates/jackin-telemetry/README.md"
 bound = 2149
@@ -593,10 +590,10 @@ key = "crates/jackin-tui/README.md"
 bound = 1812
 [[family.entry]]
 key = "crates/jackin-usage/README.md"
-bound = 5825
+bound = 6855
 [[family.entry]]
 key = "crates/jackin-usage-ffi/README.md"
-bound = 2652
+bound = 3176
 [[family.entry]]
 key = "crates/jackin-xtask/README.md"
 bound = 6112
@@ -709,10 +706,10 @@ key = "jackin-manifest"
 bound = 5
 [[family.entry]]
 key = "jackin-protocol"
-bound = 7
+bound = 8
 [[family.entry]]
 key = "jackin-runtime"
-bound = 7
+bound = 8
 [[family.entry]]
 key = "jackin-term"
 bound = 6
@@ -724,7 +721,7 @@ key = "jackin-test-support"
 bound = 4
 [[family.entry]]
 key = "jackin-usage"
-bound = 8
+bound = 9
 
 
 # Plan 027: suite wall-time from nextest junit. The provider reports zero when
@@ -834,7 +831,7 @@ key = "jackin-protocol"
 bound = 80
 [[family.entry]]
 key = "jackin-runtime"
-bound = 91
+bound = 90
 [[family.entry]]
 key = "jackin-telemetry"
 bound = 24

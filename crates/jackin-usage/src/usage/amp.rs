@@ -125,6 +125,43 @@ pub(crate) fn amp_snapshot(agent: &str, now: i64) -> FocusedUsageView {
     })
 }
 
+pub(crate) fn amp_api_key_snapshot(agent: &str, key: &str, now: i64) -> FocusedUsageView {
+    match fetch_amp_api_usage(key) {
+        Ok(usage) => amp_view_from_usage(
+            AmpSuccessContext {
+                agent,
+                credential_origin: Some("API key · configured source".to_owned()),
+                source: UsageSource::ProviderApi,
+            },
+            usage,
+            now,
+        ),
+        Err(error) => usage_view(UsageViewInput {
+            agent,
+            provider: None,
+            surface: UsageSurface::Amp,
+            account_label: String::new(),
+            username: None,
+            plan_label: None,
+            credential_origin: Some("API key · configured source".to_owned()),
+            buckets: vec![bucket(
+                "Amp Free",
+                None,
+                None,
+                None,
+                None,
+                Some(&error),
+                UsageSnapshotStatus::Error,
+            )],
+            status: UsageSnapshotStatus::Error,
+            source: UsageSource::None,
+            confidence: UsageConfidence::None,
+            now,
+            last_error: Some(error),
+        }),
+    }
+}
+
 /// The current Amp `userDisplayBalanceInfo.displayText` contract, shared by the
 /// API and CLI paths through one parser: account identity, the Amp Free daily
 /// remaining percentage, individual credit balance, and per-workspace balances.

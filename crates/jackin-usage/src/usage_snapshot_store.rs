@@ -881,6 +881,15 @@ fn row_opt_string(row: &Row, idx: usize, name: &str) -> Result<Option<String>, S
         .map_err(|err| format!("decode telemetry {name} failed: {err}"))
 }
 
+/// One durable account reconstructed from a single, source-consistent snapshot.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct StoredAccountUsageView {
+    /// Historical wire key written with the snapshot rows.
+    pub account_key_hash: String,
+    /// Reconstructed latest view. All buckets come from one selected source.
+    pub view: FocusedUsageView,
+}
+
 /// List distinct accounts in the durable store (multi-account Desktop / host).
 pub fn list_account_identities(path: &Path) -> Result<Vec<AccountIdentitySummary>, String> {
     let rows = load_all_account_snapshot_rows(path)?;
@@ -927,19 +936,69 @@ pub fn load_account_usage_view(
     account_key_hash: &str,
     now_epoch: i64,
 ) -> Result<Option<FocusedUsageView>, String> {
-    let rows = load_all_account_snapshot_rows(path)?;
-    let mut matches: Vec<_> = rows
+    Ok(load_all_account_usage_views(path, now_epoch)?
         .into_iter()
-        .filter(|row| row.account_key_hash == account_key_hash)
-        .collect();
+        .find(|stored| stored.account_key_hash == account_key_hash)
+        .map(|stored| stored.view))
+}
+
+/// Reconstruct every durable account with one database scan.
+///
+/// Rows first pin the newest fetch generation, then one evidence source. This
+/// prevents a same-timestamp provider API/CLI/local-log mix from duplicating
+/// buckets or pairing one source's header with another source's limits.
+pub fn load_all_account_usage_views(
+    path: &Path,
+    now_epoch: i64,
+) -> Result<Vec<StoredAccountUsageView>, String> {
+    let mut grouped: HashMap<String, Vec<StoredAccountUsageSnapshot>> = HashMap::new();
+    for row in load_all_account_snapshot_rows(path)? {
+        grouped
+            .entry(row.account_key_hash.clone())
+            .or_default()
+            .push(row);
+    }
+    let mut views = Vec::with_capacity(grouped.len());
+    for (account_key_hash, rows) in grouped {
+        if let Some(view) = account_usage_view_from_rows(rows, now_epoch) {
+            views.push(StoredAccountUsageView {
+                account_key_hash,
+                view,
+            });
+        }
+    }
+    views.sort_by(|a, b| {
+        a.view
+            .account
+            .provider_label
+            .cmp(&b.view.account.provider_label)
+            .then(
+                a.view
+                    .account
+                    .account_label
+                    .cmp(&b.view.account.account_label),
+            )
+    });
+    Ok(views)
+}
+
+fn account_usage_view_from_rows(
+    mut matches: Vec<StoredAccountUsageSnapshot>,
+    now_epoch: i64,
+) -> Option<FocusedUsageView> {
     if matches.is_empty() {
-        return Ok(None);
+        return None;
     }
     let latest = matches.iter().map(|r| r.fetched_at).max().unwrap_or(0);
     matches.retain(|r| r.fetched_at == latest);
-    let Some(first) = matches.first() else {
-        return Ok(None);
-    };
+    let selected_source = matches
+        .iter()
+        .max_by_key(|row| durable_source_priority(&row.source))?
+        .source
+        .clone();
+    matches.retain(|row| row.source == selected_source);
+    matches.sort_by(|a, b| a.window_kind.cmp(&b.window_kind));
+    let first = matches.first()?;
     let provider = first.provider.clone();
     let status = usage_status_from_storage(&first.view_status);
     let source = usage_source_from_storage(&first.source);
@@ -965,7 +1024,8 @@ pub fn load_account_usage_view(
         .collect();
     // Stable window order: session/weekly first when present.
     buckets.sort_by(|a, b| a.label.cmp(&b.label));
-    Ok(Some(FocusedUsageView {
+    buckets.dedup_by(|a, b| a.label == b.label);
+    Some(FocusedUsageView {
         focused_agent: None,
         focused_provider: first.focused_provider.clone().or(Some(provider.clone())),
         account: FocusedAccountHeader {
@@ -992,7 +1052,17 @@ pub fn load_account_usage_view(
         },
         tabs: Vec::new(),
         last_error: first.last_error.clone(),
-    }))
+    })
+}
+
+fn durable_source_priority(source: &str) -> u8 {
+    match source {
+        "provider_api" => 4,
+        "cli" => 3,
+        "local_logs" => 2,
+        "cache" => 1,
+        _ => 0,
+    }
 }
 
 fn usage_status_from_storage(label: &str) -> UsageSnapshotStatus {

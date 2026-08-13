@@ -18,8 +18,8 @@
 //! empirical validation. `inner_docker_enabled` defaults to `false` until
 //! Phase 0 results confirm `DinD` works inside apple/container VMs.
 
+use crate::apple_container_client::AppleContainerMount;
 use anyhow::{Context as _, Result, bail};
-use std::path::PathBuf;
 
 use crate::apple_container_client::AppleContainerApi as _;
 use crate::instance::{
@@ -43,7 +43,7 @@ pub fn print_session_contract(
     container_name: &str,
     image: &str,
     provider_version: &str,
-    mount_pairs: &[(PathBuf, PathBuf)],
+    mounts: &[AppleContainerMount],
     debug: bool,
 ) {
     eprintln!();
@@ -59,12 +59,17 @@ pub fn print_session_contract(
     eprintln!(
         "  force_daemon:         JACKIN_CAPSULE_FORCE_DAEMON=1 (capsule PID 2+ under vminitd)"
     );
-    eprintln!("  mounts ({}):", mount_pairs.len());
-    if mount_pairs.is_empty() {
+    eprintln!("  mounts ({}):", mounts.len());
+    if mounts.is_empty() {
         eprintln!("    (none)");
     } else {
-        for (h, g) in mount_pairs {
-            eprintln!("    {}:{}", h.display(), g.display());
+        for mount in mounts {
+            let suffix = if mount.readonly { ":ro" } else { "" };
+            eprintln!(
+                "    {}:{}{suffix}",
+                mount.source.display(),
+                mount.target.display()
+            );
         }
     }
     eprintln!("  network:              per-container IP via vmnet (no port mapping)");
@@ -208,9 +213,11 @@ pub struct AppleContainerLaunch<'a> {
     pub role_source_ref: Option<&'a str>,
     pub image_tag: &'a str,
     pub env_pairs: &'a [(String, String)],
-    pub mount_pairs: &'a [(PathBuf, PathBuf)],
+    pub mounts: &'a [AppleContainerMount],
     pub host_workdir_fingerprint: &'a str,
     pub capsule_config: &'a jackin_protocol::CapsuleConfig,
+    pub state: &'a crate::instance::RoleState,
+    pub resolved_env: &'a jackin_env::ResolvedEnv,
     pub debug: bool,
 }
 
@@ -233,9 +240,11 @@ pub async fn launch(args: AppleContainerLaunch<'_>) -> Result<()> {
         role_source_ref,
         image_tag,
         env_pairs,
-        mount_pairs,
+        mounts,
         host_workdir_fingerprint,
         capsule_config,
+        state,
+        resolved_env,
         debug,
     } = args;
 
@@ -256,12 +265,11 @@ pub async fn launch(args: AppleContainerLaunch<'_>) -> Result<()> {
     if debug {
         env.push(("JACKIN_TELEMETRY_LEVEL".to_owned(), "debug".to_owned()));
     }
-    for (k, v) in env_pairs {
-        if k == "JACKIN_CAPSULE_FORCE_DAEMON" || k == "JACKIN_DEBUG" {
-            continue;
-        }
-        env.push((k.clone(), v.clone()));
-    }
+    let host_env_entries = env_pairs
+        .iter()
+        .filter(|(key, _)| key != "JACKIN_CAPSULE_FORCE_DAEMON" && key != "JACKIN_DEBUG")
+        .cloned()
+        .collect::<Vec<_>>();
     // Mirror the Docker path: list on-demand credential var names so the
     // in-container MCP tool advertises which commands need jackin-exec.
     let names = super::launch::exec_binding_names(&capsule_config.exec_bindings);
@@ -272,22 +280,42 @@ pub async fn launch(args: AppleContainerLaunch<'_>) -> Result<()> {
     // socket dir bind-mount to /jackin/run: carries Capsule's launch config
     // (agent.toml, which the daemon requires at startup) and host.sock.
     let socket_dir = paths.jackin_home.join("sockets").join(container_name);
-    let capsule_config_contents = toml::to_string(capsule_config)
+    let capsule_config_contents = super::launch::capsule_config_contents(capsule_config)
         .context("serializing Capsule launch config for /jackin/run/agent.toml")?;
     super::launch::prepare_socket_dir(&socket_dir, &capsule_config_contents)?;
-    let mut mounts: Vec<(PathBuf, PathBuf)> = mount_pairs.to_vec();
-    mounts.push((socket_dir, PathBuf::from(container_paths::RUN_DIR)));
+    let _usage_relay_guard =
+        crate::usage_relay::prepare_for_container(crate::usage_relay::UsageRelayLaunch {
+            paths,
+            workspace_name,
+            role_key,
+            forwarded_sources: crate::usage_relay::forwarded_sources_from_launch(
+                state,
+                resolved_env,
+            ),
+            socket_dir: socket_dir.clone(),
+        })
+        .await
+        .context("starting scoped usage relay")?;
+    let mut container_mounts = mounts.to_vec();
+    container_mounts.push(crate::usage_relay::apple_runtime_mount(socket_dir));
+
+    let host_env_file =
+        super::launch::create_host_env_file(&paths.jackin_home, container_name, &host_env_entries)
+            .context("creating private host runtime environment")?;
 
     let spec = crate::apple_container_client::AppleContainerSpec {
         image: image.to_owned(),
         env,
-        mounts,
+        env_file: host_env_file.as_ref().map(|file| file.path().to_path_buf()),
+        mounts: container_mounts,
         caps_add: vec![],
     };
 
-    crate::apple_container_client::AppleContainerClient::new()
+    let run_result = crate::apple_container_client::AppleContainerClient::new()
         .run_container(container_name, &spec)
-        .await
+        .await;
+    drop(host_env_file);
+    run_result
         .context("container run failed — required capabilities or image may be unavailable")?;
 
     // Write instance manifest.
@@ -336,7 +364,7 @@ pub async fn launch(args: AppleContainerLaunch<'_>) -> Result<()> {
         container_name,
         image,
         version.as_deref().unwrap_or("unknown"),
-        mount_pairs,
+        mounts,
         debug,
     );
 
