@@ -139,6 +139,31 @@ fn account_snapshot_rows_are_persisted_and_upserted() {
 }
 
 #[test]
+fn canon_durable_reconstruction_pins_one_preferred_source() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let db = dir.path().join("snapshots.db");
+    let mut cli = usage_view();
+    cli.source = UsageSource::Cli;
+    cli.buckets = vec![QuotaBucketView {
+        label: "Weekly".to_owned(),
+        remaining_percent: Some(12),
+        ..cli.buckets[0].clone()
+    }];
+    let mut provider_api = cli.clone();
+    provider_api.source = UsageSource::ProviderApi;
+    provider_api.buckets[0].remaining_percent = Some(88);
+    store_usage_snapshot(&db, &cli).expect("store CLI");
+    store_usage_snapshot(&db, &provider_api).expect("store provider API");
+
+    let views =
+        load_all_account_usage_views(&db, provider_api.fetched_at_epoch).expect("materialize once");
+    assert_eq!(views.len(), 1);
+    assert_eq!(views[0].view.source, UsageSource::ProviderApi);
+    assert_eq!(views[0].view.buckets.len(), 1);
+    assert_eq!(views[0].view.buckets[0].remaining_percent, Some(88));
+}
+
+#[test]
 fn repeated_writes_reuse_cached_connection() {
     let dir = tempfile::tempdir().expect("tempdir");
     let db = dir.path().join("snapshots.db");

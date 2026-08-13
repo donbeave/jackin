@@ -8,10 +8,10 @@ use std::sync::{Arc, Mutex};
 use jackin_usage::host::HostUsageRuntime;
 
 use crate::dto::{
-    AccountDescriptorDto, OpenConfig, OverviewRowDto, ProviderGlanceRowDto, SurfaceDescriptorDto,
-    UsageEventBatchDto, UsageFormatPrefsDto, UsageViewDto, account_dto, event_batch_dto,
-    map_open_err, map_runtime_err, overview_row_dto, parse_format_prefs, provider_glance_row_dto,
-    surface_dto, to_host_config, view_dto,
+    AccountDescriptorDto, DesktopInventoryDto, OpenConfig, OverviewRowDto, ProviderGlanceRowDto,
+    SurfaceDescriptorDto, UsageEventBatchDto, UsageFormatPrefsDto, UsageViewDto, account_dto,
+    desktop_inventory_dto, event_batch_dto, map_open_err, map_runtime_err, overview_row_dto,
+    parse_format_prefs, provider_glance_row_dto, surface_dto, to_host_config, view_dto,
 };
 use crate::error::{UsageBridgeError, catch_entry};
 
@@ -116,6 +116,17 @@ impl UsageMenuBarBridge {
                 .into_iter()
                 .map(account_dto)
                 .collect())
+        })
+    }
+
+    /// Atomic, Rust-ordered provider/account projection for jackin❯ desktop.
+    pub fn desktop_inventory(&self) -> Result<DesktopInventoryDto, UsageBridgeError> {
+        catch_entry(|| {
+            let mut guard = self.lock()?;
+            guard
+                .desktop_inventory()
+                .map(desktop_inventory_dto)
+                .map_err(map_runtime_err)
         })
     }
 

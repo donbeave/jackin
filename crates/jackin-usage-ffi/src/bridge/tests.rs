@@ -265,6 +265,7 @@ fn provider_glance_rows_via_bridge_project_rust_rows() {
         view.account.provider_label = "OpenAI / Codex".to_owned();
         view.account.account_label = "codex@example.com".to_owned();
         view.account.credential_origin = Some("OAuth · ~/.codex/auth.json".to_owned());
+        view.last_error = None;
         view.buckets = vec![QuotaBucketView {
             label: "Weekly".to_owned(),
             used_label: None,
@@ -287,9 +288,33 @@ fn provider_glance_rows_via_bridge_project_rust_rows() {
         .find(|row| row.surface_id == "codex")
         .expect("codex glance row");
     assert_eq!(codex.icon_key, "codex");
+    assert_eq!(codex.fallback_glyph, "Cx");
+    assert!(
+        codex
+            .usage_url
+            .as_deref()
+            .is_some_and(|url| url.contains("usage"))
+    );
     assert_eq!(codex.bar_label, "57%");
     assert_eq!(codex.glance_remaining_percent, Some(57));
     assert!(!codex.is_refreshing);
+
+    let inventory = bridge.desktop_inventory().expect("desktop inventory");
+    assert_eq!(inventory.groups.len(), 1);
+    let codex = &inventory.groups[0];
+    assert_eq!(codex.surface_id, "codex");
+    assert_eq!(codex.display_label, "OpenAI");
+    assert_eq!(codex.accounts.len(), 1);
+    let account = &codex.accounts[0];
+    assert_eq!(account.account_label, "codex@example.com");
+    assert!(account.selected);
+    assert_eq!(account.lifecycle, "current");
+    assert_eq!(account.provenance, ["Live host"]);
+    assert_eq!(account.remaining_percent, Some(57));
+    assert_eq!(account.remaining_label, "57%");
+    assert_eq!(account.headline, "57% left");
+    assert_eq!(account.status_word, "fresh");
+    assert_eq!(account.last_error, None);
 }
 
 #[test]

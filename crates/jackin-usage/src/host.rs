@@ -24,6 +24,7 @@ use crate::usage::{
 };
 
 pub use accounts::{
+    AccountLifecycle, AccountProvenance, CanonicalAccountIdentity, CanonicalAccountSubject,
     HostAccountDescriptor, account_key_for_view, min_remaining, short_account_identity,
 };
 
@@ -121,6 +122,42 @@ impl HostSurfaceId {
         }
     }
 
+    /// Canonical provider label used by durable account-key hashing.
+    #[must_use]
+    pub const fn account_provider_label(self) -> &'static str {
+        match self {
+            Self::Claude => "Anthropic / Claude",
+            Self::Codex => "OpenAI / Codex",
+            Self::Amp => "Amp",
+            Self::Grok => "xAI / Grok",
+            Self::Zai => "GLM / Z.AI",
+            Self::Kimi => "Kimi",
+            Self::Minimax => "MiniMax",
+            Self::OpenCode => "OpenCode",
+        }
+    }
+
+    /// Rust-owned fallback glyph used only when the native icon cannot load.
+    #[must_use]
+    pub const fn fallback_glyph(self) -> &'static str {
+        self.compact_prefix()
+    }
+
+    /// Provider-owned usage/settings destination for Desktop actions.
+    #[must_use]
+    pub const fn usage_url(self) -> Option<&'static str> {
+        match self {
+            Self::Codex => Some("https://chatgpt.com/codex/settings/usage"),
+            Self::Claude => Some("https://claude.ai/settings/usage"),
+            Self::Amp => Some("https://ampcode.com/settings"),
+            Self::Grok => Some("https://console.x.ai/team/default/usage"),
+            Self::Zai => Some("https://z.ai/manage-apikey/coding-plan/personal/usage"),
+            Self::Kimi => Some("https://www.kimi.com/membership/subscription?tab=quota"),
+            Self::Minimax => Some("https://platform.minimax.io/console/usage"),
+            Self::OpenCode => None,
+        }
+    }
+
     /// Agent slug for `UsageRefreshTarget` (Z.AI/MiniMax route via a dummy agent
     /// + provider label — `resolve_surface` keys on the provider first).
     #[must_use]
@@ -155,6 +192,30 @@ impl HostSurfaceId {
     #[must_use]
     pub fn from_id(id: &str) -> Option<Self> {
         Self::ALL.iter().copied().find(|surface| surface.id() == id)
+    }
+
+    /// Parse an enumerated provider alias into exact ownership.
+    ///
+    /// This deliberately does not inspect [`Self::agent_slug`]: Z.AI and
+    /// `MiniMax` route through the Codex probe but never own `OpenAI` accounts.
+    #[must_use]
+    pub fn from_provider_alias(alias: &str) -> Option<Self> {
+        let normalized = alias
+            .chars()
+            .filter(char::is_ascii_alphanumeric)
+            .collect::<String>()
+            .to_ascii_lowercase();
+        match normalized.as_str() {
+            "claude" | "anthropic" | "anthropicclaude" => Some(Self::Claude),
+            "codex" | "openai" | "openaicodex" => Some(Self::Codex),
+            "amp" => Some(Self::Amp),
+            "grok" | "grokbuild" | "xai" | "xaigrok" => Some(Self::Grok),
+            "zai" | "glm" | "glmzai" => Some(Self::Zai),
+            "kimi" => Some(Self::Kimi),
+            "minimax" => Some(Self::Minimax),
+            "opencode" => Some(Self::OpenCode),
+            _ => None,
+        }
     }
 
     /// Map jackin agent runtimes to their primary surface (not Z.AI/MiniMax).
@@ -298,6 +359,10 @@ pub struct HostProviderGlanceRow {
     pub surface_id: String,
     /// Stable provider icon key (closed domain, equals `surface_id`).
     pub icon_key: String,
+    /// Rust-owned fallback glyph.
+    pub fallback_glyph: String,
+    /// Provider usage/settings URL.
+    pub usage_url: Option<String>,
     /// Rust-owned provider display name (`OpenAI`, `Anthropic`, …).
     pub display_label: String,
     /// Rust-owned selected-account label (empty when none).
@@ -329,6 +394,34 @@ pub struct HostProviderGlanceRow {
     pub last_error: Option<String>,
     /// Whether the native bar value is visually dimmed (stale/error).
     pub dimmed: bool,
+}
+
+/// Provider state when detection succeeds without a stable account identity.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct HostDesktopProviderState {
+    pub status_word: String,
+    pub status_label: String,
+    pub updated_label: String,
+    pub last_error: Option<String>,
+    pub is_refreshing: bool,
+}
+
+/// One Rust-ordered Desktop provider group.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct HostDesktopProviderGroup {
+    pub surface_id: String,
+    pub display_label: String,
+    pub icon_key: String,
+    pub fallback_glyph: String,
+    pub usage_url: Option<String>,
+    pub accounts: Vec<HostAccountDescriptor>,
+    pub empty_state: Option<HostDesktopProviderState>,
+}
+
+/// Atomic account inventory consumed by jackin❯ desktop.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct HostDesktopInventory {
+    pub groups: Vec<HostDesktopProviderGroup>,
 }
 
 /// Driving bucket for compact/overview labels: min remaining + its reset epoch.
@@ -399,6 +492,37 @@ impl HostUsageRuntime {
 
     /// Open with host paths; enables all surfaces when config list empty.
     pub fn open(&mut self, config: HostRuntimeConfig) -> Result<(), String> {
+        let enabled = if config.enabled_surface_ids.is_empty() {
+            HostSurfaceId::ALL
+                .iter()
+                .map(|surface| surface.id().to_owned())
+                .collect::<HashSet<_>>()
+        } else {
+            let unknown = config
+                .enabled_surface_ids
+                .iter()
+                .filter(|id| HostSurfaceId::from_id(id).is_none())
+                .cloned()
+                .collect::<Vec<_>>();
+            if !unknown.is_empty() {
+                return Err(format!(
+                    "unknown enabled surface ids: {}",
+                    unknown.join(", ")
+                ));
+            }
+            config.enabled_surface_ids.iter().cloned().collect()
+        };
+        let data_dir_changed = self
+            .data_dir
+            .as_ref()
+            .is_some_and(|current| current != &config.data_dir);
+        if data_dir_changed {
+            self.cache = UsageCache::default();
+            self.events.clear();
+            self.next_seq = 0;
+            self.selected_accounts.clear();
+            self.desktop_detected_surfaces.clear();
+        }
         let snapshot_path = host_snapshot_store_path(&config.data_dir);
         let accounts_path = host_accounts_path(&config.data_dir);
         if let Some(parent) = snapshot_path.parent() {
@@ -409,18 +533,7 @@ impl HostUsageRuntime {
         self.cache.set_accounts_materialize_path(accounts_path);
         self.refresh_floor_secs = config.refresh_floor_secs.max(60);
         self.last_refresh = None;
-        self.enabled.clear();
-        if config.enabled_surface_ids.is_empty() {
-            for surface in HostSurfaceId::ALL {
-                self.enabled.insert(surface.id().to_owned());
-            }
-        } else {
-            for id in config.enabled_surface_ids {
-                if HostSurfaceId::from_id(&id).is_some() {
-                    self.enabled.insert(id);
-                }
-            }
-        }
+        self.enabled = enabled;
         // Prove Agent::ALL is covered by primary surfaces.
         for agent in Agent::ALL {
             let surface = HostSurfaceId::from_agent(*agent);
@@ -605,11 +718,6 @@ impl HostUsageRuntime {
         let live = self
             .cache
             .focused_snapshot(Some(surface.agent_slug()), surface.provider_label());
-        let store_path = self
-            .data_dir
-            .as_ref()
-            .map(|d| host_snapshot_store_path(d))
-            .unwrap_or_default();
         // A local-only Claude resolution (Keychain denial, missing credential,
         // or an anonymous credential) never restores a durable/shared account
         // view over the live local result.
@@ -620,13 +728,12 @@ impl HostUsageRuntime {
         {
             return Ok(live);
         }
-        let selected = self.selected_accounts.get(surface.id()).map(String::as_str);
-        Ok(accounts::resolve_account_view(
-            surface,
-            selected,
-            live,
-            &store_path,
-        ))
+        let catalog = self.materialize_account_catalog()?;
+        self.reconcile_selected_accounts(&catalog, std::slice::from_ref(&surface))?;
+        let selected = self.selected_accounts.get(surface.id());
+        Ok(selected
+            .and_then(|key| catalog.entry(surface, key))
+            .map_or(live, |entry| entry.view.clone()))
     }
 
     /// List known accounts for one surface (or all surfaces when `None`).
@@ -637,78 +744,29 @@ impl HostUsageRuntime {
         surface_id: Option<&str>,
     ) -> Result<Vec<HostAccountDescriptor>, String> {
         self.require_open()?;
-        let store_path = self
-            .data_dir
-            .as_ref()
-            .map(|d| host_snapshot_store_path(d))
-            .unwrap_or_default();
         let surfaces: Vec<HostSurfaceId> = match surface_id {
             Some(id) => {
                 let surface =
                     HostSurfaceId::from_id(id).ok_or_else(|| format!("unknown surface: {id}"))?;
                 vec![surface]
             }
-            None => HostSurfaceId::ALL.to_vec(),
+            None => HostSurfaceId::DESKTOP_PROVIDER_ORDER.to_vec(),
         };
+        let catalog = self.materialize_account_catalog()?;
+        self.reconcile_selected_accounts(&catalog, &surfaces)?;
+        let now = chrono::Utc::now().timestamp();
+        let prefs = self.format_prefs;
         let mut out = Vec::new();
         for surface in surfaces {
-            let live = self
-                .cache
-                .focused_snapshot(Some(surface.agent_slug()), surface.provider_label());
-            let live_key = account_key_for_view(&live);
-            // Local-only Claude scopes read no durable/shared history: only the
-            // live row (when its identity is non-placeholder) is returned.
-            let mut account_map = if self
-                .cache
-                .active_snapshot_policy(surface.agent_slug(), surface.provider_label())
-                .is_local_only()
-            {
-                HashMap::new()
-            } else {
-                accounts::collect_account_views(surface, Some(&live), &store_path)
-            };
-            if !live_key.is_empty() {
-                account_map
-                    .entry(live_key.clone())
-                    .or_insert_with(|| live.clone());
-            }
-            let mut keys: Vec<String> = account_map.keys().cloned().collect();
-            keys.sort();
-            let selected = self
-                .selected_accounts
-                .get(surface.id())
-                .cloned()
-                .filter(|k| keys.contains(k))
-                .unwrap_or_else(|| live_key.clone());
-            if !selected.is_empty() {
-                self.selected_accounts
-                    .entry(surface.id().to_owned())
-                    .or_insert_with(|| selected.clone());
-            }
-            for key in keys {
-                let view = account_map
-                    .get(&key)
-                    .cloned()
-                    .unwrap_or_else(|| live.clone());
-                let label = view.account.account_label.clone();
-                let placeholder =
-                    label.trim().is_empty() || label.eq_ignore_ascii_case("account unavailable");
-                if placeholder && account_map.len() > 1 && key != live_key {
-                    continue;
-                }
-                out.push(HostAccountDescriptor {
-                    surface_id: surface.id().to_owned(),
-                    account_key: key.clone(),
-                    account_label: if placeholder {
-                        "Current host login".to_owned()
-                    } else {
-                        label
-                    },
-                    plan_label: view.account.plan_label.clone(),
-                    selected: key == selected,
-                    remaining_percent: min_remaining(&view),
-                    status_word: usage_status_storage_label(view.status).to_owned(),
-                });
+            let selected = self.selected_accounts.get(surface.id()).map(String::as_str);
+            for entry in catalog.entries_for_surface(surface) {
+                out.push(account_descriptor(
+                    surface,
+                    entry,
+                    selected == Some(entry.account_key.as_str()),
+                    now,
+                    prefs,
+                ));
             }
         }
         Ok(out)
@@ -726,6 +784,12 @@ impl HostUsageRuntime {
         if account_key.is_empty() {
             self.selected_accounts.remove(surface.id());
         } else {
+            let catalog = self.materialize_account_catalog()?;
+            if catalog.entry(surface, account_key).is_none() {
+                return Err(format!(
+                    "account key does not belong to surface {surface_id}"
+                ));
+            }
             self.selected_accounts
                 .insert(surface.id().to_owned(), account_key.to_owned());
         }
@@ -904,16 +968,29 @@ impl HostUsageRuntime {
         max: u32,
     ) -> Result<Vec<HostProviderGlanceRow>, String> {
         self.require_open()?;
+        let catalog = self.materialize_account_catalog()?;
+        self.reconcile_selected_accounts(&catalog, HostSurfaceId::DESKTOP_PROVIDER_ORDER)?;
         let cap = (max as usize).clamp(1, STATUS_BAR_MAX_CHIPS);
         let prefs = self.format_prefs;
         let now = chrono::Utc::now().timestamp();
         let mut candidates: Vec<(u8, Option<i64>, HostProviderGlanceRow)> = Vec::new();
         for surface in HostSurfaceId::DESKTOP_PROVIDER_ORDER.iter().copied() {
-            let Ok(view) = self.snapshot(surface.id()) else {
+            if !self.enabled.contains(surface.id()) {
+                self.desktop_detected_surfaces.remove(surface.id());
+                continue;
+            }
+            let selected = self
+                .selected_accounts
+                .get(surface.id())
+                .and_then(|key| catalog.entry(surface, key));
+            let Some(view) = selected
+                .map(|entry| &entry.view)
+                .or_else(|| catalog.provider_state(surface))
+            else {
                 self.desktop_detected_surfaces.remove(surface.id());
                 continue;
             };
-            let detected = if view_is_auto_detected(&view) {
+            let detected = if view_is_auto_detected(view) {
                 self.desktop_detected_surfaces
                     .insert(surface.id().to_owned());
                 true
@@ -926,7 +1003,7 @@ impl HostUsageRuntime {
             if !detected {
                 continue;
             }
-            let glance = glance_bucket(surface, &view);
+            let glance = glance_bucket(surface, view);
             let remaining = glance.and_then(|b| b.remaining_percent);
             // SB-19: no numeric remaining or 0% → out of bar membership.
             let Some(rem) = remaining else {
@@ -936,7 +1013,7 @@ impl HostUsageRuntime {
                 continue;
             }
             let resets_at = glance.and_then(|b| b.resets_at);
-            let row = build_provider_glance_row(surface, &view, now, prefs);
+            let row = build_provider_glance_row(surface, view, now, prefs);
             candidates.push((rem, resets_at, row));
         }
         candidates.sort_by_key(|(remaining, resets_at, row)| {
@@ -991,12 +1068,7 @@ impl HostUsageRuntime {
                 .focused_snapshot(Some(surface.agent_slug()), surface.provider_label());
             let status_word = usage_status_storage_label(view.status).to_owned();
             let severity = worst_severity_label(&view);
-            // Prefer remapping the account provider_label when present (OpenAI / Codex).
-            let display_label = if view.account.provider_label.is_empty() {
-                provider_display_label(surface.label()).to_owned()
-            } else {
-                provider_display_label(&view.account.provider_label).to_owned()
-            };
+            let display_label = provider_display_label(surface.label()).to_owned();
 
             let mut headline = String::new();
             let mut reset_label = None;
@@ -1027,27 +1099,110 @@ impl HostUsageRuntime {
         Ok(rows)
     }
 
+    /// One atomic, Rust-owned grouped account projection for jackin❯ desktop.
+    pub fn desktop_inventory(&mut self) -> Result<HostDesktopInventory, String> {
+        self.require_open()?;
+        let catalog = self.materialize_account_catalog()?;
+        self.reconcile_selected_accounts(&catalog, HostSurfaceId::DESKTOP_PROVIDER_ORDER)?;
+        let now = chrono::Utc::now().timestamp();
+        let prefs = self.format_prefs;
+        let mut groups = Vec::new();
+        for surface in HostSurfaceId::DESKTOP_PROVIDER_ORDER.iter().copied() {
+            if !self.enabled.contains(surface.id()) {
+                self.desktop_detected_surfaces.remove(surface.id());
+                continue;
+            }
+            let entries = catalog.entries_for_surface(surface);
+            let has_current = entries
+                .iter()
+                .any(|entry| entry.lifecycle == AccountLifecycle::Current);
+            let provider_state = catalog.provider_state(surface);
+            let detected = if has_current || provider_state.is_some_and(view_is_auto_detected) {
+                self.desktop_detected_surfaces
+                    .insert(surface.id().to_owned());
+                true
+            } else if provider_state.is_some_and(FocusedUsageView::is_refreshing_placeholder) {
+                self.desktop_detected_surfaces.contains(surface.id())
+            } else {
+                self.desktop_detected_surfaces.remove(surface.id());
+                false
+            };
+            if !detected {
+                continue;
+            }
+            let selected = self.selected_accounts.get(surface.id()).map(String::as_str);
+            let accounts = entries
+                .into_iter()
+                .map(|entry| {
+                    account_descriptor(
+                        surface,
+                        entry,
+                        selected == Some(entry.account_key.as_str()),
+                        now,
+                        prefs,
+                    )
+                })
+                .collect::<Vec<_>>();
+            let empty_state = accounts.is_empty().then(|| {
+                let view = provider_state.cloned().unwrap_or_else(|| {
+                    self.cache
+                        .focused_snapshot(Some(surface.agent_slug()), surface.provider_label())
+                });
+                let is_refreshing = view.is_refreshing_placeholder();
+                HostDesktopProviderState {
+                    status_word: usage_status_storage_label(view.status).to_owned(),
+                    status_label: usage_display_status_label(view.status).to_owned(),
+                    updated_label: view.updated_label,
+                    last_error: view.last_error,
+                    is_refreshing,
+                }
+            });
+            groups.push(HostDesktopProviderGroup {
+                surface_id: surface.id().to_owned(),
+                display_label: provider_display_label(surface.label()).to_owned(),
+                icon_key: surface.id().to_owned(),
+                fallback_glyph: surface.fallback_glyph().to_owned(),
+                usage_url: surface.usage_url().map(str::to_owned),
+                accounts,
+                empty_state,
+            });
+        }
+        Ok(HostDesktopInventory { groups })
+    }
+
     /// Detected providers in the canonical Desktop model order, each a
     /// selected-account-aware glance row. Iterates only
-    /// [`HostSurfaceId::DESKTOP_PROVIDER_ORDER`], reads every row through the
-    /// selected-account-aware [`Self::snapshot`], and re-evaluates detection on
-    /// every call: affirmative evidence inserts membership, a non-refreshing
-    /// view without evidence removes it, and the cold refreshing placeholder
-    /// alone reuses prior membership so a refresh cannot drop a detected item.
+    /// [`HostSurfaceId::DESKTOP_PROVIDER_ORDER`], materializes account sources
+    /// once, resolves exact selected-account ownership, and re-evaluates
+    /// detection on every call. Affirmative evidence inserts membership, a
+    /// non-refreshing view without evidence removes it, and the cold refreshing
+    /// placeholder alone reuses prior membership so refresh cannot drop a row.
     /// Returns an empty vector for zero detected providers.
     #[must_use = "the glance rows are the Desktop surface source"]
     pub fn provider_glance_rows(&mut self) -> Result<Vec<HostProviderGlanceRow>, String> {
         self.require_open()?;
+        let catalog = self.materialize_account_catalog()?;
+        self.reconcile_selected_accounts(&catalog, HostSurfaceId::DESKTOP_PROVIDER_ORDER)?;
         let prefs = self.format_prefs;
         let now = chrono::Utc::now().timestamp();
         let mut rows = Vec::new();
         for surface in HostSurfaceId::DESKTOP_PROVIDER_ORDER.iter().copied() {
-            // A disabled surface has no glance row (snapshot rejects it).
-            let Ok(view) = self.snapshot(surface.id()) else {
+            if !self.enabled.contains(surface.id()) {
+                self.desktop_detected_surfaces.remove(surface.id());
+                continue;
+            }
+            let selected = self
+                .selected_accounts
+                .get(surface.id())
+                .and_then(|key| catalog.entry(surface, key));
+            let Some(view) = selected
+                .map(|entry| &entry.view)
+                .or_else(|| catalog.provider_state(surface))
+            else {
                 self.desktop_detected_surfaces.remove(surface.id());
                 continue;
             };
-            let detected = if view_is_auto_detected(&view) {
+            let detected = if view_is_auto_detected(view) {
                 self.desktop_detected_surfaces
                     .insert(surface.id().to_owned());
                 true
@@ -1058,7 +1213,7 @@ impl HostUsageRuntime {
                 false
             };
             if detected {
-                rows.push(build_provider_glance_row(surface, &view, now, prefs));
+                rows.push(build_provider_glance_row(surface, view, now, prefs));
             }
         }
         Ok(rows)
@@ -1160,6 +1315,62 @@ impl HostUsageRuntime {
         self.open = false;
         self.last_refresh = None;
         self.events.clear();
+    }
+
+    fn materialize_account_catalog(&mut self) -> Result<accounts::AccountCatalog, String> {
+        let mut live_views = Vec::with_capacity(HostSurfaceId::ALL.len());
+        for surface in HostSurfaceId::ALL.iter().copied() {
+            let view = self
+                .cache
+                .focused_snapshot(Some(surface.agent_slug()), surface.provider_label());
+            let include_external = !self
+                .cache
+                .active_snapshot_policy(surface.agent_slug(), surface.provider_label())
+                .is_local_only();
+            live_views.push((surface, view, include_external));
+        }
+        let store_path = self
+            .data_dir
+            .as_ref()
+            .map(|dir| host_snapshot_store_path(dir))
+            .unwrap_or_default();
+        let shared_snapshots_dir = std::env::var_os("JACKIN_USAGE_SNAPSHOTS_DIR")
+            .map(PathBuf::from)
+            .or_else(|| {
+                self.data_dir
+                    .as_ref()
+                    .map(|dir| dir.join("usage-shared").join("snapshots"))
+            })
+            .unwrap_or_default();
+        accounts::materialize_account_catalog(&live_views, &store_path, &shared_snapshots_dir)
+    }
+
+    fn reconcile_selected_accounts(
+        &mut self,
+        catalog: &accounts::AccountCatalog,
+        surfaces: &[HostSurfaceId],
+    ) -> Result<(), String> {
+        let before = self.selected_accounts.clone();
+        self.selected_accounts.retain(|surface_id, account_key| {
+            HostSurfaceId::from_id(surface_id)
+                .is_some_and(|surface| catalog.entry(surface, account_key).is_some())
+        });
+        for surface in surfaces {
+            if !self.selected_accounts.contains_key(surface.id())
+                && let Some(key) = catalog.preferred_current_key(*surface)
+            {
+                self.selected_accounts.insert(surface.id().to_owned(), key);
+            }
+        }
+        if self.selected_accounts != before
+            && let Some(data_dir) = &self.data_dir
+        {
+            accounts::save_selected_accounts(
+                &accounts::selected_accounts_path(data_dir),
+                &self.selected_accounts,
+            )?;
+        }
+        Ok(())
     }
 
     fn require_open(&self) -> Result<(), String> {
@@ -1294,11 +1505,7 @@ fn build_provider_glance_row(
     prefs: UsageFormatPrefs,
 ) -> HostProviderGlanceRow {
     use jackin_protocol::control::UsageSnapshotStatus as Status;
-    let display_label = if view.account.provider_label.is_empty() {
-        provider_display_label(surface.label()).to_owned()
-    } else {
-        provider_display_label(&view.account.provider_label).to_owned()
-    };
+    let display_label = provider_display_label(surface.label()).to_owned();
     let glance = glance_bucket(surface, view);
     let (bar_label, headline, glance_remaining_percent, reset_label, exact_reset) =
         match glance.and_then(|bucket| bucket.remaining_percent) {
@@ -1325,6 +1532,8 @@ fn build_provider_glance_row(
     HostProviderGlanceRow {
         surface_id: surface.id().to_owned(),
         icon_key: surface.id().to_owned(),
+        fallback_glyph: surface.fallback_glyph().to_owned(),
+        usage_url: surface.usage_url().map(str::to_owned),
         display_label,
         account_label: view.account.account_label.clone(),
         plan_label: view.account.plan_label.clone(),
@@ -1336,6 +1545,70 @@ fn build_provider_glance_row(
         status_word: usage_status_storage_label(view.status).to_owned(),
         is_refreshing: view.is_refreshing_placeholder(),
         status_label: usage_display_status_label(view.status).to_owned(),
+        severity: worst_severity_label(view),
+        updated_label: view.updated_label.clone(),
+        last_error: view.last_error.clone(),
+        dimmed: matches!(view.status, Status::Stale | Status::Error),
+    }
+}
+
+fn account_descriptor(
+    surface: HostSurfaceId,
+    entry: &accounts::AccountCatalogEntry,
+    selected: bool,
+    now: i64,
+    prefs: UsageFormatPrefs,
+) -> HostAccountDescriptor {
+    use jackin_protocol::control::UsageSnapshotStatus as Status;
+
+    let view = &entry.view;
+    let bucket = glance_bucket(surface, view).or_else(|| {
+        view.buckets
+            .iter()
+            .filter(|bucket| bucket.remaining_percent.is_some())
+            .min_by_key(|bucket| bucket.remaining_percent)
+    });
+    let remaining_percent = bucket.and_then(|bucket| bucket.remaining_percent);
+    let (remaining_label, headline) = remaining_percent.map_or_else(
+        || ("—".to_owned(), "—".to_owned()),
+        |percent| (format!("{percent}%"), percent_headline(percent, prefs)),
+    );
+    let (reset_label, exact_reset) =
+        bucket
+            .and_then(|bucket| bucket.resets_at)
+            .map_or((None, None), |reset| {
+                (
+                    Some(reset_label_with_prefs(reset, now, prefs)),
+                    Some(exact_reset_parenthetical(reset)),
+                )
+            });
+    let provenance = entry
+        .provenance
+        .iter()
+        .map(|source| source.display_label().to_owned())
+        .collect::<Vec<_>>();
+    let provenance_label = provenance.join(" · ");
+    let status_label = usage_display_status_label(view.status).to_owned();
+    HostAccountDescriptor {
+        surface_id: surface.id().to_owned(),
+        account_key: entry.account_key.clone(),
+        account_label: entry.account_label.clone(),
+        plan_label: entry.plan_label.clone(),
+        selected,
+        lifecycle: entry.lifecycle.label().to_owned(),
+        provenance,
+        provenance_label,
+        plan_or_status_label: entry
+            .plan_label
+            .clone()
+            .unwrap_or_else(|| status_label.clone()),
+        remaining_percent,
+        remaining_label,
+        headline,
+        reset_label,
+        exact_reset,
+        status_word: usage_status_storage_label(view.status).to_owned(),
+        status_label,
         severity: worst_severity_label(view),
         updated_label: view.updated_label.clone(),
         last_error: view.last_error.clone(),

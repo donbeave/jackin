@@ -17,6 +17,7 @@ mod error;
 
 pub use bridge::UsageMenuBarBridge;
 pub use dto::{
+    AccountDescriptorDto, DesktopInventoryDto, DesktopProviderGroupDto, DesktopProviderStateDto,
     MoneyDto, OpenConfig, ProviderGlanceRowDto, QuotaBucketDto, SurfaceDescriptorDto,
     UsageDetailPresentationDto, UsageDetailRowDto, UsageEventBatchDto, UsageEventDto,
     UsagePresentationLineDto, UsageViewDto,

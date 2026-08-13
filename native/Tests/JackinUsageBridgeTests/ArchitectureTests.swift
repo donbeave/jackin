@@ -691,11 +691,10 @@ final class ArchitectureTests: XCTestCase {
         XCTAssertFalse(bar.contains(where: { $0.surfaceId == "codex" }))
     }
 
-    /// OpenUsage/CodexBar matrix: all 8 frozen hosts displayable with icons + remaining %.
-    func testFullFrozenCatalogStripDisplayable() {
-        XCTAssertEqual(frozenHostSurfaceIds.count, 8)
-        XCTAssertTrue(allFrozenHostSurfacesHaveSystemImages())
-        let surfaces = frozenHostSurfaceIds.enumerated().map { index, id in
+    /// Synthetic incoming rows prove strip displayability; Rust owns membership.
+    func testSyntheticStatusStripDisplayable() {
+        let syntheticSurfaceIds = ["claude", "codex", "amp", "grok"]
+        let surfaces = syntheticSurfaceIds.enumerated().map { index, id in
             StatusItemSurfaceSnapshot(
                 surfaceId: id,
                 label: id,
@@ -716,7 +715,7 @@ final class ArchitectureTests: XCTestCase {
         )
         // SB-3: hard-cap 3 even when maxCount asks for 8.
         XCTAssertEqual(chips.count, 3)
-        XCTAssertEqual(chips.map(\.surfaceId), Array(frozenHostSurfaceIds.prefix(3)))
+        XCTAssertEqual(chips.map(\.surfaceId), Array(syntheticSurfaceIds.prefix(3)))
         for chip in chips {
             XCTAssertNotNil(chip.systemImage, "\(chip.surfaceId) needs SF Symbol")
             XCTAssertFalse(chip.percentLines.isEmpty, "\(chip.surfaceId) needs displayable %")

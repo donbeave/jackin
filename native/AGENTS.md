@@ -27,5 +27,6 @@ Display-only Swift shell over `jackin-usage-ffi` (UniFFI). Product: **jackin❯ 
   (or `cargo xtask desktop test`). That drives host nextest + pure Swift harnesses
   (`StatusItemChipHarness`, `DesktopArchitectureLint`, `DesktopParityMatrixHarness`)
   proving multi-provider remaining % strips, dual-bucket, depleted countdown, and
-  full frozen catalog displayability without inventing token prices or trends.
+  displayability of Rust-supplied Desktop catalog fixtures without inventing token
+  prices or trends.
   Full Xcode CI may also run `cd native && swift test -c release`.

@@ -23,6 +23,7 @@ cargo clippy -p jackin-usage-ffi --all-targets -- -D warnings
 | `compact_status_bar_label_for` | Pinned surface compact label |
 | `compact_status_bar_strip` | Worst-first multi-surface strip |
 | `overview_rows` → `OverviewRowDto` | Popover + Usage-window overview |
+| `desktop_inventory` → `DesktopInventoryDto` | Atomic ordered canonical provider/account graph |
 | `next_refresh_label` | Next refresh countdown / due |
 | `UsageViewDto.estimate_caption` | Honesty caption when estimated |
 | `UsageViewDto.detail_presentation` → `UsageDetailPresentationDto` | Rust-owned Capsule-parity provider-detail card (rows/lines mirror `UsageDetailPresentation`); the Usage window renders it verbatim |
@@ -40,12 +41,13 @@ Swift renders the segments verbatim. `provider_glance_rows()` (Swift
 seven-provider Desktop glance rows in canonical order. `OpenConfig.allow_live_probes`
 maps to the Rust `HostProbePolicy` (false = smoke/defense mode, no live probes).
 
-`UsageViewDto.detail_presentation` (`UsageDetailPresentationDto` → Swift
-`detailPresentation`) mirrors the shared Rust `UsageDetailPresentation` — the same
-rows/strings/order the Capsule usage dialog renders. Each `UsageDetailRowDto` carries
-`row_id` (position-based `bucket:<i>` for buckets), `kind` (`metadata`/`bucket`/`detail`),
-`label`, grouped `layout_lines` (`leading`/`trailing`), `display_label`, `meter_percent`,
-and `severity`. Swift renders these verbatim and never splits, joins, or reorders them.
+`DesktopInventoryDto` carries the seven-provider Rust order, provider chrome, and
+self-contained account identity/lifecycle/limits/status fields. OpenCode is absent;
+Swift renders without cross-account joins.
+
+`UsageViewDto.detail_presentation` mirrors the Capsule Rust projection. Rows carry
+stable IDs/kinds, grouped lines, display copy, meter geometry, and severity; Swift
+does not split, join, or reorder them.
 
 ## Swift bindings
 

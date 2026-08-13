@@ -14,12 +14,9 @@ usage/spend trends as product features.
 - Host orchestration (`host`) — `HostUsageRuntime` for menu bar / CLI without Capsule.
 - Usage snapshot persistence (`usage_snapshot_store`) and token-accounting telemetry (`telemetry`).
 - Usage output shaping (`output`).
-- Provider probes (`usage/<provider>.rs`). Amp's API and CLI paths share one
-  `parse_amp_usage_output` reader for the current `userDisplayBalanceInfo.displayText`
-  contract: the `Amp Free: N% remaining today (resets daily)` line becomes a semantic
-  `StatusSlot::Daily` glance bucket (`Resets daily`, no exact timestamp), while individual
-  and per-workspace credit balances stay detail-only quota bounds — never a glance
-  percentage or plan inference.
+- Provider probes (`usage/<provider>.rs`). Amp API/CLI share
+  `parse_amp_usage_output`; `Amp Free` maps to `StatusSlot::Daily`, while credit
+  balances remain detail-only quota bounds.
 
 ## Architecture tier and allowed dependencies
 
@@ -49,11 +46,15 @@ UniFFI lives in sibling crate `jackin-usage-ffi`.
 Token-monitor and usage-accounting types consumed by `jackin-capsule`.
 `host::HostUsageRuntime` for jackin❯ desktop and the host CLI.
 
-Claude credential resolution (`usage/claude.rs`) reads the macOS Keychain before any file/env credential, using the shared `jackin_core::claude_keychain_scope` service derivation. Each refresh resolves one Keychain-first wave and classifies a typed `UsageSnapshotPolicy`: `Shared`, or `LocalOnly` for a Keychain denial, missing credential, or anonymous credential. Local-only outcomes never restore stale cached quota, enter shared adoption/coordination, persist snapshots, or materialize accounts, and the host snapshot/account-list boundaries return only the live local view for them. A denial is terminal for the service for the process; a missing item is re-checked every wave.
+Claude resolves macOS Keychain before file/env and classifies each refresh as
+`UsageSnapshotPolicy::Shared` or `LocalOnly`. Local-only outcomes never adopt,
+coordinate, persist, or materialize shared state.
 
-`quota_pace_label` (`usage/format.rs`) appends the Variant A run-out segment `"<pace> · Runs out in <duration>"` — emitted from Rust only when the linear-from-window-start projection runs out before the reset (exact integer cross-products; the TUI and Swift splitters split on the `" · "` separator unchanged).
+`quota_pace_label` emits the Rust-owned `"<pace> · Runs out in <duration>"`
+segment only when the exact projection precedes reset.
 
-Grok billing (`usage/grok.rs`) decodes the current ACP `x.ai/billing` `config` shape: the plan label is the server-resolved `subscription_tier` (no `auth_mode` heuristic), one Weekly headline carries pace when a positive window is derivable (RPC path), and prepaid balance / on-demand cap+used render as quota bounds only (never a price or history).
+Grok decodes ACP billing `config`; server `subscription_tier` owns plan copy,
+and prepaid/on-demand values render only as quota bounds.
 
 Host display extensions (plan 008; presentation-time only, not persisted):
 
@@ -70,9 +71,30 @@ Host display extensions (plan 008; presentation-time only, not persisted):
 | `usage::usage_bucket_presentation` / `usage_display_status_label` | Rust-owned limits-only quota-bucket segments (shared by Capsule + Desktop) |
 | `usage::usage_detail_presentation` | Rust-owned Capsule-parity provider-detail card (`UsageDetailPresentation`): fixed row order, position-based `bucket:<i>` ids, grouped `layout_lines`; consumed verbatim by the Capsule dialog and the Desktop Usage window |
 | `host::HostProviderGlanceRow` / `HostUsageRuntime::provider_glance_rows` | Selected-account-aware seven-provider Desktop glance rows (`DESKTOP_PROVIDER_ORDER`) |
+| `HostUsageRuntime::desktop_inventory` | Atomic canonical provider/account groups with complete display fields |
 | `host::HostProbePolicy` | `Live` / `Disabled` (smoke-mode probe suppression) |
 
+`CanonicalAccountIdentity` uses closed provider aliases; routing slugs never own
+accounts. Presence-only evidence stays provider state. Each inventory scans durable
+and shared inputs once and pins one durable source. `DESKTOP_PROVIDER_ORDER` is the
+detected seven-provider boundary; OpenCode remains host-only.
+
 Avoid cloning full usage views during account materialization — serialize from borrowed views/iterators.
+
+## Desktop account contract
+
+Keys hash the canonical surface with a provider subject or account label. Same
+email across providers remains distinct. Empty, unknown, presence-only, and
+fabricated local-auth labels never become keys.
+
+`desktop_inventory` scans durable and shared inputs once, pins exactly one source per
+durable fetch generation, merges provenance, and separates account lifecycle
+from snapshot freshness. Selection accepts only keys owned by that surface;
+stale choices clear, and only current accounts become implicit fallbacks.
+
+Each account owns its plan/status, remaining label and geometry, reset phrase
+and exact reset, severity, recency, and error. Native clients render all DTO fields
+exactly.
 
 ## How to verify
 
@@ -80,4 +102,3 @@ Avoid cloning full usage views during account materialization — serialize from
 cargo nextest run -p jackin-usage -p jackin-usage-ffi
 cargo clippy -p jackin-usage -p jackin-usage-ffi --all-targets -- -D warnings
 ```
-

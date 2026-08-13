@@ -7,7 +7,9 @@ use jackin_protocol::control::{
     FocusedUsageView, Money, QuotaBucketView, UsageConfidence, UsageSnapshotStatus, UsageSource,
 };
 use jackin_usage::host::{
-    HostAccountDescriptor, HostEventBatch, HostOverviewRow, HostSurfaceDescriptor, HostUsageEvent,
+    HostAccountDescriptor, HostDesktopInventory, HostDesktopProviderGroup,
+    HostDesktopProviderState, HostEventBatch, HostOverviewRow, HostSurfaceDescriptor,
+    HostUsageEvent,
 };
 use jackin_usage::usage::{PercentStyle, ResetStyle, UsageFormatPrefs, estimate_caption};
 
@@ -106,6 +108,8 @@ pub struct UsageDetailPresentationDto {
 pub struct ProviderGlanceRowDto {
     pub surface_id: String,
     pub icon_key: String,
+    pub fallback_glyph: String,
+    pub usage_url: Option<String>,
     pub display_label: String,
     pub account_label: String,
     pub plan_label: Option<String>,
@@ -129,6 +133,8 @@ pub(crate) fn provider_glance_row_dto(
     ProviderGlanceRowDto {
         surface_id: row.surface_id,
         icon_key: row.icon_key,
+        fallback_glyph: row.fallback_glyph,
+        usage_url: row.usage_url,
         display_label: row.display_label,
         account_label: row.account_label,
         plan_label: row.plan_label,
@@ -201,8 +207,21 @@ pub struct AccountDescriptorDto {
     pub account_label: String,
     pub plan_label: Option<String>,
     pub selected: bool,
+    pub lifecycle: String,
+    pub provenance: Vec<String>,
+    pub provenance_label: String,
+    pub plan_or_status_label: String,
     pub remaining_percent: Option<u8>,
+    pub remaining_label: String,
+    pub headline: String,
+    pub reset_label: Option<String>,
+    pub exact_reset: Option<String>,
     pub status_word: String,
+    pub status_label: String,
+    pub severity: String,
+    pub updated_label: String,
+    pub last_error: Option<String>,
+    pub dimmed: bool,
 }
 
 pub(crate) fn account_dto(row: HostAccountDescriptor) -> AccountDescriptorDto {
@@ -212,8 +231,81 @@ pub(crate) fn account_dto(row: HostAccountDescriptor) -> AccountDescriptorDto {
         account_label: row.account_label,
         plan_label: row.plan_label,
         selected: row.selected,
+        lifecycle: row.lifecycle,
+        provenance: row.provenance,
+        provenance_label: row.provenance_label,
+        plan_or_status_label: row.plan_or_status_label,
         remaining_percent: row.remaining_percent,
+        remaining_label: row.remaining_label,
+        headline: row.headline,
+        reset_label: row.reset_label,
+        exact_reset: row.exact_reset,
         status_word: row.status_word,
+        status_label: row.status_label,
+        severity: row.severity,
+        updated_label: row.updated_label,
+        last_error: row.last_error,
+        dimmed: row.dimmed,
+    }
+}
+
+/// Provider state when no stable account identity exists yet.
+#[derive(Debug, Clone, uniffi::Record)]
+pub struct DesktopProviderStateDto {
+    pub status_word: String,
+    pub status_label: String,
+    pub updated_label: String,
+    pub last_error: Option<String>,
+    pub is_refreshing: bool,
+}
+
+/// One Rust-ordered provider group in the atomic Desktop inventory.
+#[derive(Debug, Clone, uniffi::Record)]
+pub struct DesktopProviderGroupDto {
+    pub surface_id: String,
+    pub display_label: String,
+    pub icon_key: String,
+    pub fallback_glyph: String,
+    pub usage_url: Option<String>,
+    pub accounts: Vec<AccountDescriptorDto>,
+    pub empty_state: Option<DesktopProviderStateDto>,
+}
+
+/// Atomic Rust-owned Desktop inventory.
+#[derive(Debug, Clone, uniffi::Record)]
+pub struct DesktopInventoryDto {
+    pub groups: Vec<DesktopProviderGroupDto>,
+}
+
+pub(crate) fn desktop_inventory_dto(inventory: HostDesktopInventory) -> DesktopInventoryDto {
+    DesktopInventoryDto {
+        groups: inventory
+            .groups
+            .into_iter()
+            .map(desktop_provider_group_dto)
+            .collect(),
+    }
+}
+
+fn desktop_provider_group_dto(group: HostDesktopProviderGroup) -> DesktopProviderGroupDto {
+    DesktopProviderGroupDto {
+        surface_id: group.surface_id,
+        display_label: group.display_label,
+        icon_key: group.icon_key,
+        fallback_glyph: group.fallback_glyph,
+        usage_url: group.usage_url,
+        accounts: group.accounts.into_iter().map(account_dto).collect(),
+        empty_state: group.empty_state.map(desktop_provider_state_dto),
+    }
+}
+
+fn desktop_provider_state_dto(state: HostDesktopProviderState) -> DesktopProviderStateDto {
+    DesktopProviderStateDto {
+        status_word: state.status_word,
+        status_label: state.status_label,
+        updated_label: state.updated_label,
+        last_error: state.last_error,
+        is_refreshing: state.is_refreshing,
     }
 }
 
