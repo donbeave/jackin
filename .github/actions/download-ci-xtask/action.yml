@@ -10,7 +10,7 @@ outputs:
     value: ${{ steps.restore.outputs.tools-hit }}
   xtask-hit:
     description: Whether the requested jackin-xtask binary is available.
-    value: ${{ steps.restore.outputs.xtask-hit }}
+    value: ${{ steps.restore.outputs.xtask-hit == 'true' || steps.xtask-fallback.outputs.xtask-hit == 'true' }}
 
 inputs:
   token:
@@ -101,11 +101,18 @@ runs:
         install_args: rust
         github_token: ${{ inputs.token }}
     - name: Build locked CI xtask fallback
+      id: xtask-fallback
       if: >-
         inputs.include-xtask == 'true' &&
         steps.restore.outputs.xtask-hit != 'true' &&
         inputs.build-on-miss == 'true'
-      run: mise exec -- cargo build -p jackin-xtask --locked
+      run: |
+        set -euo pipefail
+        mise exec -- cargo build -p jackin-xtask --locked
+        install -d -m 0755 "${GITHUB_WORKSPACE}/.ci-prebuilt-xtask"
+        install -m 0755 target/debug/jackin-xtask "${GITHUB_WORKSPACE}/.ci-prebuilt-xtask/jackin-xtask"
+        test -x "${GITHUB_WORKSPACE}/.ci-prebuilt-xtask/jackin-xtask"
+        echo "xtask-hit=true" >> "${GITHUB_OUTPUT}"
       shell: bash
     - name: Cache restored Cargo tools
       if: >-
@@ -120,7 +127,7 @@ runs:
       if: >-
         inputs.include-xtask == 'true' &&
         steps.xtask-cache.outputs.cache-hit != 'true' &&
-        steps.restore.outputs.xtask-hit == 'true'
+        (steps.restore.outputs.xtask-hit == 'true' || steps.xtask-fallback.outputs.xtask-hit == 'true')
       uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: ${{ github.workspace }}/.ci-prebuilt-xtask
