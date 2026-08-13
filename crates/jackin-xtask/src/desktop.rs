@@ -418,6 +418,13 @@ fn generate_bindings(root: &Path, profile: &str) -> Result<()> {
     let sources = root.join("native/Sources/JackinUsageBridge");
     fs::create_dir_all(&sources)?;
     let generated_swift = out_dir.join("jackin_usage_ffi.swift");
+    for generated in [
+        &generated_swift,
+        &out_dir.join("jackin_usage_ffiFFI.h"),
+        &out_dir.join("jackin_usage_ffiFFI.modulemap"),
+    ] {
+        normalize_generated_file(generated)?;
+    }
     if generated_swift.is_file() {
         fs::copy(&generated_swift, sources.join("jackin_usage_ffi.swift"))?;
     }
@@ -434,6 +441,32 @@ fn generate_bindings(root: &Path, profile: &str) -> Result<()> {
         out_dir.display()
     ));
     Ok(())
+}
+
+fn normalize_generated_file(path: &Path) -> Result<()> {
+    if !path.is_file() {
+        return Ok(());
+    }
+    let source = fs::read_to_string(path)
+        .with_context(|| format!("reading generated binding {}", path.display()))?;
+    let normalized = normalize_generated_text(&source);
+    if normalized != source {
+        fs::write(path, normalized)
+            .with_context(|| format!("normalizing generated binding {}", path.display()))?;
+    }
+    Ok(())
+}
+
+fn normalize_generated_text(source: &str) -> String {
+    let mut lines = source.lines().map(str::trim_end).collect::<Vec<_>>();
+    while lines.last().is_some_and(|line| line.is_empty()) {
+        lines.pop();
+    }
+    if lines.is_empty() {
+        String::new()
+    } else {
+        format!("{}\n", lines.join("\n"))
+    }
 }
 
 fn build_xcframework(root: &Path) -> Result<()> {
