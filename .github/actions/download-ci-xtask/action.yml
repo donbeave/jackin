@@ -111,7 +111,11 @@ runs:
         mise exec -- cargo build -p jackin-xtask --locked
         install -d -m 0755 "${GITHUB_WORKSPACE}/.ci-prebuilt-xtask"
         install -m 0755 target/debug/jackin-xtask "${GITHUB_WORKSPACE}/.ci-prebuilt-xtask/jackin-xtask"
+        mise exec -- cargo metadata --format-version 1 --locked --offline \
+          > "${GITHUB_WORKSPACE}/.ci-prebuilt-xtask/workspace-metadata.json"
         test -x "${GITHUB_WORKSPACE}/.ci-prebuilt-xtask/jackin-xtask"
+        test -s "${GITHUB_WORKSPACE}/.ci-prebuilt-xtask/workspace-metadata.json"
+        echo "CI_METADATA=${GITHUB_WORKSPACE}/.ci-prebuilt-xtask/workspace-metadata.json" >> "${GITHUB_ENV}"
         echo "xtask-hit=true" >> "${GITHUB_OUTPUT}"
       shell: bash
     - name: Cache restored Cargo tools
