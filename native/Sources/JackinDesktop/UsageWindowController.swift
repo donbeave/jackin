@@ -5,8 +5,9 @@ import AppKit
 import JackinUsageBridge
 import SwiftUI
 
-/// Lazily creates and retains the AppKit Usage window hosting the existing
-/// `UsageWindowRoot`. Plan 008 owns the window's content; this controller only
+/// Lazily creates and retains the AppKit Usage window hosting `UsageWindowRoot`.
+///
+/// The SwiftUI Usage hierarchy owns the window's content; this controller only
 /// owns its lifecycle and focus.
 ///
 /// Showing the window promotes the process to `.regular` so the **system menu
@@ -19,22 +20,38 @@ import SwiftUI
 @MainActor
 public final class UsageWindowController: NSObject, NSWindowDelegate {
     private let store: PresentationStore
+    private let elevatesFixtureWindow: Bool
+    private let navigationState = UsageWindowNavigationState()
     private var window: NSWindow?
     private var hostingController: NSHostingController<UsageWindowRoot>?
 
-    public init(store: PresentationStore) {
+    public init(store: PresentationStore, elevatesFixtureWindow: Bool = false) {
         self.store = store
+        self.elevatesFixtureWindow = elevatesFixtureWindow
         super.init()
     }
 
-    /// Show the Usage window, focused on a provider surface id (`nil` = Overview),
-    /// creating it on first use and reusing it afterward.
-    public func show(focusOn surfaceId: String?) {
+    /// Show the retained Usage window without changing its valid destination.
+    public func show(size: CGSize? = nil) {
+        present(size: size)
+    }
+
+    /// Show the Usage window at an explicit provider surface id (`nil` = Overview).
+    public func show(focusOn surfaceId: String?, size: CGSize? = nil) {
         store.selectUsageSurface(surfaceId)
+        present(size: size)
+    }
+
+    private func present(size: CGSize?) {
         let window = window ?? makeWindow()
         self.window = window
-        window.makeKeyAndOrderFront(nil)
-        AppActivation.presentWindows()
+        if let size {
+            window.setContentSize(size)
+        }
+        AppActivation.present(window)
+        if elevatesFixtureWindow {
+            window.orderFrontRegardless()
+        }
     }
 
     private func makeWindow() -> NSWindow {
@@ -47,18 +64,35 @@ public final class UsageWindowController: NSObject, NSWindowDelegate {
         window.title = "jackin❯ desktop"
         window.isReleasedWhenClosed = false
         window.delegate = self
-        window.setFrameAutosaveName("jackin.desktop.usage-window")
+        if store.usesFixture {
+            // Deterministic UI/visual QA must stay observable when WindowServer assigns rapid
+            // fixture launches and the test runner to different or full-screen Spaces.
+            window.collectionBehavior.formUnion([
+                .canJoinAllSpaces,
+                .canJoinAllApplications,
+                .fullScreenAuxiliary,
+            ])
+            if elevatesFixtureWindow {
+                window.level = .floating
+            }
+        } else {
+            window.collectionBehavior.insert(.moveToActiveSpace)
+        }
+        window.contentMinSize = NSSize(width: 760, height: 500)
+        window.identifier = NSUserInterfaceItemIdentifier("usage-window")
+        window.setAccessibilityIdentifier("usage-window")
+        if !store.usesFixture {
+            window.setFrameAutosaveName("jackin.desktop.usage-window")
+        }
 
         // Unified titlebar + toolbar (system NSToolbar — not a custom chrome strip).
         window.toolbarStyle = .unified
         window.titlebarAppearsTransparent = false
-        // Custom SwiftUI `.principal` item owns the centered branded title.
-        // Keep NSWindow title for Window menu/accessibility without duplicating it at leading.
         window.titleVisibility = .hidden
         window.titlebarSeparatorStyle = .automatic
 
         // Hosting *controller* is required for SwiftUI toolbar → NSToolbar.
-        let root = UsageWindowRoot(store: store)
+        let root = UsageWindowRoot(store: store, navigationState: navigationState)
         let host = NSHostingController(rootView: root)
         hostingController = host
         window.contentViewController = host
@@ -82,6 +116,14 @@ public final class UsageWindowController: NSObject, NSWindowDelegate {
         window = nil
     }
 
-    /// QI / snapshot: the live `NSWindow` after ``show(focusOn:)`` (nil if never shown).
+    public func toggleSidebar() {
+        navigationState.toggleSidebar()
+    }
+
+    var isSidebarVisible: Bool { navigationState.isSidebarVisible }
+
+    var isKeyWindow: Bool { window?.isKeyWindow == true }
+
+    /// Visual QA: the live `NSWindow` after `show` (nil if never shown).
     public var qiWindow: NSWindow? { window }
 }

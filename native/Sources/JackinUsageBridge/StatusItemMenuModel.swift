@@ -32,8 +32,9 @@ public enum StatusItemMenuModel {
     ]
 }
 
-/// Pure action router: maps a menu action (or a provider-header click) to the
-/// injected host handlers. Testable without AppKit — tests inject counters.
+/// Pure action router.
+///
+/// It maps a menu action or provider-header click to injected host handlers.
 public struct StatusItemMenuRouter {
     private let openUsageWindow: (String?) -> Void
     private let refresh: () -> Void
@@ -42,6 +43,8 @@ public struct StatusItemMenuRouter {
     /// - Parameters:
     ///   - openUsageWindow: opens the Usage window, optionally focused on a
     ///     provider surface id (`nil` = Overview).
+    ///   - refresh: refreshes all provider usage.
+    ///   - quit: terminates the application.
     public init(
         openUsageWindow: @escaping (String?) -> Void,
         refresh: @escaping () -> Void,

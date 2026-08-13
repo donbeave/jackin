@@ -10,9 +10,9 @@
 /// that is not the jackin fallback for unknown keys.
 
 import AppKit
+import Foundation
 import JackinDesktopUI
 import JackinUsageBridge
-import Foundation
 
 @main
 struct ProviderMarksHarness {
@@ -59,7 +59,8 @@ struct ProviderMarksHarness {
             fputs("ProviderMarksHarness: \(failed) FAIL\n", stderr)
             exit(1)
         }
-        fputs("ProviderMarksHarness: ALL PASS (\(keys.count)/\(keys.count) official marks)\n", stderr)
+        fputs(
+            "ProviderMarksHarness: ALL PASS (\(keys.count)/\(keys.count) official marks)\n", stderr)
     }
 
     /// Max alpha from the bitmap AppKit loads for a template mark (ship PNG preferred).

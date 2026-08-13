@@ -1,8 +1,4 @@
-use super::{
-    APP_EXECUTABLE, APP_RESOURCE_BUNDLE, BUNDLE_ID, BUNDLE_NAME, MIN_OS, app_info_plist,
-    find_resource_bundle, minos_newer_than_14, validate_build, validate_version,
-};
-use std::fs;
+use super::{MIN_OS, minos_matches_target, validate_build, validate_version};
 
 #[test]
 fn version_accepts_dotted_numeric() {
@@ -28,37 +24,10 @@ fn build_accepts_numeric_only() {
 }
 
 #[test]
-fn minos_compare_rejects_newer_than_14() {
-    assert!(!minos_newer_than_14("14.0"));
-    assert!(!minos_newer_than_14("14.0.0"));
-    assert!(!minos_newer_than_14("13.5"));
-    assert!(minos_newer_than_14("14.1"));
-    assert!(minos_newer_than_14("15.0"));
-}
-
-#[test]
-fn info_plist_embeds_identity_and_versions() {
-    let plist = app_info_plist("0.6.0", "1");
-    assert!(plist.contains(BUNDLE_ID));
-    assert!(plist.contains(BUNDLE_NAME));
-    assert!(plist.contains(APP_EXECUTABLE));
-    assert!(plist.contains(MIN_OS));
-    assert!(plist.contains("<string>0.6.0</string>"));
-    assert!(plist.contains("<string>1</string>"));
-    assert!(plist.contains("<key>LSUIElement</key>"));
-}
-
-#[test]
-fn resource_bundle_is_named_for_owning_swift_target() {
-    let root = tempfile::tempdir().unwrap();
-    let expected = root.path().join(APP_RESOURCE_BUNDLE);
-    fs::create_dir(&expected).unwrap();
-    assert_eq!(find_resource_bundle(root.path()).unwrap(), expected);
-}
-
-#[test]
-fn executable_target_bundle_name_is_rejected() {
-    let root = tempfile::tempdir().unwrap();
-    fs::create_dir(root.path().join("JackinDesktop_JackinDesktop.bundle")).unwrap();
-    find_resource_bundle(root.path()).unwrap_err();
+fn minos_must_match_current_baseline() {
+    assert!(minos_matches_target("26.0", MIN_OS));
+    assert!(minos_matches_target("26.0.0", MIN_OS));
+    assert!(!minos_matches_target("25.0", MIN_OS));
+    assert!(!minos_matches_target("26.1", MIN_OS));
+    assert!(!minos_matches_target("27.0", MIN_OS));
 }

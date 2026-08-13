@@ -20,7 +20,9 @@ public enum StatusItemTextSelection: Equatable, Sendable {
     case strip(max: UInt32)
 }
 
-/// Select the status-item text source from prefs. Empty when icon-only or
+/// Select the status-item text source from prefs.
+///
+/// Empty when icon-only or
 /// screen-share collapse is active; pinned without an id falls back to empty.
 public func statusItemTextSelection(
     mode: StatusItemDisplayMode,
@@ -65,7 +67,9 @@ public final class PresentationStore: ObservableObject {
         public var buckets: [BucketRow]
         public var updatedLabel: String
         public var lastError: String?
-        /// Rust-owned Capsule-parity provider-detail card. The Usage window
+        /// Rust-owned Capsule-parity provider detail.
+        ///
+        /// The Usage window
         /// renders these rows verbatim; other surfaces ignore it.
         public var detailPresentation: UsageDetailPresentation
 
@@ -205,7 +209,9 @@ public final class PresentationStore: ObservableObject {
         public let selected: Bool
         public let remainingPercent: UInt8?
         public let statusWord: String
-        /// Optional presentation severity (`normal`/`warn`/`danger` or HTML mid/low/high).
+        /// Optional presentation severity.
+        ///
+        /// Values are `normal`/`warn`/`danger` or HTML mid/low/high.
         /// Empty → derived from remaining via ``accountMeterSeverity``.
         public let severity: String
 
@@ -238,7 +244,9 @@ public final class PresentationStore: ObservableObject {
     @Published public private(set) var mergedBarLabel: String = "jackin❯ usage"
     /// Rust-owned short status-item label for focus mode (e.g. `Cl 37%` remaining).
     @Published public private(set) var compactBarLabel: String = ""
-    /// Mode-selected status-item text (empty = icon only). Accessibility + fallback.
+    /// Mode-selected status-item text (empty = icon only).
+    ///
+    /// Accessibility + fallback.
     @Published public private(set) var statusItemText: String = ""
     /// OpenUsage-style menu-bar chips (Rust compact labels + remaining for mini bars).
     @Published public private(set) var statusItemChips: [StatusItemChip] = []
@@ -246,10 +254,13 @@ public final class PresentationStore: ObservableObject {
     @Published public private(set) var nextRefreshLabel: String = ""
     @Published public private(set) var surfaces: [SurfaceRow] = []
     /// Rust-owned seven-provider glance rows (auto-detected, catalog order).
+    ///
     /// Full inventory for popover / Usage — **includes** 0% (OV-7).
     @Published public private(set) var providerGlanceRows: [GlanceProviderRow] = []
     /// Burn-first **status bar** chips only (SB-3/14/17/19): hide 0%, soonest-
-    /// then-remaining, hard-cap ≤3. Popover never uses this list.
+    /// then-remaining, hard-cap ≤3.
+    ///
+    /// Popover never uses this list.
     @Published public private(set) var statusBarGlanceRows: [GlanceProviderRow] = []
     /// Presentation-only privacy flag: `false` hides the Rust status-bar values
     /// during screen sharing (it may hide a Rust label, never replace it).
@@ -258,11 +269,13 @@ public final class PresentationStore: ObservableObject {
     /// Known accounts across surfaces (multi-account host logins / shared snapshots).
     @Published public private(set) var accounts: [AccountRow] = []
     /// Sidebar / detail selection: `nil` = Overview, else surface id.
-    @Published public var usageSelection: String?
-    /// Popover tab selection: `nil` = Overview, else provider surface id.
+    @Published public private(set) var usageSelection: String?
+    /// Focused popover provider; nil lets the host select the first available provider.
     @Published public var popoverSelection: String?
     /// True only while an enqueued refresh request runs its bridge operation —
-    /// drives the popover/footer spinner. Never clears glance rows or surfaces.
+    /// drives the popover/footer spinner.
+    ///
+    /// Never clears glance rows or surfaces.
     @Published public private(set) var refreshInProgress = false
     @Published public private(set) var lastError: String?
     @Published public private(set) var isOpen: Bool = false
@@ -350,22 +363,29 @@ public final class PresentationStore: ObservableObject {
     private var pollTask: Task<Void, Never>?
     private var refreshTask: Task<Void, Never>?
     private var screenShareActive: Bool = false
+    private var fixtureMode = false
+    private var launchConfiguration: LaunchConfiguration = .production
+
+    public var usesFixture: Bool { fixtureMode }
 
     public convenience init() {
         self.init(scheduler: RefreshScheduler())
     }
 
-    /// Designated initializer. Tests inject a scheduler wrapping a fake bridge.
+    /// Designated initializer.
+    ///
+    /// Tests inject a scheduler wrapping a fake bridge.
     public init(scheduler: RefreshScheduler) {
         self.scheduler = scheduler
         let defaults = UserDefaults.standard
         if let raw = defaults.string(forKey: Self.displayModeKey),
-           let mode = StatusItemDisplayMode(rawValue: raw)
+            let mode = StatusItemDisplayMode(rawValue: raw)
         {
             self.displayMode = mode
         } else if defaults.object(forKey: "jackin.desktop.showPercent") != nil {
             // Pre-release migration: old boolean → mode (no long-term shim).
-            self.displayMode = defaults.bool(forKey: "jackin.desktop.showPercent")
+            self.displayMode =
+                defaults.bool(forKey: "jackin.desktop.showPercent")
                 ? .focusPercent
                 : .iconOnly
             defaults.removeObject(forKey: "jackin.desktop.showPercent")
@@ -398,7 +418,9 @@ public final class PresentationStore: ObservableObject {
         }
     }
 
-    /// How this launch should open the runtime. Smoke mode is defense-in-depth
+    /// How this launch should open the runtime.
+    ///
+    /// Smoke mode is defense-in-depth
     /// for the isolated launch test: a non-home data root and no live probes.
     public enum LaunchConfiguration: Sendable, Equatable {
         case production
@@ -411,8 +433,8 @@ public final class PresentationStore: ObservableObject {
             homeDirectory: String
         ) -> LaunchConfiguration {
             if let dir = environment["JACKIN_DESKTOP_SMOKE_DATA_DIR"],
-               dir.hasPrefix("/"),
-               !dir.hasPrefix(homeDirectory)
+                dir.hasPrefix("/"),
+                !dir.hasPrefix(homeDirectory)
             {
                 return .ephemeralSmoke(dataDir: dir)
             }
@@ -421,6 +443,7 @@ public final class PresentationStore: ObservableObject {
     }
 
     public func openForLaunch(_ configuration: LaunchConfiguration) {
+        launchConfiguration = configuration
         switch configuration {
         case .production:
             openDefault()
@@ -433,6 +456,16 @@ public final class PresentationStore: ObservableObject {
         let home = FileManager.default.homeDirectoryForCurrentUser
         let dataDir = home.appendingPathComponent(".jackin/data").path
         open(dataDir: dataDir, refreshFloorSecs: 300, enabled: [])
+    }
+
+    /// Retry the failed cold open, or refresh when the runtime is already open.
+    public func retryLastOperation() {
+        guard !fixtureMode else { return }
+        if isOpen {
+            refreshAll()
+        } else {
+            openForLaunch(launchConfiguration)
+        }
     }
 
     /// Ephemeral smoke open: isolated path, live probes disabled, exactly one
@@ -513,10 +546,13 @@ public final class PresentationStore: ObservableObject {
     }
 
     public func setEnabled(surfaceId: String, enabled: Bool) {
+        guard !fixtureMode else { return }
         Task { [weak self] in
             guard let self else { return }
             do {
-                try await self.scheduler.run { try $0.setEnabled(surfaceId: surfaceId, enabled: enabled) }
+                try await self.scheduler.run {
+                    try $0.setEnabled(surfaceId: surfaceId, enabled: enabled)
+                }
                 await self.refreshAll(force: true)
             } catch {
                 self.lastError = String(describing: error)
@@ -526,6 +562,22 @@ public final class PresentationStore: ObservableObject {
 
     /// Select multi-account identity for a surface (Rust-persisted).
     public func setSelectedAccount(surfaceId: String, accountKey: String) {
+        if fixtureMode {
+            accounts = accounts.map { account in
+                guard account.surfaceId == surfaceId else { return account }
+                return AccountRow(
+                    surfaceId: account.surfaceId,
+                    accountKey: account.accountKey,
+                    accountLabel: account.accountLabel,
+                    planLabel: account.planLabel,
+                    selected: account.accountKey == accountKey,
+                    remainingPercent: account.remainingPercent,
+                    statusWord: account.statusWord,
+                    severity: account.severity
+                )
+            }
+            return
+        }
         Task { [weak self] in
             guard let self else { return }
             do {
@@ -546,35 +598,40 @@ public final class PresentationStore: ObservableObject {
 
     /// Inject frozen DATA_CONTRACT / QI presentation without a live bridge poll.
     ///
-    /// Used by `DesktopVisualSnapshotHarness` so hosted snapshots drive the
-    /// **same** ``PresentationStore`` + SwiftUI surfaces as the running app.
+    /// Used by explicit visual-QA launches so UI automation drives the same
+    /// ``PresentationStore`` + SwiftUI surfaces as production.
     /// Does not invent strings — caller supplies Rust-shaped fixtures.
     public func applyQIFixture(
         glanceRows: [GlanceProviderRow],
+        statusBarGlanceRows: [GlanceProviderRow]? = nil,
         surfaces: [SurfaceRow],
         accounts: [AccountRow],
         popoverSelection: String?,
         usageSelection: String?,
-        nextRefreshLabel: String = "next update 4m"
+        nextRefreshLabel: String = "next update 4m",
+        isLoading: Bool = false,
+        isRefreshing: Bool = false,
+        lastError: String? = nil
     ) {
+        fixtureMode = true
         self.providerGlanceRows = glanceRows
-        // QI fixtures lack bridge ranking epochs — apply SB-3/19 filter only.
-        self.statusBarGlanceRows = selectStatusBarGlanceRows(
-            from: glanceRows,
-            maxCount: min(3, stripMax)
-        )
+        self.statusBarGlanceRows =
+            statusBarGlanceRows
+            ?? selectStatusBarGlanceRows(from: glanceRows, maxCount: min(3, stripMax))
         self.surfaces = surfaces
         self.accounts = accounts
         self.popoverSelection = popoverSelection
         self.usageSelection = usageSelection
         self.nextRefreshLabel = nextRefreshLabel
-        self.refreshInProgress = false
+        self.refreshInProgress = isRefreshing
         self.isOpen = true
-        self.isOpening = false
-        self.lastError = nil
+        self.isOpening = isLoading
+        self.lastError = lastError
+        reconcileSelections()
     }
 
     public func setRefreshFloorSecs(_ secs: UInt64) {
+        guard !fixtureMode else { return }
         Task { [weak self] in
             guard let self else { return }
             do {
@@ -591,6 +648,7 @@ public final class PresentationStore: ObservableObject {
 
     /// Manual Refresh button — bypasses floor.
     public func refreshAll() {
+        guard !fixtureMode else { return }
         Task { [weak self] in await self?.refreshAll(force: true) }
     }
 
@@ -616,6 +674,7 @@ public final class PresentationStore: ObservableObject {
     }
 
     public func refresh(surfaceId: String) {
+        guard !fixtureMode else { return }
         Task { [weak self] in
             guard let self else { return }
             self.refreshInProgress = true
@@ -630,7 +689,7 @@ public final class PresentationStore: ObservableObject {
     }
 
     private func pushFormatPrefs() async {
-        guard isOpen else { return }
+        guard !fixtureMode, isOpen else { return }
         let prefs = UsageFormatPrefsDto(percentStyle: percentStyle, resetStyle: resetStyle)
         do {
             try await scheduler.run { try $0.setFormatPrefs(prefs: prefs) }
@@ -650,7 +709,7 @@ public final class PresentationStore: ObservableObject {
     }
 
     private func pollOnce() async {
-        guard isOpen else { return }
+        guard !fixtureMode, isOpen else { return }
         if hideWhileScreenSharing {
             screenShareActive = Self.isScreenCurrentlyShared()
         } else {
@@ -676,7 +735,9 @@ public final class PresentationStore: ObservableObject {
         }
     }
 
-    /// Poll CGSession for active screen share (privacy collapse). AppKit-free.
+    /// Poll CGSession for active screen share (privacy collapse).
+    ///
+    /// AppKit-free.
     public static func isScreenCurrentlyShared() -> Bool {
         guard let dict = CGSessionCopyCurrentDictionary() as? [String: Any] else {
             return false
@@ -691,6 +752,7 @@ public final class PresentationStore: ObservableObject {
     }
 
     private func applySnapshots() async {
+        guard !fixtureMode else { return }
         let projection: BridgeProjection
         // Capture off MainActor before the Sendable bridge batch (SB-3 ≤3).
         let barMax = UInt32(max(1, min(statusBarMaxChips, stripMax)))
@@ -838,6 +900,7 @@ public final class PresentationStore: ObservableObject {
         // Rust owns detection, ordering, and every string — project verbatim.
         providerGlanceRows = projection.glanceRows.map(Self.mapGlanceDto)
         statusBarGlanceRows = projection.statusBarGlanceRows.map(Self.mapGlanceDto)
+        reconcileSelections()
         lastError = nil
         await applyStatusItemText()
     }
@@ -866,10 +929,31 @@ public final class PresentationStore: ObservableObject {
 
     /// Open the Usage window on Overview or a specific surface.
     public func selectUsageSurface(_ surfaceId: String?) {
-        usageSelection = surfaceId
+        guard let surfaceId else {
+            usageSelection = nil
+            return
+        }
+        usageSelection = isNavigableSurface(surfaceId) ? surfaceId : nil
+    }
+
+    private func reconcileSelections() {
+        if let usageSelection, !isNavigableSurface(usageSelection) {
+            self.usageSelection = nil
+        }
+        if let popoverSelection,
+            !providerGlanceRows.contains(where: { $0.surfaceId == popoverSelection })
+        {
+            self.popoverSelection = providerGlanceRows.first?.surfaceId
+        }
+    }
+
+    private func isNavigableSurface(_ surfaceId: String) -> Bool {
+        providerGlanceRows.contains(where: { $0.surfaceId == surfaceId })
+            && surfaces.contains(where: { $0.id == surfaceId && $0.enabled })
     }
 
     private func applyStatusItemText() async {
+        guard !fixtureMode else { return }
         let selection = statusItemTextSelection(
             mode: displayMode,
             pinnedSurfaceId: pinnedSurfaceId.isEmpty ? nil : pinnedSurfaceId,
@@ -931,7 +1015,7 @@ public final class PresentationStore: ObservableObject {
                     remainingPercent: nil,
                     remainingPerLine: [],
                     severity: "ok"
-                ),
+                )
             ]
         }
         return [makeChip(row: row, compactLabel: label)]
@@ -942,7 +1026,9 @@ public final class PresentationStore: ObservableObject {
     /// Strip mode includes all enabled hosts (cap `maxCount`); focus mode only those
     /// with numeric remaining / preview data, worst-first. Uses the per-surface
     /// compact labels captured during the last projection — no bridge round-trip.
-    private func chipsForProviderPreview(maxCount: Int, preferWorstFirst: Bool)
+    private func chipsForProviderPreview(
+        maxCount: Int, preferWorstFirst: Bool
+    )
         -> [StatusItemChip]
     {
         let snaps = surfaceSnapshotsForStatusItem()
@@ -1011,19 +1097,6 @@ public final class PresentationStore: ObservableObject {
                 remainingPerLine: [],
                 severity: "ok"
             )
-    }
-
-    private func drivingBucket(for row: SurfaceRow) -> BucketRow? {
-        let numeric = row.buckets.compactMap { bucket -> (UInt8, BucketRow)? in
-            guard let rem = bucket.remainingPercent else { return nil }
-            return (rem, bucket)
-        }
-        guard let best = drivingBucketForStatusItem(
-            remainingAndSeverity: numeric.map { (remaining: $0.0, severity: $0.1.severity) }
-        ) else {
-            return nil
-        }
-        return numeric.first(where: { $0.0 == best.remaining })?.1
     }
 }
 

@@ -95,13 +95,15 @@ struct StatusItemChipHarness {
             "remaining fraction mid",
             abs(statusItemRemainingFraction(remainingPercent: 79) - 0.79) < 0.001
         )
-        check("used+remaining fractions sum 1", {
-            let rem: UInt8 = 63
-            return abs(
-                statusItemRemainingFraction(remainingPercent: rem)
-                    + statusItemUsedFraction(remainingPercent: rem) - 1.0
-            ) < 0.001
-        }())
+        check(
+            "used+remaining fractions sum 1",
+            {
+                let rem: UInt8 = 63
+                return abs(
+                    statusItemRemainingFraction(remainingPercent: rem)
+                        + statusItemUsedFraction(remainingPercent: rem) - 1.0
+                ) < 0.001
+            }())
         check("mini bar for percent token", statusItemLineShowsMiniBar("79%"))
         check("no mini bar for countdown", !statusItemLineShowsMiniBar("resets 1h 21m"))
         check("no mini bar for placeholder", !statusItemLineShowsMiniBar("—"))
@@ -154,7 +156,7 @@ struct StatusItemChipHarness {
                 enabled: true,
                 statusBarLabel: "Session 100% · Weekly 79%",
                 status: "fresh",
-                compactLabel: "Cl 79%", // driving = min remaining
+                compactLabel: "Cl 79%",  // driving = min remaining
                 remainings: [100, 79],
                 severities: ["ok", "ok"]
             ),
@@ -388,7 +390,7 @@ struct StatusItemChipHarness {
                         remainingPerLine: [0],
                         severityPerLine: ["danger"],
                         severity: "danger"
-                    ),
+                    )
                 ]
             ) == "jackin Desktop Cl resets 1h 21m"
         )

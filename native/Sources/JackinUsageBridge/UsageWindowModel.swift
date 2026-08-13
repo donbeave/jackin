@@ -29,7 +29,9 @@ public enum UsageDetailRowKind: String, Equatable, Sendable {
     }
 }
 
-/// One provider-detail row (mirror of the Rust `UsageDetailRow`). Every visible
+/// One provider-detail row mirroring the Rust `UsageDetailRow`.
+///
+/// Every visible
 /// string is Rust-owned. `meterPercent`/`severity` are geometry/style metadata
 /// the view may use for bar width and color but never turns into text.
 public struct UsageDetailRow: Identifiable, Equatable, Sendable {
@@ -61,8 +63,9 @@ public struct UsageDetailRow: Identifiable, Equatable, Sendable {
     }
 }
 
-/// The complete Rust-owned provider-detail card (mirror of
-/// `UsageDetailPresentation`). Rows are already in canonical order.
+/// The complete Rust-owned provider detail.
+///
+/// It mirrors `UsageDetailPresentation`; rows are already in canonical order.
 public struct UsageDetailPresentation: Equatable, Sendable {
     public let rows: [UsageDetailRow]
 
@@ -92,7 +95,9 @@ public struct UsageDetailPresentation: Equatable, Sendable {
     }
 }
 
-/// Pure, importable model for the Usage window. It preserves the Rust sidebar
+/// Pure, importable model for the Usage window.
+///
+/// It preserves the Rust sidebar
 /// order, resolves the incoming selection to the selected surface's Rust detail
 /// presentation and account rows, and represents Overview/empty without
 /// synthesizing any usage string. It writes no persistence and calls no FFI;
@@ -179,7 +184,9 @@ public struct UsageWindowModel: Equatable, Sendable {
         }
     }
 
-    /// The store selection an ``Action`` resolves to (`nil` = Overview). The
+    /// The store selection an ``Action`` resolves to (`nil` = Overview).
+    ///
+    /// The
     /// account action keeps the current provider selection.
     public func selection(after action: Action) -> String? {
         switch action {

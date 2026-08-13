@@ -5,7 +5,9 @@ import AppKit
 import JackinUsageBridge
 import SwiftUI
 
-/// Provider identity chrome only. Never use these colors for quota state.
+/// Provider identity chrome only.
+///
+/// Never use these colors for quota state.
 public func desktopProviderBrandChrome(iconKey: String?) -> Color {
     switch iconKey {
     case "codex": Color(red: 0.12, green: 0.72, blue: 0.52)
@@ -72,18 +74,22 @@ public enum ProviderMarks {
 
     private static func candidateURLs(named name: String, extensions: [String]) -> [URL] {
         var urls: [URL] = []
+        #if SWIFT_PACKAGE
         let bundles: [Bundle] = [Bundle.module, Bundle.main]
+        #else
+        let bundles: [Bundle] = [Bundle.main]
+        #endif
         for bundle in bundles {
             for ext in extensions {
-                if let u = bundle.url(
+                if let url = bundle.url(
                     forResource: name,
                     withExtension: ext,
                     subdirectory: "ProviderMarks"
                 ) {
-                    urls.append(u)
+                    urls.append(url)
                 }
-                if let u = bundle.url(forResource: name, withExtension: ext) {
-                    urls.append(u)
+                if let url = bundle.url(forResource: name, withExtension: ext) {
+                    urls.append(url)
                 }
                 if let root = bundle.resourceURL {
                     urls.append(root.appendingPathComponent("ProviderMarks/\(name).\(ext)"))
@@ -93,6 +99,8 @@ public enum ProviderMarks {
             }
         }
         var seen = Set<String>()
-        return urls.filter { seen.insert($0.path).inserted && FileManager.default.fileExists(atPath: $0.path) }
+        return urls.filter {
+            seen.insert($0.path).inserted && FileManager.default.fileExists(atPath: $0.path)
+        }
     }
 }

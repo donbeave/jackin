@@ -3,17 +3,16 @@
 
 import Foundation
 
-/// Pure selection rules for status-item → glance popover focus (HTML SoT:
-/// left-click opens Providers mode focused on that provider).
+/// Pure selection rules for status-item → focused provider popover.
 ///
 /// AppKit maps the clicked button to a `surfaceId` (or fallback); this type only
 /// decides the store selection — no UI, no string invention.
 public enum StatusPopoverFocus: Sendable {
-    /// Result of resolving a left-click for the glance popover tab.
+    /// Result of resolving a left-click for the focused popover.
     public enum Outcome: Equatable, Sendable {
-        /// Overview tab (`popoverSelection == nil`).
+        /// No provider selection for the empty-set fallback item.
         case overview
-        /// Provider tab for this host surface id.
+        /// Provider focus for this host surface id.
         case provider(String)
     }
 
@@ -21,6 +20,7 @@ public enum StatusPopoverFocus: Sendable {
     /// - Parameters:
     ///   - surfaceId: Provider id when a provider status item was clicked.
     ///   - isFallbackItem: True when the empty-set fallback status item was clicked.
+    /// - Returns: The provider destination, or Overview for the fallback item.
     public static func outcome(surfaceId: String?, isFallbackItem: Bool) -> Outcome {
         if isFallbackItem { return .overview }
         if let surfaceId, !surfaceId.isEmpty { return .provider(surfaceId) }
@@ -40,7 +40,8 @@ public enum StatusPopoverFocus: Sendable {
         matchingButtonIdentity identity: ObjectIdentifier,
         providerButtonIdentities: [String: ObjectIdentifier]
     ) -> String? {
-        for (surfaceId, buttonIdentity) in providerButtonIdentities where buttonIdentity == identity {
+        for (surfaceId, buttonIdentity) in providerButtonIdentities where buttonIdentity == identity
+        {
             return surfaceId
         }
         return nil

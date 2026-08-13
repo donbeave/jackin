@@ -42,8 +42,10 @@ jobs:
               - 'Cargo.toml'
               - 'crates/jackin-dev/**'
               - '!crates/jackin-dev/**/*.md'
+      # The exact local Git diff below owns version-bump classification. Any lockfile change still
+      # needs complete offline inputs even when the API-backed path filter also marks an artifact.
       - name: Cache Rust toolchain
-        if: steps.version-inputs.outputs.lock == 'true' && steps.version-inputs.outputs.artifact != 'true'
+        if: steps.version-inputs.outputs.lock == 'true'
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
@@ -53,14 +55,14 @@ jobs:
           restore-keys: |
             rustup-${{ runner.os }}-${{ runner.arch }}-
       - uses: jdx/mise-action@7e36c90d9ab29c415a2384db3006f3ec8a8cc654 # v4.2.4
-        if: steps.version-inputs.outputs.lock == 'true' && steps.version-inputs.outputs.artifact != 'true'
+        if: steps.version-inputs.outputs.lock == 'true'
         with:
           version: "2026.7.12"
           cache_key_prefix: "mise-v2"
           cache_save: false
           install_args: "rust"
           github_token: ${{ github.token }}
-      - if: steps.version-inputs.outputs.lock == 'true' && steps.version-inputs.outputs.artifact != 'true'
+      - if: steps.version-inputs.outputs.lock == 'true'
         uses: ./.github/actions/cache-cargo-registry
 
       - name: Require jackin-dev version bump for artifact changes

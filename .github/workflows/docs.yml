@@ -235,7 +235,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
-          MISE_CONFIG_FILE=docs/mise.toml mise exec -- lychee \
+          lychee \
             --config docs/lychee.toml \
             --cache=false \
             --remap 'https://jackin.tailrocks.com/research/ file://${{ github.workspace }}/docs/content/research/index.mdx' \

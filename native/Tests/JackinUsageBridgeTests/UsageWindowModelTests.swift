@@ -7,10 +7,15 @@ import XCTest
 
 /// Executes the pure `UsageWindowModel` with opaque sentinel strings so the
 /// Usage window's order/selection/action behavior is proven without depending on
-/// any Rust wording (Rust/FFI tests own the real Amp/Grok strings). No formatting
+/// any Rust wording (Rust/FFI tests own the real Amp/Grok strings).
+///
+/// No formatting
 /// logic is duplicated here.
 final class UsageWindowModelTests: XCTestCase {
-    private func glance(_ surfaceId: String, headline: String = "H") -> PresentationStore
+    private func glance(
+        _ surfaceId: String, headline: String = "H"
+    )
+        -> PresentationStore
         .GlanceProviderRow
     {
         PresentationStore.GlanceProviderRow(
@@ -80,7 +85,10 @@ final class UsageWindowModelTests: XCTestCase {
         )
     }
 
-    private func account(_ surfaceId: String, key: String, selected: Bool) -> PresentationStore
+    private func account(
+        _ surfaceId: String, key: String, selected: Bool
+    )
+        -> PresentationStore
         .AccountRow
     {
         PresentationStore.AccountRow(
@@ -153,7 +161,8 @@ final class UsageWindowModelTests: XCTestCase {
             accounts: [],
             selection: "codex"
         )
-        let row = model.content!.detail.rows[0]
+        guard let content = model.content else { return XCTFail("missing provider content") }
+        let row = content.detail.rows[0]
         // Rendered order is leading-then-trailing per line, preserving vector order.
         let flattened = row.layoutLines.flatMap { [$0.leading, $0.trailing].compactMap { $0 } }
         XCTAssertEqual(
@@ -176,7 +185,8 @@ final class UsageWindowModelTests: XCTestCase {
             accounts: [],
             selection: "codex"
         )
-        let rows = model.content!.detail.rows
+        guard let content = model.content else { return XCTFail("missing provider content") }
+        let rows = content.detail.rows
         XCTAssertEqual(rows.map(\.id), ["bucket:0", "bucket:1"])
         XCTAssertEqual(rows.map(\.label), ["Weekly", "Weekly"])
         XCTAssertEqual(Set(rows.map(\.id)).count, 2)
@@ -185,7 +195,8 @@ final class UsageWindowModelTests: XCTestCase {
     func testStaleDetailAndLastGoodBucketCoexist() {
         let detail = UsageDetailPresentation(rows: [
             detailRow("bucket:0", kind: .bucket, label: "Weekly", lines: [line(leading: "57")]),
-            detailRow("detail", kind: .detail, label: "Detail", lines: [line(leading: "upstream 503")]),
+            detailRow(
+                "detail", kind: .detail, label: "Detail", lines: [line(leading: "upstream 503")]),
         ])
         let model = UsageWindowModel(
             glanceRows: [glance("codex")],
@@ -193,7 +204,8 @@ final class UsageWindowModelTests: XCTestCase {
             accounts: [],
             selection: "codex"
         )
-        let rows = model.content!.detail.rows
+        guard let content = model.content else { return XCTFail("missing provider content") }
+        let rows = content.detail.rows
         XCTAssertTrue(rows.contains { $0.rowId == "bucket:0" })
         XCTAssertEqual(rows.filter { $0.kind == .detail }.count, 1)
         XCTAssertEqual(rows.last?.rowId, "detail")
@@ -250,7 +262,8 @@ final class UsageWindowModelTests: XCTestCase {
             accounts: [],
             selection: "amp"
         )
-        let rows = model.content!.detail.rows
+        guard let content = model.content else { return XCTFail("missing provider content") }
+        let rows = content.detail.rows
         XCTAssertEqual(rows[0].displayLabel, "SuperGrok")
         XCTAssertEqual(rows[1].displayLabel, "61% left · Resets daily")
     }

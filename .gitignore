@@ -7,6 +7,9 @@
 # Native macOS menu-bar local build products (source + Generated bindings are tracked)
 /native/dist/
 /native/.build/
+/native/DerivedData/
+/native/JackinDesktop.xcodeproj/
+/native/JackinDesktop.xcworkspace/
 
 # Claude Code
 .worktrees/

@@ -1,4 +1,4 @@
-// swift-tools-version: 6.0
+// swift-tools-version: 6.2
 import PackageDescription
 
 // Static XCFramework produced by `cargo xtask desktop xcframework`.
@@ -6,17 +6,15 @@ import PackageDescription
 let package = Package(
     name: "JackinDesktop",
     platforms: [
-        .macOS(.v14),
+        .macOS(.v26),
     ],
     products: [
         .library(name: "JackinUsageBridge", targets: ["JackinUsageBridge"]),
         .library(name: "JackinDesktopUI", targets: ["JackinDesktopUI"]),
-        .executable(name: "JackinDesktop", targets: ["JackinDesktop"]),
         .executable(name: "StatusItemChipHarness", targets: ["StatusItemChipHarness"]),
         .executable(name: "DesktopArchitectureLint", targets: ["DesktopArchitectureLint"]),
         .executable(name: "DesktopParityMatrixHarness", targets: ["DesktopParityMatrixHarness"]),
         .executable(name: "DesktopSoTParityHarness", targets: ["DesktopSoTParityHarness"]),
-        .executable(name: "DesktopVisualSnapshotHarness", targets: ["DesktopVisualSnapshotHarness"]),
         .executable(name: "ProviderMarksHarness", targets: ["ProviderMarksHarness"]),
     ],
     targets: [
@@ -29,21 +27,16 @@ let package = Package(
             dependencies: ["jackin_usage_ffiFFI"],
             path: "Sources/JackinUsageBridge"
         ),
-        // Hostable UI library (status/popover/Usage) for app + visual snapshots.
+        // Hostable UI library (status/popover/Usage) for app + deterministic fixtures.
         .target(
             name: "JackinDesktopUI",
             dependencies: ["JackinUsageBridge"],
             path: "Sources/JackinDesktop",
             resources: [
-                .copy("Resources/JackinMark.pdf"),
+                .copy("Resources/Brand"),
                 // Official provider logomarks (template PDF) — see ProviderMarks/PROVENANCE.md
                 .copy("Resources/ProviderMarks"),
             ]
-        ),
-        .executableTarget(
-            name: "JackinDesktop",
-            dependencies: ["JackinDesktopUI", "JackinUsageBridge"],
-            path: "Sources/JackinDesktopApp"
         ),
         .executableTarget(
             name: "StatusItemChipHarness",
@@ -66,18 +59,13 @@ let package = Package(
             path: "Tools/DesktopSoTParityHarness"
         ),
         .executableTarget(
-            name: "DesktopVisualSnapshotHarness",
-            dependencies: ["JackinDesktopUI", "JackinUsageBridge"],
-            path: "Tools/DesktopVisualSnapshotHarness"
-        ),
-        .executableTarget(
             name: "ProviderMarksHarness",
             dependencies: ["JackinDesktopUI", "JackinUsageBridge"],
             path: "Tools/ProviderMarksHarness"
         ),
         .testTarget(
             name: "JackinUsageBridgeTests",
-            dependencies: ["JackinUsageBridge"],
+            dependencies: ["JackinDesktopUI", "JackinUsageBridge"],
             path: "Tests/JackinUsageBridgeTests"
         ),
     ]

@@ -19,7 +19,7 @@ Fetched vendor or industry-canonical assets and compared to `*.master.*` **path 
 | `kimi` | Moonshot Kimi | K + orbit | **Vendor** [KIMI Brand Guidelines](https://moonshotai.github.io/Branding-Guide/) `kimi-icon-round.png` | **Byte-identical** to `kimi.master.png` (1024²) | **High** (vendor brand guide) |
 | `zai` | Z.ai | Z plate | **Vendor CDN** [z-cdn…/logo.svg](https://z-cdn.chatglm.cn/z-ai/static/logo.svg) | **Path-identical** (5 paths) to `zai.master.svg` | **High** (vendor CDN) |
 | `minimax` | MiniMax | Vertical-bar mark | lobe-icons `minimax.svg` + live **minimax.io** OG/favicon (dual-bar glyph) | Master **path-identical** to lobe; **visual match** to official OG/favicon bars (not wordmark) | **High** (icon form of official mark) |
-| fallback | jackin❯ | JackinMark.pdf | repo | Done | High |
+| fallback | jackin❯ | `Brand/JackinMonogram{Dark,Light}.svg` | canonical docs generator | Done | High |
 
 ## Ship PNG health (template mono, black + alpha)
 

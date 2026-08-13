@@ -6,27 +6,44 @@ import JackinUsageBridge
 import SwiftUI
 
 /// System **menu bar** for jackin❯ desktop when a document window is front
-/// (Usage / Settings). Accessory status-item mode has no app menu chrome;
+/// (Usage / Settings).
+///
+/// Accessory status-item mode has no app menu chrome;
 /// switching to `.regular` reveals  + these menus.
 ///
-/// Now (lean, standard macOS):
-/// - **App menu** — About, Settings…, Hide, Quit
-/// - **Edit** — standard cut/copy/paste (text fields, future forms)
-/// - **View** — Refresh (same action as Usage toolbar ⌘R)
-/// - **Window** — Minimize / Zoom / Usage
-///
-/// Not now: Help, File, multi-window document model, Services clutter.
+/// Standard macOS menu citizenship for the Usage window.
 @MainActor
-public final class AppMainMenu: NSObject {
+public final class AppMainMenu: NSObject, NSMenuItemValidation {
+    static let settingsKeyEquivalent = ","
+    static let settingsKeyModifiers: NSEvent.ModifierFlags = [.command]
+    static let closeKeyEquivalent = "w"
+    static let closeKeyModifiers: NSEvent.ModifierFlags = [.command]
+    static let sidebarKeyEquivalent = "s"
+    static let sidebarKeyModifiers: NSEvent.ModifierFlags = [.command, .control]
+    static let refreshKeyEquivalent = "r"
+    static let refreshKeyModifiers: NSEvent.ModifierFlags = [.command]
+
     private let store: PresentationStore
     private let openUsage: () -> Void
+    private let toggleUsageSidebar: () -> Void
+    private let isUsageSidebarVisible: () -> Bool
+    private let canToggleUsageSidebar: () -> Bool
     private var settingsWindow: NSWindow?
     /// Strong: `NSWindow.delegate` is weak.
     private var settingsCloseProxy: SettingsWindowCloseProxy?
 
-    init(store: PresentationStore, openUsage: @escaping () -> Void) {
+    init(
+        store: PresentationStore,
+        openUsage: @escaping () -> Void,
+        toggleUsageSidebar: @escaping () -> Void,
+        isUsageSidebarVisible: @escaping () -> Bool,
+        canToggleUsageSidebar: @escaping () -> Bool
+    ) {
         self.store = store
         self.openUsage = openUsage
+        self.toggleUsageSidebar = toggleUsageSidebar
+        self.isUsageSidebarVisible = isUsageSidebarVisible
+        self.canToggleUsageSidebar = canToggleUsageSidebar
         super.init()
     }
 
@@ -35,10 +52,12 @@ public final class AppMainMenu: NSObject {
         let main = NSMenu()
 
         main.addItem(wrap(appMenu(), title: appMenuTitle))
+        main.addItem(wrap(fileMenu(), title: "File"))
         main.addItem(wrap(editMenu(), title: "Edit"))
         main.addItem(wrap(viewMenu(), title: "View"))
         let window = windowMenu()
         main.addItem(wrap(window, title: "Window"))
+        main.addItem(wrap(helpMenu(), title: "Help"))
         NSApp.windowsMenu = window
 
         NSApp.mainMenu = main
@@ -57,9 +76,23 @@ public final class AppMainMenu: NSObject {
 
         menu.addItem(owned("About \(appMenuTitle)", #selector(orderFrontAbout(_:)), key: ""))
         menu.addItem(.separator())
-        menu.addItem(owned("Settings…", #selector(openSettings(_:)), key: ","))
+        menu.addItem(
+            owned(
+                "Settings…",
+                #selector(openSettings(_:)),
+                key: Self.settingsKeyEquivalent,
+                modifiers: Self.settingsKeyModifiers
+            ))
         menu.addItem(.separator())
-        menu.addItem(routed("Hide \(appMenuTitle)", #selector(NSApplication.hide(_:)), key: "h", target: NSApp))
+        let services = NSMenu(title: "Services")
+        let servicesItem = NSMenuItem(title: "Services", action: nil, keyEquivalent: "")
+        servicesItem.submenu = services
+        menu.addItem(servicesItem)
+        NSApp.servicesMenu = services
+        menu.addItem(.separator())
+        menu.addItem(
+            routed(
+                "Hide \(appMenuTitle)", #selector(NSApplication.hide(_:)), key: "h", target: NSApp))
         menu.addItem(
             routed(
                 "Hide Others",
@@ -89,6 +122,18 @@ public final class AppMainMenu: NSObject {
         return menu
     }
 
+    private func fileMenu() -> NSMenu {
+        let menu = NSMenu(title: "File")
+        menu.addItem(
+            firstResponder(
+                "Close Window",
+                #selector(NSWindow.performClose(_:)),
+                key: Self.closeKeyEquivalent,
+                modifiers: Self.closeKeyModifiers
+            ))
+        return menu
+    }
+
     private func editMenu() -> NSMenu {
         // Target nil → first-responder chain (standard macOS Edit menu).
         let menu = NSMenu(title: "Edit")
@@ -111,16 +156,33 @@ public final class AppMainMenu: NSObject {
 
     private func viewMenu() -> NSMenu {
         let menu = NSMenu(title: "View")
-        menu.addItem(owned("Refresh", #selector(refreshAll(_:)), key: "r"))
+        menu.addItem(
+            owned(
+                "Hide Sidebar",
+                #selector(toggleSidebar(_:)),
+                key: Self.sidebarKeyEquivalent,
+                modifiers: Self.sidebarKeyModifiers
+            ))
+        menu.addItem(.separator())
+        menu.addItem(
+            owned(
+                "Refresh",
+                #selector(refreshAll(_:)),
+                key: Self.refreshKeyEquivalent,
+                modifiers: Self.refreshKeyModifiers
+            ))
         return menu
     }
 
     private func windowMenu() -> NSMenu {
         let menu = NSMenu(title: "Window")
-        menu.addItem(firstResponder("Minimize", #selector(NSWindow.performMiniaturize(_:)), key: "m"))
+        menu.addItem(
+            firstResponder("Minimize", #selector(NSWindow.performMiniaturize(_:)), key: "m"))
         menu.addItem(firstResponder("Zoom", #selector(NSWindow.performZoom(_:)), key: ""))
         menu.addItem(.separator())
-        menu.addItem(owned("Usage", #selector(showUsageWindow(_:)), key: "0"))
+        let usage = owned("Usage", #selector(showUsageWindow(_:)), key: "0")
+        usage.identifier = NSUserInterfaceItemIdentifier("menu.show-usage")
+        menu.addItem(usage)
         menu.addItem(.separator())
         menu.addItem(
             routed(
@@ -133,9 +195,22 @@ public final class AppMainMenu: NSObject {
         return menu
     }
 
+    private func helpMenu() -> NSMenu {
+        let menu = NSMenu(title: "Help")
+        menu.addItem(
+            routed(
+                "jackin❯ desktop Help",
+                #selector(NSApplication.showHelp(_:)),
+                key: "?",
+                target: NSApp
+            )
+        )
+        return menu
+    }
+
     // MARK: - Actions
 
-    @objc private func orderFrontAbout(_ sender: Any?) {
+    @objc private func orderFrontAbout(_: Any?) {
         NSApp.orderFrontStandardAboutPanel(options: [
             .applicationName: appMenuTitle,
             .credits: NSAttributedString(
@@ -144,10 +219,9 @@ public final class AppMainMenu: NSObject {
         ])
     }
 
-    @objc private func openSettings(_ sender: Any?) {
+    @objc private func openSettings(_: Any?) {
         if let existing = settingsWindow {
-            existing.makeKeyAndOrderFront(nil)
-            AppActivation.presentWindows()
+            AppActivation.present(existing)
             return
         }
         let window = NSWindow(
@@ -158,6 +232,8 @@ public final class AppMainMenu: NSObject {
         )
         window.title = "Settings"
         window.isReleasedWhenClosed = false
+        window.identifier = NSUserInterfaceItemIdentifier("settings-window")
+        window.setAccessibilityIdentifier("settings-window")
         window.toolbarStyle = .unified
         window.titlebarAppearsTransparent = false
         window.titleVisibility = .visible
@@ -176,16 +252,25 @@ public final class AppMainMenu: NSObject {
         window.center()
         window.setFrameAutosaveName("jackin.desktop.settings-window")
         settingsWindow = window
-        window.makeKeyAndOrderFront(nil)
-        AppActivation.presentWindows()
+        AppActivation.present(window)
     }
 
-    @objc private func refreshAll(_ sender: Any?) {
+    @objc private func refreshAll(_: Any?) {
         store.refreshAll()
     }
 
-    @objc private func showUsageWindow(_ sender: Any?) {
+    @objc private func toggleSidebar(_: Any?) {
+        toggleUsageSidebar()
+    }
+
+    @objc private func showUsageWindow(_: Any?) {
         openUsage()
+    }
+
+    public func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
+        guard menuItem.action == #selector(toggleSidebar(_:)) else { return true }
+        menuItem.title = isUsageSidebarVisible() ? "Hide Sidebar" : "Show Sidebar"
+        return canToggleUsageSidebar()
     }
 
     // MARK: - Helpers
@@ -253,7 +338,7 @@ private final class SettingsWindowCloseProxy: NSObject, NSWindowDelegate {
         super.init()
     }
 
-    public func windowWillClose(_ notification: Notification) {
+    func windowWillClose(_ notification: Notification) {
         DispatchQueue.main.async { [onClose] in
             onClose()
         }
@@ -263,12 +348,19 @@ private final class SettingsWindowCloseProxy: NSObject, NSWindowDelegate {
 /// Activation policy bridge: accessory (status bar only) ↔ regular (menu bar + Dock).
 @MainActor
 public enum AppActivation {
-    /// Show system menu bar ( + app menus) and allow Dock focus while windows are open.
-    static func presentWindows() {
-        if NSApp.activationPolicy() != .regular {
-            NSApp.setActivationPolicy(.regular)
+    /// Promote before ordering the window; AppKit may otherwise register an accessory-process
+    /// window in its Window menu without making that window visible on the active Space.
+    static func present(_ window: NSWindow) {
+        if NSApp.activationPolicy() == .regular {
+            NSApp.activate()
+            window.makeKeyAndOrderFront(nil)
+            return
         }
-        NSApp.activate(ignoringOtherApps: true)
+        NSApp.setActivationPolicy(.regular)
+        DispatchQueue.main.async {
+            NSApp.activate()
+            window.makeKeyAndOrderFront(nil)
+        }
     }
 
     /// Back to menu-bar agent when no app windows remain visible.

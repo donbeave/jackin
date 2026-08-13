@@ -7,46 +7,53 @@ import JackinUsageBridge
 import SwiftUI
 
 /// Owns the per-provider `NSStatusItem`s, keyed by Rust `surfaceId`, and the one
-/// shared transient popover. Rust owns detection, ranking (SB-17), and every
+/// shared transient popover.
+///
+/// Rust owns detection, ranking (SB-17), and every
 /// string; this controller reconciles items against `store.statusBarGlanceRows`
 /// and rebuilds when ranked order changes (SB-13).
 @MainActor
 public final class StatusBarController: NSObject {
     private let store: PresentationStore
+    private let compactStatusItems: Bool
     private var providerItems: [String: NSStatusItem] = [:]
     private var fallbackItem: NSStatusItem?
     /// Last applied burn-first rank order (left → right = rank 1…n).
     private var canonicalOrder: [String] = []
     private let popover = NSPopover()
     private weak var anchoredButton: NSStatusBarButton?
+    private var automationAnchorPanel: NSPanel?
     private var rightClickMonitors: [ObjectIdentifier: Any] = [:]
     private var cancellables: Set<AnyCancellable> = []
     /// Opens the Usage window focused on a provider (`nil` = Overview).
     private let onOpenUsage: (String?) -> Void
     /// Owns the context menu and is the `NSMenuItem` target. Must stay retained
+    ///
     /// for the bar lifetime (see `StatusItemMenu` docs — drop target ⇒ all rows disabled).
     private let statusItemMenu: StatusItemMenu
 
     init(
         store: PresentationStore,
         menuRouter: StatusItemMenuRouter,
+        compactStatusItems: Bool = false,
         onOpenUsage: @escaping (String?) -> Void
     ) {
         self.store = store
+        self.compactStatusItems = compactStatusItems
         self.onOpenUsage = onOpenUsage
         self.statusItemMenu = StatusItemMenu(router: menuRouter)
         super.init()
-        popover.behavior = .transient
+        // XCUITest steals application activation while synthesizing scroll gestures. Keep the
+        // real NSPopover alive only in deterministic fixture runs; production remains transient.
+        popover.behavior = compactStatusItems ? .applicationDefined : .transient
         popover.animates = true
         popover.contentSize = PopoverRoot.liveContentSize
-        // Liquid Glass popover: clear NSPopover chrome so panel glass refracts
-        // the desktop (LG-A1). Host must stay GlassPopoverHostingController.
         let root = PopoverRoot(store: store) { [weak self] surfaceId in
             self?.popover.performClose(nil)
             self?.anchoredButton = nil
             self?.onOpenUsage(surfaceId)
         }
-        popover.contentViewController = GlassPopoverHostingController(rootView: root)
+        popover.contentViewController = NSHostingController(rootView: root)
 
         // Burn-first chips only (SB-3/14/17/19) — not full providerGlanceRows inventory.
         store.$statusBarGlanceRows
@@ -87,8 +94,12 @@ public final class StatusBarController: NSObject {
     }
 
     private func makeProviderItem(surfaceId: String) -> NSStatusItem {
-        let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-        item.autosaveName = "jackin.desktop.status.\(surfaceId)"
+        let item = NSStatusBar.system.statusItem(
+            withLength: compactStatusItems ? NSStatusItem.squareLength : NSStatusItem.variableLength
+        )
+        if !compactStatusItems {
+            item.autosaveName = "jackin.desktop.status.\(surfaceId)"
+        }
         if let button = item.button {
             button.target = self
             button.action = #selector(handleClick(_:))
@@ -100,11 +111,11 @@ public final class StatusBarController: NSObject {
 
     private func configure(item: NSStatusItem, row: PresentationStore.GlanceProviderRow) {
         guard let button = item.button else { return }
-        // LG-A1 / FB1-6: template icon + dual-stack values — no glass chip chrome.
+        // Template icon plus dual-stack values keeps status chrome system-owned.
         button.image = StatusItemRendering.icon(forIconKey: row.iconKey)
         button.imagePosition = .imageLeading
         button.attributedTitle =
-            store.statusBarShowsValues
+            store.statusBarShowsValues && !compactStatusItems
             ? StatusItemRendering.title(barLabel: row.barLabel, resetLabel: row.resetLabel)
             : NSAttributedString(string: "")
         button.appearsDisabled = row.dimmed
@@ -119,8 +130,12 @@ public final class StatusBarController: NSObject {
 
     private func ensureFallbackItem() {
         guard fallbackItem == nil else { return }
-        let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-        item.autosaveName = "jackin.desktop.status.fallback"
+        let item = NSStatusBar.system.statusItem(
+            withLength: compactStatusItems ? NSStatusItem.squareLength : NSStatusItem.variableLength
+        )
+        if !compactStatusItems {
+            item.autosaveName = "jackin.desktop.status.fallback"
+        }
         if let button = item.button {
             button.image = StatusItemRendering.fallbackIcon()
             button.target = self
@@ -176,8 +191,8 @@ public final class StatusBarController: NSObject {
         let monitor = NSEvent.addLocalMonitorForEvents(matching: .rightMouseUp) {
             [weak self, weak button] event in
             guard let self, let button,
-                  event.window === button.window,
-                  button.bounds.contains(button.convert(event.locationInWindow, from: nil))
+                event.window === button.window,
+                button.bounds.contains(button.convert(event.locationInWindow, from: nil))
             else { return event }
             DispatchQueue.main.async { [weak self, weak button] in
                 guard let self, let button else { return }
@@ -190,7 +205,7 @@ public final class StatusBarController: NSObject {
 
     private func removeRightClickMonitor(from button: NSStatusBarButton?) {
         guard let button,
-              let monitor = rightClickMonitors.removeValue(forKey: ObjectIdentifier(button))
+            let monitor = rightClickMonitors.removeValue(forKey: ObjectIdentifier(button))
         else { return }
         NSEvent.removeMonitor(monitor)
     }
@@ -204,12 +219,14 @@ public final class StatusBarController: NSObject {
     }
 
     /// Resolve which provider (or fallback) owns this status button.
-    private func clickTarget(for button: NSStatusBarButton) -> (surfaceId: String?, isFallback: Bool) {
+    private func clickTarget(
+        for button: NSStatusBarButton
+    ) -> (surfaceId: String?, isFallback: Bool) {
         let identity = ObjectIdentifier(button)
         var map: [String: ObjectIdentifier] = [:]
         for (id, item) in providerItems {
-            if let b = item.button {
-                map[id] = ObjectIdentifier(b)
+            if let statusButton = item.button {
+                map[id] = ObjectIdentifier(statusButton)
             }
         }
         if let sid = StatusPopoverFocus.surfaceId(
@@ -234,7 +251,7 @@ public final class StatusBarController: NSObject {
         if popover.isShown {
             popover.performClose(sender)
         }
-        // HTML SoT: left-click focuses that provider (or Overview for fallback).
+        // A primary status-item click focuses that provider; fallback has no provider focus.
         let target = clickTarget(for: sender)
         let outcome = StatusPopoverFocus.outcome(
             surfaceId: target.surfaceId,
@@ -244,16 +261,63 @@ public final class StatusBarController: NSObject {
 
         anchoredButton = sender
         popover.show(relativeTo: sender.bounds, of: sender, preferredEdge: .minY)
-        // Re-assert clear chrome after the popover window materializes (LG translucency).
-        if let window = popover.contentViewController?.view.window {
-            window.isOpaque = false
-            window.backgroundColor = .clear
-            window.hasShadow = false
+    }
+
+    /// Deterministic visual-QA launch seam.
+    ///
+    /// The real `NSPopover` remains anchored
+    /// to a real status item; no detached preview host is introduced.
+    func showPopover(focusOn surfaceId: String?, attemptsRemaining: Int = 200) {
+        let button =
+            surfaceId.flatMap { providerItems[$0]?.button }
+            ?? providerItems[store.popoverSelection ?? ""]?.button
+            ?? store.providerGlanceRows.first.flatMap { providerItems[$0.surfaceId]?.button }
+            ?? fallbackItem?.button
+        guard let button else { return }
+        guard button.window != nil else {
+            guard attemptsRemaining > 0 else { return }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [weak self] in
+                self?.showPopover(
+                    focusOn: surfaceId,
+                    attemptsRemaining: attemptsRemaining - 1
+                )
+            }
+            return
         }
-        popover.contentViewController?.view.layer?.backgroundColor = NSColor.clear.cgColor
+        if compactStatusItems {
+            showAutomationPopover(focusOn: surfaceId)
+            return
+        }
+        togglePopover(button)
+    }
+
+    private func showAutomationPopover(focusOn surfaceId: String?) {
+        if let surfaceId, providerItems[surfaceId] != nil {
+            store.popoverSelection = surfaceId
+        }
+        let frame = NSScreen.main?.frame ?? NSRect(x: 0, y: 0, width: 1_440, height: 900)
+        let panel = NSPanel(
+            contentRect: NSRect(x: frame.maxX - 4, y: frame.maxY - 4, width: 2, height: 2),
+            styleMask: [.borderless, .nonactivatingPanel],
+            backing: .buffered,
+            defer: false
+        )
+        panel.backgroundColor = .clear
+        panel.isOpaque = false
+        panel.hasShadow = false
+        panel.ignoresMouseEvents = true
+        panel.level = .statusBar
+        panel.collectionBehavior = [.canJoinAllSpaces, .stationary]
+        panel.setAccessibilityElement(false)
+        panel.orderFrontRegardless()
+        guard let anchor = panel.contentView else { return }
+        anchor.setAccessibilityElement(false)
+        automationAnchorPanel = panel
+        popover.show(relativeTo: anchor.bounds, of: anchor, preferredEdge: .minY)
     }
 
     /// Cancel subscriptions, close the popover, and remove every status item.
+    ///
     /// Safe to call more than once.
     func invalidate() {
         cancellables.removeAll()
@@ -262,23 +326,38 @@ public final class StatusBarController: NSObject {
         }
         popover.contentViewController = nil
         anchoredButton = nil
+        automationAnchorPanel?.orderOut(nil)
+        automationAnchorPanel = nil
         removeAllProviderItems()
         removeFallbackItem()
     }
 }
 
-/// Application delegate for jackin❯ desktop (menu-bar agent). Owns the store,
+/// Application delegate for jackin❯ desktop (menu-bar agent).
+///
+/// Owns the store,
 /// status-bar controller, main menu, and document windows (Usage / Settings).
 @MainActor
 public final class DesktopAppDelegate: NSObject, NSApplicationDelegate {
+    private static let visualQAShowUsageNotification = Notification.Name(
+        "com.jackin-project.desktop.visual-qa.show-usage"
+    )
+    private static let visualQAShowPopoverNotification = Notification.Name(
+        "com.jackin-project.desktop.visual-qa.show-popover"
+    )
     let store: PresentationStore
     private let launchConfiguration: PresentationStore.LaunchConfiguration
+    private let visualQALaunchOptions: VisualQALaunchOptions
     private var statusBar: StatusBarController?
     private var usageWindow: UsageWindowController?
     /// Retained: menu item targets point here / AppMainMenu for the process life.
     private var mainMenu: AppMainMenu?
 
-    public override init() {
+    override public init() {
+        self.visualQALaunchOptions = VisualQALaunchOptions.resolve(
+            arguments: ProcessInfo.processInfo.arguments,
+            environment: ProcessInfo.processInfo.environment
+        )
         self.launchConfiguration = PresentationStore.LaunchConfiguration.resolve(
             environment: ProcessInfo.processInfo.environment,
             homeDirectory: FileManager.default.homeDirectoryForCurrentUser.path
@@ -288,28 +367,85 @@ public final class DesktopAppDelegate: NSObject, NSApplicationDelegate {
     }
 
     public func applicationWillFinishLaunching(_ notification: Notification) {
-        NSApp.setActivationPolicy(.accessory)
+        NSApp.setActivationPolicy(initialActivationPolicy)
     }
 
     public func applicationDidFinishLaunching(_ notification: Notification) {
-        NSApp.setActivationPolicy(.accessory)
-        store.openForLaunch(launchConfiguration)
-        let usageWindow = UsageWindowController(store: store)
+        NSApp.setActivationPolicy(initialActivationPolicy)
+        applyVisualQAAppearance()
+        let fixture = applyVisualQAFixtureIfRequested()
+        let usageWindow = UsageWindowController(
+            store: store,
+            elevatesFixtureWindow: visualQALaunchOptions.elevatesFixtureWindow
+        )
         self.usageWindow = usageWindow
 
-        let menu = AppMainMenu(store: store) { [weak usageWindow] in
-            usageWindow?.show(focusOn: nil)
-        }
+        let menu = AppMainMenu(
+            store: store,
+            openUsage: { [weak usageWindow] in usageWindow?.show() },
+            toggleUsageSidebar: { [weak usageWindow] in usageWindow?.toggleSidebar() },
+            isUsageSidebarVisible: { [weak usageWindow] in
+                usageWindow?.isSidebarVisible ?? true
+            },
+            canToggleUsageSidebar: { [weak usageWindow] in
+                usageWindow?.isKeyWindow ?? false
+            }
+        )
         menu.install()
         self.mainMenu = menu
 
         let router = StatusItemMenuRouter(
-            openUsageWindow: { [weak usageWindow] surfaceId in usageWindow?.show(focusOn: surfaceId) },
+            openUsageWindow: { [weak usageWindow] surfaceId in usageWindow?.show(focusOn: surfaceId)
+            },
             refresh: { [weak store] in store?.refreshAll() },
             quit: { NSApp.terminate(nil) }
         )
-        statusBar = StatusBarController(store: store, menuRouter: router) { [weak usageWindow] surfaceId in
+        let statusBar = StatusBarController(
+            store: store,
+            menuRouter: router,
+            compactStatusItems: visualQALaunchOptions.usesFixture
+        ) {
+            [weak usageWindow] surfaceId in
             usageWindow?.show(focusOn: surfaceId)
+        }
+        self.statusBar = statusBar
+
+        if visualQALaunchOptions.usesFixture {
+            DistributedNotificationCenter.default().addObserver(
+                self,
+                selector: #selector(showUsageForVisualQA(_:)),
+                name: Self.visualQAShowUsageNotification,
+                object: nil
+            )
+            DistributedNotificationCenter.default().addObserver(
+                self,
+                selector: #selector(showPopoverForVisualQA(_:)),
+                name: Self.visualQAShowPopoverNotification,
+                object: nil
+            )
+        }
+
+        let selection: String?
+        switch visualQALaunchOptions.selection {
+        case .fixtureDefault:
+            selection = fixture?.usageSelection
+        case .overview:
+            selection = nil
+        case .provider(let surfaceId):
+            selection = surfaceId
+        }
+        if visualQALaunchOptions.openUsage || visualQALaunchOptions.invalidFixtureID != nil {
+            usageWindow.show(focusOn: selection, size: visualQALaunchOptions.windowSize)
+        }
+        if visualQALaunchOptions.openPopover {
+            // Automation launches without a status-item click. Front the fixture process so the
+            // system menu bar attaches its real status-item window before NSPopover presentation.
+            NSApp.setActivationPolicy(.regular)
+            NSApp.activate()
+            let popoverSelection = selection ?? fixture?.popoverSelection
+            DispatchQueue.main.async { [weak statusBar] in
+                statusBar?.showPopover(focusOn: popoverSelection)
+            }
         }
     }
 
@@ -318,20 +454,84 @@ public final class DesktopAppDelegate: NSObject, NSApplicationDelegate {
         false
     }
 
-    public func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows: Bool) -> Bool {
+    public func applicationShouldHandleReopen(
+        _ sender: NSApplication, hasVisibleWindows: Bool
+    ) -> Bool {
         // Dock click while regular (or after hide) → bring Usage forward.
-        if !hasVisibleWindows {
-            usageWindow?.show(focusOn: nil)
+        if !hasVisibleWindows, !visualQALaunchOptions.openPopover {
+            usageWindow?.show()
         }
         return true
     }
 
     public func applicationWillTerminate(_ notification: Notification) {
+        DistributedNotificationCenter.default().removeObserver(self)
         statusBar?.invalidate()
         statusBar = nil
         usageWindow?.invalidate()
         usageWindow = nil
         mainMenu = nil
         store.shutdown()
+    }
+
+    @objc private func showUsageForVisualQA(_: Notification) {
+        usageWindow?.show()
+    }
+
+    @objc private func showPopoverForVisualQA(_: Notification) {
+        statusBar?.showPopover(focusOn: store.popoverSelection)
+    }
+
+    private func applyVisualQAAppearance() {
+        switch visualQALaunchOptions.appearance {
+        case .system:
+            break
+        case .light:
+            NSApp.appearance = NSAppearance(named: .aqua)
+        case .dark:
+            NSApp.appearance = NSAppearance(named: .darkAqua)
+        }
+    }
+
+    private var initialActivationPolicy: NSApplication.ActivationPolicy {
+        if visualQALaunchOptions.openUsage || visualQALaunchOptions.openPopover
+            || visualQALaunchOptions.invalidFixtureID != nil
+        {
+            return .regular
+        }
+        return .accessory
+    }
+
+    private func applyVisualQAFixtureIfRequested() -> VisualQAFixture? {
+        if let id = visualQALaunchOptions.fixtureID {
+            let fixture = VisualQAFixtures.fixture(id: id)
+            store.applyQIFixture(
+                glanceRows: fixture.glanceRows,
+                statusBarGlanceRows: fixture.statusGlanceRows,
+                surfaces: fixture.surfaces,
+                accounts: fixture.accounts,
+                popoverSelection: fixture.popoverSelection,
+                usageSelection: fixture.usageSelection,
+                nextRefreshLabel: fixture.nextRefreshLabel,
+                isLoading: fixture.isLoading,
+                isRefreshing: fixture.isRefreshing,
+                lastError: fixture.globalError
+            )
+            return fixture
+        }
+        if let invalid = visualQALaunchOptions.invalidFixtureID {
+            store.applyQIFixture(
+                glanceRows: [],
+                surfaces: [],
+                accounts: [],
+                popoverSelection: nil,
+                usageSelection: nil,
+                nextRefreshLabel: "",
+                lastError: "Unknown fixture ID: \(invalid)"
+            )
+            return nil
+        }
+        store.openForLaunch(launchConfiguration)
+        return nil
     }
 }

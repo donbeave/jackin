@@ -6,6 +6,7 @@
 //     single file renders identically as inline SVG, <img>, or background —
 //     with no dependence on a loaded webfont.
 //   - public/brand/jackin-monogram.svg, *.png, favicon.svg/.ico, app icons.
+//   - native/Resources/Brand/*.svg for appearance-adaptive desktop identity.
 //
 // Logo style: transparent background, white "jackin" (bold), green ❯ chevron.
 // To change the mark, edit this file or brand-geometry.ts and rerun `gen-brand`.
@@ -89,8 +90,10 @@ function faviconSvg(size: number): string {
 }
 
 const brandDir = join(root, 'public', 'brand')
+const nativeBrandDir = join(root, '..', 'native', 'Sources', 'JackinDesktop', 'Resources', 'Brand')
 const pub = join(root, 'public')
 mkdirSync(brandDir, { recursive: true })
+mkdirSync(nativeBrandDir, { recursive: true })
 
 // 1. Canonical wordmark + monogram (outlined SVG). Used by BrandMark and the TOC.
 // Guarantee, by rasterizing the result, that the byline's right edge lines up
@@ -137,7 +140,8 @@ writeFileSync(join(brandDir, 'jackin-wordmark.svg'), wordmark)
 console.log('wrote public/brand/jackin-wordmark.svg')
 writeFileSync(join(brandDir, 'jackin-lockup.svg'), wordmark)
 console.log('wrote public/brand/jackin-lockup.svg')
-writeFileSync(join(brandDir, 'jackin-monogram.svg'), wordmarkSvg('j', 200, WHITE, GREEN, false))
+const monogram = wordmarkSvg('j', 200, WHITE, GREEN, false)
+writeFileSync(join(brandDir, 'jackin-monogram.svg'), monogram)
 console.log('wrote public/brand/jackin-monogram.svg')
 
 // Light-surface variant (dark word + accent chevron) for white chrome in light
@@ -147,6 +151,19 @@ writeFileSync(join(brandDir, 'jackin-wordmark-onlight.svg'), wordmarkOnlight)
 console.log('wrote public/brand/jackin-wordmark-onlight.svg')
 writeFileSync(join(brandDir, 'jackin-lockup-onlight.svg'), wordmarkOnlight)
 console.log('wrote public/brand/jackin-lockup-onlight.svg')
+const monogramOnlight = wordmarkSvg('j', 200, DARK_WORD, GREEN, false)
+
+// Native desktop consumes generated vectors from the same geometry. Names state
+// the destination appearance, not a different mark variant.
+for (const [name, svg] of [
+  ['JackinWordmarkDark.svg', wordmark],
+  ['JackinWordmarkLight.svg', wordmarkOnlight],
+  ['JackinMonogramDark.svg', monogram],
+  ['JackinMonogramLight.svg', monogramOnlight],
+] as const) {
+  writeFileSync(join(nativeBrandDir, name), svg)
+  console.log(`wrote native/Sources/JackinDesktop/Resources/Brand/${name}`)
+}
 
 // 2. Favicon (outlined, renders without a webfont).
 writeFileSync(join(pub, 'favicon.svg'), faviconSvg(512))

@@ -57,7 +57,7 @@ public enum JackinBrand {
         colorScheme == .dark ? .black : .white
     }
 
-    public static let phosphorNSColor: NSColor = NSColor(
+    public static let phosphorNSColor = NSColor(
         name: "jackinPhosphor",
         dynamicProvider: { appearance in
             let dark = appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua

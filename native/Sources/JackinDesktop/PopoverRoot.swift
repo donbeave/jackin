@@ -4,29 +4,20 @@
 import JackinUsageBridge
 import SwiftUI
 
-/// Glance popover composition root — **Liquid Glass navigation chrome**.
-///
-/// Shell is translucent (`GlassFallbacks.panelSurfaceBackground`) so wallpaper
-/// peeks through (LG-A1). Tab strip + footer sit on glass; scroll body is still
-/// content (standard fills on rows only — LG-A2). Data remains Rust-owned.
-///
-/// **QI full-plate capture:** set `\.popoverQIFullPlate` so multi-limit heroes
-/// (Session + Weekly + …) fit without a hollow clipped header-only plate.
 private enum PopoverQIFullPlateKey: EnvironmentKey {
     static let defaultValue = false
 }
 
 extension EnvironmentValues {
-    /// When true, popover max height expands so harness/QI snapshots can show
-    /// every limit bucket (fill+track), not just the first hero in a scroll fold.
     public var popoverQIFullPlate: Bool {
         get { self[PopoverQIFullPlateKey.self] }
         set { self[PopoverQIFullPlateKey.self] = newValue }
     }
 }
 
+/// Focused-provider glance hosted by the real system `NSPopover`.
 public struct PopoverRoot: View {
-    public static let liveContentSize = CGSize(width: 416, height: 644)
+    public static let liveContentSize = CGSize(width: 380, height: 520)
 
     @ObservedObject public var store: PresentationStore
     public var onOpenUsage: ((String?) -> Void)?
@@ -38,110 +29,246 @@ public struct PopoverRoot: View {
     }
 
     public var body: some View {
+        let height: CGFloat = qiFullPlate ? 1_100 : 520
         VStack(spacing: 0) {
-            // Nav chrome: provider strip (glass selection, not content cards).
-            PopoverTabGrid(
-                providers: store.providerGlanceRows,
-                selection: $store.popoverSelection
-            )
-            .padding(.top, 8)
+            popoverBrandHeader
 
-            GlassFallbacks.glassSeparator()
-                .padding(.top, 2)
+            Divider()
 
-            // Content scrolls under glass chrome (LG-A7 soft edges).
-            ScrollView {
-                content
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 4)
+            content
+                .frame(width: 380, height: height - 94)
+                .clipped()
+
+            Divider()
+
+            controls
+                .padding(.horizontal, 12)
+                .frame(height: 48)
+                .background(.bar)
+        }
+        .frame(width: 380, height: height)
+    }
+
+    private var popoverBrandHeader: some View {
+        HStack(spacing: 8) {
+            if let monogram = JackinBrandIdentity.templateMonogram() {
+                Image(nsImage: monogram)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 18, height: 18)
+                    .accessibilityHidden(true)
             }
-            .modifier(GlassFallbacks.SoftScrollEdges())
-
-            GlassFallbacks.glassSeparator()
-
-            // Sticky glass footer dock — Open Usage Window (FB1-43 / LG-A8 one CTA).
-            PopoverFooter {
-                onOpenUsage?(store.popoverSelection)
-            }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 8)
+            Text("jackin❯ desktop")
+                .font(.headline)
+                .accessibilityAddTraits(.isHeader)
         }
-        // Craft width aligns with popover.html (~424). Live menu-bar uses a
-        // bounded max height + scroll; QI full-plate expands for multi-limit IA.
-        .frame(width: 412)
-        .frame(
-            minHeight: 220,
-            idealHeight: qiFullPlate ? 1600 : 640,
-            maxHeight: qiFullPlate ? 1600 : 640
-        )
-        // Liquid Glass panel — must sit on a clear NSPopover window.
-        .background {
-            GlassFallbacks.panelSurfaceBackground()
-        }
-        .clipShape(
-            RoundedRectangle(cornerRadius: GlassFallbacks.panelCornerRadius, style: .continuous)
-        )
-        .shadow(color: .black.opacity(0.28), radius: 32, y: 14)
-        .padding(2)
-        // ⌘R refresh without a second glass footer CTA (OV-9 / FB1-43: one Open Usage dock).
-        .background {
-            Button("Refresh") { store.refreshAll() }
-                .keyboardShortcut("r", modifiers: [.command])
-                .opacity(0)
-                .frame(width: 0, height: 0)
-                .allowsHitTesting(false)
-                .accessibilityHidden(true)
-        }
+        .frame(maxWidth: .infinity)
+        .frame(height: 44)
     }
 
     @ViewBuilder
     private var content: some View {
-        if let selection = store.popoverSelection,
-           let provider = store.providerGlanceRows.first(where: { $0.surfaceId == selection })
-        {
-            PopoverProviderTab(
-                provider: provider,
-                surface: store.surfaces.first(where: { $0.id == selection }),
-                accounts: store.accountsForSurface(selection),
-                refreshInProgress: store.refreshInProgress,
-                onSelectAccount: { surfaceId, accountKey in
-                    store.setSelectedAccount(surfaceId: surfaceId, accountKey: accountKey)
-                },
-                onRefreshProvider: { surfaceId in
-                    store.refresh(surfaceId: surfaceId)
-                }
-            )
-        } else if store.providerGlanceRows.isEmpty {
-            emptyState
+        if store.isOpening, store.providerGlanceRows.isEmpty {
+            ProgressView("Loading usage")
+                .controlSize(.large)
+                .accessibilityIdentifier("popover.loading")
+        } else if let error = store.lastError, store.providerGlanceRows.isEmpty {
+            ContentUnavailableView {
+                Label("Usage unavailable", systemImage: "exclamationmark.triangle")
+            } description: {
+                Text(error)
+            } actions: {
+                Button("Retry") { store.retryLastOperation() }
+                    .disabled(store.isOpening || store.refreshInProgress)
+                    .accessibilityIdentifier("popover.retry")
+            }
+            .accessibilityIdentifier("popover.global-error")
+        } else if let provider = selectedProvider {
+            providerForm(provider)
         } else {
-            // Overview inventory: per-account rows + official marks (OV-3…OV-10 / HTML mode-overview).
-            PopoverOverviewTab(
-                providers: store.providerGlanceRows,
-                accounts: store.accounts,
-                selection: $store.popoverSelection,
-                onRefreshSurface: { surfaceId in
-                    store.refresh(surfaceId: surfaceId)
-                },
-                onSelectAccount: { surfaceId, accountKey in
-                    store.setSelectedAccount(surfaceId: surfaceId, accountKey: accountKey)
-                }
+            ContentUnavailableView(
+                "No providers detected",
+                systemImage: "chevron.right",
+                description: Text(UsageWindowModel.emptyHint)
             )
+            .accessibilityIdentifier("popover.empty")
         }
     }
 
-    private var emptyState: some View {
-        VStack(spacing: 8) {
-            Image(systemName: "chevron.right")
-                .font(.title)
-                .foregroundStyle(.secondary)
-            Text("No agent usage detected")
-                .font(.callout)
-                .foregroundStyle(.secondary)
-            Text("Sign in to a supported agent to see usage.")
-                .font(.caption2)
-                .foregroundStyle(.tertiary)
+    private var selectedProvider: PresentationStore.GlanceProviderRow? {
+        if let selection = store.popoverSelection,
+            let match = store.providerGlanceRows.first(where: { $0.surfaceId == selection })
+        {
+            return match
         }
-        .padding()
-        .frame(maxWidth: .infinity)
+        return store.providerGlanceRows.first
+    }
+
+    private func providerForm(_ provider: PresentationStore.GlanceProviderRow) -> some View {
+        let surface = store.surfaces.first { $0.id == provider.surfaceId }
+        let accounts = store.accountsForSurface(provider.surfaceId)
+        let metadataRows = surface?.detailPresentation.rows.filter { $0.kind != .bucket } ?? []
+        let limitRows = surface?.detailPresentation.rows.filter { $0.kind == .bucket } ?? []
+
+        return Form {
+            Section {
+                providerIdentity(provider)
+            }
+
+            if accounts.count > 1 {
+                Section {
+                    Picker("Account", selection: accountSelection(accounts, provider: provider)) {
+                        ForEach(accounts) { account in
+                            Text(account.accountLabel)
+                                .tag(account.accountKey)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .accessibilityLabel("Account")
+                    .accessibilityIdentifier("popover.account-picker")
+                } header: {
+                    sectionHeader("Account")
+                }
+            }
+
+            if !metadataRows.isEmpty {
+                Section {
+                    ForEach(metadataRows) { row in
+                        LabeledContent(row.label, value: row.displayLabel)
+                            .accessibilityLabel("\(row.label), \(row.displayLabel)")
+                            .accessibilityIdentifier("popover.detail.\(row.rowId)")
+                    }
+                } header: {
+                    sectionHeader("Details")
+                }
+            }
+
+            if !limitRows.isEmpty {
+                Section {
+                    ForEach(limitRows) { row in
+                        limitRow(row)
+                    }
+                } header: {
+                    sectionHeader("Limits")
+                }
+            } else if surface?.lastError == nil {
+                Section {
+                    Text("No limit details available")
+                        .foregroundStyle(.secondary)
+                } header: {
+                    sectionHeader("Limits")
+                }
+            }
+
+            if let error = surface?.lastError ?? provider.lastError {
+                Section {
+                    Label(error, systemImage: "exclamationmark.triangle")
+                        .accessibilityIdentifier("popover.provider-error")
+                    Button("Retry") { store.refresh(surfaceId: provider.surfaceId) }
+                        .disabled(store.refreshInProgress)
+                        .accessibilityIdentifier("popover.provider-retry")
+                } header: {
+                    sectionHeader("Provider status")
+                }
+            }
+        }
+        .formStyle(.grouped)
+        .accessibilityLabel("\(provider.displayLabel) usage details")
+        .accessibilityIdentifier("popover.provider.\(provider.surfaceId)")
+    }
+
+    private func providerIdentity(_ provider: PresentationStore.GlanceProviderRow) -> some View {
+        HStack(spacing: 10) {
+            if let mark = ProviderMarks.swiftUIImage(forIconKey: provider.iconKey) {
+                mark
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 28, height: 28)
+                    .accessibilityHidden(true)
+            }
+            VStack(alignment: .leading, spacing: 2) {
+                Text(provider.displayLabel)
+                    .font(.headline)
+                Text(provider.statusLabel)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+            if provider.isRefreshing {
+                ProgressView()
+                    .controlSize(.small)
+                    .accessibilityLabel(provider.statusLabel)
+            }
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("popover.provider-identity")
+    }
+
+    private func accountSelection(
+        _ accounts: [PresentationStore.AccountRow],
+        provider: PresentationStore.GlanceProviderRow
+    ) -> Binding<String> {
+        Binding(
+            get: { accounts.first(where: \.selected)?.accountKey ?? accounts[0].accountKey },
+            set: { store.setSelectedAccount(surfaceId: provider.surfaceId, accountKey: $0) }
+        )
+    }
+
+    private func limitRow(_ row: UsageDetailRow) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            LabeledContent(row.label) {
+                Text(row.layoutLines.first?.leading ?? row.displayLabel)
+                    .monospacedDigit()
+                    .foregroundStyle(.primary)
+            }
+            if let percent = row.meterPercent {
+                ProgressView(value: Double(percent), total: 100)
+                    .tint(severityTint(row.severity))
+                    .accessibilityHidden(true)
+            }
+            ForEach(Array(row.layoutLines.dropFirst().enumerated()), id: \.offset) { _, line in
+                if let value = line.leading ?? line.trailing {
+                    Text(value)
+                        .font(.caption)
+                        .foregroundStyle(.primary)
+                }
+            }
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityRepresentation {
+            Text(row.displayLabel)
+                .accessibilityLabel("\(row.label), \(row.displayLabel)")
+                .accessibilityIdentifier("popover.limit.\(row.rowId)")
+        }
+    }
+
+    private func sectionHeader(_ title: String) -> some View {
+        Text(title)
+            .accessibilityLabel(title)
+    }
+
+    private var controls: some View {
+        HStack {
+            Button {
+                if let id = selectedProvider?.surfaceId {
+                    store.refresh(surfaceId: id)
+                } else {
+                    store.refreshAll()
+                }
+            } label: {
+                Label("Refresh", systemImage: "arrow.clockwise")
+            }
+            .keyboardShortcut("r", modifiers: [.command])
+            .disabled(store.refreshInProgress)
+            .accessibilityIdentifier("popover.refresh")
+
+            Spacer()
+
+            Button("Open Usage") {
+                onOpenUsage?(selectedProvider?.surfaceId)
+            }
+            .keyboardShortcut(.defaultAction)
+            .accessibilityIdentifier("popover.open-usage")
+        }
     }
 }

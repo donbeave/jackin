@@ -390,8 +390,8 @@ jobs:
       needs.check-version.outputs.published != 'true' &&
       (github.event_name != 'workflow_dispatch' || inputs.lanes != 'velnor')
     needs: [check-version]
-    # macos-latest: Swift 6 tools (Package.swift tools-version 6.0), same as CI native job.
-    runs-on: macos-latest
+    # Fixed shipping baseline: Tahoe host and Xcode 26.6, never a moving latest label.
+    runs-on: macos-26
     timeout-minutes: 90
     environment: ${{ needs.check-version.outputs.mode == 'publish' && 'release-macos' || '' }}
     permissions:
@@ -403,7 +403,8 @@ jobs:
       APP_BUILD: ${{ needs.check-version.outputs.app_build }}
       MODE: ${{ needs.check-version.outputs.mode }}
       CARGO_TERM_COLOR: always
-      MACOSX_DEPLOYMENT_TARGET: "14.0"
+      DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
+      MACOSX_DEPLOYMENT_TARGET: "26.0"
     outputs:
       app_sha256: ${{ steps.sha.outputs.app_sha256 }}
     steps:
@@ -436,19 +437,11 @@ jobs:
           cargo install uniffi --version 0.32.0 --features cli --locked --force
           uniffi-bindgen --version
 
-      - name: Select newest Xcode (Swift 6 + prefer macOS 26 SDK)
-        run: |
-          set -euo pipefail
-          # Prefer Xcode 26.x for Tahoe SDK; else default Xcode.app on macos-latest.
-          if [ -d /Applications/Xcode_26.1.app ]; then
-            sudo xcode-select -s /Applications/Xcode_26.1.app
-          elif [ -d /Applications/Xcode_26.0.app ]; then
-            sudo xcode-select -s /Applications/Xcode_26.0.app
-          elif [ -d /Applications/Xcode.app ]; then
-            sudo xcode-select -s /Applications/Xcode.app
-          fi
-          xcodebuild -version
-          swift --version
+      - name: Verify Xcode 26.6
+        run: xcodebuild -version
+
+      - name: Verify Swift toolchain
+        run: swift --version
 
       - name: Assemble arm64 static app
         env:

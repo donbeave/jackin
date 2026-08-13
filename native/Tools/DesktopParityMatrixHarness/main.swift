@@ -229,7 +229,7 @@ struct DesktopParityMatrixHarness {
             severities: []
         )
         let withEmpty = buildStatusItemChips(
-            surfaces: surfaces + [emptyAmp], // duplicate amp id ignored by later? use only empty
+            surfaces: surfaces + [emptyAmp],  // duplicate amp id ignored by later? use only empty
             maxCount: 8,
             preferWorstFirst: false,
             percentStyle: "left",
@@ -257,7 +257,8 @@ struct DesktopParityMatrixHarness {
         )
 
         // --- Bucket row shapes (detail displayable) ---
-        check("gauge when remaining", bucketRowShape(remainingPercent: 40, usedLabel: nil) == .gauge)
+        check(
+            "gauge when remaining", bucketRowShape(remainingPercent: 40, usedLabel: nil) == .gauge)
         check(
             "valueOnly money without remaining",
             bucketRowShape(remainingPercent: nil, usedLabel: "SGD 78 of 260") == .valueOnly
@@ -280,8 +281,7 @@ struct DesktopParityMatrixHarness {
         let statusItem = read("StatusItemLabel.swift")
         let statusBar = read("DesktopAppDelegate.swift")
         let popover = read("PopoverRoot.swift")
-        let popoverProviderTab = read("Popover/PopoverProviderTab.swift")
-        let provider = read("UsageWindow/ProviderCardView.swift")
+        let provider = read("UsageWindow/ProviderDetailView.swift")
         let overview = read("UsageWindow/OverviewListView.swift")
         let usageController = read("UsageWindowController.swift")
         check(
@@ -297,11 +297,10 @@ struct DesktopParityMatrixHarness {
                 && !statusItem.contains("statusItemRemainingFraction")
         )
         check(
-            "Popover composes tab grid + Overview/provider tabs + footer",
-            popover.contains("PopoverTabGrid")
-                && popover.contains("PopoverOverviewTab")
-                && popover.contains("PopoverProviderTab")
-                && popover.contains("PopoverFooter")
+            "Popover is focused-provider Form without custom navigation",
+            popover.contains("Form {")
+                && !popover.contains("PopoverTabGrid")
+                && !popover.contains("PopoverOverviewTab")
         )
         check(
             "Popover reads Rust glance rows verbatim (no Swift percent recompute)",
@@ -313,8 +312,8 @@ struct DesktopParityMatrixHarness {
             popover.contains("accountsForSurface") && popover.contains("setSelectedAccount")
         )
         check(
-            "Usage Overview renders Rust glance rows verbatim (no bucket synthesis)",
-            overview.contains("model.sidebar")
+            "Usage Overview renders the shared account inventory without bucket synthesis",
+            overview.contains("OverviewInventory.rows")
                 && !overview.contains("overviewNumericBucketCap")
                 && !overview.contains("bucketMiniRow")
                 && !overview.contains("splitPaceLabel")
@@ -331,18 +330,19 @@ struct DesktopParityMatrixHarness {
             bucketGaugeSecondaryLimitLabel(limitLabel: "100%", remainingPercent: 40) == nil
         )
         check(
-            "Popover provider bucket path is generic Rust segments",
-            popoverProviderTab.contains("displaySegments")
-                && !popoverProviderTab.contains("Text(bucket.statusSlot")
+            "Popover renders shared Rust detail rows with native progress",
+            popover.contains("detailPresentation.rows")
+                && popover.contains("ProgressView(value:")
+                && !popover.contains("statusItemPercentToken")
         )
         check(
-            "ProviderCard renders Rust detail rows mechanically (plan 008)",
+            "Provider detail renders Rust rows mechanically (plan 008)",
             provider.contains("content.detail.rows")
                 && provider.contains("layoutLines")
                 && provider.contains("row.label")
         )
         check(
-            "ProviderCard splits/joins no usage string and invents no field copy",
+            "Provider detail splits/joins no usage string and invents no field copy",
             !provider.contains("splitPaceLabel")
                 && !provider.contains("bucketMetricPrimaryLabel")
                 && !provider.contains("statusItemPercentToken")
@@ -352,14 +352,17 @@ struct DesktopParityMatrixHarness {
                 && !provider.contains("\"— No data\"")
         )
         check(
-            "ProviderCard bucket identity is Rust rowId, not label",
+            "Provider detail bucket identity is Rust rowId, not label",
             provider.contains("content.detail.rows")
                 && provider.contains("ForEach")
                 && !provider.contains("ForEach(surface.buckets)")
         )
         check(
-            "Usage detail meter/severity are geometry+style only (no visible text)",
-            provider.contains("meterPercent") && provider.contains("severityTint")
+            "Usage detail meter is native and severity supplements textual state",
+            provider.contains("meterPercent")
+                && provider.contains("ProgressView(value:")
+                && provider.contains("severityTint(row.severity)")
+                && provider.contains("row.displayLabel")
         )
         let usageRoot = read("UsageWindow/UsageWindowRoot.swift")
         check(
@@ -375,13 +378,13 @@ struct DesktopParityMatrixHarness {
                 && !overview.contains("\"No enabled surfaces\"")
         )
         check(
-            "Overview uses per-account inventory helper (HTML SoT)",
+            "Overview uses the per-account inventory helper",
             overview.contains("OverviewInventory")
         )
         check(
-            "Usage account nest has mini meter geometry",
-            usageRoot.contains("UsageAccountMiniMeter")
-                || usageRoot.contains("accountMiniMeter")
+            "Usage account selection is a native provider-detail Picker",
+            provider.contains("Picker(\"Account\"")
+                && !usageRoot.contains("UsageAccountMiniMeter")
         )
         check(
             "Usage window NSToolbar host",
@@ -393,9 +396,10 @@ struct DesktopParityMatrixHarness {
             statusBar.contains("StatusPopoverFocus") && statusBar.contains("popoverSelection")
         )
         check(
-            "Popover prefers detailPresentation buckets",
-            popoverProviderTab.contains("detailPresentation")
-                && popoverProviderTab.contains("ProviderUsageLinks")
+            "Provider detail preserves the provider usage escape hatch",
+            provider.contains("content.detail.rows")
+                && provider.contains("ProviderUsageLinks")
+                && provider.contains("Link(destination:")
         )
         check(
             "ProviderUsageLinks desktop map complete",

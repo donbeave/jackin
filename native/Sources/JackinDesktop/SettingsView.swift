@@ -23,9 +23,11 @@ public struct SettingsView: View {
                 .pickerStyle(.radioGroup)
                 .accessibilityLabel("Status item display mode")
                 if store.displayMode == .strip {
-                    Text("OpenUsage-style strip with Liquid Glass chip capsules on macOS 26+.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                    Text(
+                        "Detected providers use native menu-bar items with system-owned appearance."
+                    )
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
                 }
 
                 if store.displayMode == .pinnedSurface {
@@ -41,8 +43,8 @@ public struct SettingsView: View {
                 if store.displayMode == .strip {
                     Picker("Max providers in menu bar", selection: $store.stripMax) {
                         // SB-3: burn-first bar never exceeds three chips.
-                        ForEach(1...3, id: \.self) { n in
-                            Text("\(n)").tag(n)
+                        ForEach(1...3, id: \.self) { count in
+                            Text("\(count)").tag(count)
                         }
                     }
                     .accessibilityLabel("Maximum providers shown in menu bar strip (1–3)")
@@ -82,10 +84,13 @@ public struct SettingsView: View {
             }
             Section("Surfaces") {
                 ForEach(store.surfaces) { surface in
-                    Toggle(surface.label, isOn: Binding(
-                        get: { surface.enabled },
-                        set: { store.setEnabled(surfaceId: surface.id, enabled: $0) }
-                    ))
+                    Toggle(
+                        surface.label,
+                        isOn: Binding(
+                            get: { surface.enabled },
+                            set: { store.setEnabled(surfaceId: surface.id, enabled: $0) }
+                        )
+                    )
                     .accessibilityLabel("\(surface.label) enabled")
                 }
             }
@@ -113,9 +118,11 @@ public struct SettingsView: View {
             Section("About") {
                 Text("Account quotas from host credentials via jackin-usage (Rust).")
                     .font(.caption)
-                Text("Refreshing here updates the same account snapshot every jackin❯ container reads (and vice versa).")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                Text(
+                    "Refreshing here updates the same account snapshot every jackin❯ container reads (and vice versa)."
+                )
+                .font(.caption)
+                .foregroundStyle(.secondary)
                 Text("No passwords stored. No Capsule required.")
                     .font(.caption)
                     .foregroundStyle(.secondary)

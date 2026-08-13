@@ -4,18 +4,33 @@
 import JackinUsageBridge
 import SwiftUI
 
-/// Usage window — **one continuous content surface** with Liquid Glass nav
-/// floating above it (Apple Adopting Liquid Glass / Telegram-style).
-///
-/// Not a hard three-pane split. `NavigationSplitView` on macOS 26 paints a
-/// floating glass sidebar over detail content; detail uses standard materials
-/// and may extend under the sidebar via `backgroundExtensionEffect`.
+@MainActor
+public final class UsageWindowNavigationState: ObservableObject {
+    @Published var columnVisibility: NavigationSplitViewVisibility = .all
+
+    var isSidebarVisible: Bool {
+        columnVisibility != .detailOnly
+    }
+
+    func toggleSidebar() {
+        columnVisibility = isSidebarVisible ? .detailOnly : .all
+    }
+}
+
+/// Two-column Usage window with system-owned sidebar and toolbar chrome.
 public struct UsageWindowRoot: View {
+    private enum Destination: Hashable {
+        case overview
+        case provider(String)
+    }
+
     @ObservedObject public var store: PresentationStore
+    @ObservedObject private var navigationState: UsageWindowNavigationState
     @Environment(\.dismiss) private var dismiss
 
-    public init(store: PresentationStore) {
+    public init(store: PresentationStore, navigationState: UsageWindowNavigationState) {
         self.store = store
+        self.navigationState = navigationState
     }
 
     private var model: UsageWindowModel {
@@ -28,148 +43,82 @@ public struct UsageWindowRoot: View {
     }
 
     public var body: some View {
-        let model = self.model
-        NavigationSplitView {
-            List {
-                // HTML `.side` · Browse / Overview (All accounts)
-                Section {
-                    Button {
-                        store.selectUsageSurface(nil)
-                    } label: {
-                        Label {
-                            VStack(alignment: .leading, spacing: 1) {
-                                Text("Overview")
-                                    .font(.body.weight(.semibold))
-                                Text("All accounts")
-                                    .font(.caption)
-                                    .foregroundStyle(.tertiary)
+        NavigationSplitView(columnVisibility: $navigationState.columnVisibility) {
+            VStack(spacing: 0) {
+                List(selection: destination) {
+                    Label("Overview", systemImage: "rectangle.grid.2x2")
+                        .tag(Destination.overview)
+                        .accessibilityIdentifier("usage.sidebar.overview")
+
+                    Section {
+                        ForEach(model.sidebar) { provider in
+                            Label {
+                                Text(provider.displayLabel)
+                            } icon: {
+                                providerMark(provider)
                             }
-                        } icon: {
-                            sidebarLogoPlate(systemImage: "square.grid.2x2", tint: Color.jackinPhosphor)
+                            .tag(Destination.provider(provider.surfaceId))
+                            .accessibilityIdentifier("usage.sidebar.provider.\(provider.surfaceId)")
                         }
+                    } header: {
+                        Text("Providers")
+                            .accessibilityLabel("Providers")
                     }
-                    .buttonStyle(.plain)
+                }
+                .listStyle(.sidebar)
+                .accessibilityLabel("Usage providers sidebar")
+                .accessibilityIdentifier("usage.sidebar")
+
+                JackinBrandSignature()
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 10)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .listRowInsets(EdgeInsets(top: 6, leading: 8, bottom: 6, trailing: 8))
-                    .listRowBackground(providerRowBackground(selected: store.usageSelection == nil))
-                } header: {
-                    Text("Browse")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.secondary)
-                        .textCase(nil)
-                }
-
-                Section {
-                    ForEach(model.sidebar) { row in
-                        // Provider = identity only (no glance % — lives on account rows).
-                        Button {
-                            store.selectUsageSurface(row.surfaceId)
-                        } label: {
-                            providerSidebarRow(row)
-                        }
-                            .buttonStyle(.plain)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .listRowInsets(EdgeInsets(top: 4, leading: 8, bottom: 4, trailing: 8))
-                            .listRowBackground(providerRowBackground(selected: store.usageSelection == row.surfaceId))
-                            .accessibilityLabel(providerAccessibilityLabel(row))
-
-                        // Nest accounts under the selected provider only — inset well (HTML ACCOUNTS).
-                        if store.usageSelection == row.surfaceId {
-                            let accts = store.accountsForSurface(row.surfaceId)
-                            if !accts.isEmpty {
-                                UsageAccountRailView(accounts: accts) { surfaceId, accountKey in
-                                    if accts.count > 1 {
-                                        store.setSelectedAccount(
-                                            surfaceId: surfaceId,
-                                            accountKey: accountKey
-                                        )
-                                    }
-                                }
-                                .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 8, trailing: -12))
-                                .listRowBackground(Color.clear)
-                            } else if !row.accountLabel.isEmpty {
-                                accountRail {
-                                    accountFallbackRow(row)
-                                }
-                                .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 8, trailing: -12))
-                                .listRowBackground(Color.clear)
-                            }
-                        }
-                    }
-                } header: {
-                    Text("Providers")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.secondary)
-                        .textCase(nil)
-                }
             }
-            .listStyle(.sidebar)
-            .navigationSplitViewColumnWidth(min: 200, ideal: 236, max: 300)
-            // LG-A5: system sidebar already Liquid Glass on Tahoe — clear, do not stack.
-            .background { GlassFallbacks.sidebarBackground() }
-            .safeAreaInset(edge: .bottom, spacing: 0) {
-                HStack(spacing: 6) {
-                    Text("Limits only")
-                        .font(.caption2.weight(.medium))
-                        .foregroundStyle(.tertiary)
-                    Text("·")
-                        .font(.caption2)
-                        .foregroundStyle(.quaternary)
-                    Text(store.nextRefreshLabel)
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 10)
-                .background { GlassFallbacks.footerBarBackground() }
-            }
+            .navigationSplitViewColumnWidth(min: 190, ideal: 220, max: 280)
+            .toolbar(removing: .sidebarToggle)
         } detail: {
-            // LG-A2 content layer under floating glass nav (LG-A6).
-            Group {
-                if let content = model.content {
-                    ProviderCardView(content: content)
-                } else {
-                    OverviewListView(
-                        model: model,
-                        accounts: store.accounts
-                    ) { surfaceId, accountKey in
-                        store.selectUsageSurface(surfaceId)
-                        if let accountKey {
-                            store.setSelectedAccount(surfaceId: surfaceId, accountKey: accountKey)
-                        }
-                    }
-                }
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background { GlassFallbacks.windowContentBackground() }
-            .modifier(GlassFallbacks.ContentBackgroundExtension())
+            detail
         }
         .navigationSplitViewStyle(.balanced)
-        // NSToolbar items (window.toolbarStyle = .unified is set on NSWindow host).
         .toolbar {
-            ToolbarItem(placement: .principal) {
-                HStack(spacing: 0) {
-                    Text("jackin")
-                    Text("❯")
-                        .foregroundStyle(Color.jackinPhosphor)
-                    Text(" desktop")
-                }
-                .font(.subheadline.weight(.semibold))
-                .accessibilityElement(children: .combine)
-                .accessibilityLabel("jackin❯ desktop")
+            ToolbarItem(id: "usage.brand-title", placement: .principal) {
+                Text("jackin❯ desktop")
+                    .font(.headline)
+                    .accessibilityAddTraits(.isHeader)
+                    .accessibilityIdentifier("usage.brand-title")
             }
 
-            // LG-A8: system toolbar group — icon-only Refresh (standard macOS pattern).
+            ToolbarItem(id: "usage.sidebar-toggle", placement: .navigation) {
+                Button {
+                    navigationState.toggleSidebar()
+                } label: {
+                    Label(sidebarToggleLabel, systemImage: "sidebar.left")
+                }
+                .help(sidebarToggleLabel)
+                .accessibilityIdentifier("usage.sidebar-toggle")
+            }
+
             ToolbarItem(placement: .primaryAction) {
                 Button {
                     store.refreshAll()
                 } label: {
-                    Label("Refresh", systemImage: "arrow.clockwise")
+                    Label {
+                        Text(store.refreshInProgress ? "Refreshing usage" : "Refresh")
+                    } icon: {
+                        ZStack {
+                            Image(systemName: "arrow.clockwise")
+                                .opacity(store.refreshInProgress ? 0 : 1)
+                            ProgressView()
+                                .controlSize(.small)
+                                .opacity(store.refreshInProgress ? 1 : 0)
+                        }
+                        .frame(width: 16, height: 16)
+                    }
                 }
-                .labelStyle(.iconOnly)
                 .keyboardShortcut("r", modifiers: [.command])
-                .help("Refresh all enabled providers")
+                .disabled(store.refreshInProgress)
+                .accessibilityValue(store.refreshInProgress ? "In progress" : "")
+                .accessibilityIdentifier("usage.refresh")
             }
         }
         .onExitCommand { dismiss() }
@@ -181,143 +130,78 @@ public struct UsageWindowRoot: View {
         .frame(minWidth: 760, minHeight: 500)
     }
 
-    /// Provider nav — logo plate + name; multi-account caption; **no** glance progress (G-U3).
-    @ViewBuilder
-    private func providerSidebarRow(_ row: PresentationStore.GlanceProviderRow) -> some View {
-        let accts = store.accountsForSurface(row.surfaceId)
-        HStack(spacing: 10) {
-            sidebarProviderLogo(iconKey: row.iconKey)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(row.displayLabel)
-                    .font(.body.weight(.semibold))
-                    .lineLimit(1)
-                if accts.count > 1 {
-                    Text("\(accts.count) accounts")
-                        .font(.caption)
-                        .foregroundStyle(.tertiary)
-                } else if !row.accountLabel.isEmpty {
-                    Text(row.accountLabel)
-                        .font(.caption)
-                        .foregroundStyle(.tertiary)
-                        .lineLimit(1)
+    private var destination: Binding<Destination?> {
+        Binding(
+            get: { store.usageSelection.map(Destination.provider) ?? .overview },
+            set: { value in
+                let surfaceId: String?
+                switch value {
+                case .overview, .none:
+                    surfaceId = nil
+                case .provider(let selectedSurfaceId):
+                    surfaceId = selectedSurfaceId
+                }
+                guard surfaceId != store.usageSelection else { return }
+                Task { @MainActor [store] in
+                    store.selectUsageSurface(surfaceId)
                 }
             }
-            Spacer(minLength: 0)
-        }
-        .padding(.vertical, 4)
-        .frame(maxWidth: .infinity, alignment: .leading)
+        )
     }
 
-    /// HTML `.nav-provider.on` selection well (accent tint, not glass-on-glass).
+    private var sidebarToggleLabel: String {
+        navigationState.isSidebarVisible ? "Hide Sidebar" : "Show Sidebar"
+    }
+
     @ViewBuilder
-    private func providerRowBackground(selected: Bool) -> some View {
-        if selected {
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(Color.jackinPhosphor.opacity(0.14))
+    private var detail: some View {
+        if store.isOpening, store.providerGlanceRows.isEmpty {
+            ProgressView("Loading usage")
+                .controlSize(.large)
+                .accessibilityIdentifier("usage.loading")
+        } else if let error = store.lastError, store.providerGlanceRows.isEmpty {
+            ContentUnavailableView {
+                Label("Usage unavailable", systemImage: "exclamationmark.triangle")
+            } description: {
+                Text(error)
+            } actions: {
+                Button("Retry") { store.retryLastOperation() }
+                    .disabled(store.isOpening || store.refreshInProgress)
+                    .accessibilityIdentifier("usage.retry")
+            }
+            .accessibilityIdentifier("usage.global-error")
+        } else if let content = model.content {
+            ProviderDetailView(
+                content: content,
+                providerError: store.surfaces.first { $0.id == content.surfaceId }?.lastError,
+                onSelectAccount: store.setSelectedAccount,
+                onRetry: { store.refresh(surfaceId: content.surfaceId) }
+            )
         } else {
-            Color.clear
-        }
-    }
-
-    /// Fallback inset shell when Rust has identity but no materialized account row.
-    private func accountRail<Rows: View>(@ViewBuilder rows: () -> Rows) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Text("Accounts")
-                .font(.system(size: 10, weight: .semibold))
-                .foregroundStyle(.tertiary)
-                .textCase(.uppercase)
-                .tracking(0.4)
-                .padding(.horizontal, 8)
-                .padding(.top, 4)
-                .padding(.bottom, 3)
-            rows()
-        }
-        .padding(4)
-        .background {
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(Color.primary.opacity(0.055))
-                .overlay {
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .strokeBorder(Color.primary.opacity(0.10), lineWidth: 0.5)
+            OverviewListView(
+                model: model,
+                accounts: store.accounts,
+                onSelect: { surfaceId, accountKey in
+                    store.selectUsageSurface(surfaceId)
+                    if let accountKey {
+                        store.setSelectedAccount(surfaceId: surfaceId, accountKey: accountKey)
+                    }
+                },
+                onRetry: { surfaceId in
+                    store.refresh(surfaceId: surfaceId)
                 }
+            )
         }
-    }
-
-    private func sidebarProviderLogo(iconKey: String) -> some View {
-        sidebarLogoPlate(iconKey: iconKey, tint: desktopProviderBrandChrome(iconKey: iconKey))
-    }
-
-    private func sidebarLogoPlate(
-        iconKey: String? = nil,
-        systemImage: String? = nil,
-        tint: Color
-    ) -> some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 7, style: .continuous)
-                .fill(tint.opacity(0.18))
-            if let iconKey, let mark = ProviderMarks.swiftUIImage(forIconKey: iconKey) {
-                mark
-                    .resizable()
-                    .interpolation(.high)
-                    .scaledToFit()
-                    .frame(width: 13, height: 13)
-                    .colorMultiply(tint)
-            } else {
-                let symbol = systemImage
-                    ?? iconKey.flatMap { desktopProviderSystemImage(iconKey: $0) }
-                    ?? "circle.grid.cross"
-                Image(systemName: symbol)
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(tint)
-            }
-        }
-        .frame(width: 26, height: 26)
     }
 
     @ViewBuilder
-    private func accountFallbackRow(_ row: PresentationStore.GlanceProviderRow) -> some View {
-        HStack(spacing: 8) {
-            VStack(alignment: .leading, spacing: 1) {
-                Text(row.accountLabel)
-                    .font(.caption.monospaced().weight(.semibold))
-                    .lineLimit(1)
-                if let plan = row.planLabel, !plan.isEmpty {
-                    Text(plan)
-                        .font(.caption2)
-                        .foregroundStyle(.tertiary)
-                        .lineLimit(1)
-                }
-            }
-            Spacer(minLength: 4)
-            if let pct = row.glanceRemainingPercent {
-                let sev = accountMeterSeverity(
-                    severity: row.severity,
-                    remainingPercent: pct
-                )
-                VStack(alignment: .trailing, spacing: 3) {
-                    Text(row.barLabel.isEmpty ? String(pct) + "%" : row.barLabel)
-                        .font(.caption.monospacedDigit().weight(.semibold))
-                        .foregroundStyle(
-                            pct == 0 ? Color.secondary : severityTint(sev)
-                        )
-                    UsageAccountMiniMeter(percent: pct, severity: sev)
-                }
-            } else if !row.barLabel.isEmpty {
-                Text(row.barLabel)
-                    .font(.caption.monospacedDigit().weight(.semibold))
-                    .foregroundStyle(.secondary)
-            }
+    private func providerMark(_ provider: PresentationStore.GlanceProviderRow) -> some View {
+        if let mark = ProviderMarks.swiftUIImage(forIconKey: provider.iconKey) {
+            mark
+                .resizable()
+                .scaledToFit()
+        } else {
+            Image(systemName: "circle.grid.cross")
         }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 6)
     }
-
-    private func providerAccessibilityLabel(_ row: PresentationStore.GlanceProviderRow) -> String {
-        let accts = store.accountsForSurface(row.surfaceId)
-        if accts.count > 1 {
-            return "\(row.displayLabel), \(accts.count) accounts"
-        }
-        return row.displayLabel
-    }
-
 }

@@ -9,9 +9,9 @@ import XCTest
 final class ArchitectureTests: XCTestCase {
     private var sourcesRoot: URL {
         URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent() // Tests/JackinUsageBridgeTests
-            .deletingLastPathComponent() // Tests
-            .deletingLastPathComponent() // native
+            .deletingLastPathComponent()  // Tests/JackinUsageBridgeTests
+            .deletingLastPathComponent()  // Tests
+            .deletingLastPathComponent()  // native
             .appendingPathComponent("Sources")
     }
 
@@ -68,39 +68,27 @@ final class ArchitectureTests: XCTestCase {
         }
     }
 
-    func testMacOS26AvailabilityOnlyInGlassFallbacks() throws {
+    func testLatestOnlySourcesHaveNoMacOSCompatibilityBranches() throws {
         for file in try handwrittenSwiftFiles() {
             let text = try String(contentsOf: file, encoding: .utf8)
-            let hasGate = text.contains("#available(macOS 26")
-            if file.lastPathComponent == "GlassFallbacks.swift" {
-                XCTAssertTrue(hasGate, "GlassFallbacks.swift must own macOS 26 gates")
-            } else {
-                XCTAssertFalse(
-                    hasGate,
-                    "\(file.lastPathComponent) must not contain #available(macOS 26 — use GlassFallbacks"
-                )
-            }
+            XCTAssertFalse(
+                text.contains("#available(macOS"),
+                "\(file.lastPathComponent) must not retain a pre-26 compatibility lane"
+            )
         }
     }
 
-    func testGlassEffectOnlyInGlassFallbacks() throws {
-        // B2: the Liquid Glass API is chrome-only and confined to the gate file.
+    func testProductionHasNoCustomGlassEffects() throws {
         for file in try handwrittenSwiftFiles() {
             let text = try String(contentsOf: file, encoding: .utf8)
-            let hasGlass = text.contains("glassEffect")
-            if file.lastPathComponent == "GlassFallbacks.swift" {
-                XCTAssertTrue(hasGlass, "GlassFallbacks.swift must own the glassEffect API")
-            } else {
-                XCTAssertFalse(
-                    hasGlass,
-                    "\(file.lastPathComponent) must not call glassEffect — route via GlassFallbacks"
-                )
-            }
+            XCTAssertFalse(
+                text.contains("glassEffect"),
+                "\(file.lastPathComponent) must let standard controls own Liquid Glass"
+            )
         }
     }
 
-    func testSystemMaterialFallbacksOnlyInGlassFallbacks() throws {
-        // Dotted tokens only, so doc comments naming a material stay legal.
+    func testProductionHasNoHandPaintedSystemMaterial() throws {
         let regex = try NSRegularExpression(
             pattern: #"\.(ultraThin|thin|regular|thick|ultraThick)Material"#
         )
@@ -108,15 +96,11 @@ final class ArchitectureTests: XCTestCase {
             let text = try String(contentsOf: file, encoding: .utf8)
             let range = NSRange(text.startIndex..., in: text)
             let hits = regex.numberOfMatches(in: text, range: range)
-            if file.lastPathComponent == "GlassFallbacks.swift" {
-                XCTAssertGreaterThan(hits, 0, "GlassFallbacks.swift owns the material fallbacks")
-            } else {
-                XCTAssertEqual(
-                    hits,
-                    0,
-                    "\(file.lastPathComponent) must not use a system material — route via GlassFallbacks"
-                )
-            }
+            XCTAssertEqual(hits, 0, "\(file.lastPathComponent) must not paint custom material")
+            XCTAssertFalse(
+                text.contains("NSVisualEffectView"),
+                "\(file.lastPathComponent) must not imitate system material"
+            )
         }
     }
 
@@ -173,7 +157,7 @@ final class ArchitectureTests: XCTestCase {
 
     // ProviderMarks live in JackinDesktopUI — covered by DesktopSoT / visual harness.
 
-    func testJackinPhosphorTokensMatchHTMLSoT() {
+    func testJackinPhosphorTokensMatchBrandGuide() {
         XCTAssertEqual(JackinBrand.phosphorDarkSRGB.r, 0x5C / 255.0, accuracy: 0.0001)
         XCTAssertEqual(JackinBrand.phosphorDarkSRGB.g, 0xF0 / 255.0, accuracy: 0.0001)
         XCTAssertEqual(JackinBrand.phosphorDarkSRGB.b, 0x7A / 255.0, accuracy: 0.0001)
@@ -182,8 +166,8 @@ final class ArchitectureTests: XCTestCase {
         XCTAssertEqual(JackinBrand.phosphorLightSRGB.b, 0x4E / 255.0, accuracy: 0.0001)
     }
 
-    func testRemainingPercentMeterSeverityMatchesHTMLNestBands() {
-        // index.html nest fixture: 100 high, 57 mid, 12 low, 0 depleted.
+    func testRemainingPercentMeterSeverityMatchesDesignBands() {
+        // Design bands: 100 high, 57 mid, 12 low, 0 depleted.
         XCTAssertEqual(remainingPercentMeterSeverity(100), "normal")
         XCTAssertEqual(remainingPercentMeterSeverity(61), "normal")
         XCTAssertEqual(remainingPercentMeterSeverity(60), "warn")
@@ -511,15 +495,15 @@ final class ArchitectureTests: XCTestCase {
     }
 
     func testBuildStatusItemChipsRespectsCapAndHidesEmpty() {
-        let surfaces = (0..<5).map { i in
+        let surfaces = (0..<5).map { index in
             StatusItemSurfaceSnapshot(
-                surfaceId: "s\(i)",
-                label: "S\(i)",
+                surfaceId: "s\(index)",
+                label: "S\(index)",
                 enabled: true,
                 statusBarLabel: "ok",
                 status: "fresh",
-                compactLabel: "S\(i) \(50 + i)%",
-                remainings: [UInt8(50 + i)],
+                compactLabel: "S\(index) \(50 + index)%",
+                remainings: [UInt8(50 + index)],
                 severities: ["ok"]
             )
         }
@@ -532,11 +516,11 @@ final class ArchitectureTests: XCTestCase {
         XCTAssertEqual(chips.map(\.surfaceId), ["s0", "s1", "s2"])
     }
 
-    /// OV-11: Overview has no orphan Overview-level ProgressView / loading bar —
-    /// only per-account meters. Source under native/Sources (shipped path).
+    /// Overview is a native comparison table without custom meter geometry.
     func testOverviewHasNoOrphanOverviewLevelProgress() throws {
-        let overview = sourcesRoot
-            .appendingPathComponent("JackinDesktop/Popover/PopoverOverviewTab.swift")
+        let overview =
+            sourcesRoot
+            .appendingPathComponent("JackinDesktop/UsageWindow/OverviewListView.swift")
         let text = try String(contentsOf: overview, encoding: .utf8)
         XCTAssertFalse(
             text.contains("ProgressView"),
@@ -546,17 +530,96 @@ final class ArchitectureTests: XCTestCase {
             text.contains("LinearProgress"),
             "OV-11: no LinearProgress Overview-level chrome"
         )
-        // Per-account meters remain (account-tied, not Overview-wide).
+        XCTAssertTrue(text.contains("Table("), "Overview must use native Table")
+        XCTAssertFalse(text.contains("Capsule"), "Overview must not paint custom meters")
+    }
+
+    func testOverviewPrimaryValuesUseSystemForeground() throws {
+        let overview =
+            sourcesRoot
+            .appendingPathComponent("JackinDesktop")
+            .appendingPathComponent("UsageWindow/OverviewListView.swift")
+        let text = try String(contentsOf: overview, encoding: .utf8)
+
         XCTAssertTrue(
-            text.contains("overviewMeter") || text.contains("Capsule"),
-            "per-account meter geometry still present"
+            text.contains(
+                "Text(row.planLabel ?? row.statusLabel ?? \"—\")\n"
+                    + "                            .foregroundStyle(.primary)")
+        )
+        XCTAssertTrue(
+            text.contains(
+                "Text(row.resetLabel ?? \"—\")\n"
+                    + "                        .foregroundStyle(.primary)")
+        )
+        XCTAssertFalse(text.contains("Color("))
+    }
+
+    func testFinalCaptureMatrixBuildsCleanBranchHeadApp() throws {
+        let visualQARoot =
+            sourcesRoot
+            .deletingLastPathComponent()
+            .appendingPathComponent("Scripts/VisualQA")
+        let script = visualQARoot.appendingPathComponent("capture-final-matrix.sh")
+        let text = try String(contentsOf: script, encoding: .utf8)
+        let capture = try String(
+            contentsOf: visualQARoot.appendingPathComponent("capture.sh"),
+            encoding: .utf8
+        )
+        let focusDrive = try String(
+            contentsOf: visualQARoot.appendingPathComponent("focus-drive.swift"),
+            encoding: .utf8
+        )
+
+        XCTAssertTrue(text.contains("git -C \"$repo\" status --porcelain"))
+        XCTAssertTrue(text.contains("mise -C \"$repo\" run desktop-build"))
+        XCTAssertTrue(text.contains("mise -C \"$repo\" run desktop-verify"))
+        XCTAssertTrue(text.contains("final evidence requires the canonical branch-head app"))
+        XCTAssertTrue(text.contains("CAPTURE_INACTIVE_APP:-"))
+        XCTAssertTrue(text.contains("unset CAPTURE_INACTIVE_APP"))
+        XCTAssertTrue(text.contains("capture_with_relaunch"))
+        XCTAssertTrue(text.contains("capture retries exhausted after $attempt launches"))
+        XCTAssertTrue(text.contains("FOCUS_DRIVE_TOOL=$focus_tool"))
+        XCTAssertTrue(text.contains("native/.build/visual-qa/final"))
+        XCTAssertTrue(text.contains("\"$output/$file\" \"jackin❯ desktop\""))
+        XCTAssertTrue(capture.contains("\"$FOCUS_TOOL\" \"$pid\" 0"))
+        XCTAssertTrue(capture.contains("application exited before reaching requested"))
+        XCTAssertTrue(focusDrive.contains("activate(options: [.activateAllWindows])"))
+    }
+
+    func testFixtureUsageWindowSurvivesForeignFullScreenHosts() throws {
+        let controller =
+            sourcesRoot
+            .appendingPathComponent("JackinDesktop")
+            .appendingPathComponent("UsageWindowController.swift")
+        let text = try String(contentsOf: controller, encoding: .utf8)
+
+        XCTAssertTrue(text.contains(".canJoinAllSpaces"))
+        XCTAssertTrue(text.contains(".canJoinAllApplications"))
+        XCTAssertTrue(text.contains(".fullScreenAuxiliary"))
+        XCTAssertTrue(text.contains("if elevatesFixtureWindow"))
+        XCTAssertTrue(text.contains("window.level = .floating"))
+        XCTAssertTrue(text.contains("window.orderFrontRegardless()"))
+        XCTAssertTrue(text.contains("window.collectionBehavior.insert(.moveToActiveSpace)"))
+
+        let options =
+            sourcesRoot
+            .appendingPathComponent("JackinDesktop")
+            .appendingPathComponent("VisualQALaunchOptions.swift")
+        let optionsText = try String(contentsOf: options, encoding: .utf8)
+        XCTAssertTrue(
+            optionsText.contains(
+                "elevatesFixtureWindow: rawFixture != nil && arguments.contains(\"--ui-test\")"
+            )
         )
     }
 
-    /// SB-5 vs FB1-6: bar stays template mono (no severity tint). Urgency color
+    /// SB-5 vs FB1-6: bar stays template mono (no severity tint).
+    ///
+    /// Urgency color
     /// on chip chrome is SB-P4 OPEN — not silently met as full SB-5.
     func testStatusBarIsTemplateMonoWithoutSeverityTint() throws {
-        let label = sourcesRoot
+        let label =
+            sourcesRoot
             .appendingPathComponent("JackinDesktop/StatusItemLabel.swift")
         let text = try String(contentsOf: label, encoding: .utf8)
         XCTAssertTrue(
@@ -632,15 +695,15 @@ final class ArchitectureTests: XCTestCase {
     func testFullFrozenCatalogStripDisplayable() {
         XCTAssertEqual(frozenHostSurfaceIds.count, 8)
         XCTAssertTrue(allFrozenHostSurfacesHaveSystemImages())
-        let surfaces = frozenHostSurfaceIds.enumerated().map { i, id in
+        let surfaces = frozenHostSurfaceIds.enumerated().map { index, id in
             StatusItemSurfaceSnapshot(
                 surfaceId: id,
                 label: id,
                 enabled: true,
                 statusBarLabel: "ok",
                 status: "fresh",
-                compactLabel: "\(statusItemFallbackGlyph(surfaceId: id)) \(40 + i)%",
-                remainings: id == "claude" ? [100, 79] : [UInt8(40 + i)],
+                compactLabel: "\(statusItemFallbackGlyph(surfaceId: id)) \(40 + index)%",
+                remainings: id == "claude" ? [100, 79] : [UInt8(40 + index)],
                 severities: ["ok"]
             )
         }
@@ -665,7 +728,8 @@ final class ArchitectureTests: XCTestCase {
     }
 
     func testPackageSwiftUsesBinaryTargetNotHostDylib() throws {
-        let package = sourcesRoot
+        let package =
+            sourcesRoot
             .deletingLastPathComponent()
             .appendingPathComponent("Package.swift")
         let text = try String(contentsOf: package, encoding: .utf8)
@@ -689,7 +753,8 @@ final class ArchitectureTests: XCTestCase {
 
     func testDesktopSourcesDoNotComposePercentOrResetLiterals() throws {
         let desktop = sourcesRoot.appendingPathComponent("JackinDesktop")
-        let enumerator = FileManager.default.enumerator(at: desktop, includingPropertiesForKeys: nil)
+        let enumerator = FileManager.default.enumerator(
+            at: desktop, includingPropertiesForKeys: nil)
         var files: [URL] = []
         while let url = enumerator?.nextObject() as? URL {
             if url.pathExtension == "swift" {
@@ -704,7 +769,7 @@ final class ArchitectureTests: XCTestCase {
         // Always ban format composition everywhere under JackinDesktop.
         let alwaysBanned = ["String(format:"]
         // Preference chrome only (S6 format pickers); never render usage data.
-        let preferenceChromeFiles: Set<String> = ["SettingsView.swift"]
+        let preferenceChromeFiles: Set<String> = ["SettingsView.swift", "VisualQAFixtures.swift"]
         for file in files {
             let text = try String(contentsOf: file, encoding: .utf8)
             let name = file.lastPathComponent
@@ -726,15 +791,17 @@ final class ArchitectureTests: XCTestCase {
         }
     }
 
-    /// Plan 008: the three Usage-window views render the Rust
-    /// `UsageDetailPresentation` mechanically. They must not split/index/join
+    /// The three Usage-window views render Rust `UsageDetailPresentation` mechanically.
+    ///
+    /// They must not split/index/join
     /// usage strings, read raw buckets, use label-based identity, or invent field
     /// copy; and must consume the shared model's rows/lines/ids.
     func testUsageWindowRendersSharedDetailModel() throws {
-        let usageDir = sourcesRoot
+        let usageDir =
+            sourcesRoot
             .appendingPathComponent("JackinDesktop")
             .appendingPathComponent("UsageWindow")
-        let files = ["UsageWindowRoot.swift", "OverviewListView.swift", "ProviderCardView.swift"]
+        let files = ["UsageWindowRoot.swift", "OverviewListView.swift", "ProviderDetailView.swift"]
         let banned = [
             "splitPaceLabel",
             "displaySegments",
@@ -763,7 +830,7 @@ final class ArchitectureTests: XCTestCase {
             }
         }
         let provider = try String(
-            contentsOf: usageDir.appendingPathComponent("ProviderCardView.swift"),
+            contentsOf: usageDir.appendingPathComponent("ProviderDetailView.swift"),
             encoding: .utf8
         )
         XCTAssertTrue(provider.contains("content.detail.rows"))
@@ -804,7 +871,8 @@ final class ArchitectureTests: XCTestCase {
 
     func testOverviewGlanceBodySelection() {
         XCTAssertEqual(
-            overviewGlanceBody(headline: "97% left", resetLabel: "Resets in 2h", statusWord: "fresh"),
+            overviewGlanceBody(
+                headline: "97% left", resetLabel: "Resets in 2h", statusWord: "fresh"),
             .numeric(headline: "97% left", reset: "Resets in 2h")
         )
         XCTAssertEqual(
@@ -820,7 +888,8 @@ final class ArchitectureTests: XCTestCase {
     func testPopoverHasNoGaugeAndSurfaceCardGone() throws {
         let desktop = sourcesRoot.appendingPathComponent("JackinDesktop")
         XCTAssertFalse(
-            FileManager.default.fileExists(atPath: desktop.appendingPathComponent("SurfaceCard.swift").path),
+            FileManager.default.fileExists(
+                atPath: desktop.appendingPathComponent("SurfaceCard.swift").path),
             "SurfaceCard.swift must be deleted after glance popover rewrite"
         )
         let popover = desktop.appendingPathComponent("PopoverRoot.swift")
@@ -829,9 +898,32 @@ final class ArchitectureTests: XCTestCase {
         XCTAssertFalse(text.contains("SurfaceCard"), "popover must not reference SurfaceCard")
     }
 
+    func testProductIdentityUsesNativeNoninteractivePlacements() throws {
+        let desktop = sourcesRoot.appendingPathComponent("JackinDesktop")
+        let usageRoot = try String(
+            contentsOf: desktop.appendingPathComponent("UsageWindow/UsageWindowRoot.swift"),
+            encoding: .utf8
+        )
+        let popover = try String(
+            contentsOf: desktop.appendingPathComponent("PopoverRoot.swift"),
+            encoding: .utf8
+        )
+
+        XCTAssertTrue(
+            usageRoot.contains(
+                "ToolbarItem(id: \"usage.brand-title\", placement: .principal)"
+            ))
+        XCTAssertTrue(usageRoot.contains("Text(\"jackin❯ desktop\")"))
+        XCTAssertTrue(popover.contains("JackinBrandIdentity.templateMonogram()"))
+        XCTAssertTrue(popover.contains("Text(\"jackin❯ desktop\")"))
+        XCTAssertTrue(popover.contains(".frame(maxWidth: .infinity)"))
+        XCTAssertFalse(popover.contains("popoverBrandHeader.background"))
+    }
+
     /// Cold launch: the AppKit delegate must open the host runtime without a menu click.
     func testApplicationDelegateOpensRuntimeOnLaunch() throws {
-        let delegate = sourcesRoot
+        let delegate =
+            sourcesRoot
             .appendingPathComponent("JackinDesktop")
             .appendingPathComponent("DesktopAppDelegate.swift")
         let text = try String(contentsOf: delegate, encoding: .utf8)
@@ -847,10 +939,12 @@ final class ArchitectureTests: XCTestCase {
 
     func testDesktopSourcesHaveNoHardcodedProviderDisplayNames() throws {
         let desktop = sourcesRoot.appendingPathComponent("JackinDesktop")
-        let enumerator = FileManager.default.enumerator(at: desktop, includingPropertiesForKeys: nil)
+        let enumerator = FileManager.default.enumerator(
+            at: desktop, includingPropertiesForKeys: nil)
         let banned = ["\"OpenAI\"", "\"Anthropic\"", "\"xAI\"", "\"Z.AI\""]
         while let url = enumerator?.nextObject() as? URL {
             guard url.pathExtension == "swift" else { continue }
+            if url.lastPathComponent == "VisualQAFixtures.swift" { continue }
             let text = try String(contentsOf: url, encoding: .utf8)
             for token in banned {
                 XCTAssertFalse(
