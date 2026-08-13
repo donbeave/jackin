@@ -1,6 +1,6 @@
 # Confirmed A1 production plan
 
-Status: **P1–P2 complete; P3 automated proof complete with A08–A09 operator observations pending; P4 in progress**
+Status: **P1–P4 complete**
 
 ## Authority and stop line
 
@@ -51,8 +51,8 @@ Stop and return to the operator if a required visible region needs a CUSTOM cont
 
 - **P1 complete:** visible popover Refresh owns Command-R; Usage retains valid provider/account/sidebar/frame state; removed providers normalize at the state owner; local/global Retry stays native; production names replace concept/card-era names; model and real-host tests cover continuity, commands, scrolling, context routing, menu order, destructive-action absence, and all three accessibility surfaces.
 - **P2 complete:** the release lane uses macOS 26 and Xcode 26.6; the Xcode project regenerates cleanly; operator and contributor docs describe the focused popover, two-column Usage window, fixed leading sidebar control, limits-only contract, and current platform floor; roadmap state retains only external release and capture-gated work.
-- **P3 operator step pending:** source `c69a237b0b80c62164df34a39edd6578d78d81c9` has 36 core and eight accessibility real-host captures, exact provenance, byte-identical setting restoration, 15/15 real-host tests with zero runtime warnings, all three accessibility audits, and a hard-failure-free design review. Only A08/A09 clear/tinted operator observations remain.
-- **P4 in progress:** DCO repair and main synchronization are complete. Evidence documentation commit, final post-evidence branch-head gates, clean-tree proof, and draft-PR reconciliation remain. [`CompletionAudit.md`](CompletionAudit.md) is the authoritative DONE-criteria ledger.
+- **P3 complete:** source `c69a237b0b80c62164df34a39edd6578d78d81c9` has 36 core and eight accessibility real-host captures, exact provenance, byte-identical setting restoration, 15/15 real-host tests with zero runtime warnings, all three accessibility audits, and a hard-failure-free design review. Source `7c8fca3fcbfa02f50e80ec1364475bd396173b98` adds operator-confirmed A08 Clear and A09 Tinted evidence for both native surfaces.
+- **P4 complete:** DCO repair, main synchronization, evidence documentation, complete branch-head repository/docs gates, original Clear preference restoration, clean-tree proof, and final draft-PR reconciliation are complete. [`CompletionAudit.md`](CompletionAudit.md) is the authoritative DONE-criteria ledger.
 
 ## Slice P1 — Production state and interaction correctness
 

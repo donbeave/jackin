@@ -1,6 +1,6 @@
 # Native Liquid Glass completion audit
 
-Status: **automated product proof complete; A08–A09 and final delivery proof pending**
+Status: **complete**
 
 This ledger applies the original objective's DONE criteria to current authoritative evidence. A row is `PROVEN` only when its required evidence matches the final pushed branch head. Earlier captures, tests run from a dirty tree, or a plausible implementation do not count as final proof.
 
@@ -33,23 +33,20 @@ This ledger applies the original objective's DONE criteria to current authoritat
 | All required fixtures and interaction states work | PROVEN | F00–F14 have both real surfaces captured; 68 Swift package tests plus two generated-baseline tests and 15/15 real-host tests pass at source `c69a237b` with zero runtime warnings. |
 | Real captures cover the required matrix | PROVEN | [`evidence/final/`](evidence/final/) contains 36 core and eight accessibility captures with exact source/application/image hashes and `failures=0` provenance validation. |
 | Accessibility audit passes | PROVEN | Branch-head real-host tests pass audits for popover, Overview, and provider detail; four real setting pairs have byte-identical restoration receipts. |
-| A08 clear preference is operator-verified | PENDING | macOS exposes no public preference API; operator-owned manual capture and receipt required. |
-| A09 tinted preference is operator-verified | PENDING | macOS exposes no public preference API; operator-owned manual capture and receipt required. |
+| A08 clear preference is operator-verified | PROVEN | Operator attested `Clear ready`; [`evidence/final/appearance/`](evidence/final/appearance/) contains the Clear-selected System Settings receipt plus real layer-0 Usage and layer-25 popover captures with exact source/application/image provenance. |
+| A09 tinted preference is operator-verified | PROVEN | Operator attested `Tinted ready`; [`evidence/final/appearance/`](evidence/final/appearance/) contains the Tinted-selected System Settings receipt plus real layer-0 Usage and layer-25 popover captures with exact source/application/image provenance. |
 | Final design review has no hard failures | PROVEN | Principal branch-head Light, Dark, inactive, collapsed, minimum, expanded, popover, maximum-content, and Reduce Transparency views were inspected against A1/D-002/D-003/D-004 and both maps; hard failures: zero. |
 
 ## Repository and delivery proof
 
 | Criterion | Status | Authoritative evidence |
 |---|---|---|
-| Required project and repository gates pass at branch head | PENDING | Current runs pass formatting, lint, dead-code, 251 Rust/FFI tests, 66 Swift tests, build/verify, deterministic project generation, docs build/typecheck/18 tests, and fast/full CI. Repeat after the final evidence commits. |
-| Working tree is clean | PENDING | Current implementation and evidence changes are intentionally uncommitted. |
-| Every commit is conventional, signed off, co-authored, and pushed | PENDING | Operator-authorized DCO repair produced signed merge `276337ce`; source and paired CI fixes are signed, co-authored, and pushed. Re-audit after remaining commits. |
-| Exactly one open unmerged PR contains complete evidence | PENDING | PR #843 is the sole open draft and remains unmerged, but its body and remote checks are stale. Remote inspection found a transient mold download failure, cross-workflow prepared-artifact races, and a lock-only version-check setup bug. The paired setup fix is pushed; final remote proof remains. |
-| No required row remains TODO or IN PROGRESS | PENDING | A08/A09 operator observations, post-evidence repository gates, documentation commit, and PR reconciliation remain open. |
+| Required project and repository gates pass at branch head | PROVEN | Final-head runs pass tool installation, deterministic generation, formatting, lint, dead-code, 251 Rust/FFI tests, 68 Swift package tests plus two generated-baseline tests, 15/15 real-host tests, build/verify, fast/full CI, and docs build/typecheck/18 tests. |
+| Working tree is clean | PROVEN | Final audit finds no tracked or untracked product/evidence changes, and local HEAD matches the remote PR branch. |
+| Every commit is conventional, signed off, co-authored, and pushed | PROVEN | Final history audit verifies the complete branch range; the operator-authorized DCO repair, source work, paired CI fix, and final evidence commit all carry DCO signoff plus `Co-authored-by: Codex <codex@openai.com>` and are pushed. |
+| Exactly one open unmerged PR contains complete evidence | PROVEN | PR #843 is the sole open PR for the branch, remains draft and unmerged, contains the complete objective/design/architecture/evidence/test record, and has green required remote checks at final HEAD. |
+| No required row remains TODO or IN PROGRESS | PROVEN | P1–P4, every required-state row, appearance restoration, branch-head verification, evidence reconciliation, and draft-PR audit are complete. |
 
-## Current unblock sequence
+## Final state
 
-1. Commit and push the branch-head evidence and documentation reconciliation.
-2. Run the complete repository and documentation gates at the resulting branch head.
-3. Reconcile PR #843 and its remote checks while keeping it draft and unmerged.
-4. Obtain operator A08/A09 manual captures and receipts, then perform the final clean-tree audit.
+The confirmed A1 native design is implemented and proven on both surfaces. The original Clear preference and System Settings application state are restored. No product, design, repository, or delivery criterion remains open; external signing, notarization, release activation, and merge remain explicit non-goals without separate operator authority.
