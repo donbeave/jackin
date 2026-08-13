@@ -9,6 +9,7 @@ import {
   exportPrepared,
   latestArtifact,
   preparedToolsComplete,
+  preparedXtaskComplete,
   splitRepository,
   validateContracts,
   waitForArtifact,
@@ -106,6 +107,18 @@ test("rejects an incomplete prepared Cargo tool bundle", async () => {
       REQUIRED_TOOLS.map((tool) => fs.writeFile(path.join(root, tool), "tool")),
     );
     assert.equal(await preparedToolsComplete(root), true);
+  } finally {
+    await fs.rm(root, { recursive: true, force: true });
+  }
+});
+
+test("requires xtask and workspace metadata in prepared bundle", async () => {
+  const root = await fs.mkdtemp(path.join(process.cwd(), ".test-prepared-xtask-"));
+  try {
+    await fs.writeFile(path.join(root, "jackin-xtask"), "xtask");
+    assert.equal(await preparedXtaskComplete(root), false);
+    await fs.writeFile(path.join(root, "workspace-metadata.json"), "{}");
+    assert.equal(await preparedXtaskComplete(root), true);
   } finally {
     await fs.rm(root, { recursive: true, force: true });
   }

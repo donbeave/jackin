@@ -37,6 +37,18 @@ async function preparedToolsComplete(destination) {
   }
 }
 
+async function preparedXtaskComplete(destination) {
+  try {
+    const entries = new Set(await fs.readdir(destination));
+    return (
+      entries.has("jackin-xtask") && entries.has("workspace-metadata.json")
+    );
+  } catch (error) {
+    if (error.code === "ENOENT") return false;
+    throw error;
+  }
+}
+
 function splitRepository(repository) {
   const [owner, repo, extra] = repository.split("/");
   if (!owner || !repo || extra) {
@@ -153,6 +165,10 @@ async function run() {
     core.warning("ignoring incomplete prepared Cargo tools cache");
     toolsHit = false;
   }
+  if (xtaskHit && !(await preparedXtaskComplete(xtaskDestination))) {
+    core.warning("ignoring incomplete prepared xtask cache");
+    xtaskHit = false;
+  }
   core.setOutput("tools-hit", "false");
   core.setOutput("xtask-hit", "false");
   if (toolsHit) core.setOutput("tools-hit", "true");
@@ -213,8 +229,11 @@ async function run() {
       xtask,
       xtaskDestination,
     );
-    xtaskHit = true;
-    core.setOutput("xtask-hit", "true");
+    xtaskHit = await preparedXtaskComplete(xtaskDestination);
+    if (!xtaskHit && !allowMiss) {
+      throw new Error(`prepared CI xtask artifact is incomplete: ${xtask.name}`);
+    }
+    core.setOutput("xtask-hit", xtaskHit ? "true" : "false");
   }
   await exportPrepared(
     toolsDestination,
@@ -281,6 +300,7 @@ export {
   exportPrepared,
   latestArtifact,
   preparedToolsComplete,
+  preparedXtaskComplete,
   splitRepository,
   validateContracts,
   waitForArtifact,
