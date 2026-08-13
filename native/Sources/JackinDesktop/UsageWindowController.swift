@@ -5,29 +5,33 @@ import AppKit
 import JackinUsageBridge
 import SwiftUI
 
-/// Lazily creates and retains the AppKit Usage window hosting `UsageWindowRoot`.
+/// Lazily creates and retains the AppKit Usage window and its native split controller.
 ///
-/// The SwiftUI Usage hierarchy owns the window's content; this controller only
-/// owns its lifecycle and focus.
+/// SwiftUI owns pane content. AppKit owns split geometry, the full-height sidebar,
+/// its standard toolbar toggle, and the detail top accessory.
 ///
 /// Showing the window promotes the process to `.regular` so the **system menu
 /// bar** ( + AppMainMenu) is available; closing the last titled window returns
 /// to `.accessory` status-item mode.
 ///
-/// **Native toolbar:** content is an `NSHostingController` so SwiftUI
-/// `.toolbar` installs a real `NSToolbar` (unified titlebar). Plain
-/// `NSHostingView` does **not** attach the window toolbar.
 @MainActor
 public final class UsageWindowController: NSObject, NSWindowDelegate {
     private let store: PresentationStore
     private let elevatesFixtureWindow: Bool
-    private let navigationState = UsageWindowNavigationState()
+    private let onSplitControllerCreated: (NSSplitViewController) -> Void
     private var window: NSWindow?
-    private var hostingController: NSHostingController<UsageWindowRoot>?
+    private var splitController: UsageWindowSplitController?
+    private var toolbarController: UsageWindowToolbar?
+    private var sidebarKeyMonitor: Any?
 
-    public init(store: PresentationStore, elevatesFixtureWindow: Bool = false) {
+    public init(
+        store: PresentationStore,
+        elevatesFixtureWindow: Bool = false,
+        onSplitControllerCreated: @escaping (NSSplitViewController) -> Void = { _ in }
+    ) {
         self.store = store
         self.elevatesFixtureWindow = elevatesFixtureWindow
+        self.onSplitControllerCreated = onSplitControllerCreated
         super.init()
     }
 
@@ -57,7 +61,7 @@ public final class UsageWindowController: NSObject, NSWindowDelegate {
     private func makeWindow() -> NSWindow {
         let window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 920, height: 620),
-            styleMask: [.titled, .closable, .miniaturizable, .resizable],
+            styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
             backing: .buffered,
             defer: false
         )
@@ -85,17 +89,30 @@ public final class UsageWindowController: NSObject, NSWindowDelegate {
             window.setFrameAutosaveName("jackin.desktop.usage-window")
         }
 
-        // Unified titlebar + toolbar (system NSToolbar — not a custom chrome strip).
+        // Unified titlebar + standard AppKit split toolbar; no app-painted chrome.
         window.toolbarStyle = .unified
-        window.titlebarAppearsTransparent = false
+        window.titlebarAppearsTransparent = true
         window.titleVisibility = .hidden
         window.titlebarSeparatorStyle = .automatic
 
-        // Hosting *controller* is required for SwiftUI toolbar → NSToolbar.
-        let root = UsageWindowRoot(store: store, navigationState: navigationState)
-        let host = NSHostingController(rootView: root)
-        hostingController = host
-        window.contentViewController = host
+        let split = UsageWindowSplitController(store: store)
+        splitController = split
+        window.contentViewController = split
+        onSplitControllerCreated(split)
+        sidebarKeyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) {
+            [weak window, weak split] event in
+            guard window?.isKeyWindow == true, AppMainMenu.isSidebarKeyEquivalent(event) else {
+                return event
+            }
+            split?.toggleSidebar(window)
+            return nil
+        }
+
+        let toolbarController = UsageWindowToolbar(sidebarItem: split.splitViewItems[0])
+        self.toolbarController = toolbarController
+        let toolbar = toolbarController.makeToolbar()
+        window.toolbar = toolbar
+        toolbarController.installStandardItems(in: toolbar)
 
         window.center()
         return window
@@ -109,20 +126,18 @@ public final class UsageWindowController: NSObject, NSWindowDelegate {
     }
 
     public func invalidate() {
+        if let sidebarKeyMonitor {
+            NSEvent.removeMonitor(sidebarKeyMonitor)
+            self.sidebarKeyMonitor = nil
+        }
         window?.delegate = nil
         window?.orderOut(nil)
         window?.contentViewController = nil
-        hostingController = nil
+        window?.toolbar = nil
+        splitController = nil
+        toolbarController = nil
         window = nil
     }
-
-    public func toggleSidebar() {
-        navigationState.toggleSidebar()
-    }
-
-    var isSidebarVisible: Bool { navigationState.isSidebarVisible }
-
-    var isKeyWindow: Bool { window?.isKeyWindow == true }
 
     /// Visual QA: the live `NSWindow` after `show` (nil if never shown).
     public var qiWindow: NSWindow? { window }

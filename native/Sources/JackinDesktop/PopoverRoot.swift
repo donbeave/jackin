@@ -44,7 +44,6 @@ public struct PopoverRoot: View {
             controls
                 .padding(.horizontal, 12)
                 .frame(height: 48)
-                .background(.bar)
         }
         .frame(width: 380, height: height)
     }

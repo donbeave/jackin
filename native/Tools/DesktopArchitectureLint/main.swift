@@ -13,7 +13,8 @@ struct DesktopArchitectureLint {
             manager.fileExists(atPath: current.appendingPathComponent("Sources").path)
             ? current
             : current.appendingPathComponent("native")
-        let desktop = root.appendingPathComponent("Sources/JackinDesktop")
+        let sources = root.appendingPathComponent("Sources")
+        let desktop = sources.appendingPathComponent("JackinDesktop")
         var failures: [String] = []
 
         func read(_ relativePath: String) -> String {
@@ -37,6 +38,7 @@ struct DesktopArchitectureLint {
         let popover = read("PopoverRoot.swift")
         let delegate = read("DesktopAppDelegate.swift")
         let usage = read("UsageWindow/UsageWindowRoot.swift")
+        let splitController = read("UsageWindow/UsageWindowSplitController.swift")
         let overview = read("UsageWindow/OverviewListView.swift")
         let provider = read("UsageWindow/ProviderDetailView.swift")
 
@@ -70,7 +72,11 @@ struct DesktopArchitectureLint {
         require(popover.contains("ProgressView(value:"), "popover uses native limit progress")
         require(!popover.contains("PopoverTabGrid"), "popover has no provider tab strip")
 
-        require(usage.contains("NavigationSplitView"), "Usage uses NavigationSplitView")
+        require(
+            splitController.contains("NSSplitViewController")
+                && splitController.contains("NSSplitViewItem(sidebarWithViewController:"),
+            "Usage uses native AppKit split ownership"
+        )
         require(usage.contains(".listStyle(.sidebar)"), "Usage uses native sidebar List")
         require(
             usage.contains("List(selection: destination)")
@@ -79,7 +85,16 @@ struct DesktopArchitectureLint {
             "Usage sidebar has one store-owned selection authority"
         )
         require(
-            usage.contains("ToolbarItem(placement: .primaryAction)"), "Usage uses native toolbar")
+            usage.contains("struct UsageWindowDetailAccessory: View")
+                && splitController.contains("NSSplitViewItemAccessoryViewController")
+                && splitController.contains("accessory.view.setAccessibilityIdentifier")
+                && splitController.contains("sidebarItem.allowsFullHeightLayout = true")
+                && splitController.contains("[.toggleSidebar, .sidebarTrackingSeparator]")
+                && !usage.contains(".toolbar(removing: .sidebarToggle)")
+                && !usage.contains("usage.sidebar-toggle")
+                && !usage.contains("UsageWindowNavigationState"),
+            "detail accessory owns header and native split owns sidebar visibility"
+        )
         let usageController = read("UsageWindowController.swift")
         let mainMenu = read("AppMainMenu.swift")
         require(
@@ -114,16 +129,19 @@ struct DesktopArchitectureLint {
                 && mainMenu.contains("modifiers: Self.settingsKeyModifiers")
                 && mainMenu.contains("key: Self.closeKeyEquivalent")
                 && mainMenu.contains("modifiers: Self.closeKeyModifiers")
-                && mainMenu.contains("#selector(toggleSidebar(_:))")
-                && mainMenu.contains(
-                    "isUsageSidebarVisible() ? \"Hide Sidebar\" : \"Show Sidebar\""
-                )
-                && mainMenu.contains("key: Self.sidebarKeyEquivalent")
-                && mainMenu.contains("modifiers: Self.sidebarKeyModifiers")
+                && mainMenu.contains("#selector(NSSplitViewController.toggleSidebar(_:))")
+                && mainMenu.contains("item.target = nil")
+                && mainMenu.contains("keyEquivalent: sidebarKeyEquivalent")
+                && mainMenu.contains("item.keyEquivalentModifierMask = sidebarKeyModifiers")
+                && mainMenu.contains("menu.delegate = self")
+                && mainMenu.contains("item.target = nil")
+                && usageController.contains("AppMainMenu.isSidebarKeyEquivalent(event)")
+                && usageController.contains("NSEvent.addLocalMonitorForEvents")
+                && usageController.contains("split?.toggleSidebar(window)")
                 && mainMenu.contains("#selector(refreshAll(_:))")
                 && mainMenu.contains("key: Self.refreshKeyEquivalent")
                 && mainMenu.contains("modifiers: Self.refreshKeyModifiers"),
-            "standard command key equivalents remain native menu-owned"
+            "standard commands route to native owners"
         )
         require(overview.contains("Table("), "Overview uses native Table")
         require(provider.contains("List {"), "provider detail uses native List")
@@ -146,15 +164,29 @@ struct DesktopArchitectureLint {
             )
         }
 
-        let enumerator = manager.enumerator(at: desktop, includingPropertiesForKeys: nil)
+        let forbiddenChrome = [
+            ".background(.bar)",
+            ".background(.material)",
+            ".ultraThinMaterial",
+            ".thinMaterial",
+            ".regularMaterial",
+            ".thickMaterial",
+            ".ultraThickMaterial",
+            "glassEffect",
+            "GlassEffectContainer",
+            "NSVisualEffectView",
+        ]
+        let enumerator = manager.enumerator(at: sources, includingPropertiesForKeys: nil)
         while let url = enumerator?.nextObject() as? URL {
             guard url.pathExtension == "swift" else { continue }
+            guard url.lastPathComponent != "jackin_usage_ffi.swift" else { continue }
             let text = try String(contentsOf: url, encoding: .utf8)
-            require(!text.contains("glassEffect"), "no custom glass in \(url.lastPathComponent)")
-            require(
-                !text.contains("NSVisualEffectView"),
-                "no hand-painted material in \(url.lastPathComponent)"
-            )
+            for token in forbiddenChrome {
+                require(
+                    !text.contains(token),
+                    "no app-painted chrome token \(token) in \(url.lastPathComponent)"
+                )
+            }
         }
 
         if !failures.isEmpty {

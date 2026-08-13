@@ -13,7 +13,7 @@ import SwiftUI
 ///
 /// Standard macOS menu citizenship for the Usage window.
 @MainActor
-public final class AppMainMenu: NSObject, NSMenuItemValidation {
+public final class AppMainMenu: NSObject, NSMenuDelegate {
     static let settingsKeyEquivalent = ","
     static let settingsKeyModifiers: NSEvent.ModifierFlags = [.command]
     static let closeKeyEquivalent = "w"
@@ -25,25 +25,18 @@ public final class AppMainMenu: NSObject, NSMenuItemValidation {
 
     private let store: PresentationStore
     private let openUsage: () -> Void
-    private let toggleUsageSidebar: () -> Void
-    private let isUsageSidebarVisible: () -> Bool
-    private let canToggleUsageSidebar: () -> Bool
+    private lazy var sidebarCommandItem = Self.sidebarMenuItem()
+    private weak var sidebarSplitController: NSSplitViewController?
     private var settingsWindow: NSWindow?
     /// Strong: `NSWindow.delegate` is weak.
     private var settingsCloseProxy: SettingsWindowCloseProxy?
 
     init(
         store: PresentationStore,
-        openUsage: @escaping () -> Void,
-        toggleUsageSidebar: @escaping () -> Void,
-        isUsageSidebarVisible: @escaping () -> Bool,
-        canToggleUsageSidebar: @escaping () -> Bool
+        openUsage: @escaping () -> Void
     ) {
         self.store = store
         self.openUsage = openUsage
-        self.toggleUsageSidebar = toggleUsageSidebar
-        self.isUsageSidebarVisible = isUsageSidebarVisible
-        self.canToggleUsageSidebar = canToggleUsageSidebar
         super.init()
     }
 
@@ -156,13 +149,8 @@ public final class AppMainMenu: NSObject, NSMenuItemValidation {
 
     private func viewMenu() -> NSMenu {
         let menu = NSMenu(title: "View")
-        menu.addItem(
-            owned(
-                "Hide Sidebar",
-                #selector(toggleSidebar(_:)),
-                key: Self.sidebarKeyEquivalent,
-                modifiers: Self.sidebarKeyModifiers
-            ))
+        menu.delegate = self
+        menu.addItem(sidebarCommandItem)
         menu.addItem(.separator())
         menu.addItem(
             owned(
@@ -259,21 +247,41 @@ public final class AppMainMenu: NSObject, NSMenuItemValidation {
         store.refreshAll()
     }
 
-    @objc private func toggleSidebar(_: Any?) {
-        toggleUsageSidebar()
-    }
-
     @objc private func showUsageWindow(_: Any?) {
         openUsage()
     }
 
-    public func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
-        guard menuItem.action == #selector(toggleSidebar(_:)) else { return true }
-        menuItem.title = isUsageSidebarVisible() ? "Hide Sidebar" : "Show Sidebar"
-        return canToggleUsageSidebar()
+    // MARK: - Helpers
+
+    static func sidebarMenuItem() -> NSMenuItem {
+        let item = NSMenuItem(
+            title: "Hide Sidebar",
+            action: #selector(NSSplitViewController.toggleSidebar(_:)),
+            keyEquivalent: sidebarKeyEquivalent
+        )
+        item.keyEquivalentModifierMask = sidebarKeyModifiers
+        item.target = nil
+        return item
     }
 
-    // MARK: - Helpers
+    static func isSidebarKeyEquivalent(_ event: NSEvent) -> Bool {
+        let commandModifiers: NSEvent.ModifierFlags = [.command, .control, .option, .shift]
+        return event.type == .keyDown
+            && (event.keyCode == 1
+                || event.charactersIgnoringModifiers?.lowercased() == sidebarKeyEquivalent)
+            && event.modifierFlags.intersection(commandModifiers) == sidebarKeyModifiers
+    }
+
+    func routeSidebar(to splitController: NSSplitViewController) {
+        sidebarSplitController = splitController
+    }
+
+    public func menuWillOpen(_ menu: NSMenu) {
+        guard menu.title == "View", let sidebarSplitController else { return }
+        sidebarCommandItem.title =
+            sidebarSplitController.splitViewItems.first?.isCollapsed == true
+            ? "Show Sidebar" : "Hide Sidebar"
+    }
 
     private func wrap(_ menu: NSMenu, title: String) -> NSMenuItem {
         let item = NSMenuItem(title: title, action: nil, keyEquivalent: "")

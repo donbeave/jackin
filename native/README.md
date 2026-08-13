@@ -21,7 +21,7 @@ Product scope is limits only: remaining/used percentages, resets, plan/status, m
 - Swift language mode: Swift 6 strict concurrency.
 - No compatibility branch, custom material, explicit `glassEffect`, or `GlassEffectContainer` exists in production UI.
 
-Liquid Glass is owned by the system hosts and standard functional chrome: `NSPopover`, unified `NSToolbar`, `NavigationSplitView`, sidebar/list/table, menus, pickers, buttons, and window titlebars. Quota content uses ordinary `Form`, `List`, `Section`, `LabeledContent`, `Table`, and `ProgressView` surfaces. The status bar remains template monochrome. jackin❯ phosphor appears only as adaptive identity/healthy-state emphasis; warning and danger retain textual state plus system semantic color.
+Liquid Glass is owned by the system hosts and standard functional chrome: `NSPopover`, unified `NSToolbar`, `NSSplitViewController`, sidebar/list/table, menus, pickers, buttons, and window titlebars. Quota content uses ordinary `Form`, `List`, `Section`, `LabeledContent`, `Table`, and `ProgressView` surfaces. The status bar remains template monochrome. jackin❯ phosphor appears only as adaptive identity/healthy-state emphasis; warning and danger retain textual state plus system semantic color.
 
 ## Native surfaces
 
@@ -40,17 +40,18 @@ There is no cross-provider navigation inside the popover. A secondary click open
 
 ### Usage window
 
-`UsageWindowController` lazily creates and retains one normal `NSWindow`. `UsageWindowRoot` uses a two-column `NavigationSplitView`:
+`UsageWindowController` lazily creates and retains one normal `NSWindow`. A native `NSSplitViewController` owns two columns while SwiftUI renders their content:
 
 - sidebar: Overview plus Rust-ordered providers;
 - quiet footer: generated `jackin❯ by tailrocks` wordmark;
 - Overview: native account inventory `Table`;
 - provider detail: native list/sections, account menu, quota meters, recovery;
-- toolbar: one fixed leading sidebar button and a native Refresh action.
+- titlebar: the standard split-view sidebar button in its fixed leading slot;
+- detail top accessory: centered `jackin❯ desktop` identity and trailing Refresh.
 
-The system-supplied split-view toggle is removed so exactly one button owns the leading slot. Its coordinates remain stable while hiding/showing the sidebar and across retained-window reopen. A noninteractive `jackin❯ desktop` title uses the native toolbar's centered principal placement; no `Usage` heading is drawn in content or titlebar. Reopening preserves valid destination, account, sidebar state, and frame. A removed/disabled provider normalizes to Overview at `PresentationStore`, not in a view-only fallback.
+The standard `.toggleSidebar` item and `NSSplitViewController.toggleSidebar(_:)` responder action are the only visibility authority. Its native width is retained while its accessibility label changes between Show Sidebar and Hide Sidebar, so the control stays stationary through collapse and retained-window reopen. The sidebar owns the full leading structural height. The detail-only native split-item accessory centers the noninteractive product identity over the detail pane and keeps Refresh trailing; no root header or `Usage` heading spans both panes. Reopening preserves valid destination, account, sidebar state, and frame. A removed/disabled provider normalizes to Overview at `PresentationStore`, not in a view-only fallback.
 
-Standard commands: Command-R Refresh, Command-comma Settings, Command-W Close, Control-Command-S Toggle Sidebar, Escape Close.
+Standard commands: Command-R Refresh, Command-comma Settings, Command-W Close, Control-Command-S Toggle Sidebar.
 
 ### Settings
 

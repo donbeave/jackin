@@ -30,19 +30,19 @@ Liquid Glass is system-owned functional chrome, never content decoration. Produc
 |---|---|---|
 | Provider status | `NSStatusItem` / `NSStatusBarButton` | native functional chrome, template monochrome |
 | Provider glance | transient `NSPopover` hosting SwiftUI content | native host; centered product identity plus focused provider content |
-| Usage shell | retained `NSWindow`, unified `NSToolbar`, `NavigationSplitView` | native functional hierarchy |
+| Usage shell | retained `NSWindow`, unified `NSToolbar`, `NSSplitViewController` | native functional hierarchy |
 | Usage sidebar | sidebar `List` plus non-interactive generated wordmark | native navigation plus identity |
 | Overview | SwiftUI `Table` | native content |
 | Provider detail | `List`, `Section`, `LabeledContent`, `Picker`, `ProgressView` | native content/actions |
 | Settings | titled `NSWindow` plus grouped `Form` | native configuration |
 
-jackin❯ phosphor is an adaptive identity/healthy-state token. Warning and danger retain text plus system semantic color. Provider marks come from the canonical generated SVG assets. The quiet sidebar wordmark is `jackin❯ by tailrocks`; it is hidden from accessibility because it is not an action. The popover uses the generated template monogram beside `jackin❯ desktop`, and the Usage toolbar exposes the same text through native centered principal placement. Neither identity is interactive or owns material.
+jackin❯ phosphor is an adaptive identity/healthy-state token. Warning and danger retain text plus system semantic color. Provider marks come from the canonical generated SVG assets. The quiet sidebar wordmark is `jackin❯ by tailrocks`; it is hidden from accessibility because it is not an action. The popover uses the generated template monogram beside `jackin❯ desktop`, and the Usage detail's native top accessory centers the same text over that pane. Neither identity is interactive or owns material.
 
 ## Interaction architecture
 
 `StatusBarController` reconciles native status items from the Rust projection. A primary click opens one real transient `NSPopover` focused on that provider. The popover has no cross-provider navigation. It starts with centered, non-interactive jackin❯ identity, then shows provider identity, native account selection, Rust-owned detail/limit rows, visible recovery, Refresh, and Open Usage. A secondary click opens the fixed AppKit menu: Open Usage Window, Refresh, Quit jackin❯ desktop.
 
-Cross-provider navigation belongs in the Usage window. `UsageWindowController` lazily creates and retains one `NSWindow`. `UsageWindowRoot` uses a two-column `NavigationSplitView`: Overview and Rust-ordered providers in the sidebar, native `Table` Overview, and native provider detail. It removes the framework's automatic sidebar toolbar item and installs exactly one `.navigation` toolbar button so the control remains visible and stationary in expanded/collapsed states. A non-interactive `jackin❯ desktop` `.principal` toolbar item stays centered; no redundant `Usage` title appears.
+Cross-provider navigation belongs in the Usage window. `UsageWindowController` lazily creates and retains one `NSWindow`. A native `NSSplitViewController` owns the full-height sidebar and detail while SwiftUI renders their content. The standard `.toggleSidebar` toolbar item routes through `NSSplitViewController.toggleSidebar(_:)`; its native initial width is retained while its accessibility label changes with the real collapsed state. This is the only visibility authority for the visible control, View menu, and Control-Command-S. An `NSSplitViewItemAccessoryViewController` centers non-interactive `jackin❯ desktop` identity over the detail pane and keeps Refresh trailing without a root header or app-painted material. No redundant `Usage` title appears.
 
 Window entry is intentional:
 
@@ -77,7 +77,7 @@ Claude Keychain reads use the shared `claude_keychain_scope` helper. Explicit de
 
 Synthetic F00–F14 visual-QA fixtures activate only through explicit launch arguments and never call the bridge, network, or real credentials. They drive the same production AppKit/SwiftUI hosts as live data.
 
-Architecture tests enforce no custom glass/material, no Swift-composed domain strings, no hard-coded provider display names outside fixtures, and no probe imports. Real-host UI tests verify native commands, focused-popover routing, fixed sidebar position, retained window context, minimum-size scrolling, visible recovery, and accessibility audits for popover, Overview, and provider detail.
+Architecture tests enforce no custom glass/material, no Swift-composed domain strings, no hard-coded provider display names outside fixtures, and no probe imports. Real-host UI tests verify native commands, focused-popover routing, full-height sidebar geometry, a stationary dynamically labeled toggle, detail-centered identity, focus/retained-window continuity, minimum-size scrolling, visible recovery, and accessibility audits for popover, Overview, and provider detail.
 
 ## Distribution
 

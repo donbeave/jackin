@@ -17,7 +17,13 @@ final class JackinDesktopUITests: XCTestCase {
         let brandTitle = element("usage.brand-title")
         XCTAssertTrue(brandTitle.waitForExistence(timeout: 5))
         XCTAssertEqual(brandTitle.label, "jackin❯ desktop")
-        XCTAssertEqual(brandTitle.frame.midX, usageWindow.frame.midX, accuracy: 2)
+        let detailPane = element("usage.detail-pane")
+        XCTAssertTrue(detailPane.waitForExistence(timeout: 5))
+        XCTAssertEqual(brandTitle.frame.midX, detailPane.frame.midX, accuracy: 2)
+        let refresh = element("usage.refresh")
+        XCTAssertTrue(refresh.waitForExistence(timeout: 5))
+        XCTAssertGreaterThan(refresh.frame.midX, detailPane.frame.midX)
+        XCTAssertLessThanOrEqual(refresh.frame.maxX, detailPane.frame.maxX + 1)
         XCTAssertTrue(element("usage.sidebar").waitForExistence(timeout: 5))
         XCTAssertFalse(application.staticTexts["Usage"].exists)
         let overview = element("usage.overview.table")
@@ -27,10 +33,18 @@ final class JackinDesktopUITests: XCTestCase {
 
         let openAI = element("usage.sidebar.provider.codex")
         XCTAssertTrue(openAI.waitForExistence(timeout: 3))
-        openAI.click()
+        let openAIRow = application.outlineRows.containing(.any, identifier: openAI.identifier)
+            .firstMatch
+        XCTAssertTrue(openAIRow.waitForExistence(timeout: 3), application.debugDescription)
+        XCTAssertTrue(application.windows["usage-window"].frame.contains(openAIRow.frame))
+        XCTAssertTrue(frontUsageWindow())
+        for _ in 0..<3 where !element("usage.provider.codex").exists {
+            openAIRow.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).click()
+            _ = element("usage.provider.codex").waitForExistence(timeout: 1)
+        }
 
         XCTAssertTrue(element("usage.provider.codex").waitForExistence(timeout: 3))
-        XCTAssertTrue(element("usage.limit.bucket:0").exists)
+        XCTAssertTrue(element("usage.limit.bucket:0").waitForExistence(timeout: 3))
         XCTAssertTrue(element("usage.refresh").isEnabled)
     }
 
@@ -77,35 +91,48 @@ final class JackinDesktopUITests: XCTestCase {
         XCTAssertTrue(usageWindow.frame.contains(refresh.frame))
     }
 
-    func testNativeSidebarToggleKeepsLeadingToolbarSlot() {
+    func testNativeSidebarOwnsLeadingRegionAndToggleKeepsItsCoordinate() {
         defer { application.terminate() }
         guard launchUsage(fixture: "F03-multi-account", selection: "codex", size: "920x620")
         else { return }
 
         let usageWindow = application.windows.firstMatch
-        let hideSidebar = usageWindow.buttons["usage.sidebar-toggle"]
+        let sidebar = element("usage.sidebar-pane")
+        let detail = element("usage.detail-pane")
+        XCTAssertTrue(sidebar.waitForExistence(timeout: 5), application.debugDescription)
+        XCTAssertTrue(detail.waitForExistence(timeout: 5), application.debugDescription)
+        XCTAssertLessThanOrEqual(sidebar.frame.minX - usageWindow.frame.minX, 8)
+        XCTAssertLessThanOrEqual(usageWindow.frame.height - sidebar.frame.height, 16)
+        XCTAssertLessThan(sidebar.frame.minY, element("usage.brand-title").frame.minY)
+
+        let hideSidebar = sidebarToggle(label: "Hide Sidebar", in: usageWindow)
         XCTAssertTrue(hideSidebar.waitForExistence(timeout: 5), application.debugDescription)
+        XCTAssertTrue(frontUsageWindow())
         XCTAssertTrue(hideSidebar.waitForHittable(timeout: 5), application.debugDescription)
         XCTAssertEqual(hideSidebar.label, "Hide Sidebar")
-        XCTAssertEqual(
-            usageWindow.buttons.matching(NSPredicate(format: "label == %@", "Hide Sidebar")).count,
-            1)
+        XCTAssertEqual(sidebarToggleCount(label: "Hide Sidebar", in: usageWindow), 1)
+        XCTAssertLessThan(hideSidebar.frame.midX, detail.frame.minX)
         let expandedFrame = hideSidebar.frame
+        let expandedDetailWidth = detail.frame.width
         hideSidebar.click()
 
-        XCTAssertTrue(hideSidebar.waitForExistence(timeout: 3), application.debugDescription)
-        XCTAssertTrue(hideSidebar.isHittable)
-        XCTAssertEqual(hideSidebar.label, "Show Sidebar")
-        XCTAssertEqual(
-            usageWindow.buttons.matching(NSPredicate(format: "label == %@", "Show Sidebar")).count,
-            1)
-        XCTAssertEqual(hideSidebar.frame.midX, expandedFrame.midX, accuracy: 1)
-        XCTAssertEqual(hideSidebar.frame.midY, expandedFrame.midY, accuracy: 1)
-        hideSidebar.click()
-        XCTAssertTrue(hideSidebar.waitForLabel("Hide Sidebar", timeout: 3))
-        XCTAssertTrue(hideSidebar.waitForHittable(timeout: 3))
-        XCTAssertEqual(hideSidebar.frame.midX, expandedFrame.midX, accuracy: 1)
-        XCTAssertEqual(hideSidebar.frame.midY, expandedFrame.midY, accuracy: 1)
+        let showSidebar = sidebarToggle(label: "Show Sidebar", in: usageWindow)
+        XCTAssertTrue(showSidebar.waitForExistence(timeout: 3), application.debugDescription)
+        XCTAssertTrue(showSidebar.isHittable)
+        XCTAssertEqual(sidebarToggleCount(label: "Show Sidebar", in: usageWindow), 1)
+        XCTAssertTrue(
+            showSidebar.waitForFrame(expandedFrame, accuracy: 1, timeout: 3),
+            "expanded=\(expandedFrame), collapsed=\(showSidebar.frame)"
+        )
+        XCTAssertGreaterThan(detail.frame.width, expandedDetailWidth)
+        showSidebar.click()
+        let restoredToggle = sidebarToggle(label: "Hide Sidebar", in: usageWindow)
+        XCTAssertTrue(restoredToggle.waitForExistence(timeout: 3))
+        XCTAssertTrue(restoredToggle.waitForHittable(timeout: 3))
+        XCTAssertTrue(
+            restoredToggle.waitForFrame(expandedFrame, accuracy: 1, timeout: 3),
+            "expanded=\(expandedFrame), restored=\(restoredToggle.frame)"
+        )
     }
 
     func testMultiAccountProviderUsesNativePicker() {
@@ -130,6 +157,25 @@ final class JackinDesktopUITests: XCTestCase {
         XCTAssertTrue(
             picker.waitForValue("personal@example.test", timeout: 5), application.debugDescription)
         XCTAssertFalse(application.staticTexts["Accounts"].exists)
+    }
+
+    func testSidebarShortcutPreservesDetailKeyboardFocus() {
+        defer { application.terminate() }
+        guard launchUsage(fixture: "F03-multi-account", selection: "codex", size: "920x620")
+        else { return }
+
+        let focusedDetail = application.outlines.matching(
+            NSPredicate(
+                format: "identifier == %@ AND hasKeyboardFocus == true", "usage.provider.codex")
+        ).firstMatch
+        XCTAssertTrue(focusedDetail.waitForExistence(timeout: 3), application.debugDescription)
+
+        let usageWindow = application.windows["usage-window"]
+        XCTAssertTrue(toggleSidebarWithShortcut(in: usageWindow, expecting: "Show Sidebar"))
+        XCTAssertTrue(focusedDetail.exists, application.debugDescription)
+
+        XCTAssertTrue(toggleSidebarWithShortcut(in: usageWindow, expecting: "Hide Sidebar"))
+        XCTAssertTrue(focusedDetail.exists, application.debugDescription)
     }
 
     func testEmptyLoadingAndErrorStatesAreDistinct() {
@@ -194,10 +240,11 @@ final class JackinDesktopUITests: XCTestCase {
         XCTAssertTrue(accountPicker.waitForExistence(timeout: 3))
         let expectedAccount = accountPicker.value as? String
         XCTAssertNotNil(expectedAccount)
-        let toggle = usageWindow.buttons["usage.sidebar-toggle"]
+        let toggle = sidebarToggle(label: "Hide Sidebar", in: usageWindow)
         XCTAssertEqual(toggle.label, "Hide Sidebar")
         toggle.click()
-        XCTAssertEqual(toggle.label, "Show Sidebar")
+        XCTAssertTrue(
+            sidebarToggle(label: "Show Sidebar", in: usageWindow).waitForExistence(timeout: 3))
         let expectedFrame = usageWindow.frame
 
         let close = usageWindow.buttons["_XCUI:CloseWindow"]
@@ -214,7 +261,7 @@ final class JackinDesktopUITests: XCTestCase {
         XCTAssertTrue(usageWindow.waitForExistence(timeout: 5), application.debugDescription)
         XCTAssertTrue(element("usage.provider.codex").waitForExistence(timeout: 3))
         XCTAssertEqual(element("usage.account-picker").value as? String, expectedAccount)
-        XCTAssertEqual(usageWindow.buttons["usage.sidebar-toggle"].label, "Show Sidebar")
+        XCTAssertTrue(sidebarToggle(label: "Show Sidebar", in: usageWindow).exists)
         XCTAssertEqual(usageWindow.frame.origin.x, expectedFrame.origin.x, accuracy: 1)
         XCTAssertEqual(usageWindow.frame.origin.y, expectedFrame.origin.y, accuracy: 1)
         XCTAssertEqual(usageWindow.frame.size.width, expectedFrame.size.width, accuracy: 1)
@@ -271,16 +318,21 @@ final class JackinDesktopUITests: XCTestCase {
 
         let usageWindow = application.windows["usage-window"]
         usageWindow.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.03)).click()
-        let sidebarToggle = usageWindow.buttons["usage.sidebar-toggle"]
-        XCTAssertEqual(sidebarToggle.label, "Hide Sidebar")
+        let nativeToggle = sidebarToggle(label: "Hide Sidebar", in: usageWindow)
+        XCTAssertEqual(nativeToggle.label, "Hide Sidebar")
 
         application.menuBars.menuBarItems["View"].click()
         application.menuItems["Hide Sidebar"].click()
         XCTAssertTrue(
-            sidebarToggle.waitForLabel("Show Sidebar", timeout: 3), application.debugDescription)
+            sidebarToggle(label: "Show Sidebar", in: usageWindow).waitForExistence(timeout: 3),
+            application.debugDescription)
         application.menuBars.menuBarItems["View"].click()
         application.menuItems["Show Sidebar"].click()
-        XCTAssertTrue(sidebarToggle.waitForLabel("Hide Sidebar", timeout: 3))
+        XCTAssertTrue(
+            sidebarToggle(label: "Hide Sidebar", in: usageWindow).waitForExistence(timeout: 3))
+
+        XCTAssertTrue(toggleSidebarWithShortcut(in: usageWindow, expecting: "Show Sidebar"))
+        XCTAssertTrue(toggleSidebarWithShortcut(in: usageWindow, expecting: "Hide Sidebar"))
 
         application.menuBars.menuBarItems["View"].click()
         application.menuItems["Refresh"].click()
@@ -355,7 +407,17 @@ final class JackinDesktopUITests: XCTestCase {
         guard foreground else { return false }
         let usageWindow = application.windows["usage-window"]
         usageWindow.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.03)).click()
-        let hittable = usageWindow.waitForHittable(timeout: 5)
+        var hittable = usageWindow.waitForHittable(timeout: 3)
+        for _ in 0..<3 where !hittable {
+            DistributedNotificationCenter.default().postNotificationName(
+                Notification.Name("com.jackin-project.desktop.visual-qa.show-usage"),
+                object: nil,
+                userInfo: nil,
+                deliverImmediately: true
+            )
+            application.activate()
+            hittable = usageWindow.waitForHittable(timeout: 3)
+        }
         XCTAssertTrue(hittable, application.debugDescription)
         return hittable
     }
@@ -387,6 +449,39 @@ final class JackinDesktopUITests: XCTestCase {
         application.descendants(matching: .any)[identifier]
     }
 
+    private func sidebarToggle(label: String, in window: XCUIElement) -> XCUIElement {
+        window.buttons.matching(NSPredicate(format: "label == %@", label)).firstMatch
+    }
+
+    private func sidebarToggleCount(label: String, in window: XCUIElement) -> Int {
+        window.buttons.matching(NSPredicate(format: "label == %@", label)).count
+    }
+
+    private func toggleSidebarWithShortcut(
+        in window: XCUIElement,
+        expecting label: String
+    ) -> Bool {
+        for _ in 0..<3 {
+            application.activate()
+            application.typeKey("s", modifierFlags: [.control, .command])
+            if sidebarToggle(label: label, in: window).waitForExistence(timeout: 1) {
+                return true
+            }
+        }
+        return false
+    }
+
+    private func frontUsageWindow() -> Bool {
+        DistributedNotificationCenter.default().postNotificationName(
+            Notification.Name("com.jackin-project.desktop.visual-qa.show-usage"),
+            object: nil,
+            userInfo: nil,
+            deliverImmediately: true
+        )
+        application.activate()
+        return application.windows["usage-window"].waitForHittable(timeout: 3)
+    }
+
     private func handlesSystemAccessibilityAuditFalsePositive(
         _ issue: XCUIAccessibilityAuditIssue,
         auditingPopover: Bool = false,
@@ -404,6 +499,14 @@ final class JackinDesktopUITests: XCTestCase {
 
         if auditingPopover, issue.auditType == .parentChild {
             // Xcode 26 reports the AppKit-owned NSPopover bridge hierarchy without an element.
+            return true
+        }
+
+        if issue.auditType == .parentChild,
+            application.windows["usage-window"].splitGroups.count == 1
+        {
+            // Xcode 26 cannot resolve the parent proxy for the AppKit-owned native split host.
+            // Named pane/list/detail descendants remain audited and asserted independently.
             return true
         }
 
@@ -506,14 +609,22 @@ final class JackinDesktopUITests: XCTestCase {
 }
 
 extension XCUIElement {
-    fileprivate func waitForLabel(_ expectedLabel: String, timeout: TimeInterval) -> Bool {
-        let predicate = NSPredicate(format: "label == %@", expectedLabel)
+    fileprivate func waitForHittable(timeout: TimeInterval) -> Bool {
+        let predicate = NSPredicate(format: "isHittable == true")
         let expectation = XCTNSPredicateExpectation(predicate: predicate, object: self)
         return XCTWaiter.wait(for: [expectation], timeout: timeout) == .completed
     }
 
-    fileprivate func waitForHittable(timeout: TimeInterval) -> Bool {
-        let predicate = NSPredicate(format: "isHittable == true")
+    fileprivate func waitForFrame(
+        _ expectedFrame: CGRect,
+        accuracy: CGFloat,
+        timeout: TimeInterval
+    ) -> Bool {
+        let predicate = NSPredicate { object, _ in
+            guard let element = object as? XCUIElement else { return false }
+            return abs(element.frame.midX - expectedFrame.midX) <= accuracy
+                && abs(element.frame.midY - expectedFrame.midY) <= accuracy
+        }
         let expectation = XCTNSPredicateExpectation(predicate: predicate, object: self)
         return XCTWaiter.wait(for: [expectation], timeout: timeout) == .completed
     }

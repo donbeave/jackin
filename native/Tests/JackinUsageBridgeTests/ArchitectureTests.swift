@@ -82,7 +82,7 @@ final class ArchitectureTests: XCTestCase {
         for file in try handwrittenSwiftFiles() {
             let text = try String(contentsOf: file, encoding: .utf8)
             XCTAssertFalse(
-                text.contains("glassEffect"),
+                text.contains("glassEffect") || text.contains("GlassEffectContainer"),
                 "\(file.lastPathComponent) must let standard controls own Liquid Glass"
             )
         }
@@ -90,7 +90,8 @@ final class ArchitectureTests: XCTestCase {
 
     func testProductionHasNoHandPaintedSystemMaterial() throws {
         let regex = try NSRegularExpression(
-            pattern: #"\.(ultraThin|thin|regular|thick|ultraThick)Material"#
+            pattern:
+                #"\.background\(\.(bar|material)\)|\.(ultraThin|thin|regular|thick|ultraThick)Material"#
         )
         for file in try handwrittenSwiftFiles() {
             let text = try String(contentsOf: file, encoding: .utf8)
@@ -903,16 +904,29 @@ final class ArchitectureTests: XCTestCase {
             contentsOf: desktop.appendingPathComponent("UsageWindow/UsageWindowRoot.swift"),
             encoding: .utf8
         )
+        let splitController = try String(
+            contentsOf: desktop.appendingPathComponent(
+                "UsageWindow/UsageWindowSplitController.swift"),
+            encoding: .utf8
+        )
         let popover = try String(
             contentsOf: desktop.appendingPathComponent("PopoverRoot.swift"),
             encoding: .utf8
         )
 
+        XCTAssertTrue(usageRoot.contains("struct UsageWindowDetailAccessory: View"))
+        XCTAssertTrue(splitController.contains("NSSplitViewItemAccessoryViewController"))
         XCTAssertTrue(
-            usageRoot.contains(
-                "ToolbarItem(id: \"usage.brand-title\", placement: .principal)"
-            ))
+            splitController.contains("accessory.view.setAccessibilityIdentifier")
+                && splitController.contains("\"usage.detail-pane\"")
+        )
+        XCTAssertTrue(splitController.contains("NSSplitViewItem(sidebarWithViewController:"))
+        XCTAssertTrue(splitController.contains("sidebarItem.allowsFullHeightLayout = true"))
+        XCTAssertTrue(splitController.contains("[.toggleSidebar, .sidebarTrackingSeparator]"))
         XCTAssertTrue(usageRoot.contains("Text(\"jackin❯ desktop\")"))
+        XCTAssertFalse(usageRoot.contains(".toolbar(removing: .sidebarToggle)"))
+        XCTAssertFalse(usageRoot.contains("usage.sidebar-toggle"))
+        XCTAssertFalse(usageRoot.contains("UsageWindowNavigationState"))
         XCTAssertTrue(popover.contains("JackinBrandIdentity.templateMonogram()"))
         XCTAssertTrue(popover.contains("Text(\"jackin❯ desktop\")"))
         XCTAssertTrue(popover.contains(".frame(maxWidth: .infinity)"))

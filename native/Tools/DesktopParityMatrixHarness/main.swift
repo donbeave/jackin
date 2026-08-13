@@ -274,6 +274,7 @@ struct DesktopParityMatrixHarness {
         let provider = read("UsageWindow/ProviderDetailView.swift")
         let overview = read("UsageWindow/OverviewListView.swift")
         let usageController = read("UsageWindowController.swift")
+        let usageSplitController = read("UsageWindow/UsageWindowSplitController.swift")
         check(
             "StatusItemRendering displays the Rust bar label verbatim",
             statusItem.contains("StatusItemRendering")
@@ -377,9 +378,13 @@ struct DesktopParityMatrixHarness {
                 && !usageRoot.contains("UsageAccountMiniMeter")
         )
         check(
-            "Usage window NSToolbar host",
-            usageController.contains("NSHostingController")
+            "Usage window uses native split and standard toolbar",
+            usageController.contains("UsageWindowSplitController")
                 && usageController.contains("toolbarStyle = .unified")
+                && usageSplitController.contains("NSSplitViewController")
+                && usageSplitController.contains("NSHostingController")
+                && usageSplitController.contains(".toggleSidebar")
+                && usageSplitController.contains(".sidebarTrackingSeparator")
         )
         check(
             "Status left-click focuses provider via StatusPopoverFocus",

@@ -376,20 +376,16 @@ public final class DesktopAppDelegate: NSObject, NSApplicationDelegate {
         let fixture = applyVisualQAFixtureIfRequested()
         let usageWindow = UsageWindowController(
             store: store,
-            elevatesFixtureWindow: visualQALaunchOptions.elevatesFixtureWindow
+            elevatesFixtureWindow: visualQALaunchOptions.elevatesFixtureWindow,
+            onSplitControllerCreated: { [weak self] splitController in
+                self?.mainMenu?.routeSidebar(to: splitController)
+            }
         )
         self.usageWindow = usageWindow
 
         let menu = AppMainMenu(
             store: store,
-            openUsage: { [weak usageWindow] in usageWindow?.show() },
-            toggleUsageSidebar: { [weak usageWindow] in usageWindow?.toggleSidebar() },
-            isUsageSidebarVisible: { [weak usageWindow] in
-                usageWindow?.isSidebarVisible ?? true
-            },
-            canToggleUsageSidebar: { [weak usageWindow] in
-                usageWindow?.isKeyWindow ?? false
-            }
+            openUsage: { [weak usageWindow] in usageWindow?.show() }
         )
         menu.install()
         self.mainMenu = menu
