@@ -86,7 +86,7 @@ usage() {
   if [[ "$collapsed" == yes ]]; then
     environment+=("CAPTURE_TOOLBAR_BUTTON_DESCRIPTION=Hide Sidebar")
   fi
-  env "${environment[@]}" "$capture" "$app" "$owner" "$output/$file" Usage \
+  env "${environment[@]}" "$capture" "$app" "$owner" "$output/$file" "jackin❯ desktop" \
     --fixture "$fixture" --open-usage --window-size "$size" --appearance "$appearance"
 }
 
