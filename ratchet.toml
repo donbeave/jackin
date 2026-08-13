@@ -706,7 +706,7 @@ key = "jackin-manifest"
 bound = 5
 [[family.entry]]
 key = "jackin-protocol"
-bound = 7
+bound = 8
 [[family.entry]]
 key = "jackin-runtime"
 bound = 7
@@ -721,7 +721,7 @@ key = "jackin-test-support"
 bound = 4
 [[family.entry]]
 key = "jackin-usage"
-bound = 8
+bound = 9
 
 
 # Plan 027: suite wall-time from nextest junit. The provider reports zero when
