@@ -201,7 +201,12 @@ pub(crate) use mounts::{
     github_config_mount, resolve_backend,
 };
 
-pub(crate) use capsule_setup::{capsule_config, exec_binding_names, prepare_socket_dir};
+#[cfg(test)]
+pub(crate) use capsule_setup::extract_host_env_entries;
+pub(crate) use capsule_setup::{
+    capsule_config, capsule_config_contents, create_host_env_file, exec_binding_names,
+    prepare_host_env_transport, prepare_socket_dir,
+};
 
 #[cfg(test)]
 pub(crate) use exit_diagnosis::{ExitPhase, diagnose_premature_exit};

@@ -44,6 +44,29 @@ pub fn install_agent_binary_stubs(paths: &JackinPaths) {
 const _: fn(&JackinPaths) = install_capsule_binary_stub;
 const _: fn(&JackinPaths) = install_agent_binary_stubs;
 
+pub type ObservedHostEnvFile =
+    std::sync::Arc<std::sync::Mutex<Option<(std::path::PathBuf, String)>>>;
+
+pub fn observe_host_env_file(runner: &mut FakeRunner, paths: &JackinPaths) -> ObservedHostEnvFile {
+    let observed = std::sync::Arc::new(std::sync::Mutex::new(None));
+    let output = std::sync::Arc::clone(&observed);
+    let directory = paths.jackin_home.join("runtime-env");
+    runner.side_effects.push((
+        "docker run -d --name".to_owned(),
+        Box::new(move || {
+            let path = std::fs::read_dir(&directory)
+                .expect("runtime env directory")
+                .map(|entry| entry.expect("runtime env entry").path())
+                .find(|path| path.extension().is_some_and(|extension| extension == "env"))
+                .expect("host env file must exist during docker run");
+            let contents = std::fs::read_to_string(&path).expect("host env contents");
+            *output.lock().expect("host env observation lock") = Some((path, contents));
+        }),
+    ));
+    observed
+}
+const _: fn(&mut FakeRunner, &JackinPaths) -> ObservedHostEnvFile = observe_host_env_file;
+
 /// Minimal no-op `DockerApi` stub. All operations return empty/success so
 /// `load_role` proceeds as if no containers exist.
 ///

@@ -40,8 +40,10 @@ pub const DOCKER_BACKEND_NAME: &str = "docker";
 pub struct AppleContainerSpec {
     /// Role OCI image reference.
     pub image: String,
-    /// Environment variables to inject (`-e KEY=VALUE` flags).
+    /// Non-sensitive jackin runtime metadata injected as `-e KEY=VALUE`.
     pub env: Vec<(String, String)>,
+    /// Host-only environment file read by `container run --env-file`.
+    pub env_file: Option<PathBuf>,
     /// Bind mounts (`-v host_path:container_path` flags).
     pub mounts: Vec<(PathBuf, PathBuf)>,
     /// Linux capabilities to grant (`--cap-add CAP_NAME` flags).
@@ -129,22 +131,7 @@ impl Default for AppleContainerClient {
 
 impl AppleContainerApi for AppleContainerClient {
     async fn run_container(&self, name: &str, spec: &AppleContainerSpec) -> Result<()> {
-        let mut args: Vec<std::ffi::OsString> =
-            vec!["run".into(), "--name".into(), name.into(), "-d".into()];
-
-        for (k, v) in &spec.env {
-            args.extend(["-e".into(), format!("{k}={v}").into()]);
-        }
-        for (host, container) in &spec.mounts {
-            args.extend([
-                "-v".into(),
-                format!("{}:{}", host.display(), container.display()).into(),
-            ]);
-        }
-        for cap in &spec.caps_add {
-            args.extend(["--cap-add".into(), cap.into()]);
-        }
-        args.extend([spec.image.clone().into(), "jackin-capsule".into()]);
+        let args = container_run_args(name, spec);
 
         let output = crate::process_telemetry::exec_async(&jackin_process::ExecRequest::new(
             "container",
@@ -194,6 +181,29 @@ impl AppleContainerApi for AppleContainerClient {
             .filter(|c| c.name.starts_with(name_prefix))
             .collect())
     }
+}
+
+fn container_run_args(name: &str, spec: &AppleContainerSpec) -> Vec<std::ffi::OsString> {
+    let mut args: Vec<std::ffi::OsString> =
+        vec!["run".into(), "--name".into(), name.into(), "-d".into()];
+
+    if let Some(path) = &spec.env_file {
+        args.extend(["--env-file".into(), path.as_os_str().to_owned()]);
+    }
+    for (key, value) in &spec.env {
+        args.extend(["-e".into(), format!("{key}={value}").into()]);
+    }
+    for (host, container) in &spec.mounts {
+        args.extend([
+            "-v".into(),
+            format!("{}:{}", host.display(), container.display()).into(),
+        ]);
+    }
+    for capability in &spec.caps_add {
+        args.extend(["--cap-add".into(), capability.into()]);
+    }
+    args.extend([spec.image.clone().into(), "jackin-capsule".into()]);
+    args
 }
 
 /// Parse `container ps --format json` output into container info records.

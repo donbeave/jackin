@@ -256,12 +256,11 @@ pub async fn launch(args: AppleContainerLaunch<'_>) -> Result<()> {
     if debug {
         env.push(("JACKIN_TELEMETRY_LEVEL".to_owned(), "debug".to_owned()));
     }
-    for (k, v) in env_pairs {
-        if k == "JACKIN_CAPSULE_FORCE_DAEMON" || k == "JACKIN_DEBUG" {
-            continue;
-        }
-        env.push((k.clone(), v.clone()));
-    }
+    let host_env_entries = env_pairs
+        .iter()
+        .filter(|(key, _)| key != "JACKIN_CAPSULE_FORCE_DAEMON" && key != "JACKIN_DEBUG")
+        .cloned()
+        .collect::<Vec<_>>();
     // Mirror the Docker path: list on-demand credential var names so the
     // in-container MCP tool advertises which commands need jackin-exec.
     let names = super::launch::exec_binding_names(&capsule_config.exec_bindings);
@@ -272,22 +271,29 @@ pub async fn launch(args: AppleContainerLaunch<'_>) -> Result<()> {
     // socket dir bind-mount to /jackin/run: carries Capsule's launch config
     // (agent.toml, which the daemon requires at startup) and host.sock.
     let socket_dir = paths.jackin_home.join("sockets").join(container_name);
-    let capsule_config_contents = toml::to_string(capsule_config)
+    let capsule_config_contents = super::launch::capsule_config_contents(capsule_config)
         .context("serializing Capsule launch config for /jackin/run/agent.toml")?;
     super::launch::prepare_socket_dir(&socket_dir, &capsule_config_contents)?;
     let mut mounts: Vec<(PathBuf, PathBuf)> = mount_pairs.to_vec();
     mounts.push((socket_dir, PathBuf::from(container_paths::RUN_DIR)));
 
+    let host_env_file =
+        super::launch::create_host_env_file(&paths.jackin_home, container_name, &host_env_entries)
+            .context("creating private host runtime environment")?;
+
     let spec = crate::apple_container_client::AppleContainerSpec {
         image: image.to_owned(),
         env,
+        env_file: host_env_file.as_ref().map(|file| file.path().to_path_buf()),
         mounts,
         caps_add: vec![],
     };
 
-    crate::apple_container_client::AppleContainerClient::new()
+    let run_result = crate::apple_container_client::AppleContainerClient::new()
         .run_container(container_name, &spec)
-        .await
+        .await;
+    drop(host_env_file);
+    run_result
         .context("container run failed — required capabilities or image may be unavailable")?;
 
     // Write instance manifest.

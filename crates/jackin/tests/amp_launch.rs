@@ -4,7 +4,10 @@
 )]
 mod common;
 
-use common::{FakeRunner, NoOpDocker, install_agent_binary_stubs, install_capsule_binary_stub};
+use common::{
+    FakeRunner, NoOpDocker, install_agent_binary_stubs, install_capsule_binary_stub,
+    observe_host_env_file,
+};
 
 use jackin::workspace::{MountConfig, ResolvedWorkspace};
 use jackin_config::AppConfig;
@@ -98,6 +101,7 @@ agents = ["amp"]
     // Capture queue (role-specific, after 4-slot preamble):
     //   [0] capture_secret: gh auth token → empty (no gh session in test)
     let mut runner = FakeRunner::for_load_agent([String::new()]);
+    let observed_env = observe_host_env_file(&mut runner, &paths);
     let docker = NoOpDocker;
 
     load_role(
@@ -130,7 +134,19 @@ agents = ["amp"]
         "amp binary is baked into the image and must not be bind-mounted at run time; got: {run_cmd}"
     );
     assert!(!run_cmd.contains("-e JACKIN_ROLE="), "{run_cmd}");
-    assert!(run_cmd.contains("-e AMP_API_KEY=test-amp-key"), "{run_cmd}");
+    assert!(run_cmd.contains("--env-file"), "{run_cmd}");
+    assert!(!run_cmd.contains("test-amp-key"), "{run_cmd}");
+    let (env_path, env_contents) = observed_env.lock().unwrap().clone().unwrap();
+    assert!(
+        env_contents
+            .lines()
+            .any(|line| line == "AMP_API_KEY=test-amp-key"),
+        "{env_contents}"
+    );
+    assert!(
+        !env_path.exists(),
+        "host env file must be removed after run"
+    );
     assert!(!run_cmd.contains("/jackin/claude/"), "{run_cmd}");
     assert!(!run_cmd.contains("/jackin/codex/"), "{run_cmd}");
     assert!(!run_cmd.contains("/jackin/amp/secrets.json"), "{run_cmd}");

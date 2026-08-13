@@ -347,7 +347,7 @@ async fn unauthorized_credential_payload_is_absent_from_telemetry() {
 }
 
 #[tokio::test]
-async fn approved_literal_ref_resolves() {
+async fn resolve_literal_uses_unredacted_allowlist_source() {
     let allowed = vec![ExecBinding {
         name: "TOKEN".into(),
         kind: ExecKind::Literal,
@@ -355,7 +355,11 @@ async fn approved_literal_ref_resolves() {
     }];
     let reply = roundtrip(
         allowed,
-        serde_json::json!([{ "name": "TOKEN", "kind": "literal", "source": "s3cr3t" }]),
+        serde_json::json!([{
+            "name": "TOKEN",
+            "kind": "literal",
+            "source": "literal"
+        }]),
     )
     .await;
     assert_eq!(reply["values"]["TOKEN"], "s3cr3t");
@@ -399,12 +403,16 @@ async fn unapproved_source_is_rejected() {
     // read a different secret — the allow-list must reject this.
     let allowed = vec![ExecBinding {
         name: "TOKEN".into(),
-        kind: ExecKind::Literal,
-        source: "approved".into(),
+        kind: ExecKind::Op,
+        source: "op://approved/item/field".into(),
     }];
     let reply = roundtrip(
         allowed,
-        serde_json::json!([{ "name": "TOKEN", "kind": "literal", "source": "attacker-swapped" }]),
+        serde_json::json!([{
+            "name": "TOKEN",
+            "kind": "op",
+            "source": "op://attacker-swapped/item/field"
+        }]),
     )
     .await;
     assert!(reply.get("values").is_none());

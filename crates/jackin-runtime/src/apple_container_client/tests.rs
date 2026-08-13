@@ -43,12 +43,53 @@ fn parse_empty_and_malformed() {
     assert_eq!(parse_all_containers_json(json).len(), 1);
 }
 
+#[test]
+fn launch_args_use_env_file_without_secret_values() {
+    let secret = "fake-apple-container-secret";
+    let temp = tempfile::tempdir().unwrap();
+    let host_env_file = crate::runtime::launch::create_host_env_file(
+        temp.path(),
+        "fixture",
+        &[("OPERATOR_TOKEN".to_owned(), secret.to_owned())],
+    )
+    .unwrap()
+    .unwrap();
+    let spec = AppleContainerSpec {
+        image: "img".into(),
+        env: vec![("JACKIN_CAPSULE_FORCE_DAEMON".into(), "1".into())],
+        env_file: Some(host_env_file.path().to_path_buf()),
+        mounts: vec![],
+        caps_add: vec![],
+    };
+
+    let args = container_run_args("fixture", &spec)
+        .into_iter()
+        .map(|argument| argument.to_string_lossy().into_owned())
+        .collect::<Vec<_>>();
+    let env_file_path = host_env_file.path().to_string_lossy().into_owned();
+
+    assert!(args.windows(2).any(|pair| {
+        pair.first().map(String::as_str) == Some("--env-file")
+            && pair.get(1).map(String::as_str) == Some(env_file_path.as_str())
+    }));
+    assert!(
+        args.windows(2)
+            .any(|pair| { pair == ["-e", "JACKIN_CAPSULE_FORCE_DAEMON=1"] })
+    );
+    assert!(!args.join(" ").contains(secret));
+    assert_eq!(
+        std::fs::read_to_string(host_env_file.path()).unwrap(),
+        format!("OPERATOR_TOKEN={secret}\n")
+    );
+}
+
 #[tokio::test]
 async fn fake_client_lifecycle_contract() {
     let client = FakeAppleContainerClient::new();
     let spec = AppleContainerSpec {
         image: "img".into(),
         env: vec![],
+        env_file: None,
         mounts: vec![],
         caps_add: vec![],
     };

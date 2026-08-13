@@ -307,16 +307,16 @@ cleanup documentation later without rewriting the credential contract.
 
 ## Done criteria
 
-- [ ] No raw literal binding value appears in any container-visible file or DTO;
+- [x] No raw literal binding value appears in any container-visible file or DTO;
   exec resolution still yields the true value (resolve-from-allowlist test).
-- [ ] `ExecBinding` docs match behavior.
-- [ ] Socket dir is `0o700` from creation on both backends, including
+- [x] `ExecBinding` docs match behavior.
+- [x] Socket dir is `0o700` from creation on both backends, including
   zero-binding workspaces.
-- [ ] No secret value appears in `docker run` argv; the env file is `0o600`,
+- [x] No secret value appears in `docker run` argv; the env file is `0o600`,
   host-only (never under a mounted path), and removed after launch. The Apple
   backend has the same split or a documented named residual.
-- [ ] All tests, clippy, `--fast` and `--e2e` gates pass.
-- [ ] Only in-scope files and `plans/README.md` changed.
+- [x] All tests, clippy, `--fast` and `--e2e` gates pass.
+- [x] Only in-scope files and `plans/README.md` changed.
 
 ## STOP conditions
 

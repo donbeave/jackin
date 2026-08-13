@@ -876,7 +876,7 @@ pub(crate) async fn launch_role_runtime(
     // file itself gets 0o600 from inside the capsule. The same directory
     // carries Capsule's normalized launch config.
     let socket_dir = paths.jackin_home.join("sockets").join(*container_name);
-    let capsule_config_contents = toml::to_string(capsule_config)
+    let capsule_config_contents = super::capsule_config_contents(capsule_config)
         .context("serializing Capsule launch config for /jackin/run/agent.toml")?;
     // Runtime passwd/group entries for the host UID/GID so `getpwuid`/`$HOME`
     // resolve to the `agent` user inside the container even though the image
@@ -924,12 +924,8 @@ pub(crate) async fn launch_role_runtime(
     );
     let prepare_socket_dir_result =
         jackin_telemetry::spawn::joined_blocking(move || -> std::io::Result<()> {
-            std::fs::create_dir_all(&socket_dir_for_mkdir)?;
+            super::prepare_socket_dir(&socket_dir_for_mkdir, &capsule_config_contents_for_write)?;
             std::fs::create_dir_all(&usage_shared_dir_for_mkdir)?;
-            std::fs::write(
-                socket_dir_for_mkdir.join(jackin_protocol::CAPSULE_CONFIG_FILENAME),
-                capsule_config_contents_for_write,
-            )?;
             if let Some((passwd_line, group_line)) = extrausers_entries_for_write {
                 if let Some(parent) = extrausers_passwd_for_write.parent() {
                     std::fs::create_dir_all(parent)?;
@@ -1027,11 +1023,15 @@ pub(crate) async fn launch_role_runtime(
     for mount in &extrausers_mounts {
         run_args.extend_from_slice(&["-v", mount.as_str()]);
     }
+    let host_env_transport =
+        super::prepare_host_env_transport(&paths.jackin_home, container_name, &mut run_args)
+            .context("creating private host runtime environment")?;
+    host_env_transport.append_arguments(&mut run_args);
     if *debug {
         jackin_diagnostics::emit_debug_line(
             "launch",
             &format!(
-                "prepared host socket dir {socket_dir_str} (owned by host UID, default umask) and Capsule config for bind-mount at /jackin/run"
+                "prepared private host socket dir {socket_dir_str} and redacted Capsule config for bind-mount at /jackin/run"
             ),
         );
     }
@@ -1051,6 +1051,7 @@ pub(crate) async fn launch_role_runtime(
     } else {
         run_role.await
     };
+    drop(host_env_transport);
     jackin_diagnostics::active_timing_done(
         jackin_diagnostics::DiagnosticStage::Capsule,
         "docker_run_role",
