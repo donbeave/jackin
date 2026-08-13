@@ -150,15 +150,20 @@ impl UsageCapabilitySet {
 struct AccountEntry {
     envelope: AccountStateEnvelope,
     history: VecDeque<UsageGenerationView>,
+    recovery_pending: bool,
 }
 
 impl AccountEntry {
-    fn new(envelope: AccountStateEnvelope) -> Self {
+    fn new(envelope: AccountStateEnvelope, recovery_pending: bool) -> Self {
         let mut history = VecDeque::new();
         if envelope.phase.is_terminal() {
             history.push_back(generation_view(&envelope));
         }
-        Self { envelope, history }
+        Self {
+            envelope,
+            history,
+            recovery_pending,
+        }
     }
 
     fn record_terminal(&mut self) {
@@ -289,7 +294,9 @@ impl UsageCoordinator {
             .accounts
             .get_mut(capability)
             .ok_or_else(unavailable_error)?;
-        if entry.envelope.phase.is_active() || observed_generation < entry.envelope.generation {
+        if entry.envelope.phase.is_active()
+            || (!entry.recovery_pending && observed_generation < entry.envelope.generation)
+        {
             return Ok(generation_view(&entry.envelope));
         }
         if entry
@@ -310,6 +317,8 @@ impl UsageCoordinator {
         }
 
         let previous = entry.envelope.clone();
+        let recovery_pending = entry.recovery_pending;
+        entry.recovery_pending = false;
         entry.envelope.generation = entry.envelope.generation.saturating_add(1);
         entry.envelope.phase = UsageRefreshPhase::Queued;
         entry.envelope.started_at_epoch = Some(now_epoch);
@@ -320,6 +329,7 @@ impl UsageCoordinator {
         let generation = entry.envelope.generation;
         if self.shared.store.store(&entry.envelope, now_epoch).is_err() {
             entry.envelope = previous;
+            entry.recovery_pending = recovery_pending;
             let error = unavailable_error();
             state.blocked.insert(capability.clone(), error.clone());
             return Err(error);
@@ -438,11 +448,30 @@ impl UsageCoordinator {
         }
         match loaded {
             Ok(envelope) => {
-                let envelope =
+                let mut envelope =
                     envelope.unwrap_or_else(|| AccountStateEnvelope::idle(capability.clone()));
-                state
-                    .accounts
-                    .insert(capability.clone(), AccountEntry::new(envelope));
+                let recovery_pending = envelope.phase.is_active();
+                if recovery_pending {
+                    envelope.phase = UsageRefreshPhase::Failed;
+                    envelope.terminal_result = None;
+                    envelope.terminal_error = Some(coordination_error(
+                        UsageCoordinationErrorKind::OwnerLost,
+                        "usage refresh owner exited before completion",
+                    ));
+                    envelope.completed_at_epoch = Some(now_epoch);
+                    envelope.retry_deadline_epoch = None;
+                    envelope.success_deadline_epoch = None;
+                    envelope.consecutive_failures = envelope.consecutive_failures.saturating_add(1);
+                    if self.shared.store.store(&envelope, now_epoch).is_err() {
+                        let error = unavailable_error();
+                        state.blocked.insert(capability.clone(), error.clone());
+                        return Err(error);
+                    }
+                }
+                state.accounts.insert(
+                    capability.clone(),
+                    AccountEntry::new(envelope, recovery_pending),
+                );
                 Ok(())
             }
             Err(error) => {

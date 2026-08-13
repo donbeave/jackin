@@ -169,6 +169,17 @@ pub struct UsageBrokerRequest {
     pub operation: UsageBrokerOperation,
 }
 
+/// Multiplexed request carried by the host-started container stdio tunnel.
+/// The tunnel is already scoped to one container; account authorization still
+/// happens against that tunnel's immutable host-side capability allowlist.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct UsageRelayTunnelRequest {
+    /// Process-local request identifier used only to route the response.
+    pub request_id: u64,
+    /// Unmodified broker request emitted by a Capsule client.
+    pub request: UsageBrokerRequest,
+}
+
 /// Versioned broker response.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(tag = "status", rename_all = "snake_case")]
@@ -183,6 +194,15 @@ pub enum UsageBrokerResponse {
         /// Typed sanitized failure.
         error: UsageCoordinationError,
     },
+}
+
+/// Multiplexed response returned through the container stdio tunnel.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct UsageRelayTunnelResponse {
+    /// Identifier from [`UsageRelayTunnelRequest`].
+    pub request_id: u64,
+    /// Sanitized broker or authorization result.
+    pub response: UsageBrokerResponse,
 }
 
 #[cfg(test)]

@@ -16,7 +16,7 @@ use jackin_core::{JackinPaths, UsageCredentialEnvName, WorkspaceName};
 use jackin_protocol::usage_broker::{
     USAGE_BROKER_MAX_FRAME_BYTES, USAGE_BROKER_PROTOCOL_VERSION, UsageAccountCapability,
     UsageBrokerOperation, UsageBrokerRequest, UsageBrokerResponse, UsageCoordinationError,
-    UsageCoordinationErrorKind,
+    UsageCoordinationErrorKind, UsageRelayTunnelRequest, UsageRelayTunnelResponse,
 };
 use jackin_usage::coordinator::UsageCapabilitySet;
 use jackin_usage::host::{
@@ -25,10 +25,15 @@ use jackin_usage::host::{
     ProviderCredentialSecretSource, UsageBrokerClient, UsageBrokerConfig, discover_usage_sources,
     ensure_usage_broker, forwarded_usage_capabilities, validate_usage_sources,
 };
-use tokio::io::{AsyncBufReadExt as _, AsyncReadExt as _, AsyncWriteExt as _, BufReader};
+use tokio::io::{
+    AsyncBufRead, AsyncBufReadExt as _, AsyncRead, AsyncReadExt as _, AsyncWrite,
+    AsyncWriteExt as _, BufReader,
+};
 use tokio::net::{UnixListener, UnixStream};
+use tokio::sync::{mpsc, oneshot};
 
 const RELAY_SOCKET: &str = "usage.sock";
+const TUNNEL_SHUTDOWN_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(2);
 
 pub(crate) fn docker_runtime_mount(socket_dir: &Path) -> Result<String> {
     let source = socket_dir.to_str().ok_or_else(|| {
@@ -125,7 +130,22 @@ pub struct UsageRelayLaunch<'a> {
 /// Session-lifetime relay ownership. Drop revokes the socket task.
 pub struct UsageRelayGuard {
     task: Option<tokio::task::JoinHandle<()>>,
-    socket_path: PathBuf,
+    socket_path: Option<PathBuf>,
+    shutdown: Option<oneshot::Sender<()>>,
+}
+
+struct AbortTaskOnDrop<T>(tokio::task::JoinHandle<T>);
+
+impl<T> AbortTaskOnDrop<T> {
+    fn is_finished(&self) -> bool {
+        self.0.is_finished()
+    }
+}
+
+impl<T> Drop for AbortTaskOnDrop<T> {
+    fn drop(&mut self) {
+        self.0.abort();
+    }
 }
 
 impl std::fmt::Debug for UsageRelayGuard {
@@ -138,11 +158,22 @@ impl std::fmt::Debug for UsageRelayGuard {
 
 impl Drop for UsageRelayGuard {
     fn drop(&mut self) {
-        if let Some(task) = &self.task {
+        if let Some(shutdown) = self.shutdown.take() {
+            let _sent = shutdown.send(());
+        } else if let Some(task) = &self.task {
             task.abort();
         }
-        drop(fs::remove_file(&self.socket_path));
+        if let Some(socket_path) = &self.socket_path {
+            drop(fs::remove_file(socket_path));
+        }
     }
+}
+
+/// Host broker and exact launch-derived capabilities awaiting a backend transport.
+#[derive(Debug)]
+pub struct PreparedUsageRelay {
+    broker: UsageBrokerClient,
+    capabilities: Vec<UsageAccountCapability>,
 }
 
 /// Derive source proof from credentials actually provisioned for this launch.
@@ -186,7 +217,8 @@ pub async fn prepare_for_container(launch: UsageRelayLaunch<'_>) -> Result<Usage
     {
         return Ok(UsageRelayGuard {
             task: None,
-            socket_path,
+            socket_path: Some(socket_path),
+            shutdown: None,
         });
     }
     let prepared = jackin_telemetry::spawn::joined_blocking(move || {
@@ -203,10 +235,128 @@ pub async fn prepare_for_container(launch: UsageRelayLaunch<'_>) -> Result<Usage
     if capabilities.is_empty() {
         return Ok(UsageRelayGuard {
             task: None,
-            socket_path,
+            socket_path: Some(socket_path),
+            shutdown: None,
         });
     }
     Ok(start_guard(socket_path, client, capabilities))
+}
+
+/// Resolve one Docker Capsule's broker and immutable capability allowlist.
+/// The transport starts after `docker run`, through a host-owned stdio tunnel.
+pub async fn prepare_for_docker_container(
+    launch: UsageRelayLaunch<'_>,
+) -> Result<PreparedUsageRelay> {
+    let paths = launch.paths.clone();
+    let workspace_name = launch.workspace_name.map(str::to_owned);
+    let role_key = launch.role_key.to_owned();
+    let forwarded_sources = launch.forwarded_sources;
+    let (broker, capabilities) = jackin_telemetry::spawn::joined_blocking(move || {
+        prepare_broker_client(
+            &paths,
+            workspace_name.as_deref(),
+            &role_key,
+            &forwarded_sources,
+        )
+    })
+    .await
+    .context("usage broker preparation task panicked")?;
+    Ok(PreparedUsageRelay {
+        broker,
+        capabilities,
+    })
+}
+
+/// Start the production Docker stdio tunnel after the Capsule is running.
+pub fn start_docker_tunnel(
+    container_name: &str,
+    prepared: PreparedUsageRelay,
+) -> Result<UsageRelayGuard> {
+    start_docker_tunnel_with_command(
+        container_name,
+        prepared.broker,
+        prepared.capabilities,
+        &[
+            jackin_core::container_paths::CAPSULE_BIN.to_owned(),
+            "usage-relay-proxy".to_owned(),
+        ],
+    )
+}
+
+/// Test seam for a real container proxy command using production tunnel framing.
+#[doc(hidden)]
+pub fn start_docker_tunnel_with_command(
+    container_name: &str,
+    broker: UsageBrokerClient,
+    capabilities: Vec<UsageAccountCapability>,
+    proxy_command: &[String],
+) -> Result<UsageRelayGuard> {
+    if capabilities.is_empty() {
+        return Ok(UsageRelayGuard {
+            task: None,
+            socket_path: None,
+            shutdown: None,
+        });
+    }
+    let mut args = vec![
+        "exec".to_owned(),
+        "-i".to_owned(),
+        container_name.to_owned(),
+    ];
+    args.extend_from_slice(proxy_command);
+    let request = jackin_process::ExecRequest::new("docker", args)
+        .stdin_mode(jackin_process::StdioMode::Capture)
+        .stdout_mode(jackin_process::StdioMode::Capture)
+        .stderr_mode(jackin_process::StdioMode::Inherit);
+    start_tunnel_process(request, broker, capabilities)
+}
+
+fn start_tunnel_process(
+    request: jackin_process::ExecRequest,
+    broker: UsageBrokerClient,
+    capabilities: Vec<UsageAccountCapability>,
+) -> Result<UsageRelayGuard> {
+    let (operation, mut child) = crate::process_telemetry::spawn_async(&request)
+        .context("starting scoped usage stdio tunnel")?;
+    let reader = child
+        .stdout
+        .take()
+        .context("usage relay stdout was unavailable")?;
+    let writer = child
+        .stdin
+        .take()
+        .context("usage relay stdin was unavailable")?;
+    let allowlist = UsageCapabilitySet::new(capabilities);
+    let (shutdown, mut shutdown_rx) = oneshot::channel();
+    let task = jackin_telemetry::spawn::spawn_stream("usage_relay.tunnel", async move {
+        let relay_result = tokio::select! {
+            result = serve_stdio_tunnel(reader, writer, broker, allowlist) => result,
+            _ = &mut shutdown_rx => Ok(()),
+        };
+        let status =
+            if let Ok(status) = tokio::time::timeout(TUNNEL_SHUTDOWN_TIMEOUT, child.wait()).await {
+                status
+            } else {
+                drop(child.start_kill());
+                child.wait().await
+            };
+        match status {
+            Ok(status) => operation.complete_status(status),
+            Err(_) => {
+                operation.complete_failure(jackin_telemetry::schema::enums::ErrorType::IoError);
+            }
+        }
+        if relay_result.is_err() {
+            let _recorded = jackin_telemetry::record_error(
+                jackin_telemetry::schema::enums::ErrorType::RpcError,
+            );
+        }
+    });
+    Ok(UsageRelayGuard {
+        task: Some(task),
+        socket_path: None,
+        shutdown: Some(shutdown),
+    })
 }
 
 fn start_guard(
@@ -215,7 +365,11 @@ fn start_guard(
     capabilities: Vec<UsageAccountCapability>,
 ) -> UsageRelayGuard {
     let task = start(socket_path.clone(), client, capabilities).ok();
-    UsageRelayGuard { task, socket_path }
+    UsageRelayGuard {
+        task,
+        socket_path: Some(socket_path),
+        shutdown: None,
+    }
 }
 
 fn prepare_broker_client(
@@ -394,6 +548,94 @@ async fn dispatch(
         Ok(Err(error)) => UsageBrokerResponse::Error { error },
         Err(_) => error_response(UsageCoordinationErrorKind::Unavailable),
     }
+}
+
+async fn serve_stdio_tunnel<R, W>(
+    reader: R,
+    writer: W,
+    broker: UsageBrokerClient,
+    allowlist: UsageCapabilitySet,
+) -> Result<()>
+where
+    R: AsyncRead + Unpin,
+    W: AsyncWrite + Unpin + Send + 'static,
+{
+    let (responses, mut response_rx) = mpsc::channel::<UsageRelayTunnelResponse>(128);
+    let writer = AbortTaskOnDrop(jackin_telemetry::spawn::spawn_stream(
+        "usage_relay.tunnel_writer",
+        async move {
+            let mut writer = writer;
+            while let Some(response) = response_rx.recv().await {
+                if write_async_frame(&mut writer, &response).await.is_err() {
+                    return;
+                }
+            }
+        },
+    ));
+    let mut reader = BufReader::new(reader);
+    loop {
+        let tunneled = read_async_frame::<_, UsageRelayTunnelRequest>(&mut reader).await?;
+        let broker = broker.clone();
+        let allowlist = allowlist.clone();
+        let responses = responses.clone();
+        drop(jackin_telemetry::spawn::spawn_stream(
+            "usage_relay.tunnel_request",
+            async move {
+                let response = if tunneled.request.protocol_version != USAGE_BROKER_PROTOCOL_VERSION
+                    || tunneled.request.build_id != env!("CARGO_PKG_VERSION")
+                {
+                    error_response(UsageCoordinationErrorKind::ProtocolMismatch)
+                } else {
+                    dispatch(tunneled.request.operation, broker, allowlist).await
+                };
+                drop(
+                    responses
+                        .send(UsageRelayTunnelResponse {
+                            request_id: tunneled.request_id,
+                            response,
+                        })
+                        .await,
+                );
+            },
+        ));
+        if writer.is_finished() {
+            return Err(anyhow::anyhow!("usage relay tunnel writer exited"));
+        }
+    }
+}
+
+async fn read_async_frame<R, T>(reader: &mut R) -> Result<T>
+where
+    R: AsyncBufRead + Unpin,
+    T: serde::de::DeserializeOwned,
+{
+    let mut bytes = Vec::new();
+    let read = reader
+        .take(u64::try_from(USAGE_BROKER_MAX_FRAME_BYTES).unwrap_or(u64::MAX) + 1)
+        .read_until(b'\n', &mut bytes)
+        .await?;
+    anyhow::ensure!(
+        read > 0 && read <= USAGE_BROKER_MAX_FRAME_BYTES && bytes.last() == Some(&b'\n'),
+        "usage relay tunnel frame is invalid"
+    );
+    bytes.pop();
+    serde_json::from_slice(&bytes).context("decoding usage relay tunnel frame")
+}
+
+async fn write_async_frame<W, T>(writer: &mut W, value: &T) -> Result<()>
+where
+    W: AsyncWrite + Unpin,
+    T: serde::Serialize,
+{
+    let mut bytes = serde_json::to_vec(value)?;
+    anyhow::ensure!(
+        bytes.len() < USAGE_BROKER_MAX_FRAME_BYTES,
+        "usage relay tunnel frame is too large"
+    );
+    bytes.push(b'\n');
+    writer.write_all(&bytes).await?;
+    writer.flush().await?;
+    Ok(())
 }
 
 fn error_response(kind: UsageCoordinationErrorKind) -> UsageBrokerResponse {

@@ -757,6 +757,12 @@ fn claim_leader(path: &Path) -> Result<bool, UsageCoordinationError> {
             let pid = fs::read_to_string(path)
                 .ok()
                 .and_then(|value| value.trim().parse::<i32>().ok());
+            if pid.is_none() {
+                // O_EXCL publishes the leader inode before the winner can write
+                // its PID. Treat incomplete metadata as an election in progress;
+                // deleting it here can create two live brokers.
+                return Ok(false);
+            }
             if pid.is_some_and(|pid| kill(Pid::from_raw(pid), None).is_ok()) {
                 return Ok(false);
             }

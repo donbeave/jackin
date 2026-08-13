@@ -431,6 +431,45 @@ fn coordinator_timeout_wait_keeps_owner_until_worker_terminates() {
 }
 
 #[test]
+fn coordinator_recovers_persisted_owner_loss_once_without_a_herd() {
+    let executor = Arc::new(GateExecutor::new(ProviderProbeOutcome::success(
+        quota_view(1_001, 79),
+    )));
+    let store = Arc::new(MemoryStore::default());
+    let account = capability("account-a");
+    let mut abandoned = AccountStateEnvelope::idle(account.clone());
+    abandoned.generation = 4;
+    abandoned.phase = UsageRefreshPhase::Updating;
+    abandoned.started_at_epoch = Some(1_000);
+    store
+        .states
+        .lock()
+        .unwrap()
+        .insert(account.clone(), abandoned);
+    let coordinator = coordinator(
+        Arc::clone(&executor),
+        Arc::clone(&store),
+        UsageCoordinatorConfig::default(),
+    );
+
+    let recovered = coordinator
+        .request_refresh(&account, 0, true, 1_001)
+        .unwrap();
+    executor.wait_started(1);
+    let joiner = coordinator
+        .request_refresh(&account, 0, true, 1_001)
+        .unwrap();
+    assert_eq!(recovered.generation, 5);
+    assert_eq!(joiner.generation, 5);
+    assert!(joiner.phase.is_active());
+
+    executor.release(1);
+    let terminal = join_ok(&coordinator, &account, 5, 1_002);
+    assert_eq!(terminal.phase, UsageRefreshPhase::Completed);
+    assert_eq!(executor.calls.load(Ordering::SeqCst), 1);
+}
+
+#[test]
 fn coordinator_unknown_bootstrap_serializes_per_provider() {
     let executor = Arc::new(GateExecutor::new(ProviderProbeOutcome::success(
         quota_view(1_000, 80),
