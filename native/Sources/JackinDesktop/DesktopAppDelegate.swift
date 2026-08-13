@@ -111,7 +111,7 @@ public final class StatusBarController: NSObject {
 
     private func configure(item: NSStatusItem, row: PresentationStore.GlanceProviderRow) {
         guard let button = item.button else { return }
-        // LG-A1 / FB1-6: template icon + dual-stack values — no glass chip chrome.
+        // Template icon plus dual-stack values keeps status chrome system-owned.
         button.image = StatusItemRendering.icon(forIconKey: row.iconKey)
         button.imagePosition = .imageLeading
         button.attributedTitle =

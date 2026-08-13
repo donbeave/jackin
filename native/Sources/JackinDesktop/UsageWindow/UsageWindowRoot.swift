@@ -17,7 +17,7 @@ public final class UsageWindowNavigationState: ObservableObject {
     }
 }
 
-/// A1 two-column Usage window with system-owned sidebar and toolbar chrome.
+/// Two-column Usage window with system-owned sidebar and toolbar chrome.
 public struct UsageWindowRoot: View {
     private enum Destination: Hashable {
         case overview

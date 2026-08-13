@@ -4,15 +4,15 @@ title: "jackin❯ desktop — native macOS limits app"
 
 **Status**: Partially implemented
 
-**Current state**: The in-repository A1 native redesign is implemented for the macOS 26 production baseline. It uses provider-focused native popovers with centered product identity, a two-column Usage window with centered `jackin❯ desktop` toolbar identity, a fixed leading sidebar control, the generated `jackin❯ by tailrocks` sidebar signature, visible native recovery, retained window context, and system-owned Liquid Glass only. Rust remains authoritative for providers, accounts, quota semantics, refresh policy, and domain strings.
+**Current state**: The in-repository native redesign is implemented for the macOS 26 production baseline. It uses provider-focused native popovers with centered product identity, a two-column Usage window with centered `jackin❯ desktop` toolbar identity, a fixed leading sidebar control, the generated `jackin❯ by tailrocks` sidebar signature, visible native recovery, retained window context, and system-owned Liquid Glass only. Rust remains authoritative for providers, accounts, quota semantics, refresh policy, and domain strings.
 
 The roadmap remains partially implemented because the first Developer ID publication/Homebrew proof and capture-gated Amp paid-plan work require external operator evidence. Those external gates are not substituted by a green PR.
 
 ## Decisions
 
-- **2026-08-12 — Select A1.** The operator selected a focused provider popover plus two-column Usage. Cross-provider comparison belongs in Usage, not a custom tab system inside the popover.
+- **2026-08-12 — Select focused native hierarchy.** The operator selected a focused provider popover plus two-column Usage. Cross-provider comparison belongs in Usage, not a custom tab system inside the popover.
 - **2026-08-12 — Approve identity and sidebar behavior.** The generated `jackin❯ by tailrocks` wordmark belongs in the quiet sidebar footer. Exactly one native sidebar button remains in the leading toolbar slot while expanded or collapsed.
-- **2026-08-12 — Confirm runnable A1 for production.** The operator confirmed the native proof. Production implementation preserves A1 hierarchy, system-owned material, Rust/Swift ownership, and the two identity/sidebar decisions.
+- **2026-08-12 — Confirm runnable native direction.** The operator confirmed the native proof. Production implementation preserves its hierarchy, system-owned material, Rust/Swift ownership, and the two identity/sidebar decisions.
 - **2026-08-13 — Center product identity.** The operator required `jackin❯ desktop` centered in the Usage header and jackin❯ identity in the popover. Native principal placement and a non-interactive monogram/text row satisfy this without custom chrome or glass.
 
 ## Implemented baseline
@@ -50,7 +50,7 @@ Capture authenticated Amp Megawatt, Gigawatt, and linked-subscription `displayTe
 
 ### Deferred candidates
 
-These remain separate product decisions, not unfinished A1 work:
+These remain separate product decisions, not unfinished redesign work:
 
 - All Accounts Usage and Status & Sources destinations;
 - incident metadata, reset-credit expiry, collapsible secondary metrics, or segmented capacity markers;
@@ -59,10 +59,10 @@ These remain separate product decisions, not unfinished A1 work:
 
 ## Completion gate
 
-Do not retire this roadmap item until public Developer ID/cask proof and the capture-gated provider requirement have authoritative evidence. The native A1 implementation may be complete inside the repository while the broader delivery item remains **Partially implemented**.
+Do not retire this roadmap item until public Developer ID/cask proof and the capture-gated provider requirement have authoritative evidence. The native implementation may be complete inside the repository while the broader delivery item remains **Partially implemented**.
 
 ## Related work
 
 - [Auth health and operator visibility](/roadmap/auth-health-and-visibility/)
-- [jackin❯ daemon](/roadmap/jackin-daemon/) — optional later focus support, not an A1 dependency
+- [jackin❯ daemon](/roadmap/jackin-daemon/) — optional later focus support, not a desktop dependency
 - Capsule usage overlay — another consumer of the same Rust presentation

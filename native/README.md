@@ -138,4 +138,4 @@ mise run desktop-build -- 0.6.0 1
 mise run desktop-sign-notarize
 ```
 
-See the public macOS guide, ADR-011, and the [native Liquid Glass design artifacts](../plans/native-liquid-glass/README.md) for operator behavior, architecture, and the approved A1 evidence contract.
+See the [public macOS guide](<../docs/content/(public)/guides/macos-usage-menu-bar.mdx>) and [ADR-011](../docs/content/reference/adrs/adr-011-native-macos-usage-menu-bar.mdx) for operator behavior, architecture, component ownership, and verification boundaries.

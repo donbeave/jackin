@@ -5,7 +5,7 @@ import Foundation
 
 /// Official provider usage / quota pages for “Open usage page” (browser escape hatch).
 ///
-/// Product boundary: `plans/native-liquid-glass/InformationArchitecture.md`.
+/// Product boundary: ADR-011 and the Rust-owned desktop provider contract.
 ///
 /// Keys are host `surface_id` values (`codex`, `claude`, …) from
 /// `DESKTOP_PROVIDER_ORDER`. No string synthesis beyond this map.

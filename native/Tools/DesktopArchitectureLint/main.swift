@@ -159,6 +159,6 @@ struct DesktopArchitectureLint {
             fputs("DesktopArchitectureLint: \(failures.count) failure(s)\n", stderr)
             Darwin.exit(1)
         }
-        print("DesktopArchitectureLint: A1 native structure OK")
+        print("DesktopArchitectureLint: native production structure OK")
     }
 }

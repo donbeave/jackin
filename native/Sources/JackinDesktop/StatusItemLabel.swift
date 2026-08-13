@@ -6,7 +6,7 @@ import JackinUsageBridge
 
 /// AppKit rendering for one per-provider `NSStatusItem`.
 ///
-/// **Liquid Glass / product law (LG-A1, FB1-6):** menu-bar items stay
+/// **Liquid Glass / product law:** menu-bar items stay
 /// **template mono** — no glass chips, no severity tint on the bar. Dual stack
 /// shows compact reset countdown (top) + Rust `barLabel` glance % (bottom).
 /// Every usage value is Rust-owned; Swift only layouts and templates icons.
@@ -14,7 +14,7 @@ import JackinUsageBridge
 public enum StatusItemRendering {
     /// Template icon for a provider icon key.
     ///
-    /// Prefers **official** bundled PDF logomarks (`ProviderMarks`, LG-P1–P4).
+    /// Prefers **official** bundled PDF logomarks from `ProviderMarks`.
     /// Falls back to SF Symbol stand-in, then JackinMark for unknown keys.
     public static func icon(forIconKey iconKey: String) -> NSImage {
         if let official = ProviderMarks.templateImage(forIconKey: iconKey) {

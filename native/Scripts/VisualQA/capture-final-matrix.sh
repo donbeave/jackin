@@ -1,11 +1,11 @@
 #!/bin/bash
-# Regenerate the branch-head A1 native evidence matrix from one validated app bundle.
+# Regenerate the branch-head native verification matrix from one validated app bundle.
 set -euo pipefail
 
 here=$(cd "$(dirname "$0")" && pwd -P)
 repo=$(cd "$here/../../.." && pwd -P)
 app=${1:-"$repo/native/dist/JackinDesktop.app"}
-output="$repo/plans/native-liquid-glass/evidence/final"
+output="$repo/native/.build/visual-qa/final"
 window_tool="$repo/native/.build/final-window-id"
 notification_tool="$repo/native/.build/final-notification-drive"
 focus_tool="$repo/native/.build/final-focus-drive"

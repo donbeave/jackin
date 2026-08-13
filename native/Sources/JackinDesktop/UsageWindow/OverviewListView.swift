@@ -4,7 +4,7 @@
 import JackinUsageBridge
 import SwiftUI
 
-/// Native account inventory for the A1 Overview destination.
+/// Native account inventory for the Overview destination.
 public struct OverviewListView: View {
     public let model: UsageWindowModel
     public let accounts: [PresentationStore.AccountRow]

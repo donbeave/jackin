@@ -516,7 +516,7 @@ final class ArchitectureTests: XCTestCase {
         XCTAssertEqual(chips.map(\.surfaceId), ["s0", "s1", "s2"])
     }
 
-    /// A1 Overview is a native comparison table without custom meter geometry.
+    /// Overview is a native comparison table without custom meter geometry.
     func testOverviewHasNoOrphanOverviewLevelProgress() throws {
         let overview =
             sourcesRoot
@@ -530,8 +530,8 @@ final class ArchitectureTests: XCTestCase {
             text.contains("LinearProgress"),
             "OV-11: no LinearProgress Overview-level chrome"
         )
-        XCTAssertTrue(text.contains("Table("), "A1 Overview must use native Table")
-        XCTAssertFalse(text.contains("Capsule"), "A1 Overview must not paint custom meters")
+        XCTAssertTrue(text.contains("Table("), "Overview must use native Table")
+        XCTAssertFalse(text.contains("Capsule"), "Overview must not paint custom meters")
     }
 
     func testOverviewPrimaryValuesUseSystemForeground() throws {
@@ -579,6 +579,7 @@ final class ArchitectureTests: XCTestCase {
         XCTAssertTrue(text.contains("capture_with_relaunch"))
         XCTAssertTrue(text.contains("capture retries exhausted after $attempt launches"))
         XCTAssertTrue(text.contains("FOCUS_DRIVE_TOOL=$focus_tool"))
+        XCTAssertTrue(text.contains("native/.build/visual-qa/final"))
         XCTAssertTrue(text.contains("\"$output/$file\" \"jackin❯ desktop\""))
         XCTAssertTrue(capture.contains("\"$FOCUS_TOOL\" \"$pid\" 0"))
         XCTAssertTrue(capture.contains("application exited before reaching requested"))
