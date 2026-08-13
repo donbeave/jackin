@@ -43,8 +43,9 @@ mod zai;
     reason = "documented residual allow; prefer expect when site is lint-true"
 )]
 pub(crate) use self::amp::{
-    AmpSuccessContext, AmpUsage, AmpWorkspaceBalance, amp_snapshot, amp_view_from_usage,
-    fetch_amp_api_usage, fetch_amp_cli_usage, load_amp_api_key, parse_amp_usage_output,
+    AmpSuccessContext, AmpUsage, AmpWorkspaceBalance, amp_api_key_snapshot, amp_snapshot,
+    amp_view_from_usage, fetch_amp_api_usage, fetch_amp_cli_usage, load_amp_api_key,
+    parse_amp_usage_output,
 };
 pub use self::claude::ClaudeUsageDiagnostic;
 #[expect(
@@ -52,19 +53,20 @@ pub use self::claude::ClaudeUsageDiagnostic;
     reason = "documented residual allow; prefer expect when site is lint-true"
 )]
 pub(crate) use self::claude::{
-    ClaudeCliUsage, ClaudeOAuthCredentials, ClaudeOAuthExtraUsage, ClaudeOAuthLimit,
-    ClaudeOAuthLimitModel, ClaudeOAuthLimitScope, ClaudeOAuthMoney, ClaudeOAuthSpend,
-    ClaudeOAuthUsageResponse, ClaudeOAuthUsageWindow, ClaudeQuotaWindow, ClaudeSpend,
-    ClaudeWavePolicy, ClaudeWaveResolution, claude_account_identity, claude_code_user_agent,
-    claude_code_user_agent_with, claude_code_version_from_text, claude_email_from_value,
-    claude_oauth_candidates, claude_oauth_from_value, claude_organization_type_from_value,
-    claude_snapshot, claude_spend_bucket, claude_view_from_wave, claude_wave_policy,
-    fetch_claude_cli_usage, fetch_claude_oauth_usage, load_claude_account_email,
-    normalize_claude_spend, push_claude_dollar_windows, resolve_claude_wave,
+    ClaudeCliUsage, ClaudeKeychainRead, ClaudeOAuthCredentials, ClaudeOAuthExtraUsage,
+    ClaudeOAuthLimit, ClaudeOAuthLimitModel, ClaudeOAuthLimitScope, ClaudeOAuthMoney,
+    ClaudeOAuthSpend, ClaudeOAuthUsageResponse, ClaudeOAuthUsageWindow, ClaudeQuotaWindow,
+    ClaudeResolved, ClaudeSpend, ClaudeWavePolicy, ClaudeWaveResolution, claude_account_identity,
+    claude_code_user_agent, claude_code_user_agent_with, claude_code_version_from_text,
+    claude_email_from_value, claude_oauth_candidates, claude_oauth_from_value,
+    claude_organization_type_from_value, claude_snapshot, claude_spend_bucket,
+    claude_view_from_wave, claude_wave_policy, fetch_claude_cli_usage, fetch_claude_oauth_usage,
+    load_claude_account_email, normalize_claude_spend, push_claude_dollar_windows,
+    read_claude_keychain_item, resolve_claude_wave,
 };
 #[cfg(test)]
 pub(crate) use self::claude::{
-    ClaudeFileProbe, ClaudeKeychainRead, ClaudeKeychainState, classify_claude_keychain_status,
+    ClaudeFileProbe, ClaudeKeychainState, classify_claude_keychain_status,
     load_claude_oauth_credentials, load_claude_organization_type, resolve_claude_refresh_wave_with,
 };
 #[cfg(test)]
@@ -81,10 +83,11 @@ pub(crate) use self::codex::{
     CodexWindowSnapshot, codex_access_token_from_response, codex_account_identity,
     codex_account_label_from_id_token, codex_auth_candidates, codex_oauth_from_value,
     codex_plan_display_name, codex_plan_exact_display, codex_plan_word_display,
-    codex_refresh_request_body, codex_rpc_notification, codex_rpc_request, codex_snapshot,
-    fetch_codex_oauth_reset_credits, fetch_codex_oauth_usage, fetch_codex_oauth_usage_refreshing,
-    fetch_codex_rpc_usage, push_codex_window, refresh_codex_access_token, resolve_codex_base_url,
-    resolve_codex_reset_credits_url, resolve_codex_usage_url,
+    codex_profile_snapshot, codex_refresh_request_body, codex_rpc_notification, codex_rpc_request,
+    codex_snapshot, fetch_codex_oauth_reset_credits, fetch_codex_oauth_usage,
+    fetch_codex_oauth_usage_refreshing, fetch_codex_rpc_usage, push_codex_window,
+    refresh_codex_access_token, resolve_codex_base_url, resolve_codex_reset_credits_url,
+    resolve_codex_usage_url,
 };
 #[expect(
     unused_imports,
@@ -1001,6 +1004,62 @@ pub(crate) fn build_snapshot(
     BuiltUsageSnapshot {
         view,
         policy: UsageSnapshotPolicy::Shared,
+    }
+}
+
+/// Build one explicit configured-provider snapshot while the caller retains the
+/// credential. This is the tier-3 probe body used by tier-4 protected-source
+/// adapters; the secret is never returned or persisted.
+#[must_use]
+pub fn provider_credential_snapshot(
+    surface_id: &str,
+    key_name: &str,
+    secret: &str,
+) -> FocusedUsageView {
+    let now = now_epoch();
+    match surface_id {
+        "claude" => claude_view_from_wave(
+            "claude",
+            Some("Claude"),
+            now,
+            ClaudeWaveResolution::Resolved(Box::new(ClaudeResolved {
+                access_token: secret.to_owned(),
+                subscription_type: None,
+                account_email: None,
+                organization_type: None,
+                credential_origin: "OAuth · configured source".to_owned(),
+                is_anonymous: true,
+            })),
+        ),
+        "amp" => amp_api_key_snapshot("amp", secret, now),
+        "zai" => provider_key_snapshot("codex", UsageSurface::Zai, key_name, Some(secret), now),
+        "kimi" => kimi_snapshot("kimi", Some(secret), now),
+        "minimax" => minimax_snapshot("codex", Some(secret), now),
+        "grok" => grok_snapshot_from_rpc_result(
+            "grok",
+            now,
+            Path::new(GROK_HANDOFF_AUTH_PATH),
+            false,
+            key_name == jackin_core::XAI_API_KEY_ENV_NAME,
+            key_name == jackin_core::GROK_DEPLOYMENT_KEY_ENV_NAME,
+            Err("Grok billing requires an authenticated profile".to_owned()),
+        ),
+        "codex" => usage_view(UsageViewInput {
+            agent: "codex",
+            provider: Some("OpenAI"),
+            surface: UsageSurface::Codex,
+            account_label: String::new(),
+            username: None,
+            plan_label: None,
+            credential_origin: Some("API key · configured source".to_owned()),
+            buckets: Vec::new(),
+            status: UsageSnapshotStatus::Unsupported,
+            source: UsageSource::None,
+            confidence: UsageConfidence::None,
+            now,
+            last_error: Some("OpenAI API-key subscription quota is unavailable".to_owned()),
+        }),
+        _ => unsupported_snapshot(surface_id, None, now),
     }
 }
 

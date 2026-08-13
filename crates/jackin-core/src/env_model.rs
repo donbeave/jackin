@@ -62,6 +62,8 @@ pub const KIMI_API_KEY_ENV_NAME: &str = "KIMI_API_KEY";
 pub const OPENCODE_API_KEY_ENV_NAME: &str = "OPENCODE_API_KEY";
 /// xAI API key env name (Grok Build).
 pub const XAI_API_KEY_ENV_NAME: &str = "XAI_API_KEY";
+/// Grok ACP deployment credential accepted by the Grok CLI.
+pub const GROK_DEPLOYMENT_KEY_ENV_NAME: &str = "GROK_DEPLOYMENT_KEY";
 /// GitHub CLI token env name (`gh`).
 pub const GH_TOKEN_ENV_NAME: &str = "GH_TOKEN";
 /// GitHub Actions / generic token env name.
@@ -70,6 +72,87 @@ pub const GITHUB_TOKEN_ENV_NAME: &str = "GITHUB_TOKEN";
 pub const GH_HOST_ENV_NAME: &str = "GH_HOST";
 /// GitHub Enterprise token for `gh`.
 pub const GH_ENTERPRISE_TOKEN_ENV_NAME: &str = "GH_ENTERPRISE_TOKEN";
+
+/// Provider owner for a governed quota-credential environment name.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum UsageCredentialOwner {
+    /// Anthropic / Claude.
+    Claude,
+    /// `OpenAI` / Codex.
+    Codex,
+    /// Amp.
+    Amp,
+    /// Kimi.
+    Kimi,
+    /// xAI / Grok.
+    Grok,
+    /// Z.AI.
+    Zai,
+    /// `MiniMax`.
+    Minimax,
+    /// `OpenCode` (registered for launch consistency; Desktop excludes it).
+    OpenCode,
+}
+
+/// One governed environment credential name and its exact provider owner.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct UsageCredentialEnvName {
+    /// Exact environment key.
+    pub name: &'static str,
+    /// Provider that owns the credential.
+    pub owner: UsageCredentialOwner,
+}
+
+/// Closed registry consumed by launch and quota discovery.
+///
+/// Adding a provider credential starts here. UI and discovery code must not
+/// maintain independent string lists.
+pub const USAGE_CREDENTIAL_ENV_REGISTRY: &[UsageCredentialEnvName] = &[
+    UsageCredentialEnvName {
+        name: ANTHROPIC_API_KEY_ENV_NAME,
+        owner: UsageCredentialOwner::Claude,
+    },
+    UsageCredentialEnvName {
+        name: CLAUDE_CODE_OAUTH_TOKEN_ENV_NAME,
+        owner: UsageCredentialOwner::Claude,
+    },
+    UsageCredentialEnvName {
+        name: OPENAI_API_KEY_ENV_NAME,
+        owner: UsageCredentialOwner::Codex,
+    },
+    UsageCredentialEnvName {
+        name: AMP_API_KEY_ENV_NAME,
+        owner: UsageCredentialOwner::Amp,
+    },
+    UsageCredentialEnvName {
+        name: KIMI_CODE_API_KEY_ENV_NAME,
+        owner: UsageCredentialOwner::Kimi,
+    },
+    UsageCredentialEnvName {
+        name: KIMI_API_KEY_ENV_NAME,
+        owner: UsageCredentialOwner::Kimi,
+    },
+    UsageCredentialEnvName {
+        name: XAI_API_KEY_ENV_NAME,
+        owner: UsageCredentialOwner::Grok,
+    },
+    UsageCredentialEnvName {
+        name: GROK_DEPLOYMENT_KEY_ENV_NAME,
+        owner: UsageCredentialOwner::Grok,
+    },
+    UsageCredentialEnvName {
+        name: ZAI_API_KEY_ENV_NAME,
+        owner: UsageCredentialOwner::Zai,
+    },
+    UsageCredentialEnvName {
+        name: MINIMAX_API_KEY_ENV_NAME,
+        owner: UsageCredentialOwner::Minimax,
+    },
+    UsageCredentialEnvName {
+        name: OPENCODE_API_KEY_ENV_NAME,
+        owner: UsageCredentialOwner::OpenCode,
+    },
+];
 
 /// Network mode injected by jackin into role containers (`allowlist`, `open`, `none`).
 pub const JACKIN_NETWORK_MODE_ENV_NAME: &str = "JACKIN_NETWORK_MODE";

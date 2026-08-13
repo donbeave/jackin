@@ -21,6 +21,7 @@ default = []
 
 [dependencies]
 jackin-core = { workspace = true }
+jackin-config = { workspace = true }
 jackin-protocol = { workspace = true }
 jackin-diagnostics = { workspace = true }
 jackin-telemetry = { workspace = true }

@@ -460,21 +460,21 @@ All commands exit 0.
 
 ## Done criteria
 
-- [ ] Config/workspace discovery performs zero filesystem writes.
-- [ ] Every global/workspace/role effective auth scope is enumerated with existing
+- [x] Config/workspace discovery performs zero filesystem writes.
+- [x] Every global/workspace/role effective auth scope is enumerated with existing
   precedence resolvers.
-- [ ] Default and overridden credential roots use existing agent definitions.
-- [ ] Provider env refs, including account-pinned 1Password refs, resolve only in Rust.
-- [ ] Invalid/missing sources produce diagnostics, never fake accounts.
-- [ ] Same source is read once; same authenticated account refreshes once; distinct
+- [x] Default and overridden credential roots use existing agent definitions.
+- [x] Provider env refs, including account-pinned 1Password refs, resolve only in Rust.
+- [x] Invalid/missing sources produce diagnostics, never fake accounts.
+- [x] Same source is read once; same authenticated account refreshes once; distinct
   accounts stay distinct.
-- [ ] Current config discovery—not historical snapshots—defines active membership.
-- [ ] Relaunch and manual Refresh deterministically reconcile config; background quota
+- [x] Current config discovery—not historical snapshots—defines active membership.
+- [x] Relaunch and manual Refresh deterministically reconcile config; background quota
   polling neither rescans config nor causes repeated credential authorization UI.
-- [ ] Source failures are provider-scoped sanitized diagnostics, never fake accounts.
-- [ ] Swift receives only sanitized immutable discovery/account projections.
-- [ ] OpenCode and GitHub remain outside Desktop inventory.
-- [ ] All tests, lints, docs gates, and fast CI pass.
+- [x] Source failures are provider-scoped sanitized diagnostics, never fake accounts.
+- [x] Swift receives only sanitized immutable discovery/account projections.
+- [x] OpenCode and GitHub remain outside Desktop inventory.
+- [x] All tests, lints, docs gates, and fast CI pass.
 
 ## STOP conditions
 

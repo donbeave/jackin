@@ -12,14 +12,15 @@
 uniffi::setup_scaffolding!();
 
 mod bridge;
+mod discovery;
 mod dto;
 mod error;
 
 pub use bridge::UsageMenuBarBridge;
 pub use dto::{
     AccountDescriptorDto, DesktopInventoryDto, DesktopProviderGroupDto, DesktopProviderStateDto,
-    MoneyDto, OpenConfig, ProviderGlanceRowDto, QuotaBucketDto, SurfaceDescriptorDto,
-    UsageDetailPresentationDto, UsageDetailRowDto, UsageEventBatchDto, UsageEventDto,
-    UsagePresentationLineDto, UsageViewDto,
+    DiscoveryDiagnosticDto, MoneyDto, OpenConfig, ProviderGlanceRowDto, QuotaBucketDto,
+    SurfaceDescriptorDto, UsageDetailPresentationDto, UsageDetailRowDto, UsageEventBatchDto,
+    UsageEventDto, UsagePresentationLineDto, UsageViewDto,
 };
 pub use error::UsageBridgeError;

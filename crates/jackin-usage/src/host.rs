@@ -8,6 +8,7 @@
 //! data dir (not container `/jackin/...` paths).
 
 mod accounts;
+mod discovery;
 
 use std::collections::{BTreeMap, HashMap, HashSet, VecDeque};
 use std::path::{Path, PathBuf};
@@ -26,6 +27,14 @@ use crate::usage::{
 pub use accounts::{
     AccountLifecycle, AccountProvenance, CanonicalAccountIdentity, CanonicalAccountSubject,
     HostAccountDescriptor, account_key_for_view, min_remaining, short_account_identity,
+};
+pub use discovery::{
+    DiscoveredAccountDescriptor, ForwardedUsageAccount, OpaqueCredentialHandle,
+    ProviderCredentialEnvOutcome, ProviderCredentialEnvResolution, ProviderCredentialEnvResolver,
+    ProviderCredentialIdentityOutcome, ProviderCredentialRefreshOutcome, UsageCredentialKind,
+    UsageDiscoveryCatalog, UsageDiscoveryDiagnostic, UsageDiscoveryIssue, UsageDiscoveryScope,
+    UsageSourceCandidateDescriptor, ValidatedUsageDiscovery, discover_usage_sources,
+    validate_usage_sources,
 };
 
 /// Relative data-dir subtree for menu-bar durable state.
@@ -291,6 +300,8 @@ pub struct HostRuntimeConfig {
     /// used by the isolated launch smoke test so an accidental refresh cannot
     /// reach any credential/file/env/CLI/network/Keychain resolution.
     pub probe_policy: HostProbePolicy,
+    /// Account-discovery authority for this runtime.
+    pub discovery_scope: UsageDiscoveryScope,
 }
 
 /// Whether a host runtime may dispatch live provider probes.
@@ -312,6 +323,9 @@ impl HostRuntimeConfig {
             refresh_floor_secs: 300,
             enabled_surface_ids: Vec::new(),
             probe_policy: HostProbePolicy::Live,
+            discovery_scope: UsageDiscoveryScope::Capsule {
+                forwarded_accounts: Vec::new(),
+            },
         }
     }
 }
@@ -467,6 +481,14 @@ pub struct HostUsageRuntime {
     /// Provider ids currently auto-detected for the Desktop glance list.
     /// Runtime-only (never persisted); holds ids, never display strings.
     desktop_detected_surfaces: HashSet<String>,
+    /// Last completed current-membership discovery generation.
+    discovery: Option<ValidatedUsageDiscovery>,
+    /// Last quota snapshots fetched from explicit current discovery sources.
+    discovered_views: BTreeMap<(HostSurfaceId, String), FocusedUsageView>,
+    /// Explicit source state without authenticated account identity yet.
+    discovered_provider_views: BTreeMap<HostSurfaceId, FocusedUsageView>,
+    /// Scope retained for explicit manual reconciliation only.
+    discovery_scope: Option<UsageDiscoveryScope>,
 }
 
 impl HostUsageRuntime {
@@ -487,11 +509,36 @@ impl HostUsageRuntime {
             selected_accounts: HashMap::new(),
             probe_policy: HostProbePolicy::Live,
             desktop_detected_surfaces: HashSet::new(),
+            discovery: None,
+            discovered_views: BTreeMap::new(),
+            discovered_provider_views: BTreeMap::new(),
+            discovery_scope: None,
         }
     }
 
     /// Open with host paths; enables all surfaces when config list empty.
     pub fn open(&mut self, config: HostRuntimeConfig) -> Result<(), String> {
+        self.open_prepared(config, None)
+    }
+
+    /// Open after Rust-owned config/env discovery completes.
+    pub fn open_with_discovery(
+        &mut self,
+        config: HostRuntimeConfig,
+        resolver: &dyn ProviderCredentialEnvResolver,
+    ) -> Result<(), String> {
+        let discovered = validate_usage_sources(
+            discover_usage_sources(&config.discovery_scope, resolver)?,
+            resolver,
+        );
+        self.open_prepared(config, Some(discovered))
+    }
+
+    fn open_prepared(
+        &mut self,
+        config: HostRuntimeConfig,
+        discovery: Option<ValidatedUsageDiscovery>,
+    ) -> Result<(), String> {
         let enabled = if config.enabled_surface_ids.is_empty() {
             HostSurfaceId::ALL
                 .iter()
@@ -522,6 +569,9 @@ impl HostUsageRuntime {
             self.next_seq = 0;
             self.selected_accounts.clear();
             self.desktop_detected_surfaces.clear();
+            self.discovery = None;
+            self.discovered_views.clear();
+            self.discovered_provider_views.clear();
         }
         let snapshot_path = host_snapshot_store_path(&config.data_dir);
         let accounts_path = host_accounts_path(&config.data_dir);
@@ -546,6 +596,10 @@ impl HostUsageRuntime {
         let selected_path = accounts::selected_accounts_path(&config.data_dir);
         self.selected_accounts = accounts::load_selected_accounts(&selected_path);
         self.probe_policy = config.probe_policy;
+        self.discovery_scope = Some(config.discovery_scope);
+        self.discovery = discovery;
+        self.discovered_views.clear();
+        self.discovered_provider_views.clear();
         self.desktop_detected_surfaces.clear();
         self.data_dir = Some(config.data_dir);
         self.open = true;
@@ -573,6 +627,16 @@ impl HostUsageRuntime {
                 enabled: self.enabled.contains(surface.id()),
             })
             .collect())
+    }
+
+    /// Sanitized discovery failures for the current completed catalog generation.
+    pub fn discovery_diagnostics(&self) -> Result<Vec<UsageDiscoveryDiagnostic>, String> {
+        self.require_open()?;
+        Ok(self
+            .discovery
+            .as_ref()
+            .map(|discovery| discovery.diagnostics.clone())
+            .unwrap_or_default())
     }
 
     /// Enable or disable a surface for bar + refresh set.
@@ -613,6 +677,28 @@ impl HostUsageRuntime {
             .ok_or_else(|| format!("unknown surface: {surface_id}"))?;
         self.cache
             .insert_snapshot_for_test(surface.agent_slug(), surface.provider_label(), view);
+        if let Some(discovery) = &mut self.discovery {
+            let injected = self
+                .cache
+                .focused_snapshot(Some(surface.agent_slug()), surface.provider_label());
+            if let Some(identity) = CanonicalAccountIdentity::from_view(surface, &injected) {
+                let account_key = identity.account_key();
+                if !discovery
+                    .accounts
+                    .iter()
+                    .any(|account| account.account_key == account_key)
+                {
+                    discovery.accounts.push(DiscoveredAccountDescriptor {
+                        surface_id: surface.id().to_owned(),
+                        account_key,
+                        account_label: injected.account.account_label.clone(),
+                        provenance: Vec::new(),
+                        source_ids: vec!["fixture".to_owned()],
+                        identity,
+                    });
+                }
+            }
+        }
         self.push_event(
             "snapshot_updated",
             Some(surface.id()),
@@ -733,7 +819,9 @@ impl HostUsageRuntime {
         let selected = self.selected_accounts.get(surface.id());
         Ok(selected
             .and_then(|key| catalog.entry(surface, key))
-            .map_or(live, |entry| entry.view.clone()))
+            .map(|entry| entry.view.clone())
+            .or_else(|| catalog.provider_state(surface).cloned())
+            .unwrap_or(live))
     }
 
     /// List known accounts for one surface (or all surfaces when `None`).
@@ -813,9 +901,7 @@ impl HostUsageRuntime {
         if !self.enabled.contains(surface.id()) {
             return Ok(None);
         }
-        Ok(self
-            .cache
-            .focused_status_bar_label(Some(surface.agent_slug()), surface.provider_label()))
+        Ok(Some(self.snapshot(surface_id)?.status_bar_label))
     }
 
     /// Merged compact bar text from enabled surfaces that have labels.
@@ -826,16 +912,12 @@ impl HostUsageRuntime {
             if !self.enabled.contains(surface.id()) {
                 continue;
             }
-            if let Some(label) = self
-                .cache
-                .focused_status_bar_label(Some(surface.agent_slug()), surface.provider_label())
-            {
-                // Skip pure loading noise when other surfaces already contribute.
-                if label == "refreshing" && !parts.is_empty() {
-                    continue;
-                }
-                parts.push(format!("{}: {label}", surface.label()));
+            let label = self.snapshot(surface.id())?.status_bar_label;
+            // Skip pure loading noise when other surfaces already contribute.
+            if label == "refreshing" && !parts.is_empty() {
+                continue;
             }
+            parts.push(format!("{}: {label}", surface.label()));
         }
         if parts.is_empty() {
             Ok("jackin❯ usage".to_owned())
@@ -1063,9 +1145,7 @@ impl HostUsageRuntime {
             if !self.enabled.contains(surface.id()) {
                 continue;
             }
-            let view = self
-                .cache
-                .focused_snapshot(Some(surface.agent_slug()), surface.provider_label());
+            let view = self.snapshot(surface.id())?;
             let status_word = usage_status_storage_label(view.status).to_owned();
             let severity = worst_severity_label(&view);
             let display_label = provider_display_label(surface.label()).to_owned();
@@ -1226,9 +1306,7 @@ impl HostUsageRuntime {
     }
 
     fn driving_bucket_for(&mut self, surface: HostSurfaceId) -> Option<DrivingBucket> {
-        let view = self
-            .cache
-            .focused_snapshot(Some(surface.agent_slug()), surface.provider_label());
+        let view = self.snapshot(surface.id()).ok()?;
         driving_bucket_from_view(&view)
     }
 
@@ -1315,6 +1393,10 @@ impl HostUsageRuntime {
         self.open = false;
         self.last_refresh = None;
         self.events.clear();
+        self.discovery = None;
+        self.discovery_scope = None;
+        self.discovered_views.clear();
+        self.discovered_provider_views.clear();
     }
 
     fn materialize_account_catalog(&mut self) -> Result<accounts::AccountCatalog, String> {
@@ -1342,7 +1424,16 @@ impl HostUsageRuntime {
                     .map(|dir| dir.join("usage-shared").join("snapshots"))
             })
             .unwrap_or_default();
-        accounts::materialize_account_catalog(&live_views, &store_path, &shared_snapshots_dir)
+        accounts::materialize_account_catalog(
+            &live_views,
+            &self.discovered_views,
+            &self.discovered_provider_views,
+            &store_path,
+            &shared_snapshots_dir,
+            self.discovery
+                .as_ref()
+                .map(|discovery| discovery.accounts.as_slice()),
+        )
     }
 
     fn reconcile_selected_accounts(
@@ -1410,6 +1501,16 @@ impl HostUsageRuntime {
             self.events.pop_front();
         }
     }
+}
+
+fn discovered_account_keys(
+    discovery: Option<&ValidatedUsageDiscovery>,
+) -> HashSet<(HostSurfaceId, String)> {
+    discovery
+        .into_iter()
+        .flat_map(|discovery| discovery.accounts.iter())
+        .map(|account| (account.identity.surface, account.account_key.clone()))
+        .collect()
 }
 
 impl Default for HostUsageRuntime {
@@ -1582,11 +1683,14 @@ fn account_descriptor(
                     Some(exact_reset_parenthetical(reset)),
                 )
             });
-    let provenance = entry
+    let mut provenance = entry
         .provenance
         .iter()
         .map(|source| source.display_label().to_owned())
         .collect::<Vec<_>>();
+    provenance.extend(entry.discovery_provenance.iter().cloned());
+    provenance.sort();
+    provenance.dedup();
     let provenance_label = provenance.join(" · ");
     let status_label = usage_display_status_label(view.status).to_owned();
     HostAccountDescriptor {

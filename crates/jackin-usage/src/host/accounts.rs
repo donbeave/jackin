@@ -35,7 +35,7 @@ pub struct CanonicalAccountIdentity {
 }
 
 impl CanonicalAccountIdentity {
-    fn from_view(surface: HostSurfaceId, view: &FocusedUsageView) -> Option<Self> {
+    pub(super) fn from_view(surface: HostSurfaceId, view: &FocusedUsageView) -> Option<Self> {
         if surface_for_view(view) != Some(surface)
             || matches!(view.confidence, UsageConfidence::PresenceOnly)
         {
@@ -48,7 +48,7 @@ impl CanonicalAccountIdentity {
         })
     }
 
-    fn account_key(&self) -> String {
+    pub(super) fn account_key(&self) -> String {
         let subject = match &self.subject {
             CanonicalAccountSubject::ProviderId(id)
             | CanonicalAccountSubject::AuthenticatedLabel(id) => id,
@@ -82,6 +82,8 @@ impl AccountLifecycle {
 /// Non-secret places that contributed evidence for one canonical account.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum AccountProvenance {
+    /// Current config-derived credential source.
+    ConfiguredSource,
     /// Active host credential/login.
     LiveHost,
     /// Fresh cross-runtime snapshot.
@@ -94,6 +96,7 @@ impl AccountProvenance {
     /// Rust-owned user-facing provenance copy.
     pub const fn display_label(self) -> &'static str {
         match self {
+            Self::ConfiguredSource => "Configured source",
             Self::LiveHost => "Live host",
             Self::CurrentSharedResult => "Shared result",
             Self::DurableHistory => "History",
@@ -135,6 +138,7 @@ pub(super) struct AccountCatalogEntry {
     pub username: Option<String>,
     pub plan_label: Option<String>,
     pub provenance: BTreeSet<AccountProvenance>,
+    pub discovery_provenance: BTreeSet<String>,
     pub lifecycle: AccountLifecycle,
     pub view: FocusedUsageView,
     pub fetched_at_epoch: i64,
@@ -277,8 +281,11 @@ pub(super) fn surface_for_view(view: &FocusedUsageView) -> Option<HostSurfaceId>
 /// Build one catalog by scanning each external source exactly once.
 pub(super) fn materialize_account_catalog(
     live_views: &[(HostSurfaceId, FocusedUsageView, bool)],
+    discovered_views: &BTreeMap<(HostSurfaceId, String), FocusedUsageView>,
+    discovered_provider_views: &BTreeMap<HostSurfaceId, FocusedUsageView>,
     store_path: &Path,
     shared_snapshots_dir: &Path,
+    membership: Option<&[super::DiscoveredAccountDescriptor]>,
 ) -> Result<AccountCatalog, String> {
     let mut catalog = AccountCatalog::default();
     let include_external: BTreeMap<_, _> = live_views
@@ -297,12 +304,21 @@ pub(super) fn materialize_account_catalog(
             if !include_external.get(&surface).copied().unwrap_or(true) {
                 continue;
             }
+            let identity = membership_identity(membership, surface, &stored.view);
+            if membership.is_some() && identity.is_none() {
+                continue;
+            }
             merge_view(
                 &mut catalog,
                 surface,
                 stored.view,
-                AccountLifecycle::Historical,
+                if membership.is_some() {
+                    AccountLifecycle::Current
+                } else {
+                    AccountLifecycle::Historical
+                },
                 AccountProvenance::DurableHistory,
+                identity,
             );
         }
     }
@@ -314,7 +330,11 @@ pub(super) fn materialize_account_catalog(
         if !include_external.get(&surface).copied().unwrap_or(true) {
             continue;
         }
-        let lifecycle = if view.status == UsageSnapshotStatus::Fresh {
+        let identity = membership_identity(membership, surface, &view);
+        if membership.is_some() && identity.is_none() {
+            continue;
+        }
+        let lifecycle = if membership.is_some() || view.status == UsageSnapshotStatus::Fresh {
             AccountLifecycle::Current
         } else {
             AccountLifecycle::Historical
@@ -325,20 +345,105 @@ pub(super) fn materialize_account_catalog(
             view,
             lifecycle,
             AccountProvenance::CurrentSharedResult,
+            identity,
         );
     }
 
     for (surface, view, _) in live_views {
         catalog.provider_states.insert(*surface, view.clone());
+        let identity = membership_identity(membership, *surface, view);
+        if membership.is_some() && identity.is_none() {
+            continue;
+        }
         merge_view(
             &mut catalog,
             *surface,
             view.clone(),
             AccountLifecycle::Current,
             AccountProvenance::LiveHost,
+            identity,
         );
     }
+    catalog.provider_states.extend(
+        discovered_provider_views
+            .iter()
+            .map(|(surface, view)| (*surface, view.clone())),
+    );
+    if let Some(membership) = membership {
+        for ((surface, account_key), view) in discovered_views {
+            let Some(account) = membership.iter().find(|account| {
+                account.surface_id == surface.id() && account.account_key == *account_key
+            }) else {
+                continue;
+            };
+            merge_view(
+                &mut catalog,
+                *surface,
+                view.clone(),
+                AccountLifecycle::Current,
+                AccountProvenance::ConfiguredSource,
+                Some(account.identity.clone()),
+            );
+        }
+    }
+    if let Some(membership) = membership {
+        merge_discovered_placeholders(&mut catalog, membership);
+    }
     Ok(catalog)
+}
+
+fn membership_identity(
+    membership: Option<&[super::DiscoveredAccountDescriptor]>,
+    surface: HostSurfaceId,
+    view: &FocusedUsageView,
+) -> Option<CanonicalAccountIdentity> {
+    let membership = membership?;
+    let label = stable_account_label(&view.account.account_label)?;
+    membership
+        .iter()
+        .find(|account| {
+            account.surface_id == surface.id()
+                && account.account_label.trim().eq_ignore_ascii_case(label)
+        })
+        .map(|account| account.identity.clone())
+}
+
+fn merge_discovered_placeholders(
+    catalog: &mut AccountCatalog,
+    membership: &[super::DiscoveredAccountDescriptor],
+) {
+    for account in membership {
+        let surface = account.identity.surface;
+        let key = (surface, account.account_key.clone());
+        if let Some(entry) = catalog.entries.get_mut(&key) {
+            entry
+                .discovery_provenance
+                .extend(account.provenance.iter().cloned());
+            entry.lifecycle = AccountLifecycle::Current;
+            continue;
+        }
+        let mut view =
+            FocusedUsageView::refreshing(surface.provider_label(), chrono::Utc::now().timestamp());
+        view.focused_agent = Some(surface.agent_slug().to_owned());
+        view.account.account_label = account.account_label.clone();
+        view.updated_label = "Not refreshed".to_owned();
+        view.last_error = None;
+        catalog.entries.insert(
+            key,
+            AccountCatalogEntry {
+                identity: account.identity.clone(),
+                account_key: account.account_key.clone(),
+                account_label: account.account_label.clone(),
+                username: None,
+                plan_label: None,
+                provenance: BTreeSet::new(),
+                discovery_provenance: account.provenance.iter().cloned().collect(),
+                lifecycle: AccountLifecycle::Current,
+                fetched_at_epoch: view.fetched_at_epoch,
+                view,
+            },
+        );
+    }
 }
 
 fn merge_view(
@@ -347,8 +452,11 @@ fn merge_view(
     view: FocusedUsageView,
     lifecycle: AccountLifecycle,
     provenance: AccountProvenance,
+    forced_identity: Option<CanonicalAccountIdentity>,
 ) {
-    let Some(identity) = CanonicalAccountIdentity::from_view(surface, &view) else {
+    let Some(identity) =
+        forced_identity.or_else(|| CanonicalAccountIdentity::from_view(surface, &view))
+    else {
         return;
     };
     let account_key = identity.account_key();
@@ -364,6 +472,7 @@ fn merge_view(
             username: view.account.username.clone(),
             plan_label: view.account.plan_label.clone(),
             provenance: sources,
+            discovery_provenance: BTreeSet::new(),
             lifecycle,
             fetched_at_epoch,
             view: view.clone(),

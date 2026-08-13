@@ -31,9 +31,11 @@ pub use op_struct::{OpItemCreateParams, OpStructRunner, OpWriteRunner};
 pub use parse_helpers::parse_host_ref;
 pub use picker::{OpAccount, OpCache, OpField, OpItem, OpVault, default_op_struct_runner};
 pub use resolve::{
-    CLAUDE_OAUTH_TOKEN_ENV, OperatorEnvError, collect_on_demand_bindings, has_operator_env,
-    has_operator_env_matching, lookup_operator_env_raw, print_launch_diagnostic,
+    CLAUDE_OAUTH_TOKEN_ENV, OperatorEnvError, OperatorEnvKeyResolution, OperatorEnvKeyStatus,
+    collect_on_demand_bindings, has_operator_env, has_operator_env_matching,
+    lookup_operator_env_declaration, lookup_operator_env_raw, print_launch_diagnostic,
     resolve_op_uri_to_ref, resolve_operator_env, resolve_operator_env_matching,
+    resolve_operator_env_per_key_matching, resolve_operator_env_per_key_with_matching,
     resolve_operator_env_with, resolve_operator_env_with_matching, validate_reserved_names,
 };
 pub use token_setup::{

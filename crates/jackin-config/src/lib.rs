@@ -47,8 +47,9 @@ pub use app_config::AppConfig;
 pub use app_config::DEFAULT_ROLE_REPO_REFRESH_TTL_SECONDS;
 pub use app_config::mounts::{GlobalMountRow, WorkspaceGlobalMountRows};
 pub use app_config::persist::{
-    config_needs_split_migration, load_split_config, load_workspace_files,
-    validate_reserved_env_names,
+    ConfigGeneration, ConfigSourceDiagnostic, ConfigSourceIssue, ConfigSourceScope,
+    ReadOnlyConfigSnapshot, config_needs_split_migration, load_read_only_config_snapshot,
+    load_split_config, load_workspace_files, validate_reserved_env_names,
 };
 pub use app_config::roles::{
     BUILTIN_ROLES, build_github_env_layers, resolve_github_mode, resolve_mode,

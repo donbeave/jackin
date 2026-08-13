@@ -16,13 +16,47 @@ fn open_bridge(dir: &std::path::Path) -> Arc<UsageMenuBarBridge> {
     let bridge = UsageMenuBarBridge::create();
     bridge
         .open_runtime(OpenConfig {
-            data_dir: dir.display().to_string(),
+            data_dir_override: Some(dir.display().to_string()),
+            config_root_override: Some(dir.join("config").display().to_string()),
             refresh_floor_secs: 120,
             enabled_surface_ids: vec!["codex".to_owned(), "claude".to_owned()],
             allow_live_probes: true,
         })
         .expect("open");
     bridge
+}
+
+#[test]
+fn disc_diagnostics_export_only_sanitized_scope_and_copy() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let config = dir.path().join("config");
+    let workspaces = config.join("workspaces");
+    std::fs::create_dir_all(&workspaces).expect("workspaces");
+    std::fs::write(
+        config.join("config.toml"),
+        format!("version = \"{}\"\n", jackin_config::CURRENT_CONFIG_VERSION),
+    )
+    .expect("global config");
+    std::fs::write(
+        workspaces.join("broken.toml"),
+        "{fixture-secret op://vault/item",
+    )
+    .expect("workspace");
+
+    let bridge = open_bridge(dir.path());
+    let diagnostics = bridge.discovery_diagnostics().expect("diagnostics");
+    let debug = format!("{diagnostics:?}");
+
+    assert!(diagnostics.iter().any(|diagnostic| {
+        diagnostic.scope_label == "workspace broken" && diagnostic.issue == "config_invalid"
+    }));
+    for forbidden in [
+        "fixture-secret",
+        "op://",
+        dir.path().to_string_lossy().as_ref(),
+    ] {
+        assert!(!debug.contains(forbidden), "leaked {forbidden}");
+    }
 }
 
 #[test]

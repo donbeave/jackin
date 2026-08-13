@@ -9,15 +9,17 @@ use jackin_protocol::control::{
 use jackin_usage::host::{
     HostAccountDescriptor, HostDesktopInventory, HostDesktopProviderGroup,
     HostDesktopProviderState, HostEventBatch, HostOverviewRow, HostSurfaceDescriptor,
-    HostUsageEvent,
+    HostUsageEvent, UsageDiscoveryDiagnostic,
 };
 use jackin_usage::usage::{PercentStyle, ResetStyle, UsageFormatPrefs, estimate_caption};
 
 /// Open configuration from Swift (paths only — no credentials).
 #[derive(Debug, Clone, uniffi::Record)]
 pub struct OpenConfig {
-    /// Absolute jackin data directory (`~/.jackin/data`).
-    pub data_dir: String,
+    /// Optional data-dir override for hermetic tests/smoke only. Production is `None`.
+    pub data_dir_override: Option<String>,
+    /// Optional config-root override for hermetic tests/fixtures only. Production is `None`.
+    pub config_root_override: Option<String>,
     /// Refresh floor seconds (clamped ≥ 60 in Rust).
     pub refresh_floor_secs: u64,
     /// Enabled surface ids; empty = all.
@@ -35,6 +37,30 @@ pub struct SurfaceDescriptorDto {
     pub agent: String,
     pub provider: Option<String>,
     pub enabled: bool,
+}
+
+/// Sanitized config/credential discovery failure. Contains no source path or secret.
+#[derive(Debug, Clone, uniffi::Record)]
+pub struct DiscoveryDiagnosticDto {
+    pub surface_id: Option<String>,
+    pub scope_label: String,
+    pub issue: String,
+    pub message: String,
+    pub display_label: String,
+}
+
+pub(crate) fn discovery_diagnostic_dto(
+    diagnostic: UsageDiscoveryDiagnostic,
+) -> DiscoveryDiagnosticDto {
+    let message = diagnostic.issue.display_message().to_owned();
+    let display_label = format!("{}: {message}", diagnostic.scope_label);
+    DiscoveryDiagnosticDto {
+        surface_id: diagnostic.surface_id,
+        scope_label: diagnostic.scope_label,
+        issue: diagnostic.issue.id().to_owned(),
+        message,
+        display_label,
+    }
 }
 
 /// Monetary amount (minor units).
@@ -512,9 +538,22 @@ fn confidence_label(confidence: UsageConfidence) -> &'static str {
 }
 
 /// Build open config for the host runtime.
-pub(crate) fn to_host_config(config: OpenConfig) -> jackin_usage::host::HostRuntimeConfig {
-    jackin_usage::host::HostRuntimeConfig {
-        data_dir: std::path::PathBuf::from(config.data_dir),
+pub(crate) fn to_host_config(
+    config: OpenConfig,
+) -> Result<jackin_usage::host::HostRuntimeConfig, String> {
+    let paths = jackin_core::JackinPaths::detect()
+        .map_err(|_| "host path discovery unavailable".to_owned())?;
+    let data_dir_override = config.data_dir_override.map(std::path::PathBuf::from);
+    let operator_home = data_dir_override
+        .clone()
+        .unwrap_or_else(|| paths.home_dir.clone());
+    let data_dir = data_dir_override.unwrap_or(paths.data_dir);
+    let config_root = config
+        .config_root_override
+        .map(std::path::PathBuf::from)
+        .unwrap_or(paths.config_dir);
+    Ok(jackin_usage::host::HostRuntimeConfig {
+        data_dir,
         refresh_floor_secs: config.refresh_floor_secs,
         enabled_surface_ids: config.enabled_surface_ids,
         probe_policy: if config.allow_live_probes {
@@ -522,5 +561,9 @@ pub(crate) fn to_host_config(config: OpenConfig) -> jackin_usage::host::HostRunt
         } else {
             jackin_usage::host::HostProbePolicy::Disabled
         },
-    }
+        discovery_scope: jackin_usage::host::UsageDiscoveryScope::HostDesktop {
+            config_root,
+            operator_home,
+        },
+    })
 }

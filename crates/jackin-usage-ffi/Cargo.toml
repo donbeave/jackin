@@ -18,6 +18,9 @@ crate-type = ["lib", "staticlib", "cdylib"]
 path = "src/lib.rs"
 
 [dependencies]
+jackin-config = { workspace = true }
+jackin-core = { workspace = true }
+jackin-env = { workspace = true }
 jackin-usage = { workspace = true }
 jackin-protocol = { workspace = true }
 uniffi = { version = "=0.32.0", default-features = false }

@@ -414,6 +414,11 @@ pub(crate) fn read_claude_keychain_item(service: &str) -> ClaudeKeychainRead {
     }
 }
 
+#[cfg(not(any(target_os = "macos", test)))]
+pub(crate) fn read_claude_keychain_item(_service: &str) -> ClaudeKeychainRead {
+    ClaudeKeychainRead::Missing
+}
+
 #[cfg(not(target_os = "macos"))]
 pub(crate) fn read_claude_keychain_item(_service: &str) -> ClaudeKeychainRead {
     ClaudeKeychainRead::Missing
@@ -497,6 +502,7 @@ pub(crate) enum ClaudeWaveResolution {
     Missing,
 }
 
+#[derive(Clone)]
 pub(crate) struct ClaudeResolved {
     pub(crate) access_token: String,
     pub(crate) subscription_type: Option<String>,

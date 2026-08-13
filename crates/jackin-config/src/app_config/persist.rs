@@ -6,10 +6,12 @@
 
 use crate::ConfigError;
 use std::collections::BTreeMap;
+use std::ffi::OsStr;
 use std::path::{Path, PathBuf};
 
 use anyhow::Context as _;
 use jackin_core::{JackinPaths, WorkspaceName};
+use sha2::{Digest as _, Sha256};
 use toml_edit::DocumentMut;
 
 use super::AppConfig;
@@ -17,6 +19,384 @@ use crate::editor::ConfigEditor;
 use crate::migrations;
 use crate::persist::{atomic_write, validate_workspace_file_stem};
 use crate::schema::WorkspaceConfig;
+use crate::validation::validate_workspace_config;
+use crate::versions::{CURRENT_CONFIG_VERSION, CURRENT_WORKSPACE_VERSION};
+
+const READ_ONLY_SNAPSHOT_ATTEMPTS: usize = 3;
+
+/// Stable content generation for one admitted config tree.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ConfigGeneration(String);
+
+impl ConfigGeneration {
+    /// Lowercase SHA-256 digest of the sorted config-relative path and byte sequence.
+    #[must_use]
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+
+/// Sanitized source scope for a read-only config diagnostic.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ConfigSourceScope {
+    /// Top-level `config.toml`.
+    Global,
+    /// The split-workspace collection, without exposing a filesystem path.
+    Workspaces,
+    /// One validated workspace name.
+    Workspace(String),
+}
+
+/// Machine-readable failure category for one config source.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ConfigSourceIssue {
+    /// Source bytes could not be read.
+    Unreadable,
+    /// TOML syntax or typed schema was malformed.
+    Malformed,
+    /// Source schema is newer than this binary supports.
+    UnsupportedVersion,
+    /// Source failed semantic validation.
+    Invalid,
+    /// Workspace filename was not a valid workspace name.
+    InvalidWorkspaceName,
+    /// Embedded and split definitions for one workspace disagreed.
+    ConflictingWorkspaceDefinitions,
+    /// The config tree changed repeatedly while it was being read.
+    TransientConflict,
+}
+
+/// Sanitized diagnostic produced while building a read-only config snapshot.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ConfigSourceDiagnostic {
+    /// Logical source that failed; never a filesystem path.
+    pub scope: ConfigSourceScope,
+    /// Stable failure category; never raw parser or credential text.
+    pub issue: ConfigSourceIssue,
+}
+
+/// Valid portions of the operator config tree loaded without filesystem mutation.
+#[derive(Debug, Clone)]
+pub struct ReadOnlyConfigSnapshot {
+    /// Parsed global config with every valid embedded/split workspace attached.
+    pub config: AppConfig,
+    /// Per-source failures; unrelated valid sources remain available.
+    pub diagnostics: Vec<ConfigSourceDiagnostic>,
+    /// Content-derived generation for every readable config source encountered.
+    pub generation: ConfigGeneration,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct RawConfigFile {
+    relative_path: String,
+    scope: ConfigSourceScope,
+    bytes: Vec<u8>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct RawConfigTree {
+    files: Vec<RawConfigFile>,
+    diagnostics: Vec<ConfigSourceDiagnostic>,
+}
+
+/// Load the complete config tree without creating, migrating, or rewriting files.
+///
+/// A shared advisory lock is used when a writer lock already exists. A full
+/// content re-read still brackets parsing so first-writer races and external
+/// editors cannot produce a torn multi-file snapshot.
+pub fn load_read_only_config_snapshot(
+    paths: &JackinPaths,
+) -> crate::ConfigResult<ReadOnlyConfigSnapshot> {
+    load_read_only_config_snapshot_with_hook(paths, |_| {})
+}
+
+fn load_read_only_config_snapshot_with_hook<F>(
+    paths: &JackinPaths,
+    mut between_reads: F,
+) -> crate::ConfigResult<ReadOnlyConfigSnapshot>
+where
+    F: FnMut(usize),
+{
+    let _guard = crate::persist::acquire_config_read_lock(&paths.config_file)?;
+    for attempt in 0..READ_ONLY_SNAPSHOT_ATTEMPTS {
+        let before = read_raw_config_tree(paths);
+        let snapshot = parse_raw_config_tree(&before);
+        between_reads(attempt);
+        let after = read_raw_config_tree(paths);
+        if before == after {
+            return Ok(snapshot);
+        }
+    }
+
+    Ok(ReadOnlyConfigSnapshot {
+        config: AppConfig::default(),
+        diagnostics: vec![ConfigSourceDiagnostic {
+            scope: ConfigSourceScope::Workspaces,
+            issue: ConfigSourceIssue::TransientConflict,
+        }],
+        generation: config_generation(&[]),
+    })
+}
+
+fn read_raw_config_tree(paths: &JackinPaths) -> RawConfigTree {
+    let mut files = Vec::new();
+    let mut diagnostics = Vec::new();
+    read_raw_file(
+        &paths.config_file,
+        "config.toml".to_owned(),
+        ConfigSourceScope::Global,
+        &mut files,
+        &mut diagnostics,
+    );
+
+    let entries = match std::fs::read_dir(&paths.workspaces_dir) {
+        Ok(entries) => entries,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+            return RawConfigTree { files, diagnostics };
+        }
+        Err(_) => {
+            diagnostics.push(ConfigSourceDiagnostic {
+                scope: ConfigSourceScope::Workspaces,
+                issue: ConfigSourceIssue::Unreadable,
+            });
+            return RawConfigTree { files, diagnostics };
+        }
+    };
+
+    let mut workspace_paths = Vec::new();
+    for entry in entries {
+        let Ok(entry) = entry else {
+            diagnostics.push(ConfigSourceDiagnostic {
+                scope: ConfigSourceScope::Workspaces,
+                issue: ConfigSourceIssue::Unreadable,
+            });
+            continue;
+        };
+        let path = entry.path();
+        if path.extension() == Some(OsStr::new("toml")) {
+            workspace_paths.push(path);
+        }
+    }
+    workspace_paths.sort();
+
+    for path in workspace_paths {
+        let Some(stem) = path.file_stem().and_then(OsStr::to_str) else {
+            diagnostics.push(ConfigSourceDiagnostic {
+                scope: ConfigSourceScope::Workspaces,
+                issue: ConfigSourceIssue::InvalidWorkspaceName,
+            });
+            continue;
+        };
+        let Ok(name) = WorkspaceName::parse(stem) else {
+            diagnostics.push(ConfigSourceDiagnostic {
+                scope: ConfigSourceScope::Workspaces,
+                issue: ConfigSourceIssue::InvalidWorkspaceName,
+            });
+            continue;
+        };
+        let name = name.into_inner();
+        read_raw_file(
+            &path,
+            format!("workspaces/{name}.toml"),
+            ConfigSourceScope::Workspace(name),
+            &mut files,
+            &mut diagnostics,
+        );
+    }
+
+    files.sort_by(|left, right| left.relative_path.cmp(&right.relative_path));
+    diagnostics.sort_by(|left, right| diagnostic_sort_key(left).cmp(&diagnostic_sort_key(right)));
+    RawConfigTree { files, diagnostics }
+}
+
+fn read_raw_file(
+    path: &Path,
+    relative_path: String,
+    scope: ConfigSourceScope,
+    files: &mut Vec<RawConfigFile>,
+    diagnostics: &mut Vec<ConfigSourceDiagnostic>,
+) {
+    match std::fs::read(path) {
+        Ok(bytes) => files.push(RawConfigFile {
+            relative_path,
+            scope,
+            bytes,
+        }),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+        Err(_) => diagnostics.push(ConfigSourceDiagnostic {
+            scope,
+            issue: ConfigSourceIssue::Unreadable,
+        }),
+    }
+}
+
+fn diagnostic_sort_key(diagnostic: &ConfigSourceDiagnostic) -> (u8, &str, u8) {
+    let (scope, name) = match &diagnostic.scope {
+        ConfigSourceScope::Global => (0, ""),
+        ConfigSourceScope::Workspaces => (1, ""),
+        ConfigSourceScope::Workspace(name) => (2, name.as_str()),
+    };
+    (scope, name, diagnostic.issue as u8)
+}
+
+fn parse_raw_config_tree(tree: &RawConfigTree) -> ReadOnlyConfigSnapshot {
+    let mut diagnostics = tree.diagnostics.clone();
+    let mut config = AppConfig::default();
+    let mut embedded = BTreeMap::new();
+
+    if let Some(global) = tree
+        .files
+        .iter()
+        .find(|file| file.scope == ConfigSourceScope::Global)
+    {
+        match parse_global_config(&global.bytes) {
+            Ok((parsed, parsed_embedded)) => {
+                config = parsed;
+                embedded = parsed_embedded;
+            }
+            Err(issue) => diagnostics.push(ConfigSourceDiagnostic {
+                scope: ConfigSourceScope::Global,
+                issue,
+            }),
+        }
+    }
+
+    let mut split = BTreeMap::new();
+    for file in tree
+        .files
+        .iter()
+        .filter(|file| matches!(file.scope, ConfigSourceScope::Workspace(_)))
+    {
+        let ConfigSourceScope::Workspace(name) = &file.scope else {
+            continue;
+        };
+        match parse_workspace_config(name, &file.bytes) {
+            Ok(workspace) => {
+                split.insert(name.clone(), workspace);
+            }
+            Err(issue) => diagnostics.push(ConfigSourceDiagnostic {
+                scope: file.scope.clone(),
+                issue,
+            }),
+        }
+    }
+
+    for (name, workspace) in embedded {
+        match split.get(&name) {
+            Some(split_workspace) if split_workspace == &workspace => {}
+            Some(_) => diagnostics.push(ConfigSourceDiagnostic {
+                scope: ConfigSourceScope::Workspace(name),
+                issue: ConfigSourceIssue::ConflictingWorkspaceDefinitions,
+            }),
+            None => {
+                split.insert(name, workspace);
+            }
+        }
+    }
+    config.workspaces = split;
+    diagnostics.sort_by(|left, right| diagnostic_sort_key(left).cmp(&diagnostic_sort_key(right)));
+
+    ReadOnlyConfigSnapshot {
+        config,
+        diagnostics,
+        generation: config_generation(&tree.files),
+    }
+}
+
+fn parse_global_config(
+    bytes: &[u8],
+) -> Result<(AppConfig, BTreeMap<String, WorkspaceConfig>), ConfigSourceIssue> {
+    let raw = std::str::from_utf8(bytes).map_err(|_| ConfigSourceIssue::Malformed)?;
+    let legacy_op_accounts =
+        legacy_workspace_op_accounts(raw).map_err(|_| ConfigSourceIssue::Malformed)?;
+    let doc = migrate_document_in_memory(
+        raw,
+        "config",
+        CURRENT_CONFIG_VERSION,
+        migrations::CONFIG_MIGRATIONS,
+    )?;
+    let mut config: AppConfig =
+        toml::from_str(&doc.to_string()).map_err(|_| ConfigSourceIssue::Malformed)?;
+    let raw_embedded = std::mem::take(&mut config.workspaces);
+    let mut embedded = BTreeMap::new();
+    for (name, workspace) in raw_embedded {
+        let workspace = migrate_legacy_workspace_value(
+            &name,
+            &workspace,
+            legacy_op_accounts.get(&name).map(String::as_str),
+        )
+        .map_err(|_| ConfigSourceIssue::Malformed)?;
+        validate_one_workspace(&name, &workspace)?;
+        embedded.insert(name, workspace);
+    }
+    validate_reserved_env_names(&config).map_err(|_| ConfigSourceIssue::Invalid)?;
+    config
+        .validate_auth_modes()
+        .map_err(|_| ConfigSourceIssue::Invalid)?;
+    config.version = CURRENT_CONFIG_VERSION.to_owned();
+    Ok((config, embedded))
+}
+
+fn parse_workspace_config(name: &str, bytes: &[u8]) -> Result<WorkspaceConfig, ConfigSourceIssue> {
+    let raw = std::str::from_utf8(bytes).map_err(|_| ConfigSourceIssue::Malformed)?;
+    let doc = migrate_document_in_memory(
+        raw,
+        "workspace config",
+        CURRENT_WORKSPACE_VERSION,
+        migrations::WORKSPACE_MIGRATIONS,
+    )?;
+    let workspace: WorkspaceConfig =
+        toml::from_str(&doc.to_string()).map_err(|_| ConfigSourceIssue::Malformed)?;
+    validate_one_workspace(name, &workspace)?;
+    Ok(workspace)
+}
+
+fn validate_one_workspace(
+    name: &str,
+    workspace: &WorkspaceConfig,
+) -> Result<(), ConfigSourceIssue> {
+    let name = WorkspaceName::parse(name).map_err(|_| ConfigSourceIssue::InvalidWorkspaceName)?;
+    validate_workspace_config(&name, workspace).map_err(|_| ConfigSourceIssue::Invalid)?;
+    let mut isolated = AppConfig::default();
+    isolated
+        .workspaces
+        .insert(name.into_inner(), workspace.clone());
+    validate_reserved_env_names(&isolated).map_err(|_| ConfigSourceIssue::Invalid)
+}
+
+fn migrate_document_in_memory(
+    raw: &str,
+    label: &str,
+    current_raw: &str,
+    registry: &[migrations::MigrationStep],
+) -> Result<DocumentMut, ConfigSourceIssue> {
+    let mut doc: DocumentMut = raw.parse().map_err(|_| ConfigSourceIssue::Malformed)?;
+    let old = migrations::doc_version(&doc, label).map_err(|_| ConfigSourceIssue::Malformed)?;
+    let current =
+        migrations::parse_version(current_raw).map_err(|_| ConfigSourceIssue::Malformed)?;
+    if old > current {
+        return Err(ConfigSourceIssue::UnsupportedVersion);
+    }
+    if old < current {
+        migrations::apply_migrations(&mut doc, &old, &current, registry, label)
+            .map_err(|_| ConfigSourceIssue::Malformed)?;
+    }
+    Ok(doc)
+}
+
+fn config_generation(files: &[RawConfigFile]) -> ConfigGeneration {
+    let mut hasher = Sha256::new();
+    for file in files {
+        hash_len_prefixed(&mut hasher, file.relative_path.as_bytes());
+        hash_len_prefixed(&mut hasher, &file.bytes);
+    }
+    ConfigGeneration(hex::encode(hasher.finalize()))
+}
+
+fn hash_len_prefixed(hasher: &mut Sha256, bytes: &[u8]) {
+    hasher.update(u64::try_from(bytes.len()).unwrap_or(u64::MAX).to_be_bytes());
+    hasher.update(bytes);
+}
 
 pub(crate) fn workspace_file_path(paths: &JackinPaths, name: &str) -> PathBuf {
     paths.workspaces_dir.join(format!("{name}.toml"))
@@ -149,24 +529,11 @@ fn migrate_legacy_workspaces(
     for (name, workspace) in workspaces {
         validate_workspace_file_stem(name)?;
         let path = workspace_file_path(paths, name);
-        let contents = toml::to_string_pretty(workspace)
-            .with_context(|| format!("serializing workspace {name:?}"))?;
-        let contents = match legacy_op_accounts.get(name) {
-            // Re-inject the legacy account and run the same v1alpha5
-            // transform the version chain would have applied, so the
-            // account lands on each op ref instead of being lost.
-            Some(acct) => {
-                let mut doc: DocumentMut = contents
-                    .parse()
-                    .with_context(|| format!("re-parsing serialized workspace {name:?}"))?;
-                doc.insert("op_account", toml_edit::value(acct.as_str()));
-                migrations::migrate_workspace_op_account_to_refs(&mut doc).with_context(|| {
-                    format!("stamping legacy op_account onto refs for workspace {name:?}")
-                })?;
-                doc.to_string()
-            }
-            None => contents,
-        };
+        let contents = legacy_workspace_contents(
+            name,
+            workspace,
+            legacy_op_accounts.get(name).map(String::as_str),
+        )?;
         if path.exists() {
             // Idempotent re-entry: compare against the bytes we would write
             // (account already stamped), not the legacy struct — otherwise a
@@ -205,6 +572,34 @@ fn migrate_legacy_workspaces(
     })?;
     atomic_write(&paths.config_file, &global_contents)?;
     Ok(())
+}
+
+fn legacy_workspace_contents(
+    name: &str,
+    workspace: &WorkspaceConfig,
+    legacy_op_account: Option<&str>,
+) -> anyhow::Result<String> {
+    let contents = toml::to_string_pretty(workspace)
+        .with_context(|| format!("serializing workspace {name:?}"))?;
+    let Some(account) = legacy_op_account else {
+        return Ok(contents);
+    };
+    let mut doc: DocumentMut = contents
+        .parse()
+        .with_context(|| format!("re-parsing serialized workspace {name:?}"))?;
+    doc.insert("op_account", toml_edit::value(account));
+    migrations::migrate_workspace_op_account_to_refs(&mut doc)
+        .with_context(|| format!("stamping legacy op_account onto refs for workspace {name:?}"))?;
+    Ok(doc.to_string())
+}
+
+fn migrate_legacy_workspace_value(
+    name: &str,
+    workspace: &WorkspaceConfig,
+    legacy_op_account: Option<&str>,
+) -> anyhow::Result<WorkspaceConfig> {
+    let raw = legacy_workspace_contents(name, workspace, legacy_op_account)?;
+    toml::from_str(&raw).with_context(|| format!("parsing migrated workspace {name:?}"))
 }
 
 /// Reject operator env maps that declare any reserved runtime name.

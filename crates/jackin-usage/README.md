@@ -12,6 +12,9 @@ usage/spend trends as product features.
 
 - Token monitoring (`token_monitor`) and usage accounting (`usage`) for running agents.
 - Host orchestration (`host`) — `HostUsageRuntime` for menu bar / CLI without Capsule.
+- Rust-owned account discovery (`host/discovery`) — read-only global, workspace,
+  role, and workspace-role enumeration; explicit profile/protected-source probes;
+  pre-source and post-auth account deduplication; sanitized diagnostics.
 - Usage snapshot persistence (`usage_snapshot_store`) and token-accounting telemetry (`telemetry`).
 - Usage output shaping (`output`).
 - Provider probes (`usage/<provider>.rs`). Amp API/CLI share
@@ -21,7 +24,8 @@ usage/spend trends as product features.
 ## Architecture tier and allowed dependencies
 
 **Infrastructure** (capsule-side + host menu-bar observability/accounting). Allowed
-inward dependencies: `jackin-core`, `jackin-protocol`, and `jackin-diagnostics`.
+inward dependencies: `jackin-core`, `jackin-config`, `jackin-protocol`, and
+`jackin-diagnostics`.
 No dependency on `jackin-capsule` (which would be circular), `jackin-tui`,
 `jackin-console`, `jackin-launch`, or any presentation crate.
 
@@ -91,6 +95,18 @@ fabricated local-auth labels never become keys.
 durable fetch generation, merges provenance, and separates account lifecycle
 from snapshot freshness. Selection accepts only keys owned by that surface;
 stale choices clear, and only current accounts become implicit fallbacks.
+
+Host Desktop discovery reads the global config plus every effective workspace/role
+scope at open and before explicit manual Refresh. Background polling reuses the last
+completed catalog and never rereads config or retries protected-source interaction.
+The current catalog is membership authority: durable/shared history may enrich a
+current account but cannot create one. Profile paths and protected values stay in
+Rust; native DTOs contain only account identity, scope provenance, and sanitized
+diagnostics. OpenCode and GitHub are outside the seven-provider Desktop quota catalog.
+
+Capsule discovery is capability-only. It never scans host config or other host
+accounts; broker transport and cross-process generation joining are owned by the
+strict coordinator follow-up.
 
 Each account owns its plan/status, remaining label and geometry, reset phrase
 and exact reset, severity, recency, and error. Native clients render all DTO fields

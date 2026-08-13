@@ -31,6 +31,7 @@ Resolved config/workspace types plus resolution and migration entry points. Sche
 ## Persistence and validation guarantees
 
 - `ConfigEditor` owns an exclusive OS lock on sibling `config.lock` through save/drop. Snapshot readers use `acquire_config_read_lock`. The persistent file never grants ownership; the OS lock does.
+- `load_read_only_config_snapshot` is the host-discovery path: it parses global and split/legacy workspace files, applies supported migrations in memory, validates the resulting model, and computes a content generation without creating, migrating, or rewriting anything. It retries a torn tree and reports typed source diagnostics.
 - Saves validate, stage, and sync every file before renaming. Staging failure cleans temporary files and preserves the prior tree.
 - Unix writes use mode `0600`; all platforms explicitly open, write, and sync staged files. Parent directories are synced after rename.
 - Mount validation rejects explicit `.`/`..`. Repo identity, isolation ancestry, and sensitive paths use normalized components; existing host paths are canonicalized by I/O-owning callers.

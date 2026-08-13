@@ -41,7 +41,7 @@ enum LockMode {
 /// The OS lock, not the persistent lock-file contents, is authoritative.
 #[derive(Debug)]
 pub struct ConfigReadGuard {
-    _file: File,
+    _file: Option<File>,
 }
 
 #[derive(Debug)]
@@ -67,9 +67,23 @@ pub fn validate_workspace_file_stem(name: &str) -> crate::ConfigResult<()> {
 /// Acquire a shared advisory lock covering a complete config-tree read.
 ///
 /// Readers may coexist, but an editor excludes them until it saves or is dropped.
+/// If no writer has created the sibling lock file yet, this returns an empty guard
+/// instead of creating host state. Snapshot readers must still verify their input
+/// bytes after parsing to cover the race with a first writer.
 pub fn acquire_config_read_lock(config_file: &Path) -> crate::ConfigResult<ConfigReadGuard> {
-    acquire_lock(config_file, LockMode::Shared, LOCK_TIMEOUT, LOCK_POLL)
-        .map(|file| ConfigReadGuard { _file: file })
+    let lock_path = config_file.with_file_name("config.lock");
+    let file = match File::open(&lock_path) {
+        Ok(file) => Some(acquire_open_lock(
+            file,
+            &lock_path,
+            LockMode::Shared,
+            LOCK_TIMEOUT,
+            LOCK_POLL,
+        )?),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => None,
+        Err(error) => return Err(error.into()),
+    };
+    Ok(ConfigReadGuard { _file: file })
 }
 
 pub(crate) fn acquire_config_write_lock(
@@ -89,9 +103,26 @@ fn acquire_lock(
     timeout: Duration,
     poll: Duration,
 ) -> crate::ConfigResult<File> {
+    let lock_path = config_file.with_file_name("config.lock");
+    if let Some(parent) = lock_path.parent() {
+        std::fs::create_dir_all(parent)
+            .with_context(|| format!("creating config directory {}", parent.display()))?;
+    }
+    let file = open_private(&lock_path)?;
+    acquire_open_lock(file, &lock_path, mode, timeout, poll)
+}
+
+fn acquire_open_lock(
+    file: File,
+    lock_path: &Path,
+    mode: LockMode,
+    timeout: Duration,
+    poll: Duration,
+) -> crate::ConfigResult<File> {
     let started = Instant::now();
-    acquire_lock_with_timing(
-        config_file,
+    acquire_open_lock_with_timing(
+        file,
+        lock_path,
         mode,
         timeout,
         poll,
@@ -100,8 +131,9 @@ fn acquire_lock(
     )
 }
 
-fn acquire_lock_with_timing<N, W>(
-    config_file: &Path,
+fn acquire_open_lock_with_timing<N, W>(
+    file: File,
+    lock_path: &Path,
     mode: LockMode,
     timeout: Duration,
     poll: Duration,
@@ -112,12 +144,6 @@ where
     N: FnMut() -> Duration,
     W: FnMut(Duration),
 {
-    let lock_path = config_file.with_file_name("config.lock");
-    if let Some(parent) = lock_path.parent() {
-        std::fs::create_dir_all(parent)
-            .with_context(|| format!("creating config directory {}", parent.display()))?;
-    }
-    let file = open_private(&lock_path)?;
     loop {
         let acquired = match mode {
             LockMode::Shared => fs4::FileExt::try_lock_shared(&file),
@@ -131,12 +157,33 @@ where
             }
             Err(TryLockError::WouldBlock) => {
                 return Err(crate::ConfigError::ConfigLockTimeout {
-                    holder: recorded_holder(&lock_path),
+                    holder: recorded_holder(lock_path),
                 });
             }
             Err(TryLockError::Error(err)) => return Err(err.into()),
         }
     }
+}
+
+#[cfg(test)]
+fn acquire_lock_with_timing<N, W>(
+    config_file: &Path,
+    mode: LockMode,
+    timeout: Duration,
+    poll: Duration,
+    elapsed: N,
+    wait: W,
+) -> crate::ConfigResult<File>
+where
+    N: FnMut() -> Duration,
+    W: FnMut(Duration),
+{
+    let lock_path = config_file.with_file_name("config.lock");
+    if let Some(parent) = lock_path.parent() {
+        std::fs::create_dir_all(parent)?;
+    }
+    let file = open_private(&lock_path)?;
+    acquire_open_lock_with_timing(file, &lock_path, mode, timeout, poll, elapsed, wait)
 }
 
 fn recorded_holder(lock_path: &Path) -> String {

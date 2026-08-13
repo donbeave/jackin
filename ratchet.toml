@@ -518,7 +518,7 @@ key = "crates/jackin-capsule/README.md"
 bound = 6343
 [[family.entry]]
 key = "crates/jackin-config/README.md"
-bound = 1897
+bound = 2229
 [[family.entry]]
 key = "crates/jackin-oppicker/README.md"
 bound = 1575
@@ -590,10 +590,10 @@ key = "crates/jackin-tui/README.md"
 bound = 1812
 [[family.entry]]
 key = "crates/jackin-usage/README.md"
-bound = 5825
+bound = 6855
 [[family.entry]]
 key = "crates/jackin-usage-ffi/README.md"
-bound = 2652
+bound = 3176
 [[family.entry]]
 key = "crates/jackin-xtask/README.md"
 bound = 6112

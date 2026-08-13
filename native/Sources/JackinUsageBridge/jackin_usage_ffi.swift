@@ -625,6 +625,11 @@ public protocol UsageMenuBarBridgeProtocol: AnyObject, Sendable {
     func desktopInventory() throws  -> DesktopInventoryDto
     
     /**
+     * Sanitized discovery diagnostics for the current catalog generation.
+     */
+    func discoveryDiagnostics() throws  -> [DiscoveryDiagnosticDto]
+    
+    /**
      * List known accounts for one surface (`Some`) or all surfaces (`None`).
      */
     func listAccounts(surfaceId: String?) throws  -> [AccountDescriptorDto]
@@ -849,6 +854,18 @@ open func desktopInventory()throws  -> DesktopInventoryDto  {
     return try  FfiConverterTypeDesktopInventoryDto_lift(try rustCallWithError(FfiConverterTypeUsageBridgeError_lift) {
         uniffiCallStatus in
     uniffi_jackin_usage_ffi_fn_method_usagemenubarbridge_desktop_inventory(
+            self.uniffiCloneHandle(),uniffiCallStatus
+    )
+})
+}
+    
+    /**
+     * Sanitized discovery diagnostics for the current catalog generation.
+     */
+open func discoveryDiagnostics()throws  -> [DiscoveryDiagnosticDto]  {
+    return try  FfiConverterSequenceTypeDiscoveryDiagnosticDto.lift(try rustCallWithError(FfiConverterTypeUsageBridgeError_lift) {
+        uniffiCallStatus in
+    uniffi_jackin_usage_ffi_fn_method_usagemenubarbridge_discovery_diagnostics(
             self.uniffiCloneHandle(),uniffiCallStatus
     )
 })
@@ -1490,6 +1507,75 @@ public func FfiConverterTypeDesktopProviderStateDto_lower(_ value: DesktopProvid
 
 
 /**
+ * Sanitized config/credential discovery failure. Contains no source path or secret.
+ */
+public struct DiscoveryDiagnosticDto: Equatable, Hashable {
+    public var surfaceId: String?
+    public var scopeLabel: String
+    public var issue: String
+    public var message: String
+    public var displayLabel: String
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(surfaceId: String?, scopeLabel: String, issue: String, message: String, displayLabel: String) {
+        self.surfaceId = surfaceId
+        self.scopeLabel = scopeLabel
+        self.issue = issue
+        self.message = message
+        self.displayLabel = displayLabel
+    }
+
+    
+
+    
+}
+
+#if compiler(>=6)
+extension DiscoveryDiagnosticDto: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeDiscoveryDiagnosticDto: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> DiscoveryDiagnosticDto {
+        return
+            try DiscoveryDiagnosticDto(
+                surfaceId: FfiConverterOptionString.read(from: &buf), 
+                scopeLabel: FfiConverterString.read(from: &buf), 
+                issue: FfiConverterString.read(from: &buf), 
+                message: FfiConverterString.read(from: &buf), 
+                displayLabel: FfiConverterString.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: DiscoveryDiagnosticDto, into buf: inout [UInt8]) {
+        FfiConverterOptionString.write(value.surfaceId, into: &buf)
+        FfiConverterString.write(value.scopeLabel, into: &buf)
+        FfiConverterString.write(value.issue, into: &buf)
+        FfiConverterString.write(value.message, into: &buf)
+        FfiConverterString.write(value.displayLabel, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeDiscoveryDiagnosticDto_lift(_ buf: RustBuffer) throws -> DiscoveryDiagnosticDto {
+    return try FfiConverterTypeDiscoveryDiagnosticDto.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeDiscoveryDiagnosticDto_lower(_ value: DiscoveryDiagnosticDto) -> RustBuffer {
+    return FfiConverterTypeDiscoveryDiagnosticDto.lower(value)
+}
+
+
+/**
  * Monetary amount (minor units).
  */
 public struct MoneyDto: Equatable, Hashable {
@@ -1555,9 +1641,13 @@ public func FfiConverterTypeMoneyDto_lower(_ value: MoneyDto) -> RustBuffer {
  */
 public struct OpenConfig: Equatable, Hashable {
     /**
-     * Absolute jackin data directory (`~/.jackin/data`).
+     * Optional data-dir override for hermetic tests/smoke only. Production is `None`.
      */
-    public var dataDir: String
+    public var dataDirOverride: String?
+    /**
+     * Optional config-root override for hermetic tests/fixtures only. Production is `None`.
+     */
+    public var configRootOverride: String?
     /**
      * Refresh floor seconds (clamped ≥ 60 in Rust).
      */
@@ -1576,8 +1666,11 @@ public struct OpenConfig: Equatable, Hashable {
     // declare one manually.
     public init(
         /**
-         * Absolute jackin data directory (`~/.jackin/data`).
-         */dataDir: String, 
+         * Optional data-dir override for hermetic tests/smoke only. Production is `None`.
+         */dataDirOverride: String?, 
+        /**
+         * Optional config-root override for hermetic tests/fixtures only. Production is `None`.
+         */configRootOverride: String?, 
         /**
          * Refresh floor seconds (clamped ≥ 60 in Rust).
          */refreshFloorSecs: UInt64, 
@@ -1588,7 +1681,8 @@ public struct OpenConfig: Equatable, Hashable {
          * Whether live provider probes may dispatch. `false` = smoke/defense mode
          * (no credential/file/env/CLI/network/Keychain resolution). Not persisted.
          */allowLiveProbes: Bool) {
-        self.dataDir = dataDir
+        self.dataDirOverride = dataDirOverride
+        self.configRootOverride = configRootOverride
         self.refreshFloorSecs = refreshFloorSecs
         self.enabledSurfaceIds = enabledSurfaceIds
         self.allowLiveProbes = allowLiveProbes
@@ -1610,7 +1704,8 @@ public struct FfiConverterTypeOpenConfig: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> OpenConfig {
         return
             try OpenConfig(
-                dataDir: FfiConverterString.read(from: &buf), 
+                dataDirOverride: FfiConverterOptionString.read(from: &buf), 
+                configRootOverride: FfiConverterOptionString.read(from: &buf), 
                 refreshFloorSecs: FfiConverterUInt64.read(from: &buf), 
                 enabledSurfaceIds: FfiConverterSequenceString.read(from: &buf), 
                 allowLiveProbes: FfiConverterBool.read(from: &buf)
@@ -1618,7 +1713,8 @@ public struct FfiConverterTypeOpenConfig: FfiConverterRustBuffer {
     }
 
     public static func write(_ value: OpenConfig, into buf: inout [UInt8]) {
-        FfiConverterString.write(value.dataDir, into: &buf)
+        FfiConverterOptionString.write(value.dataDirOverride, into: &buf)
+        FfiConverterOptionString.write(value.configRootOverride, into: &buf)
         FfiConverterUInt64.write(value.refreshFloorSecs, into: &buf)
         FfiConverterSequenceString.write(value.enabledSurfaceIds, into: &buf)
         FfiConverterBool.write(value.allowLiveProbes, into: &buf)
@@ -2891,6 +2987,31 @@ fileprivate struct FfiConverterSequenceTypeDesktopProviderGroupDto: FfiConverter
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
+fileprivate struct FfiConverterSequenceTypeDiscoveryDiagnosticDto: FfiConverterRustBuffer {
+    typealias SwiftType = [DiscoveryDiagnosticDto]
+
+    public static func write(_ value: [DiscoveryDiagnosticDto], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterTypeDiscoveryDiagnosticDto.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [DiscoveryDiagnosticDto] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [DiscoveryDiagnosticDto]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            seq.append(try FfiConverterTypeDiscoveryDiagnosticDto.read(from: &buf))
+        }
+        return seq
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterSequenceTypeOverviewRowDto: FfiConverterRustBuffer {
     typealias SwiftType = [OverviewRowDto]
 
@@ -3088,6 +3209,9 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_jackin_usage_ffi_checksum_method_usagemenubarbridge_desktop_inventory() != 41481) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_jackin_usage_ffi_checksum_method_usagemenubarbridge_discovery_diagnostics() != 20128) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_jackin_usage_ffi_checksum_method_usagemenubarbridge_list_accounts() != 28969) {

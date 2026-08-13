@@ -7,11 +7,13 @@ use std::sync::{Arc, Mutex};
 
 use jackin_usage::host::HostUsageRuntime;
 
+use crate::discovery::DesktopCredentialResolver;
 use crate::dto::{
-    AccountDescriptorDto, DesktopInventoryDto, OpenConfig, OverviewRowDto, ProviderGlanceRowDto,
-    SurfaceDescriptorDto, UsageEventBatchDto, UsageFormatPrefsDto, UsageViewDto, account_dto,
-    desktop_inventory_dto, event_batch_dto, map_open_err, map_runtime_err, overview_row_dto,
-    parse_format_prefs, provider_glance_row_dto, surface_dto, to_host_config, view_dto,
+    AccountDescriptorDto, DesktopInventoryDto, DiscoveryDiagnosticDto, OpenConfig, OverviewRowDto,
+    ProviderGlanceRowDto, SurfaceDescriptorDto, UsageEventBatchDto, UsageFormatPrefsDto,
+    UsageViewDto, account_dto, desktop_inventory_dto, discovery_diagnostic_dto, event_batch_dto,
+    map_open_err, map_runtime_err, overview_row_dto, parse_format_prefs, provider_glance_row_dto,
+    surface_dto, to_host_config, view_dto,
 };
 use crate::error::{UsageBridgeError, catch_entry};
 
@@ -19,6 +21,7 @@ use crate::error::{UsageBridgeError, catch_entry};
 #[derive(uniffi::Object)]
 pub struct UsageMenuBarBridge {
     inner: Mutex<HostUsageRuntime>,
+    credential_resolver: DesktopCredentialResolver,
 }
 
 #[uniffi::export]
@@ -29,14 +32,18 @@ impl UsageMenuBarBridge {
     pub fn create() -> Arc<Self> {
         Arc::new(Self {
             inner: Mutex::new(HostUsageRuntime::new()),
+            credential_resolver: DesktopCredentialResolver::default(),
         })
     }
 
     /// Open the host runtime (paths + enable set). Idempotent replace.
     pub fn open_runtime(&self, config: OpenConfig) -> Result<(), UsageBridgeError> {
         catch_entry(|| {
+            let host_config = to_host_config(config).map_err(map_open_err)?;
             let mut guard = self.lock()?;
-            guard.open(to_host_config(config)).map_err(map_open_err)
+            guard
+                .open_with_discovery(host_config, &self.credential_resolver)
+                .map_err(map_open_err)
         })
     }
 
@@ -49,6 +56,19 @@ impl UsageMenuBarBridge {
                 .map_err(map_runtime_err)?
                 .into_iter()
                 .map(surface_dto)
+                .collect())
+        })
+    }
+
+    /// Sanitized discovery diagnostics for the current catalog generation.
+    pub fn discovery_diagnostics(&self) -> Result<Vec<DiscoveryDiagnosticDto>, UsageBridgeError> {
+        catch_entry(|| {
+            let guard = self.lock()?;
+            Ok(guard
+                .discovery_diagnostics()
+                .map_err(map_runtime_err)?
+                .into_iter()
+                .map(discovery_diagnostic_dto)
                 .collect())
         })
     }
@@ -71,7 +91,7 @@ impl UsageMenuBarBridge {
         catch_entry(|| {
             let mut guard = self.lock()?;
             guard
-                .refresh(surface_id.as_deref(), force)
+                .refresh_with_discovery(surface_id.as_deref(), force, &self.credential_resolver)
                 .map_err(map_runtime_err)
         })
     }

@@ -4,7 +4,7 @@ title: "jackin❯ desktop — native macOS limits app"
 
 **Status**: Partially implemented
 
-**Current state**: The in-repository native redesign is implemented for the macOS 26 production baseline. It uses provider-focused native popovers with centered product identity, a two-column Usage window with centered `jackin❯ desktop` toolbar identity, a fixed leading sidebar control, the generated `jackin❯ by tailrocks` sidebar signature, visible native recovery, retained window context, and system-owned Liquid Glass only. Rust remains authoritative for providers, accounts, quota semantics, refresh policy, and domain strings.
+**Current state**: The in-repository native redesign is implemented for the macOS 26 production baseline. It uses provider-focused native popovers with centered product identity, a two-column Usage window with centered `jackin❯ desktop` toolbar identity, a fixed leading sidebar control, the generated `jackin❯ by tailrocks` sidebar signature, visible native recovery, retained window context, and system-owned Liquid Glass only. Rust remains authoritative for providers, accounts, quota semantics, refresh policy, and domain strings. Host Desktop discovery now reads global and every effective workspace/role account scope without writing config, deduplicates configured sources/accounts, and exports only sanitized diagnostics. Current discovery—not historical snapshots—owns active membership; OpenCode and GitHub remain outside the Desktop quota catalog.
 
 The roadmap remains partially implemented because the first Developer ID publication/Homebrew proof and capture-gated Amp paid-plan work require external operator evidence. Those external gates are not substituted by a green PR.
 

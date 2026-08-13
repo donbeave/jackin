@@ -24,11 +24,18 @@ cargo clippy -p jackin-usage-ffi --all-targets -- -D warnings
 | `compact_status_bar_strip` | Worst-first multi-surface strip |
 | `overview_rows` → `OverviewRowDto` | Popover + Usage-window overview |
 | `desktop_inventory` → `DesktopInventoryDto` | Atomic ordered canonical provider/account graph |
+| `discovery_diagnostics` → `DiscoveryDiagnosticDto` | Sanitized provider/scope discovery failures; never paths or secrets |
 | `next_refresh_label` | Next refresh countdown / due |
 | `UsageViewDto.estimate_caption` | Honesty caption when estimated |
 | `UsageViewDto.detail_presentation` → `UsageDetailPresentationDto` | Rust-owned Capsule-parity provider-detail card (rows/lines mirror `UsageDetailPresentation`); the Usage window renders it verbatim |
 
 Existing methods (`snapshot`, `compact_status_bar_label`, …) are unchanged.
+
+Production `OpenConfig` supplies no paths: Rust derives the operator home, config
+root, and data root through `JackinPaths`, exactly like the CLI. Optional data/config
+overrides exist only for hermetic tests and smoke. The tier-4 credential adapter uses
+`jackin-env` per-key outcomes, retains secret values behind process-local opaque
+handles, and delegates quota shaping back to `jackin-usage`.
 
 `QuotaBucketDto.status_slot` projects the protocol `StatusSlot` as an exact
 lowercase string — `"session"`, `"daily"`, `"weekly"`, `"spend"`. `"daily"`

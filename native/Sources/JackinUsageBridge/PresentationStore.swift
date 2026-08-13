@@ -199,6 +199,16 @@ public final class PresentationStore: ObservableObject {
         public let severity: String
     }
 
+    /// Rust-owned, sanitized discovery failure. No credential location or secret.
+    public struct DiscoveryDiagnostic: Identifiable, Sendable, Equatable {
+        public var id: String { "\(surfaceId ?? "global")#\(scopeLabel)#\(issue)" }
+        public let surfaceId: String?
+        public let scopeLabel: String
+        public let issue: String
+        public let message: String
+        public let displayLabel: String
+    }
+
     /// Multi-account row for a host surface (Rust-owned keys/labels).
     public struct AccountRow: Identifiable, Sendable, Equatable {
         public var id: String { "\(surfaceId)#\(accountKey)" }
@@ -268,6 +278,7 @@ public final class PresentationStore: ObservableObject {
     @Published public private(set) var overviewRows: [OverviewRow] = []
     /// Known accounts across surfaces (multi-account host logins / shared snapshots).
     @Published public private(set) var accounts: [AccountRow] = []
+    @Published public private(set) var discoveryDiagnostics: [DiscoveryDiagnostic] = []
     /// Sidebar / detail selection: `nil` = Overview, else surface id.
     @Published public private(set) var usageSelection: String?
     /// Focused popover provider; nil lets the host select the first available provider.
@@ -453,9 +464,13 @@ public final class PresentationStore: ObservableObject {
     }
 
     public func openDefault() {
-        let home = FileManager.default.homeDirectoryForCurrentUser
-        let dataDir = home.appendingPathComponent(".jackin/data").path
-        open(dataDir: dataDir, refreshFloorSecs: 300, enabled: [])
+        open(
+            dataDirOverride: nil,
+            configRootOverride: nil,
+            refreshFloorSecs: 300,
+            enabled: [],
+            allowLiveProbes: true
+        )
     }
 
     /// Retry the failed cold open, or refresh when the runtime is already open.
@@ -474,7 +489,9 @@ public final class PresentationStore: ObservableObject {
         guard !isOpen, !isOpening else { return }
         isOpening = true
         let config = OpenConfig(
-            dataDir: dataDir,
+            dataDirOverride: dataDir,
+            configRootOverride: URL(fileURLWithPath: dataDir)
+                .appendingPathComponent("config").path,
             refreshFloorSecs: 300,
             enabledSurfaceIds: [],
             allowLiveProbes: false
@@ -499,16 +516,34 @@ public final class PresentationStore: ObservableObject {
     }
 
     public func open(dataDir: String, refreshFloorSecs: UInt64, enabled: [String]) {
+        open(
+            dataDirOverride: dataDir,
+            configRootOverride: URL(fileURLWithPath: dataDir)
+                .appendingPathComponent("config").path,
+            refreshFloorSecs: refreshFloorSecs,
+            enabled: enabled,
+            allowLiveProbes: true
+        )
+    }
+
+    private func open(
+        dataDirOverride: String?,
+        configRootOverride: String?,
+        refreshFloorSecs: UInt64,
+        enabled: [String],
+        allowLiveProbes: Bool
+    ) {
         // Coalesce duplicate cold-opens: a second open while one is in flight
         // (or already open) is a no-op, so `applicationDidBecomeActive` firing
         // during the async open cannot start a second runtime.
         guard !isOpen, !isOpening else { return }
         isOpening = true
         let config = OpenConfig(
-            dataDir: dataDir,
+            dataDirOverride: dataDirOverride,
+            configRootOverride: configRootOverride,
             refreshFloorSecs: refreshFloorSecs,
             enabledSurfaceIds: enabled,
-            allowLiveProbes: true
+            allowLiveProbes: allowLiveProbes
         )
         Task { [weak self] in
             guard let self else { return }
@@ -774,6 +809,7 @@ public final class PresentationStore: ObservableObject {
                     )
                 }
                 let overview = try handle.overviewRows()
+                let diagnostics = try handle.discoveryDiagnostics()
                 let accounts = (try? handle.listAccounts(surfaceId: nil)) ?? []
                 let glanceRows = (try? handle.providerGlanceRows()) ?? []
                 let statusBarRows =
@@ -784,6 +820,7 @@ public final class PresentationStore: ObservableObject {
                     nextRefreshLabel: nextRefresh,
                     surfaces: surfaces,
                     overviewRows: overview,
+                    discoveryDiagnostics: diagnostics,
                     accounts: accounts,
                     glanceRows: glanceRows,
                     statusBarGlanceRows: statusBarRows
@@ -797,6 +834,21 @@ public final class PresentationStore: ObservableObject {
         mergedBarLabel = projection.mergedBarLabel
         compactBarLabel = projection.compactBarLabel
         nextRefreshLabel = projection.nextRefreshLabel
+        discoveryDiagnostics = projection.discoveryDiagnostics.map { diagnostic in
+            DiscoveryDiagnostic(
+                surfaceId: diagnostic.surfaceId,
+                scopeLabel: diagnostic.scopeLabel,
+                issue: diagnostic.issue,
+                message: diagnostic.message,
+                displayLabel: diagnostic.displayLabel
+            )
+        }
+        let diagnosticBySurface = Dictionary(
+            projection.discoveryDiagnostics.compactMap { diagnostic in
+                diagnostic.surfaceId.map { ($0, diagnostic.displayLabel) }
+            },
+            uniquingKeysWith: { first, _ in first }
+        )
         var labelBySurface: [String: String] = [:]
         surfaces = projection.surfaces.map { entry in
             let surface = entry.info
@@ -815,7 +867,7 @@ public final class PresentationStore: ObservableObject {
                     estimateCaption: nil,
                     buckets: [],
                     updatedLabel: "",
-                    lastError: nil,
+                    lastError: diagnosticBySurface[surface.id],
                     detailPresentation: .empty
                 )
             }
@@ -833,7 +885,7 @@ public final class PresentationStore: ObservableObject {
                     estimateCaption: nil,
                     buckets: [],
                     updatedLabel: "",
-                    lastError: nil,
+                    lastError: diagnosticBySurface[surface.id],
                     detailPresentation: .empty
                 )
             }
@@ -868,7 +920,7 @@ public final class PresentationStore: ObservableObject {
                     )
                 },
                 updatedLabel: view.updatedLabel,
-                lastError: view.lastError,
+                lastError: view.lastError ?? diagnosticBySurface[surface.id],
                 detailPresentation: UsageDetailPresentation(dto: view.detailPresentation)
             )
         }
@@ -901,7 +953,9 @@ public final class PresentationStore: ObservableObject {
         providerGlanceRows = projection.glanceRows.map(Self.mapGlanceDto)
         statusBarGlanceRows = projection.statusBarGlanceRows.map(Self.mapGlanceDto)
         reconcileSelections()
-        lastError = nil
+        lastError = projection.discoveryDiagnostics
+            .first(where: { $0.surfaceId == nil })?
+            .displayLabel
         await applyStatusItemText()
     }
 
@@ -1117,6 +1171,7 @@ private struct BridgeProjection: Sendable {
     let nextRefreshLabel: String
     let surfaces: [SurfaceProjection]
     let overviewRows: [OverviewRowDto]
+    let discoveryDiagnostics: [DiscoveryDiagnosticDto]
     let accounts: [AccountDescriptorDto]
     let glanceRows: [ProviderGlanceRowDto]
     let statusBarGlanceRows: [ProviderGlanceRowDto]

@@ -457,3 +457,63 @@ fn prop_operator_env_follows_declared_layer_precedence() {
         );
     });
 }
+
+#[test]
+fn disc_env_per_key_preserves_success_when_another_source_fails() {
+    let mut config = AppConfig::default();
+    config.env.insert(
+        "ZAI_API_KEY".to_owned(),
+        EnvValue::Plain("resolved-zai".to_owned()),
+    );
+    config.env.insert(
+        "MINIMAX_API_KEY".to_owned(),
+        op_ref("minimax", Some("account-a"), false),
+    );
+    let runner =
+        FakeOpRunner::default().with_error("op://vault/item/minimax", Some("account-a"), "denied");
+
+    let results =
+        resolve_operator_env_per_key_with_matching(&config, None, None, &runner, host_env, |key| {
+            matches!(key, "ZAI_API_KEY" | "MINIMAX_API_KEY")
+        });
+
+    assert_eq!(results.len(), 2);
+    let zai = results
+        .iter()
+        .find(|result| result.key() == "ZAI_API_KEY")
+        .unwrap();
+    assert_eq!(zai.status(), OperatorEnvKeyStatus::Resolved);
+    assert_eq!(zai.resolved_value(), Some("resolved-zai"));
+    let minimax = results
+        .iter()
+        .find(|result| result.key() == "MINIMAX_API_KEY")
+        .unwrap();
+    assert_eq!(minimax.status(), OperatorEnvKeyStatus::DeniedOrUnavailable);
+    assert_eq!(minimax.resolved_value(), None);
+}
+
+#[test]
+fn disc_env_per_key_never_resolves_unrelated_or_on_demand_values() {
+    let mut config = AppConfig::default();
+    config.env.insert(
+        "CONTEXT7_API_KEY".to_owned(),
+        op_ref("context7", None, false),
+    );
+    config
+        .env
+        .insert("ZAI_API_KEY".to_owned(), op_ref("zai", None, true));
+    let runner = FakeOpRunner::default();
+
+    let results =
+        resolve_operator_env_per_key_with_matching(&config, None, None, &runner, host_env, |key| {
+            key == "ZAI_API_KEY"
+        });
+
+    assert_eq!(results.len(), 1);
+    assert_eq!(results[0].key(), "ZAI_API_KEY");
+    assert_eq!(
+        results[0].status(),
+        OperatorEnvKeyStatus::InteractionRequired
+    );
+    assert!(runner.calls().is_empty());
+}

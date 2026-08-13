@@ -3014,12 +3014,14 @@ dependencies = [
  "criterion",
  "directories",
  "fs4",
+ "hex",
  "jackin-core",
  "jackin-diagnostics",
  "jackin-otlp-testbed",
  "jackin-telemetry",
  "proptest",
  "serde",
+ "sha2 0.11.0",
  "tempfile",
  "thiserror 2.0.18",
  "tokio",
@@ -3455,6 +3457,7 @@ dependencies = [
  "chrono",
  "criterion",
  "fs4",
+ "jackin-config",
  "jackin-core",
  "jackin-diagnostics",
  "jackin-otlp-testbed",
@@ -3477,6 +3480,9 @@ dependencies = [
 name = "jackin-usage-ffi"
 version = "0.6.4"
 dependencies = [
+ "jackin-config",
+ "jackin-core",
+ "jackin-env",
  "jackin-protocol",
  "jackin-usage",
  "tempfile",
