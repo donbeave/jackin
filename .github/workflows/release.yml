@@ -427,15 +427,13 @@ jobs:
           version: "2026.7.12"
           cache_key_prefix: "mise-v2"
           cache_save: ${{ github.ref == 'refs/heads/main' }}
-          install_args: "cargo-binstall rust cosign syft aqua:nextest-rs/nextest/cargo-nextest"
+          install_args: "cargo-binstall rust cosign syft aqua:nextest-rs/nextest/cargo-nextest cargo:uniffi"
           github_token: ${{ secrets.GH_READONLY_TOKEN }}
 
       - uses: ./.github/actions/cache-cargo-registry
 
-      - name: Install uniffi-bindgen (pinned)
-        run: |
-          cargo install uniffi --version 0.32.0 --features cli --locked --force
-          uniffi-bindgen --version
+      - name: Verify mise-managed uniffi-bindgen
+        run: uniffi-bindgen --version
 
       - name: Verify Xcode 26.6
         run: xcodebuild -version
