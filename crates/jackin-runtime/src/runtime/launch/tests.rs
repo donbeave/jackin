@@ -6,6 +6,7 @@
     unused_qualifications,
     reason = "documented residual allow; prefer expect when site is lint-true"
 )]
+use super::mounts::AppleContainerMountError;
 use super::*;
 use crate::runtime::launch::launch_runtime::{
     CapsuleAuth, CapsuleEndpoint, CapsuleNetwork, capsule_export_coverage,
@@ -1609,6 +1610,84 @@ async fn build_workspace_mount_strings_preserves_readonly_on_user_facing_mount()
 
     let strings = build_workspace_mount_strings(&mat);
     assert_eq!(strings, vec!["/host/cache:/workspace/cache:ro".to_owned()]);
+}
+
+#[test]
+fn build_workspace_mounts_preserves_plain_read_write_mount() {
+    let workspace = MaterializedWorkspace {
+        workdir: "/workspace".into(),
+        mounts: vec![MaterializedMount {
+            bind_src: "/host/source".into(),
+            dst: "/workspace/source".into(),
+            readonly: false,
+            isolation: MountIsolation::Shared,
+            worktree_aux: None,
+        }],
+        keep_awake_enabled: false,
+    };
+
+    let mounts = build_workspace_mounts(&workspace).unwrap();
+
+    assert_eq!(mounts.len(), 1);
+    assert_eq!(mounts[0].source, Path::new("/host/source"));
+    assert_eq!(mounts[0].target, Path::new("/workspace/source"));
+    assert!(!mounts[0].readonly);
+}
+
+#[test]
+fn build_workspace_mounts_preserves_operator_readonly_mount() {
+    let workspace = MaterializedWorkspace {
+        workdir: "/workspace".into(),
+        mounts: vec![MaterializedMount {
+            bind_src: "/host/cache".into(),
+            dst: "/workspace/cache".into(),
+            readonly: true,
+            isolation: MountIsolation::Shared,
+            worktree_aux: None,
+        }],
+        keep_awake_enabled: false,
+    };
+
+    let mounts = build_workspace_mounts(&workspace).unwrap();
+
+    assert_eq!(mounts.len(), 1);
+    assert_eq!(mounts[0].target, Path::new("/workspace/cache"));
+    assert!(mounts[0].readonly);
+}
+
+#[test]
+fn build_workspace_mounts_rejects_worktree_file_overlays() {
+    let workspace = MaterializedWorkspace {
+        workdir: "/workspace".into(),
+        mounts: vec![MaterializedMount {
+            bind_src: "/state/worktree".into(),
+            dst: "/workspace/repo".into(),
+            readonly: false,
+            isolation: MountIsolation::Worktree,
+            worktree_aux: Some(WorktreeAuxMounts {
+                host_git_dir: "/host/repo/.git".into(),
+                host_git_target: "/jackin/host/workspace/repo/.git".into(),
+                git_file_override: "/state/overrides/.git".into(),
+                git_file_target: "/workspace/repo/.git".into(),
+                gitdir_back_override: "/state/overrides/gitdir".into(),
+                gitdir_back_target: "/jackin/host/workspace/repo/.git/worktrees/role/gitdir".into(),
+            }),
+        }],
+        keep_awake_enabled: false,
+    };
+
+    let error = build_workspace_mounts(&workspace).unwrap_err();
+
+    assert_eq!(
+        error,
+        AppleContainerMountError::WorktreeFileOverlays {
+            destination: "/workspace/repo".into()
+        }
+    );
+    let message = error.to_string();
+    assert!(message.contains("/workspace/repo"));
+    assert!(message.contains("single-file bind mounts"));
+    assert!(message.contains("docker backend"));
 }
 
 #[tokio::test]

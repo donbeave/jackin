@@ -83,6 +83,34 @@ fn launch_args_use_env_file_without_secret_values() {
     );
 }
 
+#[test]
+fn launch_args_preserve_mount_permissions() {
+    let spec = AppleContainerSpec {
+        image: "img".into(),
+        env: vec![],
+        env_file: None,
+        mounts: vec![
+            AppleContainerMount::new("/host/read-write", "/guest/read-write", false),
+            AppleContainerMount::new("/host/read-only", "/guest/read-only", true),
+        ],
+        caps_add: vec![],
+    };
+
+    let args = container_run_args("fixture", &spec)
+        .into_iter()
+        .map(|argument| argument.to_string_lossy().into_owned())
+        .collect::<Vec<_>>();
+
+    assert!(
+        args.windows(2)
+            .any(|pair| pair == ["-v", "/host/read-write:/guest/read-write"])
+    );
+    assert!(
+        args.windows(2)
+            .any(|pair| pair == ["-v", "/host/read-only:/guest/read-only:ro"])
+    );
+}
+
 #[tokio::test]
 async fn fake_client_lifecycle_contract() {
     let client = FakeAppleContainerClient::new();

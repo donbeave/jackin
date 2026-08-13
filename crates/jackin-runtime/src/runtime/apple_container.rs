@@ -18,8 +18,8 @@
 //! empirical validation. `inner_docker_enabled` defaults to `false` until
 //! Phase 0 results confirm `DinD` works inside apple/container VMs.
 
+use crate::apple_container_client::AppleContainerMount;
 use anyhow::{Context as _, Result, bail};
-use std::path::PathBuf;
 
 use crate::apple_container_client::AppleContainerApi as _;
 use crate::instance::{
@@ -43,7 +43,7 @@ pub fn print_session_contract(
     container_name: &str,
     image: &str,
     provider_version: &str,
-    mount_pairs: &[(PathBuf, PathBuf)],
+    mounts: &[AppleContainerMount],
     debug: bool,
 ) {
     eprintln!();
@@ -59,12 +59,17 @@ pub fn print_session_contract(
     eprintln!(
         "  force_daemon:         JACKIN_CAPSULE_FORCE_DAEMON=1 (capsule PID 2+ under vminitd)"
     );
-    eprintln!("  mounts ({}):", mount_pairs.len());
-    if mount_pairs.is_empty() {
+    eprintln!("  mounts ({}):", mounts.len());
+    if mounts.is_empty() {
         eprintln!("    (none)");
     } else {
-        for (h, g) in mount_pairs {
-            eprintln!("    {}:{}", h.display(), g.display());
+        for mount in mounts {
+            let suffix = if mount.readonly { ":ro" } else { "" };
+            eprintln!(
+                "    {}:{}{suffix}",
+                mount.source.display(),
+                mount.target.display()
+            );
         }
     }
     eprintln!("  network:              per-container IP via vmnet (no port mapping)");
@@ -208,7 +213,7 @@ pub struct AppleContainerLaunch<'a> {
     pub role_source_ref: Option<&'a str>,
     pub image_tag: &'a str,
     pub env_pairs: &'a [(String, String)],
-    pub mount_pairs: &'a [(PathBuf, PathBuf)],
+    pub mounts: &'a [AppleContainerMount],
     pub host_workdir_fingerprint: &'a str,
     pub capsule_config: &'a jackin_protocol::CapsuleConfig,
     pub debug: bool,
@@ -233,7 +238,7 @@ pub async fn launch(args: AppleContainerLaunch<'_>) -> Result<()> {
         role_source_ref,
         image_tag,
         env_pairs,
-        mount_pairs,
+        mounts,
         host_workdir_fingerprint,
         capsule_config,
         debug,
@@ -274,8 +279,12 @@ pub async fn launch(args: AppleContainerLaunch<'_>) -> Result<()> {
     let capsule_config_contents = super::launch::capsule_config_contents(capsule_config)
         .context("serializing Capsule launch config for /jackin/run/agent.toml")?;
     super::launch::prepare_socket_dir(&socket_dir, &capsule_config_contents)?;
-    let mut mounts: Vec<(PathBuf, PathBuf)> = mount_pairs.to_vec();
-    mounts.push((socket_dir, PathBuf::from(container_paths::RUN_DIR)));
+    let mut container_mounts = mounts.to_vec();
+    container_mounts.push(AppleContainerMount::new(
+        socket_dir,
+        container_paths::RUN_DIR,
+        false,
+    ));
 
     let host_env_file =
         super::launch::create_host_env_file(&paths.jackin_home, container_name, &host_env_entries)
@@ -285,7 +294,7 @@ pub async fn launch(args: AppleContainerLaunch<'_>) -> Result<()> {
         image: image.to_owned(),
         env,
         env_file: host_env_file.as_ref().map(|file| file.path().to_path_buf()),
-        mounts,
+        mounts: container_mounts,
         caps_add: vec![],
     };
 
@@ -342,7 +351,7 @@ pub async fn launch(args: AppleContainerLaunch<'_>) -> Result<()> {
         container_name,
         image,
         version.as_deref().unwrap_or("unknown"),
-        mount_pairs,
+        mounts,
         debug,
     );
 

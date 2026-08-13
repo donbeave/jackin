@@ -1,4 +1,4 @@
-# Plan 008: Fail closed on unenforceable mount options and harden notify argv
+# Plan 008: Enforce Apple read-only mount parity and harden notify argv
 
 > **Executor instructions**: Follow this plan step by step. Run every verification
 > command and confirm the expected result before moving on. If a STOP condition
@@ -74,9 +74,17 @@ another repo. Separately, container-controlled notification text reaches
 Repository constraints:
 
 - Fail closed is the established backend-divergence posture (`resolve_backend`).
-- Implementing real `:ro` support inside the apple/container VM is explicitly
-  tracked Phase 0 work needing empirical validation — this plan does NOT
-  implement it; it makes the gap loud instead of silent.
+- The repository requires Apple `container` v0.11.0 or newer.
+
+Implementation discovery: current official command documentation and the pinned
+v0.11.0 parser support `-v host:guest:ro` for directory mounts. This triggered
+the original STOP condition. The pinned, latest-stable, and current parsers all
+reject single-file bind sources, however, so worktree isolation cannot represent
+its two protected pointer-file overlays. Step 1 therefore implements real
+read-only translation for shared directory mounts and fails closed on worktree
+isolation before cleanup or launch. Command-vector tests validate the exact
+supported syntax; live VM conformance remains part of the existing
+Apple-container Phase 0 environment validation.
 
 ## Commands you will need
 
@@ -92,15 +100,15 @@ Repository constraints:
 **In scope**:
 
 - `crates/jackin-runtime/src/runtime/launch/mounts.rs` (+ tests)
-- the apple-container launch call path only as far as surfacing the new error
+- `crates/jackin-runtime/src/apple_container_client.rs` (+ tests)
+- the apple-container launch call path and session-contract mount rendering
 - `crates/jackin-runtime/src/host_daemon.rs` (notification argv only, + tests)
 - `HOST_AND_CONTAINER.md` (one note documenting the apple-container limitation)
 - `plans/README.md` (status row only)
 
 **Out of scope**:
 
-- Implementing `:ro` semantics inside the apple-container backend (Phase 0 work;
-  separate effort with empirical VM validation).
+- Live Apple VM conformance on a host without the `container` CLI.
 - Any other host_daemon adapter, socket, or protocol behavior.
 - Docker launch behavior (already correct).
 
@@ -115,20 +123,19 @@ force-push.
 
 ## Steps
 
-### Step 1: Fail closed on unenforceable mount options
+### Step 1: Preserve read-only semantics on Apple container mounts
 
-In the apple-container translation path, return an error before launch when any
-materialized mount carries `readonly = true` or a `worktree_aux` override. The
-message must name the offending mount(s) and the remedy, e.g.:
-`mount <dst> requires read-only enforcement, which the apple-container backend
-does not support yet; use the docker backend or remove readonly from this mount`.
-Wire the error through `build_workspace_mount_pairs`'s caller so it surfaces as a
-normal launch failure (match how `resolve_backend` errors surface).
+Replace bare Apple `(host, guest)` pairs with a typed mount carrying its
+read-only bit. Shared directory mounts use their configured permission and Apple
+CLI argv `-v host:guest[:ro]`, the syntax supported by the pinned v0.11.0
+parser. Reject worktree-isolated mounts with a typed, destination-naming error
+before cleanup or launch because Apple rejects the required file overlays.
 
-Add tests: (a) a readonly mount + apple backend → the typed error naming the
-mount; (b) a worktree-isolation workspace + apple backend → same; (c) plain
-read-write mounts + apple backend → unchanged success shape; (d) Docker path
-unchanged (existing snapshot tests still pass).
+Add tests: (a) a readonly mount preserves its read-only bit; (b) a
+worktree-isolation workspace returns a typed error naming its destination and
+Docker remedy; (c) plain read-write mounts retain the unchanged shape; (d)
+generated Apple CLI argv includes `:ro` only for read-only mounts; (e) existing
+Docker snapshot tests still pass.
 
 **Verify**:
 `rtk cargo nextest run -p jackin-runtime -E 'test(/mount/)'` -> (a)–(d) pass.
@@ -155,9 +162,11 @@ platform-independent argv tests pass on the macOS host.
 ### Step 3: Document the limitation
 
 Add one short paragraph to `HOST_AND_CONTAINER.md` where backends are discussed:
-the apple-container backend rejects launches that require read-only mounts until
-`:ro` support ships; the docker backend enforces them. Keep this paragraph isolated
-so Plan 009 can correct adjacent layout and cleanup documentation later.
+both backends enforce read-only directory mounts, Apple uses the supported `:ro`
+option, Apple worktree isolation rejects unsupported file overlays, and future
+backends must reject rather than silently weaken the restriction.
+Keep this paragraph isolated so Plan 009 can correct adjacent layout and cleanup
+documentation later.
 
 **Verify**:
 `rtk rg -n 'read-only mounts' HOST_AND_CONTAINER.md` -> ≥1 hit in the new
@@ -173,25 +182,24 @@ file); `rtk cargo xtask ci --fast` -> exit 0.
 
 ## Done criteria
 
-- [ ] A readonly or worktree-override mount on the apple-container backend fails
-  the launch with a mount-naming error; Docker behavior is byte-identical.
-- [ ] Linux notify argv contains `--` before positionals; title/body are clamped
+- [x] A readonly shared mount on the apple-container backend emits `:ro`; a
+  worktree-override mount fails before cleanup/launch with a destination-naming
+  error; plain read-write and Docker behavior remain unchanged.
+- [x] Linux notify argv contains `--` before positionals; title/body are clamped
   and control-char-free.
-- [ ] `HOST_AND_CONTAINER.md` documents the backend limitation.
-- [ ] Tests, clippy, fast gate, docs gate pass; only in-scope files and
+- [x] `HOST_AND_CONTAINER.md` documents backend parity and the fail-closed rule.
+- [x] Tests, clippy, fast gate, docs gate pass; only in-scope files and
   `plans/README.md` changed.
 
 ## STOP conditions
 
-- The apple-container CLI turns out to support read-only mounts after all
-  (check `container` CLI help during implementation) — report it; implementing
-  `:ro` is then preferable to failing closed, but it is a different change with
-  VM validation requirements.
+- [x] The apple-container CLI supports read-only directory mounts. Reported
+  during implementation; the plan was updated to real `:ro` enforcement for
+  supported mounts plus fail-closed worktree handling after checking official
+  current docs and pinned/current parser source.
 - The error cannot surface without restructuring launch phases.
 
 ## Maintenance notes
 
-When apple-container `:ro` support lands (Phase 0 roadmap), Step 1's rejection
-turns into real enforcement — keep the tests, flip the expectation. Reviewers of
-future backends: `resolve_backend`'s fail-closed posture plus this plan's rule
+Reviewers of future backends: `resolve_backend`'s fail-closed posture plus this plan's rule
 ("an unenforceable operator security option rejects the launch") is the template.

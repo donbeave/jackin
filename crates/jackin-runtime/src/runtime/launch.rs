@@ -197,7 +197,7 @@ use progress_helpers::{
 };
 
 pub(crate) use mounts::{
-    Backend, agent_mounts, build_workspace_mount_pairs, build_workspace_mount_strings,
+    Backend, agent_mounts, build_workspace_mount_strings, build_workspace_mounts,
     github_config_mount, resolve_backend,
 };
 

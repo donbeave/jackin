@@ -5,11 +5,20 @@
 //! All items re-exported from the parent to preserve `super::` call sites
 //! in `launch_role_runtime` and `launch_pipeline.rs`.
 
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use jackin_config::AppConfig;
 
+use crate::apple_container_client::AppleContainerMount;
 use crate::isolation::materialize::MaterializedWorkspace;
+
+#[derive(Debug, thiserror::Error, PartialEq, Eq)]
+pub(crate) enum AppleContainerMountError {
+    #[error(
+        "mount {destination} requires read-only file overlays, but the apple-container backend rejects single-file bind mounts; use the docker backend or change this mount to shared isolation"
+    )]
+    WorktreeFileOverlays { destination: String },
+}
 
 /// Emit the durable-home bind mounts for `agent`, derived from its
 /// [`AgentStatePaths`](jackin_core::AgentStatePaths) so the
@@ -209,17 +218,26 @@ pub(crate) fn resolve_backend(
     }
 }
 
-/// Translate a [`MaterializedWorkspace`] into `(host, guest)` mount pairs for
-/// the apple-container backend (which formats its own `-v host:container`
-/// flags via the `container` CLI). Mirrors [`build_workspace_mount_strings`]
-/// but yields typed path pairs. Read-only flags and the worktree-mode `.git`
-/// override entries are not yet carried — tracked as apple-container Phase 0
-/// work, since they need empirical validation inside an apple/container VM.
-pub(crate) fn build_workspace_mount_pairs(
+/// Translate a [`MaterializedWorkspace`] into typed apple-container mounts.
+/// Apple `container` v0.11.0+ accepts Docker-compatible `:ro` options on `-v`
+/// directory mounts but rejects single-file bind sources. Shared mounts retain
+/// their configured permissions; worktree isolation fails closed because its
+/// two read-only pointer-file overlays cannot be represented safely.
+pub(crate) fn build_workspace_mounts(
     workspace: &MaterializedWorkspace,
-) -> Vec<(PathBuf, PathBuf)> {
-    crate::isolation::materialize::mount_order_for_docker(workspace)
-        .into_iter()
-        .map(|mount| (PathBuf::from(&mount.bind_src), PathBuf::from(&mount.dst)))
-        .collect()
+) -> Result<Vec<AppleContainerMount>, AppleContainerMountError> {
+    let mut out = Vec::new();
+    for mount in crate::isolation::materialize::mount_order_for_docker(workspace) {
+        if mount.worktree_aux.is_some() {
+            return Err(AppleContainerMountError::WorktreeFileOverlays {
+                destination: mount.dst.clone(),
+            });
+        }
+        out.push(AppleContainerMount::new(
+            &mount.bind_src,
+            &mount.dst,
+            mount.readonly,
+        ));
+    }
+    Ok(out)
 }

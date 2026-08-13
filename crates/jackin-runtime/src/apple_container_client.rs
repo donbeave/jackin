@@ -29,6 +29,24 @@ use std::path::PathBuf;
 
 use anyhow::Result;
 
+/// Bind mount passed to Apple `container run`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AppleContainerMount {
+    pub source: PathBuf,
+    pub target: PathBuf,
+    pub readonly: bool,
+}
+
+impl AppleContainerMount {
+    pub fn new(source: impl Into<PathBuf>, target: impl Into<PathBuf>, readonly: bool) -> Self {
+        Self {
+            source: source.into(),
+            target: target.into(),
+            readonly,
+        }
+    }
+}
+
 /// Backend name used in CLI flags, config keys, and instance manifests.
 pub const BACKEND_NAME: &str = "apple-container";
 
@@ -44,8 +62,8 @@ pub struct AppleContainerSpec {
     pub env: Vec<(String, String)>,
     /// Host-only environment file read by `container run --env-file`.
     pub env_file: Option<PathBuf>,
-    /// Bind mounts (`-v host_path:container_path` flags).
-    pub mounts: Vec<(PathBuf, PathBuf)>,
+    /// Bind mounts (`-v host_path:container_path[:ro]` flags).
+    pub mounts: Vec<AppleContainerMount>,
     /// Linux capabilities to grant (`--cap-add CAP_NAME` flags).
     pub caps_add: Vec<String>,
 }
@@ -193,10 +211,16 @@ fn container_run_args(name: &str, spec: &AppleContainerSpec) -> Vec<std::ffi::Os
     for (key, value) in &spec.env {
         args.extend(["-e".into(), format!("{key}={value}").into()]);
     }
-    for (host, container) in &spec.mounts {
+    for mount in &spec.mounts {
+        let readonly = if mount.readonly { ":ro" } else { "" };
         args.extend([
             "-v".into(),
-            format!("{}:{}", host.display(), container.display()).into(),
+            format!(
+                "{}:{}{readonly}",
+                mount.source.display(),
+                mount.target.display()
+            )
+            .into(),
         ]);
     }
     for capability in &spec.caps_add {

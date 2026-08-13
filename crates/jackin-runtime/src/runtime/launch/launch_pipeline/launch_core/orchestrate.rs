@@ -1592,8 +1592,8 @@ where
     match backend {
         super::super::super::Backend::Docker => {}
         super::super::super::Backend::AppleContainer => {
+            let mounts = super::super::super::build_workspace_mounts(&materialized)?;
             cleanup.run(docker).await;
-            let mount_pairs = super::super::super::build_workspace_mount_pairs(&materialized);
             crate::runtime::apple_container::launch(
                 crate::runtime::apple_container::AppleContainerLaunch {
                     paths,
@@ -1609,7 +1609,7 @@ where
                     role_source_ref: opts.role_branch.as_deref(),
                     image_tag: &image,
                     env_pairs: &resolved_env.vars,
-                    mount_pairs: &mount_pairs,
+                    mounts: &mounts,
                     host_workdir_fingerprint: &host_workdir_fingerprint,
                     capsule_config: &launch_config,
                     debug: opts.debug,
