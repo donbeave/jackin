@@ -9,6 +9,7 @@
 
 mod accounts;
 mod broker;
+mod credential_resolver;
 mod discovery;
 
 use std::collections::{BTreeMap, HashMap, HashSet, VecDeque};
@@ -30,8 +31,12 @@ pub use accounts::{
     HostAccountDescriptor, account_key_for_view, min_remaining, short_account_identity,
 };
 pub use broker::{
-    UsageBrokerClient, UsageBrokerConfig, UsageBrokerHandle, ensure_usage_broker,
-    ensure_usage_broker_with_executor,
+    ForwardedUsageSources, UsageBrokerClient, UsageBrokerConfig, UsageBrokerHandle,
+    ensure_usage_broker, ensure_usage_broker_with_executor, forwarded_usage_capabilities,
+};
+pub use credential_resolver::{
+    CachedProviderCredentialResolver, ProviderCredentialSecretOutcome,
+    ProviderCredentialSecretResolution, ProviderCredentialSecretSource,
 };
 pub use discovery::{
     DiscoveredAccountDescriptor, ForwardedUsageAccount, OpaqueCredentialHandle,

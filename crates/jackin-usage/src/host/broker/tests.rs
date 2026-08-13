@@ -61,6 +61,72 @@ fn quota_view() -> FocusedUsageView {
 }
 
 #[test]
+fn forwarded_scope_selects_only_accounts_backed_by_forwarded_sources() {
+    use crate::host::{CanonicalAccountIdentity, CanonicalAccountSubject, HostSurfaceId};
+
+    let profile_identity = CanonicalAccountIdentity {
+        surface: HostSurfaceId::Amp,
+        subject: CanonicalAccountSubject::AuthenticatedLabel("profile@example.test".to_owned()),
+    };
+    let env_identity = CanonicalAccountIdentity {
+        surface: HostSurfaceId::Amp,
+        subject: CanonicalAccountSubject::AuthenticatedLabel("env@example.test".to_owned()),
+    };
+    let scope = "workspace sample role test";
+    let discovery = ValidatedUsageDiscovery {
+        config_generation: Some("generation".to_owned()),
+        accounts: Vec::new(),
+        diagnostics: Vec::new(),
+        candidates: Vec::new(),
+        bindings: vec![
+            ValidatedCredentialBinding {
+                surface: HostSurfaceId::Amp,
+                identity: Some(profile_identity),
+                source_id: "profile-source".to_owned(),
+                provenance: std::collections::BTreeSet::from([scope.to_owned()]),
+                source: ValidatedCredentialSource::Profile(
+                    super::super::discovery::ProfileCredentialMaterial::Amp {
+                        key: "profile-secret".to_owned(),
+                    },
+                ),
+            },
+            ValidatedCredentialBinding {
+                surface: HostSurfaceId::Amp,
+                identity: Some(env_identity),
+                source_id: "env-source".to_owned(),
+                provenance: std::collections::BTreeSet::from([scope.to_owned()]),
+                source: ValidatedCredentialSource::Env {
+                    handle: super::super::OpaqueCredentialHandle::new("env-handle"),
+                    key: "AMP_API_KEY".to_owned(),
+                },
+            },
+        ],
+    };
+    let profile_capability = capability_for_binding(&discovery.bindings[0]);
+    let env_capability = capability_for_binding(&discovery.bindings[1]);
+
+    let profile_only = forwarded_usage_capabilities(
+        &discovery,
+        scope,
+        &ForwardedUsageSources {
+            profile_surface_ids: std::collections::BTreeSet::from(["amp".to_owned()]),
+            env_keys: std::collections::BTreeSet::new(),
+        },
+    );
+    assert_eq!(profile_only, vec![profile_capability]);
+
+    let env_only = forwarded_usage_capabilities(
+        &discovery,
+        scope,
+        &ForwardedUsageSources {
+            profile_surface_ids: std::collections::BTreeSet::new(),
+            env_keys: std::collections::BTreeSet::from(["AMP_API_KEY".to_owned()]),
+        },
+    );
+    assert_eq!(env_only, vec![env_capability]);
+}
+
+#[test]
 fn usage_broker_twenty_clients_join_one_generation_and_probe() {
     let temp = tempfile::tempdir().unwrap();
     let executor = Arc::new(CountingExecutor {

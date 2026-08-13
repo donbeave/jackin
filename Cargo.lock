@@ -3384,6 +3384,7 @@ dependencies = [
  "jackin-protocol",
  "jackin-telemetry",
  "jackin-test-support",
+ "jackin-usage",
  "nix 0.31.3",
  "owo-colors 4.3.0",
  "serde",

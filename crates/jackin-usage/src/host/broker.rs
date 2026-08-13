@@ -31,7 +31,7 @@ use crate::coordinator::{
 use super::ValidatedUsageDiscovery;
 use super::discovery::{
     ProviderCredentialEnvResolver, ProviderCredentialRefreshOutcome, ValidatedCredentialBinding,
-    refresh_credential_binding,
+    ValidatedCredentialSource, refresh_credential_binding,
 };
 
 const BROKER_DIR: &str = "usage-broker";
@@ -69,6 +69,12 @@ impl UsageBrokerConfig {
             .join(BROKER_RUN_DIR)
             .join(BROKER_SOCKET)
     }
+
+    /// Construct a fail-closed client even when broker startup is unavailable.
+    #[must_use]
+    pub fn client(&self) -> UsageBrokerClient {
+        UsageBrokerClient::at(self.socket_path(), self.build_id.clone())
+    }
 }
 
 /// Attached broker plus every host-discovered canonical capability.
@@ -78,6 +84,87 @@ pub struct UsageBrokerHandle {
     pub client: UsageBrokerClient,
     /// Canonical accounts known to this discovery generation.
     pub capabilities: Vec<UsageAccountCapability>,
+    scoped_capabilities: BTreeMap<String, Vec<ScopedCapability>>,
+}
+
+impl UsageBrokerHandle {
+    /// Exact canonical accounts whose credential source was forwarded at launch.
+    #[must_use]
+    pub fn capabilities_for_forwarded_scope(
+        &self,
+        scope_label: &str,
+        sources: &ForwardedUsageSources,
+    ) -> Vec<UsageAccountCapability> {
+        self.scoped_capabilities
+            .get(scope_label)
+            .into_iter()
+            .flatten()
+            .filter(|entry| entry.requirement.is_forwarded(sources))
+            .map(|entry| entry.capability.clone())
+            .collect::<std::collections::BTreeSet<_>>()
+            .into_iter()
+            .collect()
+    }
+}
+
+/// Secret-free launch facts proving which credential sources reached a Capsule.
+#[derive(Debug, Clone, Default)]
+pub struct ForwardedUsageSources {
+    /// Surface ids with a successfully forwarded profile directory.
+    pub profile_surface_ids: std::collections::BTreeSet<String>,
+    /// Governed provider env names present in the Capsule's resolved environment.
+    pub env_keys: std::collections::BTreeSet<String>,
+}
+
+#[derive(Debug, Clone)]
+struct ScopedCapability {
+    capability: UsageAccountCapability,
+    requirement: ForwardingRequirement,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+enum ForwardingRequirement {
+    Profile(String),
+    Env(String),
+    Capability,
+}
+
+impl ForwardingRequirement {
+    fn is_forwarded(&self, sources: &ForwardedUsageSources) -> bool {
+        match self {
+            Self::Profile(surface) => sources.profile_surface_ids.contains(surface),
+            Self::Env(key) => sources.env_keys.contains(key),
+            Self::Capability => false,
+        }
+    }
+}
+
+fn forwarding_requirement(binding: &ValidatedCredentialBinding) -> ForwardingRequirement {
+    match &binding.source {
+        ValidatedCredentialSource::Profile(_) => {
+            ForwardingRequirement::Profile(binding.surface.id().to_owned())
+        }
+        ValidatedCredentialSource::Env { key, .. } => ForwardingRequirement::Env(key.clone()),
+        ValidatedCredentialSource::Capability => ForwardingRequirement::Capability,
+    }
+}
+
+/// Derive an exact per-container capability allowlist before broker startup.
+#[must_use]
+pub fn forwarded_usage_capabilities(
+    discovery: &ValidatedUsageDiscovery,
+    scope_label: &str,
+    sources: &ForwardedUsageSources,
+) -> Vec<UsageAccountCapability> {
+    discovery
+        .bindings
+        .iter()
+        .filter(|binding| binding.provenance.contains(scope_label))
+        .filter(|binding| forwarding_requirement(binding).is_forwarded(sources))
+        .map(capability_for_binding)
+        .collect::<std::collections::BTreeSet<_>>()
+        .into_iter()
+        .collect()
 }
 
 /// Small synchronous client. Each operation uses one bounded frame/connection.
@@ -102,7 +189,7 @@ impl UsageBrokerClient {
         &self,
         capability: UsageAccountCapability,
     ) -> Result<UsageGenerationView, UsageCoordinationError> {
-        self.request(UsageBrokerOperation::Current { capability })
+        self.execute(UsageBrokerOperation::Current { capability })
     }
 
     /// Request or join one account generation.
@@ -112,7 +199,7 @@ impl UsageBrokerClient {
         observed_generation: u64,
         force: bool,
     ) -> Result<UsageGenerationView, UsageCoordinationError> {
-        self.request(UsageBrokerOperation::Refresh {
+        self.execute(UsageBrokerOperation::Refresh {
             capability,
             observed_generation,
             force,
@@ -127,14 +214,15 @@ impl UsageBrokerClient {
         timeout: Duration,
     ) -> Result<UsageGenerationView, UsageCoordinationError> {
         let timeout_ms = u64::try_from(timeout.as_millis()).unwrap_or(u64::MAX);
-        self.request(UsageBrokerOperation::Join {
+        self.execute(UsageBrokerOperation::Join {
             capability,
             generation,
             timeout_ms,
         })
     }
 
-    fn request(
+    /// Execute one already-authorized broker operation.
+    pub fn execute(
         &self,
         operation: UsageBrokerOperation,
     ) -> Result<UsageGenerationView, UsageCoordinationError> {
@@ -221,8 +309,17 @@ pub fn ensure_usage_broker(
     resolver: Arc<dyn ProviderCredentialEnvResolver>,
 ) -> Result<UsageBrokerHandle, UsageCoordinationError> {
     let mut bindings = BTreeMap::new();
+    let mut scoped_capabilities = BTreeMap::<String, Vec<ScopedCapability>>::new();
     for binding in discovery.bindings {
         let capability = capability_for_binding(&binding);
+        let requirement = forwarding_requirement(&binding);
+        for provenance in &binding.provenance {
+            let scoped = scoped_capabilities.entry(provenance.clone()).or_default();
+            scoped.push(ScopedCapability {
+                capability: capability.clone(),
+                requirement: requirement.clone(),
+            });
+        }
         bindings.entry(capability).or_insert(binding);
     }
     let capabilities = bindings.keys().cloned().collect();
@@ -231,6 +328,7 @@ pub fn ensure_usage_broker(
     Ok(UsageBrokerHandle {
         client,
         capabilities,
+        scoped_capabilities,
     })
 }
 

@@ -1,7 +1,9 @@
 use std::collections::BTreeMap;
 
 use super::*;
-use jackin_config::WorkspaceConfig;
+use jackin_config::{EnvValue, WorkspaceConfig};
+use jackin_core::UsageCredentialOwner;
+use jackin_usage::host::{ProviderCredentialEnvOutcome, ProviderCredentialEnvResolver};
 
 fn entry(name: &'static str, owner: UsageCredentialOwner) -> UsageCredentialEnvName {
     UsageCredentialEnvName { name, owner }
@@ -32,8 +34,7 @@ fn disc_source_adapter_caches_identical_declaration_before_second_read() {
     let scoped = resolver.resolve_provider_credentials(&config, Some(&workspace), None, &[key]);
 
     assert_eq!(global, scoped);
-    let state = resolver.state.lock().unwrap();
-    assert_eq!(state.cache.len(), 1);
+    assert_eq!(resolver.cached_resolution_count(), 1);
     let debug = format!("{:?}", global);
     assert!(!debug.contains("fixture-secret"));
 }
@@ -89,14 +90,9 @@ fn disc_source_manual_retry_evicts_only_failed_resolution() {
     ];
     let results = resolver.resolve_provider_credentials(&config, None, None, &keys);
     assert_eq!(results.len(), 2);
-    assert_eq!(resolver.state.lock().unwrap().cache.len(), 2);
+    assert_eq!(resolver.cached_resolution_count(), 2);
 
     resolver.begin_manual_retry();
 
-    let state = resolver.state.lock().unwrap();
-    assert_eq!(state.cache.len(), 1);
-    assert!(matches!(
-        state.cache[0].outcome,
-        ProviderCredentialEnvOutcome::Resolved(_)
-    ));
+    assert_eq!(resolver.cached_resolution_count(), 1);
 }

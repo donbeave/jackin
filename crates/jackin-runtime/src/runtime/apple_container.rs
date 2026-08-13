@@ -216,6 +216,8 @@ pub struct AppleContainerLaunch<'a> {
     pub mounts: &'a [AppleContainerMount],
     pub host_workdir_fingerprint: &'a str,
     pub capsule_config: &'a jackin_protocol::CapsuleConfig,
+    pub state: &'a crate::instance::RoleState,
+    pub resolved_env: &'a jackin_env::ResolvedEnv,
     pub debug: bool,
 }
 
@@ -241,6 +243,8 @@ pub async fn launch(args: AppleContainerLaunch<'_>) -> Result<()> {
         mounts,
         host_workdir_fingerprint,
         capsule_config,
+        state,
+        resolved_env,
         debug,
     } = args;
 
@@ -279,12 +283,21 @@ pub async fn launch(args: AppleContainerLaunch<'_>) -> Result<()> {
     let capsule_config_contents = super::launch::capsule_config_contents(capsule_config)
         .context("serializing Capsule launch config for /jackin/run/agent.toml")?;
     super::launch::prepare_socket_dir(&socket_dir, &capsule_config_contents)?;
+    let _usage_relay_guard =
+        crate::usage_relay::prepare_for_container(crate::usage_relay::UsageRelayLaunch {
+            paths,
+            workspace_name,
+            role_key,
+            forwarded_sources: crate::usage_relay::forwarded_sources_from_launch(
+                state,
+                resolved_env,
+            ),
+            socket_dir: socket_dir.clone(),
+        })
+        .await
+        .context("starting scoped usage relay")?;
     let mut container_mounts = mounts.to_vec();
-    container_mounts.push(AppleContainerMount::new(
-        socket_dir,
-        container_paths::RUN_DIR,
-        false,
-    ));
+    container_mounts.push(crate::usage_relay::apple_runtime_mount(socket_dir));
 
     let host_env_file =
         super::launch::create_host_env_file(&paths.jackin_home, container_name, &host_env_entries)
