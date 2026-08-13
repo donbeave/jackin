@@ -13,6 +13,7 @@ capture="$here/capture.sh"
 owner="jackin❯ desktop"
 inactive_app=${CAPTURE_INACTIVE_APP:-$(osascript -e \
   'tell application "System Events" to get name of first application process whose frontmost is true')}
+unset CAPTURE_INACTIVE_APP
 test -n "$inactive_app" && test "$inactive_app" != JackinDesktop || {
   echo "front a non-jackin❯ application before capturing inactive states" >&2
   exit 2

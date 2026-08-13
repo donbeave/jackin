@@ -575,6 +575,7 @@ final class ArchitectureTests: XCTestCase {
         XCTAssertTrue(text.contains("mise -C \"$repo\" run desktop-verify"))
         XCTAssertTrue(text.contains("final evidence requires the canonical branch-head app"))
         XCTAssertTrue(text.contains("CAPTURE_INACTIVE_APP:-"))
+        XCTAssertTrue(text.contains("unset CAPTURE_INACTIVE_APP"))
         XCTAssertTrue(text.contains("FOCUS_DRIVE_TOOL=$focus_tool"))
         XCTAssertTrue(text.contains("\"$output/$file\" \"jackin❯ desktop\""))
         XCTAssertTrue(capture.contains("\"$FOCUS_TOOL\" \"$pid\" 0"))
