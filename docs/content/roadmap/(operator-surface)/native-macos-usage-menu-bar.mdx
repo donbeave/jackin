@@ -13,13 +13,13 @@ The roadmap remains partially implemented because the first Developer ID publica
 - **2026-08-12 — Select A1.** The operator selected a focused provider popover plus two-column Usage. Cross-provider comparison belongs in Usage, not a custom tab system inside the popover.
 - **2026-08-12 — Approve identity and sidebar behavior.** The generated `jackin❯ by tailrocks` wordmark belongs in the quiet sidebar footer. Exactly one native sidebar button remains in the leading toolbar slot while expanded or collapsed.
 - **2026-08-12 — Confirm runnable A1 for production.** The operator confirmed the native proof. Production implementation preserves A1 hierarchy, system-owned material, Rust/Swift ownership, and the two identity/sidebar decisions.
-- **2026-08-13 — Center product identity.** The operator required `jackin❯ desktop` centered in the Usage header and jackin❯ identity in the popover. Native principal placement and a noninteractive monogram/text row satisfy this without custom chrome or glass.
+- **2026-08-13 — Center product identity.** The operator required `jackin❯ desktop` centered in the Usage header and jackin❯ identity in the popover. Native principal placement and a non-interactive monogram/text row satisfy this without custom chrome or glass.
 
 ## Implemented baseline
 
 - macOS 26.0 deployment target; Xcode 26.6 release toolchain; arm64 static XCFramework app assembly.
 - Native `NSStatusItem` provider items and a real transient `NSPopover` focused on the clicked provider.
-- Centered, noninteractive generated monogram plus `jackin❯ desktop` popover identity; native account menu, Rust-owned detail/limit rows, visible Retry/Refresh/Open Usage actions, and no cross-provider navigation.
+- Centered, non-interactive generated monogram plus `jackin❯ desktop` popover identity; native account menu, Rust-owned detail/limit rows, visible Retry/Refresh/Open Usage actions, and no cross-provider navigation.
 - Retained native Usage `NSWindow` with `NavigationSplitView`, Overview table, provider detail list, centered native principal product title, native toolbar/menu commands, no `Usage` title, and stable sidebar-button coordinates.
 - Valid destination/account/sidebar/frame continuity across close/reopen; provider removal or disablement normalizes at `PresentationStore`.
 - Generated responsive brand assets; adaptive phosphor for identity/healthy emphasis; textual state plus system semantic warning/danger color.

@@ -40,9 +40,9 @@ jackin❯ phosphor is an adaptive identity/healthy-state token. Warning and dang
 
 ## Interaction architecture
 
-`StatusBarController` reconciles native status items from the Rust projection. A primary click opens one real transient `NSPopover` focused on that provider. The popover has no cross-provider navigation. It starts with centered, noninteractive jackin❯ identity, then shows provider identity, native account selection, Rust-owned detail/limit rows, visible recovery, Refresh, and Open Usage. A secondary click opens the fixed AppKit menu: Open Usage Window, Refresh, Quit jackin❯ desktop.
+`StatusBarController` reconciles native status items from the Rust projection. A primary click opens one real transient `NSPopover` focused on that provider. The popover has no cross-provider navigation. It starts with centered, non-interactive jackin❯ identity, then shows provider identity, native account selection, Rust-owned detail/limit rows, visible recovery, Refresh, and Open Usage. A secondary click opens the fixed AppKit menu: Open Usage Window, Refresh, Quit jackin❯ desktop.
 
-Cross-provider navigation belongs in the Usage window. `UsageWindowController` lazily creates and retains one `NSWindow`. `UsageWindowRoot` uses a two-column `NavigationSplitView`: Overview and Rust-ordered providers in the sidebar, native `Table` Overview, and native provider detail. It removes the framework's automatic sidebar toolbar item and installs exactly one `.navigation` toolbar button so the control remains visible and stationary in expanded/collapsed states. A noninteractive `jackin❯ desktop` `.principal` toolbar item stays centered; no redundant `Usage` title appears.
+Cross-provider navigation belongs in the Usage window. `UsageWindowController` lazily creates and retains one `NSWindow`. `UsageWindowRoot` uses a two-column `NavigationSplitView`: Overview and Rust-ordered providers in the sidebar, native `Table` Overview, and native provider detail. It removes the framework's automatic sidebar toolbar item and installs exactly one `.navigation` toolbar button so the control remains visible and stationary in expanded/collapsed states. A non-interactive `jackin❯ desktop` `.principal` toolbar item stays centered; no redundant `Usage` title appears.
 
 Window entry is intentional:
 
