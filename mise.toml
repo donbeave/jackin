@@ -27,13 +27,13 @@ hyperfine = "1.20.0"
 shellcheck = "0.11.0"
 node = "24.18.0"
 python = "3.14"
-periphery = "3.8.0"
-swiftlint = "0.65.0"
+periphery = { version = "3.8.0", os = ["macos"] }
+swiftlint = { version = "0.65.0", os = ["macos"] }
 uv = "0.11.29"
 "pipx:reuse" = { version = "6.2.0", extras = "charset-normalizer", depends = ["python"] }
 syft = "1.46.0"
 xcodegen = "2.46.0"
-xcbeautify = "3.2.1"
+xcbeautify = { version = "3.2.1", os = ["macos"] }
 zig = "0.16.0"
 # rust is read from `rust-toolchain.toml` via the `idiomatic_version_file`
 # setting below — single source of truth for the toolchain channel and components.
@@ -84,8 +84,20 @@ description = "Print the resolved construct Bake configuration"
 run = "cargo xtask construct inspect"
 
 [tasks.ci]
-description = "Run the local CI merge-readiness gate"
-run = "cargo xtask ci"
+description = "Run unified build and policy gates"
+run = "git fetch --no-tags origin main:refs/remotes/origin/main && cargo xtask ci --only policy --only docs --only snapshots"
+
+[tasks.test]
+description = "Run the unified test gate"
+run = "cargo xtask ci --only tests --fast"
+
+[tasks.lint]
+description = "Run the unified lint gate"
+run = "cargo xtask ci --only lint --fast"
+
+[tasks.fmt]
+description = "Run the unified formatting gate"
+run = "cargo fmt --check"
 
 # jackin❯ desktop (native macOS usage menu bar).
 # Logic lives in `cargo xtask desktop`; mise tasks are the operator entry points.
