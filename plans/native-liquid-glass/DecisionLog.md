@@ -69,3 +69,13 @@ not treat this design selection as confirmation of that concept.
 - **Reason:** The operator explicitly passed the second non-delegable gate after receiving the runnable app path, exact branch commit, real Light/Dark and expanded/collapsed captures, fixture descriptions, component mapping, accessibility results, and known limitations.
 - **Authorized next work:** Production planning, implementation, final material remediation, complete running-app visual/accessibility QA, design review, documentation reconciliation, full repository gates, and PR evidence reconciliation.
 - **Not authorized:** Silent redesign, custom visible components, custom glass, new provider semantics, prices/trends/analytics, publication, PR merge, Apple credential provisioning, or the separately capture-gated Amp work.
+
+## D-005 — Centered product identity on both native surfaces
+
+- **Date:** 2026-08-13
+- **Decision maker:** Operator
+- **Operator direction:** Show `jackin❯ desktop` in the Usage-window header and show jackin❯ identity in the popover; center the Usage-window identity.
+- **Decision:** Preserve A1 navigation, provider focus, content hierarchy, and material ownership. Add one noninteractive `jackin❯ desktop` `Text` item in the native toolbar's `.principal` placement while retaining the internal native window title for the Window menu and accessibility. Add one centered, noninteractive popover identity row using the real generated template monogram plus `jackin❯ desktop` text. Keep the full generated `jackin❯ by tailrocks` wordmark in the quiet sidebar footer.
+- **Reason:** The product remains recognizable even when the sidebar is collapsed and on the transient provider surface. Native principal placement gives macOS ownership of centered title geometry; the popover row is ordinary content with no background, border, hit target, or additional material.
+- **Supersedes:** D-002's rejection of a visible principal title and popover identity row, and D-003's hidden-title decision. D-002's sidebar wordmark/phosphor rules and D-003's single fixed sidebar-control rule remain authoritative.
+- **Rejected:** custom titlebar/header strips, branded glass, toolbar logo buttons, decorative cards, moving or duplicating the sidebar control, and replacing provider identity with product identity.

@@ -58,7 +58,7 @@ public final class UsageWindowController: NSObject, NSWindowDelegate {
             backing: .buffered,
             defer: false
         )
-        window.title = "Usage"
+        window.title = "jackin❯ desktop"
         window.isReleasedWhenClosed = false
         window.delegate = self
         if store.usesFixture {

@@ -890,6 +890,28 @@ final class ArchitectureTests: XCTestCase {
         XCTAssertFalse(text.contains("SurfaceCard"), "popover must not reference SurfaceCard")
     }
 
+    func testProductIdentityUsesNativeNoninteractivePlacements() throws {
+        let desktop = sourcesRoot.appendingPathComponent("JackinDesktop")
+        let usageRoot = try String(
+            contentsOf: desktop.appendingPathComponent("UsageWindow/UsageWindowRoot.swift"),
+            encoding: .utf8
+        )
+        let popover = try String(
+            contentsOf: desktop.appendingPathComponent("PopoverRoot.swift"),
+            encoding: .utf8
+        )
+
+        XCTAssertTrue(
+            usageRoot.contains(
+                "ToolbarItem(id: \"usage.brand-title\", placement: .principal)"
+            ))
+        XCTAssertTrue(usageRoot.contains("Text(\"jackin❯ desktop\")"))
+        XCTAssertTrue(popover.contains("JackinBrandIdentity.templateMonogram()"))
+        XCTAssertTrue(popover.contains("Text(\"jackin❯ desktop\")"))
+        XCTAssertTrue(popover.contains(".frame(maxWidth: .infinity)"))
+        XCTAssertFalse(popover.contains("popoverBrandHeader.background"))
+    }
+
     /// Cold launch: the AppKit delegate must open the host runtime without a menu click.
     func testApplicationDelegateOpensRuntimeOnLaunch() throws {
         let delegate =

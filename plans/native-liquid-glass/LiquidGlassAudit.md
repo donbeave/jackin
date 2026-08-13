@@ -56,7 +56,7 @@ No approved region reaches custom-bar or custom-glass steps. Therefore:
 | Popover quota rows | CONTENT | native `List`/`Section`, `ProgressView` | none | Pass by design; current cards and custom meters are superseded. |
 | Popover Refresh/Open Usage | FUNCTIONAL controls | native `Button` | control/host-owned | Pass by design; no detached glass island or custom bezel. |
 | Popover empty/loading/error | CONTENT plus native actions | `ContentUnavailableView`, `ProgressView`, `Button` | none | Pass by design. |
-| Usage window/titlebar | FUNCTIONAL / structural | native window | automatic | Pass when native title is restored and custom principal title removed. |
+| Usage window/titlebar | FUNCTIONAL / structural | native window and toolbar | automatic | Pass when `jackin❯ desktop` uses native `.principal` placement without a custom titlebar, background, or material. |
 | Usage toolbar | FUNCTIONAL / structural | `.toolbar` / `NSToolbar` | automatic | Pass if every item has a menu equivalent and system overflow owns collapse. |
 | Usage sidebar | FUNCTIONAL / structural | `NavigationSplitView`, sidebar `List` | automatic | Pass after custom background/footer/selection wells are removed. |
 | Overview table | CONTENT | `Table` | none | Pass by design; current card list is superseded. |

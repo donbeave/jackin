@@ -38,6 +38,7 @@ replacement. The label content and all transient content remain SwiftUI-first.
 |---|---|---|---|---|
 | Transient host and arrow | NATIVE | `NSPopover` with `.transient` behavior | Size bounded by approved design and available screen; SwiftUI content via `NSHostingController` | Borderless `NSPanel`, manually positioned window, custom arrow |
 | Popover material/shadow | NATIVE | System rendering owned by `NSPopover` | None beyond system appearance | `glassEffect`, `NSVisualEffectView`, custom blur, background clearing, custom stroke/shadow |
+| Product identity header | NATIVE-COMPOSED | Generated template monogram `Image` plus `Text` in a centered `HStack` | Noninteractive `jackin❯ desktop`; ordinary content on the host surface | Separate material, card, logo button, custom titlebar, replacing provider identity |
 | Content viewport | NATIVE | SwiftUI `ScrollView` or `List` | Small control metrics; native scrolling and indicators | Fixed-height clipping, nested horizontal carousels |
 | Provider identity | NATIVE-COMPOSED | `Label` built from `Image` and `Text` | Rust-owned name, existing provider mark, native title text style | Header card, decorative logo button |
 | Refresh state | NATIVE-COMPOSED | `ProgressView` plus `Text` | Rust-owned status and last-good value; indeterminate progress while active | Rotating custom glyph, custom animation loop |
@@ -53,7 +54,7 @@ replacement. The label content and all transient content remain SwiftUI-first.
 | Visible region | Class | Exact platform component | Allowed adaptation | Forbidden replacement |
 |---|---|---|---|---|
 | Window chrome | NATIVE | `NSWindow` today; SwiftUI `Window` scene if Phase 2 proves lifecycle parity | Standard title, traffic lights, restoration, minimum/default size | Borderless window, custom traffic lights, custom rounded shell |
-| Title and represented state | NATIVE | Native window title/titlebar APIs | Internal title `Usage` for Window menu/accessibility; visible title hidden; provider context stays in content | Visible branded or redundant principal title |
+| Product title and represented state | NATIVE-COMPOSED | Native window title plus SwiftUI `.principal` `ToolbarItem` containing `Text` | Internal and visible identity are `jackin❯ desktop`; native principal placement owns centering; no `Usage` label | Custom titlebar/header strip, logo button, secondary material, destination text in chrome |
 | Product signature | NATIVE-COMPOSED | Generated adaptive wordmark `Image` in a noninteractive sidebar footer | Canonical outlined `jackin❯ by tailrocks` assets; transparent background; appearance-matched word color | Toolbar logo button, brand card, hand-drawn wordmark, custom background/material |
 | Root navigation | NATIVE | SwiftUI `NavigationSplitView` | Two-column adaptive layout; native sidebar collapse | Hand-built split panes or dividers |
 | Sidebar | NATIVE | `List(selection:)` with sidebar style and `NavigationLink(value:)`/selection values | Overview plus Rust-ordered providers; system accent and selection | Rounded custom selection backgrounds, account chips |

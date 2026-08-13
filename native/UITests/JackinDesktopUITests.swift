@@ -12,6 +12,12 @@ final class JackinDesktopUITests: XCTestCase {
         guard launchUsage(fixture: "F02-catalog-normal", selection: "overview", size: "760x500")
         else { return }
 
+        let usageWindow = application.windows["usage-window"]
+        XCTAssertEqual(usageWindow.title, "jackin❯ desktop")
+        let brandTitle = element("usage.brand-title")
+        XCTAssertTrue(brandTitle.waitForExistence(timeout: 5))
+        XCTAssertEqual(brandTitle.label, "jackin❯ desktop")
+        XCTAssertEqual(brandTitle.frame.midX, usageWindow.frame.midX, accuracy: 2)
         XCTAssertTrue(element("usage.sidebar").waitForExistence(timeout: 5))
         XCTAssertFalse(application.staticTexts["Usage"].exists)
         let overview = element("usage.overview.table")
@@ -154,7 +160,11 @@ final class JackinDesktopUITests: XCTestCase {
         defer { application.terminate() }
         guard launchPopover(fixture: "F03-multi-account", selection: "codex") else { return }
 
-        XCTAssertTrue(application.popovers.firstMatch.exists)
+        let popover = application.popovers.firstMatch
+        XCTAssertTrue(popover.exists)
+        let brand = application.staticTexts["jackin❯ desktop"]
+        XCTAssertTrue(brand.exists)
+        XCTAssertEqual(brand.label, "jackin❯ desktop")
         XCTAssertTrue(element("popover.account-picker").exists)
         XCTAssertTrue(element("popover.refresh").exists)
         XCTAssertTrue(element("popover.open-usage").exists)

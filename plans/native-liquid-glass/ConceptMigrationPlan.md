@@ -121,9 +121,10 @@ Work:
 3. Overview becomes native `Table` with provider-account records.
 4. Provider detail uses native `List` or grouped `Form`, `Section`,
    `LabeledContent`, `ProgressView`, and account `Picker`.
-5. Restore native window title; remove custom principal title, selection wells,
-   sidebar account rails/footer material, content cards, custom meters, and
-   forced soft edges.
+5. Preserve native window/title semantics; remove custom titlebar strips,
+   selection wells, sidebar account rails/footer material, content cards,
+   custom meters, and forced soft edges. D-005 later authorizes one native
+   `.principal` product title without custom material.
 6. Preserve native toolbar Refresh and add/verify standard menu equivalents,
    sidebar command, File, Services, and Help citizenship.
 7. Preserve selection/context from popover to Usage.

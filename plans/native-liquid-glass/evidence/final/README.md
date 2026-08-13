@@ -1,8 +1,8 @@
 # Final A1 native evidence
 
-Status: **branch-head core, accessibility, and operator-owned appearance evidence complete**
+Status: **superseded by D-005; replacement capture in progress**
 
-The fail-closed matrix rebuilt and verified the canonical application from clean pushed source `c69a237b0b80c62164df34a39edd6578d78d81c9`. All current core and accessibility sidecars record that source and executable SHA-256 `4931f501c9e54620da9f89908809b32f6efe3bf84e1933a61fa5f4fc3761ed0b`. The validator reports `core=36 accessibility=8 failures=0` after checking image hashes, source/application provenance, window layers, titles, on-screen state, activation/key state, requested setting values, and restoration receipts.
+This matrix remains exact evidence for clean pushed source `c69a237b0b80c62164df34a39edd6578d78d81c9` and executable SHA-256 `4931f501c9e54620da9f89908809b32f6efe3bf84e1933a61fa5f4fc3761ed0b`. D-005 visibly adds centered product identity to both native surfaces, so these images no longer prove the final design. Replacement capture must preserve the same fail-closed provenance and state coverage.
 
 The host was macOS 26.5.2 (`25F84`) with Xcode 26.6 (`17F113`) and the macOS 26.5 SDK. All 36 PNGs came from the real `JackinDesktop.app`: Usage evidence resolves the real layer-0 `NSWindow`; popover evidence resolves the real layer-25 `NSPopover`. Each JSON sidecar records fixture, requested appearance and size, window identity, layer, geometry, active state, app path and hash, image hash, source commit, runtime, toolchain, SDK, timestamp, and accessibility-setting values.
 

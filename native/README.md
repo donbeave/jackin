@@ -20,6 +20,7 @@ Liquid Glass is owned by the system hosts and standard functional chrome: `NSPop
 
 `StatusBarController` owns native `NSStatusItem` instances selected from the Rust projection. A primary click opens one real transient `NSPopover` focused on that provider. The popover contains:
 
+- a centered, noninteractive generated jackin❯ monogram plus `jackin❯ desktop` identity row;
 - provider identity and status;
 - a native account menu when multiple identities are known;
 - Rust-owned detail and limit rows;
@@ -38,7 +39,7 @@ There is no cross-provider navigation inside the popover. A secondary click open
 - provider detail: native list/sections, account menu, quota meters, recovery;
 - toolbar: one fixed leading sidebar button and a native Refresh action.
 
-The system-supplied split-view toggle is removed so exactly one button owns the leading slot. Its coordinates remain stable while hiding/showing the sidebar and across retained-window reopen. The title is hidden; no `Usage` heading is drawn in content or titlebar. Reopening preserves valid destination, account, sidebar state, and frame. A removed/disabled provider normalizes to Overview at `PresentationStore`, not in a view-only fallback.
+The system-supplied split-view toggle is removed so exactly one button owns the leading slot. Its coordinates remain stable while hiding/showing the sidebar and across retained-window reopen. A noninteractive `jackin❯ desktop` title uses the native toolbar's centered principal placement; no `Usage` heading is drawn in content or titlebar. Reopening preserves valid destination, account, sidebar state, and frame. A removed/disabled provider normalizes to Overview at `PresentationStore`, not in a view-only fallback.
 
 Standard commands: Command-R Refresh, Command-comma Settings, Command-W Close, Control-Command-S Toggle Sidebar, Escape Close.
 

@@ -29,20 +29,20 @@ Liquid Glass is system-owned functional chrome, never content decoration. Produc
 | Region | Host/component | Classification |
 |---|---|---|
 | Provider status | `NSStatusItem` / `NSStatusBarButton` | native functional chrome, template monochrome |
-| Provider glance | transient `NSPopover` hosting SwiftUI `Form` | native host; focused provider content |
+| Provider glance | transient `NSPopover` hosting SwiftUI content | native host; centered product identity plus focused provider content |
 | Usage shell | retained `NSWindow`, unified `NSToolbar`, `NavigationSplitView` | native functional hierarchy |
 | Usage sidebar | sidebar `List` plus non-interactive generated wordmark | native navigation plus identity |
 | Overview | SwiftUI `Table` | native content |
 | Provider detail | `List`, `Section`, `LabeledContent`, `Picker`, `ProgressView` | native content/actions |
 | Settings | titled `NSWindow` plus grouped `Form` | native configuration |
 
-jackin❯ phosphor is an adaptive identity/healthy-state token. Warning and danger retain text plus system semantic color. Provider marks come from the canonical generated SVG assets. The quiet sidebar wordmark is `jackin❯ by tailrocks`; it is hidden from accessibility because it is not an action.
+jackin❯ phosphor is an adaptive identity/healthy-state token. Warning and danger retain text plus system semantic color. Provider marks come from the canonical generated SVG assets. The quiet sidebar wordmark is `jackin❯ by tailrocks`; it is hidden from accessibility because it is not an action. The popover uses the generated template monogram beside `jackin❯ desktop`, and the Usage toolbar exposes the same text through native centered principal placement. Neither identity is interactive or owns material.
 
 ## Interaction architecture
 
-`StatusBarController` reconciles native status items from the Rust projection. A primary click opens one real transient `NSPopover` focused on that provider. The popover has no cross-provider navigation. It shows provider identity, native account selection, Rust-owned detail/limit rows, visible recovery, Refresh, and Open Usage. A secondary click opens the fixed AppKit menu: Open Usage Window, Refresh, Quit jackin❯ desktop.
+`StatusBarController` reconciles native status items from the Rust projection. A primary click opens one real transient `NSPopover` focused on that provider. The popover has no cross-provider navigation. It starts with centered, noninteractive jackin❯ identity, then shows provider identity, native account selection, Rust-owned detail/limit rows, visible recovery, Refresh, and Open Usage. A secondary click opens the fixed AppKit menu: Open Usage Window, Refresh, Quit jackin❯ desktop.
 
-Cross-provider navigation belongs in the Usage window. `UsageWindowController` lazily creates and retains one `NSWindow`. `UsageWindowRoot` uses a two-column `NavigationSplitView`: Overview and Rust-ordered providers in the sidebar, native `Table` Overview, and native provider detail. It removes the framework's automatic sidebar toolbar item and installs exactly one `.navigation` toolbar button so the control remains visible and stationary in expanded/collapsed states. The window hides its redundant `Usage` title.
+Cross-provider navigation belongs in the Usage window. `UsageWindowController` lazily creates and retains one `NSWindow`. `UsageWindowRoot` uses a two-column `NavigationSplitView`: Overview and Rust-ordered providers in the sidebar, native `Table` Overview, and native provider detail. It removes the framework's automatic sidebar toolbar item and installs exactly one `.navigation` toolbar button so the control remains visible and stationary in expanded/collapsed states. A noninteractive `jackin❯ desktop` `.principal` toolbar item stays centered; no redundant `Usage` title appears.
 
 Window entry is intentional:
 

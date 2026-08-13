@@ -1,10 +1,10 @@
 # jackin❯ identity inside native Liquid Glass
 
-Status: **operator-directed A1 refinement implemented, verified, and confirmed for production**
+Status: **D-005 implementation complete; final visual revalidation pending**
 
 ## Finding
 
-The first A1 build put `jackin❯ desktop` in the free-floating native title position. That text competed with the sidebar toggle and Refresh toolbar item while failing to say where the operator was. The build also left the canonical product mark absent from the persistent window and rendered every quota meter in the host accent color. This was native chrome without enough jackin❯ identity.
+The first A1 build put `jackin❯ desktop` in the free-floating native title position. D-002 removed it, moved the canonical wordmark into the sidebar footer, and introduced semantic phosphor. The operator later required persistent identity on both native surfaces and explicitly centered window branding. D-005 therefore restores a restrained product title through native principal placement and adds a plain popover identity row without undoing the sidebar signature or material rules.
 
 Reference shape: Finder/Safari restraint. The Usage window is a dense records browser, not a media canvas. System components own chrome and material; product identity appears in content, data vocabulary, semantic color, and the real mark.
 
@@ -12,10 +12,11 @@ Reference shape: Finder/Safari restraint. The Usage window is a dense records br
 
 | Region | Owner | Decision |
 |---|---|---|
-| Window title | macOS | Keep `Usage` as the internal Window-menu/accessibility title, but hide visible title text. Selection and detail content provide orientation. |
+| Window title | macOS + native composition | Keep `jackin❯ desktop` as the internal Window-menu/accessibility title and show the same text once through a native `.principal` toolbar item. macOS owns centered geometry and adaptation. |
 | Toolbar, sidebar, selection, popover, menus | macOS | System components own Liquid Glass, shapes, active/inactive adaptation, focus, and accent behavior. |
 | Sidebar toggle | macOS + native composition | Remove the automatic relocating item at the sidebar source. Keep one SwiftUI toolbar `Button` in `.navigation`, bound to `NavigationSplitViewVisibility`, using Apple's `sidebar.left` SF Symbol and system toolbar treatment. |
 | Sidebar signature | jackin❯ | Place the canonical full `jackin❯ by tailrocks` wordmark in a quiet, noninteractive sidebar footer. No background, border, glass, or hit target. |
+| Popover identity | jackin❯ | Center the real generated template monogram with `jackin❯ desktop` text in one noninteractive content row. No background, border, glass, or hit target. |
 | Provider identity | Provider assets | Keep provider marks beside provider-owned data. Do not replace them with the product mark. |
 | Healthy quota meter | jackin❯ data semantics | Use adaptive phosphor: `#0B774E` in Light, `#5CF07A` in Dark. Text still states the value. |
 | Warning/exhaustion | System semantic colors | Keep orange/red only for source-owned severity; text remains the primary state signal. |
@@ -36,21 +37,21 @@ Brand and Liquid Glass do different jobs:
 - Liquid Glass supplies quiet functional depth and platform behavior.
 - The wordmark supplies product identity without impersonating a control.
 - Phosphor supplies a restrained semantic thread through healthy quota content, not a tint over glass or every action.
-- Provider marks preserve source context. The product mark does not compete with the clicked provider inside the transient popover.
+- The popover product row identifies the application; the separate provider identity keeps source context. Neither becomes a control or material surface.
 
 Custom glass count remains zero. The sidebar action is a standard native toolbar button with an Apple SF Symbol; only its fixed placement and visibility binding are app-owned. The wordmark is a generated image composition, not a control or material surface.
 
-## Rejected placements
+## Rejected treatments
 
-- **Any visible principal title:** rejected because both product branding and redundant `Usage` text compete with the fixed native sidebar toggle.
-- **Popover brand header:** rejected because transient context belongs to the clicked provider and another header adds hierarchy.
+- **Custom titlebar or popover header strip:** rejected because it would duplicate system chrome or introduce another material layer.
 - **Logo button in toolbar:** rejected because a non-action would look interactive on functional glass.
 - **Logo card or colored block:** rejected because it violates the transparent, square-cap brand contract and adds content-layer decoration.
 - **Phosphor toolbar/sidebar backgrounds:** rejected because multiple tinted controls weaken system hierarchy and Liquid Glass adaptation.
 
 ## Acceptance
 
-- No title text is visible. Internal window title remains `Usage` for the Window menu and accessibility.
+- One `jackin❯ desktop` title is visible at the native toolbar's centered principal placement; no `Usage` title is visible.
+- The popover begins with one centered, noninteractive real monogram plus `jackin❯ desktop` identity row.
 - Exactly one sidebar toggle remains in one leading toolbar slot before and after collapse; Apple owns its SF Symbol and native toolbar material, hover, focus, and help.
 - Real generated wordmark remains legible in Light, Dark, Increase Contrast, Reduce Transparency, and inactive-window captures.
 - Healthy meters use adaptive phosphor; warning/danger retain text plus semantic color; Differentiate Without Color leaves all states understandable.

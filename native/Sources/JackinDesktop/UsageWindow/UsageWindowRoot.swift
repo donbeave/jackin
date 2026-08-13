@@ -81,6 +81,13 @@ public struct UsageWindowRoot: View {
         }
         .navigationSplitViewStyle(.balanced)
         .toolbar {
+            ToolbarItem(id: "usage.brand-title", placement: .principal) {
+                Text("jackin❯ desktop")
+                    .font(.headline)
+                    .accessibilityAddTraits(.isHeader)
+                    .accessibilityIdentifier("usage.brand-title")
+            }
+
             ToolbarItem(id: "usage.sidebar-toggle", placement: .navigation) {
                 Button {
                     navigationState.toggleSidebar()

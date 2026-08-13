@@ -1,18 +1,18 @@
 # Confirmed A1 production plan
 
-Status: **P1–P4 complete**
+Status: **D-005 implementation complete; P3–P4 revalidation in progress**
 
 ## Authority and stop line
 
-The operator confirmed the runnable native direction with `I confirm the runnable A1 native concept.` Production must preserve A1, the D-002 jackin❯ identity placement, and the D-003 fixed leading sidebar control. Code structure may improve; visible structure, hierarchy, material ownership, content/functional classification, and brand behavior may not silently change.
+The operator confirmed the runnable native direction with `I confirm the runnable A1 native concept.` Production must preserve A1, D-002's sidebar identity/semantic-phosphor rules, D-003's fixed leading sidebar control, and D-005's centered product identity on both native surfaces. Code structure may improve; visible structure, hierarchy, material ownership, content/functional classification, and brand behavior may not silently change.
 
 Stop and return to the operator if a required visible region needs a CUSTOM control, custom glass, a design change, a new domain semantic, a weakened gate, unavailable GUI permission, or an API unavailable on the selected macOS 26 baseline.
 
 ## Observable acceptance
 
 - A primary provider status-item click opens one real transient `NSPopover` focused on that provider; the popover has no cross-provider tab system.
-- The popover uses native account selection, readable Rust-owned metadata and limits, visible refresh/recovery, and Open Usage preserving provider/account context.
-- Usage uses a two-column `NavigationSplitView`: Overview plus Rust-ordered providers in the sidebar, native `Table` Overview, native provider detail, provider-scoped account selection, system toolbar/menu commands, and no visible `Usage` title.
+- The popover uses one centered, noninteractive generated monogram plus `jackin❯ desktop` row, native account selection, readable Rust-owned metadata and limits, visible refresh/recovery, and Open Usage preserving provider/account context.
+- Usage uses a two-column `NavigationSplitView`: Overview plus Rust-ordered providers in the sidebar, native `Table` Overview, native provider detail, provider-scoped account selection, system toolbar/menu commands, one centered noninteractive `jackin❯ desktop` principal title, and no visible `Usage` title.
 - Exactly one native sidebar toggle stays visible, hittable, and at the same leading toolbar coordinates before collapse, after collapse, and after reopen.
 - The canonical generated `jackin❯ by tailrocks` wordmark stays noninteractive in the quiet sidebar footer. Healthy quota progress uses adaptive phosphor; warning and danger use text plus system semantic color.
 - Close/reopen, provider removal, refresh success/failure, app activation, popover-to-Usage transition, selection, scrolling, and standard commands preserve valid context and fail safely.
@@ -51,8 +51,8 @@ Stop and return to the operator if a required visible region needs a CUSTOM cont
 
 - **P1 complete:** visible popover Refresh owns Command-R; Usage retains valid provider/account/sidebar/frame state; removed providers normalize at the state owner; local/global Retry stays native; production names replace concept/card-era names; model and real-host tests cover continuity, commands, scrolling, context routing, menu order, destructive-action absence, and all three accessibility surfaces.
 - **P2 complete:** the release lane uses macOS 26 and Xcode 26.6; the Xcode project regenerates cleanly; operator and contributor docs describe the focused popover, two-column Usage window, fixed leading sidebar control, limits-only contract, and current platform floor; roadmap state retains only external release and capture-gated work.
-- **P3 complete:** source `c69a237b0b80c62164df34a39edd6578d78d81c9` has 36 core and eight accessibility real-host captures, exact provenance, byte-identical setting restoration, 15/15 real-host tests with zero runtime warnings, all three accessibility audits, and a hard-failure-free design review. Source `7c8fca3fcbfa02f50e80ec1364475bd396173b98` adds operator-confirmed A08 Clear and A09 Tinted evidence for both native surfaces.
-- **P4 complete:** DCO repair, main synchronization, evidence documentation, complete branch-head repository/docs gates, original Clear preference restoration, clean-tree proof, and final draft-PR reconciliation are complete. [`CompletionAudit.md`](CompletionAudit.md) is the authoritative DONE-criteria ledger.
+- **P3 revalidation in progress:** the prior matrix remains exact evidence for its recorded source, but D-005 visibly changes both surfaces. Regenerate core, accessibility, Clear, and Tinted evidence from the new clean pushed source before claiming final design acceptance.
+- **P4 revalidation in progress:** main synchronization is complete. The D-005 commit, replacement evidence, complete branch-head gates, clean-tree proof, and draft-PR reconciliation remain. [`CompletionAudit.md`](CompletionAudit.md) is the authoritative DONE-criteria ledger.
 
 ## Slice P1 — Production state and interaction correctness
 
@@ -101,7 +101,7 @@ Work:
 2. Build the exact branch-head app and run atomic kill-launch-drive-window-ID capture across all required appearance, active/inactive, accessibility, size, content, recovery, scrolling, and sidebar states.
 3. Exercise keyboard, pointer, menu, focus, VoiceOver/accessibility-tree, close/reopen, status-item, popover, Usage, selection, refresh, and recovery paths.
 4. Restore every modified macOS setting on success, failure, and interruption; record receipts and host/runtime/toolchain metadata.
-5. Review final captures only against A1, D-002, D-003, D-004, component/layer maps, brand contract, and actual native behavior. Correct every hard failure and repeat until stable.
+5. Review final captures only against A1, D-002, D-003, D-004, D-005, component/layer maps, brand contract, and actual native behavior. Correct every hard failure and repeat until stable.
 
 Verification: final capture manifest completeness; all UI/accessibility tests; architecture lint; no forbidden-source scans; manual clear/tinted Liquid Glass preference evidence remains operator-owned because macOS has no public read API.
 

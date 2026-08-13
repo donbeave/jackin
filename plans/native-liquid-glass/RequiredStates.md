@@ -1,8 +1,8 @@
 # Required states and evidence matrix
 
-Status: **branch-head automated and operator-owned appearance matrices complete**
+Status: **D-005 replacement matrix pending**
 
-Current branch-head evidence lives in [`evidence/final/`](evidence/final/). At clean pushed source `c69a237b0b80c62164df34a39edd6578d78d81c9`, the harness captured the 36-state core matrix plus Reduce Transparency, Increase Contrast, Reduce Motion, and Differentiate Without Color on both native surfaces, with byte-identical before/after setting receipts. A provenance validator reports zero failures. Operator-confirmed A08 Clear and A09 Tinted evidence at source `7c8fca3fcbfa02f50e80ec1364475bd396173b98` lives under [`evidence/final/appearance/`](evidence/final/appearance/). macOS exposes no public clear/tinted preference API, so both states use real System Settings receipts and window-ID captures rather than guessed state. No placeholder or offscreen rendering substitutes for these states.
+The evidence under [`evidence/final/`](evidence/final/) remains exact historical proof for its recorded clean pushed sources. D-005 visibly adds centered product identity to both native surfaces, so the complete 36-state core matrix, eight accessibility captures, and operator-owned Clear/Tinted captures must be regenerated from the new clean pushed source. macOS exposes no public clear/tinted preference API; no guessed state, placeholder, or offscreen rendering may substitute.
 
 Every row remains mandatory before production completion. A screenshot alone
 does not prove keyboard, accessibility, or restoration behavior; use the named

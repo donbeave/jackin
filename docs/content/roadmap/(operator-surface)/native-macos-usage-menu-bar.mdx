@@ -4,7 +4,7 @@ title: "jackin❯ desktop — native macOS limits app"
 
 **Status**: Partially implemented
 
-**Current state**: The in-repository A1 native redesign is implemented for the macOS 26 production baseline. It uses provider-focused native popovers, a two-column Usage window, a fixed leading sidebar control, the generated `jackin❯ by tailrocks` sidebar identity, visible native recovery, retained window context, and system-owned Liquid Glass only. Rust remains authoritative for providers, accounts, quota semantics, refresh policy, and domain strings.
+**Current state**: The in-repository A1 native redesign is implemented for the macOS 26 production baseline. It uses provider-focused native popovers with centered product identity, a two-column Usage window with centered `jackin❯ desktop` toolbar identity, a fixed leading sidebar control, the generated `jackin❯ by tailrocks` sidebar signature, visible native recovery, retained window context, and system-owned Liquid Glass only. Rust remains authoritative for providers, accounts, quota semantics, refresh policy, and domain strings.
 
 The roadmap remains partially implemented because the first Developer ID publication/Homebrew proof and capture-gated Amp paid-plan work require external operator evidence. Those external gates are not substituted by a green PR.
 
@@ -13,13 +13,14 @@ The roadmap remains partially implemented because the first Developer ID publica
 - **2026-08-12 — Select A1.** The operator selected a focused provider popover plus two-column Usage. Cross-provider comparison belongs in Usage, not a custom tab system inside the popover.
 - **2026-08-12 — Approve identity and sidebar behavior.** The generated `jackin❯ by tailrocks` wordmark belongs in the quiet sidebar footer. Exactly one native sidebar button remains in the leading toolbar slot while expanded or collapsed.
 - **2026-08-12 — Confirm runnable A1 for production.** The operator confirmed the native proof. Production implementation preserves A1 hierarchy, system-owned material, Rust/Swift ownership, and the two identity/sidebar decisions.
+- **2026-08-13 — Center product identity.** The operator required `jackin❯ desktop` centered in the Usage header and jackin❯ identity in the popover. Native principal placement and a noninteractive monogram/text row satisfy this without custom chrome or glass.
 
 ## Implemented baseline
 
 - macOS 26.0 deployment target; Xcode 26.6 release toolchain; arm64 static XCFramework app assembly.
 - Native `NSStatusItem` provider items and a real transient `NSPopover` focused on the clicked provider.
-- Native account menu, Rust-owned detail/limit rows, visible Retry/Refresh/Open Usage actions, and no cross-provider popover navigation.
-- Retained native Usage `NSWindow` with `NavigationSplitView`, Overview table, provider detail list, native toolbar/menu commands, hidden redundant title, and stable sidebar-button coordinates.
+- Centered, noninteractive generated monogram plus `jackin❯ desktop` popover identity; native account menu, Rust-owned detail/limit rows, visible Retry/Refresh/Open Usage actions, and no cross-provider navigation.
+- Retained native Usage `NSWindow` with `NavigationSplitView`, Overview table, provider detail list, centered native principal product title, native toolbar/menu commands, no `Usage` title, and stable sidebar-button coordinates.
 - Valid destination/account/sidebar/frame continuity across close/reopen; provider removal or disablement normalizes at `PresentationStore`.
 - Generated responsive brand assets; adaptive phosphor for identity/healthy emphasis; textual state plus system semantic warning/danger color.
 - Zero custom UI regions, explicit glass effects, glass containers, or app-owned materials in production sources.

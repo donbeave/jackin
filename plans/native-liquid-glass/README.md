@@ -1,8 +1,8 @@
 # Native Liquid Glass redesign
 
-Status: **A1 production implementation and automated branch-head evidence complete; A08–A09 and final repository delivery proof pending**
+Status: **D-005 implementation complete; replacement visual and delivery proof pending**
 
-These files are the design authority for the native jackin❯ desktop redesign. The A1 selection authorized Phase 2 audits and the smallest runnable Phase 3 proof; D-004 separately authorizes production implementation of that confirmed direction.
+These files are the design authority for the native jackin❯ desktop redesign. The A1 selection authorized Phase 2 audits and the smallest runnable Phase 3 proof; D-004 authorizes production implementation of that confirmed direction, and D-005 records the operator's later centered-identity refinement.
 
 ## Evidence and decisions
 
@@ -36,7 +36,7 @@ These files are the design authority for the native jackin❯ desktop redesign. 
 
 ## Gate
 
-The operator selected A1 and explicitly confirmed the runnable native concept with `I confirm the runnable A1 native concept.` Production work is authorized only when it preserves A1 plus D-002 and D-003. Publication and merge remain separately controlled.
+The operator selected A1 and explicitly confirmed the runnable native concept with `I confirm the runnable A1 native concept.` Production work is authorized only when it preserves A1, D-002's retained sidebar/semantic-color rules, D-003's fixed sidebar control, and D-005's centered identity on both native surfaces. Publication and merge remain separately controlled.
 
 ## Product invariants
 

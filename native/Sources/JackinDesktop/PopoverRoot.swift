@@ -31,8 +31,12 @@ public struct PopoverRoot: View {
     public var body: some View {
         let height: CGFloat = qiFullPlate ? 1_100 : 520
         VStack(spacing: 0) {
+            popoverBrandHeader
+
+            Divider()
+
             content
-                .frame(width: 380, height: height - 49)
+                .frame(width: 380, height: height - 94)
                 .clipped()
 
             Divider()
@@ -43,7 +47,23 @@ public struct PopoverRoot: View {
                 .background(.bar)
         }
         .frame(width: 380, height: height)
-        .accessibilityLabel("Provider usage")
+    }
+
+    private var popoverBrandHeader: some View {
+        HStack(spacing: 8) {
+            if let monogram = JackinBrandIdentity.templateMonogram() {
+                Image(nsImage: monogram)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 18, height: 18)
+                    .accessibilityHidden(true)
+            }
+            Text("jackin❯ desktop")
+                .font(.headline)
+                .accessibilityAddTraits(.isHeader)
+        }
+        .frame(maxWidth: .infinity)
+        .frame(height: 44)
     }
 
     @ViewBuilder
