@@ -56,7 +56,10 @@ pub fn global_rows_have_sensitive_mount(rows: &[GlobalMountRow]) -> bool {
         .iter()
         .map(|row| row.mount.clone())
         .collect::<Vec<MountConfig>>();
-    !find_sensitive_mounts(&mounts).is_empty()
+    let normalized = jackin_config::normalize_sensitive_mount_sources(&mounts, |path| {
+        std::fs::canonicalize(path).ok()
+    });
+    !find_sensitive_mounts(&normalized).is_empty()
 }
 
 #[must_use]

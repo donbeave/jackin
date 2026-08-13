@@ -3013,6 +3013,7 @@ dependencies = [
  "anyhow",
  "criterion",
  "directories",
+ "fs4",
  "jackin-core",
  "jackin-diagnostics",
  "jackin-otlp-testbed",

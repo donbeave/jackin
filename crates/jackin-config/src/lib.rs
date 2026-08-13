@@ -66,7 +66,9 @@ pub use migrations::{
 };
 pub use mounts::{covers, parse_mount_spec, parse_mount_spec_resolved};
 pub use paths::{expand_tilde, resolve_path};
-pub use persist::{atomic_write, validate_workspace_file_stem};
+pub use persist::{
+    ConfigReadGuard, acquire_config_read_lock, atomic_write, validate_workspace_file_stem,
+};
 pub use planner::{
     CollapseError, CollapsePlan, Removal, WorkspaceCreatePlan, WorkspaceEditPlan,
     apply_isolation_overrides, plan_collapse, plan_create, plan_edit,
@@ -82,7 +84,7 @@ pub use schema::{
     WorkspaceRoleOverride, WorkspaceRuntimeConfig, validate_mount_paths, validate_mount_specs,
     validate_mounts,
 };
-pub use sensitive::{SensitiveMount, find_sensitive_mounts};
+pub use sensitive::{SensitiveMount, find_sensitive_mounts, normalize_sensitive_mount_sources};
 pub use validation::{validate_isolation_layout, validate_workspace_config};
 pub use versions::{
     CURRENT_CONFIG_VERSION, CURRENT_WORKSPACE_VERSION, LEGACY_VERSION, current_config_version,

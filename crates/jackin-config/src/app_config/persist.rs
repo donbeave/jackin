@@ -304,20 +304,6 @@ impl AppConfig {
         let builtins_changed = config.sync_builtin_agents();
 
         if builtins_changed {
-            // ConfigEditor::open recurses into load_or_init when the file is
-            // missing; bootstrap once here so the editor sees an existing
-            // file and preserves operator comments rather than going through
-            // the lossy serde rewrite.
-            if !paths.config_file.exists() {
-                crate::telemetry::finish_operation(
-                    jackin_telemetry::schema::enums::ConfigScope::Global,
-                    jackin_telemetry::schema::enums::ConfigOperation::Save,
-                    (|| {
-                        let contents = toml::to_string_pretty(&config)?;
-                        atomic_write(&paths.config_file, &contents)
-                    })(),
-                )?;
-            }
             let mut editor = ConfigEditor::open(paths)?;
             for &(name, git) in super::roles::BUILTIN_ROLES {
                 editor.upsert_builtin_agent(name, git);

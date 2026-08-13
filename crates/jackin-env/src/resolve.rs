@@ -18,6 +18,9 @@ use jackin_core::{EnvValue, OpRef, WorkspaceName};
 /// Constructed at the resolve boundary and either returned directly (pure
 /// validation paths) or attached as an `anyhow` source so classification
 /// survives `?` and is recovered by `downcast_ref` (mixed port-error paths).
+///
+/// Security note: releases before this redaction could echo rejected credential
+/// values. Credentials observed in historical error logs should be rotated.
 #[derive(Debug, thiserror::Error)]
 pub enum OperatorEnvError {
     /// Operator env declares reserved runtime names that cannot be overridden.
@@ -33,25 +36,19 @@ pub enum OperatorEnvError {
         details: String,
     },
     /// Value is not an `op://` reference.
-    #[error("not an op:// reference: {value}")]
-    NotOpRef {
-        /// The rejected input value.
-        value: String,
-    },
+    #[error("not an op:// reference")]
+    NotOpRef,
     /// Shell variable substitution inside an `op://` URI is unsupported.
     #[error(
-        "jackin does not support shell variable substitution inside `op://` URIs \
-         (`{value}`). Use a plain string value, or substitute before passing."
+        "jackin does not support shell variable substitution inside `op://` URIs. \
+         Use a plain string value, or substitute before passing."
     )]
-    ShellVarInRef {
-        /// The rejected URI containing shell substitution.
-        value: String,
-    },
+    ShellVarInRef,
     /// `op://` URI path segment count is not 3 or 4.
-    #[error("malformed op:// URI (expected 3 or 4 path segments): {value}")]
+    #[error("malformed op:// URI (expected 3 or 4 path segments, received {segment_count})")]
     MalformedRef {
-        /// The malformed URI.
-        value: String,
+        /// Non-secret path shape used for diagnostics.
+        segment_count: usize,
     },
     /// Named or id vault could not be found.
     #[error("vault not found: {vault:?}")]
@@ -164,10 +161,6 @@ pub fn validate_reserved_names(config: &AppConfig) -> Result<(), OperatorEnvErro
 /// `None` when the call has no account context (e.g. ambient
 /// `op://...` resolution where the operator has not pinned an
 /// account).
-#[expect(
-    clippy::too_many_lines,
-    reason = "URI parsing + multi-protocol op:// resolution; split would obscure the single algorithm"
-)]
 pub fn resolve_op_uri_to_ref(
     input: &str,
     op: &dyn OpStructRunner,
@@ -176,14 +169,10 @@ pub fn resolve_op_uri_to_ref(
     // Port errors from OpStructRunner stay as raw anyhow; validation failures
     // are typed sources so pickers can downcast without substring matching.
     if !input.starts_with("op://") {
-        return Err(anyhow::Error::new(OperatorEnvError::NotOpRef {
-            value: input.to_owned(),
-        }));
+        return Err(anyhow::Error::new(OperatorEnvError::NotOpRef));
     }
     if input.contains("${") {
-        return Err(anyhow::Error::new(OperatorEnvError::ShellVarInRef {
-            value: input.to_owned(),
-        }));
+        return Err(anyhow::Error::new(OperatorEnvError::ShellVarInRef));
     }
 
     // Peel off optional `?attribute=...` / `?attr=...` / `?ssh-format=...` suffix.
@@ -191,9 +180,7 @@ pub fn resolve_op_uri_to_ref(
         .find('?')
         .map_or((input, None), |i| (&input[..i], Some(&input[i..])));
     let Some(body) = path_part.strip_prefix("op://") else {
-        return Err(anyhow::Error::new(OperatorEnvError::NotOpRef {
-            value: input.to_owned(),
-        }));
+        return Err(anyhow::Error::new(OperatorEnvError::NotOpRef));
     };
     let segs: Vec<&str> = body.split('/').collect();
     let (vault_seg, item_seg, section_seg, field_seg) = match segs.as_slice() {
@@ -201,7 +188,7 @@ pub fn resolve_op_uri_to_ref(
         [v, i, s, f] => (*v, *i, Some(*s), *f),
         _ => {
             return Err(anyhow::Error::new(OperatorEnvError::MalformedRef {
-                value: input.to_owned(),
+                segment_count: segs.len(),
             }));
         }
     };

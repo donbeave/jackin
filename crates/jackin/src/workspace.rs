@@ -34,7 +34,9 @@ pub use resolve::{
     LoadWorkspaceInput, ResolvedWorkspace, current_dir_workspace, resolve_load_workspace,
     saved_workspace_match_depth,
 };
-pub use sensitive::{SensitiveMount, confirm_sensitive_mounts, find_sensitive_mounts};
+pub use sensitive::{
+    SensitiveMount, confirm_sensitive_mounts, find_sensitive_mounts, resolved_sensitive_mounts,
+};
 
 /// Re-exported schema types from `jackin-config`.
 pub use jackin_config::{

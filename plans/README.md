@@ -21,7 +21,7 @@ the canonical command is everything after `rtk `.
 | Plan | Title | Priority | Effort | Depends on | Status |
 |---|---|---:|---:|---|---|
 | [001](001-canonical-account-inventory.md) | Make account identity and Desktop inventory canonical in Rust | P1 | L | — | DONE |
-| [007](007-config-validation-hardening.md) | Harden config validation, sensitive-mount detection, and error redaction | P2 | M | — | TODO |
+| [007](007-config-validation-hardening.md) | Harden config validation, sensitive-mount detection, and error redaction | P2 | M | — | DONE |
 | [002](002-global-rust-account-discovery.md) | Discover every configured supported account in Rust | P1 | L | 001, 007 | TODO |
 | [006](006-capsule-credential-exposure.md) | Keep credential values out of container-visible config and runtime argv | P1 | M | — | TODO |
 | [008](008-backend-parity-fail-closed.md) | Fail closed on unenforceable mount options and harden notify argv | P2 | S | — | TODO |

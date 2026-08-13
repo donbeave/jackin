@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 use std::sync::Mutex;
 
 use jackin_config::{AppConfig, RoleSource, WorkspaceConfig, WorkspaceRoleOverride};
-use jackin_core::{EnvValue, Extended, OpRef, WorkspaceName};
+use jackin_core::{EnvValue, Extended, OpAccount, OpField, OpItem, OpRef, OpVault, WorkspaceName};
 use jackin_protocol::ExecKind;
 
 use super::*;
@@ -56,6 +56,31 @@ impl OpRunner for FakeOpRunner {
             Some(Err(error)) => Err(anyhow::anyhow!(error.to_string())),
             None => anyhow::bail!("not found"),
         }
+    }
+}
+
+struct UnusedOpStructRunner;
+
+impl OpStructRunner for UnusedOpStructRunner {
+    fn account_list(&self) -> anyhow::Result<Vec<OpAccount>> {
+        unreachable!("literal rejection must happen before provider access")
+    }
+
+    fn vault_list(&self, _account: Option<&str>) -> anyhow::Result<Vec<OpVault>> {
+        unreachable!("literal rejection must happen before provider access")
+    }
+
+    fn item_list(&self, _vault_id: &str, _account: Option<&str>) -> anyhow::Result<Vec<OpItem>> {
+        unreachable!("literal rejection must happen before provider access")
+    }
+
+    fn item_get(
+        &self,
+        _item_id: &str,
+        _vault_id: &str,
+        _account: Option<&str>,
+    ) -> anyhow::Result<Vec<OpField>> {
+        unreachable!("literal rejection must happen before provider access")
     }
 }
 
@@ -246,26 +271,17 @@ fn validate_reserved_names_accepts_non_reserved_names() {
 #[test]
 fn operator_env_error_message_parity_variants() {
     assert_eq!(
-        OperatorEnvError::NotOpRef {
-            value: "plain".into()
-        }
-        .to_string(),
-        "not an op:// reference: plain"
+        OperatorEnvError::NotOpRef.to_string(),
+        "not an op:// reference"
     );
     assert_eq!(
-        OperatorEnvError::ShellVarInRef {
-            value: "op://v/${x}/f".into()
-        }
-        .to_string(),
-        "jackin does not support shell variable substitution inside `op://` URIs \
-         (`op://v/${x}/f`). Use a plain string value, or substitute before passing."
+        OperatorEnvError::ShellVarInRef.to_string(),
+        "jackin does not support shell variable substitution inside `op://` URIs. \
+         Use a plain string value, or substitute before passing."
     );
     assert_eq!(
-        OperatorEnvError::MalformedRef {
-            value: "op://only/two".into()
-        }
-        .to_string(),
-        "malformed op:// URI (expected 3 or 4 path segments): op://only/two"
+        OperatorEnvError::MalformedRef { segment_count: 2 }.to_string(),
+        "malformed op:// URI (expected 3 or 4 path segments, received 2)"
     );
     assert_eq!(
         OperatorEnvError::VaultNotFound {
@@ -320,6 +336,14 @@ fn operator_env_error_message_parity_variants() {
             .starts_with("operator env map contains 1 reserved runtime name(s):\n"),
         "{reserved}"
     );
+}
+
+#[test]
+fn resolve_error_never_retains_or_renders_literal_secret() {
+    let secret = "literal-secret-fixture-should-never-appear";
+    let err = resolve_op_uri_to_ref(secret, &UnusedOpStructRunner, None).unwrap_err();
+    assert!(!err.to_string().contains(secret));
+    assert!(!format!("{err:?}").contains(secret));
 }
 
 #[test]

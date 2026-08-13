@@ -436,7 +436,11 @@ pub async fn preflight_isolated(
     }
 
     // Sensitive mount overlap.
-    let sensitives = jackin_config::find_sensitive_mounts(std::slice::from_ref(mount));
+    let normalized =
+        jackin_config::normalize_sensitive_mount_sources(std::slice::from_ref(mount), |path| {
+            std::fs::canonicalize(path).ok()
+        });
+    let sensitives = jackin_config::find_sensitive_mounts(&normalized);
     if let Some(s) = sensitives.first() {
         return Err(IsolationError::SensitiveOverlap {
             dst: mount.dst.clone(),

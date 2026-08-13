@@ -4,8 +4,8 @@
 //! Tests for `config`.
 use super::*;
 use crate::{
-    GithubAuthMode, MountConfig, MountEntry, resolve_github_mode, resolve_mode,
-    validate_workspace_config,
+    GithubAuthMode, MountConfig, MountEntry, WorkspaceRoleOverride, resolve_github_mode,
+    resolve_mode, validate_workspace_config,
 };
 use jackin_core::JackinPaths;
 use jackin_core::WorkspaceName;
@@ -350,6 +350,86 @@ auth_forward = "oauth_token"
         msg.contains("not supported for amp"),
         "expected amp-rejection message, got: {msg}"
     );
+}
+
+#[test]
+fn auth_mode_validation_covers_every_agent_at_every_scope() {
+    let modes = [
+        AuthForwardMode::Sync,
+        AuthForwardMode::ApiKey,
+        AuthForwardMode::OAuthToken,
+        AuthForwardMode::Ignore,
+    ];
+    for agent in Agent::ALL.iter().copied() {
+        for mode in modes {
+            if agent.supported_modes().contains(&mode) {
+                continue;
+            }
+            let auth = AgentAuthConfig {
+                auth_forward: mode,
+                sync_source_dir: None,
+            };
+
+            let mut global = AppConfig::default();
+            set_global_agent_auth(&mut global, agent, auth.clone());
+            assert!(
+                global.validate_auth_modes().is_err(),
+                "global {} must reject {mode}",
+                agent.slug()
+            );
+
+            let mut workspace = WorkspaceConfig::default();
+            set_workspace_agent_auth(&mut workspace, agent, auth.clone());
+            assert!(
+                workspace.validate_auth_modes().is_err(),
+                "workspace {} must reject {mode}",
+                agent.slug()
+            );
+
+            let mut role = WorkspaceRoleOverride::default();
+            set_role_agent_auth(&mut role, agent, auth);
+            workspace = WorkspaceConfig::default();
+            workspace.roles.insert("smith".to_owned(), role);
+            assert!(
+                workspace.validate_auth_modes().is_err(),
+                "workspace role {} must reject {mode}",
+                agent.slug()
+            );
+        }
+    }
+}
+
+fn set_global_agent_auth(config: &mut AppConfig, agent: Agent, auth: AgentAuthConfig) {
+    match agent {
+        Agent::Claude => config.claude = Some(auth),
+        Agent::Codex => config.codex = Some(auth),
+        Agent::Amp => config.amp = Some(auth),
+        Agent::Kimi => config.kimi = Some(auth),
+        Agent::Opencode => config.opencode = Some(auth),
+        Agent::Grok => config.grok = Some(auth),
+    }
+}
+
+fn set_workspace_agent_auth(config: &mut WorkspaceConfig, agent: Agent, auth: AgentAuthConfig) {
+    match agent {
+        Agent::Claude => config.claude = Some(auth),
+        Agent::Codex => config.codex = Some(auth),
+        Agent::Amp => config.amp = Some(auth),
+        Agent::Kimi => config.kimi = Some(auth),
+        Agent::Opencode => config.opencode = Some(auth),
+        Agent::Grok => config.grok = Some(auth),
+    }
+}
+
+fn set_role_agent_auth(config: &mut WorkspaceRoleOverride, agent: Agent, auth: AgentAuthConfig) {
+    match agent {
+        Agent::Claude => config.claude = Some(auth),
+        Agent::Codex => config.codex = Some(auth),
+        Agent::Amp => config.amp = Some(auth),
+        Agent::Kimi => config.kimi = Some(auth),
+        Agent::Opencode => config.opencode = Some(auth),
+        Agent::Grok => config.grok = Some(auth),
+    }
 }
 
 #[test]

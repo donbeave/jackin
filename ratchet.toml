@@ -363,9 +363,6 @@ bound = 7
 key = "clippy::too_many_lines@jackin-console"
 bound = 7
 [[family.entry]]
-key = "clippy::too_many_lines@jackin-env"
-bound = 1
-[[family.entry]]
 key = "clippy::too_many_lines@jackin-launch"
 bound = 2
 [[family.entry]]
@@ -521,7 +518,7 @@ key = "crates/jackin-capsule/README.md"
 bound = 6343
 [[family.entry]]
 key = "crates/jackin-config/README.md"
-bound = 2892
+bound = 1897
 [[family.entry]]
 key = "crates/jackin-oppicker/README.md"
 bound = 1575

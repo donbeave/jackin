@@ -456,7 +456,10 @@ fn confirm_sensitive_mounts(
     workspace: &jackin_config::ResolvedWorkspace,
     steps: &mut super::StepCounter,
 ) -> anyhow::Result<()> {
-    let sensitive = jackin_config::find_sensitive_mounts(&workspace.mounts);
+    let normalized = jackin_config::normalize_sensitive_mount_sources(&workspace.mounts, |path| {
+        std::fs::canonicalize(path).ok()
+    });
+    let sensitive = jackin_config::find_sensitive_mounts(&normalized);
     if sensitive.is_empty() {
         return Ok(());
     }

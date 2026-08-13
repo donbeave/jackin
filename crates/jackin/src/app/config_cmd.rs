@@ -95,7 +95,8 @@ fn handle_mount_cmd(
                 isolation: jackin_core::MountIsolation::Shared,
             };
             crate::workspace::validate_mounts(std::slice::from_ref(&mount))?;
-            let sensitive = crate::workspace::find_sensitive_mounts(std::slice::from_ref(&mount));
+            let sensitive =
+                crate::workspace::resolved_sensitive_mounts(std::slice::from_ref(&mount));
             if !sensitive.is_empty() && !crate::workspace::confirm_sensitive_mounts(&sensitive)? {
                 anyhow::bail!("aborted — sensitive mount paths were not confirmed");
             }
