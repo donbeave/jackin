@@ -576,6 +576,8 @@ final class ArchitectureTests: XCTestCase {
         XCTAssertTrue(text.contains("final evidence requires the canonical branch-head app"))
         XCTAssertTrue(text.contains("CAPTURE_INACTIVE_APP:-"))
         XCTAssertTrue(text.contains("unset CAPTURE_INACTIVE_APP"))
+        XCTAssertTrue(text.contains("capture_with_relaunch"))
+        XCTAssertTrue(text.contains("capture retries exhausted after $attempt launches"))
         XCTAssertTrue(text.contains("FOCUS_DRIVE_TOOL=$focus_tool"))
         XCTAssertTrue(text.contains("\"$output/$file\" \"jackin❯ desktop\""))
         XCTAssertTrue(capture.contains("\"$FOCUS_TOOL\" \"$pid\" 0"))

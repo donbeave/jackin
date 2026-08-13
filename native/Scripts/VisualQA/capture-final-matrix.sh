@@ -74,6 +74,18 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM HUP
 
+capture_with_relaunch() {
+  local attempt=1
+  while ! "$@"; do
+    if [[ "$attempt" -ge 3 ]]; then
+      echo "capture retries exhausted after $attempt launches" >&2
+      return 1
+    fi
+    attempt=$((attempt + 1))
+    sleep 1
+  done
+}
+
 usage() {
   local file=$1 fixture=$2 appearance=$3 size=$4 state=${5:-active} collapsed=${6:-no}
   local -a environment=(
@@ -87,13 +99,15 @@ usage() {
   if [[ "$collapsed" == yes ]]; then
     environment+=("CAPTURE_TOOLBAR_BUTTON_DESCRIPTION=Hide Sidebar")
   fi
-  env "${environment[@]}" "$capture" "$app" "$owner" "$output/$file" "jackin❯ desktop" \
+  capture_with_relaunch env "${environment[@]}" \
+    "$capture" "$app" "$owner" "$output/$file" "jackin❯ desktop" \
     --fixture "$fixture" --open-usage --window-size "$size" --appearance "$appearance"
 }
 
 popover() {
   local file=$1 fixture=$2 appearance=$3
-  env WINDOW_ID_TOOL="$window_tool" NOTIFICATION_DRIVE_TOOL="$notification_tool" \
+  capture_with_relaunch env \
+    WINDOW_ID_TOOL="$window_tool" NOTIFICATION_DRIVE_TOOL="$notification_tool" \
     WINDOW_LAYER_MODE=all \
     "$capture" "$app" "$owner" "$output/$file" "" \
     --fixture "$fixture" --open-popover --appearance "$appearance"
