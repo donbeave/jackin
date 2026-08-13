@@ -55,6 +55,9 @@ exclude = [
   # handler.dev is a browser-visible research reference, but CI lychee
   # intermittently fails to connect to the site.
   "https://handler\\.dev/",
+  # vibe-kb.com is a browser-visible research reference, but intermittently
+  # times out from GitHub-hosted runners.
+  "https://vibe-kb\\.com/",
   # nngroup.com (Nielsen Norman Group) returns 403 to automated clients; the
   # article is browser-visible. Cited from docs/reference/tui/navigation.mdx.
   "https://www\\.nngroup\\.com/",

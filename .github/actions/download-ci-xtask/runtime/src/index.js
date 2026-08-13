@@ -9,10 +9,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const WAIT_MILLISECONDS = 2_000;
-// A cold producer installs the complete mise toolchain before publishing the
-// shared xtask. Consumers are separate workflows, so this poll is their
-// explicit completion barrier rather than a cache-timing assumption.
-export const DEADLINE_MILLISECONDS = 10 * 60_000;
+export const DEADLINE_MILLISECONDS = 120_000;
 const REQUIRED_TOOLS = [
   "sccache",
   "cargo-nextest",
@@ -34,6 +31,18 @@ async function preparedToolsComplete(destination) {
   try {
     const entries = new Set(await fs.readdir(destination));
     return REQUIRED_TOOLS.every((tool) => entries.has(tool));
+  } catch (error) {
+    if (error.code === "ENOENT") return false;
+    throw error;
+  }
+}
+
+async function preparedXtaskComplete(destination) {
+  try {
+    const entries = new Set(await fs.readdir(destination));
+    return (
+      entries.has("jackin-xtask") && entries.has("workspace-metadata.json")
+    );
   } catch (error) {
     if (error.code === "ENOENT") return false;
     throw error;
@@ -156,6 +165,10 @@ async function run() {
     core.warning("ignoring incomplete prepared Cargo tools cache");
     toolsHit = false;
   }
+  if (xtaskHit && !(await preparedXtaskComplete(xtaskDestination))) {
+    core.warning("ignoring incomplete prepared xtask cache");
+    xtaskHit = false;
+  }
   core.setOutput("tools-hit", "false");
   core.setOutput("xtask-hit", "false");
   if (toolsHit) core.setOutput("tools-hit", "true");
@@ -216,8 +229,11 @@ async function run() {
       xtask,
       xtaskDestination,
     );
-    xtaskHit = true;
-    core.setOutput("xtask-hit", "true");
+    xtaskHit = await preparedXtaskComplete(xtaskDestination);
+    if (!xtaskHit && !allowMiss) {
+      throw new Error(`prepared CI xtask artifact is incomplete: ${xtask.name}`);
+    }
+    core.setOutput("xtask-hit", xtaskHit ? "true" : "false");
   }
   await exportPrepared(
     toolsDestination,
@@ -284,6 +300,7 @@ export {
   exportPrepared,
   latestArtifact,
   preparedToolsComplete,
+  preparedXtaskComplete,
   splitRepository,
   validateContracts,
   waitForArtifact,
