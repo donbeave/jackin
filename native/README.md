@@ -93,6 +93,14 @@ swift test -c release
 
 Explicit visual-QA launch flags (`--fixture`, `--open-popover`, `--open-usage`, `--selection`, `--window-size`, `--appearance`) never activate unless a fixture is named and never call the bridge or real credentials.
 
+## Visual QA
+
+```bash
+native/Scripts/VisualQA/capture-final-matrix.sh native/dist/JackinDesktop.app
+```
+
+The script rebuilds and verifies the canonical branch-head app, then drives deterministic fixtures through the real popover and Usage-window hosts. Captures use actual window IDs and default to the ignored `native/.build/visual-qa/final/` directory. They are temporary verification output: inspect them, restore any changed system appearance or accessibility settings, and do not commit them. The retained distributable is `native/dist/JackinDesktop.app`.
+
 ## Static assembly
 
 One path builds local, PR, and release apps:

@@ -1,8 +1,0 @@
-com.apple.universalaccess|increaseContrast|ABSENT
-com.apple.universalaccess|reduceTransparency|ABSENT
-com.apple.universalaccess|reduceMotion|ABSENT
-com.apple.universalaccess|differentiateWithoutColor|ABSENT
-NSGlobalDomain|AppleInterfaceStyle|ABSENT
-NSGlobalDomain|AppleInterfaceStyleSwitchesAutomatically|1
-NSGlobalDomain|AppleKeyboardUIMode|ABSENT
-SystemEvents|darkMode|false
