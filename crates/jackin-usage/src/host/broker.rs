@@ -49,6 +49,14 @@ impl HostUsageRuntime {
         self.broker_phases.values().any(|phase| phase.is_active())
     }
 
+    /// Whether any active broker generation belongs to `surface_id`.
+    #[must_use]
+    pub fn surface_refresh_in_progress(&self, surface_id: &str) -> bool {
+        self.broker_phases
+            .iter()
+            .any(|(capability, phase)| capability.surface_id == surface_id && phase.is_active())
+    }
+
     /// Adopt one host-broker projection and never execute provider work here.
     pub fn apply_broker_generation(&mut self, state: UsageGenerationView) -> Result<(), String> {
         self.require_open()?;

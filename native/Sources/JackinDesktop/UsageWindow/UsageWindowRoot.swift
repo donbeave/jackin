@@ -23,7 +23,9 @@ public struct UsageWindowSidebar: View {
             glanceRows: store.providerGlanceRows,
             surfaces: store.surfaces,
             accounts: store.accounts,
-            selection: store.usageSelection
+            providerGroups: store.providerGroups,
+            selection: store.usageSelection,
+            accountSelection: store.usageAccountSelection
         )
     }
 
@@ -87,7 +89,8 @@ public struct UsageWindowSidebar: View {
                 .resizable()
                 .scaledToFit()
         } else {
-            Image(systemName: "circle.grid.cross")
+            Text(provider.fallbackGlyph)
+                .font(.caption2)
         }
     }
 }
@@ -105,7 +108,9 @@ public struct UsageWindowDetail: View {
             glanceRows: store.providerGlanceRows,
             surfaces: store.surfaces,
             accounts: store.accounts,
-            selection: store.usageSelection
+            providerGroups: store.providerGroups,
+            selection: store.usageSelection,
+            accountSelection: store.usageAccountSelection
         )
     }
 
@@ -145,13 +150,14 @@ public struct UsageWindowDetail: View {
             )
         } else {
             OverviewListView(
-                model: model,
-                accounts: store.accounts,
+                groups: store.providerGroups,
+                selectedRowID: $store.overviewSelectionID,
+                expandedProviderIDs: $store.overviewExpandedProviderIDs,
                 onSelect: { surfaceId, accountKey in
-                    store.selectUsageSurface(surfaceId)
                     if let accountKey {
                         store.setSelectedAccount(surfaceId: surfaceId, accountKey: accountKey)
                     }
+                    store.selectUsageContext(surfaceId: surfaceId, accountKey: accountKey)
                 },
                 onRetry: { surfaceId in
                     store.refresh(surfaceId: surfaceId)
@@ -185,7 +191,7 @@ struct UsageWindowDetailAccessory: View {
             store.refreshAll()
         } label: {
             Label {
-                Text(store.refreshInProgress ? "Refreshing usage" : "Refresh")
+                Text("Refresh")
             } icon: {
                 ZStack {
                     Image(systemName: "arrow.clockwise")

@@ -20,10 +20,13 @@ public struct PopoverRoot: View {
     public static let liveContentSize = CGSize(width: 380, height: 520)
 
     @ObservedObject public var store: PresentationStore
-    public var onOpenUsage: ((String?) -> Void)?
+    public var onOpenUsage: ((UsageNavigationContext?) -> Void)?
     @Environment(\.popoverQIFullPlate) private var qiFullPlate
 
-    public init(store: PresentationStore, onOpenUsage: ((String?) -> Void)? = nil) {
+    public init(
+        store: PresentationStore,
+        onOpenUsage: ((UsageNavigationContext?) -> Void)? = nil
+    ) {
         self.store = store
         self.onOpenUsage = onOpenUsage
     }
@@ -130,18 +133,6 @@ public struct PopoverRoot: View {
                 }
             }
 
-            if !metadataRows.isEmpty {
-                Section {
-                    ForEach(metadataRows) { row in
-                        LabeledContent(row.label, value: row.displayLabel)
-                            .accessibilityLabel("\(row.label), \(row.displayLabel)")
-                            .accessibilityIdentifier("popover.detail.\(row.rowId)")
-                    }
-                } header: {
-                    sectionHeader("Details")
-                }
-            }
-
             if !limitRows.isEmpty {
                 Section {
                     ForEach(limitRows) { row in
@@ -156,6 +147,18 @@ public struct PopoverRoot: View {
                         .foregroundStyle(.secondary)
                 } header: {
                     sectionHeader("Limits")
+                }
+            }
+
+            if !metadataRows.isEmpty {
+                Section {
+                    ForEach(metadataRows) { row in
+                        LabeledContent(row.label, value: row.displayLabel)
+                            .accessibilityLabel("\(row.label), \(row.displayLabel)")
+                            .accessibilityIdentifier("popover.detail.\(row.rowId)")
+                    }
+                } header: {
+                    sectionHeader("Details")
                 }
             }
 
@@ -188,18 +191,23 @@ public struct PopoverRoot: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(provider.displayLabel)
                     .font(.headline)
-                Text(provider.statusLabel)
+                Text(provider.accountLabel)
+                    .foregroundStyle(.primary)
+                    .accessibilityIdentifier("popover.provider-account")
+                Text(provider.activityLabel)
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                    .accessibilityIdentifier("popover.provider-activity")
             }
             Spacer()
             if provider.isRefreshing {
                 ProgressView()
                     .controlSize(.small)
-                    .accessibilityLabel(provider.statusLabel)
+                    .accessibilityLabel(provider.activityLabel)
             }
         }
         .accessibilityElement(children: .combine)
+        .accessibilityLabel(provider.accessibilityLabel)
         .accessibilityIdentifier("popover.provider-identity")
     }
 
@@ -264,7 +272,18 @@ public struct PopoverRoot: View {
             Spacer()
 
             Button("Open Usage") {
-                onOpenUsage?(selectedProvider?.surfaceId)
+                guard let provider = selectedProvider else {
+                    onOpenUsage?(nil)
+                    return
+                }
+                let accountKey = store.accountsForSurface(provider.surfaceId)
+                    .first(where: \.selected)?.accountKey
+                onOpenUsage?(
+                    UsageNavigationContext(
+                        surfaceId: provider.surfaceId,
+                        accountKey: accountKey
+                    )
+                )
             }
             .keyboardShortcut(.defaultAction)
             .accessibilityIdentifier("popover.open-usage")

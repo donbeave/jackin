@@ -3963,19 +3963,49 @@ fn usage_detail_presentation_preserves_exact_capsule_row_order() {
         .iter()
         .map(|r| r.row_id.as_str())
         .collect();
+    assert_eq!(ids, vec!["username", "plan", "auth", "bucket:0"]);
+    assert!(!ids.iter().any(|id| matches!(
+        *id,
+        "focused" | "header" | "provider" | "account" | "status" | "updated"
+    )));
+    assert_eq!(presentation.rows[0].display_label, "operator");
+}
+
+#[test]
+fn usage_identity_presentation_owns_account_and_activity_copy() {
+    let view = detail_view(Vec::new(), None, UsageSnapshotStatus::Fresh);
+    let idle = usage_identity_presentation("OpenAI", &view, false);
+    assert_eq!(idle.provider_title, "OpenAI");
+    assert_eq!(idle.account_label, "operator@example.com");
+    assert_eq!(idle.activity_label, "Updated 2m ago");
     assert_eq!(
-        ids,
-        vec![
-            "focused", "header", "provider", "account", "status", "updated", "username", "plan",
-            "auth", "bucket:0",
-        ]
+        idle.activity_kind,
+        jackin_protocol::control::UsageActivityKind::Idle
     );
-    // Focused/status wording is the exact Capsule wording, produced in Rust.
     assert_eq!(
-        presentation.rows[0].display_label,
-        "codex · OpenAI · operator@example.com"
+        idle.accessibility_label,
+        "OpenAI, operator@example.com, Updated 2m ago"
     );
-    assert_eq!(presentation.rows[4].display_label, "fresh");
+
+    let updating = usage_identity_presentation("OpenAI", &view, true);
+    assert_eq!(updating.activity_label, "Updating…");
+    assert_eq!(
+        updating.activity_kind,
+        jackin_protocol::control::UsageActivityKind::Updating
+    );
+}
+
+#[test]
+fn usage_identity_presentation_is_honest_without_account_and_on_failure() {
+    let mut view = detail_view(Vec::new(), Some("upstream 503"), UsageSnapshotStatus::Error);
+    view.account.account_label.clear();
+    let identity = usage_identity_presentation("OpenAI", &view, false);
+    assert_eq!(identity.account_label, "No authenticated account");
+    assert_eq!(identity.activity_label, "Update failed · Updated 2m ago");
+    assert_eq!(
+        identity.activity_kind,
+        jackin_protocol::control::UsageActivityKind::Exceptional
+    );
 }
 
 #[test]
@@ -4146,7 +4176,14 @@ fn usage_detail_presentation_grok_bounds_no_provider_path() {
         ..view
     };
     let presentation = usage_detail_presentation(&view);
-    assert_eq!(presentation.rows[7].display_label, "SuperGrok");
+    assert_eq!(
+        presentation
+            .rows
+            .iter()
+            .find(|row| row.row_id == "plan")
+            .map(|row| row.display_label.as_str()),
+        Some("SuperGrok")
+    );
     assert_eq!(
         presentation.rows.last().map(|r| r.display_label.as_str()),
         Some("$25.00")

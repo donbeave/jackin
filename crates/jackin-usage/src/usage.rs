@@ -478,7 +478,7 @@ pub fn estimate_caption(view: &FocusedUsageView) -> Option<String> {
 
 pub use self::format::{
     PercentStyle, ResetStyle, UsageBucketPresentation, UsageFormatPrefs, usage_bucket_presentation,
-    usage_detail_presentation, usage_display_status_label,
+    usage_detail_presentation, usage_display_status_label, usage_identity_presentation,
 };
 
 pub fn usage_status_storage_label(status: UsageSnapshotStatus) -> &'static str {
@@ -1215,7 +1215,7 @@ pub(crate) fn now_epoch() -> i64 {
 pub fn relative_updated_label(fetched_at: i64, now_epoch: i64) -> String {
     let age = now_epoch.saturating_sub(fetched_at).max(0);
     if age < 60 {
-        "Updated just now".to_owned()
+        "Updated now".to_owned()
     } else if age < 3_600 {
         format!("Updated {}m ago", age / 60)
     } else {

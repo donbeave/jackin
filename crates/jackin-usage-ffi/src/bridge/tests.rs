@@ -507,8 +507,34 @@ fn provider_glance_rows_via_bridge_project_rust_rows() {
     assert_eq!(account.remaining_percent, Some(57));
     assert_eq!(account.remaining_label, "57%");
     assert_eq!(account.headline, "57% left");
+    assert_eq!(account.reset_display_label, "Resets now");
     assert_eq!(account.status_word, "fresh");
     assert_eq!(account.last_error, None);
+
+    let projection = bridge.desktop_projection(3).expect("desktop projection");
+    assert_eq!(projection.providers.len(), 1);
+    assert_eq!(projection.glance_rows.len(), 1);
+    assert_eq!(projection.status_bar_glance_rows.len(), 1);
+    let provider = &projection.providers[0];
+    assert_eq!(provider.group.surface_id, "codex");
+    assert_eq!(
+        provider.selected_account_key.as_deref(),
+        Some(account.account_key.as_str())
+    );
+    assert_eq!(provider.selected_usage.identity.provider_title, "OpenAI");
+    assert_eq!(
+        provider.selected_usage.identity.account_label,
+        "codex@example.com"
+    );
+    assert_eq!(provider.selected_usage.identity.activity_kind, "idle");
+    assert!(
+        provider
+            .selected_usage
+            .detail_presentation
+            .rows
+            .iter()
+            .any(|row| row.row_id == "provenance")
+    );
 }
 
 #[test]
@@ -547,14 +573,17 @@ fn detail_presentation_rides_the_snapshot_dto() {
     let dto = bridge.snapshot("codex".to_owned()).expect("snapshot");
     let rows = &dto.detail_presentation.rows;
     let ids: Vec<&str> = rows.iter().map(|r| r.row_id.as_str()).collect();
-    // Fixed metadata order, then position-based bucket ids, then Detail last.
-    assert_eq!(
-        ids,
-        vec![
-            "focused", "header", "provider", "account", "status", "updated", "bucket:0",
-            "bucket:1", "detail",
-        ]
+    assert_eq!(ids, vec!["bucket:0", "bucket:1", "detail"]);
+    assert_eq!(dto.identity.provider_title, "OpenAI");
+    assert_eq!(dto.identity.account_label, "codex@example.com");
+    assert!(
+        dto.identity
+            .activity_label
+            .starts_with("Update delayed · Updated "),
+        "{}",
+        dto.identity.activity_label
     );
+    assert_eq!(dto.identity.activity_kind, "exceptional");
     // Duplicate labels keep distinct ids and distinct values.
     let b0 = rows.iter().find(|r| r.row_id == "bucket:0").expect("b0");
     let b1 = rows.iter().find(|r| r.row_id == "bucket:1").expect("b1");

@@ -16,13 +16,13 @@ use std::path::{Path, PathBuf};
 use std::time::{Duration, Instant};
 
 use jackin_core::Agent;
-use jackin_protocol::control::{FocusedUsageView, UsageSeverity};
+use jackin_protocol::control::{FocusedUsageView, UsageIdentityPresentation, UsageSeverity};
 use jackin_protocol::usage_broker::{UsageAccountCapability, UsageRefreshPhase};
 
 use crate::usage::{
     UsageCache, UsageFormatPrefs, compact_duration_label, estimate_caption,
     exact_reset_parenthetical, percent_headline, provider_display_label, reset_label_with_prefs,
-    usage_display_status_label, usage_status_storage_label,
+    usage_display_status_label, usage_identity_presentation, usage_status_storage_label,
 };
 
 pub use accounts::{
@@ -394,6 +394,8 @@ pub struct HostProviderGlanceRow {
     pub headline: String,
     /// Relative reset label when the glance bucket carries a reset.
     pub reset_label: Option<String>,
+    /// Compact countdown token used by the menu-bar chip (`<1m`, `2h 14m`).
+    pub compact_reset_label: Option<String>,
     /// Exact-clock reset parenthetical when the glance bucket carries a reset.
     pub exact_reset: Option<String>,
     /// Stable machine status word.
@@ -406,6 +408,12 @@ pub struct HostProviderGlanceRow {
     pub severity: String,
     /// Rust-owned freshness label.
     pub updated_label: String,
+    /// The single Rust-owned activity phrase for this selected provider/account.
+    pub activity_label: String,
+    /// Machine activity kind (`idle` | `updating` | `exceptional`).
+    pub activity_kind: String,
+    /// Complete menu-bar/popover accessibility and tooltip copy.
+    pub accessibility_label: String,
     /// Rust-owned last error, when present.
     pub last_error: Option<String>,
     /// Whether the native bar value is visually dimmed (stale/error).
@@ -430,6 +438,11 @@ pub struct HostDesktopProviderGroup {
     pub icon_key: String,
     pub fallback_glyph: String,
     pub usage_url: Option<String>,
+    pub account_column_label: String,
+    pub plan_or_status_label: String,
+    pub remaining_label: String,
+    pub reset_display_label: String,
+    pub accessibility_label: String,
     pub accounts: Vec<HostAccountDescriptor>,
     pub empty_state: Option<HostDesktopProviderState>,
 }
@@ -438,6 +451,30 @@ pub struct HostDesktopProviderGroup {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct HostDesktopInventory {
     pub groups: Vec<HostDesktopProviderGroup>,
+}
+
+/// One provider group plus its selected, fully-presented usage snapshot.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct HostDesktopProviderProjection {
+    pub group: HostDesktopProviderGroup,
+    pub selected_account_key: Option<String>,
+    pub selected_usage: FocusedUsageView,
+    pub identity: UsageIdentityPresentation,
+    pub is_updating: bool,
+}
+
+/// One immutable Desktop state boundary, produced while the runtime is locked.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct HostDesktopProjection {
+    pub generation: u64,
+    pub refresh_in_progress: bool,
+    pub error_message: Option<String>,
+    pub next_refresh_label: String,
+    pub surfaces: Vec<HostSurfaceDescriptor>,
+    pub providers: Vec<HostDesktopProviderProjection>,
+    pub glance_rows: Vec<HostProviderGlanceRow>,
+    pub status_bar_glance_rows: Vec<HostProviderGlanceRow>,
+    pub diagnostics: Vec<UsageDiscoveryDiagnostic>,
 }
 
 /// Driving bucket for compact/overview labels: min remaining + its reset epoch.
@@ -1032,7 +1069,13 @@ impl HostUsageRuntime {
                 continue;
             }
             let resets_at = glance.and_then(|b| b.resets_at);
-            let row = build_provider_glance_row(surface, view, now, prefs);
+            let row = build_provider_glance_row(
+                surface,
+                view,
+                self.surface_refresh_in_progress(surface.id()),
+                now,
+                prefs,
+            );
             candidates.push((rem, resets_at, row));
         }
         candidates.sort_by_key(|(remaining, resets_at, row)| {
@@ -1174,17 +1217,88 @@ impl HostUsageRuntime {
                     is_refreshing,
                 }
             });
+            let display_label = provider_display_label(surface.label()).to_owned();
+            let plan_or_status_label = empty_state
+                .as_ref()
+                .map(|state| state.status_label.clone())
+                .unwrap_or_else(|| "—".to_owned());
+            let accessibility_label = empty_state.as_ref().map_or_else(
+                || display_label.clone(),
+                |state| format!("{display_label}, {}", state.status_label),
+            );
             groups.push(HostDesktopProviderGroup {
                 surface_id: surface.id().to_owned(),
-                display_label: provider_display_label(surface.label()).to_owned(),
+                display_label,
                 icon_key: surface.id().to_owned(),
                 fallback_glyph: surface.fallback_glyph().to_owned(),
                 usage_url: surface.usage_url().map(str::to_owned),
+                account_column_label: "—".to_owned(),
+                plan_or_status_label,
+                remaining_label: "—".to_owned(),
+                reset_display_label: "—".to_owned(),
+                accessibility_label,
                 accounts,
                 empty_state,
             });
         }
         Ok(HostDesktopInventory { groups })
+    }
+
+    /// Build the complete native Desktop model from one uninterrupted runtime
+    /// snapshot. The UniFFI bridge holds the runtime mutex for this whole call,
+    /// so no broker generation can interleave partial provider/account state.
+    pub fn desktop_projection(
+        &mut self,
+        status_bar_max: u32,
+    ) -> Result<HostDesktopProjection, String> {
+        self.require_open()?;
+        let surfaces = self.list_surfaces()?;
+        let inventory = self.desktop_inventory()?;
+        let mut providers = Vec::with_capacity(inventory.groups.len());
+        for group in inventory.groups {
+            let surface_id = group.surface_id.clone();
+            let selected_account_key = group
+                .accounts
+                .iter()
+                .find(|account| account.selected)
+                .map(|account| account.account_key.clone());
+            let selected_usage = self.snapshot(&surface_id)?;
+            let is_updating = self.surface_refresh_in_progress(&surface_id);
+            let identity =
+                usage_identity_presentation(&group.display_label, &selected_usage, is_updating);
+            providers.push(HostDesktopProviderProjection {
+                group,
+                selected_account_key,
+                selected_usage,
+                identity,
+                is_updating,
+            });
+        }
+        let glance_rows = self.provider_glance_rows()?;
+        let status_bar_glance_rows = self.status_bar_provider_glance_rows(status_bar_max)?;
+        let diagnostics = self.discovery_diagnostics()?;
+        let global_messages = diagnostics
+            .iter()
+            .filter(|diagnostic| diagnostic.surface_id.is_none())
+            .map(|diagnostic| {
+                format!(
+                    "{}: {}",
+                    diagnostic.scope_label,
+                    diagnostic.issue.display_message()
+                )
+            })
+            .collect::<Vec<_>>();
+        Ok(HostDesktopProjection {
+            generation: self.next_seq,
+            refresh_in_progress: self.broker_refresh_in_progress(),
+            error_message: (!global_messages.is_empty()).then(|| global_messages.join("\n")),
+            next_refresh_label: self.next_refresh_label(),
+            surfaces,
+            providers,
+            glance_rows,
+            status_bar_glance_rows,
+            diagnostics,
+        })
     }
 
     /// Detected providers in the canonical Desktop model order, each a
@@ -1230,7 +1344,13 @@ impl HostUsageRuntime {
                 false
             };
             if detected {
-                rows.push(build_provider_glance_row(surface, view, now, prefs));
+                rows.push(build_provider_glance_row(
+                    surface,
+                    view,
+                    self.surface_refresh_in_progress(surface.id()),
+                    now,
+                    prefs,
+                ));
             }
         }
         Ok(rows)
@@ -1499,52 +1619,74 @@ fn glance_bucket(
 fn build_provider_glance_row(
     surface: HostSurfaceId,
     view: &FocusedUsageView,
+    is_updating: bool,
     now: i64,
     prefs: UsageFormatPrefs,
 ) -> HostProviderGlanceRow {
     use jackin_protocol::control::UsageSnapshotStatus as Status;
     let display_label = provider_display_label(surface.label()).to_owned();
     let glance = glance_bucket(surface, view);
-    let (bar_label, headline, glance_remaining_percent, reset_label, exact_reset) =
-        match glance.and_then(|bucket| bucket.remaining_percent) {
-            Some(percent) => {
-                let (reset_label, exact_reset) =
-                    glance
-                        .and_then(|bucket| bucket.resets_at)
-                        .map_or((None, None), |at| {
-                            (
-                                Some(reset_label_with_prefs(at, now, prefs)),
-                                Some(exact_reset_parenthetical(at)),
-                            )
-                        });
-                (
-                    format!("{percent}%"),
-                    format!("{percent}% left"),
-                    Some(percent),
-                    reset_label,
-                    exact_reset,
-                )
-            }
-            None => ("–".to_owned(), "–".to_owned(), None, None, None),
-        };
+    let (
+        bar_label,
+        headline,
+        glance_remaining_percent,
+        reset_label,
+        compact_reset_label,
+        exact_reset,
+    ) = match glance.and_then(|bucket| bucket.remaining_percent) {
+        Some(percent) => {
+            let (reset_label, compact_reset_label, exact_reset) = glance
+                .and_then(|bucket| bucket.resets_at)
+                .map_or((None, None, None), |at| {
+                    (
+                        Some(reset_label_with_prefs(at, now, prefs)),
+                        Some(if at <= now {
+                            "now".to_owned()
+                        } else {
+                            compact_duration_label(at.saturating_sub(now))
+                        }),
+                        Some(exact_reset_parenthetical(at)),
+                    )
+                });
+            (
+                format!("{percent}%"),
+                format!("{percent}% left"),
+                Some(percent),
+                reset_label,
+                compact_reset_label,
+                exact_reset,
+            )
+        }
+        None => ("–".to_owned(), "–".to_owned(), None, None, None, None),
+    };
+    let identity = usage_identity_presentation(&display_label, view, is_updating);
     HostProviderGlanceRow {
         surface_id: surface.id().to_owned(),
         icon_key: surface.id().to_owned(),
         fallback_glyph: surface.fallback_glyph().to_owned(),
         usage_url: surface.usage_url().map(str::to_owned),
         display_label,
-        account_label: view.account.account_label.clone(),
+        account_label: identity.account_label.clone(),
         plan_label: view.account.plan_label.clone(),
         glance_remaining_percent,
         bar_label,
         headline,
         reset_label,
+        compact_reset_label,
         exact_reset,
         status_word: usage_status_storage_label(view.status).to_owned(),
-        is_refreshing: view.is_refreshing_placeholder(),
+        is_refreshing: is_updating || view.is_refreshing_placeholder(),
         status_label: usage_display_status_label(view.status).to_owned(),
         severity: worst_severity_label(view),
         updated_label: view.updated_label.clone(),
+        activity_label: identity.activity_label,
+        activity_kind: match identity.activity_kind {
+            jackin_protocol::control::UsageActivityKind::Idle => "idle",
+            jackin_protocol::control::UsageActivityKind::Updating => "updating",
+            jackin_protocol::control::UsageActivityKind::Exceptional => "exceptional",
+        }
+        .to_owned(),
+        accessibility_label: identity.accessibility_label,
         last_error: view.last_error.clone(),
         dimmed: matches!(view.status, Status::Stale | Status::Error),
     }
@@ -1590,23 +1732,41 @@ fn account_descriptor(
     provenance.dedup();
     let provenance_label = provenance.join(" · ");
     let status_label = usage_display_status_label(view.status).to_owned();
+    let plan_or_status_label = entry
+        .plan_label
+        .clone()
+        .unwrap_or_else(|| status_label.clone());
+    let reset_display_label = reset_label.clone().unwrap_or_else(|| "—".to_owned());
+    let accessibility_label = format!(
+        "{}, {}, {}, {}, {}",
+        provider_display_label(surface.label()),
+        entry.account_label,
+        plan_or_status_label,
+        remaining_label,
+        reset_display_label
+    );
     HostAccountDescriptor {
         surface_id: surface.id().to_owned(),
+        provider_column_label: "—".to_owned(),
         account_key: entry.account_key.clone(),
         account_label: entry.account_label.clone(),
         plan_label: entry.plan_label.clone(),
         selected,
         lifecycle: entry.lifecycle.label().to_owned(),
+        lifecycle_label: match entry.lifecycle {
+            AccountLifecycle::Current => "Current account",
+            AccountLifecycle::Historical => "Historical account",
+            AccountLifecycle::ProviderPresenceOnly => "Provider presence only",
+        }
+        .to_owned(),
         provenance,
         provenance_label,
-        plan_or_status_label: entry
-            .plan_label
-            .clone()
-            .unwrap_or_else(|| status_label.clone()),
+        plan_or_status_label,
         remaining_percent,
         remaining_label,
         headline,
         reset_label,
+        reset_display_label,
         exact_reset,
         status_word: usage_status_storage_label(view.status).to_owned(),
         status_label,
@@ -1614,6 +1774,7 @@ fn account_descriptor(
         updated_label: view.updated_label.clone(),
         last_error: view.last_error.clone(),
         dimmed: matches!(view.status, Status::Stale | Status::Error),
+        accessibility_label,
     }
 }
 

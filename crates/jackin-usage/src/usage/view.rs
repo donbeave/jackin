@@ -212,7 +212,7 @@ pub(crate) fn usage_view(input: UsageViewInput<'_>) -> FocusedUsageView {
         confidence: input.confidence,
         fetched_at_epoch: input.now,
         updated_label: match input.status {
-            UsageSnapshotStatus::Fresh => "Updated just now",
+            UsageSnapshotStatus::Fresh => "Updated now",
             UsageSnapshotStatus::Stale => "Stale",
             UsageSnapshotStatus::NeedsLogin => "Needs login",
             UsageSnapshotStatus::NeedsSecret => "Needs secret",

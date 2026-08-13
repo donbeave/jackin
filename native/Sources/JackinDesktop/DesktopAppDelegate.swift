@@ -26,7 +26,7 @@ public final class StatusBarController: NSObject {
     private var rightClickMonitors: [ObjectIdentifier: Any] = [:]
     private var cancellables: Set<AnyCancellable> = []
     /// Opens the Usage window focused on a provider (`nil` = Overview).
-    private let onOpenUsage: (String?) -> Void
+    private let onOpenUsage: (UsageNavigationContext?) -> Void
     /// Owns the context menu and is the `NSMenuItem` target. Must stay retained
     ///
     /// for the bar lifetime (see `StatusItemMenu` docs — drop target ⇒ all rows disabled).
@@ -36,7 +36,7 @@ public final class StatusBarController: NSObject {
         store: PresentationStore,
         menuRouter: StatusItemMenuRouter,
         compactStatusItems: Bool = false,
-        onOpenUsage: @escaping (String?) -> Void
+        onOpenUsage: @escaping (UsageNavigationContext?) -> Void
     ) {
         self.store = store
         self.compactStatusItems = compactStatusItems
@@ -48,20 +48,20 @@ public final class StatusBarController: NSObject {
         popover.behavior = compactStatusItems ? .applicationDefined : .transient
         popover.animates = true
         popover.contentSize = PopoverRoot.liveContentSize
-        let root = PopoverRoot(store: store) { [weak self] surfaceId in
+        let root = PopoverRoot(store: store) { [weak self] context in
             self?.popover.performClose(nil)
             self?.anchoredButton = nil
-            self?.onOpenUsage(surfaceId)
+            self?.onOpenUsage(context)
         }
         popover.contentViewController = NSHostingController(rootView: root)
 
         // Burn-first chips only (SB-3/14/17/19) — not full providerGlanceRows inventory.
         store.$statusBarGlanceRows
-            .receive(on: RunLoop.main)
+            .receive(on: DispatchQueue.main)
             .sink { [weak self] rows in self?.apply(rows: rows) }
             .store(in: &cancellables)
         store.$statusBarShowsValues
-            .receive(on: RunLoop.main)
+            .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in self?.refreshTitles() }
             .store(in: &cancellables)
 
@@ -116,16 +116,14 @@ public final class StatusBarController: NSObject {
         button.imagePosition = .imageLeading
         button.attributedTitle =
             store.statusBarShowsValues && !compactStatusItems
-            ? StatusItemRendering.title(barLabel: row.barLabel, resetLabel: row.resetLabel)
+            ? StatusItemRendering.title(
+                barLabel: row.barLabel,
+                compactResetLabel: row.compactResetLabel
+            )
             : NSAttributedString(string: "")
         button.appearsDisabled = row.dimmed
-        // Tooltip carries full Rust headline + optional exact reset (detail beyond bar).
-        var tip = row.headline
-        if let exact = row.exactReset, !exact.isEmpty {
-            tip = "\(tip) \(exact)"
-        }
-        button.toolTip = tip
-        button.setAccessibilityLabel("\(row.displayLabel) \(row.headline)")
+        button.toolTip = row.accessibilityLabel
+        button.setAccessibilityLabel(row.accessibilityLabel)
     }
 
     private func ensureFallbackItem() {
@@ -401,8 +399,8 @@ public final class DesktopAppDelegate: NSObject, NSApplicationDelegate {
             menuRouter: router,
             compactStatusItems: visualQALaunchOptions.usesFixture
         ) {
-            [weak usageWindow] surfaceId in
-            usageWindow?.show(focusOn: surfaceId)
+            [weak usageWindow] context in
+            usageWindow?.show(context: context)
         }
         self.statusBar = statusBar
 
@@ -506,6 +504,7 @@ public final class DesktopAppDelegate: NSObject, NSApplicationDelegate {
                 statusBarGlanceRows: fixture.statusGlanceRows,
                 surfaces: fixture.surfaces,
                 accounts: fixture.accounts,
+                providerGroups: fixture.providerGroups,
                 popoverSelection: fixture.popoverSelection,
                 usageSelection: fixture.usageSelection,
                 nextRefreshLabel: fixture.nextRefreshLabel,
@@ -520,6 +519,7 @@ public final class DesktopAppDelegate: NSObject, NSApplicationDelegate {
                 glanceRows: [],
                 surfaces: [],
                 accounts: [],
+                providerGroups: [],
                 popoverSelection: nil,
                 usageSelection: nil,
                 nextRefreshLabel: "",

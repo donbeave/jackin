@@ -105,11 +105,14 @@ impl AccountProvenance {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct HostAccountDescriptor {
     pub surface_id: String,
+    /// Overview Provider cell; account children leave ownership to the parent.
+    pub provider_column_label: String,
     pub account_key: String,
     pub account_label: String,
     pub plan_label: Option<String>,
     pub selected: bool,
     pub lifecycle: String,
+    pub lifecycle_label: String,
     pub provenance: Vec<String>,
     pub provenance_label: String,
     pub plan_or_status_label: String,
@@ -117,6 +120,8 @@ pub struct HostAccountDescriptor {
     pub remaining_label: String,
     pub headline: String,
     pub reset_label: Option<String>,
+    /// Non-optional Overview display value (`—` when unknown).
+    pub reset_display_label: String,
     pub exact_reset: Option<String>,
     pub status_word: String,
     pub status_label: String,
@@ -124,6 +129,8 @@ pub struct HostAccountDescriptor {
     pub updated_label: String,
     pub last_error: Option<String>,
     pub dimmed: bool,
+    /// Complete combined Overview account-row announcement.
+    pub accessibility_label: String,
 }
 
 /// Internal source-complete account record.

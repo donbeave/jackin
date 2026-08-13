@@ -46,6 +46,15 @@ public final class UsageWindowController: NSObject, NSWindowDelegate {
         present(size: size)
     }
 
+    /// Show at an exact provider/account handoff captured by the popover.
+    public func show(context: UsageNavigationContext?, size: CGSize? = nil) {
+        store.selectUsageContext(
+            surfaceId: context?.surfaceId,
+            accountKey: context?.accountKey
+        )
+        present(size: size)
+    }
+
     private func present(size: CGSize?) {
         let window = window ?? makeWindow()
         self.window = window

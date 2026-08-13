@@ -544,12 +544,12 @@ final class ArchitectureTests: XCTestCase {
 
         XCTAssertTrue(
             text.contains(
-                "Text(row.planLabel ?? row.statusLabel ?? \"—\")\n"
+                "Text(row.planOrStatusLabel)\n"
                     + "                            .foregroundStyle(.primary)")
         )
         XCTAssertTrue(
             text.contains(
-                "Text(row.resetLabel ?? \"—\")\n"
+                "Text(row.resetLabel)\n"
                     + "                        .foregroundStyle(.primary)")
         )
         XCTAssertFalse(text.contains("Color("))
@@ -662,6 +662,8 @@ final class ArchitectureTests: XCTestCase {
             PresentationStore.GlanceProviderRow(
                 surfaceId: id,
                 iconKey: id,
+                fallbackGlyph: "?",
+                usageURL: nil,
                 displayLabel: id,
                 accountLabel: "",
                 planLabel: nil,
@@ -669,12 +671,16 @@ final class ArchitectureTests: XCTestCase {
                 barLabel: pct.map { "\($0)%" } ?? "–",
                 headline: pct.map { "\($0)% left" } ?? "–",
                 resetLabel: nil,
+                compactResetLabel: nil,
                 exactReset: nil,
                 statusWord: "fresh",
                 isRefreshing: false,
                 statusLabel: "fresh",
                 severity: "normal",
                 updatedLabel: "now",
+                activityLabel: "Updated now",
+                activityKind: "idle",
+                accessibilityLabel: id,
                 lastError: nil,
                 dimmed: false
             )
@@ -968,60 +974,4 @@ final class ArchitectureTests: XCTestCase {
         }
     }
 
-    func testStatusItemTextSelectionModes() {
-        XCTAssertEqual(
-            statusItemTextSelection(
-                mode: .iconOnly,
-                pinnedSurfaceId: nil,
-                stripMax: 3,
-                hideForScreenShare: false
-            ),
-            .empty
-        )
-        XCTAssertEqual(
-            statusItemTextSelection(
-                mode: .focusPercent,
-                pinnedSurfaceId: nil,
-                stripMax: 3,
-                hideForScreenShare: false
-            ),
-            .focus
-        )
-        XCTAssertEqual(
-            statusItemTextSelection(
-                mode: .pinnedSurface,
-                pinnedSurfaceId: "codex",
-                stripMax: 3,
-                hideForScreenShare: false
-            ),
-            .pinned(surfaceId: "codex")
-        )
-        XCTAssertEqual(
-            statusItemTextSelection(
-                mode: .pinnedSurface,
-                pinnedSurfaceId: nil,
-                stripMax: 3,
-                hideForScreenShare: false
-            ),
-            .empty
-        )
-        XCTAssertEqual(
-            statusItemTextSelection(
-                mode: .strip,
-                pinnedSurfaceId: nil,
-                stripMax: 3,
-                hideForScreenShare: false
-            ),
-            .strip(max: 3)
-        )
-        XCTAssertEqual(
-            statusItemTextSelection(
-                mode: .focusPercent,
-                pinnedSurfaceId: nil,
-                stripMax: 3,
-                hideForScreenShare: true
-            ),
-            .empty
-        )
-    }
 }

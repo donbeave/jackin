@@ -21,6 +21,8 @@ final class UsageWindowModelTests: XCTestCase {
         PresentationStore.GlanceProviderRow(
             surfaceId: surfaceId,
             iconKey: surfaceId,
+            fallbackGlyph: "?",
+            usageURL: "https://example.test/usage",
             displayLabel: "label:\(surfaceId)",
             accountLabel: "acct:\(surfaceId)",
             planLabel: nil,
@@ -28,12 +30,16 @@ final class UsageWindowModelTests: XCTestCase {
             barLabel: "bar:\(surfaceId)",
             headline: headline,
             resetLabel: nil,
+            compactResetLabel: nil,
             exactReset: nil,
             statusWord: "fresh",
             isRefreshing: false,
             statusLabel: "status:\(surfaceId)",
             severity: "normal",
             updatedLabel: "u",
+            activityLabel: "activity:\(surfaceId)",
+            activityKind: "idle",
+            accessibilityLabel: "accessibility:\(surfaceId)",
             lastError: nil,
             dimmed: false
         )
@@ -81,7 +87,16 @@ final class UsageWindowModelTests: XCTestCase {
             buckets: [],
             updatedLabel: "",
             lastError: nil,
-            detailPresentation: detail
+            detailPresentation: detail,
+            identity: .init(
+                dto: UsageIdentityPresentationDto(
+                    providerTitle: "label:\(id)",
+                    accountLabel: "acct:\(id)",
+                    activityLabel: "activity:\(id)",
+                    activityKind: "idle",
+                    accessibilityLabel: "accessibility:\(id)"
+                )
+            )
         )
     }
 
@@ -93,12 +108,26 @@ final class UsageWindowModelTests: XCTestCase {
     {
         PresentationStore.AccountRow(
             surfaceId: surfaceId,
+            providerColumnLabel: "",
             accountKey: key,
             accountLabel: "acct:\(key)",
             planLabel: nil,
             selected: selected,
+            lifecycle: "authenticated",
+            lifecycleLabel: "Authenticated",
+            provenanceLabel: "fixture",
+            planOrStatusLabel: "Ready",
             remainingPercent: nil,
-            statusWord: "fresh"
+            remainingLabel: "–",
+            headline: "–",
+            resetDisplayLabel: "–",
+            statusWord: "fresh",
+            statusLabel: "Ready",
+            severity: "normal",
+            updatedLabel: "Updated now",
+            lastError: nil,
+            dimmed: false,
+            accessibilityLabel: "acct:\(key)"
         )
     }
 
@@ -231,13 +260,16 @@ final class UsageWindowModelTests: XCTestCase {
         )
         XCTAssertEqual(model.content?.accounts.count, 2)
         XCTAssertEqual(model.content?.accounts.first?.selected, true)
-        // The account action keeps the current provider selection.
-        XCTAssertEqual(
-            model.selection(after: .selectAccount(surfaceId: "codex", accountKey: "b")),
-            "codex"
+        XCTAssertEqual(model.content?.headAccount?.accountKey, "a")
+
+        let selected = UsageWindowModel(
+            glanceRows: [glance("codex")],
+            surfaces: [surface("codex", detail: .empty)],
+            accounts: accounts,
+            selection: "codex",
+            accountSelection: "b"
         )
-        XCTAssertNil(model.selection(after: .selectOverview))
-        XCTAssertEqual(model.selection(after: .selectProvider("claude")), "claude")
+        XCTAssertEqual(selected.content?.headAccount?.accountKey, "b")
     }
 
     func testSentinelRowsTransmittedUnchanged() {

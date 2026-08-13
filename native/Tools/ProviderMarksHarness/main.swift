@@ -19,7 +19,8 @@ struct ProviderMarksHarness {
     static func main() {
         _ = NSApplication.shared
         var failed = 0
-        let keys = desktopProviderIconKeys
+        // Resource coverage only. Provider membership/order belongs to the Rust projection.
+        let keys = ["codex", "claude", "amp", "grok", "zai", "kimi", "minimax"]
         fputs("ProviderMarksHarness: \(keys.count) Desktop keys\n", stderr)
         for key in keys {
             let has = ProviderMarks.hasMark(forIconKey: key)

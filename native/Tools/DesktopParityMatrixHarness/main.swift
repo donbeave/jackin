@@ -393,12 +393,12 @@ struct DesktopParityMatrixHarness {
         check(
             "Provider detail preserves the provider usage escape hatch",
             provider.contains("content.detail.rows")
-                && provider.contains("ProviderUsageLinks")
+                && provider.contains("content.usageURL")
                 && provider.contains("Link(destination:")
         )
         check(
-            "ProviderUsageLinks desktop map complete",
-            ProviderUsageLinks.desktopProviderURLsComplete
+            "Swift provider URL table is deleted",
+            !provider.contains("ProviderUsageLinks")
         )
         check(
             "no sparkline/donut/trend product UI in status item",

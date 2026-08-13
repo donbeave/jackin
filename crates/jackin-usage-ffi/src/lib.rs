@@ -18,9 +18,10 @@ mod error;
 
 pub use bridge::UsageMenuBarBridge;
 pub use dto::{
-    AccountDescriptorDto, DesktopInventoryDto, DesktopProviderGroupDto, DesktopProviderStateDto,
-    DiscoveryDiagnosticDto, MoneyDto, OpenConfig, ProviderGlanceRowDto, QuotaBucketDto,
-    SurfaceDescriptorDto, UsageDetailPresentationDto, UsageDetailRowDto, UsageEventBatchDto,
-    UsageEventDto, UsagePresentationLineDto, UsageViewDto,
+    AccountDescriptorDto, DesktopInventoryDto, DesktopProjectionDto, DesktopProviderGroupDto,
+    DesktopProviderProjectionDto, DesktopProviderStateDto, DiscoveryDiagnosticDto, MoneyDto,
+    OpenConfig, ProviderGlanceRowDto, QuotaBucketDto, SurfaceDescriptorDto,
+    UsageDetailPresentationDto, UsageDetailRowDto, UsageEventBatchDto, UsageEventDto,
+    UsageIdentityPresentationDto, UsagePresentationLineDto, UsageViewDto,
 };
 pub use error::UsageBridgeError;

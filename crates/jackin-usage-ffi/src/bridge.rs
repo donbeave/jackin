@@ -17,11 +17,11 @@ use jackin_usage::host::{
 
 use crate::discovery::DesktopCredentialResolver;
 use crate::dto::{
-    AccountDescriptorDto, DesktopInventoryDto, DiscoveryDiagnosticDto, OpenConfig, OverviewRowDto,
-    ProviderGlanceRowDto, SurfaceDescriptorDto, UsageEventBatchDto, UsageFormatPrefsDto,
-    UsageViewDto, account_dto, desktop_inventory_dto, discovery_diagnostic_dto, event_batch_dto,
-    map_open_err, map_runtime_err, overview_row_dto, parse_format_prefs, provider_glance_row_dto,
-    surface_dto, to_host_config, view_dto,
+    AccountDescriptorDto, DesktopInventoryDto, DesktopProjectionDto, DiscoveryDiagnosticDto,
+    OpenConfig, OverviewRowDto, ProviderGlanceRowDto, SurfaceDescriptorDto, UsageEventBatchDto,
+    UsageFormatPrefsDto, UsageViewDto, account_dto, desktop_inventory_dto, desktop_projection_dto,
+    discovery_diagnostic_dto, event_batch_dto, map_open_err, map_runtime_err, overview_row_dto,
+    parse_format_prefs, provider_glance_row_dto, surface_dto, to_host_config, view_dto,
 };
 use crate::error::{UsageBridgeError, catch_entry};
 
@@ -262,6 +262,22 @@ impl UsageMenuBarBridge {
             guard
                 .desktop_inventory()
                 .map(desktop_inventory_dto)
+                .map_err(map_runtime_err)
+        })
+    }
+
+    /// Complete native Desktop state produced beneath one runtime mutex hold.
+    /// Any required subprojection failure fails the whole call; callers retain
+    /// their last complete value rather than replacing it with partial arrays.
+    pub fn desktop_projection(
+        &self,
+        status_bar_max: u32,
+    ) -> Result<DesktopProjectionDto, UsageBridgeError> {
+        catch_entry(|| {
+            let mut guard = self.lock()?;
+            guard
+                .desktop_projection(status_bar_max)
+                .map(desktop_projection_dto)
                 .map_err(map_runtime_err)
         })
     }

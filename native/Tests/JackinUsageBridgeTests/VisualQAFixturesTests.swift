@@ -26,7 +26,7 @@ final class VisualQAFixturesTests: XCTestCase {
             catalog.statusGlanceRows.map(\.surfaceId),
             ["claude", "codex", "minimax"]
         )
-        XCTAssertEqual(VisualQAFixtures.fixture(id: .layoutEnvelope).accounts.count, 12)
+        XCTAssertEqual(VisualQAFixtures.fixture(id: .layoutEnvelope).accounts.count, 10)
     }
 
     func testFixtureIdentitiesAreSynthetic() {
@@ -71,6 +71,7 @@ final class VisualQAFixturesTests: XCTestCase {
             statusBarGlanceRows: fixture.statusGlanceRows,
             surfaces: fixture.surfaces,
             accounts: fixture.accounts,
+            providerGroups: fixture.providerGroups,
             popoverSelection: fixture.popoverSelection,
             usageSelection: fixture.usageSelection
         )
@@ -94,6 +95,7 @@ final class VisualQAFixturesTests: XCTestCase {
             statusBarGlanceRows: fixture.statusGlanceRows,
             surfaces: fixture.surfaces,
             accounts: fixture.accounts,
+            providerGroups: fixture.providerGroups,
             popoverSelection: fixture.popoverSelection,
             usageSelection: fixture.usageSelection
         )
@@ -117,11 +119,13 @@ final class VisualQAFixturesTests: XCTestCase {
         let remainingGlance = fixture.glanceRows.filter { $0.surfaceId != "codex" }
         let remainingSurfaces = fixture.surfaces.filter { $0.id != "codex" }
         let remainingAccounts = fixture.accounts.filter { $0.surfaceId != "codex" }
+        let remainingGroups = fixture.providerGroups.filter { $0.surfaceId != "codex" }
 
         store.applyQIFixture(
             glanceRows: remainingGlance,
             surfaces: remainingSurfaces,
             accounts: remainingAccounts,
+            providerGroups: remainingGroups,
             popoverSelection: "codex",
             usageSelection: "codex"
         )
@@ -139,6 +143,7 @@ final class VisualQAFixturesTests: XCTestCase {
             glanceRows: fixture.glanceRows,
             surfaces: fixture.surfaces,
             accounts: fixture.accounts,
+            providerGroups: fixture.providerGroups,
             popoverSelection: fixture.popoverSelection,
             usageSelection: fixture.usageSelection
         )
@@ -200,7 +205,7 @@ final class VisualQAFixturesTests: XCTestCase {
         let text = try String(contentsOf: source, encoding: .utf8)
 
         XCTAssertTrue(text.contains("if provider.isRefreshing"))
-        XCTAssertTrue(text.contains(".accessibilityLabel(provider.statusLabel)"))
+        XCTAssertTrue(text.contains(".accessibilityLabel(provider.activityLabel)"))
         XCTAssertFalse(text.contains("accessibilityFocused"))
     }
 }
