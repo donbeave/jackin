@@ -17,7 +17,7 @@ use jackin_protocol::control::UsageSnapshotStatus;
 use jackin_protocol::usage_broker::{
     USAGE_BROKER_MAX_FRAME_BYTES, USAGE_BROKER_PROTOCOL_VERSION, UsageAccountCapability,
     UsageBrokerOperation, UsageBrokerRequest, UsageBrokerResponse, UsageCoordinationError,
-    UsageCoordinationErrorKind, UsageGenerationView,
+    UsageCoordinationErrorKind, UsageGenerationView, UsageRefreshPhase,
 };
 use nix::fcntl::{OFlag, open, openat};
 use nix::sys::signal::kill;
@@ -34,7 +34,86 @@ use super::discovery::{
     ValidatedCredentialSource, discover_usage_sources, refresh_credential_binding,
     validate_usage_sources,
 };
-use super::{UsageDiscoveryScope, ValidatedUsageDiscovery};
+use super::{HostUsageRuntime, UsageDiscoveryScope, ValidatedUsageDiscovery};
+
+impl HostUsageRuntime {
+    /// Whether this runtime permits host broker provider work.
+    #[must_use]
+    pub fn live_probes_enabled(&self) -> bool {
+        self.probe_policy == super::HostProbePolicy::Live
+    }
+
+    /// Whether any host broker generation remains active.
+    #[must_use]
+    pub fn broker_refresh_in_progress(&self) -> bool {
+        self.broker_phases.values().any(|phase| phase.is_active())
+    }
+
+    /// Adopt one host-broker projection and never execute provider work here.
+    pub fn apply_broker_generation(&mut self, state: UsageGenerationView) -> Result<(), String> {
+        self.require_open()?;
+        let capability = state.capability.clone();
+        self.broker_phases.insert(capability.clone(), state.phase);
+        if let Some(mut view) = state.snapshot {
+            if let Some(error) = &state.error {
+                view.last_error = Some(error.message.clone());
+                if !view.buckets.is_empty() {
+                    view.status = UsageSnapshotStatus::Stale;
+                }
+            }
+            let binding = self.discovery.as_ref().and_then(|discovery| {
+                discovery
+                    .bindings
+                    .iter()
+                    .find(|binding| capability_for_binding(binding) == capability)
+                    .cloned()
+            });
+            if let Some(binding) = binding {
+                self.record_discovered_snapshot(&binding, view);
+            }
+        } else if let Some(error) = &state.error {
+            self.push_event(
+                "probe_failed",
+                Some(&capability.surface_id),
+                Some(error.message.clone()),
+            );
+        }
+        if state.phase.is_terminal() {
+            self.broker_phases.remove(&capability);
+            self.last_refresh = Some(Instant::now());
+        }
+        self.push_event(
+            "broker_phase_changed",
+            Some(&capability.surface_id),
+            Some(
+                match state.phase {
+                    UsageRefreshPhase::Idle => "idle",
+                    UsageRefreshPhase::Queued => "queued",
+                    UsageRefreshPhase::Updating => "updating",
+                    UsageRefreshPhase::Completed => "completed",
+                    UsageRefreshPhase::Failed => "failed",
+                }
+                .to_owned(),
+            ),
+        );
+        Ok(())
+    }
+
+    /// Surface one coordination failure without discarding last-good quota.
+    pub fn record_broker_error(
+        &mut self,
+        surface_id: &str,
+        error: &UsageCoordinationError,
+    ) -> Result<(), String> {
+        self.require_open()?;
+        self.push_event(
+            "probe_failed",
+            Some(surface_id),
+            Some(error.message.clone()),
+        );
+        Ok(())
+    }
+}
 
 const BROKER_DIR: &str = "usage-broker";
 const BROKER_RUN_DIR: &str = "run";

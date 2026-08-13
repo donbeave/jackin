@@ -379,63 +379,6 @@ impl UsageCache {
         );
     }
 
-    /// Adopt one host-broker generation without executing provider work locally.
-    pub fn adopt_broker_generation(
-        &mut self,
-        target: &UsageRefreshTarget,
-        state: &jackin_protocol::usage_broker::UsageGenerationView,
-    ) {
-        let mut view = state.snapshot.clone().unwrap_or_else(|| {
-            if state.phase.is_active() {
-                FocusedUsageView::refreshing(target.provider.as_deref(), now_epoch())
-            } else {
-                FocusedUsageView::unavailable(
-                    state
-                        .error
-                        .as_ref()
-                        .map_or("usage coordinator unavailable", |error| {
-                            error.message.as_str()
-                        }),
-                    now_epoch(),
-                )
-            }
-        });
-        if let Some(error) = &state.error {
-            view.last_error = Some(error.message.clone());
-            if !view.buckets.is_empty() {
-                view.status = UsageSnapshotStatus::Stale;
-            }
-        }
-        if view.focused_agent.is_none() {
-            view.focused_agent = Some(target.agent.clone());
-        }
-        if view.focused_provider.is_none() {
-            view.focused_provider = target.provider.clone();
-        }
-        self.snapshots
-            .insert(target.cache_key(), CachedUsage { view });
-    }
-
-    /// Preserve last-good quota while surfacing a typed relay/broker failure.
-    pub fn adopt_broker_error(
-        &mut self,
-        target: &UsageRefreshTarget,
-        error: &jackin_protocol::usage_broker::UsageCoordinationError,
-    ) {
-        let cache_key = target.cache_key();
-        if let Some(cached) = self.snapshots.get_mut(&cache_key) {
-            cached.view.last_error = Some(error.message.clone());
-            if !cached.view.buckets.is_empty() {
-                cached.view.status = UsageSnapshotStatus::Stale;
-            }
-            return;
-        }
-        let mut view = FocusedUsageView::unavailable(&error.message, now_epoch());
-        view.focused_agent = Some(target.agent.clone());
-        view.focused_provider = target.provider.clone();
-        self.snapshots.insert(cache_key, CachedUsage { view });
-    }
-
     /// Bench/test helper: write materialized accounts to `path` instead of the
     /// container path. Cross-crate like `insert_snapshot_for_test`.
     #[doc(hidden)]

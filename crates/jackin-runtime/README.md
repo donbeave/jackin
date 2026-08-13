@@ -26,6 +26,7 @@ This crate is broad by design; the code-health program tracks decomposing it int
 | [`isolation.rs`](src/isolation.rs) · [`isolation/`](src/isolation) | mount isolation integration | [`tests.rs`](src/isolation/tests.rs) |
 | [`reactive_daemon.rs`](src/reactive_daemon.rs) · [`reactive_daemon/`](src/reactive_daemon) | reactive daemon | [`tests.rs`](src/reactive_daemon/tests.rs) |
 | [`spin_wait.rs`](src/spin_wait.rs) · [`spin_wait/`](src/spin_wait) | wait-for-state | [`tests.rs`](src/spin_wait/tests.rs) |
+| [`usage_relay.rs`](src/usage_relay.rs) | capability-scoped relay between a container and the host-owned usage broker | [`tests.rs`](src/usage_relay/tests.rs) |
 
 ## Public API
 
