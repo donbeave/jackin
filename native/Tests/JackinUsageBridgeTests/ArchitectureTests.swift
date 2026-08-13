@@ -593,9 +593,12 @@ final class ArchitectureTests: XCTestCase {
             .appendingPathComponent("UsageWindowController.swift")
         let text = try String(contentsOf: controller, encoding: .utf8)
 
-        XCTAssertTrue(text.contains("[.canJoinAllSpaces, .fullScreenAuxiliary]"))
+        XCTAssertTrue(text.contains(".canJoinAllSpaces"))
+        XCTAssertTrue(text.contains(".canJoinAllApplications"))
+        XCTAssertTrue(text.contains(".fullScreenAuxiliary"))
         XCTAssertTrue(text.contains("if elevatesFixtureWindow"))
         XCTAssertTrue(text.contains("window.level = .floating"))
+        XCTAssertTrue(text.contains("window.orderFrontRegardless()"))
         XCTAssertTrue(text.contains("window.collectionBehavior.insert(.moveToActiveSpace)"))
 
         let options =

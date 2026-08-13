@@ -85,7 +85,9 @@ struct DesktopArchitectureLint {
         require(
             usageController.contains(".moveToActiveSpace")
                 && usageController.contains(".canJoinAllSpaces")
+                && usageController.contains(".canJoinAllApplications")
                 && usageController.contains(".fullScreenAuxiliary")
+                && usageController.contains("window.orderFrontRegardless()")
                 && usageController.contains("if store.usesFixture")
                 && mainMenu.contains("NSApp.activate()")
                 && mainMenu.contains("window.makeKeyAndOrderFront(nil)"),

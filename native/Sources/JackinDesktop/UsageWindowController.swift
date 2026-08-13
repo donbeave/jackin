@@ -49,6 +49,9 @@ public final class UsageWindowController: NSObject, NSWindowDelegate {
             window.setContentSize(size)
         }
         AppActivation.present(window)
+        if elevatesFixtureWindow {
+            window.orderFrontRegardless()
+        }
     }
 
     private func makeWindow() -> NSWindow {
@@ -64,7 +67,11 @@ public final class UsageWindowController: NSObject, NSWindowDelegate {
         if store.usesFixture {
             // Deterministic UI/visual QA must stay observable when WindowServer assigns rapid
             // fixture launches and the test runner to different or full-screen Spaces.
-            window.collectionBehavior.formUnion([.canJoinAllSpaces, .fullScreenAuxiliary])
+            window.collectionBehavior.formUnion([
+                .canJoinAllSpaces,
+                .canJoinAllApplications,
+                .fullScreenAuxiliary,
+            ])
             if elevatesFixtureWindow {
                 window.level = .floating
             }
