@@ -187,6 +187,34 @@ async fn usage_relay_authorizes_only_exact_forwarded_account() {
     relay.abort();
 }
 
+#[tokio::test]
+async fn usage_relay_binds_through_short_private_symlink() {
+    let temp = tempfile::tempdir().unwrap();
+    let long_dir = temp.path().join("long-component-".repeat(8));
+    fs::create_dir_all(&long_dir).unwrap();
+    let short = tempfile::Builder::new()
+        .prefix("jackin-usage-test-")
+        .tempdir_in("/tmp")
+        .unwrap();
+    let link = short.path().join("r");
+    symlink(&long_dir, &link).unwrap();
+    let socket = link.join("usage.sock");
+    assert!(long_dir.join("usage.sock").as_os_str().len() >= 104);
+
+    let executor: Arc<dyn UsageProviderExecutor> = Arc::new(CountingExecutor {
+        calls: AtomicUsize::new(0),
+    });
+    let broker = ensure_usage_broker_with_executor(
+        UsageBrokerConfig::for_data_dir(temp.path().join("data")),
+        executor,
+    )
+    .unwrap();
+    let relay = start(socket, broker, Vec::new()).unwrap();
+
+    assert!(long_dir.join("usage.sock").exists());
+    relay.abort();
+}
+
 async fn send(socket: &Path, operation: UsageBrokerOperation) -> UsageBrokerResponse {
     let mut stream = UnixStream::connect(socket).await.unwrap();
     let request = UsageBrokerRequest {

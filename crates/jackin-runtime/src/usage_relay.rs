@@ -5,7 +5,7 @@
 
 use std::collections::BTreeSet;
 use std::fs;
-use std::os::unix::fs::PermissionsExt as _;
+use std::os::unix::fs::{PermissionsExt as _, symlink};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
@@ -125,6 +125,7 @@ pub struct UsageRelayLaunch<'a> {
 pub struct UsageRelayGuard {
     task: tokio::task::JoinHandle<()>,
     socket_path: PathBuf,
+    _short_path_root: tempfile::TempDir,
 }
 
 impl std::fmt::Debug for UsageRelayGuard {
@@ -189,9 +190,20 @@ pub async fn prepare_for_container(launch: UsageRelayLaunch<'_>) -> Result<Usage
     .await
     .context("usage broker preparation task panicked")?;
     let (client, capabilities) = prepared;
-    let socket_path = socket_dir.join(RELAY_SOCKET);
+    let short_path_root = tempfile::Builder::new()
+        .prefix("jackin-usage-")
+        .tempdir_in("/tmp")
+        .context("creating short private usage relay path")?;
+    let short_socket_dir = short_path_root.path().join("r");
+    symlink(&socket_dir, &short_socket_dir)
+        .with_context(|| format!("linking short usage relay path to {}", socket_dir.display()))?;
+    let socket_path = short_socket_dir.join(RELAY_SOCKET);
     let task = start(socket_path.clone(), client, capabilities)?;
-    Ok(UsageRelayGuard { task, socket_path })
+    Ok(UsageRelayGuard {
+        task,
+        socket_path,
+        _short_path_root: short_path_root,
+    })
 }
 
 fn prepare_broker_client(

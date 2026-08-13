@@ -572,10 +572,10 @@ key = "crates/jackin-otlp-testbed/README.md"
 bound = 1122
 [[family.entry]]
 key = "crates/jackin-protocol/README.md"
-bound = 2275
+bound = 2500
 [[family.entry]]
 key = "crates/jackin-runtime/README.md"
-bound = 3647
+bound = 3809
 [[family.entry]]
 key = "crates/jackin-telemetry/README.md"
 bound = 2149
@@ -709,7 +709,7 @@ key = "jackin-protocol"
 bound = 8
 [[family.entry]]
 key = "jackin-runtime"
-bound = 7
+bound = 8
 [[family.entry]]
 key = "jackin-term"
 bound = 6
@@ -831,7 +831,7 @@ key = "jackin-protocol"
 bound = 80
 [[family.entry]]
 key = "jackin-runtime"
-bound = 91
+bound = 90
 [[family.entry]]
 key = "jackin-telemetry"
 bound = 24
