@@ -312,7 +312,15 @@ pub(super) struct UsageState {
     pub(crate) usage_cache: UsageCache,
     pub(crate) token_monitor: TokenMonitor,
     pub(crate) pending_usage_refresh: Option<crate::usage::UsageRefreshTarget>,
-    pub(crate) usage_refresh_task: Option<tokio::task::JoinHandle<UsageCache>>,
+    pub(crate) usage_refresh_task: Option<tokio::task::JoinHandle<Vec<BrokerUsageRefresh>>>,
+}
+
+pub(super) struct BrokerUsageRefresh {
+    pub(crate) target: crate::usage::UsageRefreshTarget,
+    pub(crate) result: Result<
+        jackin_protocol::usage_broker::UsageGenerationView,
+        jackin_protocol::usage_broker::UsageCoordinationError,
+    >,
 }
 
 /// Dialog stack, control replies, session event channel.
@@ -1659,12 +1667,11 @@ pub async fn run_daemon(
                 mux.maybe_spawn_git_branch_context_lookup(Instant::now());
             }
 
-            // Account refresh scheduler. This remains the provider-calling
-            // path; Capsule renderers read the last Turso snapshot.
+            // Account refresh scheduler. Provider work stays in the host broker;
+            // Capsule renderers adopt only scoped relay projections.
             _ = usage_account_ticker.tick() => {
-                let now = Instant::now();
-                let refreshed = mux.finish_usage_account_refresh_if_ready(now).await;
-                mux.spawn_active_usage_account_refresh(now);
+                let refreshed = mux.finish_usage_account_refresh_if_ready().await;
+                mux.spawn_active_usage_account_refresh();
                 if refreshed && mux.refresh_open_usage_dialog_from_cache() {
                     mux.invalidate(dialog_change_redraw_reason());
                 }

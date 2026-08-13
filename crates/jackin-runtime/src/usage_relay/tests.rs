@@ -156,10 +156,25 @@ async fn usage_relay_authorizes_only_exact_forwarded_account() {
     assert_eq!(error.kind, UsageCoordinationErrorKind::Unauthorized);
     assert_eq!(executor.calls.load(Ordering::SeqCst), 0);
 
+    let denied_surface = send(
+        &socket,
+        UsageBrokerOperation::RefreshForSurface {
+            surface_id: "codex".to_owned(),
+            observed_generation: 0,
+            force: true,
+        },
+    )
+    .await;
+    let UsageBrokerResponse::Error { error } = denied_surface else {
+        panic!("denied surface returned state");
+    };
+    assert_eq!(error.kind, UsageCoordinationErrorKind::Unauthorized);
+    assert_eq!(executor.calls.load(Ordering::SeqCst), 0);
+
     let refresh = send(
         &socket,
-        UsageBrokerOperation::Refresh {
-            capability: allowed.clone(),
+        UsageBrokerOperation::RefreshForSurface {
+            surface_id: "claude".to_owned(),
             observed_generation: 0,
             force: true,
         },
@@ -170,8 +185,8 @@ async fn usage_relay_authorizes_only_exact_forwarded_account() {
     };
     let terminal = send(
         &socket,
-        UsageBrokerOperation::Join {
-            capability: allowed,
+        UsageBrokerOperation::JoinForSurface {
+            surface_id: "claude".to_owned(),
             generation: state.generation,
             timeout_ms: 2_000,
         },
@@ -185,6 +200,53 @@ async fn usage_relay_authorizes_only_exact_forwarded_account() {
     let metadata = fs::metadata(&socket).unwrap();
     assert_eq!(metadata.mode() & 0o777, 0o600);
     relay.abort();
+}
+
+#[tokio::test]
+async fn usage_relay_bind_failure_is_inactive_and_never_probes() {
+    let temp = tempfile::tempdir().unwrap();
+    let executor = Arc::new(CountingExecutor {
+        calls: AtomicUsize::new(0),
+    });
+    let concrete = Arc::clone(&executor);
+    let broker_executor: Arc<dyn UsageProviderExecutor> = concrete;
+    let broker = ensure_usage_broker_with_executor(
+        UsageBrokerConfig::for_data_dir(temp.path().join("data")),
+        broker_executor,
+    )
+    .unwrap();
+    let long_dir = temp.path().join("x".repeat(120));
+    fs::create_dir(&long_dir).unwrap();
+    let socket = long_dir.join("usage.sock");
+
+    let guard = start_guard(socket.clone(), broker, vec![capability("allowed")]);
+
+    assert!(guard.task.is_none());
+    assert!(!socket.exists());
+    assert_eq!(executor.calls.load(Ordering::SeqCst), 0);
+}
+
+#[tokio::test]
+async fn usage_relay_impossible_socket_path_skips_discovery() {
+    let temp = tempfile::tempdir().unwrap();
+    let paths = JackinPaths::resolve_with_env(temp.path(), None, None);
+    let socket_dir = temp.path().join("x".repeat(120));
+
+    let guard = prepare_for_container(UsageRelayLaunch {
+        paths: &paths,
+        workspace_name: Some("fixture"),
+        role_key: "role",
+        forwarded_sources: ForwardedUsageSources {
+            profile_surface_ids: BTreeSet::from(["claude".to_owned()]),
+            env_keys: BTreeSet::new(),
+        },
+        socket_dir,
+    })
+    .await
+    .unwrap();
+
+    assert!(guard.task.is_none());
+    assert!(!guard.socket_path.exists());
 }
 
 async fn send(socket: &Path, operation: UsageBrokerOperation) -> UsageBrokerResponse {

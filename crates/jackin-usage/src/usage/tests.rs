@@ -1321,6 +1321,48 @@ fn failed_refresh_preserves_last_fresh_quota_rows_as_stale_cache() {
 }
 
 #[test]
+fn broker_client_failure_preserves_last_good_quota() {
+    let target = UsageRefreshTarget {
+        agent: "claude".to_owned(),
+        provider: Some("Claude".to_owned()),
+    };
+    let mut cached = FocusedUsageView::unavailable("seed", 123);
+    cached.status = UsageSnapshotStatus::Fresh;
+    cached.buckets = vec![QuotaBucketView {
+        used_money: None,
+        limit_money: None,
+        severity: UsageSeverity::Normal,
+        label: "Weekly".to_owned(),
+        used_label: Some("36% used".to_owned()),
+        limit_label: Some("100%".to_owned()),
+        remaining_percent: Some(64),
+        reset_label: None,
+        resets_at: None,
+        status_slot: Some(StatusSlot::Weekly),
+        pace_label: None,
+        status: UsageSnapshotStatus::Fresh,
+    }];
+    let mut cache = UsageCache::default();
+    cache.insert_snapshot_for_test("claude", Some("Claude"), cached);
+
+    cache.adopt_broker_error(
+        &target,
+        &jackin_protocol::usage_broker::UsageCoordinationError {
+            kind: jackin_protocol::usage_broker::UsageCoordinationErrorKind::Unavailable,
+            message: "usage broker is unavailable".to_owned(),
+        },
+    );
+
+    let adopted = cache.focused_snapshot(Some("claude"), Some("Claude"));
+    assert_eq!(adopted.status, UsageSnapshotStatus::Stale);
+    assert_eq!(adopted.buckets[0].remaining_percent, Some(64));
+    assert_eq!(
+        adopted.last_error.as_deref(),
+        Some("usage broker is unavailable")
+    );
+}
+
+#[test]
 fn claude_oauth_response_maps_windows_to_buckets() {
     let usage: ClaudeOAuthUsageResponse = serde_json::from_value(serde_json::json!({
         "five_hour": { "utilization": 0.84, "resets_at": "2026-06-11T15:12:00Z" },

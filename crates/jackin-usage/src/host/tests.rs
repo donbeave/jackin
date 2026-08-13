@@ -909,10 +909,7 @@ fn next_refresh_label_due_and_countdown() {
     let mut runtime = open_runtime(dir.path());
     assert_eq!(runtime.next_refresh_label(), "Next update due");
     runtime.set_refresh_floor_secs(300).expect("floor");
-    // Force a refresh mark without network by simulating last_refresh via
-    // a non-forced path: inject is not a refresh. Use set_refresh after open:
-    // calling refresh with force on empty targets still stamps last_refresh.
-    runtime.refresh(None, true).expect("refresh stamp");
+    runtime.last_refresh = Some(Instant::now());
     let label = runtime.next_refresh_label();
     assert!(
         label.starts_with("Next update in ") || label == "Next update due",

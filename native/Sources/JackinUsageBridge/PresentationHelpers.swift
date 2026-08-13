@@ -158,6 +158,7 @@ public func statusItemSystemImage(surfaceId: String) -> String? {
 
 /// The exact seven-provider Desktop icon domain (canonical order). `opencode`
 /// is intentionally excluded from the Desktop status-item contract.
+///
 /// Deprecated: replaced by Rust DTO fields — removed in Plan 005.
 public let desktopProviderIconKeys = [
     "codex", "claude", "amp", "grok", "zai", "kimi", "minimax",
@@ -226,6 +227,7 @@ public func desktopProviderSystemImage(iconKey: String) -> String? {
 }
 
 /// Stable two-letter mark when SF Symbol is unavailable (matches Rust compact prefixes).
+///
 /// Deprecated: replaced by Rust DTO fields — removed in Plan 005.
 public func statusItemFallbackGlyph(surfaceId: String) -> String {
     switch surfaceId {

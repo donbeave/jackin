@@ -4,8 +4,8 @@
 //! Miscellaneous Multiplexer utility methods.
 
 use super::{
-    Dialog, FullRedrawReason, Instant, MAX_SESSIONS, MAX_TABS, Multiplexer, PaletteCloseLabel,
-    Result, SESSION_ENV_PASSTHROUGH, SessionInfo,
+    Dialog, FullRedrawReason, MAX_SESSIONS, MAX_TABS, Multiplexer, PaletteCloseLabel, Result,
+    SESSION_ENV_PASSTHROUGH, SessionInfo,
 };
 
 impl Multiplexer {
@@ -242,11 +242,6 @@ impl Multiplexer {
 
     pub(super) fn request_usage_refresh_for_provider(&mut self, provider_label: Option<&str>) {
         self.usage.pending_usage_refresh = self.usage_refresh_target_for_provider(provider_label);
-        if let Some(target) = &self.usage.pending_usage_refresh {
-            self.usage
-                .usage_cache
-                .request_account_refresh(target, Instant::now());
-        }
         self.decorate_open_usage_dialog_refreshing();
     }
 
@@ -261,7 +256,7 @@ impl Multiplexer {
         agent.map(|agent| crate::usage::UsageRefreshTarget { agent, provider })
     }
 
-    pub(super) fn spawn_active_usage_account_refresh(&mut self, now: Instant) -> bool {
+    pub(super) fn spawn_active_usage_account_refresh(&mut self) -> bool {
         if self.usage.usage_refresh_task.is_some() {
             return false;
         }
@@ -275,20 +270,19 @@ impl Multiplexer {
             .active_focused_id()
             .and_then(|id| self.session_supervisor.sessions.get(id))
             .and_then(session_refresh_target);
-        let focused = self.usage.pending_usage_refresh.take().or(focused);
+        let manual = self.usage.pending_usage_refresh.take();
+        let focused = manual.clone().or(focused);
         if active_targets.is_empty() && focused.is_none() {
             return false;
         }
-        let provider_keys = self.launch_env.provider_keys.clone();
-        let mut cache = self.usage.usage_cache.clone();
         self.usage.usage_refresh_task = Some(jackin_telemetry::spawn::joined_blocking(move || {
-            cache.refresh_active_account_snapshots(&active_targets, focused, &provider_keys, now);
-            cache
+            let client = jackin_usage::host::UsageBrokerClient::scoped_relay();
+            refresh_usage_targets_with_client(&client, active_targets, focused, manual.as_ref())
         }));
         true
     }
 
-    pub(super) async fn finish_usage_account_refresh_if_ready(&mut self, now: Instant) -> bool {
+    pub(super) async fn finish_usage_account_refresh_if_ready(&mut self) -> bool {
         let Some(task) = self.usage.usage_refresh_task.as_ref() else {
             return false;
         };
@@ -299,10 +293,18 @@ impl Multiplexer {
             return false;
         };
         match task.await {
-            Ok(cache) => {
-                self.usage.usage_cache = cache;
-                if let Some(target) = &self.usage.pending_usage_refresh {
-                    self.usage.usage_cache.request_account_refresh(target, now);
+            Ok(refreshes) => {
+                for refresh in refreshes {
+                    match refresh.result {
+                        Ok(state) => self
+                            .usage
+                            .usage_cache
+                            .adopt_broker_generation(&refresh.target, &state),
+                        Err(error) => self
+                            .usage
+                            .usage_cache
+                            .adopt_broker_error(&refresh.target, &error),
+                    }
                 }
                 true
             }
@@ -458,6 +460,49 @@ impl Multiplexer {
             })
             .collect()
     }
+}
+
+pub(super) fn refresh_usage_targets_with_client(
+    client: &jackin_usage::host::UsageBrokerClient,
+    active_targets: Vec<crate::usage::UsageRefreshTarget>,
+    focused: Option<crate::usage::UsageRefreshTarget>,
+    manual: Option<&crate::usage::UsageRefreshTarget>,
+) -> Vec<super::BrokerUsageRefresh> {
+    let mut requests = std::collections::BTreeMap::new();
+    for target in active_targets.into_iter().chain(focused) {
+        let Some(surface_id) =
+            crate::usage::broker_surface_id(&target.agent, target.provider.as_deref())
+        else {
+            continue;
+        };
+        let force = manual == Some(&target);
+        requests
+            .entry(surface_id.to_owned())
+            .and_modify(|(_, existing_force)| *existing_force |= force)
+            .or_insert((target, force));
+    }
+    requests
+        .into_iter()
+        .map(|(surface_id, (target, force))| {
+            let result = client
+                .current_for_surface(&surface_id)
+                .and_then(|current| {
+                    client.refresh_for_surface(&surface_id, current.generation, force)
+                })
+                .and_then(|state| {
+                    if state.phase.is_active() {
+                        client.join_for_surface(
+                            &surface_id,
+                            state.generation,
+                            std::time::Duration::from_secs(30),
+                        )
+                    } else {
+                        Ok(state)
+                    }
+                });
+            super::BrokerUsageRefresh { target, result }
+        })
+        .collect()
 }
 
 /// Build a usage refresh target from a session, if it has an agent codename.

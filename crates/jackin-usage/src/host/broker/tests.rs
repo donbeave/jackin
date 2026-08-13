@@ -178,6 +178,25 @@ fn usage_broker_handshake_mismatch_fails_before_provider_dispatch() {
 }
 
 #[test]
+fn broker_client_scoped_operation_requires_relay_and_never_probes() {
+    let temp = tempfile::tempdir().unwrap();
+    let executor = Arc::new(CountingExecutor {
+        calls: AtomicUsize::new(0),
+    });
+    let concrete = Arc::clone(&executor);
+    let broker_executor: Arc<dyn UsageProviderExecutor> = concrete;
+    let client = ensure_usage_broker_with_executor(
+        UsageBrokerConfig::for_data_dir(temp.path().to_owned()),
+        broker_executor,
+    )
+    .unwrap();
+
+    let error = client.current_for_surface("claude").unwrap_err();
+    assert_eq!(error.kind, UsageCoordinationErrorKind::Unauthorized);
+    assert_eq!(executor.calls.load(Ordering::SeqCst), 0);
+}
+
+#[test]
 fn usage_broker_recovers_stale_guard_with_private_permissions() {
     let temp = tempfile::tempdir().unwrap();
     let config = UsageBrokerConfig::for_data_dir(temp.path().to_owned());

@@ -878,6 +878,127 @@ fn seed_usage_dialog_for_refresh_test(mux: &mut Multiplexer) {
     mux.dialog_push(Dialog::new_usage(stale));
 }
 
+#[test]
+fn broker_client_capsule_deduplicates_surface_and_adopts_terminal_generation() {
+    use std::io::{BufRead as _, BufReader, Write as _};
+    use std::os::unix::net::UnixListener;
+
+    use jackin_protocol::control::{
+        FocusedUsageView, QuotaBucketView, StatusSlot, UsageConfidence, UsageSeverity,
+        UsageSnapshotStatus, UsageSource,
+    };
+    use jackin_protocol::usage_broker::{
+        USAGE_BROKER_PROTOCOL_VERSION, UsageAccountCapability, UsageBrokerOperation,
+        UsageBrokerRequest, UsageBrokerResponse, UsageGenerationView, UsageRefreshPhase,
+    };
+
+    let temp = tempfile::tempdir().unwrap();
+    let socket = temp.path().join("usage.sock");
+    let listener = UnixListener::bind(&socket).unwrap();
+    let server = std::thread::spawn(move || {
+        let capability = UsageAccountCapability {
+            account_id: "allowed".to_owned(),
+            surface_id: "codex".to_owned(),
+        };
+        for expected in 0..3 {
+            let (mut stream, _) = listener.accept().unwrap();
+            let request = {
+                let mut line = String::new();
+                BufReader::new(&mut stream).read_line(&mut line).unwrap();
+                serde_json::from_str::<UsageBrokerRequest>(line.trim()).unwrap()
+            };
+            assert_eq!(request.protocol_version, USAGE_BROKER_PROTOCOL_VERSION);
+            let (generation, phase, snapshot) = match (expected, request.operation) {
+                (0, UsageBrokerOperation::CurrentForSurface { surface_id }) => {
+                    assert_eq!(surface_id, "codex");
+                    (0, UsageRefreshPhase::Idle, None)
+                }
+                (
+                    1,
+                    UsageBrokerOperation::RefreshForSurface {
+                        surface_id,
+                        observed_generation,
+                        force,
+                    },
+                ) => {
+                    assert_eq!(surface_id, "codex");
+                    assert_eq!(observed_generation, 0);
+                    assert!(force);
+                    (1, UsageRefreshPhase::Queued, None)
+                }
+                (
+                    2,
+                    UsageBrokerOperation::JoinForSurface {
+                        surface_id,
+                        generation,
+                        ..
+                    },
+                ) => {
+                    assert_eq!(surface_id, "codex");
+                    assert_eq!(generation, 1);
+                    let mut view = FocusedUsageView::unavailable("fixture", 1);
+                    view.status = UsageSnapshotStatus::Fresh;
+                    view.source = UsageSource::ProviderApi;
+                    view.confidence = UsageConfidence::Authoritative;
+                    view.account.provider_label = "OpenAI / Codex".to_owned();
+                    view.account.account_label = "capsule@example.test".to_owned();
+                    view.buckets = vec![QuotaBucketView {
+                        label: "Weekly".to_owned(),
+                        used_label: None,
+                        limit_label: None,
+                        remaining_percent: Some(71),
+                        reset_label: None,
+                        resets_at: None,
+                        status_slot: Some(StatusSlot::Weekly),
+                        pace_label: None,
+                        status: UsageSnapshotStatus::Fresh,
+                        used_money: None,
+                        limit_money: None,
+                        severity: UsageSeverity::Normal,
+                    }];
+                    (1, UsageRefreshPhase::Completed, Some(view))
+                }
+                (_, operation) => panic!("unexpected relay operation: {operation:?}"),
+            };
+            let response = UsageBrokerResponse::State {
+                state: Box::new(UsageGenerationView {
+                    capability: capability.clone(),
+                    generation,
+                    phase,
+                    snapshot,
+                    error: None,
+                    retry_at_epoch: None,
+                }),
+            };
+            let mut bytes = serde_json::to_vec(&response).unwrap();
+            bytes.push(b'\n');
+            stream.write_all(&bytes).unwrap();
+        }
+    });
+    let client =
+        jackin_usage::host::UsageBrokerClient::at(socket, env!("CARGO_PKG_VERSION").to_owned());
+    let target = crate::usage::UsageRefreshTarget {
+        agent: "codex".to_owned(),
+        provider: Some("OpenAI".to_owned()),
+    };
+
+    let refreshes = multiplexer_utils::refresh_usage_targets_with_client(
+        &client,
+        vec![target.clone(), target.clone()],
+        Some(target.clone()),
+        Some(&target),
+    );
+    server.join().unwrap();
+
+    assert_eq!(refreshes.len(), 1);
+    let state = refreshes.into_iter().next().unwrap().result.unwrap();
+    assert_eq!(state.phase, UsageRefreshPhase::Completed);
+    assert_eq!(
+        state.snapshot.unwrap().account.account_label,
+        "capsule@example.test"
+    );
+}
+
 /// Drive `handle_palette_command` then compose; `None` when empty.
 fn palette_command_frame(mux: &mut Multiplexer, cmd: PaletteCommand) -> Option<Vec<u8>> {
     mux.handle_palette_command(cmd);

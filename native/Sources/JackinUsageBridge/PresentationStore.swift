@@ -199,7 +199,9 @@ public final class PresentationStore: ObservableObject {
         public let severity: String
     }
 
-    /// Rust-owned, sanitized discovery failure. No credential location or secret.
+    /// Rust-owned, sanitized discovery failure.
+    ///
+    /// No credential location or secret.
     public struct DiscoveryDiagnostic: Identifiable, Sendable, Equatable {
         public var id: String { "\(surfaceId ?? "global")#\(scopeLabel)#\(issue)" }
         public let surfaceId: String?
@@ -372,7 +374,6 @@ public final class PresentationStore: ObservableObject {
     private var compactLabelBySurface: [String: String] = [:]
     private var eventCursor: UInt64 = 0
     private var pollTask: Task<Void, Never>?
-    private var refreshTask: Task<Void, Never>?
     private var screenShareActive: Bool = false
     private var fixtureMode = false
     private var launchConfiguration: LaunchConfiguration = .production
@@ -571,8 +572,6 @@ public final class PresentationStore: ObservableObject {
     public func shutdown() {
         pollTask?.cancel()
         pollTask = nil
-        refreshTask?.cancel()
-        refreshTask = nil
         // Non-blocking: shutdown runs on the serial queue behind any in-flight
         // bridge op; the main actor never waits on the Rust mutex.
         scheduler.invalidateAndShutdown()
@@ -687,39 +686,34 @@ public final class PresentationStore: ObservableObject {
         Task { [weak self] in await self?.refreshAll(force: true) }
     }
 
-    /// Coalesce overlapping refresh requests into one in-flight task so a
-    /// consent sheet cannot build a prompt storm.
+    /// Submit refresh intent once.
+    ///
+    /// Rust broker generations own coalescing.
     private func refreshAll(force: Bool) async {
-        refreshTask?.cancel()
-        let task = Task { [weak self] in
-            guard let self else { return }
-            // Refresh-request activity drives the spinner; other bridge commands
-            // (open/poll/settings/account/shutdown) never set it.
-            self.refreshInProgress = true
-            do {
-                try await self.scheduler.run { try $0.refresh(surfaceId: nil, force: force) }
-            } catch {
-                self.lastError = String(describing: error)
+        do {
+            refreshInProgress = try await scheduler.run { handle -> Bool in
+                try handle.refresh(surfaceId: nil, force: force)
+                return try handle.refreshInProgress()
             }
-            await self.applySnapshots()
-            self.refreshInProgress = false
+        } catch {
+            lastError = String(describing: error)
         }
-        refreshTask = task
-        await task.value
+        await applySnapshots()
     }
 
     public func refresh(surfaceId: String) {
         guard !fixtureMode else { return }
         Task { [weak self] in
             guard let self else { return }
-            self.refreshInProgress = true
             do {
-                try await self.scheduler.run { try $0.refresh(surfaceId: surfaceId, force: true) }
+                self.refreshInProgress = try await self.scheduler.run { handle -> Bool in
+                    try handle.refresh(surfaceId: surfaceId, force: true)
+                    return try handle.refreshInProgress()
+                }
                 await self.applySnapshots()
             } catch {
                 self.lastError = String(describing: error)
             }
-            self.refreshInProgress = false
         }
     }
 
@@ -823,7 +817,8 @@ public final class PresentationStore: ObservableObject {
                     discoveryDiagnostics: diagnostics,
                     accounts: accounts,
                     glanceRows: glanceRows,
-                    statusBarGlanceRows: statusBarRows
+                    statusBarGlanceRows: statusBarRows,
+                    refreshInProgress: try handle.refreshInProgress()
                 )
             }
         } catch {
@@ -834,6 +829,7 @@ public final class PresentationStore: ObservableObject {
         mergedBarLabel = projection.mergedBarLabel
         compactBarLabel = projection.compactBarLabel
         nextRefreshLabel = projection.nextRefreshLabel
+        refreshInProgress = projection.refreshInProgress
         discoveryDiagnostics = projection.discoveryDiagnostics.map { diagnostic in
             DiscoveryDiagnostic(
                 surfaceId: diagnostic.surfaceId,
@@ -953,7 +949,8 @@ public final class PresentationStore: ObservableObject {
         providerGlanceRows = projection.glanceRows.map(Self.mapGlanceDto)
         statusBarGlanceRows = projection.statusBarGlanceRows.map(Self.mapGlanceDto)
         reconcileSelections()
-        lastError = projection.discoveryDiagnostics
+        lastError =
+            projection.discoveryDiagnostics
             .first(where: { $0.surfaceId == nil })?
             .displayLabel
         await applyStatusItemText()
@@ -1175,4 +1172,5 @@ private struct BridgeProjection: Sendable {
     let accounts: [AccountDescriptorDto]
     let glanceRows: [ProviderGlanceRowDto]
     let statusBarGlanceRows: [ProviderGlanceRowDto]
+    let refreshInProgress: Bool
 }

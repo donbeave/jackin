@@ -1366,6 +1366,47 @@ pub(super) fn refresh_credential_binding(
 }
 
 impl HostUsageRuntime {
+    /// Rescan the retained Rust discovery scope without dispatching provider probes.
+    ///
+    /// This is the manual-refresh reconciliation boundary used before broker
+    /// capabilities are rebuilt. The prior validated generation remains usable
+    /// when the read-only config scan is unavailable.
+    pub fn reconcile_discovery(
+        &mut self,
+        resolver: &dyn ProviderCredentialEnvResolver,
+    ) -> Result<bool, String> {
+        self.require_open()?;
+        let Some(scope) = self.discovery_scope.clone() else {
+            return Ok(false);
+        };
+        resolver.begin_manual_retry();
+        let Ok(catalog) = discover_usage_sources(&scope, resolver) else {
+            self.push_event(
+                "discovery_failed",
+                None,
+                Some("current account discovery unavailable".to_owned()),
+            );
+            return Ok(false);
+        };
+        let discovered = validate_usage_sources(catalog, resolver);
+        let changed = self
+            .discovery
+            .as_ref()
+            .map(|current| &current.config_generation)
+            != Some(&discovered.config_generation);
+        self.discovery = Some(discovered);
+        if changed {
+            let current = discovered_account_keys(self.discovery.as_ref());
+            self.discovered_views.retain(|key, _| current.contains(key));
+        }
+        self.push_event(
+            "discovery_reconciled",
+            None,
+            Some(if changed { "changed" } else { "unchanged" }.to_owned()),
+        );
+        Ok(changed)
+    }
+
     /// Refresh with an explicit manual-discovery reconciliation boundary.
     ///
     /// Forced actions rescan once before quota work. Background calls must use
@@ -1391,33 +1432,8 @@ impl HostUsageRuntime {
                 return Ok(());
             }
         }
-        if force && let Some(scope) = self.discovery_scope.clone() {
-            resolver.begin_manual_retry();
-            match discover_usage_sources(&scope, resolver) {
-                Ok(catalog) => {
-                    let discovered = validate_usage_sources(catalog, resolver);
-                    let changed = self
-                        .discovery
-                        .as_ref()
-                        .map(|current| &current.config_generation)
-                        != Some(&discovered.config_generation);
-                    self.discovery = Some(discovered);
-                    if changed {
-                        let current = discovered_account_keys(self.discovery.as_ref());
-                        self.discovered_views.retain(|key, _| current.contains(key));
-                    }
-                    self.push_event(
-                        "discovery_reconciled",
-                        None,
-                        Some(if changed { "changed" } else { "unchanged" }.to_owned()),
-                    );
-                }
-                Err(_) => self.push_event(
-                    "discovery_failed",
-                    None,
-                    Some("current account discovery unavailable".to_owned()),
-                ),
-            }
+        if force {
+            self.reconcile_discovery(resolver)?;
         }
         if self.discovery.is_some() {
             self.refresh_discovered_sources(surface_id, resolver);
@@ -1478,7 +1494,7 @@ impl HostUsageRuntime {
         }
     }
 
-    fn record_discovered_snapshot(
+    pub(super) fn record_discovered_snapshot(
         &mut self,
         binding: &ValidatedCredentialBinding,
         mut view: FocusedUsageView,

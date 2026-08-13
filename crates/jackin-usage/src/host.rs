@@ -19,6 +19,9 @@ use std::time::{Duration, Instant};
 use jackin_core::Agent;
 use jackin_protocol::Provider;
 use jackin_protocol::control::{FocusedUsageView, UsageSeverity};
+use jackin_protocol::usage_broker::{
+    UsageAccountCapability, UsageCoordinationError, UsageGenerationView, UsageRefreshPhase,
+};
 
 use crate::usage::{
     UsageCache, UsageFormatPrefs, UsageRefreshTarget, compact_duration_label, estimate_caption,
@@ -33,6 +36,7 @@ pub use accounts::{
 pub use broker::{
     ForwardedUsageSources, UsageBrokerClient, UsageBrokerConfig, UsageBrokerHandle,
     ensure_usage_broker, ensure_usage_broker_with_executor, forwarded_usage_capabilities,
+    usage_broker_capabilities,
 };
 pub use credential_resolver::{
     CachedProviderCredentialResolver, ProviderCredentialSecretOutcome,
@@ -499,6 +503,8 @@ pub struct HostUsageRuntime {
     discovered_provider_views: BTreeMap<HostSurfaceId, FocusedUsageView>,
     /// Scope retained for explicit manual reconciliation only.
     discovery_scope: Option<UsageDiscoveryScope>,
+    /// Broker generation phase per canonical account.
+    broker_phases: BTreeMap<UsageAccountCapability, UsageRefreshPhase>,
 }
 
 impl HostUsageRuntime {
@@ -523,6 +529,7 @@ impl HostUsageRuntime {
             discovered_views: BTreeMap::new(),
             discovered_provider_views: BTreeMap::new(),
             discovery_scope: None,
+            broker_phases: BTreeMap::new(),
         }
     }
 
@@ -582,6 +589,7 @@ impl HostUsageRuntime {
             self.discovery = None;
             self.discovered_views.clear();
             self.discovered_provider_views.clear();
+            self.broker_phases.clear();
         }
         let snapshot_path = host_snapshot_store_path(&config.data_dir);
         let accounts_path = host_accounts_path(&config.data_dir);
@@ -611,6 +619,7 @@ impl HostUsageRuntime {
         self.discovered_views.clear();
         self.discovered_provider_views.clear();
         self.desktop_detected_surfaces.clear();
+        self.broker_phases.clear();
         self.data_dir = Some(config.data_dir);
         self.open = true;
         self.push_event("runtime_ready", None, None);
@@ -621,6 +630,95 @@ impl HostUsageRuntime {
     #[must_use]
     pub fn is_open(&self) -> bool {
         self.open
+    }
+
+    /// Clone the current validated catalog for host broker attachment.
+    #[must_use]
+    pub fn validated_discovery(&self) -> Option<ValidatedUsageDiscovery> {
+        self.discovery.clone()
+    }
+
+    /// Whether this runtime permits host broker provider work.
+    #[must_use]
+    pub fn live_probes_enabled(&self) -> bool {
+        self.probe_policy == HostProbePolicy::Live
+    }
+
+    /// Whether one provider surface is enabled for refresh.
+    #[must_use]
+    pub fn surface_enabled(&self, surface_id: &str) -> bool {
+        self.enabled.contains(surface_id)
+    }
+
+    /// Whether any host broker generation remains active.
+    #[must_use]
+    pub fn broker_refresh_in_progress(&self) -> bool {
+        self.broker_phases.values().any(|phase| phase.is_active())
+    }
+
+    /// Adopt one host-broker projection and never execute provider work here.
+    pub fn apply_broker_generation(&mut self, state: UsageGenerationView) -> Result<(), String> {
+        self.require_open()?;
+        let capability = state.capability.clone();
+        self.broker_phases.insert(capability.clone(), state.phase);
+        if let Some(mut view) = state.snapshot {
+            if let Some(error) = &state.error {
+                view.last_error = Some(error.message.clone());
+                if !view.buckets.is_empty() {
+                    view.status = jackin_protocol::control::UsageSnapshotStatus::Stale;
+                }
+            }
+            let binding = self.discovery.as_ref().and_then(|discovery| {
+                discovery
+                    .bindings
+                    .iter()
+                    .find(|binding| broker::capability_for_binding(binding) == capability)
+                    .cloned()
+            });
+            if let Some(binding) = binding {
+                self.record_discovered_snapshot(&binding, view);
+            }
+        } else if let Some(error) = &state.error {
+            self.push_event(
+                "probe_failed",
+                Some(&capability.surface_id),
+                Some(error.message.clone()),
+            );
+        }
+        if state.phase.is_terminal() {
+            self.broker_phases.remove(&capability);
+            self.last_refresh = Some(Instant::now());
+        }
+        self.push_event(
+            "broker_phase_changed",
+            Some(&capability.surface_id),
+            Some(
+                match state.phase {
+                    UsageRefreshPhase::Idle => "idle",
+                    UsageRefreshPhase::Queued => "queued",
+                    UsageRefreshPhase::Updating => "updating",
+                    UsageRefreshPhase::Completed => "completed",
+                    UsageRefreshPhase::Failed => "failed",
+                }
+                .to_owned(),
+            ),
+        );
+        Ok(())
+    }
+
+    /// Surface one coordination failure without discarding last-good quota.
+    pub fn record_broker_error(
+        &mut self,
+        surface_id: &str,
+        error: &UsageCoordinationError,
+    ) -> Result<(), String> {
+        self.require_open()?;
+        self.push_event(
+            "probe_failed",
+            Some(surface_id),
+            Some(error.message.clone()),
+        );
+        Ok(())
     }
 
     /// List surfaces with enable flags.
@@ -793,6 +891,9 @@ impl HostUsageRuntime {
     pub fn refresh_due(&self) -> bool {
         if self.probe_policy == HostProbePolicy::Disabled {
             return false;
+        }
+        if self.broker_refresh_in_progress() {
+            return true;
         }
         match self.last_refresh {
             None => true,
@@ -1407,6 +1508,7 @@ impl HostUsageRuntime {
         self.discovery_scope = None;
         self.discovered_views.clear();
         self.discovered_provider_views.clear();
+        self.broker_phases.clear();
     }
 
     fn materialize_account_catalog(&mut self) -> Result<accounts::AccountCatalog, String> {

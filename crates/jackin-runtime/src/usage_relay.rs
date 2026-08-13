@@ -5,6 +5,7 @@
 
 use std::collections::BTreeSet;
 use std::fs;
+use std::os::unix::ffi::OsStrExt as _;
 use std::os::unix::fs::PermissionsExt as _;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -123,7 +124,7 @@ pub struct UsageRelayLaunch<'a> {
 
 /// Session-lifetime relay ownership. Drop revokes the socket task.
 pub struct UsageRelayGuard {
-    task: tokio::task::JoinHandle<()>,
+    task: Option<tokio::task::JoinHandle<()>>,
     socket_path: PathBuf,
 }
 
@@ -137,7 +138,9 @@ impl std::fmt::Debug for UsageRelayGuard {
 
 impl Drop for UsageRelayGuard {
     fn drop(&mut self) {
-        self.task.abort();
+        if let Some(task) = &self.task {
+            task.abort();
+        }
         drop(fs::remove_file(&self.socket_path));
     }
 }
@@ -178,6 +181,14 @@ pub async fn prepare_for_container(launch: UsageRelayLaunch<'_>) -> Result<Usage
     let role_key = launch.role_key.to_owned();
     let forwarded_sources = launch.forwarded_sources;
     let socket_dir = launch.socket_dir;
+    let socket_path = socket_dir.join(RELAY_SOCKET);
+    if socket_path.as_os_str().as_bytes().len() >= crate::runtime::attach::MAX_UNIX_SOCKET_PATH_LEN
+    {
+        return Ok(UsageRelayGuard {
+            task: None,
+            socket_path,
+        });
+    }
     let prepared = jackin_telemetry::spawn::joined_blocking(move || {
         prepare_broker_client(
             &paths,
@@ -189,9 +200,22 @@ pub async fn prepare_for_container(launch: UsageRelayLaunch<'_>) -> Result<Usage
     .await
     .context("usage broker preparation task panicked")?;
     let (client, capabilities) = prepared;
-    let socket_path = socket_dir.join(RELAY_SOCKET);
-    let task = start(socket_path.clone(), client, capabilities)?;
-    Ok(UsageRelayGuard { task, socket_path })
+    if capabilities.is_empty() {
+        return Ok(UsageRelayGuard {
+            task: None,
+            socket_path,
+        });
+    }
+    Ok(start_guard(socket_path, client, capabilities))
+}
+
+fn start_guard(
+    socket_path: PathBuf,
+    client: UsageBrokerClient,
+    capabilities: Vec<UsageAccountCapability>,
+) -> UsageRelayGuard {
+    let task = start(socket_path.clone(), client, capabilities).ok();
+    UsageRelayGuard { task, socket_path }
 }
 
 fn prepare_broker_client(
@@ -216,10 +240,13 @@ fn prepare_broker_client(
         |workspace| format!("workspace {workspace} role {role_key}"),
     );
     let capabilities = forwarded_usage_capabilities(&discovery, &scope_label, forwarded_sources);
+    if capabilities.is_empty() {
+        return (fallback, capabilities);
+    }
     let broker_resolver = Arc::clone(&resolver);
     let broker_resolver: Arc<dyn jackin_usage::host::ProviderCredentialEnvResolver> =
         broker_resolver;
-    let client = ensure_usage_broker(broker_config, discovery, broker_resolver)
+    let client = ensure_usage_broker(broker_config, scope, discovery, broker_resolver)
         .map_or(fallback, |handle| handle.client);
     (client, capabilities)
 }
@@ -305,12 +332,59 @@ async fn dispatch(
     broker: UsageBrokerClient,
     allowlist: UsageCapabilitySet,
 ) -> UsageBrokerResponse {
-    let capability = match &operation {
-        UsageBrokerOperation::Current { capability }
-        | UsageBrokerOperation::Refresh { capability, .. }
-        | UsageBrokerOperation::Join { capability, .. } => capability,
+    let authorized =
+        match operation {
+            UsageBrokerOperation::CurrentForSurface { surface_id } => allowlist
+                .resolve_surface(&surface_id)
+                .map(|capability| UsageBrokerOperation::Current { capability }),
+            UsageBrokerOperation::RefreshForSurface {
+                surface_id,
+                observed_generation,
+                force,
+            } => allowlist.resolve_surface(&surface_id).map(|capability| {
+                UsageBrokerOperation::Refresh {
+                    capability,
+                    observed_generation,
+                    force,
+                }
+            }),
+            UsageBrokerOperation::JoinForSurface {
+                surface_id,
+                generation,
+                timeout_ms,
+            } => allowlist.resolve_surface(&surface_id).map(|capability| {
+                UsageBrokerOperation::Join {
+                    capability,
+                    generation,
+                    timeout_ms,
+                }
+            }),
+            operation @ (UsageBrokerOperation::Current { .. }
+            | UsageBrokerOperation::Refresh { .. }
+            | UsageBrokerOperation::Join { .. }) => {
+                let (UsageBrokerOperation::Current { capability }
+                | UsageBrokerOperation::Refresh { capability, .. }
+                | UsageBrokerOperation::Join { capability, .. }) = &operation
+                else {
+                    unreachable!()
+                };
+                allowlist.authorize(capability).map(|()| operation)
+            }
+        };
+    let operation = match authorized {
+        Ok(operation) => operation,
+        Err(error) => return UsageBrokerResponse::Error { error },
     };
-    if let Err(error) = allowlist.authorize(capability) {
+    if matches!(
+        operation,
+        UsageBrokerOperation::CurrentForSurface { .. }
+            | UsageBrokerOperation::RefreshForSurface { .. }
+            | UsageBrokerOperation::JoinForSurface { .. }
+    ) {
+        let error = UsageCoordinationError {
+            kind: UsageCoordinationErrorKind::Unauthorized,
+            message: "usage provider surface is not authorized".to_owned(),
+        };
         return UsageBrokerResponse::Error { error };
     }
     match jackin_telemetry::spawn::joined_blocking(move || broker.execute(operation)).await {

@@ -9,7 +9,8 @@ use std::io::{BufRead, BufReader, Read, Write};
 use std::os::unix::fs::{MetadataExt as _, PermissionsExt as _};
 use std::os::unix::net::{UnixListener, UnixStream};
 use std::path::{Path, PathBuf};
-use std::sync::Arc;
+use std::sync::mpsc::{self, TrySendError};
+use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
 use jackin_protocol::control::UsageSnapshotStatus;
@@ -28,11 +29,12 @@ use crate::coordinator::{
     UsageProviderExecutor,
 };
 
-use super::ValidatedUsageDiscovery;
 use super::discovery::{
     ProviderCredentialEnvResolver, ProviderCredentialRefreshOutcome, ValidatedCredentialBinding,
-    ValidatedCredentialSource, refresh_credential_binding,
+    ValidatedCredentialSource, discover_usage_sources, refresh_credential_binding,
+    validate_usage_sources,
 };
+use super::{UsageDiscoveryScope, ValidatedUsageDiscovery};
 
 const BROKER_DIR: &str = "usage-broker";
 const BROKER_RUN_DIR: &str = "run";
@@ -40,6 +42,8 @@ const BROKER_SOCKET: &str = "usage-broker.sock";
 const BROKER_LEADER: &str = "leader.pid";
 const CONNECT_RETRY: Duration = Duration::from_secs(2);
 const CONNECT_RETRY_STEP: Duration = Duration::from_millis(20);
+const BROKER_CONNECTION_WORKERS: usize = 4;
+const BROKER_CONNECTION_QUEUE: usize = 128;
 
 /// Host broker filesystem and handshake configuration.
 #[derive(Debug, Clone)]
@@ -167,6 +171,20 @@ pub fn forwarded_usage_capabilities(
         .collect()
 }
 
+/// Every canonical capability in one validated host discovery generation.
+#[must_use]
+pub fn usage_broker_capabilities(
+    discovery: &ValidatedUsageDiscovery,
+) -> Vec<UsageAccountCapability> {
+    discovery
+        .bindings
+        .iter()
+        .map(capability_for_binding)
+        .collect::<std::collections::BTreeSet<_>>()
+        .into_iter()
+        .collect()
+}
+
 /// Small synchronous client. Each operation uses one bounded frame/connection.
 #[derive(Debug, Clone)]
 pub struct UsageBrokerClient {
@@ -184,12 +202,31 @@ impl UsageBrokerClient {
         }
     }
 
+    /// Attach to the current Capsule's per-container relay.
+    #[must_use]
+    pub fn scoped_relay() -> Self {
+        Self::at(
+            PathBuf::from(jackin_core::container_paths::USAGE_SOCK),
+            env!("CARGO_PKG_VERSION").to_owned(),
+        )
+    }
+
     /// Read one account generation without provider work.
     pub fn current(
         &self,
         capability: UsageAccountCapability,
     ) -> Result<UsageGenerationView, UsageCoordinationError> {
         self.execute(UsageBrokerOperation::Current { capability })
+    }
+
+    /// Read the one account authorized for a provider surface through a scoped relay.
+    pub fn current_for_surface(
+        &self,
+        surface_id: impl Into<String>,
+    ) -> Result<UsageGenerationView, UsageCoordinationError> {
+        self.execute(UsageBrokerOperation::CurrentForSurface {
+            surface_id: surface_id.into(),
+        })
     }
 
     /// Request or join one account generation.
@@ -206,6 +243,20 @@ impl UsageBrokerClient {
         })
     }
 
+    /// Request or join the one account authorized for a provider surface.
+    pub fn refresh_for_surface(
+        &self,
+        surface_id: impl Into<String>,
+        observed_generation: u64,
+        force: bool,
+    ) -> Result<UsageGenerationView, UsageCoordinationError> {
+        self.execute(UsageBrokerOperation::RefreshForSurface {
+            surface_id: surface_id.into(),
+            observed_generation,
+            force,
+        })
+    }
+
     /// Wait for one named generation. This does not release broker ownership on timeout.
     pub fn join(
         &self,
@@ -216,6 +267,21 @@ impl UsageBrokerClient {
         let timeout_ms = u64::try_from(timeout.as_millis()).unwrap_or(u64::MAX);
         self.execute(UsageBrokerOperation::Join {
             capability,
+            generation,
+            timeout_ms,
+        })
+    }
+
+    /// Wait for one generation through a scoped provider-surface relay.
+    pub fn join_for_surface(
+        &self,
+        surface_id: impl Into<String>,
+        generation: u64,
+        timeout: Duration,
+    ) -> Result<UsageGenerationView, UsageCoordinationError> {
+        let timeout_ms = u64::try_from(timeout.as_millis()).unwrap_or(u64::MAX);
+        self.execute(UsageBrokerOperation::JoinForSurface {
+            surface_id: surface_id.into(),
             generation,
             timeout_ms,
         })
@@ -253,20 +319,27 @@ impl UsageBrokerClient {
 }
 
 struct DiscoveryProviderExecutor {
-    bindings: BTreeMap<UsageAccountCapability, ValidatedCredentialBinding>,
+    bindings: Mutex<BTreeMap<UsageAccountCapability, ValidatedCredentialBinding>>,
+    scope: UsageDiscoveryScope,
     resolver: Arc<dyn ProviderCredentialEnvResolver>,
 }
 
 impl UsageProviderExecutor for DiscoveryProviderExecutor {
     fn probe(&self, capability: &UsageAccountCapability, _generation: u64) -> ProviderProbeOutcome {
-        let Some(binding) = self.bindings.get(capability) else {
+        let binding = self
+            .bindings
+            .lock()
+            .ok()
+            .and_then(|bindings| bindings.get(capability).cloned())
+            .or_else(|| self.rediscover_binding(capability));
+        let Some(binding) = binding else {
             return ProviderProbeOutcome::Failure {
                 kind: UsageCoordinationErrorKind::Unauthorized,
                 message: "usage account capability is not authorized".to_owned(),
                 retry_at_epoch: None,
             };
         };
-        match refresh_credential_binding(binding, self.resolver.as_ref()) {
+        match refresh_credential_binding(&binding, self.resolver.as_ref()) {
             ProviderCredentialRefreshOutcome::Snapshot(view) => match view.status {
                 UsageSnapshotStatus::NeedsSecret | UsageSnapshotStatus::NeedsLogin => {
                     ProviderProbeOutcome::Failure {
@@ -302,9 +375,29 @@ impl UsageProviderExecutor for DiscoveryProviderExecutor {
     }
 }
 
+impl DiscoveryProviderExecutor {
+    fn rediscover_binding(
+        &self,
+        capability: &UsageAccountCapability,
+    ) -> Option<ValidatedCredentialBinding> {
+        self.resolver.begin_manual_retry();
+        let catalog = discover_usage_sources(&self.scope, self.resolver.as_ref()).ok()?;
+        let discovery = validate_usage_sources(catalog, self.resolver.as_ref());
+        let bindings = discovery
+            .bindings
+            .into_iter()
+            .map(|binding| (capability_for_binding(&binding), binding))
+            .collect::<BTreeMap<_, _>>();
+        let binding = bindings.get(capability).cloned();
+        *self.bindings.lock().ok()? = bindings;
+        binding
+    }
+}
+
 /// Ensure one host broker backed by the validated Rust discovery generation.
 pub fn ensure_usage_broker(
     config: UsageBrokerConfig,
+    scope: UsageDiscoveryScope,
     discovery: ValidatedUsageDiscovery,
     resolver: Arc<dyn ProviderCredentialEnvResolver>,
 ) -> Result<UsageBrokerHandle, UsageCoordinationError> {
@@ -323,7 +416,11 @@ pub fn ensure_usage_broker(
         bindings.entry(capability).or_insert(binding);
     }
     let capabilities = bindings.keys().cloned().collect();
-    let executor = Arc::new(DiscoveryProviderExecutor { bindings, resolver });
+    let executor = Arc::new(DiscoveryProviderExecutor {
+        bindings: Mutex::new(bindings),
+        scope,
+        resolver,
+    });
     let client = ensure_usage_broker_with_executor(config, executor)?;
     Ok(UsageBrokerHandle {
         client,
@@ -370,20 +467,73 @@ pub fn ensure_usage_broker_with_executor(
 }
 
 fn serve(listener: UnixListener, coordinator: Arc<UsageCoordinator>, build_id: &str) {
+    let (connections, receiver) = mpsc::sync_channel(BROKER_CONNECTION_QUEUE);
+    let receiver = Arc::new(Mutex::new(receiver));
+    let build_id = Arc::<str>::from(build_id);
+    let mut workers = Vec::with_capacity(BROKER_CONNECTION_WORKERS);
+    for index in 0..BROKER_CONNECTION_WORKERS {
+        let receiver = Arc::clone(&receiver);
+        let coordinator = Arc::clone(&coordinator);
+        let build_id = Arc::clone(&build_id);
+        let worker = jackin_telemetry::spawn::thread_joined_named(
+            format!("usage-broker-connection-{index}"),
+            move || loop {
+                let stream = {
+                    let Ok(receiver) = receiver.lock() else {
+                        return;
+                    };
+                    receiver.recv()
+                };
+                let Ok(stream) = stream else {
+                    return;
+                };
+                handle_stream(stream, &coordinator, &build_id);
+            },
+        );
+        match worker {
+            Ok(worker) => workers.push(worker),
+            Err(_) => break,
+        }
+    }
+    if workers.is_empty() {
+        return;
+    }
     for incoming in listener.incoming() {
-        let Ok(mut stream) = incoming else {
+        let Ok(stream) = incoming else {
             continue;
         };
-        let response = match read_frame::<UsageBrokerRequest>(&mut stream) {
-            Ok(request) => dispatch(&coordinator, request, build_id),
-            Err(error) => UsageBrokerResponse::Error { error },
-        };
-        if let Ok(mut bytes) = serde_json::to_vec(&response)
-            && bytes.len() < USAGE_BROKER_MAX_FRAME_BYTES
-        {
-            bytes.push(b'\n');
-            let _write_result = stream.write_all(&bytes);
+        match connections.try_send(stream) {
+            Ok(()) => {}
+            Err(TrySendError::Full(mut stream) | TrySendError::Disconnected(mut stream)) => {
+                write_response(
+                    &mut stream,
+                    UsageBrokerResponse::Error {
+                        error: unavailable(),
+                    },
+                );
+            }
         }
+    }
+    drop(connections);
+    for worker in workers {
+        drop(worker.join());
+    }
+}
+
+fn handle_stream(mut stream: UnixStream, coordinator: &UsageCoordinator, build_id: &str) {
+    let response = match read_frame::<UsageBrokerRequest>(&mut stream) {
+        Ok(request) => dispatch(coordinator, request, build_id),
+        Err(error) => UsageBrokerResponse::Error { error },
+    };
+    write_response(&mut stream, response);
+}
+
+fn write_response(stream: &mut UnixStream, response: UsageBrokerResponse) {
+    if let Ok(mut bytes) = serde_json::to_vec(&response)
+        && bytes.len() < USAGE_BROKER_MAX_FRAME_BYTES
+    {
+        bytes.push(b'\n');
+        let _write_result = stream.write_all(&bytes);
     }
 }
 
@@ -399,6 +549,12 @@ fn dispatch(
     }
     let now = chrono::Utc::now().timestamp();
     let result = match request.operation {
+        UsageBrokerOperation::CurrentForSurface { .. }
+        | UsageBrokerOperation::RefreshForSurface { .. }
+        | UsageBrokerOperation::JoinForSurface { .. } => Err(UsageCoordinationError {
+            kind: UsageCoordinationErrorKind::Unauthorized,
+            message: "scoped usage operation requires a container relay".to_owned(),
+        }),
         UsageBrokerOperation::Current { capability } => coordinator.current(&capability, now),
         UsageBrokerOperation::Refresh {
             capability,
@@ -547,7 +703,9 @@ fn connect_probe(client: &UsageBrokerClient) -> bool {
     UnixStream::connect(&client.socket_path).is_ok()
 }
 
-fn capability_for_binding(binding: &ValidatedCredentialBinding) -> UsageAccountCapability {
+pub(super) fn capability_for_binding(
+    binding: &ValidatedCredentialBinding,
+) -> UsageAccountCapability {
     let subject = if let Some(identity) = &binding.identity {
         identity.account_key()
     } else {

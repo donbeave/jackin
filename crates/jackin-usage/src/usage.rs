@@ -279,6 +279,20 @@ pub(crate) enum UsageSurface {
 }
 
 impl UsageSurface {
+    const fn id(self) -> Option<&'static str> {
+        match self {
+            Self::Claude => Some("claude"),
+            Self::Codex => Some("codex"),
+            Self::Amp => Some("amp"),
+            Self::Grok => Some("grok"),
+            Self::Zai => Some("zai"),
+            Self::Kimi => Some("kimi"),
+            Self::Minimax => Some("minimax"),
+            Self::OpenCode => Some("opencode"),
+            Self::Unsupported => None,
+        }
+    }
+
     pub(crate) fn label(self) -> &'static str {
         match self {
             Self::Claude => "Claude",
@@ -363,6 +377,63 @@ impl UsageCache {
             canonical_usage_cache_key(agent, focused_provider),
             CachedUsage { view },
         );
+    }
+
+    /// Adopt one host-broker generation without executing provider work locally.
+    pub fn adopt_broker_generation(
+        &mut self,
+        target: &UsageRefreshTarget,
+        state: &jackin_protocol::usage_broker::UsageGenerationView,
+    ) {
+        let mut view = state.snapshot.clone().unwrap_or_else(|| {
+            if state.phase.is_active() {
+                FocusedUsageView::refreshing(target.provider.as_deref(), now_epoch())
+            } else {
+                FocusedUsageView::unavailable(
+                    state
+                        .error
+                        .as_ref()
+                        .map_or("usage coordinator unavailable", |error| {
+                            error.message.as_str()
+                        }),
+                    now_epoch(),
+                )
+            }
+        });
+        if let Some(error) = &state.error {
+            view.last_error = Some(error.message.clone());
+            if !view.buckets.is_empty() {
+                view.status = UsageSnapshotStatus::Stale;
+            }
+        }
+        if view.focused_agent.is_none() {
+            view.focused_agent = Some(target.agent.clone());
+        }
+        if view.focused_provider.is_none() {
+            view.focused_provider = target.provider.clone();
+        }
+        self.snapshots
+            .insert(target.cache_key(), CachedUsage { view });
+    }
+
+    /// Preserve last-good quota while surfacing a typed relay/broker failure.
+    pub fn adopt_broker_error(
+        &mut self,
+        target: &UsageRefreshTarget,
+        error: &jackin_protocol::usage_broker::UsageCoordinationError,
+    ) {
+        let cache_key = target.cache_key();
+        if let Some(cached) = self.snapshots.get_mut(&cache_key) {
+            cached.view.last_error = Some(error.message.clone());
+            if !cached.view.buckets.is_empty() {
+                cached.view.status = UsageSnapshotStatus::Stale;
+            }
+            return;
+        }
+        let mut view = FocusedUsageView::unavailable(&error.message, now_epoch());
+        view.focused_agent = Some(target.agent.clone());
+        view.focused_provider = target.provider.clone();
+        self.snapshots.insert(cache_key, CachedUsage { view });
     }
 
     /// Bench/test helper: write materialized accounts to `path` instead of the
@@ -872,6 +943,12 @@ pub fn resolved_usage_provider_label(
 ) -> Option<&'static str> {
     let surface = resolve_surface(agent, focused_provider);
     (surface != UsageSurface::Unsupported).then_some(surface.label())
+}
+
+/// Closed host-broker surface id for a Capsule refresh target.
+#[must_use]
+pub fn broker_surface_id(agent: &str, focused_provider: Option<&str>) -> Option<&'static str> {
+    resolve_surface(agent, focused_provider).id()
 }
 
 /// Shared provider display remap for Capsule tabs and jackin❯ desktop overview.

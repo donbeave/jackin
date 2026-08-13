@@ -30,6 +30,7 @@ public func desktopProviderBrandChrome(iconKey: String?) -> Color {
 @MainActor
 public enum ProviderMarks {
     /// Bundled PDF resource base name for a Desktop provider icon key.
+    ///
     /// Deprecated: replaced by Rust DTO fields — removed in Plan 005.
     public static func resourceName(forIconKey iconKey: String) -> String? {
         switch iconKey {

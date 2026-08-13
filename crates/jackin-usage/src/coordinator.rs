@@ -109,6 +109,31 @@ impl UsageCapabilitySet {
         }
     }
 
+    /// Resolve a provider surface only when this scope authorizes exactly one
+    /// canonical account. Missing and ambiguous mappings are equally denied.
+    pub fn resolve_surface(
+        &self,
+        surface_id: &str,
+    ) -> Result<UsageAccountCapability, UsageCoordinationError> {
+        let mut matches = self
+            .allowed
+            .iter()
+            .filter(|capability| capability.surface_id == surface_id);
+        let Some(capability) = matches.next() else {
+            return Err(coordination_error(
+                UsageCoordinationErrorKind::Unauthorized,
+                "usage provider surface is not authorized",
+            ));
+        };
+        if matches.next().is_some() {
+            return Err(coordination_error(
+                UsageCoordinationErrorKind::Unauthorized,
+                "usage provider surface is not uniquely authorized",
+            ));
+        }
+        Ok(capability.clone())
+    }
+
     /// Number of authorized canonical accounts.
     #[must_use]
     pub fn len(&self) -> usize {

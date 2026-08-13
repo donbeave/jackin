@@ -3486,6 +3486,7 @@ dependencies = [
  "jackin-core",
  "jackin-env",
  "jackin-protocol",
+ "jackin-telemetry",
  "jackin-usage",
  "tempfile",
  "uniffi",

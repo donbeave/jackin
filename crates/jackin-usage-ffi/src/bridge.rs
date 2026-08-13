@@ -3,9 +3,17 @@
 
 //! Coarse synchronous facade matching the roadmap `UniFFI` surface.
 
+use std::collections::BTreeSet;
 use std::sync::{Arc, Mutex};
+use std::time::Duration;
 
-use jackin_usage::host::HostUsageRuntime;
+use jackin_protocol::usage_broker::{
+    UsageAccountCapability, UsageCoordinationError, UsageCoordinationErrorKind,
+};
+use jackin_usage::host::{
+    HostUsageRuntime, UsageBrokerClient, UsageBrokerConfig, UsageDiscoveryScope,
+    ensure_usage_broker, usage_broker_capabilities,
+};
 
 use crate::discovery::DesktopCredentialResolver;
 use crate::dto::{
@@ -20,8 +28,18 @@ use crate::error::{UsageBridgeError, catch_entry};
 /// Process-scoped `UniFFI` facade over the host usage runtime.
 #[derive(uniffi::Object)]
 pub struct UsageMenuBarBridge {
-    inner: Mutex<HostUsageRuntime>,
-    credential_resolver: DesktopCredentialResolver,
+    inner: Arc<Mutex<HostUsageRuntime>>,
+    credential_resolver: Arc<DesktopCredentialResolver>,
+    broker: Mutex<Option<DesktopBroker>>,
+    joiners: Arc<Mutex<BTreeSet<(UsageAccountCapability, u64)>>>,
+}
+
+#[derive(Clone)]
+struct DesktopBroker {
+    client: UsageBrokerClient,
+    capabilities: Vec<UsageAccountCapability>,
+    config: UsageBrokerConfig,
+    scope: UsageDiscoveryScope,
 }
 
 #[uniffi::export]
@@ -31,8 +49,10 @@ impl UsageMenuBarBridge {
     #[must_use]
     pub fn create() -> Arc<Self> {
         Arc::new(Self {
-            inner: Mutex::new(HostUsageRuntime::new()),
-            credential_resolver: DesktopCredentialResolver::default(),
+            inner: Arc::new(Mutex::new(HostUsageRuntime::new())),
+            credential_resolver: Arc::new(DesktopCredentialResolver::default()),
+            broker: Mutex::new(None),
+            joiners: Arc::new(Mutex::new(BTreeSet::new())),
         })
     }
 
@@ -40,10 +60,44 @@ impl UsageMenuBarBridge {
     pub fn open_runtime(&self, config: OpenConfig) -> Result<(), UsageBridgeError> {
         catch_entry(|| {
             let host_config = to_host_config(config).map_err(map_open_err)?;
+            let broker_config = UsageBrokerConfig::for_data_dir(host_config.data_dir.clone());
+            let discovery_scope = host_config.discovery_scope.clone();
             let mut guard = self.lock()?;
             guard
-                .open_with_discovery(host_config, &self.credential_resolver)
-                .map_err(map_open_err)
+                .open_with_discovery(host_config, self.credential_resolver.as_ref())
+                .map_err(map_open_err)?;
+            let live = guard.live_probes_enabled();
+            let discovery = guard.validated_discovery();
+            drop(guard);
+            let fallback = broker_config.client();
+            let (client, capabilities) = if live {
+                discovery.map_or_else(
+                    || (fallback.clone(), Vec::new()),
+                    |discovery| {
+                        let capabilities = usage_broker_capabilities(&discovery);
+                        let resolver = Arc::clone(&self.credential_resolver);
+                        let resolver: Arc<dyn jackin_usage::host::ProviderCredentialEnvResolver> =
+                            resolver;
+                        let client = ensure_usage_broker(
+                            broker_config.clone(),
+                            discovery_scope.clone(),
+                            discovery,
+                            resolver,
+                        )
+                        .map_or_else(|_| fallback.clone(), |handle| handle.client);
+                        (client, capabilities)
+                    },
+                )
+            } else {
+                (fallback, Vec::new())
+            };
+            *self.broker_lock()? = Some(DesktopBroker {
+                client,
+                capabilities,
+                config: broker_config,
+                scope: discovery_scope,
+            });
+            Ok(())
         })
     }
 
@@ -89,11 +143,73 @@ impl UsageMenuBarBridge {
     /// When `force` is true, bypasses the floor (manual Refresh).
     pub fn refresh(&self, surface_id: Option<String>, force: bool) -> Result<(), UsageBridgeError> {
         catch_entry(|| {
-            let mut guard = self.lock()?;
-            guard
-                .refresh_with_discovery(surface_id.as_deref(), force, &self.credential_resolver)
-                .map_err(map_runtime_err)
+            if force {
+                self.reconcile_broker_catalog()?;
+            }
+            {
+                let guard = self.lock()?;
+                if !guard.live_probes_enabled() {
+                    return Ok(());
+                }
+                if surface_id
+                    .as_deref()
+                    .is_some_and(|surface| !guard.surface_enabled(surface))
+                {
+                    return Err(UsageBridgeError::rejected("runtime", "surface is disabled"));
+                }
+            }
+            let broker = self
+                .broker_lock()?
+                .clone()
+                .ok_or(UsageBridgeError::RuntimeUnavailable)?;
+            let capabilities = {
+                let runtime = self.lock()?;
+                broker
+                    .capabilities
+                    .iter()
+                    .filter(|capability| {
+                        surface_id
+                            .as_deref()
+                            .is_none_or(|surface| capability.surface_id == surface)
+                    })
+                    .filter(|capability| runtime.surface_enabled(&capability.surface_id))
+                    .cloned()
+                    .collect::<Vec<_>>()
+            };
+            let mut first_error = None;
+            for capability in capabilities {
+                let result = broker
+                    .client
+                    .current(capability.clone())
+                    .and_then(|current| {
+                        broker
+                            .client
+                            .refresh(capability.clone(), current.generation, force)
+                    });
+                let state = match result {
+                    Ok(state) => state,
+                    Err(error) => {
+                        self.lock()?
+                            .record_broker_error(&capability.surface_id, &error)
+                            .map_err(map_runtime_err)?;
+                        first_error.get_or_insert(error);
+                        continue;
+                    }
+                };
+                self.lock()?
+                    .apply_broker_generation(state.clone())
+                    .map_err(map_runtime_err)?;
+                if state.phase.is_active() {
+                    self.schedule_join(broker.client.clone(), capability, state.generation);
+                }
+            }
+            first_error.map_or(Ok(()), |error| Err(map_coordination_err(error)))
         })
+    }
+
+    /// True while at least one Rust broker generation is queued/updating.
+    pub fn refresh_in_progress(&self) -> Result<bool, UsageBridgeError> {
+        catch_entry(|| Ok(self.lock()?.broker_refresh_in_progress()))
     }
 
     /// Set refresh floor seconds (clamped ≥ 60 in Rust).
@@ -303,6 +419,11 @@ impl UsageMenuBarBridge {
         catch_entry(|| {
             let mut guard = self.lock()?;
             guard.shutdown();
+            *self.broker_lock()? = None;
+            self.joiners
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .clear();
             Ok(())
         })
     }
@@ -322,11 +443,116 @@ impl UsageMenuBarBridge {
 }
 
 impl UsageMenuBarBridge {
+    fn reconcile_broker_catalog(&self) -> Result<(), UsageBridgeError> {
+        let current = self
+            .broker_lock()?
+            .clone()
+            .ok_or(UsageBridgeError::RuntimeUnavailable)?;
+        let discovery = {
+            let mut runtime = self.lock()?;
+            if !runtime.live_probes_enabled() {
+                return Ok(());
+            }
+            runtime
+                .reconcile_discovery(self.credential_resolver.as_ref())
+                .map_err(map_runtime_err)?;
+            runtime.validated_discovery()
+        };
+        let Some(discovery) = discovery else {
+            return Ok(());
+        };
+        let capabilities = usage_broker_capabilities(&discovery);
+        let resolver = Arc::clone(&self.credential_resolver);
+        let resolver: Arc<dyn jackin_usage::host::ProviderCredentialEnvResolver> = resolver;
+        let client = ensure_usage_broker(
+            current.config.clone(),
+            current.scope.clone(),
+            discovery,
+            resolver,
+        )
+        .map_or(current.client, |handle| handle.client);
+        *self.broker_lock()? = Some(DesktopBroker {
+            client,
+            capabilities,
+            config: current.config,
+            scope: current.scope,
+        });
+        Ok(())
+    }
+
     fn lock(&self) -> Result<std::sync::MutexGuard<'_, HostUsageRuntime>, UsageBridgeError> {
         self.inner
             .lock()
             .map_err(|_| UsageBridgeError::rejected("lock", "runtime mutex poisoned"))
     }
+
+    fn broker_lock(
+        &self,
+    ) -> Result<std::sync::MutexGuard<'_, Option<DesktopBroker>>, UsageBridgeError> {
+        self.broker
+            .lock()
+            .map_err(|_| UsageBridgeError::rejected("lock", "broker mutex poisoned"))
+    }
+
+    fn schedule_join(
+        &self,
+        client: UsageBrokerClient,
+        capability: UsageAccountCapability,
+        generation: u64,
+    ) {
+        let key = (capability.clone(), generation);
+        {
+            let mut joiners = self
+                .joiners
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            if !joiners.insert(key.clone()) {
+                return;
+            }
+        }
+        let runtime = Arc::clone(&self.inner);
+        let joiners = Arc::clone(&self.joiners);
+        let name = format!("desktop-usage-join-{}", capability.surface_id);
+        let worker_key = key.clone();
+        let worker = jackin_telemetry::spawn::thread_joined_named(name, move || {
+            let result = client.join(capability.clone(), generation, Duration::from_secs(30));
+            let mut runtime = runtime
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            match result {
+                Ok(state) => drop(runtime.apply_broker_generation(state)),
+                Err(error) => {
+                    drop(runtime.record_broker_error(&capability.surface_id, &error));
+                }
+            }
+            joiners
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .remove(&worker_key);
+        });
+        if worker.is_err() {
+            self.joiners
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .remove(&key);
+        }
+    }
+}
+
+fn map_coordination_err(error: UsageCoordinationError) -> UsageBridgeError {
+    let code = match error.kind {
+        UsageCoordinationErrorKind::Unavailable => "coordination_unavailable",
+        UsageCoordinationErrorKind::Unauthorized => "coordination_unauthorized",
+        UsageCoordinationErrorKind::OwnerLost => "coordination_owner_lost",
+        UsageCoordinationErrorKind::WaitTimeout => "coordination_wait_timeout",
+        UsageCoordinationErrorKind::CorruptState => "coordination_corrupt_state",
+        UsageCoordinationErrorKind::ProviderTimeout => "coordination_provider_timeout",
+        UsageCoordinationErrorKind::ProviderUnavailable => "coordination_provider_unavailable",
+        UsageCoordinationErrorKind::NeedsSecret => "coordination_needs_secret",
+        UsageCoordinationErrorKind::RateLimited => "coordination_rate_limited",
+        UsageCoordinationErrorKind::ProtocolMismatch => "coordination_protocol_mismatch",
+    };
+    UsageBridgeError::rejected(code, error.message)
 }
 
 #[cfg(test)]

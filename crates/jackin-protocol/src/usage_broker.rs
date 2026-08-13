@@ -108,6 +108,31 @@ pub struct UsageGenerationView {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(tag = "operation", rename_all = "snake_case")]
 pub enum UsageBrokerOperation {
+    /// Relay-only current-state request for one known provider surface.
+    /// The per-container relay resolves this to exactly one allowed capability;
+    /// the global host broker rejects this operation directly.
+    CurrentForSurface {
+        /// Closed provider surface id already known to the Capsule.
+        surface_id: String,
+    },
+    /// Relay-only refresh request for one known provider surface.
+    RefreshForSurface {
+        /// Closed provider surface id already known to the Capsule.
+        surface_id: String,
+        /// Last generation observed by the caller.
+        observed_generation: u64,
+        /// True only for an explicit operator Refresh action.
+        force: bool,
+    },
+    /// Relay-only wait for one surface generation.
+    JoinForSurface {
+        /// Closed provider surface id already known to the Capsule.
+        surface_id: String,
+        /// Generation returned by a prior refresh request.
+        generation: u64,
+        /// Bounded client wait in milliseconds.
+        timeout_ms: u64,
+    },
     /// Read current account state without starting provider work.
     Current {
         /// Authorized account.

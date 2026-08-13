@@ -699,6 +699,11 @@ public protocol UsageMenuBarBridgeProtocol: AnyObject, Sendable {
     func refreshFloorSecs() throws  -> UInt64
     
     /**
+     * True while at least one Rust broker generation is queued/updating.
+     */
+    func refreshInProgress() throws  -> Bool
+
+    /**
      * Enable or disable a surface for bar + refresh.
      */
     func setEnabled(surfaceId: String, enabled: Bool) throws 
@@ -1027,6 +1032,18 @@ open func refreshFloorSecs()throws  -> UInt64  {
 })
 }
     
+    /**
+     * True while at least one Rust broker generation is queued/updating.
+     */
+open func refreshInProgress()throws  -> Bool  {
+    return try  FfiConverterBool.lift(try rustCallWithError(FfiConverterTypeUsageBridgeError_lift) {
+        uniffiCallStatus in
+    uniffi_jackin_usage_ffi_fn_method_usagemenubarbridge_refresh_in_progress(
+            self.uniffiCloneHandle(),uniffiCallStatus
+    )
+})
+}
+
     /**
      * Enable or disable a surface for bar + refresh.
      */
@@ -3248,6 +3265,9 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_jackin_usage_ffi_checksum_method_usagemenubarbridge_refresh_floor_secs() != 21503) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_jackin_usage_ffi_checksum_method_usagemenubarbridge_refresh_in_progress() != 41303) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_jackin_usage_ffi_checksum_method_usagemenubarbridge_set_enabled() != 59390) {

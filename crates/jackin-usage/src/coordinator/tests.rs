@@ -347,6 +347,16 @@ fn coordinator_capsule_capability_rejects_non_forwarded_account() {
 }
 
 #[test]
+fn coordinator_capsule_surface_rejects_ambiguous_accounts() {
+    let account_a = capability("account-a");
+    let account_b = capability("account-b");
+    let allowlist = UsageCapabilitySet::new([account_a, account_b]);
+
+    let error = allowlist.resolve_surface("claude").unwrap_err();
+    assert_eq!(error.kind, UsageCoordinationErrorKind::Unauthorized);
+}
+
+#[test]
 fn coordinator_failure_shares_retry_deadline_and_last_good() {
     let executor = Arc::new(GateExecutor::new(ProviderProbeOutcome::success(
         quota_view(1_000, 80),
