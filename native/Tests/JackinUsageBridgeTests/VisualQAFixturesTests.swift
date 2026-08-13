@@ -157,7 +157,7 @@ final class VisualQAFixturesTests: XCTestCase {
         XCTAssertNil(store.usageSelection)
     }
 
-    func testA1SourcesExposeNoDestructiveAction() throws {
+    func testProductionSourcesExposeNoDestructiveAction() throws {
         let sources = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
             .deletingLastPathComponent()
@@ -178,7 +178,7 @@ final class VisualQAFixturesTests: XCTestCase {
         }
     }
 
-    func testA1SourcesExposeNoInvisibleShortcutControl() throws {
+    func testProductionSourcesExposeNoInvisibleShortcutControl() throws {
         let source = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
             .deletingLastPathComponent()

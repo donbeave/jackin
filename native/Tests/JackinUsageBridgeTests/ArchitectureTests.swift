@@ -78,7 +78,7 @@ final class ArchitectureTests: XCTestCase {
         }
     }
 
-    func testA1HasNoCustomGlassEffects() throws {
+    func testProductionHasNoCustomGlassEffects() throws {
         for file in try handwrittenSwiftFiles() {
             let text = try String(contentsOf: file, encoding: .utf8)
             XCTAssertFalse(
@@ -88,7 +88,7 @@ final class ArchitectureTests: XCTestCase {
         }
     }
 
-    func testA1HasNoHandPaintedSystemMaterial() throws {
+    func testProductionHasNoHandPaintedSystemMaterial() throws {
         let regex = try NSRegularExpression(
             pattern: #"\.(ultraThin|thin|regular|thick|ultraThick)Material"#
         )
