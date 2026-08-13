@@ -4,6 +4,7 @@
 //! Entry point: [`UsageTotals`] — usage aggregation surface.
 //! Host menu-bar / CLI: [`host::HostUsageRuntime`] (Capsule-free).
 
+pub mod coordinator;
 pub mod host;
 pub mod logging;
 pub mod output;
