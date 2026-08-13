@@ -26,6 +26,15 @@
   `plans/008-backend-parity-fail-closed.md`
 - **Category**: dx, tests, docs
 - **Planned at**: commit `27d0d9b3`, 2026-08-13
+- **Execution state**: BLOCKED — the plan's assumed local CI graph no longer
+  exists. `.github/workflows/ci.yml` is generated, hash-authenticated fleet
+  output that calls `jackin-project/velnor-actions/.github/workflows/ci-code.yml`;
+  local edits are forbidden and would be overwritten. The repository workflow
+  policy also forbids ordinary macOS runners, while the active main ruleset
+  requires only `ci-required` and DCO. Completion requires an approved native
+  extension in the canonical `velnor-actions` code-class template (or a governed
+  repository extension point), regenerated fleet pins/caller, and then a ruleset
+  decision. Those cross-repository mutations are outside this branch's scope.
 
 ## Why this matters
 
