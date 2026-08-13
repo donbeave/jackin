@@ -43,6 +43,10 @@ inputs:
     description: Return miss outputs instead of failing when preparation must build the artifacts.
     required: false
     default: "false"
+  build-on-miss:
+    description: Build jackin-xtask through the locked mise toolchain when no prepared artifact exists.
+    required: false
+    default: "true"
 
 runs:
   using: composite
@@ -79,11 +83,30 @@ runs:
         JACKIN_INCLUDE_XTASK: ${{ inputs.include-xtask }}
         JACKIN_TOOLS_CACHE_HIT: ${{ steps.tools-cache.outputs.cache-hit }}
         JACKIN_XTASK_CACHE_HIT: ${{ steps.xtask-cache.outputs.cache-hit }}
-        JACKIN_ALLOW_MISS: ${{ inputs.allow-miss }}
+        JACKIN_ALLOW_MISS: ${{ inputs.allow-miss == 'true' || inputs.build-on-miss == 'true' }}
         JACKIN_ACTION_RUNTIME: ${{ github.action_path }}/runtime/dist/index.js
       with:
         github-token: ${{ inputs.token }}
         script: return await import(process.env.JACKIN_ACTION_RUNTIME).then(({ main }) => main())
+    - name: Set up locked Rust toolchain for fallback
+      if: >-
+        inputs.include-xtask == 'true' &&
+        steps.restore.outputs.xtask-hit != 'true' &&
+        inputs.build-on-miss == 'true'
+      uses: jdx/mise-action@7e36c90d9ab29c415a2384db3006f3ec8a8cc654 # v4.2.4
+      with:
+        version: "2026.7.12"
+        cache_key_prefix: "mise-v2"
+        cache_save: false
+        install_args: rust
+        github_token: ${{ inputs.token }}
+    - name: Build locked CI xtask fallback
+      if: >-
+        inputs.include-xtask == 'true' &&
+        steps.restore.outputs.xtask-hit != 'true' &&
+        inputs.build-on-miss == 'true'
+      run: mise exec -- cargo build -p jackin-xtask --locked
+      shell: bash
     - name: Cache restored Cargo tools
       if: >-
         inputs.include-tools == 'true' &&
