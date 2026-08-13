@@ -8,6 +8,7 @@
 //! data dir (not container `/jackin/...` paths).
 
 mod accounts;
+mod broker;
 mod discovery;
 
 use std::collections::{BTreeMap, HashMap, HashSet, VecDeque};
@@ -27,6 +28,10 @@ use crate::usage::{
 pub use accounts::{
     AccountLifecycle, AccountProvenance, CanonicalAccountIdentity, CanonicalAccountSubject,
     HostAccountDescriptor, account_key_for_view, min_remaining, short_account_identity,
+};
+pub use broker::{
+    UsageBrokerClient, UsageBrokerConfig, UsageBrokerHandle, ensure_usage_broker,
+    ensure_usage_broker_with_executor,
 };
 pub use discovery::{
     DiscoveredAccountDescriptor, ForwardedUsageAccount, OpaqueCredentialHandle,
