@@ -12,12 +12,42 @@ use jackin_usage::host::HostUsageRuntime;
 
 use crate::dto::UsageFormatPrefsDto;
 
+fn write_isolated_config(config_root: &std::path::Path) {
+    std::fs::create_dir_all(config_root).expect("config root");
+    std::fs::write(
+        config_root.join("config.toml"),
+        format!(
+            r#"version = "{}"
+
+[claude]
+auth_forward = "ignore"
+[codex]
+auth_forward = "ignore"
+[amp]
+auth_forward = "ignore"
+[kimi]
+auth_forward = "ignore"
+[grok]
+auth_forward = "ignore"
+[opencode]
+auth_forward = "ignore"
+"#,
+            jackin_config::CURRENT_CONFIG_VERSION
+        ),
+    )
+    .expect("global config");
+}
+
 fn open_bridge(dir: &std::path::Path) -> Arc<UsageMenuBarBridge> {
+    let config_root = dir.join("config");
+    if !config_root.join("config.toml").exists() {
+        write_isolated_config(&config_root);
+    }
     let bridge = UsageMenuBarBridge::create();
     bridge
         .open_runtime(OpenConfig {
             data_dir_override: Some(dir.display().to_string()),
-            config_root_override: Some(dir.join("config").display().to_string()),
+            config_root_override: Some(config_root.display().to_string()),
             refresh_floor_secs: 120,
             enabled_surface_ids: vec!["codex".to_owned(), "claude".to_owned()],
             allow_live_probes: true,
@@ -31,12 +61,8 @@ fn disc_diagnostics_export_only_sanitized_scope_and_copy() {
     let dir = tempfile::tempdir().expect("tempdir");
     let config = dir.path().join("config");
     let workspaces = config.join("workspaces");
+    write_isolated_config(&config);
     std::fs::create_dir_all(&workspaces).expect("workspaces");
-    std::fs::write(
-        config.join("config.toml"),
-        format!("version = \"{}\"\n", jackin_config::CURRENT_CONFIG_VERSION),
-    )
-    .expect("global config");
     std::fs::write(
         workspaces.join("broken.toml"),
         "{fixture-secret op://vault/item",
