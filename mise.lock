@@ -58,6 +58,25 @@ url = "https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_
 url_api = "https://api.github.com/repos/rhysd/actionlint/releases/assets/384924880"
 provenance = "github-attestations"
 
+[[tools."aqua:apple/container"]]
+version = "1.2.2"
+backend = "aqua:apple/container"
+
+[tools."aqua:apple/container"."platforms.macos-arm64"]
+checksum = "sha256:f4c7e73f7203725a3512676dfd9ec6c6a98a37093b6fd4a1b0fdcfcb227e2118"
+url = "https://github.com/apple/container/releases/download/1.2.2/container-1.2.2-installer-signed.pkg"
+url_api = "https://api.github.com/repos/apple/container/releases/assets/505922768"
+
+[tools."aqua:apple/container"."platforms.macos-x64"]
+checksum = "sha256:f4c7e73f7203725a3512676dfd9ec6c6a98a37093b6fd4a1b0fdcfcb227e2118"
+url = "https://github.com/apple/container/releases/download/1.2.2/container-1.2.2-installer-signed.pkg"
+url_api = "https://api.github.com/repos/apple/container/releases/assets/505922768"
+
+[tools."aqua:apple/container"."platforms.macos-x64-baseline"]
+checksum = "sha256:f4c7e73f7203725a3512676dfd9ec6c6a98a37093b6fd4a1b0fdcfcb227e2118"
+url = "https://github.com/apple/container/releases/download/1.2.2/container-1.2.2-installer-signed.pkg"
+url_api = "https://api.github.com/repos/apple/container/releases/assets/505922768"
+
 [[tools."aqua:nextest-rs/nextest/cargo-nextest"]]
 version = "0.9.140"
 backend = "aqua:nextest-rs/nextest/cargo-nextest"
@@ -482,6 +501,11 @@ checksum = "sha256:07d4e286e31dd79164df39097e0b59f533c94badbe18158464a455ea88a16
 url = "https://github.com/peripheryapp/periphery/releases/download/3.8.0/periphery-3.8.0.zip"
 url_api = "https://api.github.com/repos/peripheryapp/periphery/releases/assets/489291944"
 
+[tools.periphery."platforms.macos-x64-baseline"]
+checksum = "sha256:07d4e286e31dd79164df39097e0b59f533c94badbe18158464a455ea88a166d7"
+url = "https://github.com/peripheryapp/periphery/releases/download/3.8.0/periphery-3.8.0.zip"
+url_api = "https://api.github.com/repos/peripheryapp/periphery/releases/assets/489291944"
+
 [[tools."pipx:reuse"]]
 version = "6.2.0"
 backend = "pipx:reuse"
@@ -599,7 +623,32 @@ url_api = "https://api.github.com/repos/koalaman/shellcheck/releases/assets/2790
 version = "0.65.0"
 backend = "aqua:realm/SwiftLint"
 
+[tools.swiftlint."platforms.linux-arm64"]
+checksum = "sha256:12d3b84bc5b69ae13a99a5a5c79904f9ce25867f099f6368d0037854f9ee6c26"
+url = "https://github.com/realm/SwiftLint/releases/download/0.65.0/swiftlint_linux_arm64.zip"
+url_api = "https://api.github.com/repos/realm/SwiftLint/releases/assets/459315166"
+
+[tools.swiftlint."platforms.linux-arm64-musl"]
+checksum = "sha256:12d3b84bc5b69ae13a99a5a5c79904f9ce25867f099f6368d0037854f9ee6c26"
+url = "https://github.com/realm/SwiftLint/releases/download/0.65.0/swiftlint_linux_arm64.zip"
+url_api = "https://api.github.com/repos/realm/SwiftLint/releases/assets/459315166"
+
 [tools.swiftlint."platforms.linux-x64"]
+checksum = "sha256:79306a34e5c7cc55a220cd108cbb861dcad5f10138dcdf261e2624ae8b0a486b"
+url = "https://github.com/realm/SwiftLint/releases/download/0.65.0/swiftlint_linux_amd64.zip"
+url_api = "https://api.github.com/repos/realm/SwiftLint/releases/assets/459315165"
+
+[tools.swiftlint."platforms.linux-x64-baseline"]
+checksum = "sha256:79306a34e5c7cc55a220cd108cbb861dcad5f10138dcdf261e2624ae8b0a486b"
+url = "https://github.com/realm/SwiftLint/releases/download/0.65.0/swiftlint_linux_amd64.zip"
+url_api = "https://api.github.com/repos/realm/SwiftLint/releases/assets/459315165"
+
+[tools.swiftlint."platforms.linux-x64-musl"]
+checksum = "sha256:79306a34e5c7cc55a220cd108cbb861dcad5f10138dcdf261e2624ae8b0a486b"
+url = "https://github.com/realm/SwiftLint/releases/download/0.65.0/swiftlint_linux_amd64.zip"
+url_api = "https://api.github.com/repos/realm/SwiftLint/releases/assets/459315165"
+
+[tools.swiftlint."platforms.linux-x64-musl-baseline"]
 checksum = "sha256:79306a34e5c7cc55a220cd108cbb861dcad5f10138dcdf261e2624ae8b0a486b"
 url = "https://github.com/realm/SwiftLint/releases/download/0.65.0/swiftlint_linux_amd64.zip"
 url_api = "https://api.github.com/repos/realm/SwiftLint/releases/assets/459315165"
@@ -610,6 +659,11 @@ url = "https://github.com/realm/SwiftLint/releases/download/0.65.0/portable_swif
 url_api = "https://api.github.com/repos/realm/SwiftLint/releases/assets/459315152"
 
 [tools.swiftlint."platforms.macos-x64"]
+checksum = "sha256:d6cb0aa7a2f5f1ef306fc9e37bcb54dc9a26facc8f7784ac0c3dd3eccf5c6ba6"
+url = "https://github.com/realm/SwiftLint/releases/download/0.65.0/portable_swiftlint.zip"
+url_api = "https://api.github.com/repos/realm/SwiftLint/releases/assets/459315152"
+
+[tools.swiftlint."platforms.macos-x64-baseline"]
 checksum = "sha256:d6cb0aa7a2f5f1ef306fc9e37bcb54dc9a26facc8f7784ac0c3dd3eccf5c6ba6"
 url = "https://github.com/realm/SwiftLint/releases/download/0.65.0/portable_swiftlint.zip"
 url_api = "https://api.github.com/repos/realm/SwiftLint/releases/assets/459315152"
@@ -730,6 +784,11 @@ checksum = "sha256:5302e480b01910fcda9071fcc5a64f0a7fce904965834a1e9ed065bc9638b
 url = "https://github.com/cpisciotta/xcbeautify/releases/download/3.2.1/xcbeautify-3.2.1-x86_64-unknown-linux-gnu.tar.xz"
 url_api = "https://api.github.com/repos/cpisciotta/xcbeautify/releases/assets/388373840"
 
+[tools.xcbeautify."platforms.linux-x64-baseline"]
+checksum = "sha256:5302e480b01910fcda9071fcc5a64f0a7fce904965834a1e9ed065bc9638bfe9"
+url = "https://github.com/cpisciotta/xcbeautify/releases/download/3.2.1/xcbeautify-3.2.1-x86_64-unknown-linux-gnu.tar.xz"
+url_api = "https://api.github.com/repos/cpisciotta/xcbeautify/releases/assets/388373840"
+
 [tools.xcbeautify."platforms.macos-arm64"]
 checksum = "sha256:ed32972e41bc3aa19588f8b0f4a0209ef70c663ad60bbf4ad84a2de73355d637"
 url = "https://github.com/cpisciotta/xcbeautify/releases/download/3.2.1/xcbeautify-3.2.1-arm64-apple-macosx.zip"
@@ -740,9 +799,29 @@ checksum = "sha256:ba65e8efc2ebe8c6f13393aaeb88a0ff849278d9480ee1496affaa3db781a
 url = "https://github.com/cpisciotta/xcbeautify/releases/download/3.2.1/xcbeautify-3.2.1-x86_64-apple-macosx.zip"
 url_api = "https://api.github.com/repos/cpisciotta/xcbeautify/releases/assets/388376611"
 
+[tools.xcbeautify."platforms.macos-x64-baseline"]
+checksum = "sha256:ba65e8efc2ebe8c6f13393aaeb88a0ff849278d9480ee1496affaa3db781ac6e"
+url = "https://github.com/cpisciotta/xcbeautify/releases/download/3.2.1/xcbeautify-3.2.1-x86_64-apple-macosx.zip"
+url_api = "https://api.github.com/repos/cpisciotta/xcbeautify/releases/assets/388376611"
+
 [[tools.xcodegen]]
 version = "2.46.0"
 backend = "aqua:yonaskolb/XcodeGen"
+
+[tools.xcodegen."platforms.macos-arm64"]
+checksum = "sha256:4d9e34b62172d645eed6457cac13fc222569974098ef4ee9c3368bedf0196806"
+url = "https://github.com/yonaskolb/XcodeGen/releases/download/2.46.0/xcodegen.zip"
+url_api = "https://api.github.com/repos/yonaskolb/XcodeGen/releases/assets/478866069"
+
+[tools.xcodegen."platforms.macos-x64"]
+checksum = "sha256:4d9e34b62172d645eed6457cac13fc222569974098ef4ee9c3368bedf0196806"
+url = "https://github.com/yonaskolb/XcodeGen/releases/download/2.46.0/xcodegen.zip"
+url_api = "https://api.github.com/repos/yonaskolb/XcodeGen/releases/assets/478866069"
+
+[tools.xcodegen."platforms.macos-x64-baseline"]
+checksum = "sha256:4d9e34b62172d645eed6457cac13fc222569974098ef4ee9c3368bedf0196806"
+url = "https://github.com/yonaskolb/XcodeGen/releases/download/2.46.0/xcodegen.zip"
+url_api = "https://api.github.com/repos/yonaskolb/XcodeGen/releases/assets/478866069"
 
 [[tools.zig]]
 version = "0.16.0"
