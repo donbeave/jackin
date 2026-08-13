@@ -84,20 +84,20 @@ description = "Print the resolved construct Bake configuration"
 run = "cargo xtask construct inspect"
 
 [tasks.ci]
-description = "Run the local CI merge-readiness gate"
-run = "git fetch --no-tags origin main:refs/remotes/origin/main && cargo xtask ci"
+description = "Run unified build and policy gates"
+run = "git fetch --no-tags origin main:refs/remotes/origin/main && cargo xtask ci --only policy --only docs --only snapshots"
 
 [tasks.test]
 description = "Run the unified test gate"
-run = "git fetch --no-tags origin main:refs/remotes/origin/main && cargo xtask ci"
+run = "cargo xtask ci --only tests --fast"
 
 [tasks.lint]
 description = "Run the unified lint gate"
-run = "git fetch --no-tags origin main:refs/remotes/origin/main && cargo xtask ci"
+run = "cargo xtask ci --only lint --fast"
 
 [tasks.fmt]
 description = "Run the unified formatting gate"
-run = "git fetch --no-tags origin main:refs/remotes/origin/main && cargo xtask ci"
+run = "cargo fmt --check"
 
 # jackin❯ desktop (native macOS usage menu bar).
 # Logic lives in `cargo xtask desktop`; mise tasks are the operator entry points.
