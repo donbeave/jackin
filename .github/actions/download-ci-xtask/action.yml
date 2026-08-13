@@ -111,7 +111,7 @@ runs:
         mise exec -- cargo build -p jackin-xtask --locked
         install -d -m 0755 "${GITHUB_WORKSPACE}/.ci-prebuilt-xtask"
         install -m 0755 target/debug/jackin-xtask "${GITHUB_WORKSPACE}/.ci-prebuilt-xtask/jackin-xtask"
-        mise exec -- cargo metadata --format-version 1 --locked --offline \
+        mise exec -- cargo metadata --format-version 1 --locked \
           > "${GITHUB_WORKSPACE}/.ci-prebuilt-xtask/workspace-metadata.json"
         test -x "${GITHUB_WORKSPACE}/.ci-prebuilt-xtask/jackin-xtask"
         test -s "${GITHUB_WORKSPACE}/.ci-prebuilt-xtask/workspace-metadata.json"
