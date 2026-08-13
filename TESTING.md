@@ -48,6 +48,27 @@ In PR checkouts, run `jackin-dev pr sync <PR_NUMBER>` and source
 `eval "$(cargo run --bin build-jackin-capsule -- --export)"` before the
 Docker-backed smoke command.
 
+### Mandatory macOS Docker Desktop usage-broker lane
+
+Any change to usage discovery, coordinator/state, broker/relay transport, Capsule
+refresh, Desktop refresh, or backend launch assembly requires this release-path gate
+on Apple Silicon macOS 26 with Docker Desktop running:
+
+```sh
+cargo xtask ci --e2e
+```
+
+The `usage_broker_e2e` target must execute under the `docker-e2e` nextest profile;
+zero matching tests is failure. Machine-readable evidence is the JUnit output under
+`target/nextest/docker-e2e/`. The durable record belongs in the active PR check or
+comment, never in committed logs/screenshots. OrbStack, a Linux temp directory, or
+unit/process-only tests are useful provisional evidence but do not satisfy this lane.
+The active PR and coordinator plan cannot be marked complete until the real Docker
+Desktop run records passing 2/20-client single-flight, owner-loss recovery, timeout
+ownership, Desktop/Capsule generation adoption, capability isolation, distinct-
+account concurrency, shared rate deadline/failure count, and unavailable-state zero-
+call assertions.
+
 All Rust tests run through `cargo nextest run`. Public documentation examples
 must have nextest-discoverable regression tests. `cargo xtask ci-doc-examples
 --package <crate>` rejects runnable rustdoc fences so examples cannot silently

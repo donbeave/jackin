@@ -12,6 +12,9 @@ usage/spend trends as product features.
 
 - Token monitoring (`token_monitor`) and usage accounting (`usage`) for running agents.
 - Host orchestration (`host`) — `HostUsageRuntime` for menu bar / CLI without Capsule.
+- Host broker/coordinator (`host/broker`, `coordinator`) — canonical per-account
+  generations, bounded provider dispatch, atomic state, shared retry policy, and
+  capability-scoped clients.
 - Rust-owned account discovery (`host/discovery`) — read-only global, workspace,
   role, and workspace-role enumeration; explicit profile/protected-source probes;
   pre-source and post-auth account deduplication; sanitized diagnostics.
@@ -37,6 +40,7 @@ UniFFI lives in sibling crate `jackin-usage-ffi`.
 |---|---|---|
 | [`lib.rs`](src/lib.rs) | crate root, re-exports | — |
 | [`host.rs`](src/host.rs) · [`host/`](src/host) | Capsule-free host runtime | [`tests.rs`](src/host/tests.rs) |
+| [`coordinator.rs`](src/coordinator.rs) · [`coordinator/`](src/coordinator) | Broker-owned single-flight generations and host-only atomic account state | [`tests.rs`](src/coordinator/tests.rs) |
 | [`token_monitor.rs`](src/token_monitor.rs) · [`token_monitor/`](src/token_monitor) | token spend monitoring | [`tests.rs`](src/token_monitor/tests.rs) |
 | [`usage.rs`](src/usage.rs) · [`usage/`](src/usage) | usage/pricing accounting | [`tests.rs`](src/usage/tests.rs) |
 | [`telemetry.rs`](src/telemetry.rs) | telemetry emission | — |
@@ -50,9 +54,10 @@ UniFFI lives in sibling crate `jackin-usage-ffi`.
 Token-monitor and usage-accounting types consumed by `jackin-capsule`.
 `host::HostUsageRuntime` for jackin❯ desktop and the host CLI.
 
-Claude resolves macOS Keychain before file/env and classifies each refresh as
-`UsageSnapshotPolicy::Shared` or `LocalOnly`. Local-only outcomes never adopt,
-coordinate, persist, or materialize shared state.
+The host broker alone calls providers and writes shared state. Clients join canonical
+account generations; timeouts retain ownership. Failure is fail-closed and preserves
+last-good quota. Atomic host-only state includes generation, result, failures, and the
+provider deadline or shared exponential fallback.
 
 `quota_pace_label` emits the Rust-owned `"<pace> · Runs out in <duration>"`
 segment only when the exact projection precedes reset.
@@ -60,30 +65,25 @@ segment only when the exact projection precedes reset.
 Grok decodes ACP billing `config`; server `subscription_tier` owns plan copy,
 and prepaid/on-demand values render only as quota bounds.
 
-Host display extensions (plan 008; presentation-time only, not persisted):
+Host display APIs are presentation-only:
 
 | API | Role |
 |---|---|
 | `usage::provider_display_label` | Shared Capsule/Desktop provider remap (`Codex`→`OpenAI`, …) |
 | `usage::estimate_caption` | Honesty caption for estimated / local-log views |
 | `usage::{UsageFormatPrefs,PercentStyle,ResetStyle}` | left/used + countdown/exact-clock prefs |
-| `HostUsageRuntime::set_format_prefs` | Apply presentation prefs |
-| `HostUsageRuntime::compact_status_bar_label_for` | Pinned compact status-item label |
-| `HostUsageRuntime::compact_status_bar_strip` | Worst-first multi-surface strip |
-| `HostUsageRuntime::overview_rows` | Overview rows for popover + Usage window |
-| `HostUsageRuntime::next_refresh_label` | `Next update in …` / `Next update due` |
+| `HostUsageRuntime::{set_format_prefs,compact_status_bar_label_for,compact_status_bar_strip}` | Status-item preferences and labels |
+| `HostUsageRuntime::{overview_rows,next_refresh_label}` | Overview rows and refresh recency |
 | `usage::usage_bucket_presentation` / `usage_display_status_label` | Rust-owned limits-only quota-bucket segments (shared by Capsule + Desktop) |
-| `usage::usage_detail_presentation` | Rust-owned Capsule-parity provider-detail card (`UsageDetailPresentation`): fixed row order, position-based `bucket:<i>` ids, grouped `layout_lines`; consumed verbatim by the Capsule dialog and the Desktop Usage window |
+| `usage::usage_detail_presentation` | Fixed-order Capsule/Desktop detail card |
 | `host::HostProviderGlanceRow` / `HostUsageRuntime::provider_glance_rows` | Selected-account-aware seven-provider Desktop glance rows (`DESKTOP_PROVIDER_ORDER`) |
 | `HostUsageRuntime::desktop_inventory` | Atomic canonical provider/account groups with complete display fields |
 | `host::HostProbePolicy` | `Live` / `Disabled` (smoke-mode probe suppression) |
 
 `CanonicalAccountIdentity` uses closed provider aliases; routing slugs never own
-accounts. Presence-only evidence stays provider state. Each inventory scans durable
-and shared inputs once and pins one durable source. `DESKTOP_PROVIDER_ORDER` is the
-detected seven-provider boundary; OpenCode remains host-only.
-
-Avoid cloning full usage views during account materialization — serialize from borrowed views/iterators.
+accounts. Presence-only evidence stays provider state. Inventory scans broker state
+and durable history once. `DESKTOP_PROVIDER_ORDER` is the seven-provider boundary;
+OpenCode remains host-only.
 
 ## Desktop account contract
 
@@ -91,22 +91,20 @@ Keys hash the canonical surface with a provider subject or account label. Same
 email across providers remains distinct. Empty, unknown, presence-only, and
 fabricated local-auth labels never become keys.
 
-`desktop_inventory` scans durable and shared inputs once, pins exactly one source per
-durable fetch generation, merges provenance, and separates account lifecycle
-from snapshot freshness. Selection accepts only keys owned by that surface;
-stale choices clear, and only current accounts become implicit fallbacks.
+`desktop_inventory` merges provenance while separating lifecycle from freshness.
+Selection accepts only same-surface keys; stale choices clear, and only current
+accounts become implicit fallbacks.
 
-Host Desktop discovery reads the global config plus every effective workspace/role
-scope at open and before explicit manual Refresh. Background polling reuses the last
-completed catalog and never rereads config or retries protected-source interaction.
-The current catalog is membership authority: durable/shared history may enrich a
-current account but cannot create one. Profile paths and protected values stay in
-Rust; native DTOs contain only account identity, scope provenance, and sanitized
-diagnostics. OpenCode and GitHub are outside the seven-provider Desktop quota catalog.
+Desktop discovery reads global config and every effective workspace/role scope at
+open and manual Refresh. Background polling reuses the catalog. Only current
+discovery creates membership; history only enriches it. Paths and secrets stay in
+Rust. OpenCode and GitHub are outside the seven-provider Desktop catalog.
 
 Capsule discovery is capability-only. It never scans host config or other host
-accounts; broker transport and cross-process generation joining are owned by the
-strict coordinator follow-up.
+accounts. A per-Capsule relay exposes only launch-forwarded capabilities at
+`/jackin/run/usage.sock`; the global broker socket/state tree never enters a
+container. Credentials created only inside a Capsule are excluded pending a secure
+enrollment design.
 
 Each account owns its plan/status, remaining label and geometry, reset phrase
 and exact reset, severity, recency, and error. Native clients render all DTO fields

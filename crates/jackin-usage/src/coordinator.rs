@@ -22,6 +22,8 @@ pub use state::{AccountStateEnvelope, AccountStateStore, FileAccountStateStore, 
 use self::state::sanitize_usage_view;
 
 const TERMINAL_HISTORY_LIMIT: usize = 8;
+const RATE_LIMIT_BACKOFF_BASE: Duration = Duration::from_mins(5);
+const RATE_LIMIT_BACKOFF_CAP: Duration = Duration::from_mins(30);
 
 /// Result returned by a host-owned provider adapter.
 #[derive(Debug, Clone)]
@@ -670,13 +672,35 @@ fn finish_failure(
     entry.envelope.terminal_result = None;
     entry.envelope.terminal_error = Some(coordination_error(kind, message));
     entry.envelope.completed_at_epoch = Some(finished_at_epoch);
+    let consecutive_failures = entry.envelope.consecutive_failures.saturating_add(1);
+    let retry_at_epoch = if kind == UsageCoordinationErrorKind::RateLimited {
+        retry_at_epoch.or_else(|| {
+            Some(
+                finished_at_epoch.saturating_add(
+                    i64::try_from(rate_limit_backoff(consecutive_failures).as_secs())
+                        .unwrap_or(i64::MAX),
+                ),
+            )
+        })
+    } else {
+        retry_at_epoch
+    };
     entry.envelope.retry_deadline_epoch = retry_at_epoch;
     if kind == UsageCoordinationErrorKind::RateLimited {
         entry.envelope.rate_limit_deadline_epoch = retry_at_epoch;
+    } else {
+        entry.envelope.rate_limit_deadline_epoch = None;
     }
     entry.envelope.success_deadline_epoch = None;
-    entry.envelope.consecutive_failures = entry.envelope.consecutive_failures.saturating_add(1);
+    entry.envelope.consecutive_failures = consecutive_failures;
     persist_terminal(shared, &mut state, capability, finished_at_epoch);
+}
+
+fn rate_limit_backoff(consecutive_failures: u32) -> Duration {
+    let shift = consecutive_failures.saturating_sub(1).min(8);
+    let multiplier = 1u64.checked_shl(shift).unwrap_or(u64::MAX);
+    Duration::from_secs(RATE_LIMIT_BACKOFF_BASE.as_secs().saturating_mul(multiplier))
+        .min(RATE_LIMIT_BACKOFF_CAP)
 }
 
 fn persist_terminal(

@@ -8,7 +8,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use jackin_core::account_key_hash;
-use jackin_protocol::control::{FocusedUsageView, UsageConfidence, UsageSnapshotStatus};
+use jackin_protocol::control::{FocusedUsageView, UsageConfidence};
 use serde::{Deserialize, Serialize};
 
 use crate::usage::atomic_write_usage_json;
@@ -60,7 +60,7 @@ impl CanonicalAccountIdentity {
 /// Account lifecycle is independent from snapshot freshness.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum AccountLifecycle {
-    /// Affirmed by the current host login or a fresh shared result.
+    /// Affirmed by current broker discovery or a current host projection.
     Current,
     /// Available only as durable/stale history.
     Historical,
@@ -86,8 +86,6 @@ pub enum AccountProvenance {
     ConfiguredSource,
     /// Active host credential/login.
     LiveHost,
-    /// Fresh cross-runtime snapshot.
-    CurrentSharedResult,
     /// Durable last-good snapshot.
     DurableHistory,
 }
@@ -98,13 +96,12 @@ impl AccountProvenance {
         match self {
             Self::ConfiguredSource => "Configured source",
             Self::LiveHost => "Live host",
-            Self::CurrentSharedResult => "Shared result",
             Self::DurableHistory => "History",
         }
     }
 }
 
-/// One account known for a host surface (live, store, or shared snapshot).
+/// One account known for a host surface (current broker state or durable history).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct HostAccountDescriptor {
     pub surface_id: String,
@@ -284,7 +281,6 @@ pub(super) fn materialize_account_catalog(
     discovered_views: &BTreeMap<(HostSurfaceId, String), FocusedUsageView>,
     discovered_provider_views: &BTreeMap<HostSurfaceId, FocusedUsageView>,
     store_path: &Path,
-    shared_snapshots_dir: &Path,
     membership: Option<&[super::DiscoveredAccountDescriptor]>,
 ) -> Result<AccountCatalog, String> {
     let mut catalog = AccountCatalog::default();
@@ -321,32 +317,6 @@ pub(super) fn materialize_account_catalog(
                 identity,
             );
         }
-    }
-
-    for view in scan_shared_usage_views(shared_snapshots_dir)? {
-        let Some(surface) = surface_for_view(&view) else {
-            continue;
-        };
-        if !include_external.get(&surface).copied().unwrap_or(true) {
-            continue;
-        }
-        let identity = membership_identity(membership, surface, &view);
-        if membership.is_some() && identity.is_none() {
-            continue;
-        }
-        let lifecycle = if membership.is_some() || view.status == UsageSnapshotStatus::Fresh {
-            AccountLifecycle::Current
-        } else {
-            AccountLifecycle::Historical
-        };
-        merge_view(
-            &mut catalog,
-            surface,
-            view,
-            lifecycle,
-            AccountProvenance::CurrentSharedResult,
-            identity,
-        );
     }
 
     for (surface, view, _) in live_views {
@@ -490,30 +460,4 @@ fn merge_view(
         entry.fetched_at_epoch = fetched_at_epoch;
         entry.view = view;
     }
-}
-
-fn scan_shared_usage_views(dir: &Path) -> Result<Vec<FocusedUsageView>, String> {
-    let entries = match fs::read_dir(dir) {
-        Ok(entries) => entries,
-        Err(err) if err.kind() == std::io::ErrorKind::NotFound => return Ok(Vec::new()),
-        Err(err) => return Err(format!("read shared usage snapshots: {err}")),
-    };
-    let mut views = Vec::new();
-    for entry in entries {
-        let entry = entry.map_err(|err| format!("read shared usage entry: {err}"))?;
-        let path = entry.path();
-        let name = path
-            .file_name()
-            .and_then(|name| name.to_str())
-            .unwrap_or("");
-        if !name.starts_with("usage-") || !name.ends_with(".snapshot.json") {
-            continue;
-        }
-        let json = fs::read_to_string(&path)
-            .map_err(|err| format!("read shared usage snapshot: {err}"))?;
-        let view = serde_json::from_str::<FocusedUsageView>(&json)
-            .map_err(|err| format!("parse shared usage snapshot: {err}"))?;
-        views.push(view);
-    }
-    Ok(views)
 }

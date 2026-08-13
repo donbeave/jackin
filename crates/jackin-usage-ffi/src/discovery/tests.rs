@@ -1,8 +1,8 @@
 use std::collections::BTreeMap;
 
 use super::*;
-use jackin_config::{EnvValue, WorkspaceConfig};
-use jackin_core::UsageCredentialOwner;
+use jackin_config::{AppConfig, EnvValue, WorkspaceConfig};
+use jackin_core::{UsageCredentialEnvName, UsageCredentialOwner, WorkspaceName};
 use jackin_usage::host::{ProviderCredentialEnvOutcome, ProviderCredentialEnvResolver};
 
 fn entry(name: &'static str, owner: UsageCredentialOwner) -> UsageCredentialEnvName {

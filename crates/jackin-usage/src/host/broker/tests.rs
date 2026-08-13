@@ -61,6 +61,29 @@ fn quota_view() -> FocusedUsageView {
 }
 
 #[test]
+fn discovery_provider_rate_limit_preserves_retry_after() {
+    let before = chrono::Utc::now().timestamp();
+    let mut view = quota_view();
+    view.status = UsageSnapshotStatus::Stale;
+    view.last_error = Some("provider HTTP 429; Retry-After: 97".to_owned());
+
+    let ProviderProbeOutcome::Failure {
+        kind,
+        message,
+        retry_at_epoch,
+    } = provider_probe_outcome(view)
+    else {
+        panic!("rate-limited view must not publish as success");
+    };
+    let after = chrono::Utc::now().timestamp();
+    assert_eq!(kind, UsageCoordinationErrorKind::RateLimited);
+    assert_eq!(message, "usage provider rate limit is active");
+    assert!(
+        retry_at_epoch.is_some_and(|deadline| { (before + 97..=after + 97).contains(&deadline) })
+    );
+}
+
+#[test]
 fn forwarded_scope_selects_only_accounts_backed_by_forwarded_sources() {
     use crate::host::{CanonicalAccountIdentity, CanonicalAccountSubject, HostSurfaceId};
 

@@ -394,6 +394,52 @@ fn coordinator_failure_shares_retry_deadline_and_last_good() {
 }
 
 #[test]
+fn coordinator_rate_limit_without_provider_deadline_uses_shared_backoff() {
+    let executor = Arc::new(GateExecutor::new(ProviderProbeOutcome::Failure {
+        kind: UsageCoordinationErrorKind::RateLimited,
+        message: "provider rate limited".into(),
+        retry_at_epoch: None,
+    }));
+    let store = Arc::new(MemoryStore::default());
+    let coordinator = coordinator(
+        Arc::clone(&executor),
+        Arc::clone(&store),
+        UsageCoordinatorConfig::default(),
+    );
+    let account = capability("account-a");
+
+    coordinator
+        .request_refresh(&account, 0, true, 1_000)
+        .unwrap();
+    executor.wait_started(1);
+    executor.release(1);
+    let first = join_ok(&coordinator, &account, 1, 1_001);
+    assert_eq!(first.retry_at_epoch, Some(1_300));
+    let suppressed = coordinator
+        .request_refresh(&account, 1, true, 1_100)
+        .unwrap();
+    assert_eq!(suppressed.generation, 1);
+
+    coordinator
+        .request_refresh(&account, 1, true, 1_301)
+        .unwrap();
+    executor.wait_started(2);
+    executor.release(1);
+    let second = join_ok(&coordinator, &account, 2, 1_302);
+    assert_eq!(second.retry_at_epoch, Some(1_901));
+    assert_eq!(
+        store
+            .states
+            .lock()
+            .unwrap()
+            .get(&account)
+            .unwrap()
+            .consecutive_failures,
+        2
+    );
+}
+
+#[test]
 fn coordinator_timeout_wait_keeps_owner_until_worker_terminates() {
     let executor = Arc::new(GateExecutor::new(ProviderProbeOutcome::success(
         quota_view(1_000, 80),

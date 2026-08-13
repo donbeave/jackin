@@ -285,10 +285,8 @@ fn codex_rpc_maps_spark_windows_and_reset_credits() {
 }
 
 #[test]
-fn usage_status_label_prefers_in_memory_cache_before_store() {
-    let dir = tempfile::tempdir().expect("tempdir");
+fn usage_status_label_reads_in_memory_cache() {
     let mut cache = UsageCache::default();
-    cache.set_usage_snapshot_store_path(dir.path().join("missing").join("snapshots.db"));
     let view = codex_cached_usage_view();
     let expected = view.status_bar_label.clone();
     cache.snapshots.insert(
@@ -303,10 +301,8 @@ fn usage_status_label_prefers_in_memory_cache_before_store() {
 }
 
 #[test]
-fn usage_snapshot_prefers_in_memory_cache_before_store() {
-    let dir = tempfile::tempdir().expect("tempdir");
+fn usage_snapshot_reads_in_memory_cache() {
     let mut cache = UsageCache::default();
-    cache.set_usage_snapshot_store_path(dir.path().join("missing").join("snapshots.db"));
     let view = codex_cached_usage_view();
     let expected_label = view.status_bar_label.clone();
     cache.snapshots.insert(
@@ -327,13 +323,8 @@ fn usage_snapshot_prefers_in_memory_cache_before_store() {
 }
 
 #[test]
-fn usage_status_label_does_not_read_store_on_cache_miss() {
-    let dir = tempfile::tempdir().expect("tempdir");
-    let db = dir.path().join("snapshots.db");
-    crate::usage_snapshot_store::store_usage_snapshot(&db, &codex_cached_usage_view())
-        .expect("store usage snapshot");
-    let mut cache = UsageCache::default();
-    cache.set_usage_snapshot_store_path(db);
+fn usage_status_label_cache_miss_is_refreshing() {
+    let cache = UsageCache::default();
 
     // A focused agent with no cached snapshot is mid-load → `refreshing`
     // (P3), computed without touching the store.
@@ -344,13 +335,8 @@ fn usage_status_label_does_not_read_store_on_cache_miss() {
 }
 
 #[test]
-fn usage_snapshot_does_not_read_store_on_cache_miss() {
-    let dir = tempfile::tempdir().expect("tempdir");
-    let db = dir.path().join("snapshots.db");
-    crate::usage_snapshot_store::store_usage_snapshot(&db, &codex_cached_usage_view())
-        .expect("store usage snapshot");
+fn usage_snapshot_cache_miss_is_refreshing() {
     let mut cache = UsageCache::default();
-    cache.set_usage_snapshot_store_path(db);
 
     let snapshot = cache.focused_snapshot(Some("codex"), Some("OpenAI"));
 
@@ -773,180 +759,6 @@ fn status_bar_label_uses_stale_amp_cache() {
 }
 
 #[test]
-fn usage_refresh_targets_are_focused_first_and_deduplicated() {
-    let active = vec![
-        UsageRefreshTarget {
-            agent: "claude".to_owned(),
-            provider: Some("Anthropic".to_owned()),
-        },
-        UsageRefreshTarget {
-            agent: "codex".to_owned(),
-            provider: Some("OpenAI".to_owned()),
-        },
-        UsageRefreshTarget {
-            agent: "claude".to_owned(),
-            provider: Some("Anthropic / Claude".to_owned()),
-        },
-    ];
-    let focused = UsageRefreshTarget {
-        agent: "codex".to_owned(),
-        provider: Some("OpenAI".to_owned()),
-    };
-
-    let ordered = ordered_refresh_targets(&active, Some(focused));
-
-    assert_eq!(
-        ordered,
-        vec![
-            UsageRefreshTarget {
-                agent: "codex".to_owned(),
-                provider: Some("OpenAI".to_owned()),
-            },
-            UsageRefreshTarget {
-                agent: "claude".to_owned(),
-                provider: Some("Anthropic".to_owned()),
-            },
-        ]
-    );
-}
-
-#[test]
-fn usage_refresh_max_active_probes_are_spawned_before_any_join() {
-    use std::sync::atomic::{AtomicUsize, Ordering as AtomicOrdering};
-    use std::sync::{Arc, Condvar, Mutex};
-
-    struct Rendezvous {
-        state: Mutex<RendezvousState>,
-        changed: Condvar,
-    }
-
-    struct RendezvousState {
-        entered: usize,
-        released: bool,
-    }
-
-    impl Rendezvous {
-        fn wait_for_two(&self) {
-            let mut state = self
-                .state
-                .lock()
-                .unwrap_or_else(std::sync::PoisonError::into_inner);
-            state.entered += 1;
-            if state.entered == 2 {
-                state.released = true;
-                self.changed.notify_all();
-                return;
-            }
-            while !state.released {
-                let (next_state, wait) = self
-                    .changed
-                    .wait_timeout(state, Duration::from_secs(1))
-                    .unwrap_or_else(std::sync::PoisonError::into_inner);
-                state = next_state;
-                assert!(
-                    !wait.timed_out() || state.released,
-                    "second refresh probe never overlapped with the first"
-                );
-            }
-        }
-    }
-
-    let targets = vec![
-        UsageRefreshTarget {
-            agent: "codex".to_owned(),
-            provider: Some("OpenAI".to_owned()),
-        },
-        UsageRefreshTarget {
-            agent: "claude".to_owned(),
-            provider: Some("Anthropic".to_owned()),
-        },
-    ];
-    let active = Arc::new(AtomicUsize::new(0));
-    let max_active = Arc::new(AtomicUsize::new(0));
-    let rendezvous = Arc::new(Rendezvous {
-        state: Mutex::new(RendezvousState {
-            entered: 0,
-            released: false,
-        }),
-        changed: Condvar::new(),
-    });
-
-    let results = collect_usage_refresh_results_with_timeout(
-        targets,
-        {
-            let active = Arc::clone(&active);
-            let max_active = Arc::clone(&max_active);
-            let rendezvous = Arc::clone(&rendezvous);
-            move |target| {
-                let now_active = active.fetch_add(1, AtomicOrdering::SeqCst) + 1;
-                max_active.fetch_max(now_active, AtomicOrdering::SeqCst);
-                rendezvous.wait_for_two();
-                active.fetch_sub(1, AtomicOrdering::SeqCst);
-                UsageRefreshResult {
-                    target,
-                    view: FocusedUsageView::unavailable("test", now_epoch()),
-                    policy: UsageSnapshotPolicy::Shared,
-                    codex_rpc_gate: ManagedCliLaunchGate::default(),
-                    grok_rpc_gate: ManagedCliLaunchGate::default(),
-                }
-            }
-        },
-        Duration::from_secs(2),
-    );
-
-    assert_eq!(results.len(), 2);
-    assert!(
-        max_active.load(AtomicOrdering::SeqCst) >= 2,
-        "refresh probes were joined serially instead of overlapping"
-    );
-}
-
-#[test]
-#[expect(
-    clippy::disallowed_methods,
-    reason = "test worker sleeps on an owned thread to prove timeout fallback"
-)]
-fn usage_refresh_probe_timeout_returns_fallback_result() {
-    let targets = vec![
-        UsageRefreshTarget {
-            agent: "codex".to_owned(),
-            provider: Some("OpenAI".to_owned()),
-        },
-        UsageRefreshTarget {
-            agent: "claude".to_owned(),
-            provider: Some("Anthropic".to_owned()),
-        },
-    ];
-
-    let results = collect_usage_refresh_results_with_timeout(
-        targets,
-        |target| {
-            if target.provider.as_deref() == Some("Anthropic") {
-                thread::sleep(Duration::from_millis(250));
-            }
-            UsageRefreshResult {
-                target,
-                view: FocusedUsageView::unavailable("test", now_epoch()),
-                policy: UsageSnapshotPolicy::Shared,
-                codex_rpc_gate: ManagedCliLaunchGate::default(),
-                grok_rpc_gate: ManagedCliLaunchGate::default(),
-            }
-        },
-        Duration::from_millis(25),
-    );
-
-    assert_eq!(results.len(), 2);
-    let timed_out = results
-        .iter()
-        .find(|result| result.target.provider.as_deref() == Some("Anthropic"))
-        .expect("timed-out provider fallback");
-    assert_eq!(
-        timed_out.view.last_error.as_deref(),
-        Some("usage provider probe timed out")
-    );
-}
-
-#[test]
 fn usage_cache_key_canonicalizes_provider_aliases() {
     assert_eq!(
         canonical_usage_cache_key("claude", Some("Anthropic")),
@@ -965,299 +777,6 @@ fn usage_cache_key_canonicalizes_provider_aliases() {
         canonical_usage_cache_key("claude", Some("Z.AI"))
     );
 }
-
-#[test]
-fn usage_refresh_interval_stays_within_jitter_bounds() {
-    for key in ["Codex", "Claude", "GLM / Z.AI"] {
-        let interval = refresh_interval_for_key(key);
-        assert!(
-            interval >= USAGE_REFRESH_BASE_INTERVAL.saturating_sub(USAGE_REFRESH_JITTER),
-            "{key}: {interval:?}"
-        );
-        assert!(
-            interval <= USAGE_REFRESH_BASE_INTERVAL + USAGE_REFRESH_JITTER,
-            "{key}: {interval:?}"
-        );
-    }
-}
-
-#[test]
-fn usage_rate_limit_delay_honors_retry_after_and_caps_backoff() {
-    assert_eq!(
-        usage_rate_limit_delay("provider HTTP 429 retry-after: 17", 1),
-        Duration::from_secs(17)
-    );
-    assert_eq!(
-        usage_rate_limit_delay("provider HTTP 429", 1),
-        USAGE_REFRESH_BASE_INTERVAL
-    );
-    assert_eq!(
-        usage_rate_limit_delay("provider HTTP 429", 20),
-        USAGE_REFRESH_BACKOFF_CAP
-    );
-    assert!(!usage_error_is_rate_limited("provider HTTP 500"));
-}
-
-#[test]
-fn usage_refresh_schedule_skips_until_ttl_or_manual_refresh() {
-    let dir = tempfile::tempdir().expect("tempdir");
-    let target = UsageRefreshTarget {
-        agent: "codex".to_owned(),
-        provider: Some("OpenAI".to_owned()),
-    };
-    let mut schedule = UsageRefreshSchedule::default();
-    let now = Instant::now();
-    let view = FocusedUsageView::unavailable("fresh", now_epoch());
-
-    assert!(schedule.should_refresh_with_cooldown_dir(&target, now, dir.path()));
-    schedule.mark_refreshed_with_cooldown_dir(&target, now, &view, dir.path(), dir.path());
-    assert!(!schedule.should_refresh_with_cooldown_dir(
-        &target,
-        now + Duration::from_secs(30),
-        dir.path()
-    ));
-
-    schedule.mark_due(&target, now + Duration::from_secs(31));
-    assert!(schedule.should_refresh_with_cooldown_dir(
-        &target,
-        now + Duration::from_secs(31),
-        dir.path()
-    ));
-}
-
-#[test]
-fn usage_refresh_schedule_writes_and_honors_shared_rate_limit_cooldown() {
-    let dir = tempfile::tempdir().expect("tempdir");
-    let target = UsageRefreshTarget {
-        agent: "codex".to_owned(),
-        provider: Some("OpenAI".to_owned()),
-    };
-    let mut schedule = UsageRefreshSchedule::default();
-    let now = Instant::now();
-
-    assert!(schedule.should_refresh_with_cooldown_dir(&target, now, dir.path()));
-
-    let mut view = FocusedUsageView::unavailable("rate limited", now_epoch());
-    view.last_error = Some("Codex usage HTTP 429 retry-after: 60".to_owned());
-    schedule.mark_refreshed_with_cooldown_dir(&target, now, &view, dir.path(), dir.path());
-
-    // Shared cooldown is account-scoped (Class III); assert with the same key
-    // the production write path uses.
-    let key = target.shared_account_key();
-    assert!(shared_usage_cooldown_active(dir.path(), &key, now_epoch()));
-    assert!(!schedule.should_refresh_with_cooldown_dir(
-        &target,
-        now + Duration::from_secs(61),
-        dir.path()
-    ));
-}
-
-#[test]
-fn successful_refresh_writes_shared_cooldown_and_snapshot() {
-    let cooldown_dir = tempfile::tempdir().expect("tempdir");
-    let snapshots_dir = tempfile::tempdir().expect("tempdir");
-    let target = UsageRefreshTarget {
-        agent: "claude".to_owned(),
-        provider: None,
-    };
-    let mut schedule = UsageRefreshSchedule::default();
-    let now = Instant::now();
-    let view = FocusedUsageView::unavailable("fresh", now_epoch());
-
-    assert!(schedule.should_refresh_with_cooldown_dir(&target, now, cooldown_dir.path()));
-
-    schedule.mark_refreshed_with_cooldown_dir(
-        &target,
-        now,
-        &view,
-        cooldown_dir.path(),
-        snapshots_dir.path(),
-    );
-
-    // Shared files are account-scoped (Class III); use the same key the
-    // production write path uses so the round-trip is exercised faithfully.
-    let key = target.shared_account_key();
-    // Shared cooldown marker written for success.
-    assert!(
-        shared_usage_cooldown_active(cooldown_dir.path(), &key, now_epoch()),
-        "success cooldown marker should be active after successful refresh"
-    );
-    // Fresh instance (no in-process state) sees cooldown → skips fetch.
-    let mut fresh_schedule = UsageRefreshSchedule::default();
-    assert!(
-        !fresh_schedule.should_refresh_with_cooldown_dir(&target, now, cooldown_dir.path()),
-        "fresh instance should skip fetch when success cooldown is active"
-    );
-    // Shared snapshot written and readable.
-    assert!(
-        read_shared_usage_snapshot(snapshots_dir.path(), &key).is_some(),
-        "shared snapshot should be readable after successful refresh"
-    );
-}
-
-#[test]
-fn fresh_instance_seeds_cache_from_shared_snapshot_when_cooldown_active() {
-    let snapshots_dir = tempfile::tempdir().expect("tempdir");
-    let key = "Claude Max";
-    let view = FocusedUsageView::unavailable("seed", now_epoch());
-    // Write a snapshot as if another instance had already refreshed.
-    write_shared_usage_snapshot(snapshots_dir.path(), key, &view);
-    // Another instance reads it back.
-    let loaded = read_shared_usage_snapshot(snapshots_dir.path(), key);
-    assert!(
-        loaded.is_some(),
-        "shared snapshot should be readable for seeding a fresh instance"
-    );
-}
-
-#[test]
-fn shared_usage_dirs_default_under_usage_shared() {
-    // Env overrides are for tests only; with them unset, defaults land under
-    // ~/.jackin/data/usage-shared/{cooldowns,snapshots,locks}.
-    let cases = [
-        (
-            "JACKIN_USAGE_COOLDOWN_DIR",
-            shared_usage_cooldown_dir(),
-            "data/usage-shared/cooldowns",
-        ),
-        (
-            "JACKIN_USAGE_SNAPSHOTS_DIR",
-            shared_usage_snapshots_dir(),
-            "data/usage-shared/snapshots",
-        ),
-        (
-            "JACKIN_USAGE_LOCK_DIR",
-            shared_usage_lock_dir(),
-            "data/usage-shared/locks",
-        ),
-    ];
-    for (var, path, suffix) in cases {
-        // Safety: only assert the default path when the override is unset in
-        // this process; parallel tests that set the var would change meaning.
-        if std::env::var_os(var).is_some() {
-            continue;
-        }
-        let path_str = path.to_string_lossy().replace('\\', "/");
-        assert!(
-            path_str.ends_with(suffix),
-            "{var} default should end with {suffix}, got {path_str}"
-        );
-        assert!(
-            !path_str.contains("daemon/usage-"),
-            "{var} must not use legacy daemon/usage-* defaults, got {path_str}"
-        );
-    }
-}
-
-#[test]
-fn adopt_shared_snapshots_reseeds_when_shared_is_newer() {
-    let snapshots_dir = tempfile::tempdir().expect("tempdir");
-    let target = UsageRefreshTarget {
-        agent: "claude".to_owned(),
-        provider: None,
-    };
-    let account_key = target.shared_account_key();
-    let cache_key = target.cache_key();
-
-    let older = FocusedUsageView::unavailable("older", 1_000);
-    let newer = FocusedUsageView::unavailable("newer", 2_000);
-    write_shared_usage_snapshot(snapshots_dir.path(), &account_key, &newer);
-
-    let mut cache_b = UsageCache::default();
-    cache_b
-        .snapshots
-        .insert(cache_key.clone(), CachedUsage { view: older });
-    cache_b.adopt_shared_snapshots(std::slice::from_ref(&target), snapshots_dir.path());
-
-    let adopted = cache_b
-        .snapshots
-        .get(&cache_key)
-        .expect("occupied entry remains");
-    assert_eq!(
-        adopted.view.fetched_at_epoch, 2_000,
-        "warm cache must adopt strictly newer shared snapshot"
-    );
-    assert_eq!(adopted.view.status, UsageSnapshotStatus::Stale);
-    assert_eq!(adopted.view.source, UsageSource::Cache);
-    // Identity scoping: a different account key's file is not read for this target.
-    let other_key = "other-account-key";
-    let alien = FocusedUsageView::unavailable("alien", 9_999);
-    write_shared_usage_snapshot(snapshots_dir.path(), other_key, &alien);
-    cache_b.adopt_shared_snapshots(std::slice::from_ref(&target), snapshots_dir.path());
-    assert_eq!(
-        cache_b
-            .snapshots
-            .get(&cache_key)
-            .expect("still present")
-            .view
-            .fetched_at_epoch,
-        2_000,
-        "foreign account key must not replace this surface's view"
-    );
-}
-
-#[test]
-fn adopt_shared_snapshots_mtime_guard_skips_json_reread() {
-    let snapshots_dir = tempfile::tempdir().expect("tempdir");
-    let target = UsageRefreshTarget {
-        agent: "claude".to_owned(),
-        provider: None,
-    };
-    let account_key = target.shared_account_key();
-    let view = FocusedUsageView::unavailable("seed", 1_500);
-    write_shared_usage_snapshot(snapshots_dir.path(), &account_key, &view);
-
-    let mut cache = UsageCache::default();
-    cache.adopt_shared_snapshots(std::slice::from_ref(&target), snapshots_dir.path());
-    assert_eq!(cache.shared_snapshot_json_reads, 1);
-    cache.adopt_shared_snapshots(std::slice::from_ref(&target), snapshots_dir.path());
-    assert_eq!(
-        cache.shared_snapshot_json_reads, 1,
-        "unchanged mtime must not re-parse shared snapshot JSON"
-    );
-}
-
-#[test]
-fn success_cooldown_suppresses_due_target_but_force_still_refreshes() {
-    let cooldown_dir = tempfile::tempdir().expect("tempdir");
-    let snapshots_dir = tempfile::tempdir().expect("tempdir");
-    let target = UsageRefreshTarget {
-        agent: "claude".to_owned(),
-        provider: None,
-    };
-    let now = Instant::now();
-    let view = FocusedUsageView::unavailable("from-a", now_epoch());
-
-    // Process A: successful refresh writes success cooldown + snapshot.
-    let mut schedule_a = UsageRefreshSchedule::default();
-    assert!(schedule_a.should_refresh_with_cooldown_dir(&target, now, cooldown_dir.path()));
-    schedule_a.mark_refreshed_with_cooldown_dir(
-        &target,
-        now,
-        &view,
-        cooldown_dir.path(),
-        snapshots_dir.path(),
-    );
-
-    // Process B: warm schedule with the target already due (timer), no force.
-    let mut schedule_b = UsageRefreshSchedule::default();
-    let due_past = now
-        .checked_sub(Duration::from_secs(1))
-        .expect("instant subtract");
-    schedule_b.next_due.insert(target.cache_key(), due_past);
-    assert!(
-        !schedule_b.should_refresh_with_cooldown_dir(&target, now, cooldown_dir.path()),
-        "due target must skip probe while another process's success cooldown is active"
-    );
-
-    // Forced refresh (menu bar / request_account_refresh) still probes.
-    schedule_b.mark_due(&target, now);
-    assert!(
-        schedule_b.should_refresh_with_cooldown_dir(&target, now, cooldown_dir.path()),
-        "force refresh must bypass success cooldown"
-    );
-}
-
 #[test]
 fn failed_refresh_preserves_last_fresh_quota_rows_as_stale_cache() {
     let mut cached = FocusedUsageView::unavailable("seed", 123);
@@ -1923,85 +1442,6 @@ fn status_bar_headline_drops_zero_window_and_zero_spend() {
         Some("Session 100%"),
         "Weekly 0% and $0 spent must be omitted from the status bar"
     );
-}
-
-/// Class III-D: the per-account refresh lock is exclusive — a second acquirer of
-/// the same account is told it is Held while the first holds it, and can acquire
-/// once the first is released. (flock conflicts across distinct open file
-/// descriptions even in-process, mirroring the cross-container behavior.)
-#[test]
-fn account_refresh_lock_is_exclusive_and_releases() {
-    let dir = tempfile::tempdir().expect("tempdir");
-    let key = "Anthropic#deadbeef";
-    let first = acquire_account_refresh_lock_in(dir.path(), key);
-    assert!(
-        matches!(first, RefreshLockOutcome::Acquired(_)),
-        "first acquirer wins the lock"
-    );
-    assert!(
-        matches!(
-            acquire_account_refresh_lock_in(dir.path(), key),
-            RefreshLockOutcome::Held
-        ),
-        "second acquirer of the held lock is told it is Held"
-    );
-    // A different account is independent.
-    assert!(matches!(
-        acquire_account_refresh_lock_in(dir.path(), "OpenAI#feedface"),
-        RefreshLockOutcome::Acquired(_)
-    ));
-    drop(first);
-    assert!(
-        matches!(
-            acquire_account_refresh_lock_in(dir.path(), key),
-            RefreshLockOutcome::Acquired(_)
-        ),
-        "lock is re-acquirable after release"
-    );
-}
-
-/// Class III-C: hydrating a shared snapshot keeps its numbers but marks the view
-/// and its buckets Stale (last-known, not freshly fetched by this instance).
-#[test]
-fn stale_shared_view_downgrades_status_keeps_numbers() {
-    let usage: ClaudeOAuthUsageResponse = serde_json::from_value(serde_json::json!({
-        "five_hour": { "utilization": 15.0, "resets_at": "2026-06-28T16:40:00Z" }
-    }))
-    .expect("valid Claude OAuth usage");
-    let buckets = usage.into_buckets(1_781_185_560);
-    let fresh = FocusedUsageView {
-        status: UsageSnapshotStatus::Fresh,
-        buckets,
-        fetched_at_epoch: 1_781_185_560,
-        ..FocusedUsageView::unavailable("seed", 1_781_185_560)
-    };
-    let stale = stale_shared_view(fresh, 1_781_185_860);
-    assert_eq!(stale.status, UsageSnapshotStatus::Stale);
-    assert!(
-        stale
-            .buckets
-            .iter()
-            .all(|b| b.status == UsageSnapshotStatus::Stale),
-        "every bucket downgraded to Stale"
-    );
-    let session = stale
-        .buckets
-        .iter()
-        .find(|b| b.status_slot == Some(StatusSlot::Session))
-        .expect("session bucket");
-    assert_eq!(session.remaining_percent, Some(85), "numbers preserved");
-}
-
-/// Class III: a surface with no resolvable OAuth identity falls back to the
-/// provider-surface key (preserving prior single-account behavior), so the
-/// account-keying never breaks key-based providers.
-#[test]
-fn shared_account_key_falls_back_to_provider_for_unsupported() {
-    let target = UsageRefreshTarget {
-        agent: "totally-unknown-agent".to_owned(),
-        provider: Some("NoSuchProvider".to_owned()),
-    };
-    assert_eq!(target.shared_account_key(), target.cache_key());
 }
 
 /// Bug 11: an over-cap window (>100% utilization) keeps its true used figure in
@@ -4016,9 +3456,9 @@ fn managed_probe_boundaries_export_fixed_private_shapes() {
 
     let (export, subscriber) = jackin_diagnostics::observability::test_capsule_layers(false);
     tracing::subscriber::with_default(subscriber, || {
-        let codex = crate::process_telemetry::ChildOperation::begin("codex");
+        let codex = process_telemetry::ChildOperation::begin("codex");
         codex.spawn_failed();
-        let grok = crate::process_telemetry::ChildOperation::begin("/private/bin/grok");
+        let grok = process_telemetry::ChildOperation::begin("/private/bin/grok");
         grok.io_failed();
 
         let (codex_tx, codex_rx) = mpsc::channel();

@@ -11,6 +11,10 @@ Display-only Swift shell over `jackin-usage-ffi` (UniFFI). Product: **jackin❯ 
   config/workspace discovery, credential/path resolution, account deduplication, or
   inventing percentages. Numbers, identities, provenance, diagnostics, and limit
   strings come from UniFFI / Rust only. Production passes no host paths to the bridge.
+- **Broker client only.** Refresh sends intent once and renders Rust generation/phase.
+  Swift never schedules provider work, owns a retry deadline, or treats task
+  cancellation as single-flight authority. Active manual/background requests join;
+  broker failure preserves last-good data and fails closed.
 - **Limits only — never token price or historical usage trend.** The status item,
   glance popover, Usage window, and Settings show **subscription / quota limits
   only** (remaining or used %, dual-bucket stacks, resets, plan/status, multi-

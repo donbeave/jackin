@@ -3457,7 +3457,6 @@ dependencies = [
  "base64 0.22.1",
  "chrono",
  "criterion",
- "fs4",
  "jackin-config",
  "jackin-core",
  "jackin-diagnostics",

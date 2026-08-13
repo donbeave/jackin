@@ -7,7 +7,7 @@ description: "jackin❯ desktop reuses Rust usage projections through UniFFI and
 
 ## Decision
 
-jackin❯ desktop is a host process that displays account quota limits without a running Capsule. Rust owns provider probing, credential resolution, account selection, host-wide snapshot coordination, cooldowns, refresh policy, quota semantics, severity, provider ordering, and every displayed domain string. Swift owns AppKit/SwiftUI presentation, accessibility, lifecycle, settings, signing, and other macOS integration.
+jackin❯ desktop is a host process that displays account quota limits without a running Capsule. Rust owns account discovery, config/auth resolution, canonical account identity, deduplication, scheduling, shared cache, single-flight coordination, account selection, quota semantics, severity, provider ordering, and every displayed domain string. Swift owns AppKit/SwiftUI presentation, accessibility, lifecycle, settings, signing, and other macOS integration.
 
 The boundary is a synchronous coarse-grained UniFFI facade compiled as a static library and assembled into an arm64 XCFramework. Swift polls immutable DTO snapshots through an off-main-actor scheduler; it never implements HTTP/RPC/OAuth/CLI probes or a second provider matrix.
 
@@ -65,9 +65,11 @@ Loading, empty, refreshing, fresh, stale-last-good, depleted-with-reset, needs-l
 
 ## Credential and snapshot ownership
 
-Host credentials are resolved by Rust, preferring normal host roots and using container handoff paths only as a last resort. Important roots include Claude Keychain/file credentials, Codex `~/.codex/auth.json`, provider home sessions, and Z.AI/MiniMax environment keys.
+Host credentials are resolved by Rust from the read-only global/workspace/role catalog. Important roots include Claude Keychain/file credentials, Codex `~/.codex/auth.json`, provider home sessions, and configured provider-key capabilities. Secrets remain behind host-local handles.
 
-Host processes and containers coordinate through `~/.jackin/data/usage-shared/{snapshots,cooldowns,locks}`; containers mount the same tree under `/jackin/usage-shared`. At most one probe per account owns a refresh. Durable menu-bar account/snapshot state lives under `~/.jackin/data/usage-menu-bar/`.
+One host-only Rust broker is the sole provider-call and state writer. Each canonical account has one generation; every active caller, including `force`, joins it. A bounded wait timeout never releases ownership while provider work continues. Terminal result, last-good quota, failure count, success cooldown, and provider retry deadline commit as one private atomic crash-recoverable envelope. Coordination/state failure is fail-closed and performs zero provider calls. Provider `Retry-After` is never shortened; when absent, one persisted exponential deadline is shared by every process.
+
+Desktop attaches directly through its host client. A Capsule receives only a per-container relay at `/jackin/run/usage.sock`, authorized by the exact credential capabilities forwarded at launch. No global broker socket, account tree, credential catalog, or broker state is mounted into a container. Credentials created only inside a Capsule are out of scope pending a separate secure-enrollment design.
 
 Claude Keychain reads use the shared `claude_keychain_scope` helper. Explicit denial is terminal for that service for the process, prevents repeated prompts, and does not affect other providers. Missing/headless-interaction results still permit file/environment fallback according to Rust policy.
 

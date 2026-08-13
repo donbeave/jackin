@@ -1,11 +1,10 @@
 // SPDX-FileCopyrightText: 2026 Alexey Zhokhov
 // SPDX-License-Identifier: Apache-2.0
 
-//! Capsule-free host usage orchestration for the macOS menu-bar app and CLI.
+//! Capsule-free host usage projection for the macOS menu-bar app and CLI.
 //!
-//! Reuses [`crate::usage::UsageCache`] probes, cache, cooldown, and
-//! `FocusedUsageView` shaping. State roots live under the operator jackin
-//! data dir (not container `/jackin/...` paths).
+//! Provider work and shared state are owned by the host usage broker. This
+//! runtime holds presentation state only.
 
 mod accounts;
 mod broker;
@@ -17,12 +16,11 @@ use std::path::{Path, PathBuf};
 use std::time::{Duration, Instant};
 
 use jackin_core::Agent;
-use jackin_protocol::Provider;
 use jackin_protocol::control::{FocusedUsageView, UsageSeverity};
 use jackin_protocol::usage_broker::{UsageAccountCapability, UsageRefreshPhase};
 
 use crate::usage::{
-    UsageCache, UsageFormatPrefs, UsageRefreshTarget, compact_duration_label, estimate_caption,
+    UsageCache, UsageFormatPrefs, compact_duration_label, estimate_caption,
     exact_reset_parenthetical, percent_headline, provider_display_label, reset_label_with_prefs,
     usage_display_status_label, usage_status_storage_label,
 };
@@ -179,8 +177,7 @@ impl HostSurfaceId {
         }
     }
 
-    /// Agent slug for `UsageRefreshTarget` (Z.AI/MiniMax route via a dummy agent
-    /// + provider label — `resolve_surface` keys on the provider first).
+    /// Agent slug used by shared presentation helpers.
     #[must_use]
     pub const fn agent_slug(self) -> &'static str {
         match self {
@@ -249,13 +246,6 @@ impl HostSurfaceId {
             Agent::Kimi => Self::Kimi,
             Agent::Opencode => Self::OpenCode,
             Agent::Grok => Self::Grok,
-        }
-    }
-
-    fn refresh_target(self) -> UsageRefreshTarget {
-        UsageRefreshTarget {
-            agent: self.agent_slug().to_owned(),
-            provider: self.provider_label().map(str::to_owned),
         }
     }
 }
@@ -475,7 +465,6 @@ pub(crate) fn status_bar_rank_key(remaining: u8, resets_at: Option<i64>) -> (i64
 pub struct HostUsageRuntime {
     cache: UsageCache,
     enabled: HashSet<String>,
-    provider_keys: BTreeMap<Provider, String>,
     events: VecDeque<HostUsageEvent>,
     next_seq: u64,
     refresh_floor_secs: u64,
@@ -512,7 +501,6 @@ impl HostUsageRuntime {
         Self {
             cache: UsageCache::default(),
             enabled: HashSet::new(),
-            provider_keys: BTreeMap::new(),
             events: VecDeque::new(),
             next_seq: 0,
             refresh_floor_secs: 300,
@@ -589,13 +577,7 @@ impl HostUsageRuntime {
             self.discovered_provider_views.clear();
             self.broker_phases.clear();
         }
-        let snapshot_path = host_snapshot_store_path(&config.data_dir);
         let accounts_path = host_accounts_path(&config.data_dir);
-        if let Some(parent) = snapshot_path.parent() {
-            std::fs::create_dir_all(parent)
-                .map_err(|err| format!("create host usage state dir: {err}"))?;
-        }
-        self.cache.set_usage_snapshot_store_path(snapshot_path);
         self.cache.set_accounts_materialize_path(accounts_path);
         self.refresh_floor_secs = config.refresh_floor_secs.max(60);
         self.last_refresh = None;
@@ -686,15 +668,6 @@ impl HostUsageRuntime {
         Ok(())
     }
 
-    /// Inject optional provider API keys (Z.AI / `MiniMax` / Kimi) without env.
-    pub fn set_provider_key(&mut self, provider: Provider, key: String) {
-        if key.trim().is_empty() {
-            self.provider_keys.remove(&provider);
-        } else {
-            self.provider_keys.insert(provider, key);
-        }
-    }
-
     /// Seed a fixture view (tests / offline QA). Does not hit the network.
     pub fn inject_snapshot(
         &mut self,
@@ -733,64 +706,6 @@ impl HostUsageRuntime {
             Some(surface.id()),
             Some("injected".to_owned()),
         );
-        Ok(())
-    }
-
-    /// Refresh enabled surfaces (blocking probes when due).
-    ///
-    /// When `force` is false, a call within [`Self::refresh_floor_secs`] of the
-    /// last network refresh is a no-op (poll-safe). When `force` is true (manual
-    /// Refresh / Settings), the floor is bypassed and targets are marked due.
-    pub fn refresh(&mut self, surface_id: Option<&str>, force: bool) -> Result<(), String> {
-        self.require_open()?;
-        // Defense in depth: a `Disabled` runtime never dispatches probes, so an
-        // accidental refresh cannot reach any credential/file/env/CLI/network/
-        // Keychain resolution. Return a successful no-probe event.
-        if self.probe_policy == HostProbePolicy::Disabled {
-            self.push_event(
-                "refresh_skipped",
-                surface_id,
-                Some("probes disabled".to_owned()),
-            );
-            return Ok(());
-        }
-        if !force && let Some(last) = self.last_refresh {
-            let floor = Duration::from_secs(self.refresh_floor_secs);
-            if last.elapsed() < floor {
-                return Ok(());
-            }
-        }
-        let now = Instant::now();
-        let targets = self.refresh_targets(surface_id)?;
-        for target in &targets {
-            self.cache.request_account_refresh(target, now);
-        }
-        self.cache
-            .refresh_active_account_snapshots(&targets, None, &self.provider_keys, now);
-        self.last_refresh = Some(now);
-        for target in &targets {
-            let surface = surface_for_target(target);
-            let view = self
-                .cache
-                .focused_snapshot(Some(&target.agent), target.provider.as_deref());
-            let kind = if view.last_error.is_some()
-                && matches!(
-                    view.status,
-                    jackin_protocol::control::UsageSnapshotStatus::Error
-                        | jackin_protocol::control::UsageSnapshotStatus::Unavailable
-                        | jackin_protocol::control::UsageSnapshotStatus::NeedsLogin
-                        | jackin_protocol::control::UsageSnapshotStatus::NeedsSecret
-                ) {
-                "probe_failed"
-            } else {
-                "snapshot_updated"
-            };
-            self.push_event(
-                kind,
-                surface.map(HostSurfaceId::id),
-                view.last_error.clone(),
-            );
-        }
         Ok(())
     }
 
@@ -836,16 +751,6 @@ impl HostUsageRuntime {
         let live = self
             .cache
             .focused_snapshot(Some(surface.agent_slug()), surface.provider_label());
-        // A local-only Claude resolution (Keychain denial, missing credential,
-        // or an anonymous credential) never restores a durable/shared account
-        // view over the live local result.
-        if self
-            .cache
-            .active_snapshot_policy(surface.agent_slug(), surface.provider_label())
-            .is_local_only()
-        {
-            return Ok(live);
-        }
         let catalog = self.materialize_account_catalog()?;
         self.reconcile_selected_accounts(&catalog, std::slice::from_ref(&surface))?;
         let selected = self.selected_accounts.get(surface.id());
@@ -858,7 +763,7 @@ impl HostUsageRuntime {
 
     /// List known accounts for one surface (or all surfaces when `None`).
     ///
-    /// Sources: live host login, durable menu-bar store, shared container snapshots.
+    /// Sources: current broker discovery and durable broker history.
     pub fn list_accounts(
         &mut self,
         surface_id: Option<&str>,
@@ -1438,31 +1343,18 @@ impl HostUsageRuntime {
             let view = self
                 .cache
                 .focused_snapshot(Some(surface.agent_slug()), surface.provider_label());
-            let include_external = !self
-                .cache
-                .active_snapshot_policy(surface.agent_slug(), surface.provider_label())
-                .is_local_only();
-            live_views.push((surface, view, include_external));
+            live_views.push((surface, view, true));
         }
         let store_path = self
             .data_dir
             .as_ref()
             .map(|dir| host_snapshot_store_path(dir))
             .unwrap_or_default();
-        let shared_snapshots_dir = std::env::var_os("JACKIN_USAGE_SNAPSHOTS_DIR")
-            .map(PathBuf::from)
-            .or_else(|| {
-                self.data_dir
-                    .as_ref()
-                    .map(|dir| dir.join("usage-shared").join("snapshots"))
-            })
-            .unwrap_or_default();
         accounts::materialize_account_catalog(
             &live_views,
             &self.discovered_views,
             &self.discovered_provider_views,
             &store_path,
-            &shared_snapshots_dir,
             self.discovery
                 .as_ref()
                 .map(|discovery| discovery.accounts.as_slice()),
@@ -1505,23 +1397,6 @@ impl HostUsageRuntime {
         }
     }
 
-    fn refresh_targets(&self, surface_id: Option<&str>) -> Result<Vec<UsageRefreshTarget>, String> {
-        if let Some(id) = surface_id {
-            let surface =
-                HostSurfaceId::from_id(id).ok_or_else(|| format!("unknown surface: {id}"))?;
-            if !self.enabled.contains(surface.id()) {
-                return Err(format!("surface disabled: {id}"));
-            }
-            return Ok(vec![surface.refresh_target()]);
-        }
-        Ok(HostSurfaceId::ALL
-            .iter()
-            .copied()
-            .filter(|surface| self.enabled.contains(surface.id()))
-            .map(HostSurfaceId::refresh_target)
-            .collect())
-    }
-
     fn push_event(&mut self, kind: &str, surface_id: Option<&str>, detail: Option<String>) {
         self.next_seq = self.next_seq.saturating_add(1);
         self.events.push_back(HostUsageEvent {
@@ -1550,17 +1425,6 @@ impl Default for HostUsageRuntime {
     fn default() -> Self {
         Self::new()
     }
-}
-
-fn surface_for_target(target: &UsageRefreshTarget) -> Option<HostSurfaceId> {
-    if let Some(provider) = target.provider.as_deref() {
-        for surface in HostSurfaceId::ALL {
-            if surface.provider_label() == Some(provider) {
-                return Some(*surface);
-            }
-        }
-    }
-    HostSurfaceId::from_id(&target.agent)
 }
 
 /// Min-`remaining_percent` bucket (same selection as the legacy compact label).

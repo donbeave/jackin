@@ -20,6 +20,8 @@ use std::time::{Duration, Instant};
 
 use chrono::{DateTime, Local, TimeZone, Utc};
 
+use super::process_telemetry;
+
 pub(super) const PROCESS_OUTPUT_MAX: usize = 1024 * 1024;
 
 pub(super) fn env_value(name: &str) -> Option<String> {
@@ -341,7 +343,7 @@ pub(super) fn run_cli_with_timeout_full(
     args: &[&str],
     timeout: Duration,
 ) -> Result<CliOutput, String> {
-    let operation = crate::process_telemetry::ChildOperation::begin(command);
+    let operation = process_telemetry::ChildOperation::begin(command);
     let Ok(mut child) = Command::new(command)
         .args(args)
         .stdin(Stdio::null())

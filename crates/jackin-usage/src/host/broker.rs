@@ -419,23 +419,7 @@ impl UsageProviderExecutor for DiscoveryProviderExecutor {
             };
         };
         match refresh_credential_binding(&binding, self.resolver.as_ref()) {
-            ProviderCredentialRefreshOutcome::Snapshot(view) => match view.status {
-                UsageSnapshotStatus::NeedsSecret | UsageSnapshotStatus::NeedsLogin => {
-                    ProviderProbeOutcome::Failure {
-                        kind: UsageCoordinationErrorKind::NeedsSecret,
-                        message: "usage provider credentials require operator action".to_owned(),
-                        retry_at_epoch: None,
-                    }
-                }
-                UsageSnapshotStatus::Unavailable | UsageSnapshotStatus::Unsupported => {
-                    ProviderProbeOutcome::Failure {
-                        kind: UsageCoordinationErrorKind::ProviderUnavailable,
-                        message: "usage provider quota is unavailable".to_owned(),
-                        retry_at_epoch: None,
-                    }
-                }
-                _ => ProviderProbeOutcome::success(*view),
-            },
+            ProviderCredentialRefreshOutcome::Snapshot(view) => provider_probe_outcome(*view),
             ProviderCredentialRefreshOutcome::Missing
             | ProviderCredentialRefreshOutcome::Denied
             | ProviderCredentialRefreshOutcome::InteractionRequired => {
@@ -451,6 +435,45 @@ impl UsageProviderExecutor for DiscoveryProviderExecutor {
                 retry_at_epoch: None,
             },
         }
+    }
+}
+
+fn provider_probe_outcome(
+    view: jackin_protocol::control::FocusedUsageView,
+) -> ProviderProbeOutcome {
+    if let Some(error) = view
+        .last_error
+        .as_deref()
+        .filter(|error| crate::usage::usage_error_is_rate_limited(error))
+    {
+        let retry_at_epoch = crate::usage::parse_retry_after_seconds(&error.to_ascii_lowercase())
+            .map(|seconds| {
+                chrono::Utc::now()
+                    .timestamp()
+                    .saturating_add(i64::try_from(seconds).unwrap_or(i64::MAX))
+            });
+        return ProviderProbeOutcome::Failure {
+            kind: UsageCoordinationErrorKind::RateLimited,
+            message: "usage provider rate limit is active".to_owned(),
+            retry_at_epoch,
+        };
+    }
+    match view.status {
+        UsageSnapshotStatus::NeedsSecret | UsageSnapshotStatus::NeedsLogin => {
+            ProviderProbeOutcome::Failure {
+                kind: UsageCoordinationErrorKind::NeedsSecret,
+                message: "usage provider credentials require operator action".to_owned(),
+                retry_at_epoch: None,
+            }
+        }
+        UsageSnapshotStatus::Error
+        | UsageSnapshotStatus::Unavailable
+        | UsageSnapshotStatus::Unsupported => ProviderProbeOutcome::Failure {
+            kind: UsageCoordinationErrorKind::ProviderUnavailable,
+            message: "usage provider quota is unavailable".to_owned(),
+            retry_at_epoch: None,
+        },
+        _ => ProviderProbeOutcome::success(view),
     }
 }
 

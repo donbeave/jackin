@@ -9,7 +9,6 @@ use jackin_protocol::control::{
     FocusedAccountHeader, FocusedUsageView, Money, QuotaBucketView, StatusSlot, UsageConfidence,
     UsageSeverity, UsageSnapshotStatus, UsageSource,
 };
-use std::sync::atomic::{AtomicUsize, Ordering};
 
 fn open_runtime(dir: &Path) -> HostUsageRuntime {
     let mut runtime = HostUsageRuntime::new();
@@ -69,227 +68,6 @@ fn codex_fixture_view() -> FocusedUsageView {
         tabs: Vec::new(),
         last_error: None,
     }
-}
-
-#[derive(Default)]
-struct DiscoveryRefreshResolver {
-    manual_retries: AtomicUsize,
-    resolutions: AtomicUsize,
-    refreshes: AtomicUsize,
-}
-
-impl ProviderCredentialEnvResolver for DiscoveryRefreshResolver {
-    fn begin_manual_retry(&self) {
-        self.manual_retries.fetch_add(1, Ordering::SeqCst);
-    }
-
-    fn resolve_provider_credentials(
-        &self,
-        _config: &jackin_config::AppConfig,
-        _workspace: Option<&jackin_core::WorkspaceName>,
-        _role: Option<&str>,
-        _keys: &[jackin_core::UsageCredentialEnvName],
-    ) -> Vec<ProviderCredentialEnvResolution> {
-        self.resolutions.fetch_add(1, Ordering::SeqCst);
-        Vec::new()
-    }
-
-    fn refresh_provider_credential(
-        &self,
-        _surface: HostSurfaceId,
-        _key: &str,
-        _handle: &OpaqueCredentialHandle,
-    ) -> ProviderCredentialRefreshOutcome {
-        self.refreshes.fetch_add(1, Ordering::SeqCst);
-        ProviderCredentialRefreshOutcome::Snapshot(Box::new(codex_fixture_view()))
-    }
-}
-
-struct AnonymousDiscoveryRefreshResolver;
-
-impl ProviderCredentialEnvResolver for AnonymousDiscoveryRefreshResolver {
-    fn resolve_provider_credentials(
-        &self,
-        _config: &jackin_config::AppConfig,
-        _workspace: Option<&jackin_core::WorkspaceName>,
-        _role: Option<&str>,
-        _keys: &[jackin_core::UsageCredentialEnvName],
-    ) -> Vec<ProviderCredentialEnvResolution> {
-        Vec::new()
-    }
-
-    fn refresh_provider_credential(
-        &self,
-        _surface: HostSurfaceId,
-        _key: &str,
-        _handle: &OpaqueCredentialHandle,
-    ) -> ProviderCredentialRefreshOutcome {
-        let mut view = codex_fixture_view();
-        view.account.account_label = "Current host login".to_owned();
-        view.confidence = UsageConfidence::PresenceOnly;
-        ProviderCredentialRefreshOutcome::Snapshot(Box::new(view))
-    }
-}
-
-#[test]
-fn disc_refresh_uses_explicit_binding_once_and_background_respects_floor() {
-    let dir = tempfile::tempdir().expect("tempdir");
-    let mut runtime = open_runtime(dir.path());
-    let identity = CanonicalAccountIdentity {
-        surface: HostSurfaceId::Codex,
-        subject: CanonicalAccountSubject::AuthenticatedLabel("codex@example.com".to_owned()),
-    };
-    runtime.discovery = Some(ValidatedUsageDiscovery {
-        config_generation: Some("generation".to_owned()),
-        accounts: vec![DiscoveredAccountDescriptor {
-            surface_id: "codex".to_owned(),
-            account_key: identity.account_key(),
-            account_label: "codex@example.com".to_owned(),
-            provenance: vec!["workspace sample".to_owned()],
-            source_ids: vec!["source-0001".to_owned()],
-            identity: identity.clone(),
-        }],
-        diagnostics: Vec::new(),
-        candidates: Vec::new(),
-        bindings: ["source-0001", "source-0002"]
-            .into_iter()
-            .map(|source_id| discovery::ValidatedCredentialBinding {
-                surface: HostSurfaceId::Codex,
-                identity: Some(identity.clone()),
-                source_id: source_id.to_owned(),
-                provenance: std::collections::BTreeSet::from(["workspace sample".to_owned()]),
-                source: discovery::ValidatedCredentialSource::Env {
-                    handle: OpaqueCredentialHandle::new(source_id),
-                    key: "OPENAI_API_KEY".to_owned(),
-                },
-            })
-            .collect(),
-    });
-    runtime.discovery_scope = None;
-    let resolver = DiscoveryRefreshResolver::default();
-
-    runtime
-        .refresh_with_discovery(Some("codex"), false, &resolver)
-        .expect("first refresh");
-    runtime
-        .refresh_with_discovery(Some("codex"), false, &resolver)
-        .expect("floor-limited refresh");
-
-    assert_eq!(resolver.refreshes.load(Ordering::SeqCst), 1);
-    let accounts = runtime.list_accounts(Some("codex")).expect("accounts");
-    assert_eq!(accounts.len(), 1);
-    assert_eq!(accounts[0].remaining_percent, Some(60));
-    assert!(
-        accounts[0]
-            .provenance
-            .iter()
-            .any(|value| value == "workspace sample")
-    );
-}
-
-#[test]
-fn disc_successful_anonymous_refresh_emits_snapshot_updated() {
-    let dir = tempfile::tempdir().expect("tempdir");
-    let mut runtime = open_runtime(dir.path());
-    runtime.discovery = Some(ValidatedUsageDiscovery {
-        config_generation: Some("generation".to_owned()),
-        accounts: Vec::new(),
-        diagnostics: Vec::new(),
-        candidates: Vec::new(),
-        bindings: vec![discovery::ValidatedCredentialBinding {
-            surface: HostSurfaceId::Codex,
-            identity: None,
-            source_id: "source-0001".to_owned(),
-            provenance: std::collections::BTreeSet::new(),
-            source: discovery::ValidatedCredentialSource::Env {
-                handle: OpaqueCredentialHandle::new("source-0001"),
-                key: "OPENAI_API_KEY".to_owned(),
-            },
-        }],
-    });
-    runtime.discovery_scope = None;
-
-    runtime
-        .refresh_with_discovery(Some("codex"), false, &AnonymousDiscoveryRefreshResolver)
-        .expect("refresh");
-
-    let events = runtime.next_events(0, 32).expect("events").events;
-    assert!(events.iter().any(|event| event.kind == "snapshot_updated"));
-    assert!(!events.iter().any(|event| event.kind == "probe_failed"));
-}
-
-#[test]
-fn disc_refresh_manual_reconciles_once_and_background_does_not_rescan() {
-    let dir = tempfile::tempdir().expect("tempdir");
-    let config_root = dir.path().join("config");
-    let operator_home = dir.path().join("home");
-    std::fs::create_dir_all(&config_root).expect("config root");
-    let config_path = config_root.join("config.toml");
-    let config = format!(
-        r#"version = "{}"
-
-[claude]
-auth_forward = "ignore"
-[codex]
-auth_forward = "ignore"
-[amp]
-auth_forward = "ignore"
-[kimi]
-auth_forward = "ignore"
-[grok]
-auth_forward = "ignore"
-[opencode]
-auth_forward = "ignore"
-
-[env]
-ZAI_API_KEY = "fixture-value"
-"#,
-        jackin_config::CURRENT_CONFIG_VERSION
-    );
-    std::fs::write(&config_path, &config).expect("config");
-    let resolver = DiscoveryRefreshResolver::default();
-    let mut runtime = HostUsageRuntime::new();
-    runtime
-        .open_with_discovery(
-            HostRuntimeConfig {
-                data_dir: dir.path().join("data"),
-                refresh_floor_secs: 60,
-                enabled_surface_ids: Vec::new(),
-                probe_policy: HostProbePolicy::Live,
-                discovery_scope: UsageDiscoveryScope::HostDesktop {
-                    config_root,
-                    operator_home,
-                },
-            },
-            &resolver,
-        )
-        .expect("open");
-    let initial_generation = runtime
-        .discovery
-        .as_ref()
-        .and_then(|discovery| discovery.config_generation.clone());
-    let resolution_count = resolver.resolutions.load(Ordering::SeqCst);
-
-    runtime
-        .refresh_with_discovery(None, false, &resolver)
-        .expect("background refresh");
-    assert_eq!(
-        resolver.resolutions.load(Ordering::SeqCst),
-        resolution_count
-    );
-    std::fs::write(&config_path, format!("{config}\n# changed\n")).expect("edit");
-    runtime
-        .refresh_with_discovery(None, true, &resolver)
-        .expect("manual refresh");
-
-    assert_eq!(resolver.manual_retries.load(Ordering::SeqCst), 1);
-    assert_ne!(
-        runtime
-            .discovery
-            .as_ref()
-            .and_then(|discovery| discovery.config_generation.clone()),
-        initial_generation
-    );
 }
 
 #[test]
@@ -621,7 +399,7 @@ fn credential_matrix_lists_all_host_surfaces() {
 }
 
 #[test]
-fn refresh_floor_skips_non_forced_calls() {
+fn refresh_floor_tracks_completed_broker_refresh() {
     let dir = tempfile::tempdir().expect("tempdir");
     let mut runtime = HostUsageRuntime::new();
     runtime
@@ -636,11 +414,8 @@ fn refresh_floor_skips_non_forced_calls() {
         })
         .expect("open");
     assert!(runtime.refresh_due());
-    // force first refresh stamps last_refresh (may network or unavailable).
-    runtime.refresh(Some("codex"), true).expect("force refresh");
+    runtime.last_refresh = Some(Instant::now());
     assert!(!runtime.refresh_due());
-    // Non-forced call within floor must be a silent no-op.
-    runtime.refresh(None, false).expect("floor skip");
     // Floor mutator clamps and is readable.
     runtime.set_refresh_floor_secs(30).expect("set floor");
     assert_eq!(runtime.refresh_floor_secs(), 60);
@@ -1460,16 +1235,13 @@ fn canon_each_account_retains_its_own_status_limit_and_error() {
 }
 
 #[test]
-fn canon_projection_reports_malformed_shared_snapshot() {
+fn canon_projection_ignores_removed_legacy_shared_snapshot() {
     let dir = tempfile::tempdir().expect("tempdir");
     let shared = dir.path().join("usage-shared").join("snapshots");
     std::fs::create_dir_all(&shared).expect("shared dir");
     std::fs::write(shared.join("usage-broken.snapshot.json"), "not-json").expect("broken snapshot");
     let mut runtime = open_runtime(dir.path());
-    let error = runtime
-        .desktop_inventory()
-        .expect_err("typed projection error");
-    assert!(error.starts_with("parse shared usage snapshot:"), "{error}");
+    runtime.desktop_inventory().expect("legacy tree ignored");
 }
 
 #[test]
@@ -1944,7 +1716,6 @@ fn disabled_probe_policy_skips_dispatch_and_is_never_due() {
             },
         })
         .expect("open");
-    runtime.refresh(None, false).expect("non-forced refresh");
-    runtime.refresh(None, true).expect("forced refresh");
+    assert!(!runtime.live_probes_enabled());
     assert!(!runtime.refresh_due());
 }

@@ -4,9 +4,14 @@ title: "jackin❯ desktop — native macOS limits app"
 
 **Status**: Partially implemented
 
-**Current state**: The in-repository native redesign is implemented for the macOS 26 production baseline. It uses provider-focused native popovers with centered product identity, a two-column Usage window with centered `jackin❯ desktop` toolbar identity, a fixed leading sidebar control, the generated `jackin❯ by tailrocks` sidebar signature, visible native recovery, retained window context, and system-owned Liquid Glass only. Rust remains authoritative for providers, accounts, quota semantics, refresh policy, and domain strings. Host Desktop discovery now reads global and every effective workspace/role account scope without writing config, deduplicates configured sources/accounts, and exports only sanitized diagnostics. Current discovery—not historical snapshots—owns active membership; OpenCode and GitHub remain outside the Desktop quota catalog.
+**Current state**: The in-repository native redesign is implemented for the macOS 26 production baseline. It uses provider-focused native popovers with centered product identity, a two-column Usage window with centered `jackin❯ desktop` toolbar identity, a fixed leading sidebar control, the generated `jackin❯ by tailrocks` sidebar signature, visible native recovery, retained window context, and system-owned Liquid Glass only. Rust remains authoritative for providers, accounts, quota semantics, refresh policy, and domain strings. Host Desktop discovery now reads global and every effective workspace/role account scope without writing config, deduplicates configured sources/accounts, and exports only sanitized diagnostics. Current discovery—not historical snapshots—owns active membership; OpenCode and GitHub remain outside the Desktop quota catalog. One host-only Rust broker now owns refresh generations, atomic last-good state, and shared provider backoff; Desktop and capability-scoped Capsule relays join the same generation and never fall back to local/filesystem probes.
 
 The roadmap remains partially implemented because the first Developer ID publication/Homebrew proof and capture-gated Amp paid-plan work require external operator evidence. Those external gates are not substituted by a green PR.
+
+Coordinator completion also requires a recorded Apple Silicon macOS 26 + Docker
+Desktop `cargo xtask ci --e2e` run. OrbStack proof is provisional only. Capsules see
+only credential capabilities forwarded at launch; credentials created solely inside a
+Capsule remain out of scope pending a secure-enrollment design.
 
 ## Decisions
 
@@ -59,7 +64,7 @@ These remain separate product decisions, not unfinished redesign work:
 
 ## Completion gate
 
-Do not retire this roadmap item until public Developer ID/cask proof and the capture-gated provider requirement have authoritative evidence. The native implementation may be complete inside the repository while the broader delivery item remains **Partially implemented**.
+Do not retire this roadmap item until public Developer ID/cask proof, the capture-gated provider requirement, and the mandatory Docker Desktop usage-broker lane have authoritative evidence. The native implementation may be complete inside the repository while the broader delivery item remains **Partially implemented**.
 
 ## Related work
 

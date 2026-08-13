@@ -434,8 +434,7 @@ pub(crate) fn fetch_grok_rpc_billing(
 ) -> Result<GrokBillingResponse, String> {
     gate.can_launch("Grok ACP billing", Instant::now())?;
     let executable = grok_binary_path();
-    let process =
-        crate::process_telemetry::ChildOperation::begin(executable.to_string_lossy().as_ref());
+    let process = process_telemetry::ChildOperation::begin(executable.to_string_lossy().as_ref());
     let mut child = match Command::new(&executable)
         .args(["agent", "stdio"])
         .stdin(Stdio::piped())
@@ -503,7 +502,7 @@ pub(crate) fn fetch_grok_rpc_billing(
     })();
 
     drop(stdin);
-    let reaped = crate::process_telemetry::ChildOperation::reap_managed(&mut child);
+    let reaped = process_telemetry::ChildOperation::reap_managed(&mut child);
     let reader_joined = reader.join().is_ok();
     process.finish_managed(reaped && reader_joined);
     if result.is_ok() {
@@ -798,7 +797,7 @@ pub(crate) fn grok_rpc_request(
     params: serde_json::Value,
     timeout: Duration,
 ) -> Result<serde_json::Value, String> {
-    let operation = crate::process_telemetry::external_rpc_operation(
+    let operation = process_telemetry::external_rpc_operation(
         jackin_telemetry::schema::enums::RpcSystemName::GrokAcp,
         method,
     );
@@ -839,11 +838,7 @@ pub(crate) fn grok_rpc_request(
                 .ok_or_else(|| format!("Grok RPC {method} response missing result"));
         }
     })();
-    crate::process_telemetry::complete_external_rpc(
-        operation,
-        &result,
-        started.elapsed() >= timeout,
-    );
+    process_telemetry::complete_external_rpc(operation, &result, started.elapsed() >= timeout);
     result
 }
 
