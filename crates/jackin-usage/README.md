@@ -44,15 +44,13 @@ UniFFI lives in sibling crate `jackin-usage-ffi`.
 | [`token_monitor.rs`](src/token_monitor.rs) · [`token_monitor/`](src/token_monitor) | token spend monitoring | [`tests.rs`](src/token_monitor/tests.rs) |
 | [`usage.rs`](src/usage.rs) · [`usage/`](src/usage) | usage/pricing accounting | [`tests.rs`](src/usage/tests.rs) |
 | [`telemetry.rs`](src/telemetry.rs) | telemetry emission | — |
+| [`process_telemetry.rs`](src/process_telemetry.rs) | child-process telemetry ownership and redaction | — |
 | [`logging.rs`](src/logging.rs) | telemetry-level state and Capsule panic handling | — |
 | [`usage_snapshot_store.rs`](src/usage_snapshot_store.rs) · [`usage_snapshot_store/`](src/usage_snapshot_store) | persistent usage snapshot store | [`tests.rs`](src/usage_snapshot_store/tests.rs) |
 | [`store_backend.rs`](src/store_backend.rs) | turso SQLite import chokepoint | — |
 | [`output.rs`](src/output.rs) | usage output shaping | — |
 
 ## Public API
-
-Token-monitor and usage-accounting types consumed by `jackin-capsule`.
-`host::HostUsageRuntime` for jackin❯ desktop and the host CLI.
 
 The host broker alone calls providers and writes shared state. Clients join canonical
 account generations; timeouts retain ownership. Failure is fail-closed and preserves

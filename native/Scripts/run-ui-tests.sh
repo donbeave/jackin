@@ -6,6 +6,7 @@ here=$(cd "$(dirname "$0")" && pwd -P)
 repo=$(cd "$here/../.." && pwd -P)
 stamp=$(date -u '+%Y%m%dT%H%M%SZ')
 result_root="$repo/native/DerivedData/UITests-$stamp-$$"
+report_root="$repo/native/.build/test-results/ui-$stamp-$$"
 expected=$(rg --no-filename '^[[:space:]]+func test' "$repo/native/UITests"/*.swift | wc -l | tr -d ' ')
 lock="$repo/native/.build/ui-test.lock"
 runner="$repo/native/DerivedData/Build/Products/Debug/JackinDesktopUITests-Runner.app/Contents/MacOS/JackinDesktopUITests-Runner"
@@ -52,6 +53,7 @@ trap cleanup EXIT INT TERM HUP
 test "$expected" -gt 0
 terminate_repo_apps
 mkdir -p "$result_root"
+mkdir -p "$report_root"
 test_names=()
 while IFS= read -r test_name; do
   test_names+=("$test_name")
@@ -65,19 +67,39 @@ test "${#test_names[@]}" -eq "$expected"
 passed=0
 for test_name in "${test_names[@]}"; do
   result="$result_root/$test_name.xcresult"
+  raw_log="$result_root/$test_name.xcodebuild.log"
+  report="$report_root/$test_name.xml"
   terminate_repo_apps
   xcodebuild test \
-    -quiet \
     -project "$repo/native/JackinDesktop.xcodeproj" \
     -scheme JackinDesktop \
     -destination 'platform=macOS' \
     -parallel-testing-enabled NO \
     -only-testing:"JackinDesktopUITests/JackinDesktopUITests/$test_name" \
     -derivedDataPath "$repo/native/DerivedData" \
-    -resultBundlePath "$result" &
+    -resultBundlePath "$result" >"$raw_log" 2>&1 &
   child_pid=$!
-  wait "$child_pid"
+  if wait "$child_pid"; then
+    xcode_status=0
+  else
+    xcode_status=$?
+  fi
   child_pid=""
+
+  xcbeautify \
+    --quiet \
+    --is-ci \
+    --report junit \
+    --report-path "$report_root" \
+    --junit-report-filename "$test_name.xml" <"$raw_log"
+  test -s "$report" || {
+    echo "UI test JUnit report is missing or empty: $report" >&2
+    exit 1
+  }
+  test "$xcode_status" -eq 0 || {
+    echo "xcodebuild failed for $test_name: status $xcode_status" >&2
+    exit "$xcode_status"
+  }
 
   test -f "$result/Info.plist" || {
     echo "UI test result bundle is missing or corrupt: $result" >&2
@@ -118,3 +140,4 @@ done
 test "$passed" -eq "$expected"
 echo "UI tests: $passed/$expected passed"
 echo "Results: $result_root"
+echo "JUnit: $report_root"

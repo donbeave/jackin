@@ -41,6 +41,9 @@
   `plans/009-ci-testing-docs-hygiene.md`
 - **Category**: bug, tech-debt, tests, docs
 - **Planned at**: commit `27d0d9b3`, 2026-08-13
+- **Execution state**: IN PROGRESS — implementation and non-UI gates pass. The
+  required fresh visual/accessibility matrix and `desktop-test-ui` proof await an
+  unlocked logged-in macOS session; current session is locked.
 
 ## Why this matters
 

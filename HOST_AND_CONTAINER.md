@@ -66,7 +66,7 @@ Layout (current and going forward):
 - `/jackin/state/` — runtime markers (`hooks/setup-once.done`, etc.) written during first-boot.
 - `/jackin/default-home/` — image-baked default home contents copied into `/home/agent/` on first boot.
 - `/jackin/run/` — runtime sockets, pidfiles, other ephemeral runtime state. The Capsule daemon socket is `/jackin/run/jackin.sock`; the capability-scoped usage relay is `/jackin/run/usage.sock`.
-- `/jackin/{claude,codex,amp,kimi,opencode}/` — agent credential mounts.
+- `/jackin/{amp,claude,codex,grok,kimi-code,opencode}/` — agent credential mounts.
 - `/jackin/host/` — read-only views of host paths exposed into container.
 
 What rule blocks:
@@ -79,4 +79,4 @@ What rule blocks:
 
 Wanting new container-side path — place under `/jackin/` first, then justify in PR description if real constraint forces exception (e.g. third-party tool hard-coding `/run/<thing>` that can't be relocated). PRs introducing top-level jackin-owned path outside `/jackin/` without exception note rejected at review and path moved.
 
-Reason: flat single-root convention makes in-container surface debuggable. "What does jackin❯ do to my container?" → `ls /jackin/`. Also makes cleanup straightforward — `rm -rf /jackin❯` removes every jackin-owned artifact, leaving base image intact for whatever rebuild operator wants.
+Reason: flat single-root convention makes in-container surface debuggable. "What does jackin❯ do to my container?" → `ls /jackin/`. Also makes cleanup straightforward — `rm -rf /jackin` removes every jackin-owned artifact, leaving base image intact for whatever rebuild operator wants.

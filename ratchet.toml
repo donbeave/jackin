@@ -590,7 +590,7 @@ key = "crates/jackin-tui/README.md"
 bound = 1812
 [[family.entry]]
 key = "crates/jackin-usage/README.md"
-bound = 6573
+bound = 6547
 [[family.entry]]
 key = "crates/jackin-usage-ffi/README.md"
 bound = 3076
