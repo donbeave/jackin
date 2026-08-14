@@ -124,10 +124,9 @@ public final class UsageWindowController: NSObject, NSWindowDelegate {
             window.collectionBehavior.formUnion([
                 .canJoinAllSpaces,
                 .canJoinAllApplications,
+                .fullScreenAuxiliary,
             ])
-            if elevatesFixtureWindow {
-                window.level = .floating
-            }
+            window.level = .floating
         } else {
             window.collectionBehavior.insert(.moveToActiveSpace)
         }

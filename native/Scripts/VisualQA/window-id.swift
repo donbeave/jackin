@@ -112,7 +112,7 @@ if jsonMode {
     let active = NSWorkspace.shared.frontmostApplication?.processIdentifier == window.pid
     let activationState = active ? "active" : "inactive"
     let keyState: String
-    if window.layer == 0 {
+    if filter != nil {
         keyState = active ? "key" : "non-key"
     } else {
         keyState = "not-applicable-transient"

@@ -214,6 +214,10 @@ final class ArchitectureTests: XCTestCase {
             contentsOf: visualQARoot.appendingPathComponent("focus-drive.swift"),
             encoding: .utf8
         )
+        let windowResolver = try String(
+            contentsOf: visualQARoot.appendingPathComponent("window-id.swift"),
+            encoding: .utf8
+        )
 
         XCTAssertTrue(text.contains("git -C \"$repo\" status --porcelain"))
         XCTAssertTrue(text.contains("mise -C \"$repo\" run desktop-build"))
@@ -224,11 +228,13 @@ final class ArchitectureTests: XCTestCase {
         XCTAssertTrue(text.contains("capture_with_relaunch"))
         XCTAssertTrue(text.contains("capture retries exhausted after $attempt launches"))
         XCTAssertTrue(text.contains("FOCUS_DRIVE_TOOL=$focus_tool"))
+        XCTAssertTrue(text.contains("\"WINDOW_LAYER_MODE=all\""))
         XCTAssertTrue(text.contains("native/.build/visual-qa/final"))
         XCTAssertTrue(text.contains("\"$output/$file\" \"jackin❯ desktop\""))
         XCTAssertTrue(capture.contains("\"$FOCUS_TOOL\" \"$pid\" 0"))
         XCTAssertTrue(capture.contains("application exited before reaching requested"))
         XCTAssertTrue(focusDrive.contains("activate(options: [.activateAllWindows])"))
+        XCTAssertTrue(windowResolver.contains("if filter != nil"))
     }
 
     func testFixtureUsageWindowSurvivesForeignFullScreenHosts() throws {
@@ -240,7 +246,7 @@ final class ArchitectureTests: XCTestCase {
 
         XCTAssertTrue(text.contains(".canJoinAllSpaces"))
         XCTAssertTrue(text.contains(".canJoinAllApplications"))
-        XCTAssertFalse(text.contains(".fullScreenAuxiliary"))
+        XCTAssertTrue(text.contains(".fullScreenAuxiliary"))
         XCTAssertTrue(text.contains("if elevatesFixtureWindow"))
         XCTAssertTrue(text.contains("window.level = .floating"))
         XCTAssertTrue(text.contains("window.orderFrontRegardless()"))

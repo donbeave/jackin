@@ -92,6 +92,7 @@ usage() {
     "WINDOW_ID_TOOL=$window_tool"
     "NOTIFICATION_DRIVE_TOOL=$notification_tool"
     "FOCUS_DRIVE_TOOL=$focus_tool"
+    "WINDOW_LAYER_MODE=all"
   )
   if [[ "$state" == inactive ]]; then
     environment+=("CAPTURE_INACTIVE_APP=$inactive_app")
