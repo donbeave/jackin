@@ -47,13 +47,34 @@ impl Dialog {
         if *selected == UsageDialogTab::Overview {
             return Some(Self::usage_overview_state(view, scroll.clone()));
         }
-        // Rust owns every provider-card field, string, and order in
-        // `jackin_usage::usage::usage_detail_presentation` so this dialog and the
-        // native Desktop Usage window stay parity-locked. The dialog only maps
-        // each shared row to a `ContainerInfoRow`, prepending its TUI meter glyph
-        // (geometry from `meter_percent`) to a bucket's leading segment.
+        // Rust owns every provider-card field, string, and order so this dialog
+        // and the native Desktop Usage window stay parity-locked. The three
+        // machine-labelled identity rows let the TUI lay out the Rust projection
+        // without restoring the duplicate detail rows Plan 005 removed.
+        let provider_title =
+            jackin_usage::usage::provider_display_label(&view.account.provider_label);
+        let identity =
+            jackin_usage::usage::usage_identity_presentation(provider_title, view, false);
         let presentation = jackin_usage::usage::usage_detail_presentation(view);
-        let mut rows = Vec::with_capacity(presentation.rows.len());
+        let mut rows = Vec::with_capacity(presentation.rows.len().saturating_add(3));
+        rows.push(
+            crate::tui::components::container_info_surface::ContainerInfoRow::new(
+                super::USAGE_IDENTITY_PROVIDER_ROW,
+                identity.provider_title,
+            ),
+        );
+        rows.push(
+            crate::tui::components::container_info_surface::ContainerInfoRow::new(
+                super::USAGE_IDENTITY_ACCOUNT_ROW,
+                identity.account_label,
+            ),
+        );
+        rows.push(
+            crate::tui::components::container_info_surface::ContainerInfoRow::new(
+                super::USAGE_IDENTITY_ACTIVITY_ROW,
+                identity.activity_label,
+            ),
+        );
         for row in &presentation.rows {
             let value = match row.meter_percent {
                 Some(meter_percent) => {

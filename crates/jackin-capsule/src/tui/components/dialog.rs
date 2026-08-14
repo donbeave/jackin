@@ -53,6 +53,9 @@ const CONTAINER_INFO_WIDTH: u16 = 86;
 const GITHUB_URL_ROW: usize = 3;
 const GITHUB_OPEN_PR_ROW: usize = 5;
 const GITHUB_OPEN_CI_ROW: usize = 6;
+pub(crate) const USAGE_IDENTITY_PROVIDER_ROW: &str = "Identity provider";
+pub(crate) const USAGE_IDENTITY_ACCOUNT_ROW: &str = "Identity account";
+pub(crate) const USAGE_IDENTITY_ACTIVITY_ROW: &str = "Identity activity";
 
 fn file_url_path(href: &str) -> Option<&str> {
     href.strip_prefix("file://").filter(|path| !path.is_empty())

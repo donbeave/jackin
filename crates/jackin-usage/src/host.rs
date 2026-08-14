@@ -1221,8 +1221,7 @@ impl HostUsageRuntime {
             let plan_or_status_label = empty_state
                 .as_ref()
                 .filter(|state| state.status_word != "fresh")
-                .map(|state| state.status_label.clone())
-                .unwrap_or_else(|| "—".to_owned());
+                .map_or_else(|| "—".to_owned(), |state| state.status_label.clone());
             let accessibility_label = empty_state.as_ref().map_or_else(
                 || display_label.clone(),
                 |state| format!("{display_label}, {}", state.status_label),
@@ -1246,7 +1245,7 @@ impl HostUsageRuntime {
     }
 
     /// Build the complete native Desktop model from one uninterrupted runtime
-    /// snapshot. The UniFFI bridge holds the runtime mutex for this whole call,
+    /// snapshot. The `UniFFI` bridge holds the runtime mutex for this whole call,
     /// so no broker generation can interleave partial provider/account state.
     pub fn desktop_projection(
         &mut self,

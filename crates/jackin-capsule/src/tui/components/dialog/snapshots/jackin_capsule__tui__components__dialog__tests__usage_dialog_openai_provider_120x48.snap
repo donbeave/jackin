@@ -9,9 +9,11 @@ expression: "render_usage_dialog_snapshot_for_view(120, 48, UsageDialogTab::Prov
                  │         Overview   OpenAI   Anthropic   Amp   xAI   Z.AI   Kimi   MiniMax          │
                  │                   ━━━━━━━━                                                         │
                  │────────────────────────────────────────────────────────────────────────────────────│
-                 │  OpenAI                                                     alexey@chainargos.com  │
-                 │  Updated 1m ago                                                           Pro 20x  │
+                 │  OpenAI                                                         account@work.test  │
+                 │  Updated 1m ago                                                                    │
                  │────────────────────────────────────────────────────────────────────────────────────│
+                 │  Plan Pro 20x                                                                      │
+                 │                                                                                    │
                  │  Session                                                                           │
                  │  █████████████████████████████████████████████████████████████████████████████░░░  │
                  │  97% left                                                            Resets 19:45  │
