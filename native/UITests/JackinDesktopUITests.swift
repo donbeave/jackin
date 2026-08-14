@@ -336,12 +336,18 @@ final class JackinDesktopUITests: XCTestCase {
         XCTAssertTrue(lastLimit.waitForExistence(timeout: 3))
         XCTAssertTrue(refresh.isHittable)
         XCTAssertTrue(openUsage.isHittable)
-        for _ in 0..<8 {
-            provider.swipeUp()
+        // Exceed the fixture envelope without depending on gesture velocity or a
+        // ScrollView hit point that moves while AppKit coalesces swipe events.
+        for _ in 0..<3 {
+            provider.scroll(byDeltaX: 0, deltaY: -10_000)
         }
         XCTAssertTrue(lastLimit.waitForHittable(timeout: 3))
-        XCTAssertTrue(refresh.isHittable)
-        XCTAssertTrue(openUsage.isHittable)
+        // macOS wheel synthesis can return activation to the XCTest runner.
+        // Re-enter the app before proving that scrolling did not move fixed footer controls.
+        application.activate()
+        XCTAssertTrue(lastLimit.waitForHittable(timeout: 3))
+        XCTAssertTrue(refresh.waitForHittable(timeout: 3))
+        XCTAssertTrue(openUsage.waitForHittable(timeout: 3))
 
         DistributedNotificationCenter.default().postNotificationName(
             Notification.Name("com.jackin-project.desktop.visual-qa.close-popover"),

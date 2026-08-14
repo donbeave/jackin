@@ -267,8 +267,8 @@ public final class StatusBarController: NSObject {
         store.popoverSelection = StatusPopoverFocus.popoverSelection(for: outcome)
 
         anchoredButton = sender
-        popoverPresentationState.beginPresentation()
         popover.show(relativeTo: sender.bounds, of: sender, preferredEdge: .minY)
+        resetPopoverScrollAfterPresentation()
     }
 
     /// Deterministic visual-QA launch seam.
@@ -314,8 +314,14 @@ public final class StatusBarController: NSObject {
         guard let anchor = panel.contentView else { return }
         anchor.setAccessibilityElement(false)
         automationAnchorPanel = panel
-        popoverPresentationState.beginPresentation()
         popover.show(relativeTo: anchor.bounds, of: anchor, preferredEdge: .minY)
+        resetPopoverScrollAfterPresentation()
+    }
+
+    private func resetPopoverScrollAfterPresentation() {
+        DispatchQueue.main.async { [weak self] in
+            self?.popoverPresentationState.beginPresentation()
+        }
     }
 
     private func makeAutomationAnchorPanel() -> NSPanel {

@@ -128,14 +128,15 @@ fi
 
 drive_activation() {
   if [ -n "$WINDOW_NAME" ]; then
-    window_onscreen=$("$TOOL" "$OWNER" "$WINDOW_NAME" --json 2>/dev/null \
+    window_onscreen=$("$TOOL" "$OWNER" "$WINDOW_NAME" --json --pid "$pid" 2>/dev/null \
       | plutil -extract onScreen raw - 2>/dev/null || echo false)
     if [ "$window_onscreen" != true ]; then
       "$DRIVE_TOOL" "com.jackin-project.desktop.visual-qa.show-usage"
     fi
   else
-    popover_onscreen=$(WINDOW_LAYER_MODE=all "$TOOL" "$OWNER" --json 2>/dev/null \
-      | plutil -extract onScreen raw - 2>/dev/null || echo false)
+    popover_onscreen=$(WINDOW_LAYER_MODE=transient \
+      "$TOOL" "$OWNER" --json --pid "$pid" 2>/dev/null \
+        | plutil -extract onScreen raw - 2>/dev/null || echo false)
     if [ "$popover_onscreen" != true ]; then
       "$DRIVE_TOOL" "com.jackin-project.desktop.visual-qa.show-popover"
     fi
@@ -196,7 +197,7 @@ if [ -n "${CAPTURE_TOOLBAR_BUTTON_DESCRIPTION:-}" ]; then
   i=0
   while [ "$i" -lt 40 ]; do
     drive_activation
-    window_onscreen=$("$TOOL" "$OWNER" "$WINDOW_NAME" --json 2>/dev/null \
+    window_onscreen=$("$TOOL" "$OWNER" "$WINDOW_NAME" --json --pid "$pid" 2>/dev/null \
       | plutil -extract onScreen raw - 2>/dev/null || echo false)
     if [ "$window_onscreen" = true ] && osascript -e \
       "tell application \"System Events\" to tell application process \"$executable\" to tell front window to click first button of toolbar 1 whose description is \"$CAPTURE_TOOLBAR_BUTTON_DESCRIPTION\""; then
@@ -228,14 +229,16 @@ while [ "$attempt" -lt 20 ]; do
   candidate_metadata="$OUT.capture-$attempt.json"
   candidate_post_metadata="$OUT.capture-$attempt-post.json"
   if [ -n "$WINDOW_NAME" ]; then
-    "$TOOL" "$OWNER" "$WINDOW_NAME" --json > "$candidate_metadata" 2>/dev/null || {
+    "$TOOL" "$OWNER" "$WINDOW_NAME" --json --pid "$pid" \
+      > "$candidate_metadata" 2>/dev/null || {
       rm -f "$candidate_metadata"
       resolve_failures=$((resolve_failures + 1))
       attempt=$((attempt + 1))
       continue
     }
   else
-    "$TOOL" "$OWNER" --json > "$candidate_metadata" 2>/dev/null || {
+    WINDOW_LAYER_MODE=transient "$TOOL" "$OWNER" --json --pid "$pid" \
+      > "$candidate_metadata" 2>/dev/null || {
       rm -f "$candidate_metadata"
       resolve_failures=$((resolve_failures + 1))
       attempt=$((attempt + 1))
@@ -245,12 +248,14 @@ while [ "$attempt" -lt 20 ]; do
   actual_activation=$(plutil -extract applicationActivationState raw "$candidate_metadata")
   actual_key=$(plutil -extract keyStatus raw "$candidate_metadata")
   actual_onscreen=$(plutil -extract onScreen raw "$candidate_metadata")
-  last_state="$actual_activation/$actual_key/$actual_onscreen"
+  actual_contained=$(plutil -extract fullyContainedOnScreen raw "$candidate_metadata")
+  last_state="$actual_activation/$actual_key/$actual_onscreen/$actual_contained"
   expected_key=key
   [ "$requested_activation" = inactive ] && expected_key=non-key
   [ -z "$WINDOW_NAME" ] && expected_key=not-applicable-transient
   if [ "$actual_activation" != "$requested_activation" ] \
-    || [ "$actual_key" != "$expected_key" ] || [ "$actual_onscreen" != true ]; then
+    || [ "$actual_key" != "$expected_key" ] || [ "$actual_onscreen" != true ] \
+    || [ "$actual_contained" != true ]; then
     rm -f "$candidate_metadata"
     state_failures=$((state_failures + 1))
     drive_activation
@@ -261,16 +266,21 @@ while [ "$attempt" -lt 20 ]; do
   WID=$(plutil -extract windowID raw "$candidate_metadata")
   if screencapture -x -o -l "$WID" "$candidate"; then
     if [ -n "$WINDOW_NAME" ]; then
-      "$TOOL" "$OWNER" "$WINDOW_NAME" --json > "$candidate_post_metadata" 2>/dev/null || true
+      "$TOOL" "$OWNER" "$WINDOW_NAME" --json --pid "$pid" \
+        > "$candidate_post_metadata" 2>/dev/null || true
     else
-      "$TOOL" "$OWNER" --json > "$candidate_post_metadata" 2>/dev/null || true
+      WINDOW_LAYER_MODE=transient "$TOOL" "$OWNER" --json --pid "$pid" \
+        > "$candidate_post_metadata" 2>/dev/null || true
     fi
     post_id=$(plutil -extract windowID raw "$candidate_post_metadata" 2>/dev/null || echo unavailable)
     post_activation=$(plutil -extract applicationActivationState raw "$candidate_post_metadata" 2>/dev/null || echo unavailable)
     post_key=$(plutil -extract keyStatus raw "$candidate_post_metadata" 2>/dev/null || echo unavailable)
     post_onscreen=$(plutil -extract onScreen raw "$candidate_post_metadata" 2>/dev/null || echo unavailable)
+    post_contained=$(plutil -extract fullyContainedOnScreen raw \
+      "$candidate_post_metadata" 2>/dev/null || echo unavailable)
     if [ "$post_id" != "$WID" ] || [ "$post_activation" != "$requested_activation" ] \
-      || [ "$post_key" != "$expected_key" ] || [ "$post_onscreen" != true ]; then
+      || [ "$post_key" != "$expected_key" ] || [ "$post_onscreen" != true ] \
+      || [ "$post_contained" != true ]; then
       rm -f "$candidate" "$candidate_metadata" "$candidate_post_metadata"
       postcheck_failures=$((postcheck_failures + 1))
       attempt=$((attempt + 1))

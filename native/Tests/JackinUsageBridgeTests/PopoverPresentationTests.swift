@@ -18,6 +18,17 @@ final class PopoverPresentationTests: XCTestCase {
         }
     }
 
+    private var appDelegateSource: String {
+        get throws {
+            let url = URL(fileURLWithPath: #filePath)
+                .deletingLastPathComponent()
+                .deletingLastPathComponent()
+                .deletingLastPathComponent()
+                .appendingPathComponent("Sources/JackinDesktop/DesktopAppDelegate.swift")
+            return try String(contentsOf: url, encoding: .utf8)
+        }
+    }
+
     func testPopoverContentOrderAndFooterPlacement() throws {
         let source = try popoverSource
         let identity = try XCTUnwrap(source.range(of: "providerIdentity(provider)"))
@@ -48,17 +59,36 @@ final class PopoverPresentationTests: XCTestCase {
         XCTAssertTrue(controlsSource.contains("Spacer(minLength: 12)"))
         XCTAssertTrue(controlsSource.contains("Picker("))
         XCTAssertTrue(controlsSource.contains(".labelsHidden()"))
+        XCTAssertTrue(source.contains("ScrollViewReader { proxy in"))
         XCTAssertTrue(source.contains(".defaultScrollAnchor(.top, for: .initialOffset)"))
-        XCTAssertTrue(source.contains(".scrollPosition(id: $providerScrollTarget, anchor: .top)"))
-        XCTAssertTrue(source.contains(".onAppear { resetProviderScrollPosition() }"))
+        XCTAssertTrue(source.contains(".task(id: presentationState.sequence)"))
+        XCTAssertTrue(source.contains(".task(id: provider.accountLabel)"))
         XCTAssertTrue(
-            source.contains(
-                ".onChange(of: presentationState.sequence) { resetProviderScrollPosition() }"
-            )
+            source.contains("proxy.scrollTo(Self.providerIdentityScrollAnchor, anchor: .top)")
         )
+        XCTAssertFalse(source.contains(".scrollPosition(id:"))
         XCTAssertTrue(controlsSource.contains(".help(\"Refresh\")"))
         XCTAssertTrue(controlsSource.contains(".help(\"Open Usage\")"))
         XCTAssertTrue(controlsSource.contains(".help(\"Choose account\")"))
+    }
+
+    func testPopoverResetsScrollOnlyAfterExplicitNativePresentation() throws {
+        let source = try appDelegateSource
+        let toggle = try XCTUnwrap(source.range(of: "private func togglePopover"))
+        let reset = try XCTUnwrap(
+            source.range(of: "private func resetPopoverScrollAfterPresentation")
+        )
+        let toggleBody = source[toggle.lowerBound..<reset.lowerBound]
+        let resetBody = source[reset.lowerBound...]
+
+        XCTAssertFalse(source.contains("NSPopoverDelegate"))
+        XCTAssertFalse(source.contains("popoverDidShow"))
+        XCTAssertEqual(
+            toggleBody.components(separatedBy: "resetPopoverScrollAfterPresentation()").count,
+            3
+        )
+        XCTAssertTrue(resetBody.contains("DispatchQueue.main.async"))
+        XCTAssertTrue(resetBody.contains("popoverPresentationState.beginPresentation()"))
     }
 
     @MainActor
