@@ -267,7 +267,7 @@ impl UsageMenuBarBridge {
     }
 
     /// Complete native Desktop state produced beneath one runtime mutex hold.
-    /// Any required subprojection failure fails the whole call; callers retain
+    /// Any required nested projection failure fails the whole call; callers retain
     /// their last complete value rather than replacing it with partial arrays.
     pub fn desktop_projection(
         &self,

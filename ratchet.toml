@@ -331,7 +331,7 @@ key = "clippy::suboptimal_flops@jackin-launch"
 bound = 1
 [[family.entry]]
 key = "clippy::too_many_arguments@jackin-capsule"
-bound = 6
+bound = 5
 [[family.entry]]
 key = "clippy::too_many_arguments@jackin-console"
 bound = 5

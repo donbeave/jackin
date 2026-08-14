@@ -128,6 +128,29 @@ fn forwarded_sources_include_only_provisioned_profiles_and_governed_env() {
     );
 }
 
+#[test]
+fn hermetic_layout_never_starts_host_usage_discovery() {
+    let temp = tempfile::tempdir().unwrap();
+    let paths = JackinPaths::for_tests(temp.path());
+    fs::create_dir_all(&paths.config_dir).unwrap();
+    let config = format!(
+        "version = \"{}\"\n\n[env]\nZAI_API_KEY = \"synthetic-zai-key\"\n",
+        jackin_config::CURRENT_CONFIG_VERSION,
+    );
+    fs::write(&paths.config_file, &config).unwrap();
+    let forwarded_sources = ForwardedUsageSources {
+        profile_surface_ids: BTreeSet::new(),
+        env_keys: BTreeSet::from(["ZAI_API_KEY".to_owned()]),
+    };
+
+    let (_, capabilities) =
+        prepare_broker_client(&paths, Some("fixture"), "reviewer", &forwarded_sources);
+
+    assert!(capabilities.is_empty());
+    assert!(!paths.data_dir.exists());
+    assert_eq!(fs::read_to_string(&paths.config_file).unwrap(), config);
+}
+
 struct CountingExecutor {
     calls: AtomicUsize,
 }

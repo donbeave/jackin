@@ -378,13 +378,16 @@ fn prepare_broker_client(
     role_key: &str,
     forwarded_sources: &ForwardedUsageSources,
 ) -> (UsageBrokerClient, Vec<UsageAccountCapability>) {
+    let broker_config = UsageBrokerConfig::for_data_dir(paths.data_dir.clone());
+    let fallback = broker_config.client();
+    if paths.test_layout {
+        return (fallback, Vec::new());
+    }
     let resolver = Arc::new(CachedProviderCredentialResolver::new(RuntimeSecretSource));
     let scope = jackin_usage::host::UsageDiscoveryScope::HostDesktop {
         config_root: paths.config_dir.clone(),
         operator_home: paths.home_dir.clone(),
     };
-    let broker_config = UsageBrokerConfig::for_data_dir(paths.data_dir.clone());
-    let fallback = broker_config.client();
     let Ok(catalog) = discover_usage_sources(&scope, resolver.as_ref()) else {
         return (fallback, Vec::new());
     };
