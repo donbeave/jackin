@@ -169,9 +169,18 @@ public struct PopoverRoot: View {
                 if !metadataRows.isEmpty {
                     Section {
                         ForEach(metadataRows) { row in
-                            LabeledContent(row.label, value: row.displayLabel)
-                                .accessibilityLabel("\(row.label), \(row.displayLabel)")
-                                .accessibilityIdentifier("popover.detail.\(row.rowId)")
+                            LabeledContent {
+                                Text(row.displayLabel)
+                                    .foregroundStyle(.primary)
+                            } label: {
+                                Text(row.label)
+                                    .foregroundStyle(.primary)
+                                    .accessibilityIdentifier(
+                                        "popover.detail-label.\(row.rowId)"
+                                    )
+                            }
+                            .accessibilityLabel("\(row.label), \(row.displayLabel)")
+                            .accessibilityIdentifier("popover.detail.\(row.rowId)")
                         }
                     } header: {
                         sectionHeader("Details")

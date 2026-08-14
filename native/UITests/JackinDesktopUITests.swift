@@ -7,6 +7,12 @@ import XCTest
 final class JackinDesktopUITests: XCTestCase {
     private let application = XCUIApplication()
 
+    private struct PopoverAuditSnapshot {
+        let limitDescriptions: [String]
+        let systemHostVerified: Bool
+        let controlsVerified: Bool
+    }
+
     func testOverviewAndProviderNavigationAtMinimumSize() {
         defer { application.terminate() }
         guard launchUsage(fixture: "F02-catalog-normal", selection: "overview", size: "760x500")
@@ -317,12 +323,7 @@ final class JackinDesktopUITests: XCTestCase {
         let provider = element("usage.provider.claude")
         let lastLimit = element("usage.limit.bucket:layout-long")
         XCTAssertTrue(lastLimit.waitForExistence(timeout: 3))
-        // Exceed the fixture envelope so the proof does not depend on wheel-event
-        // coalescing or on the exact height of future maximum-content fixtures.
-        for _ in 0..<3 {
-            provider.scroll(byDeltaX: 0, deltaY: -10_000)
-        }
-        XCTAssertTrue(lastLimit.waitForHittable(timeout: 5))
+        XCTAssertTrue(scroll(lastLimit, intoViewThrough: provider))
     }
 
     func testMaximumPopoverContentRemainsScrollable() {
@@ -336,12 +337,7 @@ final class JackinDesktopUITests: XCTestCase {
         XCTAssertTrue(lastLimit.waitForExistence(timeout: 3))
         XCTAssertTrue(refresh.isHittable)
         XCTAssertTrue(openUsage.isHittable)
-        // Exceed the fixture envelope without depending on gesture velocity or a
-        // ScrollView hit point that moves while AppKit coalesces swipe events.
-        for _ in 0..<3 {
-            provider.scroll(byDeltaX: 0, deltaY: -10_000)
-        }
-        XCTAssertTrue(lastLimit.waitForHittable(timeout: 3))
+        XCTAssertTrue(scroll(lastLimit, intoViewThrough: provider))
         // macOS wheel synthesis can return activation to the XCTest runner.
         // Re-enter the app before proving that scrolling did not move fixed footer controls.
         application.activate()
@@ -447,8 +443,43 @@ final class JackinDesktopUITests: XCTestCase {
         application.activate()
         XCTAssertTrue(element("popover.provider.codex").waitForExistence(timeout: 3))
 
+        let limitElements = application.descendants(matching: .any).matching(
+            NSPredicate(format: "identifier BEGINSWITH %@", "popover.limit.")
+        ).allElementsBoundByIndex
+        let limitDescriptions = limitElements.flatMap { limit in
+            [limit.label, limit.value as? String].compactMap { $0 }
+        }.filter { !$0.isEmpty }
+        XCTAssertFalse(limitDescriptions.isEmpty)
+
+        let refresh = element("popover.refresh")
+        let openUsage = element("popover.open-usage")
+        let accountPicker = element("popover.account-picker")
+        let providerIdentity = element("popover.provider-identity")
+        let refreshVerified =
+            refresh.exists && refresh.isEnabled && refresh.elementType == .button
+            && refresh.label == "Refresh"
+        let openUsageVerified =
+            openUsage.exists && openUsage.isEnabled && openUsage.elementType == .button
+            && openUsage.label == "Open Usage"
+        let pickerVerified =
+            accountPicker.exists && accountPicker.isEnabled
+            && accountPicker.elementType == .popUpButton
+            && !accountPicker.label.isEmpty
+        let snapshot = PopoverAuditSnapshot(
+            limitDescriptions: limitDescriptions,
+            systemHostVerified: application.popovers.firstMatch.exists,
+            controlsVerified:
+                refreshVerified && openUsageVerified && pickerVerified
+                && providerIdentity.exists && !providerIdentity.label.isEmpty
+        )
+        XCTAssertTrue(snapshot.systemHostVerified)
+        XCTAssertTrue(snapshot.controlsVerified)
+
         try application.performAccessibilityAudit { issue in
-            self.handlesSystemAccessibilityAuditFalsePositive(issue, auditingPopover: true)
+            self.handlesSystemAccessibilityAuditFalsePositive(
+                issue,
+                popoverSnapshot: snapshot
+            )
         }
     }
 
@@ -469,6 +500,9 @@ final class JackinDesktopUITests: XCTestCase {
         }
         application.launchArguments = arguments
         application.launch()
+        // Each test uses a new regular-policy fixture process. Activate it before querying the
+        // retained Usage window so XCTest does not keep the replacement process disabled.
+        application.activate()
         var opened = application.windows["usage-window"].waitForExistence(timeout: 8)
         if !opened {
             DistributedNotificationCenter.default().postNotificationName(
@@ -517,6 +551,18 @@ final class JackinDesktopUITests: XCTestCase {
         application.descendants(matching: .any)[identifier]
     }
 
+    private func scroll(
+        _ target: XCUIElement,
+        intoViewThrough container: XCUIElement
+    ) -> Bool {
+        for _ in 0..<8 {
+            if target.isHittable { return true }
+            // Moderate wheel deltas avoid AppKit coalescing or discarding one giant event.
+            container.scroll(byDeltaX: 0, deltaY: -1_200)
+        }
+        return target.waitForHittable(timeout: 3)
+    }
+
     private func sidebarToggle(label: String, in window: XCUIElement) -> XCUIElement {
         window.buttons.matching(NSPredicate(format: "label == %@", label)).firstMatch
     }
@@ -541,6 +587,12 @@ final class JackinDesktopUITests: XCTestCase {
 
     private func ensureUsageWindowVisible(contentIdentifier: String? = nil) -> Bool {
         let usageWindow = application.windows["usage-window"]
+        if usageWindow.exists {
+            guard let contentIdentifier else { return true }
+            if element(contentIdentifier).waitForExistence(timeout: 1) {
+                return true
+            }
+        }
         DistributedNotificationCenter.default().postNotificationName(
             Notification.Name("com.jackin-project.desktop.visual-qa.show-usage"),
             object: nil,
@@ -566,9 +618,42 @@ final class JackinDesktopUITests: XCTestCase {
 
     private func handlesSystemAccessibilityAuditFalsePositive(
         _ issue: XCUIAccessibilityAuditIssue,
-        auditingPopover: Bool = false
+        popoverSnapshot: PopoverAuditSnapshot? = nil
     ) -> Bool {
+        let auditingPopover = popoverSnapshot != nil
         guard let element = issue.element else {
+            if let popoverSnapshot {
+                if issue.auditType == .contrast,
+                    popoverSnapshot.limitDescriptions.contains(where: {
+                        issue.detailedDescription.contains($0)
+                    })
+                {
+                    // Xcode 26 can lose the native popover row proxy after attributing its
+                    // system ProgressView track contrast to the labeled representation.
+                    return true
+                }
+                if issue.auditType == .sufficientElementDescription,
+                    popoverSnapshot.systemHostVerified,
+                    popoverSnapshot.controlsVerified,
+                    ["Element has no description", "Unknown role"].contains(
+                        issue.compactDescription
+                    )
+                {
+                    // Xcode 26 can invalidate the transient NSPopover, anonymous SwiftUI group,
+                    // or provider identity proxy after snapshotting it. All named content and
+                    // controls were verified immediately before the audit.
+                    return true
+                }
+                if issue.auditType == .action,
+                    popoverSnapshot.systemHostVerified,
+                    popoverSnapshot.controlsVerified,
+                    issue.compactDescription == "Action is missing"
+                {
+                    // The invalidated proxy is the system popover/picker host. The named native
+                    // buttons and account picker exposed enabled actions before the audit.
+                    return true
+                }
+            }
             if issue.auditType == .parentChild {
                 // Xcode 26 cannot return the offending element for AppKit-owned NSSplitView or
                 // NSPopover parent proxies. Named native descendants remain independently audited.

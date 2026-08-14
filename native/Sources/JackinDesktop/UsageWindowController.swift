@@ -72,6 +72,7 @@ public final class UsageWindowController: NSObject, NSWindowDelegate {
             centerFixtureWindowOnPrimaryScreen(window)
         }
         if elevatesFixtureWindow {
+            window.makeKeyAndOrderFront(nil)
             window.orderFrontRegardless()
             renewFixtureVisibilityLease(for: window)
         } else {

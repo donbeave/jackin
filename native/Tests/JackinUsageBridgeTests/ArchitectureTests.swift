@@ -258,6 +258,7 @@ final class ArchitectureTests: XCTestCase {
         XCTAssertTrue(text.contains(".fullScreenAuxiliary"))
         XCTAssertTrue(text.contains("if elevatesFixtureWindow"))
         XCTAssertTrue(text.contains("window.level = .floating"))
+        XCTAssertTrue(text.contains("window.makeKeyAndOrderFront(nil)"))
         XCTAssertTrue(text.contains("window.orderFrontRegardless()"))
         XCTAssertTrue(text.contains("window.collectionBehavior.insert(.moveToActiveSpace)"))
 
