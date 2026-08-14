@@ -462,6 +462,9 @@ final class JackinDesktopUITests: XCTestCase {
         }
         XCTAssertTrue(opened, application.debugDescription)
         guard opened else { return false }
+        // The UI-test runner can retain activation between per-test launches even after the real
+        // NSPopover appears, causing the first synthesized click to target stale focus.
+        application.activate()
         return true
     }
 
