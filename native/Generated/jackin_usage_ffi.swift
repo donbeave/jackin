@@ -626,7 +626,7 @@ public protocol UsageMenuBarBridgeProtocol: AnyObject, Sendable {
 
     /**
      * Complete native Desktop state produced beneath one runtime mutex hold.
-     * Any required subprojection failure fails the whole call; callers retain
+     * Any required nested projection failure fails the whole call; callers retain
      * their last complete value rather than replacing it with partial arrays.
      */
     func desktopProjection(statusBarMax: UInt32) throws  -> DesktopProjectionDto
@@ -873,7 +873,7 @@ open func desktopInventory()throws  -> DesktopInventoryDto  {
 
     /**
      * Complete native Desktop state produced beneath one runtime mutex hold.
-     * Any required subprojection failure fails the whole call; callers retain
+     * Any required nested projection failure fails the whole call; callers retain
      * their last complete value rather than replacing it with partial arrays.
      */
 open func desktopProjection(statusBarMax: UInt32)throws  -> DesktopProjectionDto  {
@@ -3552,7 +3552,7 @@ private let initializationResult: InitializationResult = {
     if (uniffi_jackin_usage_ffi_checksum_method_usagemenubarbridge_desktop_inventory() != 41481) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_jackin_usage_ffi_checksum_method_usagemenubarbridge_desktop_projection() != 45525) {
+    if (uniffi_jackin_usage_ffi_checksum_method_usagemenubarbridge_desktop_projection() != 57358) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_jackin_usage_ffi_checksum_method_usagemenubarbridge_discovery_diagnostics() != 20128) {

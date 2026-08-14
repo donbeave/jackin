@@ -38,7 +38,7 @@ Liquid Glass is owned by the system hosts and standard functional chrome: `NSPop
 - a centered, noninteractive generated jackin❯ monogram plus `jackin❯ desktop` identity row;
 - provider identity, selected account, and one Rust-owned activity phrase;
 - a native account menu when multiple identities are known;
-- Limits before useful, nonduplicated Details;
+- Limits before useful Details without repetition;
 - visible Retry actions for global/provider failures;
 - visible Refresh (Command-R) and Open Usage actions.
 

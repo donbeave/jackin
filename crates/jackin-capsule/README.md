@@ -35,6 +35,7 @@ Not responsible for: protocol encoding (`jackin-protocol`), host-side launch orc
 | [`tui.rs`](src/tui.rs) · [`tui/`](src/tui) | composition, chrome/input, ANSI rules, and daemon-facing compositor/input/layout adapters over TermRock and shared operator-info UI | nested; daemon-adapter integration lives in [`daemon/tests.rs`](src/daemon/tests.rs) |
 | [`clipboard.rs`](src/clipboard.rs) · [`clipboard/`](src/clipboard) | clipboard image staging + idle expiry | [`tests.rs`](src/clipboard/tests.rs) |
 | [`runtime_setup.rs`](src/runtime_setup.rs) · [`runtime_setup/`](src/runtime_setup) | in-container git/auth/MCP setup | [`tests.rs`](src/runtime_setup/tests.rs) |
+| [`usage_relay_proxy.rs`](src/usage_relay_proxy.rs) · [`usage_relay_proxy/`](src/usage_relay_proxy) | container-local scoped usage socket and host stdio tunnel | [`tests.rs`](src/usage_relay_proxy/tests.rs) |
 | [`config.rs`](src/config.rs) | `CapsuleConfig` load/validate | — |
 | [`container_context.rs`](src/container_context.rs) | container identity metadata and co-located tests | — |
 | [`agent_status.rs`](src/agent_status.rs) · [`agent_status/`](src/agent_status) | capsule-facing status hooks | nested |
