@@ -40,6 +40,7 @@ public struct UsageWindowSidebar: View {
                     ForEach(model.sidebar) { provider in
                         Label {
                             Text(provider.displayLabel)
+                                .foregroundStyle(.primary)
                         } icon: {
                             providerMark(provider)
                         }
@@ -88,6 +89,7 @@ public struct UsageWindowSidebar: View {
             mark
                 .resizable()
                 .scaledToFit()
+                .foregroundStyle(.primary)
         } else {
             Text(provider.fallbackGlyph)
                 .font(.caption2)
@@ -179,6 +181,12 @@ struct UsageWindowDetailAccessory: View {
                 .accessibilityIdentifier("usage.brand-title")
 
             HStack {
+                if store.usesFixture {
+                    Text("Fixture")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.primary)
+                        .accessibilityIdentifier("usage.fixture-badge")
+                }
                 Spacer()
                 refreshButton
             }

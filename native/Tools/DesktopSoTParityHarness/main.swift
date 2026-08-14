@@ -35,10 +35,16 @@ struct DesktopSoTParityHarness {
             group(surface: "codex", label: "OpenAI", accounts: [codexA, codexB]),
         ]
         let tree = OverviewInventory.tree(groups: groups)
-        check("provider order remains Rust order", tree.map(\.providerLabel) == ["Anthropic", "OpenAI"])
-        check("OpenAI appears once as parent", tree.filter { $0.providerLabel == "OpenAI" }.count == 1)
+        check(
+            "provider order remains Rust order",
+            tree.map(\.providerLabel) == ["Anthropic", "OpenAI"])
+        check(
+            "OpenAI appears once as parent", tree.filter { $0.providerLabel == "OpenAI" }.count == 1
+        )
         check("OpenAI has two account children", tree[1].children?.count == 2)
-        check("child provider cell is Rust placeholder", tree[1].children?.first?.providerLabel == "—")
+        check(
+            "child provider cell is Rust placeholder", tree[1].children?.first?.providerLabel == "—"
+        )
         check("child remaining is verbatim", tree[1].children?.last?.remainingLabel == "0%")
         check(
             "child accessibility keeps provider context",

@@ -43,7 +43,6 @@ public struct OverviewListView: View {
                 TableColumn("Provider") { row in
                     Text(row.providerLabel)
                         .lineLimit(2)
-                        .accessibilityElement(children: .ignore)
                         .accessibilityLabel(row.accessibilityLabel)
                         .accessibilityIdentifier(rowAccessibilityIdentifier(row))
                 }
@@ -61,6 +60,7 @@ public struct OverviewListView: View {
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                                 .lineLimit(2)
+                                .accessibilityIdentifier("usage.overview.error.\(row.surfaceId)")
                             Button("Retry") { onRetry(row.surfaceId) }
                                 .controlSize(.small)
                                 .buttonStyle(.bordered)
@@ -104,7 +104,6 @@ public struct OverviewListView: View {
             .onChange(of: selectedRowID) { _, selectedID in
                 guard let selectedID, let row = findRow(id: selectedID) else { return }
                 onSelect(row.surfaceId, row.accountKey)
-                selectedRowID = nil
             }
         }
     }

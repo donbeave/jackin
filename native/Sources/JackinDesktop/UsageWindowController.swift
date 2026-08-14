@@ -23,6 +23,9 @@ public final class UsageWindowController: NSObject, NSWindowDelegate {
     private var splitController: UsageWindowSplitController?
     private var toolbarController: UsageWindowToolbar?
     private var sidebarKeyMonitor: Any?
+    private var fixtureVisibilityTask: Task<Void, Never>?
+    private var visibilityDesired = false
+    private var retainedFrame: NSRect?
 
     public init(
         store: PresentationStore,
@@ -56,15 +59,51 @@ public final class UsageWindowController: NSObject, NSWindowDelegate {
     }
 
     private func present(size: CGSize?) {
+        let isNewWindow = window == nil
         let window = window ?? makeWindow()
         self.window = window
+        visibilityDesired = true
         if let size {
             window.setContentSize(size)
+        } else if let retainedFrame {
+            window.setFrame(retainedFrame, display: false)
         }
-        AppActivation.present(window)
+        if isNewWindow, elevatesFixtureWindow {
+            centerFixtureWindowOnPrimaryScreen(window)
+        }
         if elevatesFixtureWindow {
             window.orderFrontRegardless()
+            renewFixtureVisibilityLease(for: window)
+        } else {
+            AppActivation.present(window)
         }
+    }
+
+    private func renewFixtureVisibilityLease(for window: NSWindow) {
+        fixtureVisibilityTask?.cancel()
+        fixtureVisibilityTask = Task { @MainActor [weak self, weak window] in
+            for _ in 0..<120 {
+                guard !Task.isCancelled, self?.visibilityDesired == true, let window else { return }
+                NSApp.unhideWithoutActivation()
+                window.orderFrontRegardless()
+                try? await Task.sleep(for: .milliseconds(250))
+            }
+        }
+    }
+
+    private func centerFixtureWindowOnPrimaryScreen(_ window: NSWindow) {
+        guard
+            let screen = NSScreen.screens.first(where: {
+                abs($0.frame.origin.x) < 0.5 && abs($0.frame.origin.y) < 0.5
+            }) ?? NSScreen.main ?? NSScreen.screens.first
+        else { return }
+        let visible = screen.visibleFrame
+        window.setFrameOrigin(
+            NSPoint(
+                x: visible.midX - window.frame.width / 2,
+                y: visible.midY - window.frame.height / 2
+            )
+        )
     }
 
     private func makeWindow() -> NSWindow {
@@ -76,14 +115,15 @@ public final class UsageWindowController: NSObject, NSWindowDelegate {
         )
         window.title = "jackin❯ desktop"
         window.isReleasedWhenClosed = false
+        window.hidesOnDeactivate = false
         window.delegate = self
         if store.usesFixture {
             // Deterministic UI/visual QA must stay observable when WindowServer assigns rapid
             // fixture launches and the test runner to different or full-screen Spaces.
+            window.canHide = false
             window.collectionBehavior.formUnion([
                 .canJoinAllSpaces,
                 .canJoinAllApplications,
-                .fullScreenAuxiliary,
             ])
             if elevatesFixtureWindow {
                 window.level = .floating
@@ -128,6 +168,11 @@ public final class UsageWindowController: NSObject, NSWindowDelegate {
     }
 
     public func windowWillClose(_ notification: Notification) {
+        visibilityDesired = false
+        fixtureVisibilityTask?.cancel()
+        if let window = notification.object as? NSWindow {
+            retainedFrame = window.frame
+        }
         // Window is still visible during willClose; resign on next run-loop turn.
         DispatchQueue.main.async {
             AppActivation.resignToAccessoryIfNeeded()
@@ -135,6 +180,9 @@ public final class UsageWindowController: NSObject, NSWindowDelegate {
     }
 
     public func invalidate() {
+        visibilityDesired = false
+        fixtureVisibilityTask?.cancel()
+        fixtureVisibilityTask = nil
         if let sidebarKeyMonitor {
             NSEvent.removeMonitor(sidebarKeyMonitor)
             self.sidebarKeyMonitor = nil
@@ -150,4 +198,8 @@ public final class UsageWindowController: NSObject, NSWindowDelegate {
 
     /// Visual QA: the live `NSWindow` after `show` (nil if never shown).
     public var qiWindow: NSWindow? { window }
+    public var qiVisibilityDesired: Bool { visibilityDesired }
+    public func qiToggleSidebar() {
+        splitController?.toggleSidebar(window)
+    }
 }

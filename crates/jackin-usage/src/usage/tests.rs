@@ -4268,7 +4268,7 @@ fn quota_pace_label_runout_depleted_bucket() {
     // used=100, elapsed=500, run-out=0 < 500 -> trivially precedes reset.
     assert_eq!(
         quota_pace_label(Some(0), Some(500), Some(1_000), 0).expect("pace"),
-        "50% in deficit · Runs out in 0m"
+        "50% in deficit · Runs out in <1m"
     );
 }
 

@@ -9,7 +9,7 @@ description: "jackin❯ desktop reuses Rust usage projections through UniFFI and
 
 jackin❯ desktop is a host process that displays account quota limits without a running Capsule. Rust owns account discovery, config/auth resolution, canonical account identity, deduplication, scheduling, shared cache, single-flight coordination, account selection, quota semantics, severity, provider ordering, and every displayed domain string. Swift owns AppKit/SwiftUI presentation, accessibility, lifecycle, settings, signing, and other macOS integration.
 
-The boundary is a synchronous coarse-grained UniFFI facade compiled as a static library and assembled into an arm64 XCFramework. Swift polls immutable DTO snapshots through an off-main-actor scheduler; it never implements HTTP/RPC/OAuth/CLI probes or a second provider matrix.
+The boundary is a synchronous coarse-grained UniFFI facade compiled as a static library and assembled into an arm64 XCFramework. One `desktopProjection` call returns a complete immutable broker generation under one Rust runtime lock: grouped providers/accounts, selected identities, status-item rows, details/limits, activity, and sanitized diagnostics. Swift obtains it through an off-main-actor scheduler; it never implements HTTP/RPC/OAuth/CLI probes or a second provider matrix.
 
 ## Product and platform bounds
 
@@ -40,7 +40,7 @@ jackin❯ phosphor is an adaptive identity/healthy-state token. Warning and dang
 
 ## Interaction architecture
 
-`StatusBarController` reconciles native status items from the Rust projection. A primary click opens one real transient `NSPopover` focused on that provider. The popover has no cross-provider navigation. It starts with centered, non-interactive jackin❯ identity, then shows provider identity, native account selection, Rust-owned detail/limit rows, visible recovery, Refresh, and Open Usage. A secondary click opens the fixed AppKit menu: Open Usage Window, Refresh, Quit jackin❯ desktop.
+`StatusBarController` reconciles native status items from the Rust projection. A primary click opens one real transient `NSPopover` focused on that provider. The popover has no cross-provider navigation. It starts with centered, non-interactive jackin❯ identity, then provider plus selected account and one Rust-owned activity phrase, native account selection, Limits, useful nonduplicated Details, visible recovery, Refresh, and Open Usage. A secondary click opens the fixed AppKit menu: Open Usage Window, Refresh, Quit jackin❯ desktop.
 
 Cross-provider navigation belongs in the Usage window. `UsageWindowController` lazily creates and retains one `NSWindow`. A native `NSSplitViewController` owns the full-height sidebar and detail while SwiftUI renders their content. The standard `.toggleSidebar` toolbar item routes through `NSSplitViewController.toggleSidebar(_:)`; its native initial width is retained while its accessibility label changes with the real collapsed state. This is the only visibility authority for the visible control, View menu, and Control-Command-S. An `NSSplitViewItemAccessoryViewController` centers non-interactive `jackin❯ desktop` identity over the detail pane and keeps Refresh trailing without a root header or app-painted material. No redundant `Usage` title appears.
 
@@ -53,6 +53,11 @@ Window entry is intentional:
 
 `PresentationStore` owns selection validity. Provider removal/disablement normalizes Usage to Overview and moves stale popover focus to the first valid provider. Views do not conceal invalid owner state with local fallback.
 
+Overview is a hierarchical native `Table`: provider parents contain exact account
+children across Provider, Account, Plan or status, Remaining, and Reset columns.
+Provider detail keeps the deeper order: identity, optional account picker, Details,
+then Limits. Popover Open Usage carries the exact provider and account key.
+
 Standard commands use the native app menu and responder chain: Command-R, Command-comma, Command-W, Control-Command-S, and Escape.
 
 ## Rust presentation ownership
@@ -61,7 +66,7 @@ Rust builds the ordered `UsageDetailPresentation` consumed by Capsule and jackin
 
 The same rule applies to status items, focused popover, Overview inventory, and account menus: provider membership, order, labels, reset text, status, and quota values originate in Rust. Screen-sharing privacy may hide a projected status-item value but cannot replace it with new semantics.
 
-Loading, empty, refreshing, fresh, stale-last-good, depleted-with-reset, needs-login, unsupported, provider failure, and global bridge failure remain separate states. Refresh failures preserve last-good data. Global and provider failures expose native Retry actions.
+Loading, empty, refreshing, fresh, stale-last-good, depleted-with-reset, needs-login, unsupported, provider failure, and global bridge failure remain separate states. One Rust identity activity reads `Updating…` only during an active generation and becomes one terminal recency/exception phrase afterward. Complete projection decode is the only replacement boundary; transient failure preserves exact last-good data and selection, while generation guards reject stale resumes. Global and provider failures expose native Retry actions.
 
 ## Credential and snapshot ownership
 
@@ -75,7 +80,7 @@ Claude Keychain reads use the shared `claude_keychain_scope` helper. Explicit de
 
 ## Verification boundaries
 
-Synthetic F00–F14 visual-QA fixtures activate only through explicit launch arguments and never call the bridge, network, or real credentials. They drive the same production AppKit/SwiftUI hosts as live data.
+Synthetic F00–F14 visual-QA fixtures activate only through explicit `--fixture` argv, show a persistent Fixture badge, and never call the bridge, network, or real credentials. Frozen projection variants drive account selection and `Updating…` transitions through the same production AppKit/SwiftUI hosts as live data. Environment variables cannot activate fixtures. Debug-target extraction remains deferred maintenance.
 
 Architecture tests enforce no custom glass/material, no Swift-composed domain strings, no hard-coded provider display names outside fixtures, and no probe imports. Real-host UI tests verify native commands, focused-popover routing, full-height sidebar geometry, a stationary dynamically labeled toggle, detail-centered identity, focus/retained-window continuity, minimum-size scrolling, visible recovery, and accessibility audits for popover, Overview, and provider detail.
 

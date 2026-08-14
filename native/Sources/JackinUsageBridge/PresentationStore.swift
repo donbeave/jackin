@@ -314,6 +314,29 @@ public final class PresentationStore: ObservableObject {
         }
     }
 
+    /// Complete frozen state used only by explicit `--fixture` QA launches.
+    public struct QIFixtureProjection: Sendable, Equatable {
+        public let glanceRows: [GlanceProviderRow]
+        public let statusBarGlanceRows: [GlanceProviderRow]
+        public let surfaces: [SurfaceRow]
+        public let accounts: [AccountRow]
+        public let providerGroups: [ProviderGroupRow]
+
+        public init(
+            glanceRows: [GlanceProviderRow],
+            statusBarGlanceRows: [GlanceProviderRow],
+            surfaces: [SurfaceRow],
+            accounts: [AccountRow],
+            providerGroups: [ProviderGroupRow]
+        ) {
+            self.glanceRows = glanceRows
+            self.statusBarGlanceRows = statusBarGlanceRows
+            self.surfaces = surfaces
+            self.accounts = accounts
+            self.providerGroups = providerGroups
+        }
+    }
+
     /// Footer / window next-refresh string from Rust.
     @Published public private(set) var nextRefreshLabel: String = ""
     @Published public private(set) var surfaces: [SurfaceRow] = []
@@ -436,6 +459,10 @@ public final class PresentationStore: ObservableObject {
     private var pollTask: Task<Void, Never>?
     private var screenShareActive: Bool = false
     private var fixtureMode = false
+    private var fixtureTerminalProjection: QIFixtureProjection?
+    private var fixtureRefreshingProjection: QIFixtureProjection?
+    private var fixtureAccountProjections: [String: QIFixtureProjection] = [:]
+    private var fixtureRefreshTask: Task<Void, Never>?
     private var launchConfiguration: LaunchConfiguration = .production
 
     public var usesFixture: Bool { fixtureMode }
@@ -618,6 +645,8 @@ public final class PresentationStore: ObservableObject {
     public func shutdown() {
         pollTask?.cancel()
         pollTask = nil
+        fixtureRefreshTask?.cancel()
+        fixtureRefreshTask = nil
         // Non-blocking: shutdown runs on the serial queue behind any in-flight
         // bridge op; the main actor never waits on the Rust mutex.
         scheduler.invalidateAndShutdown()
@@ -643,32 +672,18 @@ public final class PresentationStore: ObservableObject {
     /// Select multi-account identity for a surface (Rust-persisted).
     public func setSelectedAccount(surfaceId: String, accountKey: String) {
         if fixtureMode {
-            accounts = accounts.map { account in
-                guard account.surfaceId == surfaceId else { return account }
-                return AccountRow(
-                    surfaceId: account.surfaceId,
-                    providerColumnLabel: account.providerColumnLabel,
-                    accountKey: account.accountKey,
-                    accountLabel: account.accountLabel,
-                    planLabel: account.planLabel,
-                    selected: account.accountKey == accountKey,
-                    lifecycle: account.lifecycle,
-                    lifecycleLabel: account.lifecycleLabel,
-                    provenanceLabel: account.provenanceLabel,
-                    planOrStatusLabel: account.planOrStatusLabel,
-                    remainingPercent: account.remainingPercent,
-                    remainingLabel: account.remainingLabel,
-                    headline: account.headline,
-                    resetDisplayLabel: account.resetDisplayLabel,
-                    statusWord: account.statusWord,
-                    statusLabel: account.statusLabel,
-                    severity: account.severity,
-                    updatedLabel: account.updatedLabel,
-                    lastError: account.lastError,
-                    dimmed: account.dimmed,
-                    accessibilityLabel: account.accessibilityLabel
-                )
+            guard
+                let projection = fixtureAccountProjections[
+                    fixtureKey(
+                        surfaceId: surfaceId,
+                        accountKey: accountKey
+                    )]
+            else {
+                return
             }
+            applyFixtureProjection(projection)
+            fixtureTerminalProjection = projection
+            usageAccountSelection = accountKey
             return
         }
         Task { [weak self] in
@@ -700,6 +715,8 @@ public final class PresentationStore: ObservableObject {
         surfaces: [SurfaceRow],
         accounts: [AccountRow],
         providerGroups: [ProviderGroupRow],
+        refreshingProjection: QIFixtureProjection? = nil,
+        accountProjections: [String: QIFixtureProjection] = [:],
         popoverSelection: String?,
         usageSelection: String?,
         nextRefreshLabel: String = "next update 4m",
@@ -708,21 +725,27 @@ public final class PresentationStore: ObservableObject {
         lastError: String? = nil
     ) {
         fixtureMode = true
-        self.providerGlanceRows = glanceRows
-        projectedStatusBarRows =
-            statusBarGlanceRows
-            ?? selectStatusBarGlanceRows(from: glanceRows, maxCount: min(3, stripMax))
-        self.surfaces = surfaces
-        self.accounts = accounts
-        self.providerGroups = providerGroups
+        let projection = QIFixtureProjection(
+            glanceRows: glanceRows,
+            statusBarGlanceRows: statusBarGlanceRows
+                ?? selectStatusBarGlanceRows(from: glanceRows, maxCount: min(3, stripMax)),
+            surfaces: surfaces,
+            accounts: accounts,
+            providerGroups: providerGroups
+        )
+        fixtureTerminalProjection = projection
+        fixtureRefreshingProjection = refreshingProjection
+        fixtureAccountProjections = accountProjections
+        applyFixtureProjection(projection)
         let providerIDs = Set(providerGroups.map(\.surfaceId))
         knownOverviewProviderIDs = providerIDs
         overviewExpandedProviderIDs = providerIDs
         self.popoverSelection = popoverSelection
         self.usageSelection = usageSelection
-        usageAccountSelection = accounts.first(where: {
-            $0.surfaceId == usageSelection && $0.selected
-        })?.accountKey
+        usageAccountSelection =
+            accounts.first(where: {
+                $0.surfaceId == usageSelection && $0.selected
+            })?.accountKey
         self.nextRefreshLabel = nextRefreshLabel
         self.refreshInProgress = isRefreshing
         self.isOpen = true
@@ -750,7 +773,10 @@ public final class PresentationStore: ObservableObject {
 
     /// Manual Refresh button — bypasses floor.
     public func refreshAll() {
-        guard !fixtureMode else { return }
+        if fixtureMode {
+            runFixtureRefresh()
+            return
+        }
         Task { [weak self] in await self?.refreshAll(force: true) }
     }
 
@@ -777,7 +803,10 @@ public final class PresentationStore: ObservableObject {
     }
 
     public func refresh(surfaceId: String) {
-        guard !fixtureMode else { return }
+        if fixtureMode {
+            runFixtureRefresh()
+            return
+        }
         Task { [weak self] in
             guard let self else { return }
             await self.performRefresh(surfaceId: surfaceId, force: true)
@@ -858,9 +887,7 @@ public final class PresentationStore: ObservableObject {
                 try handle.desktopProjection(statusBarMax: barMax)
             }
         } catch {
-            if request >= lastAppliedRequest {
-                report(error, userMessage: "Usage could not be updated. Try again.")
-            }
+            retainLastGoodAfterProjectionFailure(error, request: request)
             return
         }
         guard request >= lastAppliedRequest,
@@ -928,6 +955,44 @@ public final class PresentationStore: ObservableObject {
         refreshVisibleStatusRows()
         reconcileSelections()
         lastError = projection.errorMessage
+    }
+
+    private func retainLastGoodAfterProjectionFailure(_ error: Error, request: UInt64) {
+        guard request >= lastAppliedRequest else { return }
+        report(error, userMessage: "Usage could not be updated. Try again.")
+    }
+
+    /// Test seam for the same transient-failure path used by `applySnapshots`.
+    func applyProjectionFailureForTesting(_ error: Error, request: UInt64 = .max) {
+        retainLastGoodAfterProjectionFailure(error, request: request)
+    }
+
+    private func fixtureKey(surfaceId: String, accountKey: String) -> String {
+        "\(surfaceId)#\(accountKey)"
+    }
+
+    private func applyFixtureProjection(_ projection: QIFixtureProjection) {
+        providerGlanceRows = projection.glanceRows
+        projectedStatusBarRows = projection.statusBarGlanceRows
+        surfaces = projection.surfaces
+        accounts = projection.accounts
+        providerGroups = projection.providerGroups
+        refreshVisibleStatusRows()
+    }
+
+    private func runFixtureRefresh() {
+        guard let refreshing = fixtureRefreshingProjection,
+            let terminal = fixtureTerminalProjection
+        else { return }
+        fixtureRefreshTask?.cancel()
+        applyFixtureProjection(refreshing)
+        refreshInProgress = true
+        fixtureRefreshTask = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(2))
+            guard !Task.isCancelled, let self else { return }
+            self.applyFixtureProjection(terminal)
+            self.refreshInProgress = false
+        }
     }
 
     private static func emptySurface(
@@ -1081,9 +1146,10 @@ public final class PresentationStore: ObservableObject {
                 $0.surfaceId == usageSelection && $0.accountKey == usageAccountSelection
             })
         {
-            self.usageAccountSelection = accounts.first(where: {
-                $0.surfaceId == usageSelection && $0.selected
-            })?.accountKey
+            self.usageAccountSelection =
+                accounts.first(where: {
+                    $0.surfaceId == usageSelection && $0.selected
+                })?.accountKey
         }
         if let popoverSelection,
             !providerGlanceRows.contains(where: { $0.surfaceId == popoverSelection })

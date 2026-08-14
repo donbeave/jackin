@@ -44,7 +44,9 @@ struct StatusItemChipHarness {
         check("compact reset is a dedicated field", row.compactResetLabel == "3d")
         check("no reset parsing required", row.resetLabel?.contains("Aug 17") == true)
         check("fallback glyph rides DTO", row.fallbackGlyph == "Cx")
-        check("accessibility copy rides DTO", row.accessibilityLabel.contains("operator@example.test"))
+        check(
+            "accessibility copy rides DTO", row.accessibilityLabel.contains("operator@example.test")
+        )
         check("activity is explicit machine state", row.activityKind == "idle")
 
         var opened: [String?] = []

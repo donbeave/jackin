@@ -66,6 +66,15 @@ public struct PopoverRoot: View {
         }
         .frame(maxWidth: .infinity)
         .frame(height: 44)
+        .overlay(alignment: .trailing) {
+            if store.usesFixture {
+                Text("Fixture")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.primary)
+                    .padding(.trailing, 12)
+                    .accessibilityIdentifier("popover.fixture-badge")
+            }
+        }
     }
 
     @ViewBuilder
@@ -206,7 +215,7 @@ public struct PopoverRoot: View {
                     .accessibilityLabel(provider.activityLabel)
             }
         }
-        .accessibilityElement(children: .combine)
+        .accessibilityElement(children: .ignore)
         .accessibilityLabel(provider.accessibilityLabel)
         .accessibilityIdentifier("popover.provider-identity")
     }

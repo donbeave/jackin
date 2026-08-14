@@ -5,7 +5,7 @@ set -euo pipefail
 here=$(cd "$(dirname "$0")" && pwd -P)
 repo=$(cd "$here/../.." && pwd -P)
 stamp=$(date -u '+%Y%m%dT%H%M%SZ')
-result="$repo/native/DerivedData/UITests-$stamp-$$.xcresult"
+result_root="$repo/native/DerivedData/UITests-$stamp-$$"
 expected=$(rg --no-filename '^[[:space:]]+func test' "$repo/native/UITests"/*.swift | wc -l | tr -d ' ')
 lock="$repo/native/.build/ui-test.lock"
 runner="$repo/native/DerivedData/Build/Products/Debug/JackinDesktopUITests-Runner.app/Contents/MacOS/JackinDesktopUITests-Runner"
@@ -51,52 +51,70 @@ trap cleanup EXIT INT TERM HUP
 
 test "$expected" -gt 0
 terminate_repo_apps
-xcodebuild test \
-  -quiet \
-  -project "$repo/native/JackinDesktop.xcodeproj" \
-  -scheme JackinDesktop \
-  -destination 'platform=macOS' \
-  -parallel-testing-enabled NO \
-  -only-testing:JackinDesktopUITests \
-  -derivedDataPath "$repo/native/DerivedData" \
-  -resultBundlePath "$result" &
-child_pid=$!
-wait "$child_pid"
-child_pid=""
-
-test -f "$result/Info.plist" || {
-  echo "UI test result bundle is missing or corrupt: $result" >&2
-  exit 1
-}
-
-summary=$(xcrun xcresulttool get test-results summary --path "$result")
-tests=$(xcrun xcresulttool get test-results tests --path "$result")
-total=$(printf '%s' "$summary" | plutil -extract totalTestCount raw -)
-failed=$(printf '%s' "$summary" | plutil -extract failedTests raw -)
-passed=$(printf '%s' "$summary" | plutil -extract passedTests raw -)
-runtime_warnings=$(
-  printf '%s' "$tests" \
-    | awk '/"nodeType" : "Runtime Warning"/ { count++ } END { print count + 0 }'
+mkdir -p "$result_root"
+test_names=()
+while IFS= read -r test_name; do
+  test_names+=("$test_name")
+done < <(
+  rg --no-filename '^[[:space:]]+func test' "$repo/native/UITests"/*.swift \
+    | sed -E 's/^[[:space:]]+func (test[^ (]+).*/\1/' \
+    | sort
 )
+test "${#test_names[@]}" -eq "$expected"
 
-test "$total" -eq "$expected" || {
-  echo "UI test count mismatch: expected $expected, executed $total" >&2
-  exit 1
-}
-test "$failed" -eq 0 || {
-  echo "UI test failures: $failed" >&2
-  exit 1
-}
-test "$passed" -eq "$expected" || {
-  echo "UI tests did not all pass: expected $expected, passed $passed" >&2
-  exit 1
-}
-test "$runtime_warnings" -eq 0 || {
-  echo "UI tests emitted runtime warnings: $runtime_warnings" >&2
-  printf '%s' "$tests" \
-    | awk '/"nodeType" : "Runtime Warning"/ { print previous } { previous = $0 }' >&2
-  exit 1
-}
+passed=0
+for test_name in "${test_names[@]}"; do
+  result="$result_root/$test_name.xcresult"
+  terminate_repo_apps
+  xcodebuild test \
+    -quiet \
+    -project "$repo/native/JackinDesktop.xcodeproj" \
+    -scheme JackinDesktop \
+    -destination 'platform=macOS' \
+    -parallel-testing-enabled NO \
+    -only-testing:"JackinDesktopUITests/JackinDesktopUITests/$test_name" \
+    -derivedDataPath "$repo/native/DerivedData" \
+    -resultBundlePath "$result" &
+  child_pid=$!
+  wait "$child_pid"
+  child_pid=""
 
+  test -f "$result/Info.plist" || {
+    echo "UI test result bundle is missing or corrupt: $result" >&2
+    exit 1
+  }
+
+  summary=$(xcrun xcresulttool get test-results summary --path "$result")
+  test_tree=$(xcrun xcresulttool get test-results tests --path "$result")
+  total=$(printf '%s' "$summary" | plutil -extract totalTestCount raw -)
+  failed=$(printf '%s' "$summary" | plutil -extract failedTests raw -)
+  current_passed=$(printf '%s' "$summary" | plutil -extract passedTests raw -)
+  runtime_warnings=$(
+    printf '%s' "$test_tree" \
+      | awk '/"nodeType" : "Runtime Warning"/ { count++ } END { print count + 0 }'
+  )
+
+  test "$total" -eq 1 || {
+    echo "UI test count mismatch for $test_name: expected 1, executed $total" >&2
+    exit 1
+  }
+  test "$failed" -eq 0 || {
+    echo "UI test failed: $test_name" >&2
+    exit 1
+  }
+  test "$current_passed" -eq 1 || {
+    echo "UI test did not pass: $test_name" >&2
+    exit 1
+  }
+  test "$runtime_warnings" -eq 0 || {
+    echo "UI test emitted runtime warnings: $test_name ($runtime_warnings)" >&2
+    printf '%s' "$test_tree" \
+      | awk '/"nodeType" : "Runtime Warning"/ { print previous } { previous = $0 }' >&2
+    exit 1
+  }
+  passed=$((passed + current_passed))
+done
+
+test "$passed" -eq "$expected"
 echo "UI tests: $passed/$expected passed"
-echo "Result: $result"
+echo "Results: $result_root"

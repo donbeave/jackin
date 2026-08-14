@@ -47,6 +47,18 @@ public struct VisualQAFixture: Sendable {
     public var openaiDetail: UsageDetailPresentation {
         surfaces.first { $0.id == "codex" }?.detailPresentation ?? .empty
     }
+
+    public var projection: PresentationStore.QIFixtureProjection {
+        VisualQAFixtures.projection(for: self)
+    }
+
+    public var refreshingProjection: PresentationStore.QIFixtureProjection {
+        VisualQAFixtures.refreshingProjection(for: self)
+    }
+
+    public var accountProjections: [String: PresentationStore.QIFixtureProjection] {
+        VisualQAFixtures.accountProjections(for: self)
+    }
 }
 
 /// One catalog owns app launch, UI automation, and native capture data.
@@ -178,7 +190,7 @@ public enum VisualQAFixtures: Sendable {
                     supporting: [
                         "Resets Tuesday, 18 August 2026 at 23:59 Indochina Time"
                     ]
-                ),
+                )
             ])
             return customSingleProviderFixture(
                 id: id,
@@ -235,6 +247,171 @@ public enum VisualQAFixtures: Sendable {
                 globalError: "Usage presentation is unavailable"
             )
         }
+    }
+
+    public static func projection(
+        for fixture: VisualQAFixture
+    ) -> PresentationStore.QIFixtureProjection {
+        PresentationStore.QIFixtureProjection(
+            glanceRows: fixture.glanceRows,
+            statusBarGlanceRows: fixture.statusGlanceRows,
+            surfaces: fixture.surfaces,
+            accounts: fixture.accounts,
+            providerGroups: fixture.providerGroups
+        )
+    }
+
+    public static func refreshingProjection(
+        for fixture: VisualQAFixture
+    ) -> PresentationStore.QIFixtureProjection {
+        let glances = fixture.glanceRows.map { row in
+            glance(
+                surfaceId: row.surfaceId,
+                iconKey: row.iconKey,
+                label: row.displayLabel,
+                accountLabel: row.accountLabel,
+                planLabel: row.planLabel,
+                remaining: row.glanceRemainingPercent,
+                reset: row.resetLabel,
+                status: row.statusWord,
+                updated: row.updatedLabel,
+                error: row.lastError,
+                refreshing: true
+            )
+        }
+        let bySurface = Dictionary(uniqueKeysWithValues: glances.map { ($0.surfaceId, $0) })
+        let surfaces = fixture.surfaces.map { row in
+            guard let glance = bySurface[row.id] else { return row }
+            return surface(
+                glance: glance,
+                detail: row.detailPresentation,
+                credentialOrigin: row.credentialOrigin
+            )
+        }
+        return PresentationStore.QIFixtureProjection(
+            glanceRows: glances,
+            statusBarGlanceRows: fixture.statusGlanceRows.compactMap {
+                bySurface[$0.surfaceId]
+            },
+            surfaces: surfaces,
+            accounts: fixture.accounts,
+            providerGroups: fixture.providerGroups
+        )
+    }
+
+    public static func accountProjections(
+        for fixture: VisualQAFixture
+    ) -> [String: PresentationStore.QIFixtureProjection] {
+        var projections: [String: PresentationStore.QIFixtureProjection] = [:]
+        for selected in fixture.accounts {
+            let accounts = fixture.accounts.map { row in
+                copiedAccount(
+                    row,
+                    selected: row.surfaceId == selected.surfaceId
+                        ? row.accountKey == selected.accountKey
+                        : row.selected)
+            }
+            let glances = fixture.glanceRows.map { row in
+                guard row.surfaceId == selected.surfaceId else { return row }
+                return glance(
+                    surfaceId: row.surfaceId,
+                    iconKey: row.iconKey,
+                    label: row.displayLabel,
+                    accountLabel: selected.accountLabel,
+                    planLabel: selected.planLabel,
+                    remaining: selected.remainingPercent,
+                    reset: row.resetLabel,
+                    status: selected.statusWord,
+                    updated: selected.updatedLabel,
+                    error: selected.lastError,
+                    refreshing: false
+                )
+            }
+            let bySurface = Dictionary(uniqueKeysWithValues: glances.map { ($0.surfaceId, $0) })
+            let surfaces = fixture.surfaces.map { row in
+                guard row.id == selected.surfaceId,
+                    let glance = bySurface[row.id]
+                else { return row }
+                return surface(
+                    glance: glance,
+                    detail: selectedDetail(account: selected, fallback: row.detailPresentation),
+                    credentialOrigin: row.credentialOrigin
+                )
+            }
+            let groups = providerGroups(glanceRows: glances, accounts: accounts)
+            projections["\(selected.surfaceId)#\(selected.accountKey)"] =
+                PresentationStore.QIFixtureProjection(
+                    glanceRows: glances,
+                    statusBarGlanceRows: fixture.statusGlanceRows.compactMap {
+                        bySurface[$0.surfaceId]
+                    },
+                    surfaces: surfaces,
+                    accounts: accounts,
+                    providerGroups: groups
+                )
+        }
+        return projections
+    }
+
+    private static func copiedAccount(
+        _ account: PresentationStore.AccountRow,
+        selected: Bool,
+        statusWord: String? = nil,
+        lastError: String? = nil
+    ) -> PresentationStore.AccountRow {
+        let effectiveStatus = statusWord ?? account.statusWord
+        let effectiveError = lastError ?? account.lastError
+        return PresentationStore.AccountRow(
+            surfaceId: account.surfaceId,
+            providerColumnLabel: account.providerColumnLabel,
+            accountKey: account.accountKey,
+            accountLabel: account.accountLabel,
+            planLabel: account.planLabel,
+            selected: selected,
+            lifecycle: account.lifecycle,
+            lifecycleLabel: account.lifecycleLabel,
+            provenanceLabel: account.provenanceLabel,
+            planOrStatusLabel: account.planLabel ?? statusWord ?? account.planOrStatusLabel,
+            remainingPercent: account.remainingPercent,
+            remainingLabel: account.remainingLabel,
+            headline: account.headline,
+            resetDisplayLabel: account.resetDisplayLabel,
+            statusWord: effectiveStatus,
+            statusLabel: statusWord ?? account.statusLabel,
+            severity: account.severity,
+            updatedLabel: account.updatedLabel,
+            lastError: effectiveError,
+            dimmed: account.dimmed || statusWord != nil,
+            accessibilityLabel: [account.accessibilityLabel, effectiveError]
+                .compactMap { $0 }
+                .joined(separator: ", ")
+        )
+    }
+
+    private static func selectedDetail(
+        account: PresentationStore.AccountRow,
+        fallback: UsageDetailPresentation
+    ) -> UsageDetailPresentation {
+        let metadataRows = fallback.rows.filter { $0.kind != .bucket }
+        let reset = account.resetDisplayLabel == "—" ? nil : account.resetDisplayLabel
+        let lines = [
+            UsagePresentationLine(leading: account.headline, trailing: nil),
+            reset.map { UsagePresentationLine(leading: nil, trailing: $0) },
+        ].compactMap { $0 }
+        let displayLabel = lines.flatMap { [$0.leading, $0.trailing].compactMap { $0 } }
+            .joined(separator: " · ")
+        return UsageDetailPresentation(
+            rows: metadataRows + [
+                UsageDetailRow(
+                    rowId: "bucket:selected",
+                    kind: .bucket,
+                    label: "Account quota",
+                    layoutLines: lines,
+                    displayLabel: displayLabel,
+                    meterPercent: account.remainingPercent,
+                    severity: account.severity,
+                )
+            ])
     }
 
     private enum Provider: String, CaseIterable {
@@ -421,7 +598,15 @@ public enum VisualQAFixtures: Sendable {
         failureStatus: String = "fresh",
         failureError: String? = nil
     ) -> VisualQAFixture {
-        let accounts = catalogAccounts()
+        let accounts = catalogAccounts().map { account in
+            guard account.surfaceId == failingSurface else { return account }
+            return copiedAccount(
+                account,
+                selected: account.selected,
+                statusWord: failureStatus,
+                lastError: failureError
+            )
+        }
         let glances = Provider.allCases.map { provider in
             let selected = accounts.first { $0.surfaceId == provider.rawValue && $0.selected }
             let isFailure = provider.rawValue == failingSurface
@@ -510,7 +695,7 @@ public enum VisualQAFixtures: Sendable {
         )
         let detail = UsageDetailPresentation(
             rows: [
-                metadata(id: "plan", label: "Plan", value: "Team"),
+                metadata(id: "plan", label: "Plan", value: "Team")
             ] + anthropicDetail().rows + [longRow]
         )
         let surfaces = base.surfaces.map { row in

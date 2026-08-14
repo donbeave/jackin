@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import AppKit
-import JackinUsageBridge
 
 /// AppKit rendering for one per-provider `NSStatusItem`.
 ///
@@ -90,5 +89,4 @@ public enum StatusItemRendering {
         )
         return result
     }
-
 }

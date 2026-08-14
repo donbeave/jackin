@@ -95,7 +95,7 @@ public final class StatusBarController: NSObject {
 
     private func makeProviderItem(surfaceId: String) -> NSStatusItem {
         let item = NSStatusBar.system.statusItem(
-            withLength: compactStatusItems ? NSStatusItem.squareLength : NSStatusItem.variableLength
+            withLength: NSStatusItem.variableLength
         )
         if !compactStatusItems {
             item.autosaveName = "jackin.desktop.status.\(surfaceId)"
@@ -115,12 +115,14 @@ public final class StatusBarController: NSObject {
         button.image = StatusItemRendering.icon(forIconKey: row.iconKey)
         button.imagePosition = .imageLeading
         button.attributedTitle =
-            store.statusBarShowsValues && !compactStatusItems
-            ? StatusItemRendering.title(
-                barLabel: row.barLabel,
-                compactResetLabel: row.compactResetLabel
-            )
-            : NSAttributedString(string: "")
+            compactStatusItems
+            ? NSAttributedString(string: " Fixture")
+            : store.statusBarShowsValues
+                ? StatusItemRendering.title(
+                    barLabel: row.barLabel,
+                    compactResetLabel: row.compactResetLabel
+                )
+                : NSAttributedString(string: "")
         button.appearsDisabled = row.dimmed
         button.toolTip = row.accessibilityLabel
         button.setAccessibilityLabel(row.accessibilityLabel)
@@ -129,7 +131,7 @@ public final class StatusBarController: NSObject {
     private func ensureFallbackItem() {
         guard fallbackItem == nil else { return }
         let item = NSStatusBar.system.statusItem(
-            withLength: compactStatusItems ? NSStatusItem.squareLength : NSStatusItem.variableLength
+            withLength: NSStatusItem.variableLength
         )
         if !compactStatusItems {
             item.autosaveName = "jackin.desktop.status.fallback"
@@ -141,6 +143,9 @@ public final class StatusBarController: NSObject {
             button.sendAction(on: [.leftMouseUp])
             installRightClickMonitor(on: button)
             button.setAccessibilityLabel("jackin❯ desktop usage")
+            if compactStatusItems {
+                button.title = " Fixture"
+            }
         }
         fallbackItem = item
     }
@@ -293,6 +298,15 @@ public final class StatusBarController: NSObject {
         if let surfaceId, providerItems[surfaceId] != nil {
             store.popoverSelection = surfaceId
         }
+        let panel = automationAnchorPanel ?? makeAutomationAnchorPanel()
+        panel.orderFrontRegardless()
+        guard let anchor = panel.contentView else { return }
+        anchor.setAccessibilityElement(false)
+        automationAnchorPanel = panel
+        popover.show(relativeTo: anchor.bounds, of: anchor, preferredEdge: .minY)
+    }
+
+    private func makeAutomationAnchorPanel() -> NSPanel {
         let frame = NSScreen.main?.frame ?? NSRect(x: 0, y: 0, width: 1_440, height: 900)
         let panel = NSPanel(
             contentRect: NSRect(x: frame.maxX - 4, y: frame.maxY - 4, width: 2, height: 2),
@@ -307,11 +321,7 @@ public final class StatusBarController: NSObject {
         panel.level = .statusBar
         panel.collectionBehavior = [.canJoinAllSpaces, .stationary]
         panel.setAccessibilityElement(false)
-        panel.orderFrontRegardless()
-        guard let anchor = panel.contentView else { return }
-        anchor.setAccessibilityElement(false)
-        automationAnchorPanel = panel
-        popover.show(relativeTo: anchor.bounds, of: anchor, preferredEdge: .minY)
+        return panel
     }
 
     /// Cancel subscriptions, close the popover, and remove every status item.
@@ -343,9 +353,22 @@ public final class DesktopAppDelegate: NSObject, NSApplicationDelegate {
     private static let visualQAShowPopoverNotification = Notification.Name(
         "com.jackin-project.desktop.visual-qa.show-popover"
     )
+    private static let visualQARefreshNotification = Notification.Name(
+        "com.jackin-project.desktop.visual-qa.refresh"
+    )
+    private static let visualQASelectAccountNotification = Notification.Name(
+        "com.jackin-project.desktop.visual-qa.select-personal-account"
+    )
+    private static let visualQAToggleSidebarNotification = Notification.Name(
+        "com.jackin-project.desktop.visual-qa.toggle-sidebar"
+    )
+    private static let visualQASelectCodexProviderNotification = Notification.Name(
+        "com.jackin-project.desktop.visual-qa.select-codex-provider"
+    )
     let store: PresentationStore
     private let launchConfiguration: PresentationStore.LaunchConfiguration
     private let visualQALaunchOptions: VisualQALaunchOptions
+    private var visualQAUsageSelection: String?
     private var statusBar: StatusBarController?
     private var usageWindow: UsageWindowController?
     /// Retained: menu item targets point here / AppMainMenu for the process life.
@@ -417,6 +440,30 @@ public final class DesktopAppDelegate: NSObject, NSApplicationDelegate {
                 name: Self.visualQAShowPopoverNotification,
                 object: nil
             )
+            DistributedNotificationCenter.default().addObserver(
+                self,
+                selector: #selector(refreshForVisualQA(_:)),
+                name: Self.visualQARefreshNotification,
+                object: nil
+            )
+            DistributedNotificationCenter.default().addObserver(
+                self,
+                selector: #selector(selectPersonalAccountForVisualQA(_:)),
+                name: Self.visualQASelectAccountNotification,
+                object: nil
+            )
+            DistributedNotificationCenter.default().addObserver(
+                self,
+                selector: #selector(toggleSidebarForVisualQA(_:)),
+                name: Self.visualQAToggleSidebarNotification,
+                object: nil
+            )
+            DistributedNotificationCenter.default().addObserver(
+                self,
+                selector: #selector(selectCodexProviderForVisualQA(_:)),
+                name: Self.visualQASelectCodexProviderNotification,
+                object: nil
+            )
         }
 
         let selection: String?
@@ -428,6 +475,7 @@ public final class DesktopAppDelegate: NSObject, NSApplicationDelegate {
         case .provider(let surfaceId):
             selection = surfaceId
         }
+        visualQAUsageSelection = selection
         if visualQALaunchOptions.openUsage || visualQALaunchOptions.invalidFixtureID != nil {
             usageWindow.show(focusOn: selection, size: visualQALaunchOptions.windowSize)
         }
@@ -446,6 +494,25 @@ public final class DesktopAppDelegate: NSObject, NSApplicationDelegate {
     public func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
         // Menu-bar agent stays alive after Usage/Settings close.
         false
+    }
+
+    public func applicationDidHide(_ notification: Notification) {
+        restoreFixtureUsageVisibility()
+    }
+
+    private func restoreFixtureUsageVisibility() {
+        guard visualQALaunchOptions.usesFixture else { return }
+        // The UI-test runner may own focus while scrolling or auditing. Reverse only an actual
+        // application hide, without activating the fixture process or fighting the runner.
+        NSApp.unhideWithoutActivation()
+        if visualQALaunchOptions.openUsage, usageWindow?.qiVisibilityDesired == true,
+            let window = usageWindow?.qiWindow
+        {
+            window.orderFrontRegardless()
+        }
+        if visualQALaunchOptions.openPopover {
+            statusBar?.showPopover(focusOn: store.popoverSelection)
+        }
     }
 
     public func applicationShouldHandleReopen(
@@ -469,11 +536,27 @@ public final class DesktopAppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func showUsageForVisualQA(_: Notification) {
-        usageWindow?.show()
+        usageWindow?.show(focusOn: visualQAUsageSelection)
     }
 
     @objc private func showPopoverForVisualQA(_: Notification) {
         statusBar?.showPopover(focusOn: store.popoverSelection)
+    }
+
+    @objc private func refreshForVisualQA(_: Notification) {
+        store.refreshAll()
+    }
+
+    @objc private func selectPersonalAccountForVisualQA(_: Notification) {
+        store.setSelectedAccount(surfaceId: "codex", accountKey: "codex-personal")
+    }
+
+    @objc private func toggleSidebarForVisualQA(_: Notification) {
+        usageWindow?.qiToggleSidebar()
+    }
+
+    @objc private func selectCodexProviderForVisualQA(_: Notification) {
+        usageWindow?.show(focusOn: "codex")
     }
 
     private func applyVisualQAAppearance() {
@@ -488,6 +571,9 @@ public final class DesktopAppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private var initialActivationPolicy: NSApplication.ActivationPolicy {
+        if visualQALaunchOptions.elevatesFixtureWindow {
+            return .accessory
+        }
         if visualQALaunchOptions.openUsage || visualQALaunchOptions.openPopover
             || visualQALaunchOptions.invalidFixtureID != nil
         {
@@ -505,6 +591,8 @@ public final class DesktopAppDelegate: NSObject, NSApplicationDelegate {
                 surfaces: fixture.surfaces,
                 accounts: fixture.accounts,
                 providerGroups: fixture.providerGroups,
+                refreshingProjection: fixture.refreshingProjection,
+                accountProjections: fixture.accountProjections,
                 popoverSelection: fixture.popoverSelection,
                 usageSelection: fixture.usageSelection,
                 nextRefreshLabel: fixture.nextRefreshLabel,

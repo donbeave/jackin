@@ -11,6 +11,12 @@ last-good state, and shared rate-limit deadlines. Desktop sends refresh intent a
 renders the returned phase; it never starts a local probe or uses Swift task
 cancellation as coordination.
 
+One `desktopProjection` call returns the complete generation: provider groups,
+account children, selected identities, quota/detail rows, status-item rows, activity,
+and sanitized diagnostics. `PresentationStore` replaces visible state only after that
+whole projection decodes. A transient failure preserves the exact last-good rows and
+destination; an older generation can never overwrite a newer one.
+
 Product scope is limits only: remaining/used percentages, resets, plan/status, multi-account selection, and provider-supplied quota caps. Never add token unit prices, session-cost estimates, historical spend/usage, trends, sparklines, or aggregate charts.
 
 ## Shipping baseline
@@ -30,9 +36,9 @@ Liquid Glass is owned by the system hosts and standard functional chrome: `NSPop
 `StatusBarController` owns native `NSStatusItem` instances selected from the Rust projection. A primary click opens one real transient `NSPopover` focused on that provider. The popover contains:
 
 - a centered, noninteractive generated jackin❯ monogram plus `jackin❯ desktop` identity row;
-- provider identity and status;
+- provider identity, selected account, and one Rust-owned activity phrase;
 - a native account menu when multiple identities are known;
-- Rust-owned detail and limit rows;
+- Limits before useful, nonduplicated Details;
 - visible Retry actions for global/provider failures;
 - visible Refresh (Command-R) and Open Usage actions.
 
@@ -44,8 +50,9 @@ There is no cross-provider navigation inside the popover. A secondary click open
 
 - sidebar: Overview plus Rust-ordered providers;
 - quiet footer: generated `jackin❯ by tailrocks` wordmark;
-- Overview: native account inventory `Table`;
-- provider detail: native list/sections, account menu, quota meters, recovery;
+- Overview: expanded native hierarchical `Table` with provider parents, account
+  children, and Provider/Account/Plan or status/Remaining/Reset columns;
+- provider detail: selected identity, account menu, Details, Limits, and recovery;
 - titlebar: the standard split-view sidebar button in its fixed leading slot;
 - detail top accessory: centered `jackin❯ desktop` identity and trailing Refresh.
 
@@ -101,7 +108,7 @@ swift test -c release
 
 `desktop-test` covers 251 Rust/FFI tests plus native architecture/parity harnesses. SwiftPM tests protect ownership, navigation normalization, native component confinement, brand tokens, and visual-QA fixture isolation. The UI suite runs the real app host and audits popover, Overview, provider detail, sidebar coordinates, commands, scrolling, recovery, and retained context.
 
-Explicit visual-QA launch flags (`--fixture`, `--open-popover`, `--open-usage`, `--selection`, `--window-size`, `--appearance`) never activate unless a fixture is named and never call the bridge or real credentials.
+Explicit visual-QA launch flags (`--fixture`, `--open-popover`, `--open-usage`, `--selection`, `--window-size`, `--appearance`) never activate unless `--fixture` is present in argv and never call the bridge or real credentials. Fixture runs carry a persistent visible Fixture badge, and their frozen account/refresh projections exercise immediate selection plus `Updating…` → terminal activity. Environment variables cannot enable fabricated data. Moving fixture code into a debug-only target remains a maintenance follow-up.
 
 ## Visual QA
 

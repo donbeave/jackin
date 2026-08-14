@@ -20,13 +20,15 @@ Capsule remain out of scope pending a secure-enrollment design.
 - **2026-08-12 — Confirm runnable native direction.** The operator confirmed the native proof. Production implementation preserves its hierarchy, system-owned material, Rust/Swift ownership, and the two identity/sidebar decisions.
 - **2026-08-13 — Center product identity.** The operator required `jackin❯ desktop` centered in the Usage header and jackin❯ identity in the popover. A native detail split-item accessory and a non-interactive monogram/text row satisfy this without custom chrome or glass.
 - **2026-08-14 — Restore native pane ownership.** `NSSplitViewController` owns a full-height leading sidebar. Its standard toggle is the single visibility authority and remains stationary while the detail-only native accessory owns centered identity and trailing Refresh.
+- **2026-08-14 — Unify account-first presentation.** One atomic Rust projection now drives selected identity, activity, grouped Overview rows, status items, and exact provider/account handoff. Popover keeps Limits before Details; provider detail keeps Details before Limits.
 
 ## Implemented baseline
 
 - macOS 26.0 deployment target; Xcode 26.6 release toolchain; arm64 static XCFramework app assembly.
 - Native `NSStatusItem` provider items and a real transient `NSPopover` focused on the clicked provider.
-- Centered, non-interactive generated monogram plus `jackin❯ desktop` popover identity; native account menu, Rust-owned detail/limit rows, visible Retry/Refresh/Open Usage actions, and no cross-provider navigation.
-- Retained native Usage `NSWindow` with `NSSplitViewController`, full-height sidebar, Overview table, provider detail list, detail-centered product identity, native toolbar/menu commands, no `Usage` title, and stable sidebar-button coordinates.
+- Centered, non-interactive generated monogram plus `jackin❯ desktop` popover identity; provider and selected account, one Rust-owned activity phrase, native account menu, Limits before nonduplicated Details, visible Retry/Refresh/Open Usage actions, and no cross-provider navigation.
+- Retained native Usage `NSWindow` with `NSSplitViewController`, full-height sidebar, grouped hierarchical Overview table with selectable account children, account-first provider detail, detail-centered product identity, native toolbar/menu commands, no `Usage` title, and stable sidebar-button coordinates.
+- One atomic Rust Desktop projection per broker generation; transient decode/bridge failures retain exact last-good rows and destination, and stale resumes cannot overwrite newer generations.
 - Valid destination/account/sidebar/frame continuity across close/reopen; provider removal or disablement normalizes at `PresentationStore`.
 - Generated responsive brand assets; adaptive phosphor for identity/healthy emphasis; textual state plus system semantic warning/danger color.
 - Zero custom UI regions, explicit glass effects, glass containers, or app-owned materials in production sources.

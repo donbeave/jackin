@@ -101,7 +101,7 @@ struct DesktopArchitectureLint {
             usageController.contains(".moveToActiveSpace")
                 && usageController.contains(".canJoinAllSpaces")
                 && usageController.contains(".canJoinAllApplications")
-                && usageController.contains(".fullScreenAuxiliary")
+                && !usageController.contains(".fullScreenAuxiliary")
                 && usageController.contains("window.orderFrontRegardless()")
                 && usageController.contains("if store.usesFixture")
                 && mainMenu.contains("NSApp.activate()")

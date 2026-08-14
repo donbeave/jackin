@@ -54,6 +54,12 @@ final class VisualQAFixturesTests: XCTestCase {
         XCTAssertEqual(fixture.fixtureID, .multiAccount)
         XCTAssertNil(fixture.invalidFixtureID)
 
+        let environmentOnly = VisualQALaunchOptions.resolve(
+            arguments: ["JackinDesktop"],
+            environment: ["JACKIN_DESKTOP_FIXTURE": "F03-multi-account"]
+        )
+        XCTAssertFalse(environmentOnly.usesFixture)
+
         let invalid = VisualQALaunchOptions.resolve(
             arguments: ["JackinDesktop", "--fixture", "F99-unknown"],
             environment: [:]
@@ -72,6 +78,8 @@ final class VisualQAFixturesTests: XCTestCase {
             surfaces: fixture.surfaces,
             accounts: fixture.accounts,
             providerGroups: fixture.providerGroups,
+            refreshingProjection: fixture.refreshingProjection,
+            accountProjections: fixture.accountProjections,
             popoverSelection: fixture.popoverSelection,
             usageSelection: fixture.usageSelection
         )
@@ -82,6 +90,18 @@ final class VisualQAFixturesTests: XCTestCase {
             store.accounts.first { $0.accountKey == "codex-organization" }?.selected == true
         )
         XCTAssertEqual(store.accounts.filter(\.selected).count, 1)
+        XCTAssertEqual(
+            store.providerGlanceRows.first?.accountLabel,
+            "organization-production-sandbox@example.test"
+        )
+        XCTAssertEqual(store.providerGlanceRows.first?.glanceRemainingPercent, 88)
+        XCTAssertEqual(
+            store.surfaces.first?.identity?.accountLabel,
+            "organization-production-sandbox@example.test")
+        XCTAssertEqual(
+            store.surfaces.first?.detailPresentation.rows.last?.displayLabel,
+            "88% left"
+        )
     }
 
     @MainActor
@@ -96,6 +116,8 @@ final class VisualQAFixturesTests: XCTestCase {
             surfaces: fixture.surfaces,
             accounts: fixture.accounts,
             providerGroups: fixture.providerGroups,
+            refreshingProjection: fixture.refreshingProjection,
+            accountProjections: fixture.accountProjections,
             popoverSelection: fixture.popoverSelection,
             usageSelection: fixture.usageSelection
         )
@@ -110,6 +132,31 @@ final class VisualQAFixturesTests: XCTestCase {
         XCTAssertNil(store.lastError)
         XCTAssertEqual(
             store.providerGlanceRows.map(\.surfaceId), fixture.glanceRows.map(\.surfaceId))
+    }
+
+    @MainActor
+    func testFixtureRefreshTransitionsToUpdatingAndBack() async throws {
+        let fixture = VisualQAFixtures.fixture(id: .catalogNormal)
+        let store = PresentationStore()
+        store.applyQIFixture(
+            glanceRows: fixture.glanceRows,
+            statusBarGlanceRows: fixture.statusGlanceRows,
+            surfaces: fixture.surfaces,
+            accounts: fixture.accounts,
+            providerGroups: fixture.providerGroups,
+            refreshingProjection: fixture.refreshingProjection,
+            accountProjections: fixture.accountProjections,
+            popoverSelection: fixture.popoverSelection,
+            usageSelection: fixture.usageSelection
+        )
+
+        store.refreshAll()
+        XCTAssertTrue(store.refreshInProgress)
+        XCTAssertTrue(store.providerGlanceRows.allSatisfy { $0.activityLabel == "Updating…" })
+
+        try await Task.sleep(for: .milliseconds(2_200))
+        XCTAssertFalse(store.refreshInProgress)
+        XCTAssertTrue(store.providerGlanceRows.allSatisfy { $0.activityLabel == "Updated now" })
     }
 
     @MainActor

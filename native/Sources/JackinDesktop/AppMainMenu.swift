@@ -360,12 +360,14 @@ public enum AppActivation {
     /// window in its Window menu without making that window visible on the active Space.
     static func present(_ window: NSWindow) {
         if NSApp.activationPolicy() == .regular {
+            NSApp.unhide(nil)
             NSApp.activate()
             window.makeKeyAndOrderFront(nil)
             return
         }
         NSApp.setActivationPolicy(.regular)
         DispatchQueue.main.async {
+            NSApp.unhide(nil)
             NSApp.activate()
             window.makeKeyAndOrderFront(nil)
         }

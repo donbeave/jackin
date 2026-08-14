@@ -124,7 +124,7 @@ public struct UsageWindowModel: Equatable, Sendable {
         public let surfaceId: String
         /// Provider display name for detail head (from glance / surface — Rust only).
         public let displayLabel: String
-        /// Icon key for detail-head logo plate (`desktopProviderSystemImage`).
+        /// Rust-owned icon key for the detail-head logo plate.
         public let iconKey: String?
         public let fallbackGlyph: String?
         public let usageURL: String?
@@ -211,5 +211,4 @@ public struct UsageWindowModel: Equatable, Sendable {
             content = nil
         }
     }
-
 }

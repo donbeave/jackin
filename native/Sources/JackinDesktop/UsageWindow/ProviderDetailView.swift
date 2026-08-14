@@ -136,7 +136,7 @@ public struct ProviderDetailView: View {
                     .accessibilityIdentifier("usage.provider-activity")
             }
         }
-        .accessibilityElement(children: .combine)
+        .accessibilityElement(children: .ignore)
         .accessibilityLabel(content.identity.accessibilityLabel)
         .accessibilityIdentifier("usage.provider-identity")
     }
