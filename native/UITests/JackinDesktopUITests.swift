@@ -342,6 +342,26 @@ final class JackinDesktopUITests: XCTestCase {
         XCTAssertTrue(lastLimit.waitForHittable(timeout: 3))
         XCTAssertTrue(refresh.isHittable)
         XCTAssertTrue(openUsage.isHittable)
+
+        DistributedNotificationCenter.default().postNotificationName(
+            Notification.Name("com.jackin-project.desktop.visual-qa.close-popover"),
+            object: nil,
+            userInfo: nil,
+            deliverImmediately: true
+        )
+        XCTAssertTrue(application.popovers.firstMatch.waitForNonExistence(timeout: 3))
+        DistributedNotificationCenter.default().postNotificationName(
+            Notification.Name("com.jackin-project.desktop.visual-qa.show-popover"),
+            object: nil,
+            userInfo: nil,
+            deliverImmediately: true
+        )
+
+        let reopenedPopover = application.popovers.firstMatch
+        let providerIdentity = element("popover.provider-identity")
+        XCTAssertTrue(reopenedPopover.waitForExistence(timeout: 5))
+        XCTAssertTrue(providerIdentity.waitForExistence(timeout: 3))
+        XCTAssertTrue(reopenedPopover.frame.intersects(providerIdentity.frame))
     }
 
     func testStandardCommandsAndMenusShareNativeState() {

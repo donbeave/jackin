@@ -49,6 +49,13 @@ final class PopoverPresentationTests: XCTestCase {
         XCTAssertTrue(controlsSource.contains("Picker("))
         XCTAssertTrue(controlsSource.contains(".labelsHidden()"))
         XCTAssertTrue(source.contains(".defaultScrollAnchor(.top, for: .initialOffset)"))
+        XCTAssertTrue(source.contains(".scrollPosition(id: $providerScrollTarget, anchor: .top)"))
+        XCTAssertTrue(source.contains(".onAppear { resetProviderScrollPosition() }"))
+        XCTAssertTrue(
+            source.contains(
+                ".onChange(of: presentationState.sequence) { resetProviderScrollPosition() }"
+            )
+        )
         XCTAssertTrue(controlsSource.contains(".help(\"Refresh\")"))
         XCTAssertTrue(controlsSource.contains(".help(\"Open Usage\")"))
         XCTAssertTrue(controlsSource.contains(".help(\"Choose account\")"))

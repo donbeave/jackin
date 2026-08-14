@@ -21,6 +21,7 @@ public final class StatusBarController: NSObject {
     /// Last applied burn-first rank order (left → right = rank 1…n).
     private var canonicalOrder: [String] = []
     private let popover = NSPopover()
+    private let popoverPresentationState = PopoverPresentationState()
     private weak var anchoredButton: NSStatusBarButton?
     private var automationAnchorPanel: NSPanel?
     private var rightClickMonitors: [ObjectIdentifier: Any] = [:]
@@ -48,7 +49,10 @@ public final class StatusBarController: NSObject {
         popover.behavior = compactStatusItems ? .applicationDefined : .transient
         popover.animates = true
         popover.contentSize = PopoverRoot.liveContentSize
-        let root = PopoverRoot(store: store) { [weak self] context in
+        let root = PopoverRoot(
+            store: store,
+            presentationState: popoverPresentationState
+        ) { [weak self] context in
             self?.popover.performClose(nil)
             self?.anchoredButton = nil
             self?.onOpenUsage(context)
@@ -263,6 +267,7 @@ public final class StatusBarController: NSObject {
         store.popoverSelection = StatusPopoverFocus.popoverSelection(for: outcome)
 
         anchoredButton = sender
+        popoverPresentationState.beginPresentation()
         popover.show(relativeTo: sender.bounds, of: sender, preferredEdge: .minY)
     }
 
@@ -294,6 +299,12 @@ public final class StatusBarController: NSObject {
         togglePopover(button)
     }
 
+    /// Close the real popover between deterministic visual-QA assertions.
+    func closePopoverForVisualQA() {
+        popover.performClose(nil)
+        anchoredButton = nil
+    }
+
     private func showAutomationPopover(focusOn surfaceId: String?) {
         if let surfaceId, providerItems[surfaceId] != nil {
             store.popoverSelection = surfaceId
@@ -303,6 +314,7 @@ public final class StatusBarController: NSObject {
         guard let anchor = panel.contentView else { return }
         anchor.setAccessibilityElement(false)
         automationAnchorPanel = panel
+        popoverPresentationState.beginPresentation()
         popover.show(relativeTo: anchor.bounds, of: anchor, preferredEdge: .minY)
     }
 
@@ -352,6 +364,9 @@ public final class DesktopAppDelegate: NSObject, NSApplicationDelegate {
     )
     private static let visualQAShowPopoverNotification = Notification.Name(
         "com.jackin-project.desktop.visual-qa.show-popover"
+    )
+    private static let visualQAClosePopoverNotification = Notification.Name(
+        "com.jackin-project.desktop.visual-qa.close-popover"
     )
     private static let visualQARefreshNotification = Notification.Name(
         "com.jackin-project.desktop.visual-qa.refresh"
@@ -438,6 +453,12 @@ public final class DesktopAppDelegate: NSObject, NSApplicationDelegate {
                 self,
                 selector: #selector(showPopoverForVisualQA(_:)),
                 name: Self.visualQAShowPopoverNotification,
+                object: nil
+            )
+            DistributedNotificationCenter.default().addObserver(
+                self,
+                selector: #selector(closePopoverForVisualQA(_:)),
+                name: Self.visualQAClosePopoverNotification,
                 object: nil
             )
             DistributedNotificationCenter.default().addObserver(
@@ -541,6 +562,10 @@ public final class DesktopAppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func showPopoverForVisualQA(_: Notification) {
         statusBar?.showPopover(focusOn: store.popoverSelection)
+    }
+
+    @objc private func closePopoverForVisualQA(_: Notification) {
+        statusBar?.closePopoverForVisualQA()
     }
 
     @objc private func refreshForVisualQA(_: Notification) {

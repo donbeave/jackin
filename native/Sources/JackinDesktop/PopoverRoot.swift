@@ -4,6 +4,15 @@
 import JackinUsageBridge
 import SwiftUI
 
+@MainActor
+final class PopoverPresentationState: ObservableObject {
+    @Published private(set) var sequence: UInt64 = 0
+
+    func beginPresentation() {
+        sequence &+= 1
+    }
+}
+
 private enum PopoverQIFullPlateKey: EnvironmentKey {
     static let defaultValue = false
 }
@@ -18,16 +27,30 @@ extension EnvironmentValues {
 /// Focused-provider glance hosted by the real system `NSPopover`.
 public struct PopoverRoot: View {
     public static let liveContentSize = CGSize(width: 380, height: 520)
+    private static let providerIdentityScrollAnchor = "popover.provider-identity-anchor"
 
     @ObservedObject public var store: PresentationStore
+    @ObservedObject private var presentationState: PopoverPresentationState
     public var onOpenUsage: ((UsageNavigationContext?) -> Void)?
     @Environment(\.popoverQIFullPlate) private var qiFullPlate
+    @State private var providerScrollTarget: String? = Self.providerIdentityScrollAnchor
 
     public init(
         store: PresentationStore,
         onOpenUsage: ((UsageNavigationContext?) -> Void)? = nil
     ) {
         self.store = store
+        self.presentationState = PopoverPresentationState()
+        self.onOpenUsage = onOpenUsage
+    }
+
+    init(
+        store: PresentationStore,
+        presentationState: PopoverPresentationState,
+        onOpenUsage: ((UsageNavigationContext?) -> Void)? = nil
+    ) {
+        self.store = store
+        self.presentationState = presentationState
         self.onOpenUsage = onOpenUsage
     }
 
@@ -123,6 +146,7 @@ public struct PopoverRoot: View {
         return Form {
             Section {
                 providerIdentity(provider)
+                    .id(Self.providerIdentityScrollAnchor)
             }
 
             if !limitRows.isEmpty {
@@ -168,8 +192,20 @@ public struct PopoverRoot: View {
         }
         .formStyle(.grouped)
         .defaultScrollAnchor(.top, for: .initialOffset)
+        .scrollPosition(id: $providerScrollTarget, anchor: .top)
+        .onAppear { resetProviderScrollPosition() }
+        .onChange(of: presentationState.sequence) { resetProviderScrollPosition() }
+        .onChange(of: provider.accountLabel) { resetProviderScrollPosition() }
         .accessibilityLabel("\(provider.displayLabel) usage details")
         .accessibilityIdentifier("popover.provider.\(provider.surfaceId)")
+    }
+
+    private func resetProviderScrollPosition() {
+        providerScrollTarget = nil
+        Task { @MainActor in
+            await Task.yield()
+            providerScrollTarget = Self.providerIdentityScrollAnchor
+        }
     }
 
     private func providerIdentity(_ provider: PresentationStore.GlanceProviderRow) -> some View {
