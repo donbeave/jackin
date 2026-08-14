@@ -182,6 +182,11 @@ done
   exit 1
 }
 
+# WindowServer can mark the real popover onscreen before SwiftUI has drawn its
+# independently hosted brand and footer regions. Let one full render interval
+# settle before accepting pixel evidence.
+sleep "${CAPTURE_SETTLE_DELAY_SECONDS:-1}"
+
 if [ -n "${CAPTURE_TOOLBAR_BUTTON_DESCRIPTION:-}" ]; then
   [ -n "$WINDOW_NAME" ] || {
     echo "toolbar driving requires a window title" >&2
