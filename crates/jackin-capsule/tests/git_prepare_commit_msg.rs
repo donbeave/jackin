@@ -4,7 +4,7 @@
 )]
 
 use std::io::Write as _;
-use std::os::unix::fs::symlink;
+use std::os::unix::process::CommandExt as _;
 use std::process::{Command, Stdio};
 
 const CLAUDE_TRAILER: &str = "Co-authored-by: Claude <noreply@anthropic.com>";
@@ -14,7 +14,6 @@ const SIGNOFF_TRAILER: &str = "Signed-off-by: Test User <test@example.com>";
 fn run_hook(input: &str, source: Option<&str>) -> String {
     let temp = tempfile::tempdir().unwrap();
     let message_path = temp.path().join("COMMIT_EDITMSG");
-    let hook_path = temp.path().join("prepare-commit-msg");
     let git_config_path = temp.path().join("gitconfig");
     let dco_cache_path = temp.path().join("git-dco-identity");
     let xdg_config_home = temp.path().join("xdg-config");
@@ -25,10 +24,10 @@ fn run_hook(input: &str, source: Option<&str>) -> String {
     )
     .unwrap();
     std::fs::create_dir(&xdg_config_home).unwrap();
-    symlink(env!("CARGO_BIN_EXE_jackin-capsule"), &hook_path).unwrap();
 
-    let mut command = Command::new(&hook_path);
+    let mut command = Command::new(env!("CARGO_BIN_EXE_jackin-capsule"));
     command
+        .arg0("prepare-commit-msg")
         .arg(&message_path)
         .current_dir(temp.path())
         .env("GIT_CONFIG_GLOBAL", &git_config_path)
