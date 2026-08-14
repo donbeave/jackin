@@ -141,10 +141,6 @@ run = "native/Scripts/run-ui-tests.sh"
 description = "Scan jackin❯ desktop for unused declarations"
 run = "cd native && periphery scan --project JackinDesktop.xcodeproj --schemes JackinDesktop --retain-public --retain-objc-accessible --retain-assign-only-properties --report-exclude '**/jackin_usage_ffi.swift' --strict --quiet"
 
-[tasks.desktop-build-next]
-description = "Forward-build jackin❯ desktop against the next macOS SDK"
-run = "test -x /Applications/Xcode-beta.app/Contents/Developer/usr/bin/xcodebuild && DEVELOPER_DIR=/Applications/Xcode-beta.app/Contents/Developer xcodebuild -version && DEVELOPER_DIR=/Applications/Xcode-beta.app/Contents/Developer xcodebuild -showsdks | grep -q macosx27 && set -o pipefail && DEVELOPER_DIR=/Applications/Xcode-beta.app/Contents/Developer xcodebuild -project native/JackinDesktop.xcodeproj -scheme JackinDesktop -configuration Debug -derivedDataPath native/DerivedData-next build | xcbeautify"
-
 [tasks.desktop-build]
 description = "Build JackinDesktop.app (prints absolute path + how to run)"
 usage = '''
