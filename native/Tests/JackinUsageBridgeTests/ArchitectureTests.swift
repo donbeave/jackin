@@ -531,6 +531,28 @@ final class ArchitectureTests: XCTestCase {
         XCTAssertFalse(popover.contains("popoverBrandHeader.background"))
     }
 
+    func testVisualQAStateRestoresLiquidGlassAfterDarkMode() throws {
+        let script = try String(
+            contentsOf:
+                sourcesRoot
+                .deletingLastPathComponent()
+                .appendingPathComponent("Scripts/VisualQA/state.sh"),
+            encoding: .utf8
+        )
+        let start = try XCTUnwrap(script.range(of: "KEYS='"))
+        let end = try XCTUnwrap(
+            script.range(of: "'\n\nread_value", range: start.upperBound..<script.endIndex)
+        )
+        let keys = script[start.upperBound..<end.lowerBound]
+            .split(separator: "\n")
+            .map(String.init)
+
+        XCTAssertEqual(
+            Array(keys.suffix(2)),
+            ["SystemEvents|darkMode", "NSGlobalDomain|NSGlassDiffusionSetting"]
+        )
+    }
+
     /// Cold launch: the AppKit delegate must open the host runtime without a menu click.
     func testApplicationDelegateOpensRuntimeOnLaunch() throws {
         let delegate =
