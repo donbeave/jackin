@@ -26,6 +26,10 @@ final class VisualQAFixturesTests: XCTestCase {
             catalog.statusGlanceRows.map(\.surfaceId),
             ["claude", "codex", "minimax"]
         )
+        let overviewPlanOrStatus = catalog.providerGroups.flatMap { group in
+            [group.planOrStatusLabel] + group.accounts.map(\.planOrStatusLabel)
+        }
+        XCTAssertFalse(overviewPlanOrStatus.contains("fresh"))
         XCTAssertEqual(VisualQAFixtures.fixture(id: .layoutEnvelope).accounts.count, 10)
     }
 

@@ -1220,6 +1220,7 @@ impl HostUsageRuntime {
             let display_label = provider_display_label(surface.label()).to_owned();
             let plan_or_status_label = empty_state
                 .as_ref()
+                .filter(|state| state.status_word != "fresh")
                 .map(|state| state.status_label.clone())
                 .unwrap_or_else(|| "—".to_owned());
             let accessibility_label = empty_state.as_ref().map_or_else(
@@ -1732,10 +1733,13 @@ fn account_descriptor(
     provenance.dedup();
     let provenance_label = provenance.join(" · ");
     let status_label = usage_display_status_label(view.status).to_owned();
-    let plan_or_status_label = entry
-        .plan_label
-        .clone()
-        .unwrap_or_else(|| status_label.clone());
+    let plan_or_status_label = entry.plan_label.clone().unwrap_or_else(|| {
+        if matches!(view.status, Status::Fresh) {
+            "—".to_owned()
+        } else {
+            status_label.clone()
+        }
+    });
     let reset_display_label = reset_label.clone().unwrap_or_else(|| "—".to_owned());
     let accessibility_label = format!(
         "{}, {}, {}, {}, {}",

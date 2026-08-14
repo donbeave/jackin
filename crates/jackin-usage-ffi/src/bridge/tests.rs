@@ -509,6 +509,7 @@ fn provider_glance_rows_via_bridge_project_rust_rows() {
     assert_eq!(account.headline, "57% left");
     assert_eq!(account.reset_display_label, "Resets now");
     assert_eq!(account.status_word, "fresh");
+    assert_eq!(account.plan_or_status_label, "—");
     assert_eq!(account.last_error, None);
 
     let projection = bridge.desktop_projection(3).expect("desktop projection");

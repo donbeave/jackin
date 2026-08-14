@@ -1075,7 +1075,13 @@ fn canon_presence_only_state_is_not_an_account() {
         .find(|group| group.surface_id == "amp")
         .expect("detected Amp state");
     assert!(amp.accounts.is_empty());
-    assert!(amp.empty_state.is_some());
+    assert_eq!(
+        amp.empty_state
+            .as_ref()
+            .map(|state| state.status_word.as_str()),
+        Some("unavailable")
+    );
+    assert_eq!(amp.plan_or_status_label, "unavailable");
 }
 
 #[test]
@@ -1319,6 +1325,7 @@ fn canon_desktop_inventory_is_grouped_and_complete() {
     assert_eq!(account.remaining_label, "57%");
     assert_eq!(account.headline, "57% left");
     assert_eq!(account.status_word, "fresh");
+    assert_eq!(account.plan_or_status_label, "—");
     assert!(
         inventory
             .groups

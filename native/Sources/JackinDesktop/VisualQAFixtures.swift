@@ -539,7 +539,8 @@ public enum VisualQAFixtures: Sendable {
                 fallbackGlyph: glance.fallbackGlyph,
                 usageURL: glance.usageURL,
                 accountColumnLabel: "—",
-                planOrStatusLabel: children.isEmpty ? glance.statusLabel : "—",
+                planOrStatusLabel:
+                    children.isEmpty && glance.statusWord != "fresh" ? glance.statusLabel : "—",
                 remainingLabel: "—",
                 resetDisplayLabel: "—",
                 accounts: children,
@@ -826,7 +827,7 @@ public enum VisualQAFixtures: Sendable {
         status: String = "fresh"
     ) -> PresentationStore.AccountRow {
         let providerLabel = Provider(rawValue: surfaceId)?.label ?? surfaceId
-        let planOrStatusLabel = plan ?? status
+        let planOrStatusLabel = plan ?? (status == "fresh" ? "—" : status)
         let remainingLabel = remaining.map { "\($0)%" } ?? "—"
         let resetDisplayLabel = "—"
         return PresentationStore.AccountRow(
