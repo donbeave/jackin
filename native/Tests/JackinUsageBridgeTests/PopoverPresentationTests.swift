@@ -48,6 +48,7 @@ final class PopoverPresentationTests: XCTestCase {
         XCTAssertTrue(controlsSource.contains("Spacer(minLength: 12)"))
         XCTAssertTrue(controlsSource.contains("Picker("))
         XCTAssertTrue(controlsSource.contains(".labelsHidden()"))
+        XCTAssertTrue(source.contains(".defaultScrollAnchor(.top, for: .initialOffset)"))
         XCTAssertTrue(controlsSource.contains(".help(\"Refresh\")"))
         XCTAssertTrue(controlsSource.contains(".help(\"Open Usage\")"))
         XCTAssertTrue(controlsSource.contains(".help(\"Choose account\")"))

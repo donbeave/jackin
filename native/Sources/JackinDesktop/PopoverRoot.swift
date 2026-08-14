@@ -167,6 +167,7 @@ public struct PopoverRoot: View {
             }
         }
         .formStyle(.grouped)
+        .defaultScrollAnchor(.top, for: .initialOffset)
         .accessibilityLabel("\(provider.displayLabel) usage details")
         .accessibilityIdentifier("popover.provider.\(provider.surfaceId)")
     }
