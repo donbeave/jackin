@@ -53,7 +53,7 @@ jobs:
 
       - name: Resolve Docs xtask contract
         id: contracts
-        uses: actions/github-script@373c709c69115d41ff229c7e5df9f8788daa9553 # v9.0.0
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
           CONTRACT: ${{ hashFiles('.cargo/**', 'Cargo.lock', 'Cargo.toml', 'rust-toolchain.toml', 'crates/*/Cargo.toml', 'crates/jackin-xtask/src/arch.rs', 'crates/jackin-xtask/src/cmd.rs', 'crates/jackin-xtask/src/docs.rs', 'crates/jackin-xtask/src/docs/**', 'crates/jackin-xtask/src/fs_util.rs', 'crates/jackin-xtask/src/main.rs', 'crates/jackin-xtask/src/report.rs') }}
         with:
