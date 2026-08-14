@@ -227,6 +227,8 @@ final class ArchitectureTests: XCTestCase {
         XCTAssertTrue(text.contains("unset CAPTURE_INACTIVE_APP"))
         XCTAssertTrue(text.contains("capture_with_relaunch"))
         XCTAssertTrue(text.contains("capture retries exhausted after $attempt launches"))
+        XCTAssertTrue(text.contains("--fixture \"$fixture\" --ui-test --open-usage"))
+        XCTAssertTrue(text.contains("--fixture \"$fixture\" --ui-test --open-popover"))
         XCTAssertTrue(text.contains("FOCUS_DRIVE_TOOL=$focus_tool"))
         XCTAssertTrue(text.contains("\"WINDOW_LAYER_MODE=all\""))
         XCTAssertTrue(text.contains("native/.build/visual-qa/final"))

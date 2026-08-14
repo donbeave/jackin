@@ -102,7 +102,8 @@ usage() {
   fi
   capture_with_relaunch env "${environment[@]}" \
     "$capture" "$app" "$owner" "$output/$file" "jackin❯ desktop" \
-    --fixture "$fixture" --open-usage --window-size "$size" --appearance "$appearance"
+    --fixture "$fixture" --ui-test --open-usage --window-size "$size" \
+    --appearance "$appearance"
 }
 
 popover() {
@@ -111,7 +112,7 @@ popover() {
     WINDOW_ID_TOOL="$window_tool" NOTIFICATION_DRIVE_TOOL="$notification_tool" \
     WINDOW_LAYER_MODE=all \
     "$capture" "$app" "$owner" "$output/$file" "" \
-    --fixture "$fixture" --open-popover --appearance "$appearance"
+    --fixture "$fixture" --ui-test --open-popover --appearance "$appearance"
 }
 
 usage usage-dark-active-F02.png F02-catalog-normal dark 920x620
