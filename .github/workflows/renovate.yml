@@ -32,10 +32,13 @@ jobs:
       - name: Cache Renovate repository cache
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
-          path: .renovate/cache
+          path: /tmp/renovate/cache
           key: renovate-${{ runner.os }}-${{ github.run_id }}
           restore-keys: |
             renovate-${{ runner.os }}-
+
+      - name: Prepare Renovate data directory
+        run: install -d -m 0777 /tmp/renovate /tmp/renovate/cache /tmp/renovate/repos
 
       - name: Self-hosted Renovate
         uses: renovatebot/github-action@316d7cd859606d6039a2182b7d69199e9b036835 # v46.2.1
@@ -43,7 +46,7 @@ jobs:
           token: ${{ secrets.RENOVATE_TOKEN }}
         env:
           RENOVATE_REPOSITORIES: ${{ github.repository }}
-          RENOVATE_BASE_DIR: ${{ github.workspace }}/.renovate
+          RENOVATE_BASE_DIR: /tmp/renovate
           RENOVATE_ONBOARDING: false
           RENOVATE_REPOSITORY_CACHE: enabled
           # Pin the git author identity so the DCO sign-off trailer in
