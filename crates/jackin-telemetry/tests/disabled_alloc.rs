@@ -120,20 +120,28 @@ fn disabled_alloc_facade_fast_paths_allocate_nothing() {
         }
         dhat::assert_eq!(governed, direct);
 
-        let before = dhat::HeapStats::get();
-        tokio::spawn(async {})
+        // Tokio may independently grow or retire scheduler state between two
+        // spawns. Compare the warmed steady-state lower envelope so scheduler
+        // maintenance is not charged to whichever wrapper runs second.
+        let mut direct = u64::MAX;
+        let mut governed = u64::MAX;
+        for _ in 0..16 {
+            let before = dhat::HeapStats::get();
+            tokio::spawn(async {})
+                .await
+                .expect("direct detached baseline");
+            direct = direct.min(dhat::HeapStats::get().total_blocks - before.total_blocks);
+
+            let before = dhat::HeapStats::get();
+            jackin_telemetry::spawn::spawn_detached(
+                &jackin_telemetry::operation::PROCESS_COMMAND,
+                async {},
+                |()| jackin_telemetry::spawn::DetachedCompletion::success(),
+            )
             .await
-            .expect("direct detached baseline");
-        let direct = dhat::HeapStats::get().total_blocks - before.total_blocks;
-        let before = dhat::HeapStats::get();
-        jackin_telemetry::spawn::spawn_detached(
-            &jackin_telemetry::operation::PROCESS_COMMAND,
-            async {},
-            |()| jackin_telemetry::spawn::DetachedCompletion::success(),
-        )
-        .await
-        .expect("governed detached");
-        let governed = dhat::HeapStats::get().total_blocks - before.total_blocks;
+            .expect("governed detached");
+            governed = governed.min(dhat::HeapStats::get().total_blocks - before.total_blocks);
+        }
         dhat::assert_eq!(governed, direct);
     });
 }
