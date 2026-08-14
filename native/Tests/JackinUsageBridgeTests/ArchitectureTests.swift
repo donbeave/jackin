@@ -235,7 +235,7 @@ final class ArchitectureTests: XCTestCase {
         XCTAssertTrue(text.contains("\"$output/$file\" \"jackin❯ desktop\""))
         XCTAssertTrue(capture.contains("\"$FOCUS_TOOL\" \"$pid\" 0"))
         XCTAssertTrue(capture.contains("application exited before reaching requested"))
-        XCTAssertTrue(capture.contains("CAPTURE_SETTLE_DELAY_SECONDS:-1"))
+        XCTAssertTrue(capture.contains("CAPTURE_SETTLE_DELAY_SECONDS:-3"))
         XCTAssertTrue(focusDrive.contains("activate(options: [.activateAllWindows])"))
         XCTAssertTrue(windowResolver.contains("if filter != nil"))
     }
