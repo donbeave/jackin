@@ -304,7 +304,7 @@ final class JackinDesktopUITests: XCTestCase {
         let provider = element("usage.provider.claude")
         let lastLimit = element("usage.limit.bucket:layout-long")
         provider.scroll(byDeltaX: 0, deltaY: -400)
-        for _ in 1..<8 where !lastLimit.isHittable {
+        for _ in 1..<8 {
             provider.scroll(byDeltaX: 0, deltaY: -320)
         }
         XCTAssertTrue(lastLimit.waitForHittable(timeout: 3))
@@ -321,10 +321,10 @@ final class JackinDesktopUITests: XCTestCase {
         XCTAssertTrue(lastLimit.waitForExistence(timeout: 3))
         XCTAssertTrue(refresh.isHittable)
         XCTAssertTrue(openUsage.isHittable)
-        for _ in 0..<8 where !lastLimit.isHittable {
+        for _ in 0..<8 {
             provider.swipeUp()
         }
-        XCTAssertTrue(lastLimit.isHittable)
+        XCTAssertTrue(lastLimit.waitForHittable(timeout: 3))
         XCTAssertTrue(refresh.isHittable)
         XCTAssertTrue(openUsage.isHittable)
     }
