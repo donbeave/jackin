@@ -80,9 +80,15 @@ struct DesktopArchitectureLint {
         require(!popover.contains("PopoverTabGrid"), "popover has no provider tab strip")
         require(
             popover.contains("HStack(spacing: 4) {")
-                && popover.contains("Label(\"Refresh\", systemImage:")
-                && popover.contains("Label(\"Open Usage\", systemImage:")
-                && popover.contains(".labelStyle(.iconOnly)")
+                && popover.contains(
+                    "Label(\"Refresh\", systemImage: \"arrow.clockwise\")\n"
+                        + "                        .labelStyle(.iconOnly)"
+                )
+                && popover.contains(
+                    "Label(\"Open Usage\", systemImage: \"macwindow\")\n"
+                        + "                        .labelStyle(.iconOnly)"
+                )
+                && !popover.contains("\n            .labelStyle(.iconOnly)")
                 && popover.contains("Spacer(minLength: 12)")
                 && popover.contains(".labelsHidden()")
                 && popover.contains(".help(\"Refresh\")")

@@ -257,6 +257,7 @@ public struct PopoverRoot: View {
                     }
                 } label: {
                     Label("Refresh", systemImage: "arrow.clockwise")
+                        .labelStyle(.iconOnly)
                 }
                 .keyboardShortcut("r", modifiers: [.command])
                 .disabled(store.refreshInProgress)
@@ -279,14 +280,13 @@ public struct PopoverRoot: View {
                     )
                 } label: {
                     Label("Open Usage", systemImage: "macwindow")
+                        .labelStyle(.iconOnly)
                 }
                 .keyboardShortcut(.defaultAction)
                 .accessibilityLabel("Open Usage")
                 .accessibilityIdentifier("popover.open-usage")
                 .help("Open Usage")
             }
-            .labelStyle(.iconOnly)
-
             Spacer(minLength: 12)
 
             if let provider = selectedProvider {

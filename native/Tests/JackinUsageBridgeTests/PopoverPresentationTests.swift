@@ -32,9 +32,19 @@ final class PopoverPresentationTests: XCTestCase {
         XCTAssertLessThan(limits.lowerBound, details.lowerBound)
         XCTAssertFalse(formSource.contains("Picker("))
         XCTAssertTrue(controlsSource.contains("HStack(spacing: 4)"))
-        XCTAssertTrue(controlsSource.contains("Label(\"Refresh\", systemImage:"))
-        XCTAssertTrue(controlsSource.contains("Label(\"Open Usage\", systemImage:"))
-        XCTAssertTrue(controlsSource.contains(".labelStyle(.iconOnly)"))
+        XCTAssertTrue(
+            controlsSource.contains(
+                "Label(\"Refresh\", systemImage: \"arrow.clockwise\")\n"
+                    + "                        .labelStyle(.iconOnly)"
+            )
+        )
+        XCTAssertTrue(
+            controlsSource.contains(
+                "Label(\"Open Usage\", systemImage: \"macwindow\")\n"
+                    + "                        .labelStyle(.iconOnly)"
+            )
+        )
+        XCTAssertFalse(controlsSource.contains("\n            .labelStyle(.iconOnly)"))
         XCTAssertTrue(controlsSource.contains("Spacer(minLength: 12)"))
         XCTAssertTrue(controlsSource.contains("Picker("))
         XCTAssertTrue(controlsSource.contains(".labelsHidden()"))

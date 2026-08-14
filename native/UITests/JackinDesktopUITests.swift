@@ -511,16 +511,28 @@ final class JackinDesktopUITests: XCTestCase {
     }
 
     private func ensureUsageWindowVisible(contentIdentifier: String? = nil) -> Bool {
+        let usageWindow = application.windows["usage-window"]
         DistributedNotificationCenter.default().postNotificationName(
             Notification.Name("com.jackin-project.desktop.visual-qa.show-usage"),
             object: nil,
             userInfo: nil,
             deliverImmediately: true
         )
-        guard application.windows["usage-window"].waitForExistence(timeout: 3) else { return false }
+        guard usageWindow.waitForExistence(timeout: 3) else { return false }
         application.activate()
+        if !usageWindow.waitForExistence(timeout: 1) {
+            // XCTest can invalidate its native-window proxy while activating an empty/error
+            // split. Re-present the retained fixture window, then require the same real host.
+            DistributedNotificationCenter.default().postNotificationName(
+                Notification.Name("com.jackin-project.desktop.visual-qa.show-usage"),
+                object: nil,
+                userInfo: nil,
+                deliverImmediately: true
+            )
+            guard usageWindow.waitForExistence(timeout: 3) else { return false }
+        }
         guard let contentIdentifier else { return true }
-        return element(contentIdentifier).waitForExistence(timeout: 3)
+        return element(contentIdentifier).waitForExistence(timeout: 5)
     }
 
     private func handlesSystemAccessibilityAuditFalsePositive(
