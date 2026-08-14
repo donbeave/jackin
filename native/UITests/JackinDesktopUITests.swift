@@ -237,9 +237,19 @@ final class JackinDesktopUITests: XCTestCase {
         let brand = application.staticTexts["jackin❯ desktop"]
         XCTAssertTrue(brand.exists)
         XCTAssertEqual(brand.label, "jackin❯ desktop")
-        XCTAssertTrue(element("popover.account-picker").exists)
-        XCTAssertTrue(element("popover.refresh").exists)
-        XCTAssertTrue(element("popover.open-usage").exists)
+        let accountPicker = element("popover.account-picker")
+        let refresh = element("popover.refresh")
+        let openUsage = element("popover.open-usage")
+        XCTAssertTrue(accountPicker.exists)
+        XCTAssertTrue(refresh.exists)
+        XCTAssertTrue(openUsage.exists)
+        XCTAssertEqual(accountPicker.elementType, .popUpButton)
+        XCTAssertEqual(refresh.elementType, .button)
+        XCTAssertEqual(openUsage.elementType, .button)
+        XCTAssertEqual(refresh.label, "Refresh")
+        XCTAssertEqual(openUsage.label, "Open Usage")
+        XCTAssertGreaterThan(accountPicker.frame.minX, refresh.frame.maxX)
+        XCTAssertGreaterThan(accountPicker.frame.minX, openUsage.frame.maxX)
     }
 
     func testPopoverRoutesProviderContextIntoUsage() {
@@ -303,11 +313,13 @@ final class JackinDesktopUITests: XCTestCase {
 
         let provider = element("usage.provider.claude")
         let lastLimit = element("usage.limit.bucket:layout-long")
-        provider.scroll(byDeltaX: 0, deltaY: -400)
-        for _ in 1..<8 {
-            provider.scroll(byDeltaX: 0, deltaY: -320)
+        XCTAssertTrue(lastLimit.waitForExistence(timeout: 3))
+        // Exceed the fixture envelope so the proof does not depend on wheel-event
+        // coalescing or on the exact height of future maximum-content fixtures.
+        for _ in 0..<3 {
+            provider.scroll(byDeltaX: 0, deltaY: -10_000)
         }
-        XCTAssertTrue(lastLimit.waitForHittable(timeout: 3))
+        XCTAssertTrue(lastLimit.waitForHittable(timeout: 5))
     }
 
     func testMaximumPopoverContentRemainsScrollable() {
@@ -439,7 +451,11 @@ final class JackinDesktopUITests: XCTestCase {
             opened = application.windows["usage-window"].waitForExistence(timeout: 8)
         }
         XCTAssertTrue(opened, application.debugDescription)
-        return opened
+        guard opened else { return false }
+        // Match popover launches: XCTest can retain activation between per-test app
+        // processes, leaving otherwise visible native window controls disabled.
+        application.activate()
+        return true
     }
 
     private func launchPopover(fixture: String, selection: String) -> Bool {
@@ -502,6 +518,7 @@ final class JackinDesktopUITests: XCTestCase {
             deliverImmediately: true
         )
         guard application.windows["usage-window"].waitForExistence(timeout: 3) else { return false }
+        application.activate()
         guard let contentIdentifier else { return true }
         return element(contentIdentifier).waitForExistence(timeout: 3)
     }

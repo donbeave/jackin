@@ -252,6 +252,22 @@ final class ArchitectureTests: XCTestCase {
         XCTAssertTrue(text.contains("window.orderFrontRegardless()"))
         XCTAssertTrue(text.contains("window.collectionBehavior.insert(.moveToActiveSpace)"))
 
+        let delegate =
+            sourcesRoot
+            .appendingPathComponent("JackinDesktop")
+            .appendingPathComponent("DesktopAppDelegate.swift")
+        let delegateText = try String(contentsOf: delegate, encoding: .utf8)
+        XCTAssertFalse(
+            delegateText.contains(
+                "if visualQALaunchOptions.elevatesFixtureWindow {\n            return .accessory"
+            )
+        )
+        XCTAssertTrue(
+            delegateText.contains(
+                "if visualQALaunchOptions.openUsage || visualQALaunchOptions.openPopover"
+            )
+        )
+
         let options =
             sourcesRoot
             .appendingPathComponent("JackinDesktop")

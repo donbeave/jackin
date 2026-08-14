@@ -79,7 +79,7 @@ the execution order above:
 
 | Feedback requirement | Owning plan/step | Selected contract |
 |---|---|---|
-| Popover identity, active account, selector, Limits before Details | 005 steps 1, 3 | Rust supplies the provider/account identity record; the picker appears only for multiple stable accounts. |
+| Popover identity, active account, selector, Limits before Details | 005 steps 1, 3 | Rust supplies the provider/account identity record; the picker appears only for multiple stable accounts at the trailing footer edge, while Refresh/Open Usage remain separate adjacent leading icon-only system controls. |
 | Usage identity and Details before Limits | 005 steps 1, 4 | Same Rust identity/activity projection; deeper window keeps Details before Limits. |
 | Remove Focused/Header/Provider/duplicate Account/Fresh | 005 step 1 | Remove at the shared Rust presentation owner; preserve only actionable exceptional state. |
 | Honest `Updating…` and one terminal recency phrase | 003 steps 1, 5; 005 steps 1–2 | Broker generation is truth; Swift renders its immutable phase and never invents freshness. |

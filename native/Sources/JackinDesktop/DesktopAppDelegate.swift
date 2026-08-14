@@ -571,9 +571,6 @@ public final class DesktopAppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private var initialActivationPolicy: NSApplication.ActivationPolicy {
-        if visualQALaunchOptions.elevatesFixtureWindow {
-            return .accessory
-        }
         if visualQALaunchOptions.openUsage || visualQALaunchOptions.openPopover
             || visualQALaunchOptions.invalidFixtureID != nil
         {

@@ -16,9 +16,9 @@ that is ambiguous or duplicated.
 Required information order:
 
 1. Provider identity and selected account.
-2. Account selector when multiple accounts are available.
-3. Limits.
-4. Details.
+2. Limits.
+3. Details.
+4. Footer account selector when multiple accounts are available.
 
 Requirements:
 
@@ -26,8 +26,16 @@ Requirements:
 - Keep the provider identity block first.
 - Always identify the currently displayed account in the first provider block. This
   must work even when only one account exists and no account picker is shown.
-- Keep any multi-account selector near the top so the selected account can be changed
-  before reading its limits.
+- Move the multi-account selector out of the content form and place it at the trailing
+  edge of the footer. The identity block remains the immediate, noninteractive source
+  of selected-account context while the selector stays available during scrolling.
+- Keep Refresh and Open Usage at the leading edge of the footer as system SF Symbol
+  buttons without visible text. Retain semantic labels, keyboard behavior, hover help,
+  and native hit regions for VoiceOver, Voice Control, and pointer users.
+- Keep the two footer actions adjacent at the leading side, without combining unlike
+  actions into a composite control. Keep the account picker visually separate on the
+  trailing side. Do not paint a footer background or add custom glass/material
+  effects; the system `NSPopover` and controls own Liquid Glass.
 - The exact visual composition of the account indicator is not selected yet. It may
   use the account label, username/email, or another existing Rust-owned account label,
   but it must make the active account immediately unambiguous without scrolling.
@@ -96,7 +104,11 @@ offline states may remain when they communicate distinct, actionable information
 - Single-account Anthropic popover: the provider block identifies Anthropic and the
   active account without scrolling; Limits precede Details.
 - Multi-account popover: the identity block reflects the selected account, changing
-  the picker updates that identity, and the displayed limits belong to that account.
+  the trailing footer picker updates that identity, and the displayed limits belong
+  to that account.
+- Popover footer: Refresh and Open Usage are icon-only system controls with accessible
+  labels and hover help; the account picker stays trailing and remains reachable while
+  long content scrolls.
 - Anthropic Details contains no Focused, Header, Provider, duplicated Account, or
   ordinary Fresh row.
 - Usage opened from the Anthropic popover selects Anthropic and preserves the account

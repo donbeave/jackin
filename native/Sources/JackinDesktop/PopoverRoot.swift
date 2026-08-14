@@ -117,29 +117,12 @@ public struct PopoverRoot: View {
 
     private func providerForm(_ provider: PresentationStore.GlanceProviderRow) -> some View {
         let surface = store.surfaces.first { $0.id == provider.surfaceId }
-        let accounts = store.accountsForSurface(provider.surfaceId)
         let metadataRows = surface?.detailPresentation.rows.filter { $0.kind != .bucket } ?? []
         let limitRows = surface?.detailPresentation.rows.filter { $0.kind == .bucket } ?? []
 
         return Form {
             Section {
                 providerIdentity(provider)
-            }
-
-            if accounts.count > 1 {
-                Section {
-                    Picker("Account", selection: accountSelection(accounts, provider: provider)) {
-                        ForEach(accounts) { account in
-                            Text(account.accountLabel)
-                                .tag(account.accountKey)
-                        }
-                    }
-                    .pickerStyle(.menu)
-                    .accessibilityLabel("Account")
-                    .accessibilityIdentifier("popover.account-picker")
-                } header: {
-                    sectionHeader("Account")
-                }
             }
 
             if !limitRows.isEmpty {
@@ -264,38 +247,68 @@ public struct PopoverRoot: View {
     }
 
     private var controls: some View {
-        HStack {
-            Button {
-                if let id = selectedProvider?.surfaceId {
-                    store.refresh(surfaceId: id)
-                } else {
-                    store.refreshAll()
+        HStack(spacing: 12) {
+            HStack(spacing: 4) {
+                Button {
+                    if let id = selectedProvider?.surfaceId {
+                        store.refresh(surfaceId: id)
+                    } else {
+                        store.refreshAll()
+                    }
+                } label: {
+                    Label("Refresh", systemImage: "arrow.clockwise")
                 }
-            } label: {
-                Label("Refresh", systemImage: "arrow.clockwise")
-            }
-            .keyboardShortcut("r", modifiers: [.command])
-            .disabled(store.refreshInProgress)
-            .accessibilityIdentifier("popover.refresh")
+                .keyboardShortcut("r", modifiers: [.command])
+                .disabled(store.refreshInProgress)
+                .accessibilityLabel("Refresh")
+                .accessibilityIdentifier("popover.refresh")
+                .help("Refresh")
 
-            Spacer()
-
-            Button("Open Usage") {
-                guard let provider = selectedProvider else {
-                    onOpenUsage?(nil)
-                    return
-                }
-                let accountKey = store.accountsForSurface(provider.surfaceId)
-                    .first(where: \.selected)?.accountKey
-                onOpenUsage?(
-                    UsageNavigationContext(
-                        surfaceId: provider.surfaceId,
-                        accountKey: accountKey
+                Button {
+                    guard let provider = selectedProvider else {
+                        onOpenUsage?(nil)
+                        return
+                    }
+                    let accountKey = store.accountsForSurface(provider.surfaceId)
+                        .first(where: \.selected)?.accountKey
+                    onOpenUsage?(
+                        UsageNavigationContext(
+                            surfaceId: provider.surfaceId,
+                            accountKey: accountKey
+                        )
                     )
-                )
+                } label: {
+                    Label("Open Usage", systemImage: "macwindow")
+                }
+                .keyboardShortcut(.defaultAction)
+                .accessibilityLabel("Open Usage")
+                .accessibilityIdentifier("popover.open-usage")
+                .help("Open Usage")
             }
-            .keyboardShortcut(.defaultAction)
-            .accessibilityIdentifier("popover.open-usage")
+            .labelStyle(.iconOnly)
+
+            Spacer(minLength: 12)
+
+            if let provider = selectedProvider {
+                let accounts = store.accountsForSurface(provider.surfaceId)
+                if accounts.count > 1 {
+                    Picker(
+                        "Account",
+                        selection: accountSelection(accounts, provider: provider)
+                    ) {
+                        ForEach(accounts) { account in
+                            Text(account.accountLabel)
+                                .tag(account.accountKey)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .labelsHidden()
+                    .frame(width: 220, alignment: .trailing)
+                    .accessibilityLabel("Account")
+                    .accessibilityIdentifier("popover.account-picker")
+                    .help("Choose account")
+                }
+            }
         }
     }
 }

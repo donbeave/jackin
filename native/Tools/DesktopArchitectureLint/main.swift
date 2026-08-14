@@ -53,6 +53,10 @@ struct DesktopArchitectureLint {
         require(
             delegate.contains("NSApp.setActivationPolicy(initialActivationPolicy)")
                 && delegate.contains("visualQALaunchOptions.openUsage")
+                && delegate.contains("visualQALaunchOptions.openPopover")
+                && !delegate.contains(
+                    "if visualQALaunchOptions.elevatesFixtureWindow {\n            return .accessory"
+                )
                 && delegate.contains("return .accessory"),
             "fixture windows launch regular while production menu-bar mode stays accessory"
         )
@@ -68,9 +72,24 @@ struct DesktopArchitectureLint {
         )
 
         require(popover.contains("Form {"), "popover uses native Form")
-        require(popover.contains("Picker(\"Account\""), "popover uses native account Picker")
+        require(
+            popover.contains("Picker(") && popover.contains("\"Account\","),
+            "popover uses native account Picker"
+        )
         require(popover.contains("ProgressView(value:"), "popover uses native limit progress")
         require(!popover.contains("PopoverTabGrid"), "popover has no provider tab strip")
+        require(
+            popover.contains("HStack(spacing: 4) {")
+                && popover.contains("Label(\"Refresh\", systemImage:")
+                && popover.contains("Label(\"Open Usage\", systemImage:")
+                && popover.contains(".labelStyle(.iconOnly)")
+                && popover.contains("Spacer(minLength: 12)")
+                && popover.contains(".labelsHidden()")
+                && popover.contains(".help(\"Refresh\")")
+                && popover.contains(".help(\"Open Usage\")")
+                && popover.contains(".help(\"Choose account\")"),
+            "popover footer uses adjacent semantic icon actions and trailing account Picker"
+        )
 
         require(
             splitController.contains("NSSplitViewController")

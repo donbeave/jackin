@@ -18,16 +18,29 @@ final class PopoverPresentationTests: XCTestCase {
         }
     }
 
-    func testPopoverOrderIsIdentityPickerLimitsDetails() throws {
+    func testPopoverContentOrderAndFooterPlacement() throws {
         let source = try popoverSource
         let identity = try XCTUnwrap(source.range(of: "providerIdentity(provider)"))
-        let picker = try XCTUnwrap(source.range(of: "if accounts.count > 1"))
         let limits = try XCTUnwrap(source.range(of: "if !limitRows.isEmpty"))
         let details = try XCTUnwrap(source.range(of: "if !metadataRows.isEmpty"))
+        let formEnd = try XCTUnwrap(source.range(of: "private func providerIdentity"))
+        let controls = try XCTUnwrap(source.range(of: "private var controls"))
+        let formSource = source[identity.lowerBound..<formEnd.lowerBound]
+        let controlsSource = source[controls.lowerBound...]
 
-        XCTAssertLessThan(identity.lowerBound, picker.lowerBound)
-        XCTAssertLessThan(picker.lowerBound, limits.lowerBound)
+        XCTAssertLessThan(identity.lowerBound, limits.lowerBound)
         XCTAssertLessThan(limits.lowerBound, details.lowerBound)
+        XCTAssertFalse(formSource.contains("Picker("))
+        XCTAssertTrue(controlsSource.contains("HStack(spacing: 4)"))
+        XCTAssertTrue(controlsSource.contains("Label(\"Refresh\", systemImage:"))
+        XCTAssertTrue(controlsSource.contains("Label(\"Open Usage\", systemImage:"))
+        XCTAssertTrue(controlsSource.contains(".labelStyle(.iconOnly)"))
+        XCTAssertTrue(controlsSource.contains("Spacer(minLength: 12)"))
+        XCTAssertTrue(controlsSource.contains("Picker("))
+        XCTAssertTrue(controlsSource.contains(".labelsHidden()"))
+        XCTAssertTrue(controlsSource.contains(".help(\"Refresh\")"))
+        XCTAssertTrue(controlsSource.contains(".help(\"Open Usage\")"))
+        XCTAssertTrue(controlsSource.contains(".help(\"Choose account\")"))
     }
 
     @MainActor
