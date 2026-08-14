@@ -14,6 +14,16 @@ use jackin_usage::host::{
 pub(crate) struct DesktopSecretSource;
 
 impl ProviderCredentialSecretSource for DesktopSecretSource {
+    fn lookup_declaration(
+        &self,
+        config: &AppConfig,
+        workspace: Option<&WorkspaceName>,
+        role: Option<&str>,
+        entry: UsageCredentialEnvName,
+    ) -> Option<jackin_config::EnvValue> {
+        jackin_env::lookup_operator_env_declaration(config, role, workspace, entry.name)
+    }
+
     fn resolve_secret(
         &self,
         config: &AppConfig,

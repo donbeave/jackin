@@ -20,6 +20,16 @@ mod store;
 struct CliUsageSecretSource;
 
 impl jackin_usage::host::ProviderCredentialSecretSource for CliUsageSecretSource {
+    fn lookup_declaration(
+        &self,
+        config: &jackin_config::AppConfig,
+        workspace: Option<&jackin_core::WorkspaceName>,
+        role: Option<&str>,
+        entry: jackin_core::UsageCredentialEnvName,
+    ) -> Option<jackin_config::EnvValue> {
+        jackin_env::lookup_operator_env_declaration(config, role, workspace, entry.name)
+    }
+
     fn resolve_secret(
         &self,
         config: &jackin_config::AppConfig,

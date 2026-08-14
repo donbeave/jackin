@@ -62,6 +62,16 @@ pub(crate) fn apple_runtime_mount(
 struct RuntimeSecretSource;
 
 impl ProviderCredentialSecretSource for RuntimeSecretSource {
+    fn lookup_declaration(
+        &self,
+        config: &AppConfig,
+        workspace: Option<&WorkspaceName>,
+        role: Option<&str>,
+        entry: UsageCredentialEnvName,
+    ) -> Option<jackin_config::EnvValue> {
+        jackin_env::lookup_operator_env_declaration(config, role, workspace, entry.name)
+    }
+
     fn resolve_secret(
         &self,
         config: &AppConfig,
