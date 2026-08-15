@@ -91,9 +91,24 @@ static SINK_HOST_TERMINAL: SinkHostTerminal = SinkHostTerminal;
 #[derive(Debug)]
 struct JackinStandaloneDialogSink;
 
+impl JackinStandaloneDialogSink {
+    fn error_popup_with_renderer(
+        title: &str,
+        message: &str,
+        renderer: impl FnOnce(
+            &str,
+            &str,
+            &'static dyn LaunchHostTerminal,
+            &'static str,
+        ) -> anyhow::Result<()>,
+    ) -> anyhow::Result<()> {
+        renderer(title, message, &SINK_HOST_TERMINAL, env!("JACKIN_VERSION"))
+    }
+}
+
 impl StandaloneDialogSink for JackinStandaloneDialogSink {
     fn error_popup(&self, title: &str, message: &str) -> anyhow::Result<()> {
-        standalone_error_popup(title, message, &SINK_HOST_TERMINAL, env!("JACKIN_VERSION"))
+        Self::error_popup_with_renderer(title, message, standalone_error_popup)
     }
 
     fn exit_dialog_with_inspect(

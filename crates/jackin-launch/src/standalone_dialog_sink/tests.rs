@@ -25,11 +25,29 @@ fn sink_host_terminal_is_debug_mode_matches_diagnostics() {
 
 #[test]
 fn sink_forwards_through_standalone_dialog_renderers() {
-    // Smoke-render into a thread that does not own a terminal. We
-    // expect the renderer to short-circuit (no TTY) and return an
-    // error — the goal here is that the sink impl wires through
-    // without a panic, not that it produces a real dialog.
-    let result = JackinStandaloneDialogSink.error_popup("title", "message");
-    // Either Ok (silent short-circuit) or Err (no TTY) is acceptable.
-    drop(result);
+    let mut forwarded = None;
+    JackinStandaloneDialogSink::error_popup_with_renderer(
+        "title",
+        "message",
+        |title, message, host, version| {
+            forwarded = Some((
+                title.to_owned(),
+                message.to_owned(),
+                host.is_debug_mode(),
+                version,
+            ));
+            Ok(())
+        },
+    )
+    .unwrap();
+
+    assert_eq!(
+        forwarded,
+        Some((
+            "title".to_owned(),
+            "message".to_owned(),
+            jackin_diagnostics::is_debug_mode(),
+            env!("JACKIN_VERSION"),
+        ))
+    );
 }
