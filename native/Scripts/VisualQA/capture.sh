@@ -49,30 +49,33 @@ if [ -n "${TMPDIR:-}" ]; then
 fi
 
 mkdir -p "$(dirname "$OUT")"
+prepare_swift_tool() {
+  tool=$1
+  source=$2
+  override=$3
+  needs_compile=0
+  [ ! -x "$tool" ] && needs_compile=1
+  if [ -z "$override" ] && [ "$source" -nt "$tool" ]; then
+    needs_compile=1
+  fi
+  [ "$needs_compile" -eq 0 ] && return
+  command -v swiftc >/dev/null 2>&1 || {
+    echo "swiftc missing; set an explicit tool override" >&2
+    exit 2
+  }
+  swiftc -O "$source" -o "$tool"
+}
+
+window_id_override=${WINDOW_ID_TOOL:-}
 TOOL=${WINDOW_ID_TOOL:-"${TMPDIR:-/tmp}/tailrocks-window-id"}
-if [ ! -x "$TOOL" ]; then
-  command -v swiftc >/dev/null 2>&1 || {
-    echo "swiftc missing; set WINDOW_ID_TOOL" >&2
-    exit 2
-  }
-  swiftc -O "$HERE/window-id.swift" -o "$TOOL"
-fi
+prepare_swift_tool "$TOOL" "$HERE/window-id.swift" "$window_id_override"
+notification_drive_override=${NOTIFICATION_DRIVE_TOOL:-}
 DRIVE_TOOL=${NOTIFICATION_DRIVE_TOOL:-"${TMPDIR:-/tmp}/tailrocks-notification-drive"}
-if [ ! -x "$DRIVE_TOOL" ]; then
-  command -v swiftc >/dev/null 2>&1 || {
-    echo "swiftc missing; set NOTIFICATION_DRIVE_TOOL" >&2
-    exit 2
-  }
-  swiftc -O "$HERE/notification-drive.swift" -o "$DRIVE_TOOL"
-fi
+prepare_swift_tool "$DRIVE_TOOL" "$HERE/notification-drive.swift" \
+  "$notification_drive_override"
+focus_drive_override=${FOCUS_DRIVE_TOOL:-}
 FOCUS_TOOL=${FOCUS_DRIVE_TOOL:-"${TMPDIR:-/tmp}/tailrocks-focus-drive"}
-if [ ! -x "$FOCUS_TOOL" ]; then
-  command -v swiftc >/dev/null 2>&1 || {
-    echo "swiftc missing; set FOCUS_DRIVE_TOOL" >&2
-    exit 2
-  }
-  swiftc -O "$HERE/focus-drive.swift" -o "$FOCUS_TOOL"
-fi
+prepare_swift_tool "$FOCUS_TOOL" "$HERE/focus-drive.swift" "$focus_drive_override"
 
 EXEC="$APP/Contents/MacOS/"
 matched=$(pgrep -f "$EXEC" 2>/dev/null | wc -l | tr -d ' ')
@@ -106,10 +109,10 @@ pid=$(pgrep -f "$EXEC" | head -1 || true)
 executable=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$APP/Contents/Info.plist")
 if [ -n "${CAPTURE_STATUS_ITEM_INDEX:-}" ]; then
   if [ "${CAPTURE_STATUS_ITEM_BUTTON:-left}" = right ]; then
+    status_item_override=${STATUS_ITEM_TOOL:-}
     STATUS_TOOL=${STATUS_ITEM_TOOL:-"${TMPDIR:-/tmp}/tailrocks-status-item-drive"}
-    if [ ! -x "$STATUS_TOOL" ]; then
-      swiftc -O "$HERE/status-item-drive.swift" -o "$STATUS_TOOL"
-    fi
+    prepare_swift_tool "$STATUS_TOOL" "$HERE/status-item-drive.swift" \
+      "$status_item_override"
     "$STATUS_TOOL" "$pid" "$CAPTURE_STATUS_ITEM_INDEX" right
   else
     osascript -e \
