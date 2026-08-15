@@ -18,9 +18,15 @@ async fn exports_host_process_matrix_without_operator_material() {
         ],
     ))
     .unwrap();
-    exec_async(&ExecRequest::new("docker", ["operator-secret-argument"]))
-        .await
-        .unwrap();
+    let fixture = tempfile::tempdir().unwrap();
+    let docker = fixture.path().join("docker");
+    std::os::unix::fs::symlink("/bin/sh", &docker).unwrap();
+    exec_async(&ExecRequest::new(
+        docker,
+        ["-c", "printf operator-secret-argument >&2; exit 17"],
+    ))
+    .await
+    .unwrap();
     exec_async(&ExecRequest::new("sh", ["-c", "sleep 1"]).timeout(Duration::from_millis(5)))
         .await
         .unwrap();

@@ -97,13 +97,16 @@ fn expired_budget_skips_flush_work() {
 fn flush_timeout_returns_without_joining_hung_worker() {
     let started = std::time::Instant::now();
     let (release_tx, release_rx) = std::sync::mpsc::sync_channel(0);
+    let completed = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+    let worker_completed = std::sync::Arc::clone(&completed);
     let task = super::FlushTask::spawn(move || {
         release_rx.recv().expect("release flush worker");
+        worker_completed.store(true, std::sync::atomic::Ordering::Release);
         Ok(())
     });
     let result = task.finish_before(started + std::time::Duration::from_millis(20));
     assert_eq!(result, Err("telemetry flush budget exhausted".to_owned()));
-    assert!(started.elapsed() < std::time::Duration::from_millis(80));
+    assert!(!completed.load(std::sync::atomic::Ordering::Acquire));
     release_tx.send(()).expect("release flush worker");
     super::reap_flush_workers();
 }

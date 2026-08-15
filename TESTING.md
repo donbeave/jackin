@@ -380,6 +380,7 @@ Trigger manually: `gh workflow run Hygiene` (or wait for the daily cron).
 
 | Lane | Job | Artifact | Gate? |
 |---|---|---|---|
+| Criterion performance | `bench-run` | `criterion-results-<run-id>` | 5% regression ceiling against reviewed GitHub-hosted x86_64 medians |
 | Beta clippy canary | `beta-clippy-canary` | `beta-clippy-log` | advisory — `continue-on-error` |
 | Coverage (llvm-cov) | `coverage` | `coverage.lcov` | advisory — artifact only |
 | Miri pure crates | `miri` | step summary | advisory |
@@ -390,6 +391,13 @@ Trigger manually: `gh workflow run Hygiene` (or wait for the daily cron).
 | rust-analyzer clean | `rust-analyzer-clean` | `ra-stats.txt` | advisory — `continue-on-error` on error grep |
 | Per-crate build times | `build-time-measure` | `build-times.json` (5 crates × clean/incremental) | scheduled `build-time` ceiling ratchet |
 | dylint render purity | `dylint-advisory` | `dylint-findings` | advisory — `continue-on-error`; nightly pin in `crates/jackin-lints` |
+
+The Criterion gate compares absolute medians on its pinned GitHub-hosted x86_64
+runner class. Do not normalize those medians with an unrelated microbenchmark:
+the calibration workload and frame/render workloads respond differently to
+runner CPU variation, which can manufacture a regression while the measured
+workload remains stable. Failed comparisons still upload the current Criterion
+estimates so a baseline change can be reviewed from retained evidence.
 
 
 
