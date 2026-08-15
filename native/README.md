@@ -98,6 +98,8 @@ The default bundle is `native/dist/JackinDesktop.app`. Build/verify/run print it
 ## Tests
 
 ```bash
+mise run desktop-ci
+
 mise run desktop-format-check
 mise run desktop-lint
 mise run desktop-deadcode
@@ -108,7 +110,9 @@ cd native
 swift test -c release
 ```
 
-`desktop-test` covers 251 Rust/FFI tests plus native architecture/parity harnesses. SwiftPM tests protect ownership, navigation normalization, native component confinement, brand tokens, and visual-QA fixture isolation. The UI suite runs the real app host and audits popover, Overview, provider detail, sidebar coordinates, commands, scrolling, recovery, and retained context.
+`desktop-ci` is the required macOS PR contract: generated bindings, formatting,
+SwiftLint, Rust/FFI plus parity harnesses, then the complete SwiftPM XCTest suite.
+`desktop-test` covers 291 Rust/FFI tests plus native architecture/parity harnesses. SwiftPM tests protect ownership, navigation normalization, native component confinement, brand tokens, and visual-QA fixture isolation. The UI suite runs the real app host and audits popover, Overview, provider detail, sidebar coordinates, commands, scrolling, recovery, and retained context.
 
 Explicit visual-QA launch flags (`--fixture`, `--open-popover`, `--open-usage`, `--selection`, `--window-size`, `--appearance`) never activate unless `--fixture` is present in argv and never call the bridge or real credentials. Fixture runs carry a persistent visible Fixture badge, and their frozen account/refresh projections exercise immediate selection plus `Updating…` → terminal activity. Environment variables cannot enable fabricated data. Moving fixture code into a debug-only target remains a maintenance follow-up.
 
