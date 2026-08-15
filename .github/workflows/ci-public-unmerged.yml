@@ -972,6 +972,8 @@ jobs:
     needs: [changes, cargo-registry-warmup]
     if: >-
       always() && !failure() && !cancelled() &&
+      (needs.changes.outputs.result-reuse != 'true' ||
+       needs.changes.outputs.workflows == 'true') &&
       (needs.changes.outputs.rust == 'true' ||
        github.event_name == 'schedule' ||
        github.event_name == 'workflow_dispatch')
