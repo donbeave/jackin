@@ -237,7 +237,7 @@ version = "6.0.1"
 backend = "cargo:cargo-dylint"
 
 [[tools."cargo:cargo-fuzz"]]
-version = "0.13.1"
+version = "0.13.2"
 backend = "cargo:cargo-fuzz"
 
 [[tools."cargo:cargo-hack"]]
