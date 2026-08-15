@@ -494,6 +494,8 @@ final class ArchitectureTests: XCTestCase {
             encoding: .utf8
         )
         XCTAssertTrue(root.contains("UsageWindowModel"))
+        XCTAssertTrue(root.contains("case .none:\n                    return"))
+        XCTAssertFalse(root.contains("case .overview, .none:"))
         let overview = try String(
             contentsOf: usageDir.appendingPathComponent("OverviewListView.swift"),
             encoding: .utf8
@@ -562,6 +564,19 @@ final class ArchitectureTests: XCTestCase {
         XCTAssertTrue(popover.contains("Text(\"jackin❯ desktop\")"))
         XCTAssertTrue(popover.contains(".frame(maxWidth: .infinity)"))
         XCTAssertFalse(popover.contains("popoverBrandHeader.background"))
+    }
+
+    func testFixtureWindowVisibilityLeaseEndsOnlyWithWindowLifecycle() throws {
+        let controller = try String(
+            contentsOf: sourcesRoot.appendingPathComponent(
+                "JackinDesktop/UsageWindowController.swift"),
+            encoding: .utf8
+        )
+
+        XCTAssertTrue(controller.contains("while true"))
+        XCTAssertFalse(controller.contains("for _ in 0..<120"))
+        XCTAssertTrue(controller.contains("fixtureVisibilityTask?.cancel()"))
+        XCTAssertTrue(controller.contains("visibilityDesired = false"))
     }
 
     func testVisualQAStateRestoresLiquidGlassAfterDarkMode() throws {

@@ -41,9 +41,10 @@
   `plans/009-ci-testing-docs-hygiene.md`
 - **Category**: bug, tech-debt, tests, docs
 - **Planned at**: commit `27d0d9b3`, 2026-08-13
-- **Execution state**: IN PROGRESS — the final popover-footer refinement is implemented
-  and passes the branch-head Swift, architecture, and real-host UI suites. A fresh
-  Clear/Tinted visual and accessibility matrix remains pending.
+- **Execution state**: IN PROGRESS — the final popover-footer refinement passes the
+  branch-head Swift, architecture, and real-host UI suites. The fresh Clear/Tinted
+  visual and accessibility matrices also pass. Final union dependencies and cleanup
+  remain gated by Plans 003 and 009.
 
 ## Why this matters
 

@@ -29,11 +29,11 @@
   `plans/008-backend-parity-fail-closed.md`
 - **Category**: security, bug, perf, tech-debt, tests, docs, direction
 - **Planned at**: commit `27d0d9b3`, 2026-08-13
-- **Execution state**: BLOCKED — implementation and local gates pass, including
-  the complete Docker E2E profile on macOS 26.5.2 with OrbStack 29.4.0. This host
-  has no Docker Desktop installation, so the required real Docker Desktop run
-  remains unavailable. Operator prerequisite: install/start Docker Desktop, select
-  its Docker context, then run `cargo xtask ci --e2e` and retain the CI/PR result.
+- **Execution state**: DONE — implementation and local gates pass, including the
+  complete Docker E2E profile on macOS 26.5.2 with OrbStack 29.4.0. The operator
+  confirmed OrbStack is the sole supported runtime for this lane. Exact
+  `cargo xtask ci --e2e` passed on commit `ef0e4d7f`; durable evidence is recorded in
+  PR #864.
 
 ## Why this matters
 
@@ -132,7 +132,7 @@ this plan; they request and join broker generations for accounts explicitly forw
 at launch.
 
 Why broker, not another filesystem lock: no primary Docker source guarantees coherent
-`flock` semantics across macOS host sharing and multiple Docker Desktop containers.
+`flock` semantics across macOS host sharing and multiple OrbStack containers.
 The existing whole-tree mount also cannot enforce account visibility. A host broker
 gives one serialization authority and a capability boundary that can be tested.
 
@@ -420,7 +420,7 @@ make zero provider calls. Never fall back to the old filesystem path.
 one generation, preserve last-good on failure, and never invoke provider code
 locally.
 
-### Step 6: Prove the real process and Docker Desktop contract
+### Step 6: Prove the real process and OrbStack contract
 
 Add an instrumented fake provider/counter and deterministic barriers, extending
 the Step 3 target `crates/jackin/tests/usage_broker_e2e.rs`, covering:
@@ -439,13 +439,13 @@ the Step 3 target `crates/jackin/tests/usage_broker_e2e.rs`, covering:
 - broker/state unavailable -> zero calls;
 - no global usage tree is mounted.
 
-Run these on supported macOS 26 with Docker Desktop, not only a Linux temp directory.
-If normal hosted CI cannot provide Docker Desktop, document the gate as a named
+Run these on supported macOS 26 with OrbStack, not only a Linux temp directory.
+If normal hosted CI cannot provide OrbStack, document the gate as a named
 mandatory lane in `TESTING.md` (command, expected machine-readable output =
 nextest JUnit under `target/nextest/docker-e2e/`, and the rule that the active PR
 completion waits for it); the durable evidence is the PR check/comment recording
 that run, never a committed file. Documenting the lane is required **in
-addition to** running it, never instead: until a real macOS 26 + Docker Desktop
+addition to** running it, never instead: until a real macOS 26 + OrbStack
 run is recorded in the PR, this plan's status is BLOCKED, not DONE. Temporary
 counters/logs live in ignored `.build`/`target` directories and are deleted
 after the run. When touching `TESTING.md`/`HOST_AND_CONTAINER.md`, keep the broker
@@ -454,7 +454,7 @@ command without undoing this contract.
 
 **Verify**:
 `rtk cargo xtask ci --e2e`
--> all fake-provider and isolation assertions pass on Docker Desktop; counter is 1 for
+-> all fake-provider and isolation assertions pass on OrbStack; counter is 1 for
 the 20+Desktop case.
 
 ### Step 7: Correct normative docs
@@ -482,7 +482,7 @@ crate/runtime READMEs, and both roadmap pages. State explicitly:
   capabilities; credentials created inside a Capsule and never forwarded are
   explicitly out of scope pending a secure enrollment design (record this
   Batch 4 scope reduction in `plans/README.md` and the roadmap page);
-- Docker Desktop E2E is required evidence.
+- OrbStack E2E is required evidence.
 
 Remove claims that shared `flock`/cooldown files guarantee one call.
 
@@ -504,7 +504,7 @@ mount only in past-tense/socket terms;
 - Process: independent clients and broker leader recovery.
 - Runtime: Docker/Apple launch args and scoped relay authorization.
 - Capsule/FFI: same generation/phase/result, last-good preservation, fail-closed.
-- Docker Desktop: 2, 20, killed owner, different accounts, account isolation.
+- OrbStack: 2, 20, killed owner, different accounts, account isolation.
 - Security assertions: no snapshot/account metadata or credential source crosses an
   unauthorized relay; no raw IO path/secret enters telemetry/errors.
 
@@ -522,7 +522,7 @@ rtk cargo xtask docs repo-links
 rtk cargo xtask research check
 ```
 
-All commands exit 0; Docker Desktop evidence is retained only in the PR/check result,
+All commands exit 0; OrbStack evidence is retained only in the PR/check result,
 not as committed logs/screenshots.
 
 ## Done criteria
@@ -546,7 +546,7 @@ not as committed logs/screenshots.
   identity-bearing fields never reach container-readable state.
 - [x] 20 Capsules + Desktop make exactly one fake-provider request for one account.
 - [x] Different accounts can refresh concurrently within a bounded executor.
-- [ ] macOS 26 Docker Desktop test proves process/container behavior.
+- [x] macOS 26 OrbStack test proves process/container behavior.
 - [x] All unit, integration, lint, docs, and full CI gates pass.
 
 ## STOP conditions
@@ -557,7 +557,7 @@ not as committed logs/screenshots.
 - Provider timeout cannot cancel/join the worker while keeping ownership. Report the
   provider adapter that lacks a bounded/cancellable operation.
 - Canonical account/source capabilities from Plans 001–002 are missing.
-- Real Docker Desktop verification cannot run. Do not claim completion; report the
+- Real OrbStack verification cannot run. Do not claim completion; report the
   unavailable gate and exact command/operator prerequisite.
 - No workable peer/authorization model exists for the relay on the target
   platform (e.g. per-container socket-dir isolation turns out insufficient).

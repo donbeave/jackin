@@ -70,7 +70,9 @@ public struct UsageWindowSidebar: View {
             set: { value in
                 let surfaceId: String?
                 switch value {
-                case .overview, .none:
+                case .none:
+                    return
+                case .overview:
                     surfaceId = nil
                 case .provider(let selectedSurfaceId):
                     surfaceId = selectedSurfaceId

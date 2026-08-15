@@ -7,10 +7,25 @@ import SwiftUI
 @MainActor
 final class PopoverPresentationState: ObservableObject {
     @Published private(set) var sequence: UInt64 = 0
+    private var lastScrollResetSequence: UInt64?
+    private var lastScrollResetAccountLabel: String?
 
     func beginPresentation() {
         sequence &+= 1
     }
+
+    func claimScrollReset(accountLabel: String) -> Bool {
+        guard lastScrollResetSequence != sequence || lastScrollResetAccountLabel != accountLabel
+        else { return false }
+        lastScrollResetSequence = sequence
+        lastScrollResetAccountLabel = accountLabel
+        return true
+    }
+}
+
+private struct ProviderScrollReset: Equatable {
+    let presentationSequence: UInt64
+    let accountLabel: String
 }
 
 private enum PopoverQIFullPlateKey: EnvironmentKey {
@@ -141,6 +156,10 @@ public struct PopoverRoot: View {
         let surface = store.surfaces.first { $0.id == provider.surfaceId }
         let metadataRows = surface?.detailPresentation.rows.filter { $0.kind != .bucket } ?? []
         let limitRows = surface?.detailPresentation.rows.filter { $0.kind == .bucket } ?? []
+        let scrollReset = ProviderScrollReset(
+            presentationSequence: presentationState.sequence,
+            accountLabel: provider.accountLabel
+        )
 
         return Form {
             Section {
@@ -200,17 +219,15 @@ public struct PopoverRoot: View {
         .formStyle(.grouped)
         .scrollPosition($providerScrollPosition)
         .defaultScrollAnchor(.top, for: .initialOffset)
-        .task(id: presentationState.sequence) {
-            await resetProviderScrollPosition()
-        }
-        .task(id: provider.accountLabel) {
-            await resetProviderScrollPosition()
+        .task(id: scrollReset) {
+            await resetProviderScrollPosition(ifNeededFor: scrollReset)
         }
         .accessibilityLabel("\(provider.displayLabel) usage details")
         .accessibilityIdentifier("popover.provider.\(provider.surfaceId)")
     }
 
-    private func resetProviderScrollPosition() async {
+    private func resetProviderScrollPosition(ifNeededFor reset: ProviderScrollReset) async {
+        guard presentationState.claimScrollReset(accountLabel: reset.accountLabel) else { return }
         await Task.yield()
         providerScrollPosition.scrollTo(edge: .top)
     }

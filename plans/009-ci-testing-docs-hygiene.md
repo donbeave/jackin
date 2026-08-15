@@ -38,8 +38,8 @@
 - **Completed local scope**: the false hygiene comment, container-layout docs,
   Desktop verification matrix, Swift-shell coverage claim, UI-test flake policy,
   ignored per-XCTest JUnit emission, and usage module table are corrected. Shell,
-  workflow, docs, README, and ratchet gates pass. The logged-in UI execution proof
-  remains pending while the macOS session is locked.
+  workflow, docs, README, and ratchet gates pass. The logged-in UI suite passes all
+  19 tests and emits the ignored per-XCTest JUnit report.
 
 ## Why this matters
 
@@ -256,8 +256,8 @@ No Rust/Swift source changes, so no new unit tests.
 - [ ] PR CI runs bindings/format/lint/harness/XCTest for desktop-affecting
   changes, and `ci-required` gates on it.
 - [x] `hygiene.yml`'s comment describes reality.
-- [ ] UI-test results feed the flake process, or the exclusion is documented
-  (implementation/docs complete; logged-in execution proof pending).
+- [x] UI-test results feed the flake process through the ignored per-XCTest JUnit
+  report, and the logged-in suite passes all 19 tests.
 - [x] `HOST_AND_CONTAINER.md` layout matches `container_paths.rs` and the
   cleanup command uses the real path.
 - [x] `TESTING.md` has the desktop row and no false completeness claim.
