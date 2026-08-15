@@ -59,13 +59,17 @@ final class PopoverPresentationTests: XCTestCase {
         XCTAssertTrue(controlsSource.contains("Spacer(minLength: 12)"))
         XCTAssertTrue(controlsSource.contains("Picker("))
         XCTAssertTrue(controlsSource.contains(".labelsHidden()"))
-        XCTAssertTrue(source.contains("ScrollViewReader { proxy in"))
+        XCTAssertFalse(source.contains("ScrollViewReader { proxy in"))
+        XCTAssertTrue(
+            source.contains(
+                "@State private var providerScrollPosition = ScrollPosition(edge: .top)"
+            )
+        )
+        XCTAssertTrue(source.contains(".scrollPosition($providerScrollPosition)"))
         XCTAssertTrue(source.contains(".defaultScrollAnchor(.top, for: .initialOffset)"))
         XCTAssertTrue(source.contains(".task(id: presentationState.sequence)"))
         XCTAssertTrue(source.contains(".task(id: provider.accountLabel)"))
-        XCTAssertTrue(
-            source.contains("proxy.scrollTo(Self.providerIdentityScrollAnchor, anchor: .top)")
-        )
+        XCTAssertTrue(source.contains("providerScrollPosition.scrollTo(edge: .top)"))
         XCTAssertFalse(source.contains(".scrollPosition(id:"))
         XCTAssertTrue(controlsSource.contains(".help(\"Refresh\")"))
         XCTAssertTrue(controlsSource.contains(".help(\"Open Usage\")"))

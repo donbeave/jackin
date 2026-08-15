@@ -27,10 +27,10 @@ extension EnvironmentValues {
 /// Focused-provider glance hosted by the real system `NSPopover`.
 public struct PopoverRoot: View {
     public static let liveContentSize = CGSize(width: 380, height: 520)
-    private static let providerIdentityScrollAnchor = "popover.provider-identity-anchor"
 
     @ObservedObject public var store: PresentationStore
     @ObservedObject private var presentationState: PopoverPresentationState
+    @State private var providerScrollPosition = ScrollPosition(edge: .top)
     public var onOpenUsage: ((UsageNavigationContext?) -> Void)?
     @Environment(\.popoverQIFullPlate) private var qiFullPlate
 
@@ -142,79 +142,77 @@ public struct PopoverRoot: View {
         let metadataRows = surface?.detailPresentation.rows.filter { $0.kind != .bucket } ?? []
         let limitRows = surface?.detailPresentation.rows.filter { $0.kind == .bucket } ?? []
 
-        return ScrollViewReader { proxy in
-            Form {
+        return Form {
+            Section {
+                providerIdentity(provider)
+            }
+
+            if !limitRows.isEmpty {
                 Section {
-                    providerIdentity(provider)
-                        .id(Self.providerIdentityScrollAnchor)
+                    ForEach(limitRows) { row in
+                        limitRow(row)
+                    }
+                } header: {
+                    sectionHeader("Limits")
                 }
+            } else if surface?.lastError == nil {
+                Section {
+                    Text("No limit details available")
+                        .foregroundStyle(.secondary)
+                } header: {
+                    sectionHeader("Limits")
+                }
+            }
 
-                if !limitRows.isEmpty {
-                    Section {
-                        ForEach(limitRows) { row in
-                            limitRow(row)
+            if !metadataRows.isEmpty {
+                Section {
+                    ForEach(metadataRows) { row in
+                        LabeledContent {
+                            Text(row.displayLabel)
+                                .foregroundStyle(.primary)
+                        } label: {
+                            Text(row.label)
+                                .foregroundStyle(.primary)
+                                .accessibilityIdentifier(
+                                    "popover.detail-label.\(row.rowId)"
+                                )
                         }
-                    } header: {
-                        sectionHeader("Limits")
+                        .accessibilityLabel("\(row.label), \(row.displayLabel)")
+                        .accessibilityIdentifier("popover.detail.\(row.rowId)")
                     }
-                } else if surface?.lastError == nil {
-                    Section {
-                        Text("No limit details available")
-                            .foregroundStyle(.secondary)
-                    } header: {
-                        sectionHeader("Limits")
-                    }
+                } header: {
+                    sectionHeader("Details")
                 }
+            }
 
-                if !metadataRows.isEmpty {
-                    Section {
-                        ForEach(metadataRows) { row in
-                            LabeledContent {
-                                Text(row.displayLabel)
-                                    .foregroundStyle(.primary)
-                            } label: {
-                                Text(row.label)
-                                    .foregroundStyle(.primary)
-                                    .accessibilityIdentifier(
-                                        "popover.detail-label.\(row.rowId)"
-                                    )
-                            }
-                            .accessibilityLabel("\(row.label), \(row.displayLabel)")
-                            .accessibilityIdentifier("popover.detail.\(row.rowId)")
-                        }
-                    } header: {
-                        sectionHeader("Details")
-                    }
-                }
-
-                if let error = surface?.lastError ?? provider.lastError {
-                    Section {
-                        Label(error, systemImage: "exclamationmark.triangle")
-                            .accessibilityIdentifier("popover.provider-error")
-                        Button("Retry") { store.refresh(surfaceId: provider.surfaceId) }
-                            .disabled(store.refreshInProgress)
-                            .accessibilityIdentifier("popover.provider-retry")
-                    } header: {
-                        sectionHeader("Provider status")
-                    }
+            if let error = surface?.lastError ?? provider.lastError {
+                Section {
+                    Label(error, systemImage: "exclamationmark.triangle")
+                        .accessibilityIdentifier("popover.provider-error")
+                    Button("Retry") { store.refresh(surfaceId: provider.surfaceId) }
+                        .disabled(store.refreshInProgress)
+                        .accessibilityIdentifier("popover.provider-retry")
+                } header: {
+                    sectionHeader("Provider status")
                 }
             }
-            .formStyle(.grouped)
-            .defaultScrollAnchor(.top, for: .initialOffset)
-            .task(id: presentationState.sequence) {
-                await resetProviderScrollPosition(proxy)
-            }
-            .task(id: provider.accountLabel) {
-                await resetProviderScrollPosition(proxy)
-            }
-            .accessibilityLabel("\(provider.displayLabel) usage details")
-            .accessibilityIdentifier("popover.provider.\(provider.surfaceId)")
         }
+        .formStyle(.grouped)
+        .scrollPosition($providerScrollPosition)
+        .defaultScrollAnchor(.top, for: .initialOffset)
+        .task(id: presentationState.sequence) {
+            await resetProviderScrollPosition()
+        }
+        .task(id: provider.accountLabel) {
+            await resetProviderScrollPosition()
+        }
+        .accessibilityLabel("\(provider.displayLabel) usage details")
+        .accessibilityIdentifier("popover.provider.\(provider.surfaceId)")
     }
 
-    private func resetProviderScrollPosition(_ proxy: ScrollViewProxy) async {
+    private func resetProviderScrollPosition() async {
         await Task.yield()
-        proxy.scrollTo(Self.providerIdentityScrollAnchor, anchor: .top)
+        providerScrollPosition.scrollTo(edge: .top)
     }
 
     private func providerIdentity(_ provider: PresentationStore.GlanceProviderRow) -> some View {
