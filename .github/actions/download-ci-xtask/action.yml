@@ -83,7 +83,9 @@ runs:
         JACKIN_INCLUDE_XTASK: ${{ inputs.include-xtask }}
         JACKIN_TOOLS_CACHE_HIT: ${{ steps.tools-cache.outputs.cache-hit }}
         JACKIN_XTASK_CACHE_HIT: ${{ steps.xtask-cache.outputs.cache-hit }}
-        JACKIN_ALLOW_MISS: ${{ inputs.allow-miss == 'true' || inputs.build-on-miss == 'true' }}
+        # build-on-miss covers only jackin-xtask. A requested Cargo-tools
+        # bundle has no local fallback and must never become a successful miss.
+        JACKIN_ALLOW_MISS: ${{ inputs.allow-miss == 'true' || (inputs.include-tools != 'true' && inputs.build-on-miss == 'true') }}
         JACKIN_ACTION_RUNTIME: ${{ github.action_path }}/runtime/dist/index.js
       with:
         github-token: ${{ inputs.token }}
