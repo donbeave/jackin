@@ -83,7 +83,7 @@ public final class UsageWindowController: NSObject, NSWindowDelegate {
     private func renewFixtureVisibilityLease(for window: NSWindow) {
         fixtureVisibilityTask?.cancel()
         fixtureVisibilityTask = Task { @MainActor [weak self, weak window] in
-            for _ in 0..<120 {
+            while true {
                 guard !Task.isCancelled, self?.visibilityDesired == true, let window else { return }
                 NSApp.unhideWithoutActivation()
                 window.orderFrontRegardless()

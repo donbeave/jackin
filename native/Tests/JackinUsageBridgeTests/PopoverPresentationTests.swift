@@ -67,13 +67,31 @@ final class PopoverPresentationTests: XCTestCase {
         )
         XCTAssertTrue(source.contains(".scrollPosition($providerScrollPosition)"))
         XCTAssertTrue(source.contains(".defaultScrollAnchor(.top, for: .initialOffset)"))
-        XCTAssertTrue(source.contains(".task(id: presentationState.sequence)"))
-        XCTAssertTrue(source.contains(".task(id: provider.accountLabel)"))
+        XCTAssertTrue(source.contains(".task(id: scrollReset)"))
+        XCTAssertTrue(
+            source.contains(
+                "presentationState.claimScrollReset(accountLabel: reset.accountLabel)"
+            )
+        )
+        XCTAssertFalse(source.contains(".task(id: presentationState.sequence)"))
+        XCTAssertFalse(source.contains(".task(id: provider.accountLabel)"))
         XCTAssertTrue(source.contains("providerScrollPosition.scrollTo(edge: .top)"))
         XCTAssertFalse(source.contains(".scrollPosition(id:"))
         XCTAssertTrue(controlsSource.contains(".help(\"Refresh\")"))
         XCTAssertTrue(controlsSource.contains(".help(\"Open Usage\")"))
         XCTAssertTrue(controlsSource.contains(".help(\"Choose account\")"))
+    }
+
+    @MainActor
+    func testScrollResetClaimSurvivesViewRemounts() {
+        let state = PopoverPresentationState()
+
+        XCTAssertTrue(state.claimScrollReset(accountLabel: "first"))
+        XCTAssertFalse(state.claimScrollReset(accountLabel: "first"))
+        XCTAssertTrue(state.claimScrollReset(accountLabel: "second"))
+        XCTAssertFalse(state.claimScrollReset(accountLabel: "second"))
+        state.beginPresentation()
+        XCTAssertTrue(state.claimScrollReset(accountLabel: "second"))
     }
 
     func testPopoverResetsScrollOnlyAfterExplicitNativePresentation() throws {

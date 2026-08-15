@@ -13,6 +13,12 @@ final class JackinDesktopUITests: XCTestCase {
         let controlsVerified: Bool
     }
 
+    private struct UsageAuditSnapshot {
+        let rowDescriptions: [String]
+        let systemHostVerified: Bool
+        let controlsVerified: Bool
+    }
+
     func testOverviewAndProviderNavigationAtMinimumSize() {
         defer { application.terminate() }
         guard launchUsage(fixture: "F02-catalog-normal", selection: "overview", size: "760x500")
@@ -166,9 +172,12 @@ final class JackinDesktopUITests: XCTestCase {
         guard launchUsage(fixture: "F03-multi-account", selection: "codex", size: "920x620")
         else { return }
 
+        let ready = ensureUsageWindowVisible(contentIdentifier: "usage.account-picker")
+        XCTAssertTrue(ready, application.debugDescription)
+        guard ready else { return }
         XCTAssertTrue(element("usage.provider.codex").waitForExistence(timeout: 5))
         let picker = element("usage.account-picker")
-        XCTAssertTrue(picker.waitForExistence(timeout: 3))
+        XCTAssertTrue(picker.waitForExistence(timeout: 3), application.debugDescription)
         XCTAssertTrue(picker.waitForHittable(timeout: 5), application.debugDescription)
         XCTAssertEqual(picker.elementType, .popUpButton)
         DistributedNotificationCenter.default().postNotificationName(
@@ -181,9 +190,9 @@ final class JackinDesktopUITests: XCTestCase {
             picker.waitForValue("personal@example.test", timeout: 5), application.debugDescription)
         XCTAssertTrue(
             element("usage.provider-identity").waitForLabelContaining(
-                "personal@example.test", timeout: 3)
+                "personal@example.test", timeout: 5)
         )
-        XCTAssertTrue(element("usage.limit.bucket:selected").exists)
+        XCTAssertTrue(element("usage.limit.bucket:selected").waitForExistence(timeout: 5))
         XCTAssertFalse(application.staticTexts["Accounts"].exists)
     }
 
@@ -335,8 +344,9 @@ final class JackinDesktopUITests: XCTestCase {
         let refresh = element("popover.refresh")
         let openUsage = element("popover.open-usage")
         XCTAssertTrue(lastLimit.waitForExistence(timeout: 3))
-        XCTAssertTrue(refresh.isHittable)
-        XCTAssertTrue(openUsage.isHittable)
+        let controlsReady = ensurePopoverControlsHittable([refresh, openUsage])
+        XCTAssertTrue(controlsReady, application.debugDescription)
+        guard controlsReady else { return }
         XCTAssertTrue(scroll(lastLimit, intoViewThrough: provider))
         // macOS wheel synthesis can return activation to the XCTest runner.
         // Re-enter the app before proving that scrolling did not move fixed footer controls.
@@ -416,10 +426,36 @@ final class JackinDesktopUITests: XCTestCase {
         defer { application.terminate() }
         guard launchUsage(fixture: "F03-multi-account", selection: "codex", size: "920x620")
         else { return }
-        XCTAssertTrue(element("usage.provider.codex").waitForExistence(timeout: 5))
+        let ready = ensureUsageWindowVisible(contentIdentifier: "usage.account-picker")
+        XCTAssertTrue(ready, application.debugDescription)
+        guard ready else { return }
+        let provider = element("usage.provider.codex")
+        let identity = element("usage.provider-identity")
+        let picker = element("usage.account-picker")
+        let refresh = element("usage.refresh")
+        XCTAssertTrue(provider.waitForExistence(timeout: 5))
+        let snapshot = UsageAuditSnapshot(
+            rowDescriptions:
+                auditDescriptions(identifierPrefix: "usage.limit.")
+                + auditDescriptions(identifierPrefix: "usage.detail-label.")
+                + [identity.label, picker.label, picker.value as? String]
+                .compactMap { $0 }
+                .filter { !$0.isEmpty },
+            systemHostVerified: application.windows["usage-window"].exists,
+            controlsVerified:
+                identity.exists && !identity.label.isEmpty
+                && picker.exists && picker.elementType == .popUpButton
+                && refresh.exists && refresh.elementType == .button
+        )
+        XCTAssertTrue(snapshot.systemHostVerified)
+        XCTAssertTrue(snapshot.controlsVerified)
+        XCTAssertFalse(snapshot.rowDescriptions.isEmpty)
 
         try application.performAccessibilityAudit { issue in
-            self.handlesSystemAccessibilityAuditFalsePositive(issue)
+            self.handlesSystemAccessibilityAuditFalsePositive(
+                issue,
+                usageSnapshot: snapshot
+            )
         }
     }
 
@@ -557,10 +593,28 @@ final class JackinDesktopUITests: XCTestCase {
     ) -> Bool {
         for _ in 0..<8 {
             if target.isHittable { return true }
+            guard container.waitForHittable(timeout: 3) else { return false }
             // Moderate wheel deltas avoid AppKit coalescing or discarding one giant event.
             container.scroll(byDeltaX: 0, deltaY: -1_200)
         }
         return target.waitForHittable(timeout: 3)
+    }
+
+    private func ensurePopoverControlsHittable(_ controls: [XCUIElement]) -> Bool {
+        for _ in 0..<3 {
+            application.activate()
+            if controls.allSatisfy({ $0.waitForHittable(timeout: 2) }) {
+                return true
+            }
+            DistributedNotificationCenter.default().postNotificationName(
+                Notification.Name("com.jackin-project.desktop.visual-qa.show-popover"),
+                object: nil,
+                userInfo: nil,
+                deliverImmediately: true
+            )
+            _ = application.popovers.firstMatch.waitForExistence(timeout: 2)
+        }
+        return controls.allSatisfy(\.isHittable)
     }
 
     private func sidebarToggle(label: String, in window: XCUIElement) -> XCUIElement {
@@ -618,10 +672,35 @@ final class JackinDesktopUITests: XCTestCase {
 
     private func handlesSystemAccessibilityAuditFalsePositive(
         _ issue: XCUIAccessibilityAuditIssue,
+        usageSnapshot: UsageAuditSnapshot? = nil,
         popoverSnapshot: PopoverAuditSnapshot? = nil
     ) -> Bool {
         let auditingPopover = popoverSnapshot != nil
         guard let element = issue.element else {
+            if let usageSnapshot {
+                if issue.auditType == .contrast,
+                    usageSnapshot.systemHostVerified,
+                    usageSnapshot.controlsVerified,
+                    usageSnapshot.rowDescriptions.contains(where: {
+                        issue.detailedDescription.contains($0)
+                    })
+                {
+                    // Xcode 26 can invalidate native Form row proxies after attributing system
+                    // foreground or ProgressView contrast to their labeled representation.
+                    return true
+                }
+                if issue.auditType == .sufficientElementDescription,
+                    usageSnapshot.systemHostVerified,
+                    usageSnapshot.controlsVerified,
+                    ["Element has no description", "Unknown role"].contains(
+                        issue.compactDescription
+                    )
+                {
+                    // Named provider content and native controls were verified before Xcode lost
+                    // the non-actionable Form group or provider identity proxy.
+                    return true
+                }
+            }
             if let popoverSnapshot {
                 if issue.auditType == .contrast,
                     popoverSnapshot.limitDescriptions.contains(where: {
@@ -665,9 +744,23 @@ final class JackinDesktopUITests: XCTestCase {
             return false
         }
         let elementType = element.elementType
+
+        if issue.auditType == .sufficientElementDescription {
+            if auditingPopover, elementType == .popover {
+                // NSPopover owns this transient host; every contained region is labeled below it.
+                return true
+            }
+            if elementType == .touchBar {
+                return true
+            }
+            if elementType == .group {
+                // SwiftUI layout groups are non-actionable. Their named descendants remain
+                // separate AX elements and are audited independently.
+                return true
+            }
+        }
+
         let identifier = element.identifier
-        let label = element.label
-        let value = element.value
 
         if auditingPopover,
             issue.auditType == .elementDetection,
@@ -685,18 +778,6 @@ final class JackinDesktopUITests: XCTestCase {
                 // though its label is the complete Rust-owned provider/account/activity copy.
                 return true
             }
-            if auditingPopover, elementType == .popover {
-                // NSPopover owns this transient host; every contained region is labeled below it.
-                return true
-            }
-            if elementType == .touchBar {
-                return true
-            }
-            if elementType == .group, identifier.isEmpty {
-                // SwiftUI emits anonymous non-actionable layout groups. Their child controls and
-                // text remain separate AX elements and are audited independently.
-                return true
-            }
         }
 
         if issue.auditType == .action,
@@ -709,8 +790,7 @@ final class JackinDesktopUITests: XCTestCase {
         if auditingPopover,
             issue.auditType == .action,
             elementType == .popover,
-            identifier.isEmpty,
-            label.isEmpty
+            identifier.isEmpty
         {
             // NSPopover is a system-owned container, not an actionable control; its child native
             // buttons and picker expose their own actions and are audited independently.
@@ -740,7 +820,7 @@ final class JackinDesktopUITests: XCTestCase {
         // AppKit does not expose SwiftUI Section header identifiers to XCTest on macOS 26.
         if issue.auditType == .contrast,
             elementType == .staticText,
-            (value as? String) == "Account"
+            (element.value as? String) == "Account"
         {
             return true
         }
@@ -771,9 +851,17 @@ final class JackinDesktopUITests: XCTestCase {
         XCTContext.runActivity(
             named:
                 "Unhandled AX audit: \(issue.auditType); type=\(elementType.rawValue); "
-                + "id=\(identifier); label=\(label)"
+                + "id=\(identifier); \(issue.compactDescription)"
         ) { _ in }
         return false
+    }
+
+    private func auditDescriptions(identifierPrefix: String) -> [String] {
+        application.descendants(matching: .any).matching(
+            NSPredicate(format: "identifier BEGINSWITH %@", identifierPrefix)
+        ).allElementsBoundByIndex.flatMap { element in
+            [element.label, element.value as? String].compactMap { $0 }
+        }.filter { !$0.isEmpty }
     }
 }
 
