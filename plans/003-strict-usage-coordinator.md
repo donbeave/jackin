@@ -29,10 +29,11 @@
   `plans/008-backend-parity-fail-closed.md`
 - **Category**: security, bug, perf, tech-debt, tests, docs, direction
 - **Planned at**: commit `27d0d9b3`, 2026-08-13
-- **Execution state**: IN PROGRESS — implementation and local gates pass, including
-  the complete Docker E2E profile on macOS 26.5.2 with OrbStack 29.4.0. The operator
-  confirmed OrbStack is the sole supported runtime for this lane. The exact-head
-  `cargo xtask ci --e2e` rerun and durable PR evidence remain before DONE.
+- **Execution state**: DONE — implementation and local gates pass, including the
+  complete Docker E2E profile on macOS 26.5.2 with OrbStack 29.4.0. The operator
+  confirmed OrbStack is the sole supported runtime for this lane. Exact
+  `cargo xtask ci --e2e` passed on commit `ef0e4d7f`; durable evidence is recorded in
+  PR #864.
 
 ## Why this matters
 
@@ -545,7 +546,7 @@ not as committed logs/screenshots.
   identity-bearing fields never reach container-readable state.
 - [x] 20 Capsules + Desktop make exactly one fake-provider request for one account.
 - [x] Different accounts can refresh concurrently within a bounded executor.
-- [ ] macOS 26 OrbStack test proves process/container behavior.
+- [x] macOS 26 OrbStack test proves process/container behavior.
 - [x] All unit, integration, lint, docs, and full CI gates pass.
 
 ## STOP conditions
