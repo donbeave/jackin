@@ -15,7 +15,6 @@ use crate::docs::repo_root;
 
 const BASELINE: &str = "crates/jackin-telemetry/benches/baseline.json";
 const CURRENT: &str = "target/telemetry-bench-current.json";
-const CALIBRATION: &str = "target/criterion/telemetry_calibration/new/estimates.json";
 const SOURCES: &[(&str, &str)] = &[
     (
         "launch_pipeline",
@@ -54,7 +53,6 @@ struct Measurements {
     unit: String,
     #[serde(default)]
     reference: String,
-    calibration: f64,
     benchmarks: BTreeMap<String, f64>,
 }
 
@@ -80,7 +78,6 @@ pub(crate) fn run(args: TelemetryBenchArgs) -> Result<()> {
 
 fn capture(root: &Path, baseline_path: &Path, current_path: &Path) -> Result<()> {
     let baseline = read_measurements(baseline_path)?;
-    let calibration = read_median(&root.join(CALIBRATION))?;
     let mut benchmarks = BTreeMap::new();
     for (name, relative) in SOURCES {
         benchmarks.insert((*name).to_owned(), read_median(&root.join(relative))?);
@@ -88,8 +85,7 @@ fn capture(root: &Path, baseline_path: &Path, current_path: &Path) -> Result<()>
     let current = Measurements {
         max_regression_percent: baseline.max_regression_percent,
         unit: baseline.unit,
-        reference: "same-run Criterion medians normalized by telemetry_calibration".to_owned(),
-        calibration,
+        reference: "absolute Criterion medians on the workflow runner".to_owned(),
         benchmarks,
     };
     if let Some(parent) = current_path.parent() {
@@ -112,13 +108,13 @@ fn compare(baseline_path: &Path, current_path: &Path) -> Result<()> {
             .benchmarks
             .get(name)
             .with_context(|| format!("current results omit {name}"))?;
-        let baseline_ratio = baseline_value / baseline.calibration;
-        let current_ratio = current_value / current.calibration;
-        let limit = baseline_ratio * (1.0 + baseline.max_regression_percent / 100.0);
-        if current_ratio > limit {
+        let limit = baseline_value * (1.0 + baseline.max_regression_percent / 100.0);
+        if current_value > &limit {
             bail!(
-                "{name} regressed {:.2}% after calibration (baseline ratio {baseline_ratio:.6}, current ratio {current_ratio:.6}, limit {:.2}%)",
-                (current_ratio / baseline_ratio - 1.0) * 100.0,
+                "{name} regressed {:.2}% (baseline {baseline_value:.3} {}, current {current_value:.3} {}, limit {:.2}%)",
+                (current_value / baseline_value - 1.0) * 100.0,
+                baseline.unit,
+                current.unit,
                 baseline.max_regression_percent
             );
         }
@@ -135,9 +131,6 @@ fn read_median(path: &Path) -> Result<f64> {
 }
 
 fn validate_measurements(label: &str, measurements: &Measurements) -> Result<()> {
-    if !measurements.calibration.is_finite() || measurements.calibration <= 0.0 {
-        bail!("{label} calibration must be finite and positive");
-    }
     for (name, value) in &measurements.benchmarks {
         if !value.is_finite() || *value <= 0.0 {
             bail!("{label} benchmark {name} must be finite and positive");
