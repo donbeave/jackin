@@ -28,7 +28,7 @@ the canonical command is everything after `rtk `.
 | [003](003-strict-usage-coordinator.md) | Enforce one refresh generation per account through a host broker | P1 | L | 001, 002, 006, 008 | BLOCKED (real macOS 26 + Docker Desktop evidence unavailable; OrbStack E2E and implementation gates pass) |
 | [009](009-ci-testing-docs-hygiene.md) | Give desktop changes a PR CI lane and fix actively wrong doc claims | P2 | M | 003, 008 | BLOCKED (local docs/JUnit work passes; governed `velnor-actions` native extension remains external) |
 | [004](004-native-full-height-sidebar.md) | Restore native full-height Liquid Glass pane ownership | P1 | M | 003, 009 | DONE |
-| [005](005-correct-native-usage-presentation.md) | Render correct account-first quota presentation from one Rust projection | P1 | L | all prior rows | IN PROGRESS (final logged-in UI/visual proof pending) |
+| [005](005-correct-native-usage-presentation.md) | Render correct account-first quota presentation from one Rust projection | P1 | L | all prior rows | IN PROGRESS (UI/visual proof passes; final union and cleanup await 003/009) |
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED (one-line reason) | REJECTED
 (one-line rationale).
