@@ -504,7 +504,13 @@ public final class DesktopAppDelegate: NSObject, NSApplicationDelegate {
         }
         visualQAUsageSelection = selection
         if visualQALaunchOptions.openUsage || visualQALaunchOptions.invalidFixtureID != nil {
-            usageWindow.show(focusOn: selection, size: visualQALaunchOptions.windowSize)
+            let windowSize = visualQALaunchOptions.windowSize
+            // AppKit can leave a synchronously constructed launch window absent from the
+            // accessibility tree until the application-finished callback returns. Present on
+            // the next main-loop turn, matching the real popover launch seam below.
+            DispatchQueue.main.async { [weak usageWindow] in
+                usageWindow?.show(focusOn: selection, size: windowSize)
+            }
         }
         if visualQALaunchOptions.openPopover {
             // Automation launches without a status-item click. Front the fixture process so the
