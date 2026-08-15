@@ -242,6 +242,8 @@ final class ArchitectureTests: XCTestCase {
         XCTAssertTrue(capture.contains("\"$FOCUS_TOOL\" \"$pid\" 0"))
         XCTAssertTrue(capture.contains("application exited before reaching requested"))
         XCTAssertTrue(capture.contains("CAPTURE_SETTLE_DELAY_SECONDS:-3"))
+        XCTAssertTrue(capture.contains("perform action \"AXPress\" of targetButton"))
+        XCTAssertFalse(capture.contains("to click first button of toolbar"))
         XCTAssertTrue(focusDrive.contains("activate(options: [.activateAllWindows])"))
         XCTAssertTrue(windowResolver.contains("if filter != nil"))
     }

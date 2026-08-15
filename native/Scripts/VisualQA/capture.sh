@@ -199,8 +199,15 @@ if [ -n "${CAPTURE_TOOLBAR_BUTTON_DESCRIPTION:-}" ]; then
     drive_activation
     window_onscreen=$("$TOOL" "$OWNER" "$WINDOW_NAME" --json --pid "$pid" 2>/dev/null \
       | plutil -extract onScreen raw - 2>/dev/null || echo false)
-    if [ "$window_onscreen" = true ] && osascript -e \
-      "tell application \"System Events\" to tell application process \"$executable\" to tell front window to click first button of toolbar 1 whose description is \"$CAPTURE_TOOLBAR_BUTTON_DESCRIPTION\""; then
+    if [ "$window_onscreen" = true ] && osascript \
+      -e "tell application \"System Events\"" \
+      -e "tell application process \"$executable\"" \
+      -e "tell front window" \
+      -e "set targetButton to first button of toolbar 1 whose description is \"$CAPTURE_TOOLBAR_BUTTON_DESCRIPTION\"" \
+      -e 'perform action "AXPress" of targetButton' \
+      -e 'end tell' \
+      -e 'end tell' \
+      -e 'end tell'; then
       toolbar_ok=1
       break
     fi
