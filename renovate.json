@@ -3,6 +3,9 @@
   "extends": [
     "config:best-practices"
   ],
+  "ignorePaths": [
+    "crates/jackin-lints/rust-toolchain"
+  ],
   "customManagers": [
     {
       "customType": "regex",

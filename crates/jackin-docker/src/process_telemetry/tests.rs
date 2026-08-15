@@ -8,9 +8,12 @@ fn exports_docker_context_process_without_context_material() {
     let (export, subscriber) = jackin_diagnostics::observability::test_capsule_layers(false);
     let _subscriber = tracing::subscriber::set_default(subscriber);
 
+    let fixture = tempfile::tempdir().unwrap();
+    let docker = fixture.path().join("docker");
+    std::os::unix::fs::symlink("/bin/sh", &docker).unwrap();
     exec_sync(&ExecRequest::new(
-        "docker",
-        ["context", "inspect", "context-secret-name"],
+        docker,
+        ["-c", "printf context-secret-name >&2; exit 17"],
     ))
     .unwrap();
     let error = exec_sync(&ExecRequest::new(
