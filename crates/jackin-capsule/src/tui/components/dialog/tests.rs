@@ -987,7 +987,7 @@ fn usage_view_fixture() -> jackin_protocol::control::FocusedUsageView {
         source: jackin_protocol::control::UsageSource::Cli,
         confidence: jackin_protocol::control::UsageConfidence::Authoritative,
         fetched_at_epoch: 1_781_185_560,
-        updated_label: "Updated just now".to_owned(),
+        updated_label: "Updated now".to_owned(),
         status_bar_label: "Codex Session: 63% used · 37% left".to_owned(),
         tabs: vec![
             jackin_protocol::control::UsageProviderTab {
@@ -1142,7 +1142,7 @@ fn openai_usage_view_fixture() -> jackin_protocol::control::FocusedUsageView {
     provider_usage_view_fixture(
         "Codex",
         "OpenAI",
-        "alexey@chainargos.com",
+        "account@work.test",
         Some("Pro 20x"),
         "Updated 1m ago",
         vec![
@@ -1173,7 +1173,7 @@ fn anthropic_usage_view_fixture() -> jackin_protocol::control::FocusedUsageView 
     provider_usage_view_fixture(
         "Claude",
         "Anthropic",
-        "alexey@chainargos.com",
+        "account@work.test",
         Some("Max"),
         "Updated 2m ago",
         vec![
@@ -1201,9 +1201,9 @@ fn amp_usage_view_fixture() -> jackin_protocol::control::FocusedUsageView {
     provider_usage_view_fixture(
         "Amp",
         "Amp",
-        "alexey@zhokhov.com",
+        "account@personal.test",
         Some("Amp Free"),
-        "Updated just now",
+        "Updated now",
         vec![
             jackin_protocol::control::QuotaBucketView {
                 used_money: None,
@@ -1241,7 +1241,7 @@ fn xai_usage_view_fixture() -> jackin_protocol::control::FocusedUsageView {
     provider_usage_view_fixture(
         "Grok Build",
         "xAI",
-        "alexey@chainargos.com",
+        "account@work.test",
         Some("SuperGrok"),
         "Updated 4m ago",
         vec![quota_bucket(
@@ -1257,7 +1257,7 @@ fn zai_usage_view_fixture() -> jackin_protocol::control::FocusedUsageView {
     provider_usage_view_fixture(
         "GLM / Z.AI",
         "Z.AI",
-        "alexey@chainargos.com",
+        "account@work.test",
         None,
         "Updated 2m ago",
         vec![
@@ -1277,7 +1277,7 @@ fn kimi_usage_view_fixture() -> jackin_protocol::control::FocusedUsageView {
     provider_usage_view_fixture(
         "Kimi",
         "Kimi",
-        "alexey@chainargos.com",
+        "account@work.test",
         None,
         "Updated 4m ago",
         vec![
@@ -1296,7 +1296,7 @@ fn minimax_usage_view_fixture() -> jackin_protocol::control::FocusedUsageView {
     provider_usage_view_fixture(
         "MiniMax",
         "MiniMax",
-        "alexey@chainargos.com",
+        "account@work.test",
         None,
         "Updated 3m ago",
         vec![
@@ -1376,9 +1376,8 @@ fn usage_tab_text_position(d: &Dialog, height: u16, width: u16, label: &str) -> 
 
 #[test]
 fn usage_dialog_renders_auth_source_and_omits_blank_email() {
-    // P1: credential_origin renders as its own "Auth:" line (the source, never
-    // the secret); an empty account_label shows neither an email nor the
-    // "account unavailable" placeholder; username and plan share line 2.
+    // credential_origin, distinct username, and plan stay in Details while the
+    // Rust identity projection supplies an honest non-account state above them.
     let mut view = usage_view_fixture();
     view.account = jackin_protocol::control::FocusedAccountHeader {
         provider_label: "Z.AI".to_owned(),
@@ -1389,12 +1388,16 @@ fn usage_dialog_renders_auth_source_and_omits_blank_email() {
     };
     let snapshot = render_usage_dialog_snapshot_for_view(120, 40, UsageDialogTab::Provider, view);
     assert!(
-        snapshot.contains("Auth: API token \u{b7} env ZAI_API_KEY"),
+        snapshot.contains("Auth API token \u{b7} env ZAI_API_KEY"),
         "auth source line missing:\n{snapshot}"
     );
     assert!(
-        snapshot.contains("donbeave \u{b7} GLM Coding"),
-        "username \u{b7} plan line missing:\n{snapshot}"
+        snapshot.contains("Username donbeave"),
+        "username detail missing:\n{snapshot}"
+    );
+    assert!(
+        snapshot.contains("Plan GLM Coding"),
+        "plan detail missing:\n{snapshot}"
     );
     assert!(
         !snapshot.contains("account unavailable"),
@@ -1423,10 +1426,22 @@ fn usage_dialog_renders_usage_status_rows_for_error_and_stale_states() {
         );
     }
 
-    assert!(values.iter().any(|value| value == "needs login"));
-    assert!(values.iter().any(|value| value == "stale"));
-    assert!(values.iter().any(|value| value == "unsupported"));
-    assert!(values.iter().any(|value| value == "error"));
+    assert!(values.iter().any(|value| value == "Sign in required"));
+    assert!(
+        values
+            .iter()
+            .any(|value| value == "Update delayed · Updated now")
+    );
+    assert!(
+        values
+            .iter()
+            .any(|value| value == "Usage limits unsupported")
+    );
+    assert!(
+        values
+            .iter()
+            .any(|value| value == "Update failed · Updated now")
+    );
 }
 
 #[test]
@@ -1474,8 +1489,12 @@ fn usage_dialog_rows_render_provider_quota_snapshot() {
         .map(crate::tui::components::container_info_surface::ContainerInfoRow::value)
         .collect();
 
-    assert_eq!(state.rows()[0].label(), "Focused");
-    assert!(values.contains(&"codex · OpenAI · alexey@example.com"));
+    assert_eq!(state.rows()[0].label(), "Identity provider");
+    assert_eq!(state.rows()[0].value(), "OpenAI");
+    assert_eq!(state.rows()[1].label(), "Identity account");
+    assert_eq!(state.rows()[1].value(), "alexey@example.com");
+    assert_eq!(state.rows()[2].label(), "Identity activity");
+    assert_eq!(state.rows()[2].value(), "Updated now");
     assert!(values.iter().any(|value| {
         value.starts_with("████")
             && value.contains("37% left")
@@ -1484,11 +1503,10 @@ fn usage_dialog_rows_render_provider_quota_snapshot() {
             && !value.contains("used / 100%")
     }));
     assert!(values.contains(&"ACP billing unavailable · unsupported"));
-    assert!(values.contains(&"fresh"));
-    assert!(values.contains(&"Updated just now"));
+    assert!(!values.contains(&"fresh"));
     let rows_debug = format!("{:?}", state.rows());
     assert!(!rows_debug.contains("Account availability"));
-    assert!(rows_debug.contains("Header"));
+    assert!(!rows_debug.contains("Header"));
     assert!(!rows_debug.contains("Instance"));
     assert!(!values.contains(&"local diagnostic detail"));
 }
@@ -1892,7 +1910,7 @@ fn usage_dialog_renders_amp_individual_credits_as_credits_section() {
         .join("\n");
 
     assert!(rendered.contains("Amp"), "{rendered}");
-    assert!(rendered.contains("alexey@zhokhov.com"), "{rendered}");
+    assert!(rendered.contains("account@personal.test"), "{rendered}");
     assert!(rendered.contains("Amp Free"), "{rendered}");
     assert!(rendered.contains("4% left"), "{rendered}");
     assert!(rendered.contains("Resets in 22h 40m"), "{rendered}");
@@ -1968,7 +1986,7 @@ fn usage_dialog_renders_inside_narrow_terminal() {
     assert!(!rendered.contains("OpenAI / Codex"), "{rendered}");
     assert!(rendered.contains("alexey@example.com"), "{rendered}");
     assert!(rendered.contains("Pro 20x"), "{rendered}");
-    assert!(rendered.contains("Updated just now"), "{rendered}");
+    assert!(rendered.contains("Updated now"), "{rendered}");
     assert!(!rendered.contains("Account availability"), "{rendered}");
     assert!(!rendered.contains("2 buckets"), "{rendered}");
     assert!(!rendered.contains("Overview  Codex"), "{rendered}");

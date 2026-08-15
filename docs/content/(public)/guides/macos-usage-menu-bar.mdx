@@ -55,9 +55,9 @@ Open Usage from the popover or status-item menu. The normal resizable window is 
 - A quiet generated `jackin❯ by tailrocks` wordmark sits at the bottom of the sidebar. It is identity, not a control.
 - Overview is a native table of provider/account, plan, remaining, and reset.
 - Provider detail uses native sections, an account menu, system meters, and visible recovery.
-- Exactly one sidebar button stays in the leading toolbar position. It remains there while the sidebar is open or closed.
-- `jackin❯ desktop` stays centered in the native toolbar while the sidebar and actions keep their native positions.
-- Refresh is a native toolbar action.
+- Exactly one standard sidebar button stays in the leading titlebar position. Its Show/Hide label follows the real sidebar state while its position remains fixed.
+- The sidebar uses the full leading structural height.
+- `jackin❯ desktop` stays centered over the detail pane, with Refresh trailing in the same native detail accessory.
 
 The window does not display a redundant `Usage` heading. Closing and reopening preserves a valid destination, account, sidebar state, and frame. If the selected provider disappears or is disabled, the app returns safely to Overview.
 
@@ -67,7 +67,7 @@ Keyboard commands:
 |---|---|
 | Command-R | Refresh |
 | Command-comma | Settings |
-| Command-W or Escape | Close current window |
+| Command-W | Close current window |
 | Control-Command-S | Hide or show the sidebar |
 
 ## Accounts and credentials

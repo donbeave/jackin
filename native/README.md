@@ -6,6 +6,16 @@ Production Swift passes no config, home, or data paths. Rust derives canonical h
 paths, loads the global/workspace/role configuration read-only, resolves configured
 credential sources, deduplicates accounts, and exports only immutable sanitized
 inventory/diagnostic DTOs. Swift never scans configuration or handles credentials.
+One host Rust broker owns canonical refresh generations, provider calls, atomic
+last-good state, and shared rate-limit deadlines. Desktop sends refresh intent and
+renders the returned phase; it never starts a local probe or uses Swift task
+cancellation as coordination.
+
+One `desktopProjection` call returns the complete generation: provider groups,
+account children, selected identities, quota/detail rows, status-item rows, activity,
+and sanitized diagnostics. `PresentationStore` replaces visible state only after that
+whole projection decodes. A transient failure preserves the exact last-good rows and
+destination; an older generation can never overwrite a newer one.
 
 Product scope is limits only: remaining/used percentages, resets, plan/status, multi-account selection, and provider-supplied quota caps. Never add token unit prices, session-cost estimates, historical spend/usage, trends, sparklines, or aggregate charts.
 
@@ -17,7 +27,7 @@ Product scope is limits only: remaining/used percentages, resets, plan/status, m
 - Swift language mode: Swift 6 strict concurrency.
 - No compatibility branch, custom material, explicit `glassEffect`, or `GlassEffectContainer` exists in production UI.
 
-Liquid Glass is owned by the system hosts and standard functional chrome: `NSPopover`, unified `NSToolbar`, `NavigationSplitView`, sidebar/list/table, menus, pickers, buttons, and window titlebars. Quota content uses ordinary `Form`, `List`, `Section`, `LabeledContent`, `Table`, and `ProgressView` surfaces. The status bar remains template monochrome. jackin❯ phosphor appears only as adaptive identity/healthy-state emphasis; warning and danger retain textual state plus system semantic color.
+Liquid Glass is owned by the system hosts and standard functional chrome: `NSPopover`, unified `NSToolbar`, `NSSplitViewController`, sidebar/list/table, menus, pickers, buttons, and window titlebars. Quota content uses ordinary `Form`, `List`, `Section`, `LabeledContent`, `Table`, and `ProgressView` surfaces. The status bar remains template monochrome. jackin❯ phosphor appears only as adaptive identity/healthy-state emphasis; warning and danger retain textual state plus system semantic color.
 
 ## Native surfaces
 
@@ -26,27 +36,31 @@ Liquid Glass is owned by the system hosts and standard functional chrome: `NSPop
 `StatusBarController` owns native `NSStatusItem` instances selected from the Rust projection. A primary click opens one real transient `NSPopover` focused on that provider. The popover contains:
 
 - a centered, noninteractive generated jackin❯ monogram plus `jackin❯ desktop` identity row;
-- provider identity and status;
-- a native account menu when multiple identities are known;
-- Rust-owned detail and limit rows;
+- provider identity, selected account, and one Rust-owned activity phrase;
+- Limits before useful Details without repetition;
 - visible Retry actions for global/provider failures;
-- visible Refresh (Command-R) and Open Usage actions.
+- a fixed native footer with adjacent icon-only Refresh (Command-R) and Open Usage
+  actions at the leading edge, plus a trailing native account menu when multiple
+  identities are known. Semantic labels and hover help preserve discoverability while
+  the system popover and controls own Liquid Glass.
 
 There is no cross-provider navigation inside the popover. A secondary click opens the fixed native menu: Open Usage Window, Refresh, Quit jackin❯ desktop.
 
 ### Usage window
 
-`UsageWindowController` lazily creates and retains one normal `NSWindow`. `UsageWindowRoot` uses a two-column `NavigationSplitView`:
+`UsageWindowController` lazily creates and retains one normal `NSWindow`. A native `NSSplitViewController` owns two columns while SwiftUI renders their content:
 
 - sidebar: Overview plus Rust-ordered providers;
 - quiet footer: generated `jackin❯ by tailrocks` wordmark;
-- Overview: native account inventory `Table`;
-- provider detail: native list/sections, account menu, quota meters, recovery;
-- toolbar: one fixed leading sidebar button and a native Refresh action.
+- Overview: expanded native hierarchical `Table` with provider parents, account
+  children, and Provider/Account/Plan or status/Remaining/Reset columns;
+- provider detail: selected identity, account menu, Details, Limits, and recovery;
+- titlebar: the standard split-view sidebar button in its fixed leading slot;
+- detail top accessory: centered `jackin❯ desktop` identity and trailing Refresh.
 
-The system-supplied split-view toggle is removed so exactly one button owns the leading slot. Its coordinates remain stable while hiding/showing the sidebar and across retained-window reopen. A noninteractive `jackin❯ desktop` title uses the native toolbar's centered principal placement; no `Usage` heading is drawn in content or titlebar. Reopening preserves valid destination, account, sidebar state, and frame. A removed/disabled provider normalizes to Overview at `PresentationStore`, not in a view-only fallback.
+The standard `.toggleSidebar` item and `NSSplitViewController.toggleSidebar(_:)` responder action are the only visibility authority. Its native width is retained while its accessibility label changes between Show Sidebar and Hide Sidebar, so the control stays stationary through collapse and retained-window reopen. The sidebar owns the full leading structural height. The detail-only native split-item accessory centers the noninteractive product identity over the detail pane and keeps Refresh trailing; no root header or `Usage` heading spans both panes. Reopening preserves valid destination, account, sidebar state, and frame. A removed/disabled provider normalizes to Overview at `PresentationStore`, not in a view-only fallback.
 
-Standard commands: Command-R Refresh, Command-comma Settings, Command-W Close, Control-Command-S Toggle Sidebar, Escape Close.
+Standard commands: Command-R Refresh, Command-comma Settings, Command-W Close, Control-Command-S Toggle Sidebar.
 
 ### Settings
 
@@ -96,7 +110,7 @@ swift test -c release
 
 `desktop-test` covers 251 Rust/FFI tests plus native architecture/parity harnesses. SwiftPM tests protect ownership, navigation normalization, native component confinement, brand tokens, and visual-QA fixture isolation. The UI suite runs the real app host and audits popover, Overview, provider detail, sidebar coordinates, commands, scrolling, recovery, and retained context.
 
-Explicit visual-QA launch flags (`--fixture`, `--open-popover`, `--open-usage`, `--selection`, `--window-size`, `--appearance`) never activate unless a fixture is named and never call the bridge or real credentials.
+Explicit visual-QA launch flags (`--fixture`, `--open-popover`, `--open-usage`, `--selection`, `--window-size`, `--appearance`) never activate unless `--fixture` is present in argv and never call the bridge or real credentials. Fixture runs carry a persistent visible Fixture badge, and their frozen account/refresh projections exercise immediate selection plus `Updating…` → terminal activity. Environment variables cannot enable fabricated data. Moving fixture code into a debug-only target remains a maintenance follow-up.
 
 ## Visual QA
 

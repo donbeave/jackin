@@ -3,6 +3,17 @@
 
 import Foundation
 
+/// Exact provider/account destination carried across popover/window handoff.
+public struct UsageNavigationContext: Equatable, Sendable {
+    public let surfaceId: String
+    public let accountKey: String?
+
+    public init(surfaceId: String, accountKey: String?) {
+        self.surfaceId = surfaceId
+        self.accountKey = accountKey
+    }
+}
+
 /// One already-grouped visual line of a ``UsageDetailRow`` (mirror of the Rust
 /// `UsagePresentationLine`). `leading`/`trailing` are finished display strings;
 /// Swift never splits, joins, or reorders them.
@@ -100,8 +111,7 @@ public struct UsageDetailPresentation: Equatable, Sendable {
 /// It preserves the Rust sidebar
 /// order, resolves the incoming selection to the selected surface's Rust detail
 /// presentation and account rows, and represents Overview/empty without
-/// synthesizing any usage string. It writes no persistence and calls no FFI;
-/// `UsageWindowRoot` routes ``Action`` values to the store's one mutation each.
+/// synthesizing any usage string. It writes no persistence and calls no FFI.
 public struct UsageWindowModel: Equatable, Sendable {
     /// Sidebar/detail selection.
     public enum Selection: Equatable, Sendable {
@@ -109,40 +119,47 @@ public struct UsageWindowModel: Equatable, Sendable {
         case provider(String)
     }
 
-    /// Navigation intents carrying only existing surface/account keys.
-    public enum Action: Equatable, Sendable {
-        case selectOverview
-        case selectProvider(String)
-        case selectAccount(surfaceId: String, accountKey: String)
-    }
-
     /// Selected provider content (nil for Overview / empty).
     public struct Content: Equatable, Sendable {
         public let surfaceId: String
         /// Provider display name for detail head (from glance / surface — Rust only).
         public let displayLabel: String
-        /// Icon key for detail-head logo plate (`desktopProviderSystemImage`).
+        /// Rust-owned icon key for the detail-head logo plate.
         public let iconKey: String?
+        public let fallbackGlyph: String?
+        public let usageURL: String?
+        public let identity: PresentationStore.IdentityRow
         public let detail: UsageDetailPresentation
         public let accounts: [PresentationStore.AccountRow]
+        public let selectedAccountKey: String?
 
         public init(
             surfaceId: String,
             displayLabel: String,
             iconKey: String? = nil,
+            fallbackGlyph: String?,
+            usageURL: String?,
+            identity: PresentationStore.IdentityRow,
             detail: UsageDetailPresentation,
-            accounts: [PresentationStore.AccountRow]
+            accounts: [PresentationStore.AccountRow],
+            selectedAccountKey: String?
         ) {
             self.surfaceId = surfaceId
             self.displayLabel = displayLabel
             self.iconKey = iconKey
+            self.fallbackGlyph = fallbackGlyph
+            self.usageURL = usageURL
+            self.identity = identity
             self.detail = detail
             self.accounts = accounts
+            self.selectedAccountKey = selectedAccountKey
         }
 
         /// Selected account for detail-head subtitle (multi-account); else first.
         public var headAccount: PresentationStore.AccountRow? {
-            accounts.first(where: \.selected) ?? accounts.first
+            selectedAccountKey.flatMap { key in
+                accounts.first(where: { $0.accountKey == key })
+            } ?? accounts.first(where: \.selected) ?? accounts.first
         }
     }
 
@@ -160,7 +177,9 @@ public struct UsageWindowModel: Equatable, Sendable {
         glanceRows: [PresentationStore.GlanceProviderRow],
         surfaces: [PresentationStore.SurfaceRow],
         accounts: [PresentationStore.AccountRow],
-        selection surfaceId: String?
+        providerGroups: [PresentationStore.ProviderGroupRow] = [],
+        selection surfaceId: String?,
+        accountSelection: String? = nil
     ) {
         sidebar = glanceRows
         isEmpty = glanceRows.isEmpty
@@ -171,34 +190,25 @@ public struct UsageWindowModel: Equatable, Sendable {
         {
             selection = .provider(surfaceId)
             let glance = glanceRows.first(where: { $0.surfaceId == surfaceId })
-            content = Content(
-                surfaceId: surfaceId,
-                displayLabel: glance?.displayLabel ?? surface.label,
-                iconKey: glance?.iconKey,
-                detail: surface.detailPresentation,
-                accounts: accounts.filter { $0.surfaceId == surfaceId }
-            )
+            let group = providerGroups.first(where: { $0.surfaceId == surfaceId })
+            if let identity = surface.identity {
+                content = Content(
+                    surfaceId: surfaceId,
+                    displayLabel: identity.providerTitle,
+                    iconKey: group?.iconKey ?? glance?.iconKey,
+                    fallbackGlyph: group?.fallbackGlyph ?? glance?.fallbackGlyph,
+                    usageURL: group?.usageURL ?? glance?.usageURL,
+                    identity: identity,
+                    detail: surface.detailPresentation,
+                    accounts: accounts.filter { $0.surfaceId == surfaceId },
+                    selectedAccountKey: accountSelection
+                )
+            } else {
+                content = nil
+            }
         } else {
             selection = .overview
             content = nil
-        }
-    }
-
-    /// The store selection an ``Action`` resolves to (`nil` = Overview).
-    ///
-    /// The
-    /// account action keeps the current provider selection.
-    public func selection(after action: Action) -> String? {
-        switch action {
-        case .selectOverview:
-            return nil
-        case .selectProvider(let surfaceId):
-            return surfaceId
-        case .selectAccount:
-            if case .provider(let surfaceId) = selection {
-                return surfaceId
-            }
-            return nil
         }
     }
 }

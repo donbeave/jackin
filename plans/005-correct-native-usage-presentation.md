@@ -41,6 +41,9 @@
   `plans/009-ci-testing-docs-hygiene.md`
 - **Category**: bug, tech-debt, tests, docs
 - **Planned at**: commit `27d0d9b3`, 2026-08-13
+- **Execution state**: IN PROGRESS — the final popover-footer refinement is implemented
+  and passes the branch-head Swift, architecture, and real-host UI suites. A fresh
+  Clear/Tinted visual and accessibility matrix remains pending.
 
 ## Why this matters
 
@@ -392,11 +395,13 @@ In `PopoverRoot`:
 
 1. render the Rust provider identity and selected account at the top for one or many
    accounts;
-2. render the native account picker immediately below only when multiple stable
-   accounts exist;
-3. render Limits before Details;
-4. render useful Details only;
-5. preserve provider error/Retry and footer actions.
+2. render Limits before Details;
+3. render useful Details only;
+4. move the native account picker out of the content form to the trailing edge of the
+   fixed footer, only when multiple stable accounts exist;
+5. render Refresh and Open Usage as adjacent native leading icon-only SF Symbol
+   buttons, preserving independent action semantics, labels, shortcuts, hover help,
+   and system-owned sizing/material.
 
 The identity account text must update immediately after selection and displayed
 limits must belong to that account. During a manual or background generation, render
@@ -418,7 +423,8 @@ PopoverRoot` would match nothing), then
 plus the popover cases in `rtk mise run desktop-test-ui` -> single-account
 identity is visible without picker; multi-account selection updates
 identity/limits; Limits precede Details; Open Usage preserves exact
-provider/account.
+provider/account; footer actions remain accessible icon-only buttons and the account
+picker remains trailing and reachable while content scrolls.
 
 ### Step 4: Keep Usage provider detail deep and account-first
 
@@ -535,7 +541,8 @@ remain a no-op. Keep fixture data isolated and secret/network-free.
 Add end-to-end synthetic cases:
 
 - single-account Anthropic: account visible at top, no picker, Limits first in popover;
-- multi-account OpenAI: two children one group; picker changes identity/limits;
+- multi-account OpenAI: two children one group; trailing footer picker changes
+  identity/limits;
 - Z.AI/MiniMax: no OpenAI accounts;
 - Amp: old history is absent from current catalog; presence-only source is provider
   state, not a Fresh account;
@@ -597,7 +604,9 @@ All commands exit 0.
 ## Done criteria
 
 - [ ] Provider and selected account are always visible at the top of both surfaces.
-- [ ] Popover order is identity, picker, Limits, Details.
+- [ ] Popover content order is identity, Limits, Details; the optional account picker
+  is fixed at the trailing footer edge beside separate leading semantic
+  icon-only Refresh/Open Usage controls.
 - [ ] Usage order is identity, picker, Details, Limits.
 - [ ] Focused/Header/Provider/duplicate Account/ordinary Fresh rows are absent.
 - [ ] Exactly one Rust-owned activity phrase is visible; real in-flight work says

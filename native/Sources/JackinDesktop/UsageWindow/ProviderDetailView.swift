@@ -95,10 +95,10 @@ public struct ProviderDetailView: View {
                 }
             }
 
-            if let url = ProviderUsageLinks.usagePageURL(surfaceId: content.surfaceId) {
+            if let rawURL = content.usageURL, let url = URL(string: rawURL) {
                 Section {
                     Link(destination: url) {
-                        Label(ProviderUsageLinks.openUsagePageTitle, systemImage: "arrow.up.right")
+                        Label("Open provider usage page", systemImage: "arrow.up.right")
                     }
                     .accessibilityIdentifier("usage.open-provider-page")
                 }
@@ -119,17 +119,25 @@ public struct ProviderDetailView: View {
                     .scaledToFit()
                     .frame(width: 32, height: 32)
                     .accessibilityHidden(true)
+            } else if let fallbackGlyph = content.fallbackGlyph {
+                Text(fallbackGlyph)
+                    .font(.headline)
+                    .accessibilityHidden(true)
             }
             VStack(alignment: .leading, spacing: 2) {
-                Text(content.displayLabel)
+                Text(content.identity.providerTitle)
                     .font(.title2)
-                if let account = content.headAccount {
-                    Text(accountSubtitle(account))
-                        .foregroundStyle(.secondary)
-                }
+                Text(content.identity.accountLabel)
+                    .foregroundStyle(.primary)
+                    .accessibilityIdentifier("usage.provider-account")
+                Text(content.identity.activityLabel)
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .accessibilityIdentifier("usage.provider-activity")
             }
         }
-        .accessibilityElement(children: .combine)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(content.identity.accessibilityLabel)
         .accessibilityIdentifier("usage.provider-identity")
     }
 
@@ -142,11 +150,6 @@ public struct ProviderDetailView: View {
             },
             set: { onSelectAccount(content.surfaceId, $0) }
         )
-    }
-
-    private func accountSubtitle(_ account: PresentationStore.AccountRow) -> String {
-        guard let plan = account.planLabel, !plan.isEmpty else { return account.accountLabel }
-        return "\(account.accountLabel) · \(plan)"
     }
 
     private func limitRow(_ row: UsageDetailRow) -> some View {

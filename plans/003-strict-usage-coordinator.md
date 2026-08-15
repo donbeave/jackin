@@ -29,6 +29,11 @@
   `plans/008-backend-parity-fail-closed.md`
 - **Category**: security, bug, perf, tech-debt, tests, docs, direction
 - **Planned at**: commit `27d0d9b3`, 2026-08-13
+- **Execution state**: BLOCKED — implementation and local gates pass, including
+  the complete Docker E2E profile on macOS 26.5.2 with OrbStack 29.4.0. This host
+  has no Docker Desktop installation, so the required real Docker Desktop run
+  remains unavailable. Operator prerequisite: install/start Docker Desktop, select
+  its Docker context, then run `cargo xtask ci --e2e` and retain the CI/PR result.
 
 ## Why this matters
 
@@ -522,27 +527,27 @@ not as committed logs/screenshots.
 
 ## Done criteria
 
-- [ ] Exactly one active refresh generation exists per canonical account.
-- [ ] Manual/background requests join active work and receive one terminal result.
-- [ ] Timeout never releases ownership while provider work continues.
-- [ ] Broker/rate-limit/state failure produces zero unlocked provider calls.
-- [ ] One atomic envelope owns snapshot, generation, failure, and cooldown.
-- [ ] State files are host-only, no-follow, `0600`; directories are `0700`.
-- [ ] No Capsule receives the global broker socket or global account state tree.
-- [ ] Capsule relay authorizes only explicitly forwarded accounts.
-- [ ] Desktop (via FFI/`PresentationStore` state, fixture-proof) and Capsule
+- [x] Exactly one active refresh generation exists per canonical account.
+- [x] Manual/background requests join active work and receive one terminal result.
+- [x] Timeout never releases ownership while provider work continues.
+- [x] Broker/rate-limit/state failure produces zero unlocked provider calls.
+- [x] One atomic envelope owns snapshot, generation, failure, and cooldown.
+- [x] State files are host-only, no-follow, `0600`; directories are `0700`.
+- [x] No Capsule receives the global broker socket or global account state tree.
+- [x] Capsule relay authorizes only explicitly forwarded accounts.
+- [x] Desktop (via FFI/`PresentationStore` state, fixture-proof) and Capsule
   expose the same Rust generation/phase/result; final Desktop visual rendering
   of that phase is Plan 005's gate, not this one.
-- [ ] Ambient ticks never bypass the success cooldown; Refresh All issues exactly
+- [x] Ambient ticks never bypass the success cooldown; Refresh All issues exactly
   one request per unique canonical account.
-- [ ] A timed-out/unavailable/unsupported probe never overwrites a data-bearing
+- [x] A timed-out/unavailable/unsupported probe never overwrites a data-bearing
   snapshot and never writes a success cooldown.
-- [ ] Broker ingestion validates size/epoch/schema and sanitizes display strings;
+- [x] Broker ingestion validates size/epoch/schema and sanitizes display strings;
   identity-bearing fields never reach container-readable state.
-- [ ] 20 Capsules + Desktop make exactly one fake-provider request for one account.
-- [ ] Different accounts can refresh concurrently within a bounded executor.
+- [x] 20 Capsules + Desktop make exactly one fake-provider request for one account.
+- [x] Different accounts can refresh concurrently within a bounded executor.
 - [ ] macOS 26 Docker Desktop test proves process/container behavior.
-- [ ] All unit, integration, lint, docs, and full CI gates pass.
+- [x] All unit, integration, lint, docs, and full CI gates pass.
 
 ## STOP conditions
 

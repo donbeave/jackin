@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import AppKit
-import JackinUsageBridge
 
 /// AppKit rendering for one per-provider `NSStatusItem`.
 ///
@@ -15,16 +14,10 @@ public enum StatusItemRendering {
     /// Template icon for a provider icon key.
     ///
     /// Prefers **official** bundled PDF logomarks from `ProviderMarks`.
-    /// Falls back to SF Symbol stand-in, then JackinMark for unknown keys.
+    /// Falls back to the jackin❯ monogram for unknown keys.
     public static func icon(forIconKey iconKey: String) -> NSImage {
         if let official = ProviderMarks.templateImage(forIconKey: iconKey) {
             return official
-        }
-        if let symbol = desktopProviderSystemImage(iconKey: iconKey),
-            let image = NSImage(systemSymbolName: symbol, accessibilityDescription: nil)
-        {
-            image.isTemplate = true
-            return image
         }
         return fallbackIcon()
     }
@@ -44,7 +37,10 @@ public enum StatusItemRendering {
     /// Dual-stack title: compact reset (top) + `barLabel` (bottom).
     ///
     /// When no reset is available, falls back to a single-line `barLabel`.
-    public static func title(barLabel: String, resetLabel: String?) -> NSAttributedString {
+    public static func title(
+        barLabel: String,
+        compactResetLabel: String?
+    ) -> NSAttributedString {
         let paragraph = NSMutableParagraphStyle()
         paragraph.alignment = .left
         paragraph.maximumLineHeight = 10
@@ -59,7 +55,7 @@ public enum StatusItemRendering {
             weight: .medium
         )
 
-        guard let compact = compactResetCountdown(resetLabel), !compact.isEmpty else {
+        guard let compactResetLabel, !compactResetLabel.isEmpty else {
             return NSAttributedString(
                 string: barLabel,
                 attributes: [
@@ -73,7 +69,7 @@ public enum StatusItemRendering {
         let result = NSMutableAttributedString()
         result.append(
             NSAttributedString(
-                string: compact + "\n",
+                string: compactResetLabel + "\n",
                 attributes: [
                     .font: topFont,
                     .foregroundColor: NSColor.secondaryLabelColor,
@@ -92,37 +88,5 @@ public enum StatusItemRendering {
             )
         )
         return result
-    }
-
-    /// Compacts Rust `reset_label` for the menu bar top line.
-    ///
-    /// Does not invent durations — only trims known prefixes / separators.
-    /// Examples: `"Resets in 3d"` → `"3d"`; `"Resets in 2h 14m · …"` → `"2h 14m"`.
-    public static func compactResetCountdown(_ resetLabel: String?) -> String? {
-        guard var text = resetLabel?.trimmingCharacters(in: .whitespacesAndNewlines),
-            !text.isEmpty
-        else {
-            return nil
-        }
-        // Prefix trim only (Rust owns the countdown). Built without a contiguous
-        // banned display token in source (architecture scanner).
-        let lower = text.lowercased()
-        let word = "re" + "sets"
-        if lower.hasPrefix(word + " in ") {
-            text = String(text.dropFirst(word.count + 4))
-        } else if lower.hasPrefix(word + " ") {
-            text = String(text.dropFirst(word.count + 1))
-        }
-        if let head = text.split(separator: "·", maxSplits: 1, omittingEmptySubsequences: true)
-            .first
-        {
-            text = head.trimmingCharacters(in: .whitespacesAndNewlines)
-        }
-        if let head = text.split(separator: "(", maxSplits: 1, omittingEmptySubsequences: true)
-            .first
-        {
-            text = head.trimmingCharacters(in: .whitespacesAndNewlines)
-        }
-        return text.isEmpty ? nil : text
     }
 }

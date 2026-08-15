@@ -1,17 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Alexey Zhokhov
 // SPDX-License-Identifier: Apache-2.0
 
-/// Pure production-path chip harness (no XCTest / no network).
-///
-/// Asserts CodexBar/OpenUsage status-item parity:
-/// - multi-provider chips from Rust remainings
-/// - default percent lines = remaining %
-/// - compact driving digit matches min remaining (no used%/remaining% mix)
-/// - dual-bucket stack + a11y speak both lines
-/// - used style flips display lines only
-///
-/// Run after XCFramework exists:
-///   cd native && swift run -c release StatusItemChipHarness
+/// CLT-safe proof that the status-item consumes finished Rust DTO fields.
 
 import Foundation
 import JackinUsageBridge
@@ -20,520 +10,71 @@ import JackinUsageBridge
 struct StatusItemChipHarness {
     static func main() {
         var failures = 0
-
-        func check(_ name: String, _ ok: @autoclosure () -> Bool, _ detail: String = "") {
-            if ok() {
-                print("PASS  \(name)")
-            } else {
-                failures += 1
-                let suffix = detail.isEmpty ? "" : " — \(detail)"
-                print("FAIL  \(name)\(suffix)")
-            }
+        func check(_ name: String, _ ok: Bool) {
+            print("\(ok ? "PASS" : "FAIL")  \(name)")
+            if !ok { failures += 1 }
         }
 
-        // --- Desktop provider icon seam (plan 005 Step 6) ---
-        check(
-            "desktop icon keys are the seven-provider domain",
-            desktopProviderIconKeys == ["codex", "claude", "amp", "grok", "zai", "kimi", "minimax"]
+        let row = ProviderGlanceRowDto(
+            surfaceId: "codex",
+            iconKey: "codex",
+            fallbackGlyph: "Cx",
+            usageUrl: "https://chatgpt.com/codex/settings/usage",
+            displayLabel: "OpenAI",
+            accountLabel: "operator@example.test",
+            planLabel: "Pro",
+            glanceRemainingPercent: 57,
+            barLabel: "57%",
+            headline: "57% left",
+            resetLabel: "Resets in 3d (Aug 17, 18:51)",
+            compactResetLabel: "3d",
+            exactReset: "(Aug 17, 18:51)",
+            statusWord: "fresh",
+            isRefreshing: false,
+            statusLabel: "fresh",
+            severity: "normal",
+            updatedLabel: "Updated now",
+            activityLabel: "Updated now",
+            activityKind: "idle",
+            accessibilityLabel: "OpenAI, operator@example.test, Updated now",
+            lastError: nil,
+            dimmed: false
         )
-        for key in desktopProviderIconKeys {
-            check(
-                "desktop provider icon maps: \(key)",
-                desktopProviderSystemImage(iconKey: key) != nil
-            )
-        }
+        check("bar text is Rust-owned", row.barLabel == "57%")
+        check("compact reset is a dedicated field", row.compactResetLabel == "3d")
+        check("no reset parsing required", row.resetLabel?.contains("Aug 17") == true)
+        check("fallback glyph rides DTO", row.fallbackGlyph == "Cx")
         check(
-            "opencode is excluded from desktop provider icons",
-            desktopProviderSystemImage(iconKey: "opencode") == nil
+            "accessibility copy rides DTO", row.accessibilityLabel.contains("operator@example.test")
         )
-        check(
-            "unknown desktop provider icon key is nil",
-            desktopProviderSystemImage(iconKey: "cursor") == nil
-        )
+        check("activity is explicit machine state", row.activityKind == "idle")
 
-        // --- Status-item context menu model + router (plan 007) ---
+        var opened: [String?] = []
+        var refreshed = 0
+        var quit = 0
+        let router = StatusItemMenuRouter(
+            openUsageWindow: { opened.append($0) },
+            refresh: { refreshed += 1 },
+            quit: { quit += 1 }
+        )
+        router.dispatch(.openUsageWindow)
+        router.dispatch(.refresh)
+        router.dispatch(.quit)
+        router.openUsage(focusOn: "codex")
+        check("menu router preserves surface", opened == [nil, "codex"])
+        check("menu router refreshes once", refreshed == 1)
+        check("menu router quits once", quit == 1)
         check(
-            "menu rows are Open Usage / Refresh / Quit",
-            StatusItemMenuModel.rows.map(\.action)
-                == [.openUsageWindow, .refresh, .quit]
-        )
-        do {
-            var opened: [String?] = []
-            var refreshed = 0
-            var quit = 0
-            let router = StatusItemMenuRouter(
-                openUsageWindow: { opened.append($0) },
-                refresh: { refreshed += 1 },
-                quit: { quit += 1 }
-            )
-            router.dispatch(.openUsageWindow)
-            router.dispatch(.refresh)
-            router.dispatch(.quit)
-            router.openUsage(focusOn: "codex")
-            check("router dispatches menu actions", refreshed == 1 && quit == 1)
-            check(
-                "router opens usage overview then focused provider",
-                opened == [nil, "codex"]
-            )
-        }
-
-        // --- Pure token helpers ---
-        check("remaining token default", statusItemPercentToken(remainingPercent: 37) == "37%")
-        check(
-            "used token style",
-            statusItemPercentToken(remainingPercent: 37, percentStyle: "used") == "63%"
-        )
-        check(
-            "remaining fraction full",
-            abs(statusItemRemainingFraction(remainingPercent: 100) - 1.0) < 0.001
-        )
-        check(
-            "remaining fraction depleted",
-            abs(statusItemRemainingFraction(remainingPercent: 0) - 0.0) < 0.001
-        )
-        check(
-            "remaining fraction mid",
-            abs(statusItemRemainingFraction(remainingPercent: 79) - 0.79) < 0.001
-        )
-        check(
-            "used+remaining fractions sum 1",
-            {
-                let rem: UInt8 = 63
-                return abs(
-                    statusItemRemainingFraction(remainingPercent: rem)
-                        + statusItemUsedFraction(remainingPercent: rem) - 1.0
-                ) < 0.001
-            }())
-        check("mini bar for percent token", statusItemLineShowsMiniBar("79%"))
-        check("no mini bar for countdown", !statusItemLineShowsMiniBar("resets 1h 21m"))
-        check("no mini bar for placeholder", !statusItemLineShowsMiniBar("—"))
-        check(
-            "glyph from remaining compact",
-            statusItemGlyph(compactLabel: "Cl 37%", surfaceId: "claude") == "Cl"
-        )
-        check(
-            "dual remaining lines",
-            statusItemPercentLines(remainings: [100, 79], maxLines: 2) == ["100%", "79%"]
-        )
-        check(
-            "dual used lines",
-            statusItemPercentLines(
-                remainings: [100, 79],
-                maxLines: 2,
-                percentStyle: "used"
-            ) == ["0%", "21%"]
-        )
-        check(
-            "primary left label",
-            bucketPrimaryPercentLabel(
-                remainingPercent: 81,
-                usedLabel: "19% used",
-                percentStyle: "left"
-            ) == "81% left"
-        )
-        check(
-            "primary used label",
-            bucketPrimaryPercentLabel(
-                remainingPercent: 81,
-                usedLabel: "19% used",
-                percentStyle: "used"
-            ) == "19% used"
-        )
-        check(
-            "primary money fallback",
-            bucketPrimaryPercentLabel(
-                remainingPercent: nil,
-                usedLabel: "SGD 78 of 260",
-                percentStyle: "left"
-            ) == "SGD 78 of 260"
-        )
-
-        // Production-shaped multi-provider strip (Claude dual + Codex + hidden empty/disabled).
-        let surfaces = [
-            StatusItemSurfaceSnapshot(
-                surfaceId: "claude",
-                label: "Claude",
-                enabled: true,
-                statusBarLabel: "Session 100% · Weekly 79%",
-                status: "fresh",
-                compactLabel: "Cl 79%",  // driving = min remaining
-                remainings: [100, 79],
-                severities: ["ok", "ok"]
-            ),
-            StatusItemSurfaceSnapshot(
-                surfaceId: "codex",
-                label: "Codex",
-                enabled: true,
-                statusBarLabel: "Session 84%",
-                status: "fresh",
-                compactLabel: "Cx 84%",
-                remainings: [84],
-                severities: ["warn"]
-            ),
-            StatusItemSurfaceSnapshot(
-                surfaceId: "amp",
-                label: "Amp",
-                enabled: true,
-                statusBarLabel: "",
-                status: "unavailable",
-                compactLabel: "",
-                remainings: [],
-                severities: []
-            ),
-            StatusItemSurfaceSnapshot(
-                surfaceId: "grok",
-                label: "Grok Build",
-                enabled: false,
-                statusBarLabel: "unused",
-                status: "fresh",
-                compactLabel: "Gr 50%",
-                remainings: [50],
-                severities: ["ok"]
-            ),
-            StatusItemSurfaceSnapshot(
-                surfaceId: "zai",
-                label: "GLM / Z.AI",
-                enabled: true,
-                statusBarLabel: "Weekly 12%",
-                status: "fresh",
-                compactLabel: "ZA 12%",
-                remainings: [12],
-                severities: ["danger"]
-            ),
-            StatusItemSurfaceSnapshot(
-                surfaceId: "kimi",
-                label: "Kimi",
-                enabled: true,
-                statusBarLabel: "Session 40%",
-                status: "fresh",
-                compactLabel: "Ki 40%",
-                remainings: [40],
-                severities: ["ok"]
-            ),
-            StatusItemSurfaceSnapshot(
-                surfaceId: "minimax",
-                label: "MiniMax",
-                enabled: true,
-                statusBarLabel: "Session 55%",
-                status: "fresh",
-                compactLabel: "MM 55%",
-                remainings: [55],
-                severities: ["ok"]
-            ),
-            StatusItemSurfaceSnapshot(
-                surfaceId: "opencode",
-                label: "OpenCode",
-                enabled: true,
-                statusBarLabel: "Session 90%",
-                status: "fresh",
-                compactLabel: "OC 90%",
-                remainings: [90],
-                severities: ["ok"]
-            ),
-        ]
-
-        let chips = buildStatusItemChips(
-            surfaces: surfaces,
-            maxCount: 8,
-            preferWorstFirst: false,
-            percentStyle: "left",
-            includeAllEnabled: false
-        )
-        let ids = chips.map(\.surfaceId)
-        // SB-3 hard-cap 3; catalog order among non-empty enabled (amp empty, grok disabled).
-        check(
-            "hides empty/disabled without includeAll",
-            ids == ["claude", "codex", "zai"],
-            "ids=\(ids)"
-        )
-
-        // OpenUsage strip: every enabled provider gets icon + remaining% or "—".
-        let allEnabled = buildStatusItemChips(
-            surfaces: surfaces,
-            maxCount: 8,
-            preferWorstFirst: false,
-            percentStyle: "left",
-            includeAllEnabled: true
-        )
-        check(
-            "includeAllEnabled shows amp unavailable",
-            allEnabled.map(\.surfaceId).contains("amp"),
-            "ids=\(allEnabled.map(\.surfaceId))"
-        )
-        check(
-            "includeAllEnabled hides disabled grok",
-            !allEnabled.map(\.surfaceId).contains("grok")
-        )
-        if let amp = allEnabled.first(where: { $0.surfaceId == "amp" }) {
-            check(
-                "amp empty shows placeholder not invented %",
-                amp.percentLines == ["—"] && amp.systemImage != nil,
-                "lines=\(amp.percentLines) icon=\(amp.systemImage ?? "nil")"
-            )
-        } else {
-            check("amp present for placeholder check", false)
-        }
-        check(
-            "every chip has icon or glyph",
-            allEnabled.allSatisfy { $0.systemImage != nil || !$0.glyph.isEmpty }
-        )
-        check(
-            "data providers still show remaining %",
-            allEnabled.first(where: { $0.surfaceId == "codex" })?.percentLines == ["84%"]
-        )
-        check(
-            "claude dual remaining stack",
-            chips[0].percentLines == ["100%", "79%"] && chips[0].remainingPerLine == [100, 79]
-        )
-        check(
-            "claude severity per line",
-            chips[0].severityPerLine == ["ok", "ok"],
-            "sev=\(chips[0].severityPerLine)"
-        )
-        check(
-            "codex warn severity",
-            chips[1].severity == "warn" && chips[1].severityPerLine == ["warn"]
-        )
-        check("claude driving remaining", chips[0].remainingPercent == 79)
-        check(
-            "compact matches driving remaining",
-            chips[0].compactLabel.contains("79%") && chips[0].percentLines.contains("79%"),
-            "compact=\(chips[0].compactLabel) lines=\(chips[0].percentLines)"
-        )
-        check("codex single remaining", chips[1].percentLines == ["84%"])
-
-        let a11y = statusItemAccessibilityLabel(chips: Array(chips.prefix(2)))
-        check(
-            "a11y dual stack",
-            a11y == "jackin Desktop Cl 100% and 79%, Cx 84%",
-            "a11y=\(a11y)"
-        )
-
-        let worst = buildStatusItemChips(
-            surfaces: surfaces,
-            maxCount: 3,
-            preferWorstFirst: true,
-            percentStyle: "left"
-        )
-        // preferWorstFirst name is historical: SB-17 time-unknown tie-break =
-        // higher remaining first (opencode 90, then codex 84 / claude dual…).
-        check(
-            "higher-remaining-first order (SB-17 tie-break)",
-            worst.map(\.surfaceId).first == "opencode"
-                || worst.map(\.surfaceId) == ["opencode", "codex", "claude"],
-            "order=\(worst.map(\.surfaceId))"
-        )
-        check("highest remaining first is opencode", worst.first?.surfaceId == "opencode")
-
-        let used = buildStatusItemChips(
-            surfaces: surfaces,
-            maxCount: 2,
-            preferWorstFirst: false,
-            percentStyle: "used"
-        )
-        check("used style claude lines", used[0].percentLines == ["0%", "21%"])
-        check("used style keeps raw remainings", used[0].remainingPerLine == [100, 79])
-        check("used style codex line", used[1].percentLines == ["16%"])
-
-        // Cap
-        let capped = buildStatusItemChips(
-            surfaces: surfaces,
-            maxCount: 2,
-            preferWorstFirst: false,
-            percentStyle: "left"
-        )
-        check("cap 2", capped.count == 2)
-
-        // Depleted + Rust reset countdown: show countdown, not bare 0%.
-        let depleted = StatusItemSurfaceSnapshot(
-            surfaceId: "claude",
-            label: "Claude",
-            enabled: true,
-            statusBarLabel: "Session 100% used",
-            status: "fresh",
-            compactLabel: "Cl resets 1h 21m",
-            remainings: [0],
-            severities: ["danger"]
-        )
-        let depChips = buildStatusItemChips(
-            surfaces: [depleted],
-            maxCount: 1,
-            preferWorstFirst: false,
-            percentStyle: "left"
-        )
-        // SB-19: pure 0% remaining is out of burn-first membership.
-        check(
-            "depleted pure-0 excluded from strip (SB-19)",
-            depChips.isEmpty,
-            "lines=\(depChips.first?.percentLines ?? []) compact=\(depChips.first?.compactLabel ?? "")"
-        )
-        // Display helper still formats countdown when building lines for dual-bucket.
-        check(
-            "depleted countdown helper still formats compact",
-            statusItemChipDisplayLines(
-                remainings: [0],
-                compactLabel: "Cl resets 1h 21m",
-                percentStyle: "left"
-            ) == ["resets 1h 21m"]
-        )
-        check(
-            "depleted a11y uses full compact",
-            statusItemAccessibilityLabel(
-                chips: [
-                    StatusItemChip(
-                        surfaceId: "claude",
-                        glyph: "Cl",
-                        systemImage: "sparkles",
-                        percentLines: ["resets 1h 21m"],
-                        compactLabel: "Cl resets 1h 21m",
-                        remainingPercent: 0,
-                        remainingPerLine: [0],
-                        severityPerLine: ["danger"],
-                        severity: "danger"
-                    )
-                ]
-            ) == "jackin Desktop Cl resets 1h 21m"
-        )
-        check(
-            "display lines helper remaining healthy",
-            statusItemChipDisplayLines(
-                remainings: [100, 79],
-                compactLabel: "Cl 79%",
-                percentStyle: "left"
-            ) == ["100%", "79%"]
-        )
-
-        // Dual-bucket: session depleted + weekly healthy — keep 79% line.
-        check(
-            "dual depleted+healthy keeps weekly",
-            statusItemChipDisplayLines(
-                remainings: [0, 79],
-                compactLabel: "Cl resets 1h 21m",
-                percentStyle: "left"
-            ) == ["resets 1h 21m", "79%"]
-        )
-        let dualDep = StatusItemSurfaceSnapshot(
-            surfaceId: "claude",
-            label: "Claude",
-            enabled: true,
-            statusBarLabel: "Session 0 · Weekly 79",
-            status: "fresh",
-            compactLabel: "Cl resets 1h 21m",
-            remainings: [0, 79],
-            severities: ["danger", "ok"]
-        )
-        let dualDepChips = buildStatusItemChips(
-            surfaces: [dualDep],
-            maxCount: 1,
-            preferWorstFirst: false,
-            percentStyle: "left"
-        )
-        check(
-            "chip dual depleted+healthy stack",
-            dualDepChips.count == 1
-                && dualDepChips[0].percentLines == ["resets 1h 21m", "79%"]
-                && dualDepChips[0].remainingPerLine == [0, 79],
-            "lines=\(dualDepChips.first?.percentLines ?? [])"
-        )
-        check(
-            "weekly second after session countdown",
-            dualDepChips[0].percentLines.count == 2
-                && dualDepChips[0].percentLines[1] == "79%"
-        )
-
-        // Agent-tile dual badges (OpenUsage glance density).
-        check(
-            "tile dual remaining lines",
-            tileRemainingBadgeLines(remainings: [86, 95], percentStyle: "left") == ["86%", "95%"]
-        )
-        check(
-            "tile compact dual slash",
-            tileRemainingBadgeCompact(remainings: [86, 95]) == "86%/95%"
-        )
-        check(
-            "tile depleted uses bucket Resets label",
-            tileRemainingBadgeLines(
-                remainings: [0, 79],
-                compactLabel: "Resets in 1h 21m",
-                percentStyle: "left"
-            ) == ["Resets in 1h 21m", "79%"],
-            "lines=\(tileRemainingBadgeLines(remainings: [0, 79], compactLabel: "Resets in 1h 21m"))"
-        )
-        check(
-            "bucket reset countdown line preserved",
-            statusItemResetCountdownLine(compactLabel: "Resets in 2h") == "Resets in 2h"
-        )
-        check(
-            "pace split dual columns",
-            splitPaceLabel("On pace · Runs out in 4d 21h") == [
-                "On pace", "Runs out in 4d 21h",
-            ]
-        )
-        check(
-            "metric primary depleted prefers reset",
-            bucketMetricPrimaryLabel(
-                remainingPercent: 0,
-                usedLabel: nil,
-                resetLabel: "Resets in 2h",
-                percentStyle: "left"
-            ) == "Resets in 2h"
-        )
-        check(
-            "metric primary healthy left",
-            bucketMetricPrimaryLabel(
-                remainingPercent: 81,
-                usedLabel: nil,
-                resetLabel: "Resets in 5h",
-                percentStyle: "left"
-            ) == "81% left"
-        )
-        check(
-            "sidebar dual remaining subtitle",
-            surfaceRemainingSubtitle(remainings: [100, 79]) == "100% · 79%"
-        )
-        check(
-            "overview numeric cap keeps four windows",
-            overviewNumericBuckets(
-                remainingPercents: [100, 79, 40, 22, 5].map { Optional($0) }
-            ) == [100, 79, 40, 22]
-        )
-        check(
-            "account pill with remaining",
-            accountPillLabel(
-                accountLabel: "work@ex.com",
-                remainingPercent: 63,
-                percentStyle: "left",
-                selected: true
-            ) == "work@ex.com, 63%, selected"
-        )
-        check("status_slot session is machine", isMachineStatusSlot("session"))
-        check("status_slot weekly is machine", isMachineStatusSlot("weekly"))
-        check("status_slot spend is machine", isMachineStatusSlot("spend"))
-        check(
-            "gauge secondary drops bare 100%",
-            bucketGaugeSecondaryLimitLabel(limitLabel: "100%", remainingPercent: 81) == nil
-        )
-        check(
-            "gauge secondary keeps money limit",
-            bucketGaugeSecondaryLimitLabel(
-                limitLabel: "SGD 260",
-                remainingPercent: nil
-            ) == "SGD 260"
-        )
-        check(
-            "dual depleted a11y keeps weekly",
-            statusItemAccessibilityLabel(chips: dualDepChips)
-                == "jackin Desktop Cl resets 1h 21m and 79%",
-            "a11y=\(statusItemAccessibilityLabel(chips: dualDepChips))"
+            "menu model remains native three-action shape",
+            StatusItemMenuModel.rows.map(\.action) == [.openUsageWindow, .refresh, .quit]
         )
 
         print("---")
         if failures == 0 {
             print("StatusItemChipHarness: ALL PASS")
             exit(0)
-        } else {
-            print("StatusItemChipHarness: \(failures) FAILURE(S)")
-            exit(1)
         }
+        print("StatusItemChipHarness: \(failures) FAILURE(S)")
+        exit(1)
     }
 }

@@ -294,7 +294,7 @@ fn focused_usage_view_rebuilds_snapshot_from_account_rows() {
             .iter()
             .all(|bucket| bucket.status_slot.is_none())
     );
-    assert_eq!(view.updated_label, "Updated just now");
+    assert_eq!(view.updated_label, "Updated now");
     assert_eq!(view.status_bar_label, "Codex Session: 63% used · 37% left");
 }
 

@@ -31,11 +31,9 @@ struct VisualQALaunchOptions: Equatable {
 
     static func resolve(
         arguments: [String],
-        environment: [String: String]
+        environment _: [String: String]
     ) -> VisualQALaunchOptions {
-        let rawFixture =
-            value(after: "--fixture", in: arguments)
-            ?? environment["JACKIN_DESKTOP_FIXTURE"]
+        let rawFixture = value(after: "--fixture", in: arguments)
         let fixtureID = rawFixture.flatMap(VisualQAFixtureID.init(rawValue:))
         let rawSelection = value(after: "--selection", in: arguments)
         let selection: Selection

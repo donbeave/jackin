@@ -49,6 +49,14 @@ impl HostUsageRuntime {
         self.broker_phases.values().any(|phase| phase.is_active())
     }
 
+    /// Whether any active broker generation belongs to `surface_id`.
+    #[must_use]
+    pub fn surface_refresh_in_progress(&self, surface_id: &str) -> bool {
+        self.broker_phases
+            .iter()
+            .any(|(capability, phase)| capability.surface_id == surface_id && phase.is_active())
+    }
+
     /// Adopt one host-broker projection and never execute provider work here.
     pub fn apply_broker_generation(&mut self, state: UsageGenerationView) -> Result<(), String> {
         self.require_open()?;
@@ -419,23 +427,7 @@ impl UsageProviderExecutor for DiscoveryProviderExecutor {
             };
         };
         match refresh_credential_binding(&binding, self.resolver.as_ref()) {
-            ProviderCredentialRefreshOutcome::Snapshot(view) => match view.status {
-                UsageSnapshotStatus::NeedsSecret | UsageSnapshotStatus::NeedsLogin => {
-                    ProviderProbeOutcome::Failure {
-                        kind: UsageCoordinationErrorKind::NeedsSecret,
-                        message: "usage provider credentials require operator action".to_owned(),
-                        retry_at_epoch: None,
-                    }
-                }
-                UsageSnapshotStatus::Unavailable | UsageSnapshotStatus::Unsupported => {
-                    ProviderProbeOutcome::Failure {
-                        kind: UsageCoordinationErrorKind::ProviderUnavailable,
-                        message: "usage provider quota is unavailable".to_owned(),
-                        retry_at_epoch: None,
-                    }
-                }
-                _ => ProviderProbeOutcome::success(*view),
-            },
+            ProviderCredentialRefreshOutcome::Snapshot(view) => provider_probe_outcome(*view),
             ProviderCredentialRefreshOutcome::Missing
             | ProviderCredentialRefreshOutcome::Denied
             | ProviderCredentialRefreshOutcome::InteractionRequired => {
@@ -451,6 +443,45 @@ impl UsageProviderExecutor for DiscoveryProviderExecutor {
                 retry_at_epoch: None,
             },
         }
+    }
+}
+
+fn provider_probe_outcome(
+    view: jackin_protocol::control::FocusedUsageView,
+) -> ProviderProbeOutcome {
+    if let Some(error) = view
+        .last_error
+        .as_deref()
+        .filter(|error| crate::usage::usage_error_is_rate_limited(error))
+    {
+        let retry_at_epoch = crate::usage::parse_retry_after_seconds(&error.to_ascii_lowercase())
+            .map(|seconds| {
+                chrono::Utc::now()
+                    .timestamp()
+                    .saturating_add(i64::try_from(seconds).unwrap_or(i64::MAX))
+            });
+        return ProviderProbeOutcome::Failure {
+            kind: UsageCoordinationErrorKind::RateLimited,
+            message: "usage provider rate limit is active".to_owned(),
+            retry_at_epoch,
+        };
+    }
+    match view.status {
+        UsageSnapshotStatus::NeedsSecret | UsageSnapshotStatus::NeedsLogin => {
+            ProviderProbeOutcome::Failure {
+                kind: UsageCoordinationErrorKind::NeedsSecret,
+                message: "usage provider credentials require operator action".to_owned(),
+                retry_at_epoch: None,
+            }
+        }
+        UsageSnapshotStatus::Error
+        | UsageSnapshotStatus::Unavailable
+        | UsageSnapshotStatus::Unsupported => ProviderProbeOutcome::Failure {
+            kind: UsageCoordinationErrorKind::ProviderUnavailable,
+            message: "usage provider quota is unavailable".to_owned(),
+            retry_at_epoch: None,
+        },
+        _ => ProviderProbeOutcome::success(view),
     }
 }
 
@@ -757,6 +788,12 @@ fn claim_leader(path: &Path) -> Result<bool, UsageCoordinationError> {
             let pid = fs::read_to_string(path)
                 .ok()
                 .and_then(|value| value.trim().parse::<i32>().ok());
+            if pid.is_none() {
+                // O_EXCL publishes the leader inode before the winner can write
+                // its PID. Treat incomplete metadata as an election in progress;
+                // deleting it here can create two live brokers.
+                return Ok(false);
+            }
             if pid.is_some_and(|pid| kill(Pid::from_raw(pid), None).is_ok()) {
                 return Ok(false);
             }

@@ -5,6 +5,8 @@ use anyhow::Result;
 use clap::{Args, Subcommand};
 use jackin_protocol::control::AccountUsageSnapshotView;
 use serde::Serialize;
+use std::sync::Arc;
+use std::time::Duration;
 
 use crate::cli::format::{OutputEnvelope, OutputFormat};
 use crate::cli::{BANNER, HELP_STYLES};
@@ -13,6 +15,77 @@ use jackin_runtime::instance::{InstanceIndex, InstanceStatus};
 use jackin_runtime::runtime::snapshot;
 
 mod store;
+
+#[derive(Default)]
+struct CliUsageSecretSource;
+
+impl jackin_usage::host::ProviderCredentialSecretSource for CliUsageSecretSource {
+    fn lookup_declaration(
+        &self,
+        config: &jackin_config::AppConfig,
+        workspace: Option<&jackin_core::WorkspaceName>,
+        role: Option<&str>,
+        entry: jackin_core::UsageCredentialEnvName,
+    ) -> Option<jackin_config::EnvValue> {
+        jackin_env::lookup_operator_env_declaration(config, role, workspace, entry.name)
+    }
+
+    fn resolve_secret(
+        &self,
+        config: &jackin_config::AppConfig,
+        workspace: Option<&jackin_core::WorkspaceName>,
+        role: Option<&str>,
+        entry: jackin_core::UsageCredentialEnvName,
+    ) -> Option<jackin_usage::host::ProviderCredentialSecretResolution> {
+        use jackin_usage::host::{
+            ProviderCredentialSecretOutcome, ProviderCredentialSecretResolution,
+        };
+
+        let declaration =
+            jackin_env::lookup_operator_env_declaration(config, role, workspace, entry.name)?;
+        let resolved =
+            jackin_env::resolve_operator_env_per_key_matching(config, role, workspace, |key| {
+                key == entry.name
+            })
+            .into_iter()
+            .next();
+        let outcome = match resolved {
+            Some(result)
+                if result.status() == jackin_env::OperatorEnvKeyStatus::Resolved
+                    && result.resolved_value().is_some() =>
+            {
+                ProviderCredentialSecretOutcome::Resolved(
+                    result.resolved_value().unwrap_or_default().to_owned(),
+                )
+            }
+            Some(result) => match result.status() {
+                jackin_env::OperatorEnvKeyStatus::Resolved => {
+                    ProviderCredentialSecretOutcome::Malformed
+                }
+                jackin_env::OperatorEnvKeyStatus::Missing => {
+                    ProviderCredentialSecretOutcome::Missing
+                }
+                jackin_env::OperatorEnvKeyStatus::DeniedOrUnavailable => {
+                    ProviderCredentialSecretOutcome::Denied
+                }
+                jackin_env::OperatorEnvKeyStatus::Malformed => {
+                    ProviderCredentialSecretOutcome::Malformed
+                }
+                jackin_env::OperatorEnvKeyStatus::InteractionRequired => {
+                    ProviderCredentialSecretOutcome::InteractionRequired
+                }
+            },
+            None => return None,
+        };
+        Some(ProviderCredentialSecretResolution {
+            declaration,
+            outcome,
+        })
+    }
+}
+
+type CliUsageCredentialResolver =
+    jackin_usage::host::CachedProviderCredentialResolver<CliUsageSecretSource>;
 
 /// `jackin usage` — Capsule-cached or host-probed usage snapshots.
 #[derive(Debug, Args, PartialEq, Eq)]
@@ -23,7 +96,7 @@ mod store;
         account snapshots (status bar + overlay). Use `jackin usage cache accounts`\n\
         for the host-global account cache.\n\n\
         Host path (menu bar / offline Capsule): `jackin usage host snapshot`\n\
-        probes via jackin-usage HostUsageRuntime — same FocusedUsageView fields\n\
+        requests the jackin-usage host broker — same FocusedUsageView fields\n\
         as Capsule, from host credentials."
 )]
 pub struct UsageArgs {
@@ -117,7 +190,10 @@ fn run_host_snapshot(
     paths: &JackinPaths,
     scope: &UsageHostSnapshotArgs,
 ) -> Result<()> {
-    use jackin_usage::host::{HostRuntimeConfig, HostSurfaceId, HostUsageRuntime};
+    use jackin_usage::host::{
+        HostProbePolicy, HostRuntimeConfig, HostSurfaceId, HostUsageRuntime, UsageBrokerConfig,
+        UsageDiscoveryScope, ensure_usage_broker,
+    };
 
     let surface = HostSurfaceId::from_id(&scope.agent).ok_or_else(|| {
         anyhow::anyhow!(
@@ -131,15 +207,53 @@ fn run_host_snapshot(
         )
     })?;
 
+    let resolver = Arc::new(CliUsageCredentialResolver::default());
+    let discovery_scope = UsageDiscoveryScope::HostDesktop {
+        config_root: paths.config_dir.clone(),
+        operator_home: paths.home_dir.clone(),
+    };
+    let host_config = HostRuntimeConfig {
+        data_dir: paths.data_dir.clone(),
+        refresh_floor_secs: 300,
+        enabled_surface_ids: Vec::new(),
+        probe_policy: HostProbePolicy::Live,
+        discovery_scope: discovery_scope.clone(),
+    };
+    let broker_config = UsageBrokerConfig::for_data_dir(paths.data_dir.clone());
     let mut runtime = HostUsageRuntime::new();
     runtime
-        .open(HostRuntimeConfig::under_data_dir(&paths.data_dir))
+        .open_with_discovery(host_config, resolver.as_ref())
         .map_err(|err| anyhow::anyhow!(err))?;
 
     if !scope.no_refresh {
-        runtime
-            .refresh(Some(surface.id()), true)
-            .map_err(|err| anyhow::anyhow!(err))?;
+        let discovery = runtime
+            .validated_discovery()
+            .ok_or_else(|| anyhow::anyhow!("host usage discovery unavailable"))?;
+        let broker = ensure_usage_broker(broker_config, discovery_scope, discovery, resolver)
+            .map_err(|error| anyhow::anyhow!(error.message))?;
+        for capability in broker
+            .capabilities
+            .into_iter()
+            .filter(|capability| capability.surface_id == surface.id())
+        {
+            let current = broker
+                .client
+                .current(capability.clone())
+                .map_err(|error| anyhow::anyhow!(error.message))?;
+            let mut state = broker
+                .client
+                .refresh(capability.clone(), current.generation, true)
+                .map_err(|error| anyhow::anyhow!(error.message))?;
+            if state.phase.is_active() {
+                state = broker
+                    .client
+                    .join(capability, state.generation, Duration::from_secs(30))
+                    .map_err(|error| anyhow::anyhow!(error.message))?;
+            }
+            runtime
+                .apply_broker_generation(state)
+                .map_err(|err| anyhow::anyhow!(err))?;
+        }
     }
     let view = runtime
         .snapshot(surface.id())

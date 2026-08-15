@@ -22,6 +22,8 @@ pub use state::{AccountStateEnvelope, AccountStateStore, FileAccountStateStore, 
 use self::state::sanitize_usage_view;
 
 const TERMINAL_HISTORY_LIMIT: usize = 8;
+const RATE_LIMIT_BACKOFF_BASE: Duration = Duration::from_mins(5);
+const RATE_LIMIT_BACKOFF_CAP: Duration = Duration::from_mins(30);
 
 /// Result returned by a host-owned provider adapter.
 #[derive(Debug, Clone)]
@@ -150,15 +152,20 @@ impl UsageCapabilitySet {
 struct AccountEntry {
     envelope: AccountStateEnvelope,
     history: VecDeque<UsageGenerationView>,
+    recovery_pending: bool,
 }
 
 impl AccountEntry {
-    fn new(envelope: AccountStateEnvelope) -> Self {
+    fn new(envelope: AccountStateEnvelope, recovery_pending: bool) -> Self {
         let mut history = VecDeque::new();
         if envelope.phase.is_terminal() {
             history.push_back(generation_view(&envelope));
         }
-        Self { envelope, history }
+        Self {
+            envelope,
+            history,
+            recovery_pending,
+        }
     }
 
     fn record_terminal(&mut self) {
@@ -289,7 +296,9 @@ impl UsageCoordinator {
             .accounts
             .get_mut(capability)
             .ok_or_else(unavailable_error)?;
-        if entry.envelope.phase.is_active() || observed_generation < entry.envelope.generation {
+        if entry.envelope.phase.is_active()
+            || (!entry.recovery_pending && observed_generation < entry.envelope.generation)
+        {
             return Ok(generation_view(&entry.envelope));
         }
         if entry
@@ -310,6 +319,8 @@ impl UsageCoordinator {
         }
 
         let previous = entry.envelope.clone();
+        let recovery_pending = entry.recovery_pending;
+        entry.recovery_pending = false;
         entry.envelope.generation = entry.envelope.generation.saturating_add(1);
         entry.envelope.phase = UsageRefreshPhase::Queued;
         entry.envelope.started_at_epoch = Some(now_epoch);
@@ -320,6 +331,7 @@ impl UsageCoordinator {
         let generation = entry.envelope.generation;
         if self.shared.store.store(&entry.envelope, now_epoch).is_err() {
             entry.envelope = previous;
+            entry.recovery_pending = recovery_pending;
             let error = unavailable_error();
             state.blocked.insert(capability.clone(), error.clone());
             return Err(error);
@@ -438,11 +450,30 @@ impl UsageCoordinator {
         }
         match loaded {
             Ok(envelope) => {
-                let envelope =
+                let mut envelope =
                     envelope.unwrap_or_else(|| AccountStateEnvelope::idle(capability.clone()));
-                state
-                    .accounts
-                    .insert(capability.clone(), AccountEntry::new(envelope));
+                let recovery_pending = envelope.phase.is_active();
+                if recovery_pending {
+                    envelope.phase = UsageRefreshPhase::Failed;
+                    envelope.terminal_result = None;
+                    envelope.terminal_error = Some(coordination_error(
+                        UsageCoordinationErrorKind::OwnerLost,
+                        "usage refresh owner exited before completion",
+                    ));
+                    envelope.completed_at_epoch = Some(now_epoch);
+                    envelope.retry_deadline_epoch = None;
+                    envelope.success_deadline_epoch = None;
+                    envelope.consecutive_failures = envelope.consecutive_failures.saturating_add(1);
+                    if self.shared.store.store(&envelope, now_epoch).is_err() {
+                        let error = unavailable_error();
+                        state.blocked.insert(capability.clone(), error.clone());
+                        return Err(error);
+                    }
+                }
+                state.accounts.insert(
+                    capability.clone(),
+                    AccountEntry::new(envelope, recovery_pending),
+                );
                 Ok(())
             }
             Err(error) => {
@@ -641,13 +672,35 @@ fn finish_failure(
     entry.envelope.terminal_result = None;
     entry.envelope.terminal_error = Some(coordination_error(kind, message));
     entry.envelope.completed_at_epoch = Some(finished_at_epoch);
+    let consecutive_failures = entry.envelope.consecutive_failures.saturating_add(1);
+    let retry_at_epoch = if kind == UsageCoordinationErrorKind::RateLimited {
+        retry_at_epoch.or_else(|| {
+            Some(
+                finished_at_epoch.saturating_add(
+                    i64::try_from(rate_limit_backoff(consecutive_failures).as_secs())
+                        .unwrap_or(i64::MAX),
+                ),
+            )
+        })
+    } else {
+        retry_at_epoch
+    };
     entry.envelope.retry_deadline_epoch = retry_at_epoch;
     if kind == UsageCoordinationErrorKind::RateLimited {
         entry.envelope.rate_limit_deadline_epoch = retry_at_epoch;
+    } else {
+        entry.envelope.rate_limit_deadline_epoch = None;
     }
     entry.envelope.success_deadline_epoch = None;
-    entry.envelope.consecutive_failures = entry.envelope.consecutive_failures.saturating_add(1);
+    entry.envelope.consecutive_failures = consecutive_failures;
     persist_terminal(shared, &mut state, capability, finished_at_epoch);
+}
+
+fn rate_limit_backoff(consecutive_failures: u32) -> Duration {
+    let shift = consecutive_failures.saturating_sub(1).min(8);
+    let multiplier = 1u64.checked_shl(shift).unwrap_or(u64::MAX);
+    Duration::from_secs(RATE_LIMIT_BACKOFF_BASE.as_secs().saturating_mul(multiplier))
+        .min(RATE_LIMIT_BACKOFF_CAP)
 }
 
 fn persist_terminal(

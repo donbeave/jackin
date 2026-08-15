@@ -808,7 +808,7 @@ pub(crate) fn fetch_codex_rpc_usage(
     gate: &mut ManagedCliLaunchGate,
 ) -> Result<CodexRpcUsage, String> {
     gate.can_launch("Codex app-server", Instant::now())?;
-    let process = crate::process_telemetry::ChildOperation::begin("codex");
+    let process = process_telemetry::ChildOperation::begin("codex");
     let mut child = match Command::new("codex")
         .args(["-s", "read-only", "-a", "untrusted", "app-server"])
         .stdin(Stdio::piped())
@@ -880,7 +880,7 @@ pub(crate) fn fetch_codex_rpc_usage(
     })();
 
     drop(stdin);
-    let reaped = crate::process_telemetry::ChildOperation::reap_managed(&mut child);
+    let reaped = process_telemetry::ChildOperation::reap_managed(&mut child);
     let reader_joined = reader.join().is_ok();
     process.finish_managed(reaped && reader_joined);
 
@@ -900,7 +900,7 @@ pub(crate) fn codex_rpc_request(
     params: serde_json::Value,
     timeout: Duration,
 ) -> Result<serde_json::Value, String> {
-    let operation = crate::process_telemetry::external_rpc_operation(
+    let operation = process_telemetry::external_rpc_operation(
         jackin_telemetry::schema::enums::RpcSystemName::CodexAppServer,
         method,
     );
@@ -945,16 +945,12 @@ pub(crate) fn codex_rpc_request(
                 .ok_or_else(|| format!("Codex app-server {method} response missing result"));
         }
     })();
-    crate::process_telemetry::complete_external_rpc(
-        operation,
-        &result,
-        started.elapsed() >= timeout,
-    );
+    process_telemetry::complete_external_rpc(operation, &result, started.elapsed() >= timeout);
     result
 }
 
 pub(crate) fn codex_rpc_notification(stdin: &mut impl Write, method: &str) -> Result<(), String> {
-    let operation = crate::process_telemetry::external_rpc_operation(
+    let operation = process_telemetry::external_rpc_operation(
         jackin_telemetry::schema::enums::RpcSystemName::CodexAppServer,
         method,
     );
@@ -968,7 +964,7 @@ pub(crate) fn codex_rpc_notification(stdin: &mut impl Write, method: &str) -> Re
         "Codex app-server notification encode failed",
         "Codex app-server notification write failed",
     );
-    crate::process_telemetry::complete_external_rpc(operation, &result, false);
+    process_telemetry::complete_external_rpc(operation, &result, false);
     result
 }
 

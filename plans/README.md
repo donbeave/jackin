@@ -25,10 +25,10 @@ the canonical command is everything after `rtk `.
 | [002](002-global-rust-account-discovery.md) | Discover every configured supported account in Rust | P1 | L | 001, 007 | DONE |
 | [006](006-capsule-credential-exposure.md) | Keep credential values out of container-visible config and runtime argv | P1 | M | — | DONE |
 | [008](008-backend-parity-fail-closed.md) | Enforce Apple read-only mount parity and harden notify argv | P2 | S | — | DONE |
-| [003](003-strict-usage-coordinator.md) | Enforce one refresh generation per account through a host broker | P1 | L | 001, 002, 006, 008 | IN PROGRESS |
-| [009](009-ci-testing-docs-hygiene.md) | Give desktop changes a PR CI lane and fix actively wrong doc claims | P2 | M | 003, 008 | TODO |
-| [004](004-native-full-height-sidebar.md) | Restore native full-height Liquid Glass pane ownership | P1 | M | 003, 009 | TODO |
-| [005](005-correct-native-usage-presentation.md) | Render correct account-first quota presentation from one Rust projection | P1 | L | all prior rows | TODO |
+| [003](003-strict-usage-coordinator.md) | Enforce one refresh generation per account through a host broker | P1 | L | 001, 002, 006, 008 | BLOCKED (real macOS 26 + Docker Desktop evidence unavailable; OrbStack E2E and implementation gates pass) |
+| [009](009-ci-testing-docs-hygiene.md) | Give desktop changes a PR CI lane and fix actively wrong doc claims | P2 | M | 003, 008 | BLOCKED (local docs/JUnit work passes; governed `velnor-actions` native extension remains external) |
+| [004](004-native-full-height-sidebar.md) | Restore native full-height Liquid Glass pane ownership | P1 | M | 003, 009 | DONE |
+| [005](005-correct-native-usage-presentation.md) | Render correct account-first quota presentation from one Rust projection | P1 | L | all prior rows | IN PROGRESS (final logged-in UI/visual proof pending) |
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED (one-line reason) | REJECTED
 (one-line rationale).
@@ -79,7 +79,7 @@ the execution order above:
 
 | Feedback requirement | Owning plan/step | Selected contract |
 |---|---|---|
-| Popover identity, active account, selector, Limits before Details | 005 steps 1, 3 | Rust supplies the provider/account identity record; the picker appears only for multiple stable accounts. |
+| Popover identity, active account, selector, Limits before Details | 005 steps 1, 3 | Rust supplies the provider/account identity record; the picker appears only for multiple stable accounts at the trailing footer edge, while Refresh/Open Usage remain separate adjacent leading icon-only system controls. |
 | Usage identity and Details before Limits | 005 steps 1, 4 | Same Rust identity/activity projection; deeper window keeps Details before Limits. |
 | Remove Focused/Header/Provider/duplicate Account/Fresh | 005 step 1 | Remove at the shared Rust presentation owner; preserve only actionable exceptional state. |
 | Honest `Updating…` and one terminal recency phrase | 003 steps 1, 5; 005 steps 1–2 | Broker generation is truth; Swift renders its immutable phase and never invents freshness. |

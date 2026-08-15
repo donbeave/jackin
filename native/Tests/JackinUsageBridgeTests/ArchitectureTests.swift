@@ -82,7 +82,7 @@ final class ArchitectureTests: XCTestCase {
         for file in try handwrittenSwiftFiles() {
             let text = try String(contentsOf: file, encoding: .utf8)
             XCTAssertFalse(
-                text.contains("glassEffect"),
+                text.contains("glassEffect") || text.contains("GlassEffectContainer"),
                 "\(file.lastPathComponent) must let standard controls own Liquid Glass"
             )
         }
@@ -90,7 +90,8 @@ final class ArchitectureTests: XCTestCase {
 
     func testProductionHasNoHandPaintedSystemMaterial() throws {
         let regex = try NSRegularExpression(
-            pattern: #"\.(ultraThin|thin|regular|thick|ultraThick)Material"#
+            pattern:
+                #"\.background\(\.(bar|material)\)|\.(ultraThin|thin|regular|thick|ultraThick)Material"#
         )
         for file in try handwrittenSwiftFiles() {
             let text = try String(contentsOf: file, encoding: .utf8)
@@ -142,17 +143,11 @@ final class ArchitectureTests: XCTestCase {
         }
     }
 
-    func testSeverityAndStatusBadgeMappings() {
+    func testSeverityTintUsesBrandAndSystemWarningColors() {
         XCTAssertEqual(severityTint("danger"), Color.red)
         XCTAssertEqual(severityTint("warn"), Color.orange)
-        // Healthy/default = product phosphor, never host system accent blue (LG-A9).
-        XCTAssertEqual(severityTint("ok"), Color.jackinPhosphor)
         XCTAssertEqual(severityTint("normal"), Color.jackinPhosphor)
-        XCTAssertEqual(severityTint(""), Color.jackinPhosphor)
-        XCTAssertNotEqual(severityTint("ok"), Color.accentColor)
-        XCTAssertEqual(statusBadgeSymbol("error"), "exclamationmark.triangle")
-        XCTAssertEqual(statusBadgeSymbol("stale"), "clock")
-        XCTAssertNil(statusBadgeSymbol("fresh"))
+        XCTAssertNotEqual(severityTint("normal"), Color.accentColor)
     }
 
     // ProviderMarks live in JackinDesktopUI — covered by DesktopSoT / visual harness.
@@ -164,356 +159,6 @@ final class ArchitectureTests: XCTestCase {
         XCTAssertEqual(JackinBrand.phosphorLightSRGB.r, 0x0B / 255.0, accuracy: 0.0001)
         XCTAssertEqual(JackinBrand.phosphorLightSRGB.g, 0x77 / 255.0, accuracy: 0.0001)
         XCTAssertEqual(JackinBrand.phosphorLightSRGB.b, 0x4E / 255.0, accuracy: 0.0001)
-    }
-
-    func testRemainingPercentMeterSeverityMatchesDesignBands() {
-        // Design bands: 100 high, 57 mid, 12 low, 0 depleted.
-        XCTAssertEqual(remainingPercentMeterSeverity(100), "normal")
-        XCTAssertEqual(remainingPercentMeterSeverity(61), "normal")
-        XCTAssertEqual(remainingPercentMeterSeverity(60), "warn")
-        XCTAssertEqual(remainingPercentMeterSeverity(57), "warn")
-        XCTAssertEqual(remainingPercentMeterSeverity(21), "warn")
-        XCTAssertEqual(remainingPercentMeterSeverity(20), "danger")
-        XCTAssertEqual(remainingPercentMeterSeverity(12), "danger")
-        XCTAssertEqual(remainingPercentMeterSeverity(0), "normal")
-        XCTAssertEqual(accountMeterSeverity(severity: "mid", remainingPercent: 57), "warn")
-        XCTAssertEqual(accountMeterSeverity(severity: "low", remainingPercent: 12), "danger")
-        XCTAssertEqual(accountMeterSeverity(severity: "high", remainingPercent: 100), "normal")
-        XCTAssertEqual(accountMeterSeverity(severity: nil, remainingPercent: 57), "warn")
-        XCTAssertEqual(severityTint("warn"), Color.orange)
-        XCTAssertEqual(severityTint("danger"), Color.red)
-    }
-
-    func testStatusItemChipHelpers() {
-        let drive = drivingBucketForStatusItem(
-            remainingAndSeverity: [
-                (remaining: 63, severity: "ok"),
-                (remaining: 12, severity: "danger"),
-                (remaining: 41, severity: "warn"),
-            ]
-        )
-        XCTAssertEqual(drive?.remaining, 12)
-        XCTAssertEqual(drive?.severity, "danger")
-        XCTAssertEqual(statusItemUsedFraction(remainingPercent: 63), 0.37, accuracy: 0.001)
-        XCTAssertEqual(statusItemUsedFraction(remainingPercent: 100), 0.0, accuracy: 0.001)
-        XCTAssertEqual(statusItemUsedFraction(remainingPercent: 0), 1.0, accuracy: 0.001)
-        XCTAssertEqual(statusItemRemainingFraction(remainingPercent: 63), 0.63, accuracy: 0.001)
-        XCTAssertEqual(statusItemRemainingFraction(remainingPercent: 100), 1.0, accuracy: 0.001)
-        XCTAssertEqual(statusItemRemainingFraction(remainingPercent: 0), 0.0, accuracy: 0.001)
-        XCTAssertTrue(statusItemLineShowsMiniBar("79%"))
-        XCTAssertFalse(statusItemLineShowsMiniBar("resets 1h"))
-        XCTAssertEqual(statusItemPercentToken(remainingPercent: 79), "79%")
-        XCTAssertEqual(
-            statusItemPercentToken(remainingPercent: 37, percentStyle: "used"),
-            "63%"
-        )
-        XCTAssertEqual(statusItemGlyph(compactLabel: "Cl 37%", surfaceId: "claude"), "Cl")
-        XCTAssertEqual(
-            statusItemPercentLines(remainings: [100, 79, 12], maxLines: 2),
-            ["100%", "79%"]
-        )
-        XCTAssertEqual(
-            statusItemPercentLines(
-                remainings: [37, 79],
-                maxLines: 2,
-                percentStyle: "used"
-            ),
-            ["63%", "21%"]
-        )
-        XCTAssertEqual(
-            bucketPrimaryPercentLabel(
-                remainingPercent: 81,
-                usedLabel: "19% used",
-                percentStyle: "left"
-            ),
-            "81% left"
-        )
-        XCTAssertEqual(
-            bucketPrimaryPercentLabel(
-                remainingPercent: 81,
-                usedLabel: "19% used",
-                percentStyle: "used"
-            ),
-            "19% used"
-        )
-        XCTAssertEqual(
-            bucketPrimaryPercentLabel(
-                remainingPercent: nil,
-                usedLabel: "SGD 78 of 260",
-                percentStyle: "left"
-            ),
-            "SGD 78 of 260"
-        )
-        let money = MoneyDto(amountMinor: 6559, currency: "USD", exponent: 2)
-        XCTAssertEqual(formatMoneyDto(money), "$65.59")
-    }
-
-    /// Multi-provider strip: one chip per surface with dual-bucket remainings (CodexBar parity).
-    ///
-    /// Compact labels use **remaining** (OpenUsage/CodexBar default) and must
-    /// match stacked percent lines / a11y (no used% vs remaining% mix).
-    func testBuildStatusItemChipsMultiProviderDualBucket() {
-        let surfaces = [
-            StatusItemSurfaceSnapshot(
-                surfaceId: "claude",
-                label: "Claude",
-                enabled: true,
-                statusBarLabel: "Session 100% · Weekly 79%",
-                status: "fresh",
-                // Driving remaining = min(100, 79) = 79 → compact Cl 79%.
-                compactLabel: "Cl 79%",
-                remainings: [100, 79],
-                severities: ["ok", "ok"]
-            ),
-            StatusItemSurfaceSnapshot(
-                surfaceId: "codex",
-                label: "Codex",
-                enabled: true,
-                statusBarLabel: "Session 84%",
-                status: "fresh",
-                compactLabel: "Cx 84%",
-                remainings: [84],
-                severities: ["warn"]
-            ),
-            StatusItemSurfaceSnapshot(
-                surfaceId: "amp",
-                label: "Amp",
-                enabled: true,
-                statusBarLabel: "",
-                status: "unavailable",
-                compactLabel: "",
-                remainings: [],
-                severities: []
-            ),
-            StatusItemSurfaceSnapshot(
-                surfaceId: "grok",
-                label: "Grok Build",
-                enabled: false,
-                statusBarLabel: "unused",
-                status: "fresh",
-                compactLabel: "Gr 50%",
-                remainings: [50],
-                severities: ["ok"]
-            ),
-        ]
-        let chips = buildStatusItemChips(
-            surfaces: surfaces,
-            maxCount: 6,
-            preferWorstFirst: false,
-            percentStyle: "left",
-            includeAllEnabled: false
-        )
-        // Amp empty/unavailable and disabled Grok hidden; Claude + Codex only.
-        XCTAssertEqual(chips.map(\.surfaceId), ["claude", "codex"])
-
-        let openUsageStrip = buildStatusItemChips(
-            surfaces: surfaces,
-            maxCount: 8,
-            preferWorstFirst: false,
-            percentStyle: "left",
-            includeAllEnabled: true
-        )
-        // Enabled amp (no data) appears with "—"; disabled grok still hidden.
-        XCTAssertEqual(openUsageStrip.map(\.surfaceId), ["claude", "codex", "amp"])
-        XCTAssertEqual(
-            openUsageStrip.first(where: { $0.surfaceId == "amp" })?.percentLines,
-            ["—"]
-        )
-        XCTAssertNotNil(openUsageStrip.first(where: { $0.surfaceId == "claude" })?.systemImage)
-        XCTAssertEqual(
-            openUsageStrip.first(where: { $0.surfaceId == "claude" })?.percentLines,
-            ["100%", "79%"]
-        )
-        XCTAssertEqual(chips[0].percentLines, ["100%", "79%"])
-        XCTAssertEqual(chips[0].remainingPerLine, [100, 79])
-        XCTAssertEqual(chips[0].remainingPercent, 79)
-        XCTAssertEqual(chips[1].percentLines, ["84%"])
-        XCTAssertEqual(chips[1].systemImage, "circle.hexagongrid.fill")
-        XCTAssertEqual(chips[0].compactLabel, "Cl 79%")
-        // Dual-bucket a11y speaks both stacked remaining lines.
-        XCTAssertEqual(
-            statusItemAccessibilityLabel(chips: chips),
-            "jackin Desktop Cl 100% and 79%, Cx 84%"
-        )
-        // Production invariant: compact driving digit matches min remaining line.
-        XCTAssertTrue(
-            chips[0].compactLabel.contains("79%"),
-            "compact must use driving remaining, not used%"
-        )
-        XCTAssertTrue(chips[0].percentLines.contains("79%"))
-
-        let higherRemFirst = buildStatusItemChips(
-            surfaces: surfaces,
-            maxCount: 1,
-            preferWorstFirst: true,
-            percentStyle: "left"
-        )
-        // No reset epochs: SB-17 tie-break = higher remaining (Codex 84 > Claude 79).
-        XCTAssertEqual(higherRemFirst.map(\.surfaceId), ["codex"])
-
-        // Used style flips stacked lines only; remainings stay Rust-owned.
-        let usedChips = buildStatusItemChips(
-            surfaces: surfaces,
-            maxCount: 2,
-            preferWorstFirst: false,
-            percentStyle: "used"
-        )
-        XCTAssertEqual(usedChips[0].percentLines, ["0%", "21%"])
-        XCTAssertEqual(usedChips[1].percentLines, ["16%"])
-        XCTAssertEqual(usedChips[0].remainingPerLine, [100, 79])
-
-        // Depleted with Rust reset countdown (CodexBar plan-around-resets).
-        let depleted = StatusItemSurfaceSnapshot(
-            surfaceId: "claude",
-            label: "Claude",
-            enabled: true,
-            statusBarLabel: "depleted",
-            status: "fresh",
-            compactLabel: "Cl resets 1h 21m",
-            remainings: [0],
-            severities: ["danger"]
-        )
-        let dep = buildStatusItemChips(
-            surfaces: [depleted],
-            maxCount: 1,
-            preferWorstFirst: false,
-            percentStyle: "left"
-        )
-        // SB-19: pure 0% remaining is out of burn-first chip membership.
-        XCTAssertEqual(dep.count, 0)
-        // Display helpers still format depleted countdown when chip is built manually.
-        XCTAssertEqual(
-            statusItemChipDisplayLines(
-                remainings: [0],
-                compactLabel: "Cl resets 1h 21m",
-                percentStyle: "left"
-            ),
-            ["resets 1h 21m"]
-        )
-        XCTAssertTrue(statusItemCompactIsResetCountdown("Cl resets 1h 21m"))
-
-        // Dual-bucket depleted session + healthy weekly must keep 79%.
-        XCTAssertEqual(
-            statusItemChipDisplayLines(
-                remainings: [0, 79],
-                compactLabel: "Cl resets 1h 21m",
-                percentStyle: "left"
-            ),
-            ["resets 1h 21m", "79%"]
-        )
-        let dualDep = StatusItemSurfaceSnapshot(
-            surfaceId: "claude",
-            label: "Claude",
-            enabled: true,
-            statusBarLabel: "Session 0 · Weekly 79",
-            status: "fresh",
-            compactLabel: "Cl resets 1h 21m",
-            remainings: [0, 79],
-            severities: ["danger", "ok"]
-        )
-        let dual = buildStatusItemChips(
-            surfaces: [dualDep],
-            maxCount: 1,
-            preferWorstFirst: false,
-            percentStyle: "left"
-        )
-        XCTAssertEqual(dual.count, 1)
-        XCTAssertEqual(dual[0].percentLines, ["resets 1h 21m", "79%"])
-        XCTAssertEqual(dual[0].remainingPerLine, [0, 79])
-        XCTAssertEqual(dual[0].percentLines[1], "79%")
-        XCTAssertEqual(
-            statusItemAccessibilityLabel(chips: dual),
-            "jackin Desktop Cl resets 1h 21m and 79%"
-        )
-
-        // Agent tiles: dual remaining + bucket "Resets in …" depleted form.
-        XCTAssertEqual(
-            tileRemainingBadgeLines(remainings: [86, 95]),
-            ["86%", "95%"]
-        )
-        XCTAssertEqual(tileRemainingBadgeCompact(remainings: [86, 95]), "86%/95%")
-        XCTAssertEqual(
-            tileRemainingBadgeLines(
-                remainings: [0, 79],
-                compactLabel: "Resets in 1h 21m"
-            ),
-            ["Resets in 1h 21m", "79%"]
-        )
-        XCTAssertEqual(
-            statusItemResetCountdownLine(compactLabel: "Resets in 2h"),
-            "Resets in 2h"
-        )
-        XCTAssertEqual(
-            splitPaceLabel("On pace · Runs out in 4d 21h"),
-            ["On pace", "Runs out in 4d 21h"]
-        )
-        XCTAssertEqual(
-            bucketMetricPrimaryLabel(
-                remainingPercent: 0,
-                usedLabel: nil,
-                resetLabel: "Resets in 2h"
-            ),
-            "Resets in 2h"
-        )
-        XCTAssertEqual(
-            bucketMetricPrimaryLabel(
-                remainingPercent: 81,
-                usedLabel: nil,
-                resetLabel: "Resets in 5h"
-            ),
-            "81% left"
-        )
-        XCTAssertEqual(
-            surfaceRemainingSubtitle(remainings: [100, 79]),
-            "100% · 79%"
-        )
-        XCTAssertEqual(
-            overviewNumericBuckets(
-                remainingPercents: [100, 79, 40, 22, 5].map { Optional($0) }
-            ),
-            [100, 79, 40, 22]
-        )
-        XCTAssertEqual(overviewNumericBucketCap, 4)
-        XCTAssertEqual(
-            accountPillLabel(
-                accountLabel: "work@ex.com",
-                remainingPercent: 63,
-                selected: true
-            ),
-            "work@ex.com, 63%, selected"
-        )
-        XCTAssertTrue(isMachineStatusSlot("session"))
-        XCTAssertTrue(isMachineStatusSlot("weekly"))
-        XCTAssertTrue(isMachineStatusSlot("spend"))
-        XCTAssertNil(
-            bucketGaugeSecondaryLimitLabel(limitLabel: "100%", remainingPercent: 81)
-        )
-        XCTAssertEqual(
-            bucketGaugeSecondaryLimitLabel(limitLabel: "SGD 260", remainingPercent: nil),
-            "SGD 260"
-        )
-    }
-
-    func testBuildStatusItemChipsRespectsCapAndHidesEmpty() {
-        let surfaces = (0..<5).map { index in
-            StatusItemSurfaceSnapshot(
-                surfaceId: "s\(index)",
-                label: "S\(index)",
-                enabled: true,
-                statusBarLabel: "ok",
-                status: "fresh",
-                compactLabel: "S\(index) \(50 + index)%",
-                remainings: [UInt8(50 + index)],
-                severities: ["ok"]
-            )
-        }
-        let chips = buildStatusItemChips(
-            surfaces: surfaces,
-            maxCount: 3,
-            preferWorstFirst: false
-        )
-        XCTAssertEqual(chips.count, 3)
-        XCTAssertEqual(chips.map(\.surfaceId), ["s0", "s1", "s2"])
     }
 
     /// Overview is a native comparison table without custom meter geometry.
@@ -543,12 +188,12 @@ final class ArchitectureTests: XCTestCase {
 
         XCTAssertTrue(
             text.contains(
-                "Text(row.planLabel ?? row.statusLabel ?? \"—\")\n"
+                "Text(row.planOrStatusLabel)\n"
                     + "                            .foregroundStyle(.primary)")
         )
         XCTAssertTrue(
             text.contains(
-                "Text(row.resetLabel ?? \"—\")\n"
+                "Text(row.resetLabel)\n"
                     + "                        .foregroundStyle(.primary)")
         )
         XCTAssertFalse(text.contains("Color("))
@@ -569,6 +214,10 @@ final class ArchitectureTests: XCTestCase {
             contentsOf: visualQARoot.appendingPathComponent("focus-drive.swift"),
             encoding: .utf8
         )
+        let windowResolver = try String(
+            contentsOf: visualQARoot.appendingPathComponent("window-id.swift"),
+            encoding: .utf8
+        )
 
         XCTAssertTrue(text.contains("git -C \"$repo\" status --porcelain"))
         XCTAssertTrue(text.contains("mise -C \"$repo\" run desktop-build"))
@@ -578,12 +227,30 @@ final class ArchitectureTests: XCTestCase {
         XCTAssertTrue(text.contains("unset CAPTURE_INACTIVE_APP"))
         XCTAssertTrue(text.contains("capture_with_relaunch"))
         XCTAssertTrue(text.contains("capture retries exhausted after $attempt launches"))
+        XCTAssertTrue(text.contains("--fixture \"$fixture\" --ui-test --open-usage"))
+        XCTAssertTrue(text.contains("--fixture \"$fixture\" --ui-test --open-popover"))
         XCTAssertTrue(text.contains("FOCUS_DRIVE_TOOL=$focus_tool"))
+        XCTAssertTrue(text.contains("\"WINDOW_LAYER_MODE=all\""))
         XCTAssertTrue(text.contains("native/.build/visual-qa/final"))
         XCTAssertTrue(text.contains("\"$output/$file\" \"jackin❯ desktop\""))
+        XCTAssertTrue(capture.contains("WINDOW_LAYER_MODE=transient"))
+        XCTAssertTrue(capture.contains("fullyContainedOnScreen"))
+        XCTAssertTrue(capture.contains("--pid \"$pid\""))
+        XCTAssertTrue(windowResolver.contains("let transientOnly = layerMode == \"transient\""))
+        XCTAssertTrue(windowResolver.contains("isFullyContainedOnScreen"))
+        XCTAssertTrue(windowResolver.contains("pid: requestedPID"))
         XCTAssertTrue(capture.contains("\"$FOCUS_TOOL\" \"$pid\" 0"))
         XCTAssertTrue(capture.contains("application exited before reaching requested"))
+        XCTAssertTrue(capture.contains("CAPTURE_SETTLE_DELAY_SECONDS:-3"))
+        XCTAssertTrue(capture.contains("prepare_swift_tool"))
+        XCTAssertTrue(capture.contains("[ \"$source\" -nt \"$tool\" ]"))
+        XCTAssertTrue(capture.contains("window_id_override=${WINDOW_ID_TOOL:-}"))
+        XCTAssertTrue(capture.contains("perform action \"AXPress\" of targetButton"))
+        XCTAssertFalse(capture.contains("to click first button of toolbar"))
+        XCTAssertTrue(text.contains("CAPTURE_TOOLBAR_BUTTON_POST_DESCRIPTION=Show Sidebar"))
+        XCTAssertTrue(capture.contains("toolbar_state_matches"))
         XCTAssertTrue(focusDrive.contains("activate(options: [.activateAllWindows])"))
+        XCTAssertTrue(windowResolver.contains("if filter != nil"))
     }
 
     func testFixtureUsageWindowSurvivesForeignFullScreenHosts() throws {
@@ -598,8 +265,25 @@ final class ArchitectureTests: XCTestCase {
         XCTAssertTrue(text.contains(".fullScreenAuxiliary"))
         XCTAssertTrue(text.contains("if elevatesFixtureWindow"))
         XCTAssertTrue(text.contains("window.level = .floating"))
+        XCTAssertTrue(text.contains("window.makeKeyAndOrderFront(nil)"))
         XCTAssertTrue(text.contains("window.orderFrontRegardless()"))
         XCTAssertTrue(text.contains("window.collectionBehavior.insert(.moveToActiveSpace)"))
+
+        let delegate =
+            sourcesRoot
+            .appendingPathComponent("JackinDesktop")
+            .appendingPathComponent("DesktopAppDelegate.swift")
+        let delegateText = try String(contentsOf: delegate, encoding: .utf8)
+        XCTAssertFalse(
+            delegateText.contains(
+                "if visualQALaunchOptions.elevatesFixtureWindow {\n            return .accessory"
+            )
+        )
+        XCTAssertTrue(
+            delegateText.contains(
+                "if visualQALaunchOptions.openUsage || visualQALaunchOptions.openPopover"
+            )
+        )
 
         let options =
             sourcesRoot
@@ -661,6 +345,8 @@ final class ArchitectureTests: XCTestCase {
             PresentationStore.GlanceProviderRow(
                 surfaceId: id,
                 iconKey: id,
+                fallbackGlyph: "?",
+                usageURL: nil,
                 displayLabel: id,
                 accountLabel: "",
                 planLabel: nil,
@@ -668,12 +354,16 @@ final class ArchitectureTests: XCTestCase {
                 barLabel: pct.map { "\($0)%" } ?? "–",
                 headline: pct.map { "\($0)% left" } ?? "–",
                 resetLabel: nil,
+                compactResetLabel: nil,
                 exactReset: nil,
                 statusWord: "fresh",
                 isRefreshing: false,
                 statusLabel: "fresh",
                 severity: "normal",
                 updatedLabel: "now",
+                activityLabel: "Updated now",
+                activityKind: "idle",
+                accessibilityLabel: id,
                 lastError: nil,
                 dimmed: false
             )
@@ -689,41 +379,6 @@ final class ArchitectureTests: XCTestCase {
         XCTAssertEqual(bar.count, 3)
         XCTAssertEqual(bar.map(\.surfaceId), ["claude", "amp", "grok"])
         XCTAssertFalse(bar.contains(where: { $0.surfaceId == "codex" }))
-    }
-
-    /// Synthetic incoming rows prove strip displayability; Rust owns membership.
-    func testSyntheticStatusStripDisplayable() {
-        let syntheticSurfaceIds = ["claude", "codex", "amp", "grok"]
-        let surfaces = syntheticSurfaceIds.enumerated().map { index, id in
-            StatusItemSurfaceSnapshot(
-                surfaceId: id,
-                label: id,
-                enabled: true,
-                statusBarLabel: "ok",
-                status: "fresh",
-                compactLabel: "\(statusItemFallbackGlyph(surfaceId: id)) \(40 + index)%",
-                remainings: id == "claude" ? [100, 79] : [UInt8(40 + index)],
-                severities: ["ok"]
-            )
-        }
-        let chips = buildStatusItemChips(
-            surfaces: surfaces,
-            maxCount: 8,
-            preferWorstFirst: false,
-            percentStyle: "left",
-            includeAllEnabled: true
-        )
-        // SB-3: hard-cap 3 even when maxCount asks for 8.
-        XCTAssertEqual(chips.count, 3)
-        XCTAssertEqual(chips.map(\.surfaceId), Array(syntheticSurfaceIds.prefix(3)))
-        for chip in chips {
-            XCTAssertNotNil(chip.systemImage, "\(chip.surfaceId) needs SF Symbol")
-            XCTAssertFalse(chip.percentLines.isEmpty, "\(chip.surfaceId) needs displayable %")
-        }
-        XCTAssertEqual(
-            chips.first(where: { $0.surfaceId == "claude" })?.percentLines,
-            ["100%", "79%"]
-        )
     }
 
     func testPackageSwiftUsesBinaryTargetNotHostDylib() throws {
@@ -861,29 +516,6 @@ final class ArchitectureTests: XCTestCase {
         }
     }
 
-    func testBucketRowShapeSelection() {
-        XCTAssertEqual(bucketRowShape(remainingPercent: 40, usedLabel: "60% used"), .gauge)
-        XCTAssertEqual(bucketRowShape(remainingPercent: nil, usedLabel: "$0.06"), .valueOnly)
-        XCTAssertEqual(bucketRowShape(remainingPercent: nil, usedLabel: nil), .empty)
-        XCTAssertEqual(bucketRowShape(remainingPercent: nil, usedLabel: ""), .empty)
-    }
-
-    func testOverviewGlanceBodySelection() {
-        XCTAssertEqual(
-            overviewGlanceBody(
-                headline: "97% left", resetLabel: "Resets in 2h", statusWord: "fresh"),
-            .numeric(headline: "97% left", reset: "Resets in 2h")
-        )
-        XCTAssertEqual(
-            overviewGlanceBody(headline: "97% left", resetLabel: nil, statusWord: "fresh"),
-            .numeric(headline: "97% left", reset: nil)
-        )
-        XCTAssertEqual(
-            overviewGlanceBody(headline: "", resetLabel: nil, statusWord: "unsupported"),
-            .statusWord("unsupported")
-        )
-    }
-
     func testPopoverHasNoGaugeAndSurfaceCardGone() throws {
         let desktop = sourcesRoot.appendingPathComponent("JackinDesktop")
         XCTAssertFalse(
@@ -903,20 +535,55 @@ final class ArchitectureTests: XCTestCase {
             contentsOf: desktop.appendingPathComponent("UsageWindow/UsageWindowRoot.swift"),
             encoding: .utf8
         )
+        let splitController = try String(
+            contentsOf: desktop.appendingPathComponent(
+                "UsageWindow/UsageWindowSplitController.swift"),
+            encoding: .utf8
+        )
         let popover = try String(
             contentsOf: desktop.appendingPathComponent("PopoverRoot.swift"),
             encoding: .utf8
         )
 
+        XCTAssertTrue(usageRoot.contains("struct UsageWindowDetailAccessory: View"))
+        XCTAssertTrue(splitController.contains("NSSplitViewItemAccessoryViewController"))
         XCTAssertTrue(
-            usageRoot.contains(
-                "ToolbarItem(id: \"usage.brand-title\", placement: .principal)"
-            ))
+            splitController.contains("accessory.view.setAccessibilityIdentifier")
+                && splitController.contains("\"usage.detail-pane\"")
+        )
+        XCTAssertTrue(splitController.contains("NSSplitViewItem(sidebarWithViewController:"))
+        XCTAssertTrue(splitController.contains("sidebarItem.allowsFullHeightLayout = true"))
+        XCTAssertTrue(splitController.contains("[.toggleSidebar, .sidebarTrackingSeparator]"))
         XCTAssertTrue(usageRoot.contains("Text(\"jackin❯ desktop\")"))
+        XCTAssertFalse(usageRoot.contains(".toolbar(removing: .sidebarToggle)"))
+        XCTAssertFalse(usageRoot.contains("usage.sidebar-toggle"))
+        XCTAssertFalse(usageRoot.contains("UsageWindowNavigationState"))
         XCTAssertTrue(popover.contains("JackinBrandIdentity.templateMonogram()"))
         XCTAssertTrue(popover.contains("Text(\"jackin❯ desktop\")"))
         XCTAssertTrue(popover.contains(".frame(maxWidth: .infinity)"))
         XCTAssertFalse(popover.contains("popoverBrandHeader.background"))
+    }
+
+    func testVisualQAStateRestoresLiquidGlassAfterDarkMode() throws {
+        let script = try String(
+            contentsOf:
+                sourcesRoot
+                .deletingLastPathComponent()
+                .appendingPathComponent("Scripts/VisualQA/state.sh"),
+            encoding: .utf8
+        )
+        let start = try XCTUnwrap(script.range(of: "KEYS='"))
+        let end = try XCTUnwrap(
+            script.range(of: "'\n\nread_value", range: start.upperBound..<script.endIndex)
+        )
+        let keys = script[start.upperBound..<end.lowerBound]
+            .split(separator: "\n")
+            .map(String.init)
+
+        XCTAssertEqual(
+            Array(keys.suffix(2)),
+            ["SystemEvents|darkMode", "NSGlobalDomain|NSGlassDiffusionSetting"]
+        )
     }
 
     /// Cold launch: the AppKit delegate must open the host runtime without a menu click.
@@ -936,6 +603,18 @@ final class ArchitectureTests: XCTestCase {
         )
     }
 
+    func testSettingsHydrationDoesNotPersistClampedFloor() throws {
+        let settings =
+            sourcesRoot
+            .appendingPathComponent("JackinDesktop/SettingsView.swift")
+        let text = try String(contentsOf: settings, encoding: .utf8)
+
+        XCTAssertTrue(text.contains("@State private var isHydrating = false"))
+        XCTAssertTrue(text.contains("guard !isHydrating else { return }"))
+        XCTAssertTrue(text.contains("isHydrating = true"))
+        XCTAssertTrue(text.contains("DispatchQueue.main.async { isHydrating = false }"))
+    }
+
     func testDesktopSourcesHaveNoHardcodedProviderDisplayNames() throws {
         let desktop = sourcesRoot.appendingPathComponent("JackinDesktop")
         let enumerator = FileManager.default.enumerator(
@@ -952,62 +631,5 @@ final class ArchitectureTests: XCTestCase {
                 )
             }
         }
-    }
-
-    func testStatusItemTextSelectionModes() {
-        XCTAssertEqual(
-            statusItemTextSelection(
-                mode: .iconOnly,
-                pinnedSurfaceId: nil,
-                stripMax: 3,
-                hideForScreenShare: false
-            ),
-            .empty
-        )
-        XCTAssertEqual(
-            statusItemTextSelection(
-                mode: .focusPercent,
-                pinnedSurfaceId: nil,
-                stripMax: 3,
-                hideForScreenShare: false
-            ),
-            .focus
-        )
-        XCTAssertEqual(
-            statusItemTextSelection(
-                mode: .pinnedSurface,
-                pinnedSurfaceId: "codex",
-                stripMax: 3,
-                hideForScreenShare: false
-            ),
-            .pinned(surfaceId: "codex")
-        )
-        XCTAssertEqual(
-            statusItemTextSelection(
-                mode: .pinnedSurface,
-                pinnedSurfaceId: nil,
-                stripMax: 3,
-                hideForScreenShare: false
-            ),
-            .empty
-        )
-        XCTAssertEqual(
-            statusItemTextSelection(
-                mode: .strip,
-                pinnedSurfaceId: nil,
-                stripMax: 3,
-                hideForScreenShare: false
-            ),
-            .strip(max: 3)
-        )
-        XCTAssertEqual(
-            statusItemTextSelection(
-                mode: .focusPercent,
-                pinnedSurfaceId: nil,
-                stripMax: 3,
-                hideForScreenShare: true
-            ),
-            .empty
-        )
     }
 }

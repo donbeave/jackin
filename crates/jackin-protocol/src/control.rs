@@ -417,6 +417,33 @@ pub struct FocusedUsageView {
     pub last_error: Option<String>,
 }
 
+/// Machine state for the one activity phrase shown beside provider identity.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum UsageActivityKind {
+    /// A complete, usable snapshot is idle between refreshes.
+    Idle,
+    /// A broker generation is actively queued or updating.
+    Updating,
+    /// The provider needs attention or is serving stale/failed data.
+    Exceptional,
+}
+
+/// Finished provider/account/activity copy shared by every usage surface.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct UsageIdentityPresentation {
+    /// Canonical provider display title.
+    pub provider_title: String,
+    /// Selected account, or an honest provider-level absence label.
+    pub account_label: String,
+    /// The single visible freshness/refresh/exception phrase.
+    pub activity_label: String,
+    /// Machine-only styling state for `activity_label`.
+    pub activity_kind: UsageActivityKind,
+    /// Complete combined accessibility announcement.
+    pub accessibility_label: String,
+}
+
 impl FocusedUsageView {
     #[must_use]
     /// `unavailable` associated function.

@@ -522,7 +522,7 @@ fn disc_dedup_repeated_roots_read_once_and_same_identity_merges() {
 }
 
 #[test]
-fn disc_dedup_undiscoverable_history_never_creates_active_row() {
+fn disc_dedup_legacy_shared_snapshot_never_creates_active_row() {
     let temp = tempfile::tempdir().unwrap();
     let shared = temp.path().join("shared");
     std::fs::create_dir_all(&shared).unwrap();
@@ -543,7 +543,6 @@ fn disc_dedup_undiscoverable_history_never_creates_active_row() {
         &BTreeMap::new(),
         &BTreeMap::new(),
         &store,
-        &shared,
         Some(&[]),
     )
     .unwrap();

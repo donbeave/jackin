@@ -5,29 +5,36 @@ import AppKit
 import JackinUsageBridge
 import SwiftUI
 
-/// Lazily creates and retains the AppKit Usage window hosting `UsageWindowRoot`.
+/// Lazily creates and retains the AppKit Usage window and its native split controller.
 ///
-/// The SwiftUI Usage hierarchy owns the window's content; this controller only
-/// owns its lifecycle and focus.
+/// SwiftUI owns pane content. AppKit owns split geometry, the full-height sidebar,
+/// its standard toolbar toggle, and the detail top accessory.
 ///
 /// Showing the window promotes the process to `.regular` so the **system menu
 /// bar** ( + AppMainMenu) is available; closing the last titled window returns
 /// to `.accessory` status-item mode.
 ///
-/// **Native toolbar:** content is an `NSHostingController` so SwiftUI
-/// `.toolbar` installs a real `NSToolbar` (unified titlebar). Plain
-/// `NSHostingView` does **not** attach the window toolbar.
 @MainActor
 public final class UsageWindowController: NSObject, NSWindowDelegate {
     private let store: PresentationStore
     private let elevatesFixtureWindow: Bool
-    private let navigationState = UsageWindowNavigationState()
+    private let onSplitControllerCreated: (NSSplitViewController) -> Void
     private var window: NSWindow?
-    private var hostingController: NSHostingController<UsageWindowRoot>?
+    private var splitController: UsageWindowSplitController?
+    private var toolbarController: UsageWindowToolbar?
+    private var sidebarKeyMonitor: Any?
+    private var fixtureVisibilityTask: Task<Void, Never>?
+    private var visibilityDesired = false
+    private var retainedFrame: NSRect?
 
-    public init(store: PresentationStore, elevatesFixtureWindow: Bool = false) {
+    public init(
+        store: PresentationStore,
+        elevatesFixtureWindow: Bool = false,
+        onSplitControllerCreated: @escaping (NSSplitViewController) -> Void = { _ in }
+    ) {
         self.store = store
         self.elevatesFixtureWindow = elevatesFixtureWindow
+        self.onSplitControllerCreated = onSplitControllerCreated
         super.init()
     }
 
@@ -42,39 +49,85 @@ public final class UsageWindowController: NSObject, NSWindowDelegate {
         present(size: size)
     }
 
+    /// Show at an exact provider/account handoff captured by the popover.
+    public func show(context: UsageNavigationContext?, size: CGSize? = nil) {
+        store.selectUsageContext(
+            surfaceId: context?.surfaceId,
+            accountKey: context?.accountKey
+        )
+        present(size: size)
+    }
+
     private func present(size: CGSize?) {
+        let isNewWindow = window == nil
         let window = window ?? makeWindow()
         self.window = window
+        visibilityDesired = true
         if let size {
             window.setContentSize(size)
+        } else if let retainedFrame {
+            window.setFrame(retainedFrame, display: false)
         }
-        AppActivation.present(window)
+        if isNewWindow, elevatesFixtureWindow {
+            centerFixtureWindowOnPrimaryScreen(window)
+        }
         if elevatesFixtureWindow {
+            window.makeKeyAndOrderFront(nil)
             window.orderFrontRegardless()
+            renewFixtureVisibilityLease(for: window)
+        } else {
+            AppActivation.present(window)
         }
+    }
+
+    private func renewFixtureVisibilityLease(for window: NSWindow) {
+        fixtureVisibilityTask?.cancel()
+        fixtureVisibilityTask = Task { @MainActor [weak self, weak window] in
+            for _ in 0..<120 {
+                guard !Task.isCancelled, self?.visibilityDesired == true, let window else { return }
+                NSApp.unhideWithoutActivation()
+                window.orderFrontRegardless()
+                try? await Task.sleep(for: .milliseconds(250))
+            }
+        }
+    }
+
+    private func centerFixtureWindowOnPrimaryScreen(_ window: NSWindow) {
+        guard
+            let screen = NSScreen.screens.first(where: {
+                abs($0.frame.origin.x) < 0.5 && abs($0.frame.origin.y) < 0.5
+            }) ?? NSScreen.main ?? NSScreen.screens.first
+        else { return }
+        let visible = screen.visibleFrame
+        window.setFrameOrigin(
+            NSPoint(
+                x: visible.midX - window.frame.width / 2,
+                y: visible.midY - window.frame.height / 2
+            )
+        )
     }
 
     private func makeWindow() -> NSWindow {
         let window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 920, height: 620),
-            styleMask: [.titled, .closable, .miniaturizable, .resizable],
+            styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
             backing: .buffered,
             defer: false
         )
         window.title = "jackin❯ desktop"
         window.isReleasedWhenClosed = false
+        window.hidesOnDeactivate = false
         window.delegate = self
         if store.usesFixture {
             // Deterministic UI/visual QA must stay observable when WindowServer assigns rapid
             // fixture launches and the test runner to different or full-screen Spaces.
+            window.canHide = false
             window.collectionBehavior.formUnion([
                 .canJoinAllSpaces,
                 .canJoinAllApplications,
                 .fullScreenAuxiliary,
             ])
-            if elevatesFixtureWindow {
-                window.level = .floating
-            }
+            window.level = .floating
         } else {
             window.collectionBehavior.insert(.moveToActiveSpace)
         }
@@ -85,23 +138,41 @@ public final class UsageWindowController: NSObject, NSWindowDelegate {
             window.setFrameAutosaveName("jackin.desktop.usage-window")
         }
 
-        // Unified titlebar + toolbar (system NSToolbar — not a custom chrome strip).
+        // Unified titlebar + standard AppKit split toolbar; no app-painted chrome.
         window.toolbarStyle = .unified
-        window.titlebarAppearsTransparent = false
+        window.titlebarAppearsTransparent = true
         window.titleVisibility = .hidden
         window.titlebarSeparatorStyle = .automatic
 
-        // Hosting *controller* is required for SwiftUI toolbar → NSToolbar.
-        let root = UsageWindowRoot(store: store, navigationState: navigationState)
-        let host = NSHostingController(rootView: root)
-        hostingController = host
-        window.contentViewController = host
+        let split = UsageWindowSplitController(store: store)
+        splitController = split
+        window.contentViewController = split
+        onSplitControllerCreated(split)
+        sidebarKeyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) {
+            [weak window, weak split] event in
+            guard window?.isKeyWindow == true, AppMainMenu.isSidebarKeyEquivalent(event) else {
+                return event
+            }
+            split?.toggleSidebar(window)
+            return nil
+        }
+
+        let toolbarController = UsageWindowToolbar(sidebarItem: split.splitViewItems[0])
+        self.toolbarController = toolbarController
+        let toolbar = toolbarController.makeToolbar()
+        window.toolbar = toolbar
+        toolbarController.installStandardItems(in: toolbar)
 
         window.center()
         return window
     }
 
     public func windowWillClose(_ notification: Notification) {
+        visibilityDesired = false
+        fixtureVisibilityTask?.cancel()
+        if let window = notification.object as? NSWindow {
+            retainedFrame = window.frame
+        }
         // Window is still visible during willClose; resign on next run-loop turn.
         DispatchQueue.main.async {
             AppActivation.resignToAccessoryIfNeeded()
@@ -109,21 +180,26 @@ public final class UsageWindowController: NSObject, NSWindowDelegate {
     }
 
     public func invalidate() {
+        visibilityDesired = false
+        fixtureVisibilityTask?.cancel()
+        fixtureVisibilityTask = nil
+        if let sidebarKeyMonitor {
+            NSEvent.removeMonitor(sidebarKeyMonitor)
+            self.sidebarKeyMonitor = nil
+        }
         window?.delegate = nil
         window?.orderOut(nil)
         window?.contentViewController = nil
-        hostingController = nil
+        window?.toolbar = nil
+        splitController = nil
+        toolbarController = nil
         window = nil
     }
 
-    public func toggleSidebar() {
-        navigationState.toggleSidebar()
-    }
-
-    var isSidebarVisible: Bool { navigationState.isSidebarVisible }
-
-    var isKeyWindow: Bool { window?.isKeyWindow == true }
-
     /// Visual QA: the live `NSWindow` after `show` (nil if never shown).
     public var qiWindow: NSWindow? { window }
+    public var qiVisibilityDesired: Bool { visibilityDesired }
+    public func qiToggleSidebar() {
+        splitController?.toggleSidebar(window)
+    }
 }

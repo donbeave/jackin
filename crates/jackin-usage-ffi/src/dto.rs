@@ -7,9 +7,9 @@ use jackin_protocol::control::{
     FocusedUsageView, Money, QuotaBucketView, UsageConfidence, UsageSnapshotStatus, UsageSource,
 };
 use jackin_usage::host::{
-    HostAccountDescriptor, HostDesktopInventory, HostDesktopProviderGroup,
-    HostDesktopProviderState, HostEventBatch, HostOverviewRow, HostSurfaceDescriptor,
-    HostUsageEvent, UsageDiscoveryDiagnostic,
+    HostAccountDescriptor, HostDesktopInventory, HostDesktopProjection, HostDesktopProviderGroup,
+    HostDesktopProviderProjection, HostDesktopProviderState, HostEventBatch, HostOverviewRow,
+    HostSurfaceDescriptor, HostUsageEvent, UsageDiscoveryDiagnostic,
 };
 use jackin_usage::usage::{PercentStyle, ResetStyle, UsageFormatPrefs, estimate_caption};
 
@@ -127,6 +127,17 @@ pub struct UsageDetailPresentationDto {
     pub rows: Vec<UsageDetailRowDto>,
 }
 
+/// Finished provider/account/activity identity copy.
+#[derive(Debug, Clone, uniffi::Record)]
+pub struct UsageIdentityPresentationDto {
+    pub provider_title: String,
+    pub account_label: String,
+    pub activity_label: String,
+    /// `idle` | `updating` | `exceptional`
+    pub activity_kind: String,
+    pub accessibility_label: String,
+}
+
 /// One selected-account-aware provider glance row (1:1 mirror of the Rust
 /// `HostProviderGlanceRow`). The Desktop status bar, popover, and Usage window
 /// all consume this same Rust-owned row.
@@ -143,12 +154,16 @@ pub struct ProviderGlanceRowDto {
     pub bar_label: String,
     pub headline: String,
     pub reset_label: Option<String>,
+    pub compact_reset_label: Option<String>,
     pub exact_reset: Option<String>,
     pub status_word: String,
     pub is_refreshing: bool,
     pub status_label: String,
     pub severity: String,
     pub updated_label: String,
+    pub activity_label: String,
+    pub activity_kind: String,
+    pub accessibility_label: String,
     pub last_error: Option<String>,
     pub dimmed: bool,
 }
@@ -168,12 +183,16 @@ pub(crate) fn provider_glance_row_dto(
         bar_label: row.bar_label,
         headline: row.headline,
         reset_label: row.reset_label,
+        compact_reset_label: row.compact_reset_label,
         exact_reset: row.exact_reset,
         status_word: row.status_word,
         is_refreshing: row.is_refreshing,
         status_label: row.status_label,
         severity: row.severity,
         updated_label: row.updated_label,
+        activity_label: row.activity_label,
+        activity_kind: row.activity_kind,
+        accessibility_label: row.accessibility_label,
         last_error: row.last_error,
         dimmed: row.dimmed,
     }
@@ -182,6 +201,7 @@ pub(crate) fn provider_glance_row_dto(
 /// Full focused usage view for one surface.
 #[derive(Debug, Clone, uniffi::Record)]
 pub struct UsageViewDto {
+    pub identity: UsageIdentityPresentationDto,
     pub focused_agent: Option<String>,
     pub focused_provider: Option<String>,
     pub provider_label: String,
@@ -229,11 +249,13 @@ pub struct OverviewRowDto {
 #[derive(Debug, Clone, uniffi::Record)]
 pub struct AccountDescriptorDto {
     pub surface_id: String,
+    pub provider_column_label: String,
     pub account_key: String,
     pub account_label: String,
     pub plan_label: Option<String>,
     pub selected: bool,
     pub lifecycle: String,
+    pub lifecycle_label: String,
     pub provenance: Vec<String>,
     pub provenance_label: String,
     pub plan_or_status_label: String,
@@ -241,6 +263,7 @@ pub struct AccountDescriptorDto {
     pub remaining_label: String,
     pub headline: String,
     pub reset_label: Option<String>,
+    pub reset_display_label: String,
     pub exact_reset: Option<String>,
     pub status_word: String,
     pub status_label: String,
@@ -248,16 +271,19 @@ pub struct AccountDescriptorDto {
     pub updated_label: String,
     pub last_error: Option<String>,
     pub dimmed: bool,
+    pub accessibility_label: String,
 }
 
 pub(crate) fn account_dto(row: HostAccountDescriptor) -> AccountDescriptorDto {
     AccountDescriptorDto {
         surface_id: row.surface_id,
+        provider_column_label: row.provider_column_label,
         account_key: row.account_key,
         account_label: row.account_label,
         plan_label: row.plan_label,
         selected: row.selected,
         lifecycle: row.lifecycle,
+        lifecycle_label: row.lifecycle_label,
         provenance: row.provenance,
         provenance_label: row.provenance_label,
         plan_or_status_label: row.plan_or_status_label,
@@ -265,6 +291,7 @@ pub(crate) fn account_dto(row: HostAccountDescriptor) -> AccountDescriptorDto {
         remaining_label: row.remaining_label,
         headline: row.headline,
         reset_label: row.reset_label,
+        reset_display_label: row.reset_display_label,
         exact_reset: row.exact_reset,
         status_word: row.status_word,
         status_label: row.status_label,
@@ -272,6 +299,7 @@ pub(crate) fn account_dto(row: HostAccountDescriptor) -> AccountDescriptorDto {
         updated_label: row.updated_label,
         last_error: row.last_error,
         dimmed: row.dimmed,
+        accessibility_label: row.accessibility_label,
     }
 }
 
@@ -293,6 +321,11 @@ pub struct DesktopProviderGroupDto {
     pub icon_key: String,
     pub fallback_glyph: String,
     pub usage_url: Option<String>,
+    pub account_column_label: String,
+    pub plan_or_status_label: String,
+    pub remaining_label: String,
+    pub reset_display_label: String,
+    pub accessibility_label: String,
     pub accounts: Vec<AccountDescriptorDto>,
     pub empty_state: Option<DesktopProviderStateDto>,
 }
@@ -301,6 +334,28 @@ pub struct DesktopProviderGroupDto {
 #[derive(Debug, Clone, uniffi::Record)]
 pub struct DesktopInventoryDto {
     pub groups: Vec<DesktopProviderGroupDto>,
+}
+
+/// One grouped provider plus its exact selected account/detail snapshot.
+#[derive(Debug, Clone, uniffi::Record)]
+pub struct DesktopProviderProjectionDto {
+    pub group: DesktopProviderGroupDto,
+    pub selected_account_key: Option<String>,
+    pub selected_usage: UsageViewDto,
+}
+
+/// Complete immutable native Desktop state for one runtime generation.
+#[derive(Debug, Clone, uniffi::Record)]
+pub struct DesktopProjectionDto {
+    pub generation: u64,
+    pub refresh_in_progress: bool,
+    pub error_message: Option<String>,
+    pub next_refresh_label: String,
+    pub surfaces: Vec<SurfaceDescriptorDto>,
+    pub providers: Vec<DesktopProviderProjectionDto>,
+    pub glance_rows: Vec<ProviderGlanceRowDto>,
+    pub status_bar_glance_rows: Vec<ProviderGlanceRowDto>,
+    pub diagnostics: Vec<DiscoveryDiagnosticDto>,
 }
 
 pub(crate) fn desktop_inventory_dto(inventory: HostDesktopInventory) -> DesktopInventoryDto {
@@ -313,6 +368,57 @@ pub(crate) fn desktop_inventory_dto(inventory: HostDesktopInventory) -> DesktopI
     }
 }
 
+pub(crate) fn desktop_projection_dto(projection: HostDesktopProjection) -> DesktopProjectionDto {
+    DesktopProjectionDto {
+        generation: projection.generation,
+        refresh_in_progress: projection.refresh_in_progress,
+        error_message: projection.error_message,
+        next_refresh_label: projection.next_refresh_label,
+        surfaces: projection.surfaces.into_iter().map(surface_dto).collect(),
+        providers: projection
+            .providers
+            .into_iter()
+            .map(desktop_provider_projection_dto)
+            .collect(),
+        glance_rows: projection
+            .glance_rows
+            .into_iter()
+            .map(provider_glance_row_dto)
+            .collect(),
+        status_bar_glance_rows: projection
+            .status_bar_glance_rows
+            .into_iter()
+            .map(provider_glance_row_dto)
+            .collect(),
+        diagnostics: projection
+            .diagnostics
+            .into_iter()
+            .map(discovery_diagnostic_dto)
+            .collect(),
+    }
+}
+
+fn desktop_provider_projection_dto(
+    projection: HostDesktopProviderProjection,
+) -> DesktopProviderProjectionDto {
+    let account = projection.selected_account_key.as_deref().and_then(|key| {
+        projection
+            .group
+            .accounts
+            .iter()
+            .find(|row| row.account_key == key)
+    });
+    DesktopProviderProjectionDto {
+        group: desktop_provider_group_dto(projection.group.clone()),
+        selected_account_key: projection.selected_account_key,
+        selected_usage: view_dto_with_context(
+            projection.selected_usage,
+            projection.identity,
+            account,
+        ),
+    }
+}
+
 fn desktop_provider_group_dto(group: HostDesktopProviderGroup) -> DesktopProviderGroupDto {
     DesktopProviderGroupDto {
         surface_id: group.surface_id,
@@ -320,6 +426,11 @@ fn desktop_provider_group_dto(group: HostDesktopProviderGroup) -> DesktopProvide
         icon_key: group.icon_key,
         fallback_glyph: group.fallback_glyph,
         usage_url: group.usage_url,
+        account_column_label: group.account_column_label,
+        plan_or_status_label: group.plan_or_status_label,
+        remaining_label: group.remaining_label,
+        reset_display_label: group.reset_display_label,
+        accessibility_label: group.accessibility_label,
         accounts: group.accounts.into_iter().map(account_dto).collect(),
         empty_state: group.empty_state.map(desktop_provider_state_dto),
     }
@@ -391,47 +502,59 @@ fn event_dto(event: HostUsageEvent) -> UsageEventDto {
     }
 }
 
-fn detail_presentation_dto(view: &FocusedUsageView) -> UsageDetailPresentationDto {
+fn detail_presentation_dto(
+    view: &FocusedUsageView,
+    account: Option<&HostAccountDescriptor>,
+) -> UsageDetailPresentationDto {
     // Same Rust builder Capsule uses — one parity handoff, no second assembler.
     let presentation = jackin_usage::usage::usage_detail_presentation(view);
-    UsageDetailPresentationDto {
-        rows: presentation
-            .rows
-            .into_iter()
-            .map(|row| UsageDetailRowDto {
-                row_id: row.row_id,
-                kind: match row.kind {
-                    jackin_protocol::control::UsageDetailRowKind::Metadata => "metadata",
-                    jackin_protocol::control::UsageDetailRowKind::Bucket => "bucket",
-                    jackin_protocol::control::UsageDetailRowKind::Detail => "detail",
-                }
-                .to_owned(),
-                label: row.label,
-                layout_lines: row
-                    .layout_lines
-                    .into_iter()
-                    .map(|line| UsagePresentationLineDto {
-                        leading: line.leading,
-                        trailing: line.trailing,
-                    })
-                    .collect(),
-                display_label: row.display_label,
-                meter_percent: row.meter_percent,
-                severity: match row.severity {
-                    jackin_protocol::control::UsageSeverity::Normal => "normal",
-                    jackin_protocol::control::UsageSeverity::Warn => "warn",
-                    jackin_protocol::control::UsageSeverity::Danger => "danger",
-                }
-                .to_owned(),
-            })
-            .collect(),
+    let mut rows = presentation
+        .rows
+        .into_iter()
+        .map(detail_row_dto)
+        .collect::<Vec<_>>();
+    if let Some(account) = account {
+        let insert_at = rows
+            .iter()
+            .position(|row| row.kind == "bucket" || row.kind == "detail")
+            .unwrap_or(rows.len());
+        let mut context_rows = Vec::new();
+        if !account.provenance_label.is_empty() {
+            context_rows.push(metadata_detail_row_dto(
+                "provenance",
+                "Source",
+                account.provenance_label.clone(),
+            ));
+        }
+        context_rows.push(metadata_detail_row_dto(
+            "lifecycle",
+            "Availability",
+            account.lifecycle_label.clone(),
+        ));
+        rows.splice(insert_at..insert_at, context_rows);
     }
+    UsageDetailPresentationDto { rows }
 }
 
 pub(crate) fn view_dto(view: FocusedUsageView) -> UsageViewDto {
+    let provider_title = jackin_usage::usage::provider_display_label(&view.account.provider_label);
+    let identity = jackin_usage::usage::usage_identity_presentation(
+        provider_title,
+        &view,
+        view.is_refreshing_placeholder(),
+    );
+    view_dto_with_context(view, identity, None)
+}
+
+fn view_dto_with_context(
+    view: FocusedUsageView,
+    identity: jackin_protocol::control::UsageIdentityPresentation,
+    account: Option<&HostAccountDescriptor>,
+) -> UsageViewDto {
     let caption = estimate_caption(&view);
-    let detail_presentation = detail_presentation_dto(&view);
+    let detail_presentation = detail_presentation_dto(&view, account);
     UsageViewDto {
+        identity: identity_dto(identity),
         focused_agent: view.focused_agent,
         focused_provider: view.focused_provider,
         provider_label: view.account.provider_label,
@@ -449,6 +572,67 @@ pub(crate) fn view_dto(view: FocusedUsageView) -> UsageViewDto {
         last_error: view.last_error,
         estimate_caption: caption,
         detail_presentation,
+    }
+}
+
+fn identity_dto(
+    identity: jackin_protocol::control::UsageIdentityPresentation,
+) -> UsageIdentityPresentationDto {
+    UsageIdentityPresentationDto {
+        provider_title: identity.provider_title,
+        account_label: identity.account_label,
+        activity_label: identity.activity_label,
+        activity_kind: match identity.activity_kind {
+            jackin_protocol::control::UsageActivityKind::Idle => "idle",
+            jackin_protocol::control::UsageActivityKind::Updating => "updating",
+            jackin_protocol::control::UsageActivityKind::Exceptional => "exceptional",
+        }
+        .to_owned(),
+        accessibility_label: identity.accessibility_label,
+    }
+}
+
+fn detail_row_dto(row: jackin_protocol::control::UsageDetailRow) -> UsageDetailRowDto {
+    UsageDetailRowDto {
+        row_id: row.row_id,
+        kind: match row.kind {
+            jackin_protocol::control::UsageDetailRowKind::Metadata => "metadata",
+            jackin_protocol::control::UsageDetailRowKind::Bucket => "bucket",
+            jackin_protocol::control::UsageDetailRowKind::Detail => "detail",
+        }
+        .to_owned(),
+        label: row.label,
+        layout_lines: row
+            .layout_lines
+            .into_iter()
+            .map(|line| UsagePresentationLineDto {
+                leading: line.leading,
+                trailing: line.trailing,
+            })
+            .collect(),
+        display_label: row.display_label,
+        meter_percent: row.meter_percent,
+        severity: match row.severity {
+            jackin_protocol::control::UsageSeverity::Normal => "normal",
+            jackin_protocol::control::UsageSeverity::Warn => "warn",
+            jackin_protocol::control::UsageSeverity::Danger => "danger",
+        }
+        .to_owned(),
+    }
+}
+
+fn metadata_detail_row_dto(row_id: &str, label: &str, value: String) -> UsageDetailRowDto {
+    UsageDetailRowDto {
+        row_id: row_id.to_owned(),
+        kind: "metadata".to_owned(),
+        label: label.to_owned(),
+        layout_lines: vec![UsagePresentationLineDto {
+            leading: Some(value.clone()),
+            trailing: None,
+        }],
+        display_label: value,
+        meter_percent: None,
+        severity: "normal".to_owned(),
     }
 }
 

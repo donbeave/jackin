@@ -9,7 +9,8 @@ com.apple.universalaccess|differentiateWithoutColor
 NSGlobalDomain|AppleInterfaceStyle
 NSGlobalDomain|AppleInterfaceStyleSwitchesAutomatically
 NSGlobalDomain|AppleKeyboardUIMode
-SystemEvents|darkMode'
+SystemEvents|darkMode
+NSGlobalDomain|NSGlassDiffusionSetting'
 
 read_value() {
   domain=$1

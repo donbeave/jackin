@@ -8,6 +8,7 @@ import SwiftUI
 public struct SettingsView: View {
     @ObservedObject var store: PresentationStore
     @State private var floorMinutes: Double = 5
+    @State private var isHydrating = false
     @State private var launchAtLogin: Bool = false
     @State private var launchAtLoginNote: String?
 
@@ -108,6 +109,7 @@ public struct SettingsView: View {
                     Text("30m")
                 }
                 .onChange(of: floorMinutes) { _, newValue in
+                    guard !isHydrating else { return }
                     store.setRefreshFloorSecs(UInt64(newValue) * 60)
                 }
                 Text("Probe at most every \(Int(floorMinutes)) minutes (Rust floor).")
@@ -131,13 +133,15 @@ public struct SettingsView: View {
         .formStyle(.grouped)
         .frame(width: 420, height: 640)
         .onAppear {
+            isHydrating = true
             if !store.isOpen {
                 store.openDefault()
             }
-            floorMinutes = Double(max(store.refreshFloorSecs, 60)) / 60.0
+            floorMinutes = min(30, max(1, Double(store.refreshFloorSecs) / 60.0))
             // Always read truth from SMAppService — never cache as sole source.
             launchAtLogin = SMAppService.mainApp.status == .enabled
             launchAtLoginNote = statusNote(SMAppService.mainApp.status)
+            DispatchQueue.main.async { isHydrating = false }
         }
     }
 

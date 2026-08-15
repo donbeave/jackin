@@ -49,30 +49,33 @@ if [ -n "${TMPDIR:-}" ]; then
 fi
 
 mkdir -p "$(dirname "$OUT")"
+prepare_swift_tool() {
+  tool=$1
+  source=$2
+  override=$3
+  needs_compile=0
+  [ ! -x "$tool" ] && needs_compile=1
+  if [ -z "$override" ] && [ "$source" -nt "$tool" ]; then
+    needs_compile=1
+  fi
+  [ "$needs_compile" -eq 0 ] && return
+  command -v swiftc >/dev/null 2>&1 || {
+    echo "swiftc missing; set an explicit tool override" >&2
+    exit 2
+  }
+  swiftc -O "$source" -o "$tool"
+}
+
+window_id_override=${WINDOW_ID_TOOL:-}
 TOOL=${WINDOW_ID_TOOL:-"${TMPDIR:-/tmp}/tailrocks-window-id"}
-if [ ! -x "$TOOL" ]; then
-  command -v swiftc >/dev/null 2>&1 || {
-    echo "swiftc missing; set WINDOW_ID_TOOL" >&2
-    exit 2
-  }
-  swiftc -O "$HERE/window-id.swift" -o "$TOOL"
-fi
+prepare_swift_tool "$TOOL" "$HERE/window-id.swift" "$window_id_override"
+notification_drive_override=${NOTIFICATION_DRIVE_TOOL:-}
 DRIVE_TOOL=${NOTIFICATION_DRIVE_TOOL:-"${TMPDIR:-/tmp}/tailrocks-notification-drive"}
-if [ ! -x "$DRIVE_TOOL" ]; then
-  command -v swiftc >/dev/null 2>&1 || {
-    echo "swiftc missing; set NOTIFICATION_DRIVE_TOOL" >&2
-    exit 2
-  }
-  swiftc -O "$HERE/notification-drive.swift" -o "$DRIVE_TOOL"
-fi
+prepare_swift_tool "$DRIVE_TOOL" "$HERE/notification-drive.swift" \
+  "$notification_drive_override"
+focus_drive_override=${FOCUS_DRIVE_TOOL:-}
 FOCUS_TOOL=${FOCUS_DRIVE_TOOL:-"${TMPDIR:-/tmp}/tailrocks-focus-drive"}
-if [ ! -x "$FOCUS_TOOL" ]; then
-  command -v swiftc >/dev/null 2>&1 || {
-    echo "swiftc missing; set FOCUS_DRIVE_TOOL" >&2
-    exit 2
-  }
-  swiftc -O "$HERE/focus-drive.swift" -o "$FOCUS_TOOL"
-fi
+prepare_swift_tool "$FOCUS_TOOL" "$HERE/focus-drive.swift" "$focus_drive_override"
 
 EXEC="$APP/Contents/MacOS/"
 matched=$(pgrep -f "$EXEC" 2>/dev/null | wc -l | tr -d ' ')
@@ -106,10 +109,10 @@ pid=$(pgrep -f "$EXEC" | head -1 || true)
 executable=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$APP/Contents/Info.plist")
 if [ -n "${CAPTURE_STATUS_ITEM_INDEX:-}" ]; then
   if [ "${CAPTURE_STATUS_ITEM_BUTTON:-left}" = right ]; then
+    status_item_override=${STATUS_ITEM_TOOL:-}
     STATUS_TOOL=${STATUS_ITEM_TOOL:-"${TMPDIR:-/tmp}/tailrocks-status-item-drive"}
-    if [ ! -x "$STATUS_TOOL" ]; then
-      swiftc -O "$HERE/status-item-drive.swift" -o "$STATUS_TOOL"
-    fi
+    prepare_swift_tool "$STATUS_TOOL" "$HERE/status-item-drive.swift" \
+      "$status_item_override"
     "$STATUS_TOOL" "$pid" "$CAPTURE_STATUS_ITEM_INDEX" right
   else
     osascript -e \
@@ -128,14 +131,15 @@ fi
 
 drive_activation() {
   if [ -n "$WINDOW_NAME" ]; then
-    window_onscreen=$("$TOOL" "$OWNER" "$WINDOW_NAME" --json 2>/dev/null \
+    window_onscreen=$("$TOOL" "$OWNER" "$WINDOW_NAME" --json --pid "$pid" 2>/dev/null \
       | plutil -extract onScreen raw - 2>/dev/null || echo false)
     if [ "$window_onscreen" != true ]; then
       "$DRIVE_TOOL" "com.jackin-project.desktop.visual-qa.show-usage"
     fi
   else
-    popover_onscreen=$(WINDOW_LAYER_MODE=all "$TOOL" "$OWNER" --json 2>/dev/null \
-      | plutil -extract onScreen raw - 2>/dev/null || echo false)
+    popover_onscreen=$(WINDOW_LAYER_MODE=transient \
+      "$TOOL" "$OWNER" --json --pid "$pid" 2>/dev/null \
+        | plutil -extract onScreen raw - 2>/dev/null || echo false)
     if [ "$popover_onscreen" != true ]; then
       "$DRIVE_TOOL" "com.jackin-project.desktop.visual-qa.show-popover"
     fi
@@ -182,6 +186,11 @@ done
   exit 1
 }
 
+# WindowServer can mark a native host onscreen before SwiftUI has restored its
+# independently hosted chrome and scroll position. Accessibility appearance
+# changes need the longer convergence window before pixels are evidence.
+sleep "${CAPTURE_SETTLE_DELAY_SECONDS:-3}"
+
 if [ -n "${CAPTURE_TOOLBAR_BUTTON_DESCRIPTION:-}" ]; then
   [ -n "$WINDOW_NAME" ] || {
     echo "toolbar driving requires a window title" >&2
@@ -191,10 +200,17 @@ if [ -n "${CAPTURE_TOOLBAR_BUTTON_DESCRIPTION:-}" ]; then
   i=0
   while [ "$i" -lt 40 ]; do
     drive_activation
-    window_onscreen=$("$TOOL" "$OWNER" "$WINDOW_NAME" --json 2>/dev/null \
+    window_onscreen=$("$TOOL" "$OWNER" "$WINDOW_NAME" --json --pid "$pid" 2>/dev/null \
       | plutil -extract onScreen raw - 2>/dev/null || echo false)
-    if [ "$window_onscreen" = true ] && osascript -e \
-      "tell application \"System Events\" to tell application process \"$executable\" to tell front window to click first button of toolbar 1 whose description is \"$CAPTURE_TOOLBAR_BUTTON_DESCRIPTION\""; then
+    if [ "$window_onscreen" = true ] && osascript \
+      -e "tell application \"System Events\"" \
+      -e "tell application process \"$executable\"" \
+      -e "tell front window" \
+      -e "set targetButton to first button of toolbar 1 whose description is \"$CAPTURE_TOOLBAR_BUTTON_DESCRIPTION\"" \
+      -e 'perform action "AXPress" of targetButton' \
+      -e 'end tell' \
+      -e 'end tell' \
+      -e 'end tell'; then
       toolbar_ok=1
       break
     fi
@@ -207,6 +223,19 @@ if [ -n "${CAPTURE_TOOLBAR_BUTTON_DESCRIPTION:-}" ]; then
   }
   sleep 1
 fi
+
+expected_toolbar_button_description=${CAPTURE_TOOLBAR_BUTTON_POST_DESCRIPTION:-}
+toolbar_state_matches() {
+  [ -z "$expected_toolbar_button_description" ] && return 0
+  matching_buttons=$(osascript -e \
+    "tell application \"System Events\" to tell application process \"$executable\" to tell front window to count buttons of toolbar 1 whose description is \"$expected_toolbar_button_description\"" \
+    2>/dev/null || echo 0)
+  [ "$matching_buttons" -eq 1 ]
+}
+toolbar_state_matches || {
+  echo "toolbar state did not become available: $expected_toolbar_button_description" >&2
+  exit 1
+}
 
 capture_ok=0
 success_count=0
@@ -222,15 +251,22 @@ while [ "$attempt" -lt 20 ]; do
   candidate="$OUT.capture-$attempt.png"
   candidate_metadata="$OUT.capture-$attempt.json"
   candidate_post_metadata="$OUT.capture-$attempt-post.json"
+  if ! toolbar_state_matches; then
+    state_failures=$((state_failures + 1))
+    attempt=$((attempt + 1))
+    continue
+  fi
   if [ -n "$WINDOW_NAME" ]; then
-    "$TOOL" "$OWNER" "$WINDOW_NAME" --json > "$candidate_metadata" 2>/dev/null || {
+    "$TOOL" "$OWNER" "$WINDOW_NAME" --json --pid "$pid" \
+      > "$candidate_metadata" 2>/dev/null || {
       rm -f "$candidate_metadata"
       resolve_failures=$((resolve_failures + 1))
       attempt=$((attempt + 1))
       continue
     }
   else
-    "$TOOL" "$OWNER" --json > "$candidate_metadata" 2>/dev/null || {
+    WINDOW_LAYER_MODE=transient "$TOOL" "$OWNER" --json --pid "$pid" \
+      > "$candidate_metadata" 2>/dev/null || {
       rm -f "$candidate_metadata"
       resolve_failures=$((resolve_failures + 1))
       attempt=$((attempt + 1))
@@ -240,12 +276,14 @@ while [ "$attempt" -lt 20 ]; do
   actual_activation=$(plutil -extract applicationActivationState raw "$candidate_metadata")
   actual_key=$(plutil -extract keyStatus raw "$candidate_metadata")
   actual_onscreen=$(plutil -extract onScreen raw "$candidate_metadata")
-  last_state="$actual_activation/$actual_key/$actual_onscreen"
+  actual_contained=$(plutil -extract fullyContainedOnScreen raw "$candidate_metadata")
+  last_state="$actual_activation/$actual_key/$actual_onscreen/$actual_contained"
   expected_key=key
   [ "$requested_activation" = inactive ] && expected_key=non-key
   [ -z "$WINDOW_NAME" ] && expected_key=not-applicable-transient
   if [ "$actual_activation" != "$requested_activation" ] \
-    || [ "$actual_key" != "$expected_key" ] || [ "$actual_onscreen" != true ]; then
+    || [ "$actual_key" != "$expected_key" ] || [ "$actual_onscreen" != true ] \
+    || [ "$actual_contained" != true ]; then
     rm -f "$candidate_metadata"
     state_failures=$((state_failures + 1))
     drive_activation
@@ -256,16 +294,21 @@ while [ "$attempt" -lt 20 ]; do
   WID=$(plutil -extract windowID raw "$candidate_metadata")
   if screencapture -x -o -l "$WID" "$candidate"; then
     if [ -n "$WINDOW_NAME" ]; then
-      "$TOOL" "$OWNER" "$WINDOW_NAME" --json > "$candidate_post_metadata" 2>/dev/null || true
+      "$TOOL" "$OWNER" "$WINDOW_NAME" --json --pid "$pid" \
+        > "$candidate_post_metadata" 2>/dev/null || true
     else
-      "$TOOL" "$OWNER" --json > "$candidate_post_metadata" 2>/dev/null || true
+      WINDOW_LAYER_MODE=transient "$TOOL" "$OWNER" --json --pid "$pid" \
+        > "$candidate_post_metadata" 2>/dev/null || true
     fi
     post_id=$(plutil -extract windowID raw "$candidate_post_metadata" 2>/dev/null || echo unavailable)
     post_activation=$(plutil -extract applicationActivationState raw "$candidate_post_metadata" 2>/dev/null || echo unavailable)
     post_key=$(plutil -extract keyStatus raw "$candidate_post_metadata" 2>/dev/null || echo unavailable)
     post_onscreen=$(plutil -extract onScreen raw "$candidate_post_metadata" 2>/dev/null || echo unavailable)
+    post_contained=$(plutil -extract fullyContainedOnScreen raw \
+      "$candidate_post_metadata" 2>/dev/null || echo unavailable)
     if [ "$post_id" != "$WID" ] || [ "$post_activation" != "$requested_activation" ] \
-      || [ "$post_key" != "$expected_key" ] || [ "$post_onscreen" != true ]; then
+      || [ "$post_key" != "$expected_key" ] || [ "$post_onscreen" != true ] \
+      || [ "$post_contained" != true ] || ! toolbar_state_matches; then
       rm -f "$candidate" "$candidate_metadata" "$candidate_post_metadata"
       postcheck_failures=$((postcheck_failures + 1))
       attempt=$((attempt + 1))

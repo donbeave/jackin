@@ -1,10 +1,18 @@
-use super::compact_duration_label;
+use super::{UsageFormatPrefs, compact_duration_label, reset_label_with_prefs};
 
 #[test]
 fn under_one_hour_is_minutes() {
-    assert_eq!(compact_duration_label(0), "0m");
+    assert_eq!(compact_duration_label(0), "<1m");
+    assert_eq!(compact_duration_label(59), "<1m");
     assert_eq!(compact_duration_label(45 * 60), "45m");
     assert_eq!(compact_duration_label(3_599), "59m");
+}
+
+#[test]
+fn sub_minute_reset_uses_compact_and_honest_long_forms() {
+    let label = reset_label_with_prefs(10_059, 10_000, UsageFormatPrefs::default());
+    assert!(label.starts_with("Resets in under a minute ("), "{label}");
+    assert!(!label.contains("0m"), "{label}");
 }
 
 #[test]

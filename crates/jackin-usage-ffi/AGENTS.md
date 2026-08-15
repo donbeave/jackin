@@ -9,6 +9,9 @@ or second provider matrix in this crate or in the Swift shell.
 - Coarse sync API only: open / list / set_enabled / refresh / next_events /
   snapshot / list_accounts / set_selected_account / shutdown. No fine-grained
   probe callbacks into Swift.
+- Refresh is a non-blocking client operation against the host Rust broker. Waiting
+  and provider work stay on Rust worker threads; callers observe one shared
+  generation/phase. Never fall back to local probes or filesystem coordination.
 - Panic containment at every entry (`catch_entry`); typed `UsageBridgeError`.
 - Reuse `jackin_usage::host::HostUsageRuntime` and protocol view fields; do not
   re-shape quotas in Swift.

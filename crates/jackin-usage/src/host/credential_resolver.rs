@@ -60,6 +60,15 @@ impl std::fmt::Debug for ProviderCredentialSecretResolution {
 
 /// Host composition port for config/env/1Password resolution.
 pub trait ProviderCredentialSecretSource: Send + Sync {
+    /// Return the effective declaration without resolving protected material.
+    fn lookup_declaration(
+        &self,
+        config: &AppConfig,
+        workspace: Option<&WorkspaceName>,
+        role: Option<&str>,
+        entry: UsageCredentialEnvName,
+    ) -> Option<EnvValue>;
+
     /// Resolve one governed key in one effective config scope.
     fn resolve_secret(
         &self,
@@ -139,7 +148,9 @@ impl<S: ProviderCredentialSecretSource> CachedProviderCredentialResolver<S> {
         role: Option<&str>,
         entry: UsageCredentialEnvName,
     ) -> Option<ProviderCredentialEnvResolution> {
-        let resolved = self.source.resolve_secret(config, workspace, role, entry)?;
+        let declaration = self
+            .source
+            .lookup_declaration(config, workspace, role, entry)?;
         let mut state = self
             .state
             .lock()
@@ -147,13 +158,14 @@ impl<S: ProviderCredentialSecretSource> CachedProviderCredentialResolver<S> {
         if let Some(cached) = state
             .cache
             .iter()
-            .find(|cached| cached.key == entry.name && cached.declaration == resolved.declaration)
+            .find(|cached| cached.key == entry.name && cached.declaration == declaration)
         {
             return Some(ProviderCredentialEnvResolution {
                 key: entry.name.to_owned(),
                 outcome: cached.outcome.clone(),
             });
         }
+        let resolved = self.source.resolve_secret(config, workspace, role, entry)?;
 
         let (outcome, secret, handle) = match resolved.outcome {
             ProviderCredentialSecretOutcome::Resolved(secret) if !secret.is_empty() => {
@@ -263,3 +275,6 @@ impl<S: ProviderCredentialSecretSource> ProviderCredentialEnvResolver
         ))
     }
 }
+
+#[cfg(test)]
+mod tests;

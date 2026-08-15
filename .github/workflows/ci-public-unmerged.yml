@@ -1029,7 +1029,7 @@ jobs:
           version: "2026.7.12"
           cache_key_prefix: "mise-v2"
           cache_save: false
-          install_args: "zig"
+          install_args: "zig cargo:cargo-zigbuild"
           github_token: ${{ github.token }}
       - id: cargo-registry-cache
         uses: ./.github/actions/cache-cargo-registry

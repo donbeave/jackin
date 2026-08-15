@@ -2,25 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import AppKit
-import JackinUsageBridge
 import SwiftUI
-
-/// Provider identity chrome only.
-///
-/// Never use these colors for quota state.
-/// Deprecated: replaced by Rust DTO fields — removed in Plan 005.
-public func desktopProviderBrandChrome(iconKey: String?) -> Color {
-    switch iconKey {
-    case "codex": Color(red: 0.12, green: 0.72, blue: 0.52)
-    case "claude": Color(red: 0.86, green: 0.48, blue: 0.28)
-    case "amp": Color(red: 0.52, green: 0.38, blue: 0.92)
-    case "grok": Color(red: 0.35, green: 0.38, blue: 0.42)
-    case "zai": Color(red: 0.20, green: 0.55, blue: 0.95)
-    case "kimi": Color(red: 0.75, green: 0.35, blue: 0.55)
-    case "minimax": Color(red: 0.90, green: 0.55, blue: 0.20)
-    default: Color.jackinPhosphor
-    }
-}
 
 /// Official provider logomarks (template PDF) for status bar, popover plates, and Usage chrome.
 ///
@@ -29,26 +11,9 @@ public func desktopProviderBrandChrome(iconKey: String?) -> Color {
 /// Masters + provenance: `Resources/ProviderMarks/PROVENANCE.md`.
 @MainActor
 public enum ProviderMarks {
-    /// Bundled PDF resource base name for a Desktop provider icon key.
-    ///
-    /// Deprecated: replaced by Rust DTO fields — removed in Plan 005.
-    public static func resourceName(forIconKey iconKey: String) -> String? {
-        switch iconKey {
-        case "codex": return "codex"
-        case "claude": return "claude"
-        case "amp": return "amp"
-        case "grok": return "grok"
-        case "kimi": return "kimi"
-        case "zai": return "zai"
-        case "minimax": return "minimax"
-        default: return nil
-        }
-    }
-
     /// Load official mark as template `NSImage` for menu-bar / monochrome use.
     public static func templateImage(forIconKey iconKey: String) -> NSImage? {
-        guard let name = resourceName(forIconKey: iconKey) else { return nil }
-        return loadPDF(named: name, template: true)
+        loadPDF(named: iconKey, template: true)
     }
 
     /// SwiftUI image of the official mark (template rendering for mono; pair with plate for color).

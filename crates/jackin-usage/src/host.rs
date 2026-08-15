@@ -1,11 +1,10 @@
 // SPDX-FileCopyrightText: 2026 Alexey Zhokhov
 // SPDX-License-Identifier: Apache-2.0
 
-//! Capsule-free host usage orchestration for the macOS menu-bar app and CLI.
+//! Capsule-free host usage projection for the macOS menu-bar app and CLI.
 //!
-//! Reuses [`crate::usage::UsageCache`] probes, cache, cooldown, and
-//! `FocusedUsageView` shaping. State roots live under the operator jackin
-//! data dir (not container `/jackin/...` paths).
+//! Provider work and shared state are owned by the host usage broker. This
+//! runtime holds presentation state only.
 
 mod accounts;
 mod broker;
@@ -17,14 +16,13 @@ use std::path::{Path, PathBuf};
 use std::time::{Duration, Instant};
 
 use jackin_core::Agent;
-use jackin_protocol::Provider;
-use jackin_protocol::control::{FocusedUsageView, UsageSeverity};
+use jackin_protocol::control::{FocusedUsageView, UsageIdentityPresentation, UsageSeverity};
 use jackin_protocol::usage_broker::{UsageAccountCapability, UsageRefreshPhase};
 
 use crate::usage::{
-    UsageCache, UsageFormatPrefs, UsageRefreshTarget, compact_duration_label, estimate_caption,
+    UsageCache, UsageFormatPrefs, compact_duration_label, estimate_caption,
     exact_reset_parenthetical, percent_headline, provider_display_label, reset_label_with_prefs,
-    usage_display_status_label, usage_status_storage_label,
+    usage_display_status_label, usage_identity_presentation, usage_status_storage_label,
 };
 
 pub use accounts::{
@@ -41,12 +39,13 @@ pub use credential_resolver::{
     ProviderCredentialSecretResolution, ProviderCredentialSecretSource,
 };
 pub use discovery::{
-    DiscoveredAccountDescriptor, ForwardedUsageAccount, OpaqueCredentialHandle,
-    ProviderCredentialEnvOutcome, ProviderCredentialEnvResolution, ProviderCredentialEnvResolver,
-    ProviderCredentialIdentityOutcome, ProviderCredentialRefreshOutcome, UsageCredentialKind,
-    UsageDiscoveryCatalog, UsageDiscoveryDiagnostic, UsageDiscoveryIssue, UsageDiscoveryScope,
+    DiscoveredAccountDescriptor, ForwardedUsageAccount, HostCredentialRootRow,
+    OpaqueCredentialHandle, ProviderCredentialEnvOutcome, ProviderCredentialEnvResolution,
+    ProviderCredentialEnvResolver, ProviderCredentialIdentityOutcome,
+    ProviderCredentialRefreshOutcome, UsageCredentialKind, UsageDiscoveryCatalog,
+    UsageDiscoveryDiagnostic, UsageDiscoveryIssue, UsageDiscoveryScope,
     UsageSourceCandidateDescriptor, ValidatedUsageDiscovery, discover_usage_sources,
-    validate_usage_sources,
+    host_credential_root_matrix, validate_usage_sources,
 };
 
 /// Relative data-dir subtree for menu-bar durable state.
@@ -179,8 +178,7 @@ impl HostSurfaceId {
         }
     }
 
-    /// Agent slug for `UsageRefreshTarget` (Z.AI/MiniMax route via a dummy agent
-    /// + provider label — `resolve_surface` keys on the provider first).
+    /// Agent slug used by shared presentation helpers.
     #[must_use]
     pub const fn agent_slug(self) -> &'static str {
         match self {
@@ -249,13 +247,6 @@ impl HostSurfaceId {
             Agent::Kimi => Self::Kimi,
             Agent::Opencode => Self::OpenCode,
             Agent::Grok => Self::Grok,
-        }
-    }
-
-    fn refresh_target(self) -> UsageRefreshTarget {
-        UsageRefreshTarget {
-            agent: self.agent_slug().to_owned(),
-            provider: self.provider_label().map(str::to_owned),
         }
     }
 }
@@ -404,6 +395,8 @@ pub struct HostProviderGlanceRow {
     pub headline: String,
     /// Relative reset label when the glance bucket carries a reset.
     pub reset_label: Option<String>,
+    /// Compact countdown token used by the menu-bar chip (`<1m`, `2h 14m`).
+    pub compact_reset_label: Option<String>,
     /// Exact-clock reset parenthetical when the glance bucket carries a reset.
     pub exact_reset: Option<String>,
     /// Stable machine status word.
@@ -416,6 +409,12 @@ pub struct HostProviderGlanceRow {
     pub severity: String,
     /// Rust-owned freshness label.
     pub updated_label: String,
+    /// The single Rust-owned activity phrase for this selected provider/account.
+    pub activity_label: String,
+    /// Machine activity kind (`idle` | `updating` | `exceptional`).
+    pub activity_kind: String,
+    /// Complete menu-bar/popover accessibility and tooltip copy.
+    pub accessibility_label: String,
     /// Rust-owned last error, when present.
     pub last_error: Option<String>,
     /// Whether the native bar value is visually dimmed (stale/error).
@@ -440,6 +439,11 @@ pub struct HostDesktopProviderGroup {
     pub icon_key: String,
     pub fallback_glyph: String,
     pub usage_url: Option<String>,
+    pub account_column_label: String,
+    pub plan_or_status_label: String,
+    pub remaining_label: String,
+    pub reset_display_label: String,
+    pub accessibility_label: String,
     pub accounts: Vec<HostAccountDescriptor>,
     pub empty_state: Option<HostDesktopProviderState>,
 }
@@ -448,6 +452,30 @@ pub struct HostDesktopProviderGroup {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct HostDesktopInventory {
     pub groups: Vec<HostDesktopProviderGroup>,
+}
+
+/// One provider group plus its selected, fully-presented usage snapshot.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct HostDesktopProviderProjection {
+    pub group: HostDesktopProviderGroup,
+    pub selected_account_key: Option<String>,
+    pub selected_usage: FocusedUsageView,
+    pub identity: UsageIdentityPresentation,
+    pub is_updating: bool,
+}
+
+/// One immutable Desktop state boundary, produced while the runtime is locked.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct HostDesktopProjection {
+    pub generation: u64,
+    pub refresh_in_progress: bool,
+    pub error_message: Option<String>,
+    pub next_refresh_label: String,
+    pub surfaces: Vec<HostSurfaceDescriptor>,
+    pub providers: Vec<HostDesktopProviderProjection>,
+    pub glance_rows: Vec<HostProviderGlanceRow>,
+    pub status_bar_glance_rows: Vec<HostProviderGlanceRow>,
+    pub diagnostics: Vec<UsageDiscoveryDiagnostic>,
 }
 
 /// Driving bucket for compact/overview labels: min remaining + its reset epoch.
@@ -475,7 +503,6 @@ pub(crate) fn status_bar_rank_key(remaining: u8, resets_at: Option<i64>) -> (i64
 pub struct HostUsageRuntime {
     cache: UsageCache,
     enabled: HashSet<String>,
-    provider_keys: BTreeMap<Provider, String>,
     events: VecDeque<HostUsageEvent>,
     next_seq: u64,
     refresh_floor_secs: u64,
@@ -512,7 +539,6 @@ impl HostUsageRuntime {
         Self {
             cache: UsageCache::default(),
             enabled: HashSet::new(),
-            provider_keys: BTreeMap::new(),
             events: VecDeque::new(),
             next_seq: 0,
             refresh_floor_secs: 300,
@@ -589,13 +615,7 @@ impl HostUsageRuntime {
             self.discovered_provider_views.clear();
             self.broker_phases.clear();
         }
-        let snapshot_path = host_snapshot_store_path(&config.data_dir);
         let accounts_path = host_accounts_path(&config.data_dir);
-        if let Some(parent) = snapshot_path.parent() {
-            std::fs::create_dir_all(parent)
-                .map_err(|err| format!("create host usage state dir: {err}"))?;
-        }
-        self.cache.set_usage_snapshot_store_path(snapshot_path);
         self.cache.set_accounts_materialize_path(accounts_path);
         self.refresh_floor_secs = config.refresh_floor_secs.max(60);
         self.last_refresh = None;
@@ -686,15 +706,6 @@ impl HostUsageRuntime {
         Ok(())
     }
 
-    /// Inject optional provider API keys (Z.AI / `MiniMax` / Kimi) without env.
-    pub fn set_provider_key(&mut self, provider: Provider, key: String) {
-        if key.trim().is_empty() {
-            self.provider_keys.remove(&provider);
-        } else {
-            self.provider_keys.insert(provider, key);
-        }
-    }
-
     /// Seed a fixture view (tests / offline QA). Does not hit the network.
     pub fn inject_snapshot(
         &mut self,
@@ -733,64 +744,6 @@ impl HostUsageRuntime {
             Some(surface.id()),
             Some("injected".to_owned()),
         );
-        Ok(())
-    }
-
-    /// Refresh enabled surfaces (blocking probes when due).
-    ///
-    /// When `force` is false, a call within [`Self::refresh_floor_secs`] of the
-    /// last network refresh is a no-op (poll-safe). When `force` is true (manual
-    /// Refresh / Settings), the floor is bypassed and targets are marked due.
-    pub fn refresh(&mut self, surface_id: Option<&str>, force: bool) -> Result<(), String> {
-        self.require_open()?;
-        // Defense in depth: a `Disabled` runtime never dispatches probes, so an
-        // accidental refresh cannot reach any credential/file/env/CLI/network/
-        // Keychain resolution. Return a successful no-probe event.
-        if self.probe_policy == HostProbePolicy::Disabled {
-            self.push_event(
-                "refresh_skipped",
-                surface_id,
-                Some("probes disabled".to_owned()),
-            );
-            return Ok(());
-        }
-        if !force && let Some(last) = self.last_refresh {
-            let floor = Duration::from_secs(self.refresh_floor_secs);
-            if last.elapsed() < floor {
-                return Ok(());
-            }
-        }
-        let now = Instant::now();
-        let targets = self.refresh_targets(surface_id)?;
-        for target in &targets {
-            self.cache.request_account_refresh(target, now);
-        }
-        self.cache
-            .refresh_active_account_snapshots(&targets, None, &self.provider_keys, now);
-        self.last_refresh = Some(now);
-        for target in &targets {
-            let surface = surface_for_target(target);
-            let view = self
-                .cache
-                .focused_snapshot(Some(&target.agent), target.provider.as_deref());
-            let kind = if view.last_error.is_some()
-                && matches!(
-                    view.status,
-                    jackin_protocol::control::UsageSnapshotStatus::Error
-                        | jackin_protocol::control::UsageSnapshotStatus::Unavailable
-                        | jackin_protocol::control::UsageSnapshotStatus::NeedsLogin
-                        | jackin_protocol::control::UsageSnapshotStatus::NeedsSecret
-                ) {
-                "probe_failed"
-            } else {
-                "snapshot_updated"
-            };
-            self.push_event(
-                kind,
-                surface.map(HostSurfaceId::id),
-                view.last_error.clone(),
-            );
-        }
         Ok(())
     }
 
@@ -836,16 +789,6 @@ impl HostUsageRuntime {
         let live = self
             .cache
             .focused_snapshot(Some(surface.agent_slug()), surface.provider_label());
-        // A local-only Claude resolution (Keychain denial, missing credential,
-        // or an anonymous credential) never restores a durable/shared account
-        // view over the live local result.
-        if self
-            .cache
-            .active_snapshot_policy(surface.agent_slug(), surface.provider_label())
-            .is_local_only()
-        {
-            return Ok(live);
-        }
         let catalog = self.materialize_account_catalog()?;
         self.reconcile_selected_accounts(&catalog, std::slice::from_ref(&surface))?;
         let selected = self.selected_accounts.get(surface.id());
@@ -858,7 +801,7 @@ impl HostUsageRuntime {
 
     /// List known accounts for one surface (or all surfaces when `None`).
     ///
-    /// Sources: live host login, durable menu-bar store, shared container snapshots.
+    /// Sources: current broker discovery and durable broker history.
     pub fn list_accounts(
         &mut self,
         surface_id: Option<&str>,
@@ -1127,7 +1070,13 @@ impl HostUsageRuntime {
                 continue;
             }
             let resets_at = glance.and_then(|b| b.resets_at);
-            let row = build_provider_glance_row(surface, view, now, prefs);
+            let row = build_provider_glance_row(
+                surface,
+                view,
+                self.surface_refresh_in_progress(surface.id()),
+                now,
+                prefs,
+            );
             candidates.push((rem, resets_at, row));
         }
         candidates.sort_by_key(|(remaining, resets_at, row)| {
@@ -1269,17 +1218,88 @@ impl HostUsageRuntime {
                     is_refreshing,
                 }
             });
+            let display_label = provider_display_label(surface.label()).to_owned();
+            let plan_or_status_label = empty_state
+                .as_ref()
+                .filter(|state| state.status_word != "fresh")
+                .map_or_else(|| "—".to_owned(), |state| state.status_label.clone());
+            let accessibility_label = empty_state.as_ref().map_or_else(
+                || display_label.clone(),
+                |state| format!("{display_label}, {}", state.status_label),
+            );
             groups.push(HostDesktopProviderGroup {
                 surface_id: surface.id().to_owned(),
-                display_label: provider_display_label(surface.label()).to_owned(),
+                display_label,
                 icon_key: surface.id().to_owned(),
                 fallback_glyph: surface.fallback_glyph().to_owned(),
                 usage_url: surface.usage_url().map(str::to_owned),
+                account_column_label: "—".to_owned(),
+                plan_or_status_label,
+                remaining_label: "—".to_owned(),
+                reset_display_label: "—".to_owned(),
+                accessibility_label,
                 accounts,
                 empty_state,
             });
         }
         Ok(HostDesktopInventory { groups })
+    }
+
+    /// Build the complete native Desktop model from one uninterrupted runtime
+    /// snapshot. The `UniFFI` bridge holds the runtime mutex for this whole call,
+    /// so no broker generation can interleave partial provider/account state.
+    pub fn desktop_projection(
+        &mut self,
+        status_bar_max: u32,
+    ) -> Result<HostDesktopProjection, String> {
+        self.require_open()?;
+        let surfaces = self.list_surfaces()?;
+        let inventory = self.desktop_inventory()?;
+        let mut providers = Vec::with_capacity(inventory.groups.len());
+        for group in inventory.groups {
+            let surface_id = group.surface_id.clone();
+            let selected_account_key = group
+                .accounts
+                .iter()
+                .find(|account| account.selected)
+                .map(|account| account.account_key.clone());
+            let selected_usage = self.snapshot(&surface_id)?;
+            let is_updating = self.surface_refresh_in_progress(&surface_id);
+            let identity =
+                usage_identity_presentation(&group.display_label, &selected_usage, is_updating);
+            providers.push(HostDesktopProviderProjection {
+                group,
+                selected_account_key,
+                selected_usage,
+                identity,
+                is_updating,
+            });
+        }
+        let glance_rows = self.provider_glance_rows()?;
+        let status_bar_glance_rows = self.status_bar_provider_glance_rows(status_bar_max)?;
+        let diagnostics = self.discovery_diagnostics()?;
+        let global_messages = diagnostics
+            .iter()
+            .filter(|diagnostic| diagnostic.surface_id.is_none())
+            .map(|diagnostic| {
+                format!(
+                    "{}: {}",
+                    diagnostic.scope_label,
+                    diagnostic.issue.display_message()
+                )
+            })
+            .collect::<Vec<_>>();
+        Ok(HostDesktopProjection {
+            generation: self.next_seq,
+            refresh_in_progress: self.broker_refresh_in_progress(),
+            error_message: (!global_messages.is_empty()).then(|| global_messages.join("\n")),
+            next_refresh_label: self.next_refresh_label(),
+            surfaces,
+            providers,
+            glance_rows,
+            status_bar_glance_rows,
+            diagnostics,
+        })
     }
 
     /// Detected providers in the canonical Desktop model order, each a
@@ -1325,7 +1345,13 @@ impl HostUsageRuntime {
                 false
             };
             if detected {
-                rows.push(build_provider_glance_row(surface, view, now, prefs));
+                rows.push(build_provider_glance_row(
+                    surface,
+                    view,
+                    self.surface_refresh_in_progress(surface.id()),
+                    now,
+                    prefs,
+                ));
             }
         }
         Ok(rows)
@@ -1438,31 +1464,18 @@ impl HostUsageRuntime {
             let view = self
                 .cache
                 .focused_snapshot(Some(surface.agent_slug()), surface.provider_label());
-            let include_external = !self
-                .cache
-                .active_snapshot_policy(surface.agent_slug(), surface.provider_label())
-                .is_local_only();
-            live_views.push((surface, view, include_external));
+            live_views.push((surface, view, true));
         }
         let store_path = self
             .data_dir
             .as_ref()
             .map(|dir| host_snapshot_store_path(dir))
             .unwrap_or_default();
-        let shared_snapshots_dir = std::env::var_os("JACKIN_USAGE_SNAPSHOTS_DIR")
-            .map(PathBuf::from)
-            .or_else(|| {
-                self.data_dir
-                    .as_ref()
-                    .map(|dir| dir.join("usage-shared").join("snapshots"))
-            })
-            .unwrap_or_default();
         accounts::materialize_account_catalog(
             &live_views,
             &self.discovered_views,
             &self.discovered_provider_views,
             &store_path,
-            &shared_snapshots_dir,
             self.discovery
                 .as_ref()
                 .map(|discovery| discovery.accounts.as_slice()),
@@ -1505,23 +1518,6 @@ impl HostUsageRuntime {
         }
     }
 
-    fn refresh_targets(&self, surface_id: Option<&str>) -> Result<Vec<UsageRefreshTarget>, String> {
-        if let Some(id) = surface_id {
-            let surface =
-                HostSurfaceId::from_id(id).ok_or_else(|| format!("unknown surface: {id}"))?;
-            if !self.enabled.contains(surface.id()) {
-                return Err(format!("surface disabled: {id}"));
-            }
-            return Ok(vec![surface.refresh_target()]);
-        }
-        Ok(HostSurfaceId::ALL
-            .iter()
-            .copied()
-            .filter(|surface| self.enabled.contains(surface.id()))
-            .map(HostSurfaceId::refresh_target)
-            .collect())
-    }
-
     fn push_event(&mut self, kind: &str, surface_id: Option<&str>, detail: Option<String>) {
         self.next_seq = self.next_seq.saturating_add(1);
         self.events.push_back(HostUsageEvent {
@@ -1550,17 +1546,6 @@ impl Default for HostUsageRuntime {
     fn default() -> Self {
         Self::new()
     }
-}
-
-fn surface_for_target(target: &UsageRefreshTarget) -> Option<HostSurfaceId> {
-    if let Some(provider) = target.provider.as_deref() {
-        for surface in HostSurfaceId::ALL {
-            if surface.provider_label() == Some(provider) {
-                return Some(*surface);
-            }
-        }
-    }
-    HostSurfaceId::from_id(&target.agent)
 }
 
 /// Min-`remaining_percent` bucket (same selection as the legacy compact label).
@@ -1635,52 +1620,74 @@ fn glance_bucket(
 fn build_provider_glance_row(
     surface: HostSurfaceId,
     view: &FocusedUsageView,
+    is_updating: bool,
     now: i64,
     prefs: UsageFormatPrefs,
 ) -> HostProviderGlanceRow {
     use jackin_protocol::control::UsageSnapshotStatus as Status;
     let display_label = provider_display_label(surface.label()).to_owned();
     let glance = glance_bucket(surface, view);
-    let (bar_label, headline, glance_remaining_percent, reset_label, exact_reset) =
-        match glance.and_then(|bucket| bucket.remaining_percent) {
-            Some(percent) => {
-                let (reset_label, exact_reset) =
-                    glance
-                        .and_then(|bucket| bucket.resets_at)
-                        .map_or((None, None), |at| {
-                            (
-                                Some(reset_label_with_prefs(at, now, prefs)),
-                                Some(exact_reset_parenthetical(at)),
-                            )
-                        });
-                (
-                    format!("{percent}%"),
-                    format!("{percent}% left"),
-                    Some(percent),
-                    reset_label,
-                    exact_reset,
-                )
-            }
-            None => ("–".to_owned(), "–".to_owned(), None, None, None),
-        };
+    let (
+        bar_label,
+        headline,
+        glance_remaining_percent,
+        reset_label,
+        compact_reset_label,
+        exact_reset,
+    ) = match glance.and_then(|bucket| bucket.remaining_percent) {
+        Some(percent) => {
+            let (reset_label, compact_reset_label, exact_reset) = glance
+                .and_then(|bucket| bucket.resets_at)
+                .map_or((None, None, None), |at| {
+                    (
+                        Some(reset_label_with_prefs(at, now, prefs)),
+                        Some(if at <= now {
+                            "now".to_owned()
+                        } else {
+                            compact_duration_label(at.saturating_sub(now))
+                        }),
+                        Some(exact_reset_parenthetical(at)),
+                    )
+                });
+            (
+                format!("{percent}%"),
+                format!("{percent}% left"),
+                Some(percent),
+                reset_label,
+                compact_reset_label,
+                exact_reset,
+            )
+        }
+        None => ("–".to_owned(), "–".to_owned(), None, None, None, None),
+    };
+    let identity = usage_identity_presentation(&display_label, view, is_updating);
     HostProviderGlanceRow {
         surface_id: surface.id().to_owned(),
         icon_key: surface.id().to_owned(),
         fallback_glyph: surface.fallback_glyph().to_owned(),
         usage_url: surface.usage_url().map(str::to_owned),
         display_label,
-        account_label: view.account.account_label.clone(),
+        account_label: identity.account_label.clone(),
         plan_label: view.account.plan_label.clone(),
         glance_remaining_percent,
         bar_label,
         headline,
         reset_label,
+        compact_reset_label,
         exact_reset,
         status_word: usage_status_storage_label(view.status).to_owned(),
-        is_refreshing: view.is_refreshing_placeholder(),
+        is_refreshing: is_updating || view.is_refreshing_placeholder(),
         status_label: usage_display_status_label(view.status).to_owned(),
         severity: worst_severity_label(view),
         updated_label: view.updated_label.clone(),
+        activity_label: identity.activity_label,
+        activity_kind: match identity.activity_kind {
+            jackin_protocol::control::UsageActivityKind::Idle => "idle",
+            jackin_protocol::control::UsageActivityKind::Updating => "updating",
+            jackin_protocol::control::UsageActivityKind::Exceptional => "exceptional",
+        }
+        .to_owned(),
+        accessibility_label: identity.accessibility_label,
         last_error: view.last_error.clone(),
         dimmed: matches!(view.status, Status::Stale | Status::Error),
     }
@@ -1726,23 +1733,44 @@ fn account_descriptor(
     provenance.dedup();
     let provenance_label = provenance.join(" · ");
     let status_label = usage_display_status_label(view.status).to_owned();
+    let plan_or_status_label = entry.plan_label.clone().unwrap_or_else(|| {
+        if matches!(view.status, Status::Fresh) {
+            "—".to_owned()
+        } else {
+            status_label.clone()
+        }
+    });
+    let reset_display_label = reset_label.clone().unwrap_or_else(|| "—".to_owned());
+    let accessibility_label = format!(
+        "{}, {}, {}, {}, {}",
+        provider_display_label(surface.label()),
+        entry.account_label,
+        plan_or_status_label,
+        remaining_label,
+        reset_display_label
+    );
     HostAccountDescriptor {
         surface_id: surface.id().to_owned(),
+        provider_column_label: "—".to_owned(),
         account_key: entry.account_key.clone(),
         account_label: entry.account_label.clone(),
         plan_label: entry.plan_label.clone(),
         selected,
         lifecycle: entry.lifecycle.label().to_owned(),
+        lifecycle_label: match entry.lifecycle {
+            AccountLifecycle::Current => "Current account",
+            AccountLifecycle::Historical => "Historical account",
+            AccountLifecycle::ProviderPresenceOnly => "Provider presence only",
+        }
+        .to_owned(),
         provenance,
         provenance_label,
-        plan_or_status_label: entry
-            .plan_label
-            .clone()
-            .unwrap_or_else(|| status_label.clone()),
+        plan_or_status_label,
         remaining_percent,
         remaining_label,
         headline,
         reset_label,
+        reset_display_label,
         exact_reset,
         status_word: usage_status_storage_label(view.status).to_owned(),
         status_label,
@@ -1750,6 +1778,7 @@ fn account_descriptor(
         updated_label: view.updated_label.clone(),
         last_error: view.last_error.clone(),
         dimmed: matches!(view.status, Status::Stale | Status::Error),
+        accessibility_label,
     }
 }
 
@@ -1770,75 +1799,6 @@ fn worst_severity_label(view: &FocusedUsageView) -> String {
         UsageSeverity::Danger => "danger",
     }
     .to_owned()
-}
-
-/// Credential-root inventory for docs and debug (no secrets read).
-#[must_use]
-pub fn host_credential_root_matrix() -> Vec<HostCredentialRootRow> {
-    use jackin_core::container_paths;
-    vec![
-        HostCredentialRootRow {
-            surface: "claude",
-            host_paths: "~/.claude/.credentials.json, ~/.claude.json, $CLAUDE_CONFIG_DIR",
-            env_vars: "ANTHROPIC_API_KEY, ANTHROPIC_AUTH_TOKEN",
-            container_handoff: container_paths::CLAUDE_CREDENTIALS,
-        },
-        HostCredentialRootRow {
-            surface: "codex",
-            host_paths: "$CODEX_HOME/auth.json, ~/.codex/auth.json",
-            env_vars: "",
-            container_handoff: container_paths::CODEX_AUTH,
-        },
-        HostCredentialRootRow {
-            surface: "amp",
-            host_paths: "Amp home secrets loaders",
-            env_vars: "",
-            container_handoff: container_paths::AMP_SECRETS,
-        },
-        HostCredentialRootRow {
-            surface: "grok",
-            host_paths: "~/.grok (auth + bin)",
-            env_vars: "",
-            container_handoff: container_paths::GROK_AUTH,
-        },
-        HostCredentialRootRow {
-            surface: "kimi",
-            host_paths: "~/.kimi-code, ~/.kimi",
-            env_vars: "KIMI_AUTH_TOKEN, KIMI_CODE_API_KEY, kimi_auth_token",
-            container_handoff: container_paths::KIMI_CODE_DIR,
-        },
-        HostCredentialRootRow {
-            surface: "opencode",
-            host_paths: "OpenCode home (probe-defined)",
-            env_vars: "",
-            container_handoff: "",
-        },
-        HostCredentialRootRow {
-            surface: "zai",
-            host_paths: "",
-            env_vars: "ZAI_API_KEY, Z_AI_API_KEY",
-            container_handoff: "",
-        },
-        HostCredentialRootRow {
-            surface: "minimax",
-            host_paths: "",
-            env_vars: "MINIMAX_CODING_API_KEY, MINIMAX_API_KEY",
-            container_handoff: "",
-        },
-    ]
-}
-
-/// One row of the host credential matrix.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct HostCredentialRootRow {
-    /// Surface id.
-    pub surface: &'static str,
-    /// Host path roots.
-    pub host_paths: &'static str,
-    /// Environment variables.
-    pub env_vars: &'static str,
-    /// Container handoff fallback.
-    pub container_handoff: &'static str,
 }
 
 #[cfg(test)]

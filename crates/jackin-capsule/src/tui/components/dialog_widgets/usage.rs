@@ -88,8 +88,8 @@ pub(crate) fn usage_tab_strip_width(tabs: &[(String, bool)]) -> usize {
 }
 
 /// Panel title. In the narrow list layout the provider-detail panel reads
-/// `Usage: <provider>` (matching the narrow preview); the wide layout and the
-/// Overview/Instance panels keep their own titles.
+/// `Usage: <provider>` from the Rust identity projection; the wide layout and
+/// the Overview/Instance panels keep their own titles.
 pub(crate) fn usage_panel_title(
     state: &crate::tui::components::container_info_surface::ContainerInfoState,
     width: u16,
@@ -102,8 +102,11 @@ pub(crate) fn usage_panel_title(
     if width >= 68 || base != "Usage" {
         return base.to_owned();
     }
-    if let Some(header) = usage_row_value(state, "Header") {
-        let short = header.rsplit(" / ").next().unwrap_or(header).trim();
+    if let Some(provider) = usage_row_value(
+        state,
+        crate::tui::components::dialog::USAGE_IDENTITY_PROVIDER_ROW,
+    ) {
+        let short = provider.rsplit(" / ").next().unwrap_or(provider).trim();
         if !short.is_empty() {
             return format!("Usage: {short}");
         }
@@ -189,11 +192,18 @@ pub(crate) fn usage_info_lines_impl(
 ) -> Vec<Line<'static>> {
     let mut lines = Vec::with_capacity(state.rows().len().saturating_mul(2).saturating_add(1));
     let context = UsageLineContext {
-        updated: usage_row_value(state, "Updated"),
-        account: usage_row_value(state, "Account"),
-        username: usage_row_value(state, "Username"),
-        plan: usage_row_value(state, "Plan"),
-        auth: usage_row_value(state, "Auth"),
+        provider: usage_row_value(
+            state,
+            crate::tui::components::dialog::USAGE_IDENTITY_PROVIDER_ROW,
+        ),
+        account: usage_row_value(
+            state,
+            crate::tui::components::dialog::USAGE_IDENTITY_ACCOUNT_ROW,
+        ),
+        activity: usage_row_value(
+            state,
+            crate::tui::components::dialog::USAGE_IDENTITY_ACTIVITY_ROW,
+        ),
         list_layout,
         width: width as usize,
     };
@@ -201,6 +211,15 @@ pub(crate) fn usage_info_lines_impl(
         lines.push(Line::from(""));
     } else {
         lines.push(usage_separator_line(context.width));
+    }
+    if let Some(provider) = context.provider {
+        usage_identity_lines(
+            provider,
+            context.account,
+            context.activity,
+            context.width,
+            &mut lines,
+        );
     }
     for row in state.rows() {
         usage_lines_for_row(
@@ -216,11 +235,9 @@ pub(crate) fn usage_info_lines_impl(
 
 #[derive(Clone, Copy)]
 pub(crate) struct UsageLineContext<'a> {
-    updated: Option<&'a str>,
+    provider: Option<&'a str>,
     account: Option<&'a str>,
-    username: Option<&'a str>,
-    plan: Option<&'a str>,
-    auth: Option<&'a str>,
+    activity: Option<&'a str>,
     list_layout: bool,
     /// Panel inner width for right-aligned header fields; 0 disables alignment.
     width: usize,
@@ -274,18 +291,9 @@ pub(crate) fn usage_lines_for_row(
     lines: &mut Vec<Line<'static>>,
 ) {
     match label {
-        "Header" => {
-            usage_header_lines(
-                value,
-                context.updated,
-                context.account,
-                context.username,
-                context.plan,
-                context.auth,
-                context.width,
-                lines,
-            );
-        }
+        crate::tui::components::dialog::USAGE_IDENTITY_PROVIDER_ROW
+        | crate::tui::components::dialog::USAGE_IDENTITY_ACCOUNT_ROW
+        | crate::tui::components::dialog::USAGE_IDENTITY_ACTIVITY_ROW => {}
         "Focused agent" | "Focused account" => {
             lines.push(Line::from(vec![
                 usage_content_indent(),
@@ -295,8 +303,8 @@ pub(crate) fn usage_lines_for_row(
                 ),
             ]));
         }
-        "Provider" | "Account" | "Username" | "Plan" | "Auth" | "Status" | "Updated"
-        | "Focused" | "Started" | "Today" | "Since start" => {}
+        "Provider" | "Account" | "Status" | "Updated" | "Focused" | "Started" | "Today"
+        | "Since start" => {}
         bucket if is_quota_bucket_row(bucket, value) => {
             if context.list_layout {
                 usage_quota_bucket_compact_lines(bucket, value, context.width, lines);
@@ -448,59 +456,30 @@ pub(crate) fn usage_overview_reset_columns(reset: &str) -> (&str, Option<&str>) 
     (reset, None)
 }
 
-#[expect(
-    clippy::too_many_arguments,
-    reason = "documented residual allow; prefer expect when site is lint-true"
-)]
-pub(crate) fn usage_header_lines(
-    value: &str,
-    updated: Option<&str>,
+pub(crate) fn usage_identity_lines(
+    provider: &str,
     account: Option<&str>,
-    username: Option<&str>,
-    plan: Option<&str>,
-    auth: Option<&str>,
+    activity: Option<&str>,
     width: usize,
     lines: &mut Vec<Line<'static>>,
 ) {
-    // The email is the account identity; omit it (no "account unavailable")
-    // when the provider exposes none — the auth source goes on its own line.
     let account = account.map(str::trim).filter(|value| !value.is_empty());
     lines.push(usage_header_two_column(
-        value,
+        provider,
         termrock::Theme::default().style(termrock::style::Role::TextStrong),
         account.unwrap_or(""),
         termrock::Theme::default().style(termrock::style::Role::TextStrong),
         width,
     ));
 
-    let updated = updated.map(str::trim).filter(|value| !value.is_empty());
-    let username = username.map(str::trim).filter(|value| !value.is_empty());
-    let plan = plan.map(str::trim).filter(|value| !value.is_empty());
-    let right_parts = [username, plan].into_iter().flatten().collect::<Vec<_>>();
-    let right = (!right_parts.is_empty()).then(|| right_parts.join(" \u{b7} "));
-    if updated.is_some() || right.is_some() {
+    if let Some(activity) = activity.map(str::trim).filter(|value| !value.is_empty()) {
         lines.push(usage_header_two_column(
-            updated.unwrap_or(""),
+            activity,
             termrock::Theme::default().style(termrock::style::Role::TextMuted),
-            right.as_deref().unwrap_or(""),
+            "",
             termrock::Theme::default().style(termrock::style::Role::TextMuted),
             width,
         ));
-    }
-
-    // Line 3: the credential source — never the secret.
-    if let Some(auth) = auth.map(str::trim).filter(|value| !value.is_empty()) {
-        lines.push(Line::from(vec![
-            usage_content_indent(),
-            Span::styled(
-                "Auth: ",
-                termrock::Theme::default().style(termrock::style::Role::TextMuted),
-            ),
-            Span::styled(
-                auth.to_owned(),
-                termrock::Theme::default().style(termrock::style::Role::TextMuted),
-            ),
-        ]));
     }
 
     lines.push(usage_separator_line(width));

@@ -63,3 +63,23 @@ fn scoped_surface_request_round_trip_exposes_no_capability() {
         request
     );
 }
+
+#[test]
+fn stdio_tunnel_envelope_round_trips_without_account_metadata() {
+    let request = UsageRelayTunnelRequest {
+        request_id: 9,
+        request: UsageBrokerRequest {
+            protocol_version: USAGE_BROKER_PROTOCOL_VERSION.to_owned(),
+            build_id: "build".to_owned(),
+            operation: UsageBrokerOperation::CurrentForSurface {
+                surface_id: "claude".to_owned(),
+            },
+        },
+    };
+    let bytes = serde_json::to_vec(&request).unwrap();
+    assert!(!String::from_utf8_lossy(&bytes).contains("account_id"));
+    assert_eq!(
+        serde_json::from_slice::<UsageRelayTunnelRequest>(&bytes).unwrap(),
+        request
+    );
+}

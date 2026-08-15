@@ -4,6 +4,15 @@
 import JackinUsageBridge
 import SwiftUI
 
+@MainActor
+final class PopoverPresentationState: ObservableObject {
+    @Published private(set) var sequence: UInt64 = 0
+
+    func beginPresentation() {
+        sequence &+= 1
+    }
+}
+
 private enum PopoverQIFullPlateKey: EnvironmentKey {
     static let defaultValue = false
 }
@@ -20,11 +29,27 @@ public struct PopoverRoot: View {
     public static let liveContentSize = CGSize(width: 380, height: 520)
 
     @ObservedObject public var store: PresentationStore
-    public var onOpenUsage: ((String?) -> Void)?
+    @ObservedObject private var presentationState: PopoverPresentationState
+    @State private var providerScrollPosition = ScrollPosition(edge: .top)
+    public var onOpenUsage: ((UsageNavigationContext?) -> Void)?
     @Environment(\.popoverQIFullPlate) private var qiFullPlate
 
-    public init(store: PresentationStore, onOpenUsage: ((String?) -> Void)? = nil) {
+    public init(
+        store: PresentationStore,
+        onOpenUsage: ((UsageNavigationContext?) -> Void)? = nil
+    ) {
         self.store = store
+        self.presentationState = PopoverPresentationState()
+        self.onOpenUsage = onOpenUsage
+    }
+
+    init(
+        store: PresentationStore,
+        presentationState: PopoverPresentationState,
+        onOpenUsage: ((UsageNavigationContext?) -> Void)? = nil
+    ) {
+        self.store = store
+        self.presentationState = presentationState
         self.onOpenUsage = onOpenUsage
     }
 
@@ -44,7 +69,6 @@ public struct PopoverRoot: View {
             controls
                 .padding(.horizontal, 12)
                 .frame(height: 48)
-                .background(.bar)
         }
         .frame(width: 380, height: height)
     }
@@ -64,6 +88,15 @@ public struct PopoverRoot: View {
         }
         .frame(maxWidth: .infinity)
         .frame(height: 44)
+        .overlay(alignment: .trailing) {
+            if store.usesFixture {
+                Text("Fixture")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.primary)
+                    .padding(.trailing, 12)
+                    .accessibilityIdentifier("popover.fixture-badge")
+            }
+        }
     }
 
     @ViewBuilder
@@ -106,41 +139,12 @@ public struct PopoverRoot: View {
 
     private func providerForm(_ provider: PresentationStore.GlanceProviderRow) -> some View {
         let surface = store.surfaces.first { $0.id == provider.surfaceId }
-        let accounts = store.accountsForSurface(provider.surfaceId)
         let metadataRows = surface?.detailPresentation.rows.filter { $0.kind != .bucket } ?? []
         let limitRows = surface?.detailPresentation.rows.filter { $0.kind == .bucket } ?? []
 
         return Form {
             Section {
                 providerIdentity(provider)
-            }
-
-            if accounts.count > 1 {
-                Section {
-                    Picker("Account", selection: accountSelection(accounts, provider: provider)) {
-                        ForEach(accounts) { account in
-                            Text(account.accountLabel)
-                                .tag(account.accountKey)
-                        }
-                    }
-                    .pickerStyle(.menu)
-                    .accessibilityLabel("Account")
-                    .accessibilityIdentifier("popover.account-picker")
-                } header: {
-                    sectionHeader("Account")
-                }
-            }
-
-            if !metadataRows.isEmpty {
-                Section {
-                    ForEach(metadataRows) { row in
-                        LabeledContent(row.label, value: row.displayLabel)
-                            .accessibilityLabel("\(row.label), \(row.displayLabel)")
-                            .accessibilityIdentifier("popover.detail.\(row.rowId)")
-                    }
-                } header: {
-                    sectionHeader("Details")
-                }
             }
 
             if !limitRows.isEmpty {
@@ -160,6 +164,27 @@ public struct PopoverRoot: View {
                 }
             }
 
+            if !metadataRows.isEmpty {
+                Section {
+                    ForEach(metadataRows) { row in
+                        LabeledContent {
+                            Text(row.displayLabel)
+                                .foregroundStyle(.primary)
+                        } label: {
+                            Text(row.label)
+                                .foregroundStyle(.primary)
+                                .accessibilityIdentifier(
+                                    "popover.detail-label.\(row.rowId)"
+                                )
+                        }
+                        .accessibilityLabel("\(row.label), \(row.displayLabel)")
+                        .accessibilityIdentifier("popover.detail.\(row.rowId)")
+                    }
+                } header: {
+                    sectionHeader("Details")
+                }
+            }
+
             if let error = surface?.lastError ?? provider.lastError {
                 Section {
                     Label(error, systemImage: "exclamationmark.triangle")
@@ -173,8 +198,21 @@ public struct PopoverRoot: View {
             }
         }
         .formStyle(.grouped)
+        .scrollPosition($providerScrollPosition)
+        .defaultScrollAnchor(.top, for: .initialOffset)
+        .task(id: presentationState.sequence) {
+            await resetProviderScrollPosition()
+        }
+        .task(id: provider.accountLabel) {
+            await resetProviderScrollPosition()
+        }
         .accessibilityLabel("\(provider.displayLabel) usage details")
         .accessibilityIdentifier("popover.provider.\(provider.surfaceId)")
+    }
+
+    private func resetProviderScrollPosition() async {
+        await Task.yield()
+        providerScrollPosition.scrollTo(edge: .top)
     }
 
     private func providerIdentity(_ provider: PresentationStore.GlanceProviderRow) -> some View {
@@ -189,18 +227,23 @@ public struct PopoverRoot: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(provider.displayLabel)
                     .font(.headline)
-                Text(provider.statusLabel)
+                Text(provider.accountLabel)
+                    .foregroundStyle(.primary)
+                    .accessibilityIdentifier("popover.provider-account")
+                Text(provider.activityLabel)
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                    .accessibilityIdentifier("popover.provider-activity")
             }
             Spacer()
             if provider.isRefreshing {
                 ProgressView()
                     .controlSize(.small)
-                    .accessibilityLabel(provider.statusLabel)
+                    .accessibilityLabel(provider.activityLabel)
             }
         }
-        .accessibilityElement(children: .combine)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(provider.accessibilityLabel)
         .accessibilityIdentifier("popover.provider-identity")
     }
 
@@ -248,27 +291,68 @@ public struct PopoverRoot: View {
     }
 
     private var controls: some View {
-        HStack {
-            Button {
-                if let id = selectedProvider?.surfaceId {
-                    store.refresh(surfaceId: id)
-                } else {
-                    store.refreshAll()
+        HStack(spacing: 12) {
+            HStack(spacing: 4) {
+                Button {
+                    if let id = selectedProvider?.surfaceId {
+                        store.refresh(surfaceId: id)
+                    } else {
+                        store.refreshAll()
+                    }
+                } label: {
+                    Label("Refresh", systemImage: "arrow.clockwise")
+                        .labelStyle(.iconOnly)
                 }
-            } label: {
-                Label("Refresh", systemImage: "arrow.clockwise")
-            }
-            .keyboardShortcut("r", modifiers: [.command])
-            .disabled(store.refreshInProgress)
-            .accessibilityIdentifier("popover.refresh")
+                .keyboardShortcut("r", modifiers: [.command])
+                .disabled(store.refreshInProgress)
+                .accessibilityLabel("Refresh")
+                .accessibilityIdentifier("popover.refresh")
+                .help("Refresh")
 
-            Spacer()
-
-            Button("Open Usage") {
-                onOpenUsage?(selectedProvider?.surfaceId)
+                Button {
+                    guard let provider = selectedProvider else {
+                        onOpenUsage?(nil)
+                        return
+                    }
+                    let accountKey = store.accountsForSurface(provider.surfaceId)
+                        .first(where: \.selected)?.accountKey
+                    onOpenUsage?(
+                        UsageNavigationContext(
+                            surfaceId: provider.surfaceId,
+                            accountKey: accountKey
+                        )
+                    )
+                } label: {
+                    Label("Open Usage", systemImage: "macwindow")
+                        .labelStyle(.iconOnly)
+                }
+                .keyboardShortcut(.defaultAction)
+                .accessibilityLabel("Open Usage")
+                .accessibilityIdentifier("popover.open-usage")
+                .help("Open Usage")
             }
-            .keyboardShortcut(.defaultAction)
-            .accessibilityIdentifier("popover.open-usage")
+            Spacer(minLength: 12)
+
+            if let provider = selectedProvider {
+                let accounts = store.accountsForSurface(provider.surfaceId)
+                if accounts.count > 1 {
+                    Picker(
+                        "Account",
+                        selection: accountSelection(accounts, provider: provider)
+                    ) {
+                        ForEach(accounts) { account in
+                            Text(account.accountLabel)
+                                .tag(account.accountKey)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .labelsHidden()
+                    .frame(width: 220, alignment: .trailing)
+                    .accessibilityLabel("Account")
+                    .accessibilityIdentifier("popover.account-picker")
+                    .help("Choose account")
+                }
+            }
         }
     }
 }

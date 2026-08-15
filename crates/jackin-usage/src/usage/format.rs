@@ -20,6 +20,8 @@ use std::time::{Duration, Instant};
 
 use chrono::{DateTime, Local, TimeZone, Utc};
 
+use super::process_telemetry;
+
 pub(super) const PROCESS_OUTPUT_MAX: usize = 1024 * 1024;
 
 pub(super) fn env_value(name: &str) -> Option<String> {
@@ -118,11 +120,18 @@ pub(crate) fn reset_label_with_prefs(reset_at: i64, now: i64, prefs: UsageFormat
         return "Resets now".to_owned();
     }
     match prefs.reset_style {
-        ResetStyle::Countdown => format!(
-            "Resets in {} ({})",
-            compact_duration_label(reset_at.saturating_sub(now).max(0)),
-            local_timestamp_label(reset_at)
-        ),
+        ResetStyle::Countdown => {
+            let remaining = reset_at.saturating_sub(now);
+            let countdown = if remaining < 60 {
+                "under a minute".to_owned()
+            } else {
+                compact_duration_label(remaining)
+            };
+            format!(
+                "Resets in {countdown} ({})",
+                local_timestamp_label(reset_at)
+            )
+        }
         ResetStyle::ExactClock => format!("Resets {}", local_timestamp_label(reset_at)),
     }
 }
@@ -217,6 +226,9 @@ pub(super) fn quota_pace_label(
 /// Prefer hours until the 48h line; do not emit a day form for 24–47h windows.
 pub(crate) fn compact_duration_label(seconds: i64) -> String {
     let seconds = seconds.max(0);
+    if seconds < 60 {
+        return "<1m".to_owned();
+    }
     let total_hours = seconds / 3_600;
     let minutes = (seconds % 3_600) / 60;
     if total_hours >= 48 {
@@ -341,7 +353,7 @@ pub(super) fn run_cli_with_timeout_full(
     args: &[&str],
     timeout: Duration,
 ) -> Result<CliOutput, String> {
-    let operation = crate::process_telemetry::ChildOperation::begin(command);
+    let operation = process_telemetry::ChildOperation::begin(command);
     let Ok(mut child) = Command::new(command)
         .args(args)
         .stdin(Stdio::null())
@@ -579,6 +591,62 @@ pub fn usage_display_status_label(
     }
 }
 
+/// Build the one provider/account/activity identity block consumed by Capsule
+/// and native Desktop surfaces. All visible copy is complete before crossing
+/// the FFI boundary.
+#[must_use]
+pub fn usage_identity_presentation(
+    provider_title: &str,
+    view: &jackin_protocol::control::FocusedUsageView,
+    is_updating: bool,
+) -> jackin_protocol::control::UsageIdentityPresentation {
+    use jackin_protocol::control::{UsageActivityKind, UsageSnapshotStatus as Status};
+
+    let account_label = if view.account.account_label.trim().is_empty() {
+        "No authenticated account".to_owned()
+    } else {
+        view.account.account_label.clone()
+    };
+    let (activity_label, activity_kind) = if is_updating || view.is_refreshing_placeholder() {
+        ("Updating…".to_owned(), UsageActivityKind::Updating)
+    } else {
+        match view.status {
+            Status::Fresh => (view.updated_label.clone(), UsageActivityKind::Idle),
+            Status::Stale => (
+                format!("Update delayed · {}", view.updated_label),
+                UsageActivityKind::Exceptional,
+            ),
+            Status::NeedsLogin => (
+                "Sign in required".to_owned(),
+                UsageActivityKind::Exceptional,
+            ),
+            Status::NeedsSecret => (
+                "Credential required".to_owned(),
+                UsageActivityKind::Exceptional,
+            ),
+            Status::Unsupported => (
+                "Usage limits unsupported".to_owned(),
+                UsageActivityKind::Exceptional,
+            ),
+            Status::Unavailable => (
+                "Usage unavailable".to_owned(),
+                UsageActivityKind::Exceptional,
+            ),
+            Status::Error => (
+                format!("Update failed · {}", view.updated_label),
+                UsageActivityKind::Exceptional,
+            ),
+        }
+    };
+    jackin_protocol::control::UsageIdentityPresentation {
+        provider_title: provider_title.to_owned(),
+        account_label: account_label.clone(),
+        accessibility_label: format!("{provider_title}, {account_label}, {activity_label}"),
+        activity_label,
+        activity_kind,
+    }
+}
+
 fn usage_money_cap_segment(
     used: Option<&str>,
     limit: Option<&str>,
@@ -683,24 +751,6 @@ pub fn usage_bucket_presentation(
     }
 }
 
-/// The focused-header value line: `<agent> · <provider> · <account>` with the
-/// account falling back to `account unavailable`. Moved here from Capsule so the
-/// Desktop Usage window and the Capsule dialog share one wording (plan 008).
-fn usage_focused_label(view: &jackin_protocol::control::FocusedUsageView) -> String {
-    let account = view.account.account_label.trim();
-    let account = if account.is_empty() {
-        "account unavailable"
-    } else {
-        account
-    };
-    match (&view.focused_agent, &view.focused_provider) {
-        (Some(agent), Some(provider)) => format!("{agent} · {provider} · {account}"),
-        (Some(agent), None) => format!("{agent} · {account}"),
-        (None, Some(provider)) => format!("{provider} · {account}"),
-        (None, None) => format!("no focused agent · {account}"),
-    }
-}
-
 /// One leading-only metadata line plus its `display_label`.
 fn metadata_row(
     row_id: &str,
@@ -722,9 +772,9 @@ fn metadata_row(
 }
 
 /// Build the single Rust-owned provider-detail card shared by the Capsule usage
-/// dialog and the native Desktop Usage window. Emits rows in the fixed order
-/// `focused`, `header`, `provider`, `account`, `status`, `updated`, optional
-/// `username`/`plan`/`auth`, one `bucket:<zero-based index>` per source bucket
+/// dialog and the native Desktop Usage window. Identity, activity, and ordinary
+/// freshness live in the separate identity presentation. This card emits only
+/// distinct `username`/`plan`/`auth`, one `bucket:<zero-based index>` per source bucket
 /// (so duplicate provider labels stay distinct), then optional `detail`
 /// (`last_error`, appended after the last-good bucket rows — errors never
 /// replace data). Every visible string is produced here; consumers render the
@@ -735,23 +785,10 @@ pub fn usage_detail_presentation(
 ) -> jackin_protocol::control::UsageDetailPresentation {
     use jackin_protocol::control::{UsageDetailRow, UsageDetailRowKind, UsagePresentationLine};
 
-    let mut rows = vec![
-        metadata_row("focused", "Focused", usage_focused_label(view)),
-        metadata_row(
-            "header",
-            "Header",
-            super::provider_display_label(&view.account.provider_label).to_owned(),
-        ),
-        metadata_row("provider", "Provider", view.account.provider_label.clone()),
-        metadata_row("account", "Account", view.account.account_label.clone()),
-        metadata_row(
-            "status",
-            "Status",
-            usage_display_status_label(view.status).to_owned(),
-        ),
-        metadata_row("updated", "Updated", view.updated_label.clone()),
-    ];
-    if let Some(username) = &view.account.username {
+    let mut rows = Vec::new();
+    if let Some(username) = &view.account.username
+        && username.trim() != view.account.account_label.trim()
+    {
         rows.push(metadata_row("username", "Username", username.clone()));
     }
     if let Some(plan) = &view.account.plan_label {

@@ -212,7 +212,7 @@ pub(crate) fn usage_view(input: UsageViewInput<'_>) -> FocusedUsageView {
         confidence: input.confidence,
         fetched_at_epoch: input.now,
         updated_label: match input.status {
-            UsageSnapshotStatus::Fresh => "Updated just now",
+            UsageSnapshotStatus::Fresh => "Updated now",
             UsageSnapshotStatus::Stale => "Stale",
             UsageSnapshotStatus::NeedsLogin => "Needs login",
             UsageSnapshotStatus::NeedsSecret => "Needs secret",
@@ -465,24 +465,6 @@ pub(crate) fn preserve_cached_quota_on_failed_refresh(
         view.status,
         &view.buckets,
     );
-}
-
-/// Present a shared-snapshot view as this instance's last-known **Stale** data:
-/// it was fetched by some other instance earlier, not freshly by us. Keeps the
-/// numbers, marks the view and its buckets Stale, sources from cache, and sets an
-/// "as of" relative label (Class III-C). With Bug 1's marker, the status bar then
-/// reads `Updated Xm ago · refreshing...` while this instance's background fetch
-/// runs, upgrading to Fresh on completion — never a blank "refreshing" cold start.
-pub(crate) fn stale_shared_view(mut view: FocusedUsageView, now: i64) -> FocusedUsageView {
-    view.status = UsageSnapshotStatus::Stale;
-    view.source = UsageSource::Cache;
-    for bucket in &mut view.buckets {
-        if bucket.status == UsageSnapshotStatus::Fresh {
-            bucket.status = UsageSnapshotStatus::Stale;
-        }
-    }
-    view.updated_label = relative_updated_label(view.fetched_at_epoch, now);
-    view
 }
 
 pub(crate) fn provider_tabs(active: UsageSurface) -> Vec<UsageProviderTab> {

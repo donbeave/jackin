@@ -2,17 +2,20 @@
 
 Container bootstrap pipeline — the orchestrator that turns a resolved workspace + role into a running (or restorable) container and attaches the operator to it. Holds the concrete `DockerApi`/`CommandRunner` implementations, image build, DinD sidecar management, mount materialization, and the launch phases.
 
-This crate is broad by design; the code-health program tracks decomposing it into a thin facade over launch, attach, cleanup, image/build, backend, and instance-lifecycle leaves (see the runtime/launch behavioral spec before any extraction).
-
 ## What this crate owns
 
 - The launch pipeline (`runtime`) and its phase contracts: profile validation, workspace/role materialization, trust/source checks, image materialization, env/auth resolution, Docker run, wait-for-state, teardown, foreground attach, cleanup classification.
 - Backend clients (`apple_container_client`, `host_daemon`) and host-side exec (`exec_host`).
 - Mount isolation integration (`isolation`), the reactive daemon (`reactive_daemon`), and wait-for-state (`spin_wait`).
+- Host usage-broker lifecycle and per-container relay assembly. Docker and Apple
+  backends reuse the container socket directory; neither mounts global usage state.
 
 ## Architecture tier and allowed dependencies
 
-**L1 application / orchestration.** Allowed workspace dependencies: `jackin-brand`, `jackin-core`, `jackin-config`, `jackin-env`, `jackin-manifest`, `jackin-docker`, `jackin-image`, `jackin-diagnostics`, `jackin-launch`, `jackin-host`, `jackin-protocol`, `jackin-isolation`, `jackin-instance`, `jackin-build-meta`. Host attach uses `crossterm` for raw mode only. Launch TUI presentation and its product tests live in `jackin-launch` / `jackin-tui` — not here.
+**L1 application / orchestration.** It composes the workspace's core, config, env,
+manifest, container, image, launch, host, protocol, isolation, instance, diagnostics,
+and build-metadata crates. Launch TUI presentation stays in `jackin-launch` /
+`jackin-tui`; host attach uses `crossterm` only for raw mode.
 
 ## Structure
 
@@ -32,7 +35,15 @@ This crate is broad by design; the code-health program tracks decomposing it int
 
 The launch entry points (`launch_role_runtime`, `load_role_with`, `run_launch_core`) consumed by the `jackin` CLI. The [runtime/launch behavioral spec](../../docs/content/reference/developer-reference/specs/runtime-launch.mdx) is the oracle for any extraction.
 
-`run_launch_core` is a linear chain of typed `#[must_use]` phase tokens (validation → image classification → materialization → instance prepare → environment → trust → workspace materialize → run → finalize → cleanup classification). Boundary harnesses live in `runtime/launch/launch_pipeline/tests.rs` (`LaunchCore` fixture builder + suite-A / finalize-error cleanup proofs). Pipeline Criterion scenario: `benches/launch_pipeline.rs` (`run_launch_core_e2e_fakedocker`).
+`run_launch_core` is a linear chain of typed `#[must_use]` phases. Boundary proofs
+live in `runtime/launch/launch_pipeline/tests.rs`; its Criterion scenario is
+`benches/launch_pipeline.rs`.
+
+Each Capsule receives one immutable launch-derived account-capability allowlist. Its
+relay appears at `/jackin/run/usage.sock` and forwards only authorized current/
+refresh/join requests to the host broker. The global broker socket, account catalog,
+credential sources, and atomic state never cross the container boundary. Relay or
+broker failure is a typed no-probe failure.
 
 ## How to verify
 

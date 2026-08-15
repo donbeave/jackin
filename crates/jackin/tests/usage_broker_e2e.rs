@@ -5,27 +5,40 @@
 
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::process::Command;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
+use anyhow::{Context, Result};
 use jackin_protocol::control::{
     FocusedUsageView, QuotaBucketView, UsageConfidence, UsageSeverity, UsageSnapshotStatus,
     UsageSource,
 };
-use jackin_protocol::usage_broker::UsageCoordinationErrorKind;
 use jackin_protocol::usage_broker::{UsageAccountCapability, UsageRefreshPhase};
+use jackin_protocol::usage_broker::{UsageCoordinationError, UsageCoordinationErrorKind};
 use jackin_usage::coordinator::{ProviderProbeOutcome, UsageProviderExecutor};
 use jackin_usage::host::{UsageBrokerConfig, ensure_usage_broker_with_executor};
 
 const CHILD_ENV: &str = "JACKIN_USAGE_BROKER_E2E_CHILD";
 const ROOT_ENV: &str = "JACKIN_USAGE_BROKER_E2E_ROOT";
+const MODE_ENV: &str = "JACKIN_USAGE_BROKER_E2E_MODE";
+const EXPECTED_ENV: &str = "JACKIN_USAGE_BROKER_E2E_EXPECTED";
 const CLIENTS: usize = 20;
 static PROCESS_CALLS: AtomicUsize = AtomicUsize::new(0);
 
+trait CoordinationResultExt<T> {
+    fn test_result(self) -> Result<T>;
+}
+
+impl<T> CoordinationResultExt<T> for std::result::Result<T, UsageCoordinationError> {
+    fn test_result(self) -> Result<T> {
+        self.map_err(|error| anyhow::anyhow!("{:?}: {}", error.kind, error.message))
+    }
+}
+
 struct FileCountingProvider {
     root: PathBuf,
+    release: Option<PathBuf>,
 }
 
 impl UsageProviderExecutor for FileCountingProvider {
@@ -47,6 +60,9 @@ impl UsageProviderExecutor for FileCountingProvider {
                 message: "fake provider counter is unavailable".to_owned(),
                 retry_at_epoch: None,
             };
+        }
+        if let Some(release) = &self.release {
+            wait_until(Duration::from_secs(10), || release.exists());
         }
         std::thread::park_timeout(Duration::from_millis(100));
         ProviderProbeOutcome::success(quota_view())
@@ -89,59 +105,100 @@ fn quota_view() -> FocusedUsageView {
 }
 
 #[test]
-fn usage_broker_child() {
+fn usage_broker_child() -> Result<()> {
     let Ok(child) = std::env::var(CHILD_ENV) else {
-        return;
+        return Ok(());
     };
-    let root = PathBuf::from(std::env::var_os(ROOT_ENV).unwrap());
-    fs::write(root.join(format!("ready-{child}")), b"ready\n").unwrap();
+    let root = PathBuf::from(std::env::var_os(ROOT_ENV).context("missing broker E2E root")?);
+    let mode = std::env::var(MODE_ENV).unwrap_or_else(|_| "standard".to_owned());
+    let expected = std::env::var(EXPECTED_ENV)
+        .ok()
+        .and_then(|value| value.parse::<usize>().ok())
+        .unwrap_or(CLIENTS);
+    if mode == "owner" {
+        let executor: Arc<dyn UsageProviderExecutor> = Arc::new(FileCountingProvider {
+            root: root.clone(),
+            release: Some(root.join("release-owner")),
+        });
+        let client = ensure_usage_broker_with_executor(
+            UsageBrokerConfig::for_data_dir(root.join("data")),
+            executor,
+        )
+        .test_result()?;
+        let state = client.refresh(capability(), 0, true).test_result()?;
+        assert_eq!(state.generation, 1);
+        wait_until(Duration::from_secs(10), || {
+            entries_with_prefix(&root, "provider-call-") == 1
+        });
+        fs::write(root.join("owner-active"), b"active\n")?;
+        loop {
+            std::thread::park_timeout(Duration::from_secs(1));
+        }
+    }
+    fs::write(root.join(format!("ready-{child}")), b"ready\n")?;
     wait_until(Duration::from_secs(10), || root.join("go").exists());
 
-    let executor: Arc<dyn UsageProviderExecutor> =
-        Arc::new(FileCountingProvider { root: root.clone() });
+    let executor: Arc<dyn UsageProviderExecutor> = Arc::new(FileCountingProvider {
+        root: root.clone(),
+        release: None,
+    });
     let client = ensure_usage_broker_with_executor(
         UsageBrokerConfig::for_data_dir(root.join("data")),
         executor,
     )
-    .unwrap();
-    let state = client.refresh(capability(), 0, true).unwrap();
+    .test_result()?;
+    let state = client.refresh(capability(), 0, true).test_result()?;
     let terminal = client
         .join(capability(), state.generation, Duration::from_secs(5))
-        .unwrap();
-    assert_eq!(terminal.generation, 1);
+        .test_result()?;
+    assert_eq!(terminal.generation, if mode == "recovery" { 2 } else { 1 });
     assert_eq!(terminal.phase, UsageRefreshPhase::Completed);
-    fs::write(root.join(format!("done-{child}")), b"done\n").unwrap();
+    fs::write(root.join(format!("done-{child}")), b"done\n")?;
     wait_until(Duration::from_secs(10), || {
-        entries_with_prefix(&root, "done-") == CLIENTS
+        entries_with_prefix(&root, "done-") == expected
     });
+    Ok(())
 }
 
 #[test]
-fn usage_broker_twenty_host_processes_make_one_provider_call() {
-    let temp = tempfile::tempdir().unwrap();
+fn usage_broker_twenty_host_processes_make_one_provider_call() -> Result<()> {
+    assert_host_process_singleflight(CLIENTS)
+}
+
+#[test]
+fn usage_broker_two_host_processes_make_one_provider_call() -> Result<()> {
+    assert_host_process_singleflight(2)
+}
+
+fn assert_host_process_singleflight(clients: usize) -> Result<()> {
+    let temp = tempfile::tempdir()?;
     let root = temp.path();
-    let executable = std::env::current_exe().unwrap();
+    let executable = std::env::current_exe()?;
     let mut children = Vec::new();
-    for child in 0..CLIENTS {
-        children.push(
-            Command::new(&executable)
-                .arg("--exact")
-                .arg("usage_broker_child")
-                .arg("--nocapture")
-                .env(CHILD_ENV, child.to_string())
-                .env(ROOT_ENV, root)
-                .spawn()
-                .unwrap(),
-        );
+    for child in 0..clients {
+        let envs: Vec<(std::ffi::OsString, std::ffi::OsString)> = vec![
+            (CHILD_ENV.into(), child.to_string().into()),
+            (ROOT_ENV.into(), root.as_os_str().to_owned()),
+            (EXPECTED_ENV.into(), clients.to_string().into()),
+        ];
+        let request = jackin_process::ExecRequest::new(
+            &executable,
+            ["--exact", "usage_broker_child", "--nocapture"],
+        )
+        .envs(envs)
+        .stdout_mode(jackin_process::StdioMode::Inherit)
+        .stderr_mode(jackin_process::StdioMode::Inherit);
+        children.push(jackin_process::spawn_sync(&request)?);
     }
     wait_until(Duration::from_secs(10), || {
-        entries_with_prefix(root, "ready-") == CLIENTS
+        entries_with_prefix(root, "ready-") == clients
     });
-    fs::write(root.join("go"), b"go\n").unwrap();
+    fs::write(root.join("go"), b"go\n")?;
     for mut child in children {
-        assert!(child.wait().unwrap().success());
+        assert!(child.wait()?.success());
     }
     assert_eq!(entries_with_prefix(root, "provider-call-"), 1);
+    Ok(())
 }
 
 fn wait_until(timeout: Duration, condition: impl Fn() -> bool) {
@@ -161,3 +218,8 @@ fn entries_with_prefix(root: &Path, prefix: &str) -> usize {
         .filter(|entry| entry.file_name().to_string_lossy().starts_with(prefix))
         .count()
 }
+
+#[path = "usage_broker_e2e/docker.rs"]
+mod docker;
+#[path = "usage_broker_e2e/recovery.rs"]
+mod recovery;

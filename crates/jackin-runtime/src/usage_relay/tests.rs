@@ -17,6 +17,61 @@ use tokio::io::{AsyncBufReadExt as _, AsyncWriteExt as _};
 
 use super::*;
 
+#[tokio::test]
+async fn docker_relay_guard_requests_graceful_shutdown_before_detach() -> Result<()> {
+    let (shutdown, shutdown_rx) = oneshot::channel();
+    let (observed, observed_rx) = oneshot::channel();
+    let task = jackin_telemetry::spawn::spawn_stream("usage_relay.test_shutdown", async move {
+        drop(shutdown_rx.await);
+        let _observed = observed.send(());
+    });
+    let guard = UsageRelayGuard {
+        task: Some(task),
+        socket_path: None,
+        shutdown: Some(shutdown),
+    };
+
+    drop(guard);
+
+    tokio::time::timeout(std::time::Duration::from_secs(1), observed_rx).await??;
+    Ok(())
+}
+
+#[tokio::test]
+async fn docker_relay_guard_closes_child_stdin_and_reaps_proxy() -> Result<()> {
+    let temp = tempfile::tempdir()?;
+    let marker = temp.path().join("proxy-exited");
+    let executor: Arc<dyn UsageProviderExecutor> = Arc::new(CountingExecutor {
+        calls: AtomicUsize::new(0),
+    });
+    let broker = ensure_usage_broker_with_executor(
+        UsageBrokerConfig::for_data_dir(temp.path().join("data")),
+        executor,
+    )
+    .map_err(|error| anyhow::anyhow!("{:?}: {}", error.kind, error.message))?;
+    let args: Vec<std::ffi::OsString> = vec![
+        "-c".into(),
+        "cat >/dev/null; : > \"$1\"".into(),
+        "usage-relay-test".into(),
+        marker.as_os_str().to_owned(),
+    ];
+    let request = jackin_process::ExecRequest::new("sh", args)
+        .stdin_mode(jackin_process::StdioMode::Capture)
+        .stdout_mode(jackin_process::StdioMode::Capture)
+        .stderr_mode(jackin_process::StdioMode::Inherit);
+    let guard = start_tunnel_process(request, broker, vec![capability("allowed")])?;
+
+    drop(guard);
+
+    tokio::time::timeout(std::time::Duration::from_secs(3), async {
+        while !marker.exists() {
+            tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+        }
+    })
+    .await?;
+    Ok(())
+}
+
 #[test]
 fn usage_mount_uses_only_existing_runtime_directory_for_both_backends() {
     let socket_dir = PathBuf::from("/host/jackin/sockets/fixture");
@@ -71,6 +126,29 @@ fn forwarded_sources_include_only_provisioned_profiles_and_governed_env() {
         sources.env_keys,
         BTreeSet::from(["OPENAI_API_KEY".to_owned()])
     );
+}
+
+#[test]
+fn hermetic_layout_never_starts_host_usage_discovery() {
+    let temp = tempfile::tempdir().unwrap();
+    let paths = JackinPaths::for_tests(temp.path());
+    fs::create_dir_all(&paths.config_dir).unwrap();
+    let config = format!(
+        "version = \"{}\"\n\n[env]\nZAI_API_KEY = \"synthetic-zai-key\"\n",
+        jackin_config::CURRENT_CONFIG_VERSION,
+    );
+    fs::write(&paths.config_file, &config).unwrap();
+    let forwarded_sources = ForwardedUsageSources {
+        profile_surface_ids: BTreeSet::new(),
+        env_keys: BTreeSet::from(["ZAI_API_KEY".to_owned()]),
+    };
+
+    let (_, capabilities) =
+        prepare_broker_client(&paths, Some("fixture"), "reviewer", &forwarded_sources);
+
+    assert!(capabilities.is_empty());
+    assert!(!paths.data_dir.exists());
+    assert_eq!(fs::read_to_string(&paths.config_file).unwrap(), config);
 }
 
 struct CountingExecutor {
@@ -246,7 +324,7 @@ async fn usage_relay_impossible_socket_path_skips_discovery() {
     .unwrap();
 
     assert!(guard.task.is_none());
-    assert!(!guard.socket_path.exists());
+    assert!(!guard.socket_path.as_ref().unwrap().exists());
 }
 
 async fn send(socket: &Path, operation: UsageBrokerOperation) -> UsageBrokerResponse {

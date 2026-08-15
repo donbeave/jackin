@@ -955,8 +955,8 @@ pub(crate) async fn launch_role_runtime(
         },
     );
     prepare_socket_dir_result?;
-    let _usage_relay_guard =
-        crate::usage_relay::prepare_for_container(crate::usage_relay::UsageRelayLaunch {
+    let prepared_usage_relay =
+        crate::usage_relay::prepare_for_docker_container(crate::usage_relay::UsageRelayLaunch {
             paths,
             workspace_name: (!sibling_auth_prewarm.workspace_name.is_empty())
                 .then_some(sibling_auth_prewarm.workspace_name),
@@ -1098,6 +1098,10 @@ pub(crate) async fn launch_role_runtime(
             return Err(err.context(failure_context));
         }
     }
+    let relay = crate::usage_relay::start_docker_tunnel(container_name, prepared_usage_relay);
+    let Some(_usage_relay_guard) = relay.ok() else {
+        anyhow::bail!("starting scoped usage stdio tunnel failed");
+    };
 
     // Reconcile keep_awake AFTER the role container is running but
     // BEFORE the foreground session blocks. This is the only window in

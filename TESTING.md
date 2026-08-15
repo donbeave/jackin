@@ -48,6 +48,27 @@ In PR checkouts, run `jackin-dev pr sync <PR_NUMBER>` and source
 `eval "$(cargo run --bin build-jackin-capsule -- --export)"` before the
 Docker-backed smoke command.
 
+### Mandatory macOS Docker Desktop usage-broker lane
+
+Any change to usage discovery, coordinator/state, broker/relay transport, Capsule
+refresh, Desktop refresh, or backend launch assembly requires this release-path gate
+on Apple Silicon macOS 26 with Docker Desktop running:
+
+```sh
+cargo xtask ci --e2e
+```
+
+The `usage_broker_e2e` target must execute under the `docker-e2e` nextest profile;
+zero matching tests is failure. Machine-readable evidence is the JUnit output under
+`target/nextest/docker-e2e/`. The durable record belongs in the active PR check or
+comment, never in committed logs/screenshots. OrbStack, a Linux temp directory, or
+unit/process-only tests are useful provisional evidence but do not satisfy this lane.
+The active PR and coordinator plan cannot be marked complete until the real Docker
+Desktop run records passing 2/20-client single-flight, owner-loss recovery, timeout
+ownership, Desktop/Capsule generation adoption, capability isolation, distinct-
+account concurrency, shared rate deadline/failure count, and unavailable-state zero-
+call assertions.
+
 All Rust tests run through `cargo nextest run`. Public documentation examples
 must have nextest-discoverable regression tests. `cargo xtask ci-doc-examples
 --package <crate>` rejects runnable rustdoc fences so examples cannot silently
@@ -143,6 +164,7 @@ latest-target pointer; it does not duplicate the target archive.
 | One CI partition | `cargo xtask ci --only <lint\|policy\|tests\|snapshots\|docs\|powerset>` | inner loop mirroring a CI lane |
 | Scoped feature powerset | `cargo hack check -p jackin -p jackin-diagnostics -p jackin-capsule -p jackin-agent-status -p jackin-term -p jackin-runtime --feature-powerset --all-targets --locked` | optional-feature crates (PR gate) |
 | Container/runtime behavior | `cargo xtask ci --e2e` (Docker running) | capsule/runtime PRs |
+| Desktop / native Swift | `mise run desktop-test`; `cd native && swift test -c release`; `mise run desktop-test-ui` on a logged-in macOS host | Desktop UI, bridge, or usage projection changes |
 | Docs/roadmap | `cargo xtask roadmap audit && cargo xtask docs repo-links && cargo xtask research check` | any docs edit |
 | File-size gate | `cargo xtask lint files` (`--format json\|github`) | structure / split PRs |
 | README freshness (advisory) | `cargo xtask lint readme-freshness --base origin/main` | structural `crates/*/src` A/D/R without README touch |
@@ -159,7 +181,9 @@ fields. The shared problem matcher is registered by CI for human/GitHub output.
 Changed `.snap` files are enumerated in CI against the PR merge-base with `origin/main` (step summary + job log). Reviewers must acknowledge each listed snapshot; hand-edited snapshots that merely match buggy output are rejected in review. Pending files (`*.pending-snap`) still fail CI. Prefer `cargo insta review` / `cargo insta accept` over hand-editing `.snap` bodies.
 
 
-Every crate is verified by `cargo nextest run -p <crate>`. The `jackin` E2E
+Every Rust workspace member is verified by `cargo nextest run -p <crate>`. The
+Swift shell is verified by `cargo xtask desktop test` and the Desktop commands
+above; generated PR CI does not yet provide a native Swift lane. The `jackin` E2E
 tests additionally need `--features e2e --profile docker-e2e`. Documentation
 examples are mirrored into ordinary tests and checked with `cargo xtask
 ci-doc-examples --package <crate>`. The machine-checkable per-member map is
@@ -208,6 +232,13 @@ Does not apply to:
 ### Flake policy
 
 CI nextest uses `[profile.ci]` (`.config/nextest.toml`): fixed 2 retries with a 1s delay and `final-status-level = "flaky"`. A pass-on-retry is reported as flaky — never silently absorbed. The matrix is exactly one job per affected crate that requires testing; an input-identical successful result is resolved before matrix expansion and does not consume a runner. It has no shards, multi-crate buckets, older-toolchain lanes, or second jobs for crate-specific clippy, benchmarks, powersets, fuzzing, or Docker tests. The `jackin` job owns its conditional Docker E2E steps. Every crate job uploads `target/nextest/ci/junit.xml` and fails if any flaky test is not listed in the shrink-only quarantine ledger `flaky-tests.toml` (repo root; each `[[test]]` needs `name`, `owner`, `reason`, `since`). Prefer fixing the flake over quarantining.
+
+Native UI tests run outside nextest and require a logged-in macOS session.
+`mise run desktop-test-ui` writes one JUnit report per XCTest under the ignored
+`native/.build/test-results/` tree. The script does not retry failures. If a manual
+rerun proves an XCTest intermittent, review its report under the same
+`flaky-tests.toml` owner/reason/since policy; the current nextest analyzer does not
+ingest XCTest reports, so the active PR must record the disposition explicitly.
 
 An input-identical successful crate result is reused for seven days before any
 toolchain, registry, or target restore. Its key includes the crate's forward

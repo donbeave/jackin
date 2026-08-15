@@ -2,9 +2,9 @@
 
 In-container control plane for jackin❯ role containers.
 
-`jackin-capsule` is copied into derived role images and runs as PID 1 under `/jackin/runtime/jackin-capsule`. It owns the terminal sessions, PTYs, pane layout, status bar, attach socket, runtime setup, and the in-container git trailer hook. The host `jackin` binary starts containers detached and attaches through the Capsule client so the operator sees the multiplexer instead of raw container logs.
+In derived role images, `jackin-capsule` runs as PID 1 at `/jackin/runtime/jackin-capsule`. It owns PTYs, sessions, panes, status bar, attach socket, setup, and git trailer hook. The host `jackin` client attaches to that multiplexer, not container logs.
 
-Design rationale and cross-cutting capsule behaviour live under [Capsule reference](../../docs/content/reference/capsule/index.mdx) — this README is the crate orientation record only.
+Shared behaviour: [Capsule reference](../../docs/content/reference/capsule/index.mdx). This README maps crate ownership.
 
 ## What this crate owns
 
@@ -35,6 +35,7 @@ Not responsible for: protocol encoding (`jackin-protocol`), host-side launch orc
 | [`tui.rs`](src/tui.rs) · [`tui/`](src/tui) | composition, chrome/input, ANSI rules, and daemon-facing compositor/input/layout adapters over TermRock and shared operator-info UI | nested; daemon-adapter integration lives in [`daemon/tests.rs`](src/daemon/tests.rs) |
 | [`clipboard.rs`](src/clipboard.rs) · [`clipboard/`](src/clipboard) | clipboard image staging + idle expiry | [`tests.rs`](src/clipboard/tests.rs) |
 | [`runtime_setup.rs`](src/runtime_setup.rs) · [`runtime_setup/`](src/runtime_setup) | in-container git/auth/MCP setup | [`tests.rs`](src/runtime_setup/tests.rs) |
+| [`usage_relay_proxy.rs`](src/usage_relay_proxy.rs) · [`usage_relay_proxy/`](src/usage_relay_proxy) | container-local scoped usage socket and host stdio tunnel | [`tests.rs`](src/usage_relay_proxy/tests.rs) |
 | [`config.rs`](src/config.rs) | `CapsuleConfig` load/validate | — |
 | [`container_context.rs`](src/container_context.rs) | container identity metadata and co-located tests | — |
 | [`agent_status.rs`](src/agent_status.rs) · [`agent_status/`](src/agent_status) | capsule-facing status hooks | nested |

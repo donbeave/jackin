@@ -6,9 +6,8 @@
 //! Config precedence, path roots, provider ownership, and deduplication stay in
 //! this crate. Native clients receive only sanitized descriptors/diagnostics.
 
-use std::collections::{BTreeMap, BTreeSet, HashSet};
+use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Component, Path, PathBuf};
-use std::time::{Duration, Instant};
 
 use jackin_config::{AppConfig, ConfigSourceIssue, ReadOnlyConfigSnapshot};
 use jackin_core::{
@@ -18,8 +17,8 @@ use jackin_core::{
 use jackin_protocol::control::FocusedUsageView;
 
 use super::{
-    CanonicalAccountIdentity, CanonicalAccountSubject, HostProbePolicy, HostSurfaceId,
-    HostUsageRuntime, discovered_account_keys,
+    CanonicalAccountIdentity, CanonicalAccountSubject, HostSurfaceId, HostUsageRuntime,
+    discovered_account_keys,
 };
 
 /// Discovery boundary: Desktop may scan host config; Capsule sees capabilities only.
@@ -37,6 +36,75 @@ pub enum UsageDiscoveryScope {
         /// Broker/runtime-issued capabilities available inside this Capsule.
         forwarded_accounts: Vec<ForwardedUsageAccount>,
     },
+}
+
+/// Credential-root inventory for docs and debug (no secrets read).
+#[must_use]
+pub fn host_credential_root_matrix() -> Vec<HostCredentialRootRow> {
+    use jackin_core::container_paths;
+    vec![
+        HostCredentialRootRow {
+            surface: "claude",
+            host_paths: "~/.claude/.credentials.json, ~/.claude.json, $CLAUDE_CONFIG_DIR",
+            env_vars: "ANTHROPIC_API_KEY, ANTHROPIC_AUTH_TOKEN",
+            container_handoff: container_paths::CLAUDE_CREDENTIALS,
+        },
+        HostCredentialRootRow {
+            surface: "codex",
+            host_paths: "$CODEX_HOME/auth.json, ~/.codex/auth.json",
+            env_vars: "",
+            container_handoff: container_paths::CODEX_AUTH,
+        },
+        HostCredentialRootRow {
+            surface: "amp",
+            host_paths: "Amp home secrets loaders",
+            env_vars: "",
+            container_handoff: container_paths::AMP_SECRETS,
+        },
+        HostCredentialRootRow {
+            surface: "grok",
+            host_paths: "~/.grok (auth + bin)",
+            env_vars: "",
+            container_handoff: container_paths::GROK_AUTH,
+        },
+        HostCredentialRootRow {
+            surface: "kimi",
+            host_paths: "~/.kimi-code, ~/.kimi",
+            env_vars: "KIMI_AUTH_TOKEN, KIMI_CODE_API_KEY, kimi_auth_token",
+            container_handoff: container_paths::KIMI_CODE_DIR,
+        },
+        HostCredentialRootRow {
+            surface: "opencode",
+            host_paths: "OpenCode home (probe-defined)",
+            env_vars: "",
+            container_handoff: "",
+        },
+        HostCredentialRootRow {
+            surface: "zai",
+            host_paths: "",
+            env_vars: "ZAI_API_KEY, Z_AI_API_KEY",
+            container_handoff: "",
+        },
+        HostCredentialRootRow {
+            surface: "minimax",
+            host_paths: "",
+            env_vars: "MINIMAX_CODING_API_KEY, MINIMAX_API_KEY",
+            container_handoff: "",
+        },
+    ]
+}
+
+/// One row of the host credential matrix.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct HostCredentialRootRow {
+    /// Surface id.
+    pub surface: &'static str,
+    /// Host path roots.
+    pub host_paths: &'static str,
+    /// Environment variables.
+    pub env_vars: &'static str,
+    /// Container handoff fallback.
+    pub container_handoff: &'static str,
 }
 
 /// One account capability explicitly forwarded into a Capsule.
@@ -1405,93 +1473,6 @@ impl HostUsageRuntime {
             Some(if changed { "changed" } else { "unchanged" }.to_owned()),
         );
         Ok(changed)
-    }
-
-    /// Refresh with an explicit manual-discovery reconciliation boundary.
-    ///
-    /// Forced actions rescan once before quota work. Background calls must use
-    /// [`Self::refresh`] and therefore never touch config or protected sources.
-    pub fn refresh_with_discovery(
-        &mut self,
-        surface_id: Option<&str>,
-        force: bool,
-        resolver: &dyn ProviderCredentialEnvResolver,
-    ) -> Result<(), String> {
-        self.require_open()?;
-        if self.probe_policy == HostProbePolicy::Disabled {
-            self.push_event(
-                "refresh_skipped",
-                surface_id,
-                Some("probes disabled".to_owned()),
-            );
-            return Ok(());
-        }
-        if !force && let Some(last) = self.last_refresh {
-            let floor = Duration::from_secs(self.refresh_floor_secs);
-            if last.elapsed() < floor {
-                return Ok(());
-            }
-        }
-        if force {
-            self.reconcile_discovery(resolver)?;
-        }
-        if self.discovery.is_some() {
-            self.refresh_discovered_sources(surface_id, resolver);
-            self.last_refresh = Some(Instant::now());
-            return Ok(());
-        }
-        self.refresh(surface_id, force)
-    }
-
-    fn refresh_discovered_sources(
-        &mut self,
-        surface_id: Option<&str>,
-        resolver: &dyn ProviderCredentialEnvResolver,
-    ) {
-        let Some(discovery) = &self.discovery else {
-            return;
-        };
-        let bindings = discovery.bindings.clone();
-        let mut refreshed = HashSet::new();
-        for binding in bindings {
-            if !self.enabled.contains(binding.surface.id())
-                || surface_id.is_some_and(|requested| requested != binding.surface.id())
-            {
-                continue;
-            }
-            let refresh_key = binding.identity.as_ref().map_or_else(
-                || format!("{}#{}", binding.surface.id(), binding.source_id),
-                CanonicalAccountIdentity::account_key,
-            );
-            if !refreshed.insert(refresh_key) {
-                continue;
-            }
-            match refresh_credential_binding(&binding, resolver) {
-                ProviderCredentialRefreshOutcome::Snapshot(view) => {
-                    self.record_discovered_snapshot(&binding, *view);
-                }
-                ProviderCredentialRefreshOutcome::Missing => self.push_event(
-                    "probe_failed",
-                    Some(binding.surface.id()),
-                    Some("Credentials are missing".to_owned()),
-                ),
-                ProviderCredentialRefreshOutcome::Denied => self.push_event(
-                    "probe_failed",
-                    Some(binding.surface.id()),
-                    Some("Credential access was denied".to_owned()),
-                ),
-                ProviderCredentialRefreshOutcome::Malformed => self.push_event(
-                    "probe_failed",
-                    Some(binding.surface.id()),
-                    Some("Credentials are malformed".to_owned()),
-                ),
-                ProviderCredentialRefreshOutcome::InteractionRequired => self.push_event(
-                    "probe_failed",
-                    Some(binding.surface.id()),
-                    Some("Credential access requires interaction".to_owned()),
-                ),
-            }
-        }
     }
 
     pub(super) fn record_discovered_snapshot(

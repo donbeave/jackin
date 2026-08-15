@@ -1,4 +1,6 @@
-use super::{MIN_OS, minos_matches_target, validate_build, validate_version};
+use super::{
+    MIN_OS, minos_matches_target, normalize_generated_text, validate_build, validate_version,
+};
 
 #[test]
 fn version_accepts_dotted_numeric() {
@@ -30,4 +32,14 @@ fn minos_must_match_current_baseline() {
     assert!(!minos_matches_target("25.0", MIN_OS));
     assert!(!minos_matches_target("26.1", MIN_OS));
     assert!(!minos_matches_target("27.0", MIN_OS));
+}
+
+#[test]
+fn generated_bindings_have_stable_whitespace() {
+    assert_eq!(
+        normalize_generated_text("one  \n  two\t\n\n"),
+        "one\n  two\n"
+    );
+    assert_eq!(normalize_generated_text("one"), "one\n");
+    assert_eq!(normalize_generated_text(" \t\n"), "");
 }
