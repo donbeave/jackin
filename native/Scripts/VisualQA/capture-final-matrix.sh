@@ -98,7 +98,10 @@ usage() {
     environment+=("CAPTURE_INACTIVE_APP=$inactive_app")
   fi
   if [[ "$collapsed" == yes ]]; then
-    environment+=("CAPTURE_TOOLBAR_BUTTON_DESCRIPTION=Hide Sidebar")
+    environment+=(
+      "CAPTURE_TOOLBAR_BUTTON_DESCRIPTION=Hide Sidebar"
+      "CAPTURE_TOOLBAR_BUTTON_POST_DESCRIPTION=Show Sidebar"
+    )
   fi
   capture_with_relaunch env "${environment[@]}" \
     "$capture" "$app" "$owner" "$output/$file" "jackin❯ desktop" \

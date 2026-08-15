@@ -244,6 +244,8 @@ final class ArchitectureTests: XCTestCase {
         XCTAssertTrue(capture.contains("CAPTURE_SETTLE_DELAY_SECONDS:-3"))
         XCTAssertTrue(capture.contains("perform action \"AXPress\" of targetButton"))
         XCTAssertFalse(capture.contains("to click first button of toolbar"))
+        XCTAssertTrue(text.contains("CAPTURE_TOOLBAR_BUTTON_POST_DESCRIPTION=Show Sidebar"))
+        XCTAssertTrue(capture.contains("toolbar_state_matches"))
         XCTAssertTrue(focusDrive.contains("activate(options: [.activateAllWindows])"))
         XCTAssertTrue(windowResolver.contains("if filter != nil"))
     }

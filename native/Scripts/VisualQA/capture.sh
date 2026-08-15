@@ -221,6 +221,19 @@ if [ -n "${CAPTURE_TOOLBAR_BUTTON_DESCRIPTION:-}" ]; then
   sleep 1
 fi
 
+expected_toolbar_button_description=${CAPTURE_TOOLBAR_BUTTON_POST_DESCRIPTION:-}
+toolbar_state_matches() {
+  [ -z "$expected_toolbar_button_description" ] && return 0
+  matching_buttons=$(osascript -e \
+    "tell application \"System Events\" to tell application process \"$executable\" to tell front window to count buttons of toolbar 1 whose description is \"$expected_toolbar_button_description\"" \
+    2>/dev/null || echo 0)
+  [ "$matching_buttons" -eq 1 ]
+}
+toolbar_state_matches || {
+  echo "toolbar state did not become available: $expected_toolbar_button_description" >&2
+  exit 1
+}
+
 capture_ok=0
 success_count=0
 best_size=0
@@ -235,6 +248,11 @@ while [ "$attempt" -lt 20 ]; do
   candidate="$OUT.capture-$attempt.png"
   candidate_metadata="$OUT.capture-$attempt.json"
   candidate_post_metadata="$OUT.capture-$attempt-post.json"
+  if ! toolbar_state_matches; then
+    state_failures=$((state_failures + 1))
+    attempt=$((attempt + 1))
+    continue
+  fi
   if [ -n "$WINDOW_NAME" ]; then
     "$TOOL" "$OWNER" "$WINDOW_NAME" --json --pid "$pid" \
       > "$candidate_metadata" 2>/dev/null || {
@@ -287,7 +305,7 @@ while [ "$attempt" -lt 20 ]; do
       "$candidate_post_metadata" 2>/dev/null || echo unavailable)
     if [ "$post_id" != "$WID" ] || [ "$post_activation" != "$requested_activation" ] \
       || [ "$post_key" != "$expected_key" ] || [ "$post_onscreen" != true ] \
-      || [ "$post_contained" != true ]; then
+      || [ "$post_contained" != true ] || ! toolbar_state_matches; then
       rm -f "$candidate" "$candidate_metadata" "$candidate_post_metadata"
       postcheck_failures=$((postcheck_failures + 1))
       attempt=$((attempt + 1))
