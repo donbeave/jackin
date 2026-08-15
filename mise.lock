@@ -233,7 +233,7 @@ version = "0.20.0"
 backend = "cargo:cargo-deny"
 
 [[tools."cargo:cargo-dylint"]]
-version = "6.0.1"
+version = "6.0.4"
 backend = "cargo:cargo-dylint"
 
 [[tools."cargo:cargo-fuzz"]]
