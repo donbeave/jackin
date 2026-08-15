@@ -48,11 +48,11 @@ In PR checkouts, run `jackin-dev pr sync <PR_NUMBER>` and source
 `eval "$(cargo run --bin build-jackin-capsule -- --export)"` before the
 Docker-backed smoke command.
 
-### Mandatory macOS Docker Desktop usage-broker lane
+### Mandatory macOS OrbStack usage-broker lane
 
 Any change to usage discovery, coordinator/state, broker/relay transport, Capsule
 refresh, Desktop refresh, or backend launch assembly requires this release-path gate
-on Apple Silicon macOS 26 with Docker Desktop running:
+on Apple Silicon macOS 26 with OrbStack running:
 
 ```sh
 cargo xtask ci --e2e
@@ -61,10 +61,10 @@ cargo xtask ci --e2e
 The `usage_broker_e2e` target must execute under the `docker-e2e` nextest profile;
 zero matching tests is failure. Machine-readable evidence is the JUnit output under
 `target/nextest/docker-e2e/`. The durable record belongs in the active PR check or
-comment, never in committed logs/screenshots. OrbStack, a Linux temp directory, or
-unit/process-only tests are useful provisional evidence but do not satisfy this lane.
-The active PR and coordinator plan cannot be marked complete until the real Docker
-Desktop run records passing 2/20-client single-flight, owner-loss recovery, timeout
+comment, never in committed logs/screenshots. A generic Docker daemon, a Linux temp
+directory, or unit/process-only tests do not satisfy this macOS OrbStack lane. The
+active PR and coordinator plan cannot be marked complete until the OrbStack run
+records passing 2/20-client single-flight, owner-loss recovery, timeout
 ownership, Desktop/Capsule generation adoption, capability isolation, distinct-
 account concurrency, shared rate deadline/failure count, and unavailable-state zero-
 call assertions.

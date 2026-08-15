@@ -25,7 +25,7 @@ the canonical command is everything after `rtk `.
 | [002](002-global-rust-account-discovery.md) | Discover every configured supported account in Rust | P1 | L | 001, 007 | DONE |
 | [006](006-capsule-credential-exposure.md) | Keep credential values out of container-visible config and runtime argv | P1 | M | — | DONE |
 | [008](008-backend-parity-fail-closed.md) | Enforce Apple read-only mount parity and harden notify argv | P2 | S | — | DONE |
-| [003](003-strict-usage-coordinator.md) | Enforce one refresh generation per account through a host broker | P1 | L | 001, 002, 006, 008 | BLOCKED (real macOS 26 + Docker Desktop evidence unavailable; OrbStack E2E and implementation gates pass) |
+| [003](003-strict-usage-coordinator.md) | Enforce one refresh generation per account through a host broker | P1 | L | 001, 002, 006, 008 | IN PROGRESS (OrbStack is authoritative; exact-head E2E rerun pending) |
 | [009](009-ci-testing-docs-hygiene.md) | Give desktop changes a PR CI lane and fix actively wrong doc claims | P2 | M | 003, 008 | BLOCKED (local docs/JUnit work passes; governed `velnor-actions` native extension remains external) |
 | [004](004-native-full-height-sidebar.md) | Restore native full-height Liquid Glass pane ownership | P1 | M | 003, 009 | DONE |
 | [005](005-correct-native-usage-presentation.md) | Render correct account-first quota presentation from one Rust projection | P1 | L | all prior rows | IN PROGRESS (UI/visual proof passes; final union and cleanup await 003/009) |
@@ -139,10 +139,10 @@ executors):
   credentials created inside a Capsule and never forwarded are deferred to a
   future secure-enrollment design (Batch 4 scope reduction, recorded).
 - Broker-over-flock ordering: the feedback allows the filesystem design only if
-  Docker Desktop lock coherence can be proven; no official contract documents
+  OrbStack lock coherence can be proven; no official contract documents
   it, so it cannot be proven from vendor guarantees, and the per-Capsule
   visibility requirement independently rules out a shared tree. The broker is
-  therefore the selected contract, and the Docker Desktop E2E gate proves the
+  therefore the selected contract, and the OrbStack E2E gate proves the
   broker, not flock (records the prove-then-fall-back reasoning).
 
 ## Highest-priority findings
@@ -170,7 +170,7 @@ executors):
 | ARCH-05 | Overview is flat and Swift-composed (`OverviewListView.swift:40-74`; `OverviewInventory.swift:102-184`) | Provider grouping/accessibility absent; business strings drift into Swift | M | MED | HIGH | 005 |
 | PERF-01 | Every 5-second poll rescans durable/shared inputs per surface (`host.rs:635-716`; `host/accounts.rs:166-218`) | Work scales surfaces × snapshots before global discovery adds accounts | M | MED | HIGH | 001 |
 | PERF-02 | Refresh creates one OS thread per due target (`usage/refresh.rs:32-55`) | Global catalog causes unbounded thread/provider bursts | M | MED | HIGH | 003 |
-| TEST-01 | Same-process lock tests are the only coordination proof (`usage/tests.rs:1886-1919`) | Host + Docker Desktop single-flight/isolation claims can regress green | L | LOW | HIGH | 003 |
+| TEST-01 | Same-process lock tests are the only coordination proof (`usage/tests.rs:1886-1919`) | Host + OrbStack single-flight/isolation claims can regress green | L | LOW | HIGH | 003 |
 | TEST-02 | Existing gates pin superseded contracts: `bridge/tests.rs:332-338` freezes the exact 9-row detail-id ordering (ids are distinct — the frozen order is the problem), `ArchitectureTests.swift:912-920` requires root `.principal` branding | Correct implementation is rejected while real failures remain untested | M | LOW | HIGH | 004, 005 |
 | TEST-03 | Accessibility audit suppressions are category-wide (`JackinDesktopUITests.swift:395-471`) | New grouping/account identity regressions can pass the AX gate | S | LOW | HIGH | 005 |
 | DOC-01 | ADR-011:70 promises shared-tree "at most one probe per account" exclusivity the code does not deliver (`refresh.rs:221` calls the lock best-effort); the ADR-011:45/README custom-toggle text accurately describes shipped code and is superseded by feedback, not drifted | Maintainers are instructed to preserve an invalid coordination guarantee | S | LOW | HIGH | 003–005 |
@@ -242,10 +242,10 @@ current authority for security/test/docs coverage outside the feedback program.
 | Correctness/bugs | Canonical ownership, placeholder identities, selection validation, per-account state, refresh joining, timeout ownership, atomic projection, detail/update copy, and popover ordering all planned. |
 | Security | Whole-tree Capsule exposure, symlink escape, socket/capability authorization, file ownership/permissions, secret-free DTO/cache/telemetry covered in 002–003. |
 | Performance | Catalog is materialized once per generation; broker uses bounded account concurrency instead of surface-times-snapshot rescans and one thread per target. |
-| Test coverage | Vertical config-to-Swift fixtures, pure state machine, multi-process, Docker Desktop, real-host UI, strict accessibility, and cleanup gates specified. |
+| Test coverage | Vertical config-to-Swift fixtures, pure state machine, multi-process, OrbStack, real-host UI, strict accessibility, and cleanup gates specified. |
 | Tech debt/architecture | Rust owns discovery/identity/dedup/scheduling/strings; Swift owns native rendering/intent; routing and identity are separate; one atomic projection. |
 | Dependencies/migrations | 002 adds lower-tier config/env reuse and a zero-write in-memory migration reader. No persisted config schema change is required. Durable schema changes are STOP-and-report. |
-| DX/tooling | Existing nextest/clippy/xtask/mise gates retained; Docker Desktop single-flight becomes a named release-path gate; generated bindings remain mechanical. |
+| DX/tooling | Existing nextest/clippy/xtask/mise gates retained; OrbStack single-flight becomes a named release-path gate; generated bindings remain mechanical. |
 | Documentation | AGENTS, crate READMEs, ADR-011, host/container/testing docs, and roadmap updates are included with their owning implementation plans. |
 | Direction | Config-wide account catalog and host usage broker implement the requested global quota-control direction without expanding into prices/history/OpenCode. |
 
@@ -263,7 +263,7 @@ current authority for security/test/docs coverage outside the feedback program.
 - **Show OpenCode/GitHub because config discovery sees them**: rejected. The frozen
   Desktop quota contract explicitly excludes OpenCode, and GitHub auth has no quota
   surface here.
-- **Continue shared files with stronger `flock` use**: rejected. Docker Desktop does
+- **Continue shared files with stronger `flock` use**: rejected. OrbStack does
   not provide the required documented cross-host/container lock guarantee, and a
   shared directory cannot enforce per-Capsule account visibility.
 - **Fall back to unlocked probing when broker/storage is unavailable**: rejected.
@@ -287,9 +287,9 @@ current authority for security/test/docs coverage outside the feedback program.
 ## Final program closure and artifact cleanup
 
 Do this only after all nine plans are DONE and every Plan 005 final gate, including
-macOS 26 Docker Desktop and real-host UI tests, is green.
+macOS 26 OrbStack and real-host UI tests, is green.
 
-1. Run every Plan 005 final gate, the macOS 26 Docker Desktop gate, and the final
+1. Run every Plan 005 final gate, the macOS 26 OrbStack gate, and the final
    Clear/Tinted/accessibility visual matrix against branch HEAD. Record durable test
    evidence only in CI/PR check status, not in repository files.
 2. Rebuild and verify the canonical final `native/dist/JackinDesktop.app`. Confirm no
