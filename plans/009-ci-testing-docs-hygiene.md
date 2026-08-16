@@ -26,15 +26,11 @@
   `plans/008-backend-parity-fail-closed.md`
 - **Category**: dx, tests, docs
 - **Planned at**: commit `27d0d9b3`, 2026-08-13
-- **Execution state**: BLOCKED — the plan's assumed local CI graph no longer
-  exists. `.github/workflows/ci.yml` is generated, hash-authenticated fleet
-  output that calls `jackin-project/velnor-actions/.github/workflows/ci-code.yml`;
-  local edits are forbidden and would be overwritten. The repository workflow
-  policy also forbids ordinary macOS runners, while the active main ruleset
-  requires only `ci-required` and DCO. Completion requires an approved native
-  extension in the canonical `velnor-actions` code-class template (or a governed
-  repository extension point), regenerated fleet pins/caller, and then a ruleset
-  decision. Those cross-repository mutations are outside this branch's scope.
+- **Execution state**: DONE — canonical Velnor PR #40 added the generated native
+  class, signed immutable release `2026.8.20` is mirrored across all three owners,
+  and the generated jackin❯ caller uses owner-local full-SHA pins. PR #872 ran
+  `native-usage-menu-bar` on `macos-26`; that lane and both `ci-required` checks
+  passed.
 - **Completed local scope**: the false hygiene comment, container-layout docs,
   Desktop verification matrix, Swift-shell coverage claim, UI-test flake policy,
   ignored per-XCTest JUnit emission, and usage module table are corrected. Shell,

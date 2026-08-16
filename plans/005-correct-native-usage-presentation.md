@@ -41,10 +41,9 @@
   `plans/009-ci-testing-docs-hygiene.md`
 - **Category**: bug, tech-debt, tests, docs
 - **Planned at**: commit `27d0d9b3`, 2026-08-13
-- **Execution state**: IN PROGRESS — the final popover-footer refinement passes the
-  branch-head Swift, architecture, and real-host UI suites. The fresh Clear/Tinted
-  visual and accessibility matrices also pass. Final union dependencies and cleanup
-  remain gated by Plans 003 and 009.
+- **Execution state**: DONE — the branch-head Rust/FFI, native contract, real-host
+  UI, full workspace, documentation, OrbStack broker, and final visual/accessibility
+  gates pass. The canonical production app is rebuilt and verified.
 
 ## Why this matters
 
