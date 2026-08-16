@@ -9,10 +9,10 @@ on:
   workflow_dispatch:
     inputs:
       lanes:
-        description: github (default) | velnor
+        description: velnor (default) | github
         type: choice
-        default: github
-        options: [github, velnor]
+        default: velnor
+        options: [velnor, github]
       chaos_seed:
         description: "Optional JACKIN_CHAOS_SEED for dind-chaos lane"
         required: false
@@ -29,7 +29,7 @@ concurrency:
 jobs:
   cache-usage:
     name: Cache usage review
-    runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'velnor') && fromJSON('["self-hosted","velnor-target-mvp"]') || 'ubuntu-26.04' }}
+    runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'github') && 'ubuntu-26.04' || fromJSON('["self-hosted","velnor-target-mvp"]') }}
     timeout-minutes: 60
     steps:
       - name: Summarize GitHub Actions cache usage
@@ -61,11 +61,12 @@ jobs:
 
   scheduled-hygiene:
     name: Scheduled hygiene
-    runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'velnor') && fromJSON('["self-hosted","velnor-target-mvp"]') || 'ubuntu-26.04' }}
+    runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'github') && 'ubuntu-26.04' || fromJSON('["self-hosted","velnor-target-mvp"]') }}
     timeout-minutes: 60
     env:
       CARGO_INCREMENTAL: "0"
       CARGO_TERM_COLOR: always
+      CI_LANE: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'github') && 'GitHub' || 'Velnor' }}
       RUSTC_WRAPPER: sccache
       RUSTFLAGS: "-C link-arg=-fuse-ld=mold"
       SCCACHE_GHA_ENABLED: "false"
@@ -106,6 +107,14 @@ jobs:
           github_token: ${{ secrets.GH_READONLY_TOKEN }}
       - id: cargo-registry-cache
         uses: ./.github/actions/cache-cargo-registry
+      - name: Cache Cargo and fuzz targets
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            target
+            crates/*/fuzz/target
+          key: cargo-target-${{ env.CI_LANE }}-${{ runner.os }}-${{ github.job }}-${{ hashFiles('rust-toolchain.toml', '.cargo/config.toml', '**/Cargo.toml', '**/Cargo.lock') }}-${{ github.sha }}
+          restore-keys: cargo-target-${{ env.CI_LANE }}-${{ runner.os }}-${{ github.job }}-${{ hashFiles('rust-toolchain.toml', '.cargo/config.toml', '**/Cargo.toml', '**/Cargo.lock') }}-
       - run: cargo deny check advisories
       - run: cargo hack check --workspace --feature-powerset --all-targets --locked
       - run: shellcheck docker/runtime/entrypoint.sh docker/runtime/agent-status/hooks/*/report-hook.sh scripts/*.sh
@@ -143,13 +152,20 @@ jobs:
   native-macos:
     if: github.event_name != 'workflow_dispatch' || inputs.lanes != 'velnor'
     name: Native macOS smoke
-    runs-on: macos-latest
+    runs-on: macos-26
     timeout-minutes: 60
     env:
       CARGO_INCREMENTAL: "0"
       CARGO_TERM_COLOR: always
+      RUSTC_WRAPPER: sccache
+      SCCACHE_GHA_ENABLED: "false"
+      SCCACHE_CACHE_SIZE: 20G
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: mozilla-actions/sccache-action@fc920bf0ec8de6ee65d409111f7ec508035751ba # v0.0.11
+        with:
+          version: v0.16.0
+          disable_annotations: "false"
       - name: Cache Rust toolchain
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
@@ -168,12 +184,12 @@ jobs:
           github_token: ${{ secrets.GH_READONLY_TOKEN }}
       - id: cargo-registry-cache
         uses: ./.github/actions/cache-cargo-registry
-      - uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
+      - name: Cache Cargo target
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
-          shared-key: native-macos-workspace-v2
-          cache-all-crates: "true"
-          cache-workspace-crates: "true"
-          env-vars: "CARGO CC CFLAGS CXX CMAKE RUSTFLAGS RUSTDOC RUSTUP"
+          path: target
+          key: cargo-target-GitHub-${{ runner.os }}-${{ github.job }}-${{ hashFiles('rust-toolchain.toml', '.cargo/config.toml', '**/Cargo.toml', '**/Cargo.lock') }}-${{ github.sha }}
+          restore-keys: cargo-target-GitHub-${{ runner.os }}-${{ github.job }}-${{ hashFiles('rust-toolchain.toml', '.cargo/config.toml', '**/Cargo.toml', '**/Cargo.lock') }}-
       - run: cargo build --release --locked
       - run: cargo nextest run --workspace --locked
 
@@ -181,7 +197,7 @@ jobs:
   # same-run calibration benchmark before the reviewed 5% threshold is applied.
   bench-run:
     name: Criterion bench run (advisory)
-    runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'velnor') && fromJSON('["self-hosted","velnor-target-mvp"]') || 'ubuntu-26.04' }}
+    runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'github') && 'ubuntu-26.04' || fromJSON('["self-hosted","velnor-target-mvp"]') }}
     timeout-minutes: 90
     env:
       CARGO_INCREMENTAL: "0"
@@ -251,7 +267,7 @@ jobs:
   # multi-run stability is proven (see TESTING.md allocation lane).
   dhat-allocation:
     name: dhat allocation suites (advisory)
-    runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'velnor') && fromJSON('["self-hosted","velnor-target-mvp"]') || 'ubuntu-26.04' }}
+    runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'github') && 'ubuntu-26.04' || fromJSON('["self-hosted","velnor-target-mvp"]') }}
     timeout-minutes: 45
     continue-on-error: true
     env:
@@ -301,7 +317,7 @@ jobs:
 
   cold-start-bench:
     name: Cold-start and PTY frame timing (advisory)
-    runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'velnor') && fromJSON('["self-hosted","velnor-target-mvp"]') || 'ubuntu-26.04' }}
+    runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'github') && 'ubuntu-26.04' || fromJSON('["self-hosted","velnor-target-mvp"]') }}
     timeout-minutes: 45
     env:
       CARGO_INCREMENTAL: "0"
@@ -375,7 +391,7 @@ jobs:
   # Advisory rust-analyzer workspace load check (plan 048).
   rust-analyzer-clean:
     name: rust-analyzer clean (advisory)
-    runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'velnor') && fromJSON('["self-hosted","velnor-target-mvp"]') || 'ubuntu-26.04' }}
+    runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'github') && 'ubuntu-26.04' || fromJSON('["self-hosted","velnor-target-mvp"]') }}
     timeout-minutes: 45
     env:
       CARGO_INCREMENTAL: "0"
@@ -431,7 +447,7 @@ jobs:
   # Scheduled per-crate clean + incremental build-time ceiling (plans 026/048).
   build-time-measure:
     name: Per-crate build-time ratchet
-    runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'velnor') && fromJSON('["self-hosted","velnor-target-mvp"]') || 'ubuntu-26.04' }}
+    runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'github') && 'ubuntu-26.04' || fromJSON('["self-hosted","velnor-target-mvp"]') }}
     timeout-minutes: 90
     env:
       CARGO_INCREMENTAL: "0"
@@ -479,7 +495,7 @@ jobs:
   # Plan 022: beta-toolchain clippy canary (advisory — never blocks).
   beta-clippy-canary:
     name: Beta clippy canary (advisory)
-    runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'velnor') && fromJSON('["self-hosted","velnor-target-mvp"]') || 'ubuntu-26.04' }}
+    runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'github') && 'ubuntu-26.04' || fromJSON('["self-hosted","velnor-target-mvp"]') }}
     timeout-minutes: 60
     continue-on-error: true
     env:
@@ -523,7 +539,7 @@ jobs:
   # Plan 035: coverage artifact lane (advisory).
   coverage:
     name: Coverage (advisory)
-    runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'velnor') && fromJSON('["self-hosted","velnor-target-mvp"]') || 'ubuntu-26.04' }}
+    runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'github') && 'ubuntu-26.04' || fromJSON('["self-hosted","velnor-target-mvp"]') }}
     timeout-minutes: 45
     env:
       CARGO_INCREMENTAL: "0"
@@ -577,7 +593,7 @@ jobs:
   # Plan 035: Miri pure-crate lane (advisory).
   miri:
     name: Miri ${{ matrix.crate }} (advisory)
-    runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'velnor') && fromJSON('["self-hosted","velnor-target-mvp"]') || 'ubuntu-26.04' }}
+    runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'github') && 'ubuntu-26.04' || fromJSON('["self-hosted","velnor-target-mvp"]') }}
     timeout-minutes: 180
     strategy:
       fail-fast: false
@@ -628,7 +644,7 @@ jobs:
   # Plan 035: cargo-mutants on smallest pure crates (advisory; never fails job).
   mutants:
     name: cargo-mutants pure crates (advisory)
-    runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'velnor') && fromJSON('["self-hosted","velnor-target-mvp"]') || 'ubuntu-26.04' }}
+    runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'github') && 'ubuntu-26.04' || fromJSON('["self-hosted","velnor-target-mvp"]') }}
     timeout-minutes: 90
     env:
       CARGO_INCREMENTAL: "0"
@@ -684,7 +700,7 @@ jobs:
   # Plan 012: create an ephemeral workspace-hack in the CI checkout for timing only.
   hakari-timing:
     name: hakari timing investigation (advisory)
-    runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'velnor') && fromJSON('["self-hosted","velnor-target-mvp"]') || 'ubuntu-26.04' }}
+    runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'github') && 'ubuntu-26.04' || fromJSON('["self-hosted","velnor-target-mvp"]') }}
     timeout-minutes: 45
     env:
       CARGO_INCREMENTAL: "0"
@@ -800,7 +816,7 @@ jobs:
   # Plan 048: hyperfine cold-start measurement (advisory).
   dylint-advisory:
     name: dylint render purity
-    runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'velnor') && fromJSON('["self-hosted","velnor-target-mvp"]') || 'ubuntu-26.04' }}
+    runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'github') && 'ubuntu-26.04' || fromJSON('["self-hosted","velnor-target-mvp"]') }}
     timeout-minutes: 60
     env:
       CARGO_INCREMENTAL: "0"
@@ -866,7 +882,7 @@ jobs:
 
   dind-chaos:
     name: Full DinD E2E
-    runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'velnor') && fromJSON('["self-hosted","velnor-target-mvp"]') || 'ubuntu-26.04' }}
+    runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'github') && 'ubuntu-26.04' || fromJSON('["self-hosted","velnor-target-mvp"]') }}
     timeout-minutes: 90
     env:
       CARGO_INCREMENTAL: "0"
@@ -912,7 +928,7 @@ jobs:
   health-trend:
     name: Health trend snapshot (advisory)
     if: github.ref == 'refs/heads/main'
-    runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'velnor') && fromJSON('["self-hosted","velnor-target-mvp"]') || 'ubuntu-26.04' }}
+    runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'github') && 'ubuntu-26.04' || fromJSON('["self-hosted","velnor-target-mvp"]') }}
     timeout-minutes: 30
     continue-on-error: true
     env:
