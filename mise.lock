@@ -265,7 +265,7 @@ version = "0.23.0"
 backend = "cargo:cargo-zigbuild"
 
 [[tools."cargo:codebook-lsp"]]
-version = "0.3.41"
+version = "0.3.42"
 backend = "cargo:codebook-lsp"
 
 [tools."cargo:codebook-lsp".options]
