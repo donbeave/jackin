@@ -257,7 +257,7 @@ version = "27.1.0"
 backend = "cargo:cargo-mutants"
 
 [[tools."cargo:cargo-shear"]]
-version = "1.13.0"
+version = "1.13.4"
 backend = "cargo:cargo-shear"
 
 [[tools."cargo:cargo-zigbuild"]]
