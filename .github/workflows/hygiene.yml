@@ -138,8 +138,8 @@ jobs:
           cd crates/jackin-term
           cargo +nightly fuzz run --sanitizer address --target x86_64-unknown-linux-gnu damage_grid_process -- -max_total_time=300
 
-  # Workspace Rust smoke only. Desktop bindings, lint, harness, and XCTest remain
-  # local/release gates until generated PR CI gains a governed native extension.
+  # Scheduled workspace Rust smoke only. Governed PR CI runs the complete Desktop
+  # gate in the generated native-usage-menu-bar lane.
   native-macos:
     if: github.event_name != 'workflow_dispatch' || inputs.lanes != 'velnor'
     name: Native macOS smoke

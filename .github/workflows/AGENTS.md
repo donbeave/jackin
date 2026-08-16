@@ -34,7 +34,9 @@ Apply these rules to every workflow under this directory. They define the reposi
   runner-selectable pipeline exposes a `workflow_dispatch` `lanes` choice
   ordered `github`, `velnor`, and `both`; omitted input resolves to GitHub.
   Velnor runs only when explicitly selected or in scheduled parity. The GitHub
-  lane is pinned to `ubuntu-26.04`, and workflows do not use macOS runners.
+  portable lane is pinned to `ubuntu-26.04`. The generated `native` class owns
+  the only required desktop platform lane, pinned to `macos-26`; do not add
+  repository-slug branches or hand-edited platform jobs to the consumer.
 - The canonical Sunday parity schedule selects `both`. Other automatic events
   remain GitHub-default.
 
