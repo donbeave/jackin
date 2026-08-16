@@ -267,6 +267,12 @@ jobs:
       - name: Bind package-result resolver into admitted closure
         if: github.event_name == 'velnor-admission-closure'
         uses: dawidd6/action-download-artifact@b6e2e70617bc3265edd6dab6c906732b2f1ae151 # v21
+      - name: Bind nested cache save into admitted closure
+        if: github.event_name == 'velnor-admission-closure'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      - name: Bind nested xtask resolver into admitted closure
+        if: github.event_name == 'velnor-admission-closure'
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
       - name: Restore input-identical jackin archive set
         id: archive-result
         uses: ./.github/actions/restore-package-result
@@ -383,6 +389,12 @@ jobs:
       - name: Bind package-result resolver into admitted closure
         if: github.event_name == 'velnor-admission-closure'
         uses: dawidd6/action-download-artifact@b6e2e70617bc3265edd6dab6c906732b2f1ae151 # v21
+      - name: Bind nested cache save into admitted closure
+        if: github.event_name == 'velnor-admission-closure'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      - name: Bind nested xtask resolver into admitted closure
+        if: github.event_name == 'velnor-admission-closure'
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
       - name: Restore input-identical capsule archive set
         id: archive-result
         uses: ./.github/actions/restore-package-result
