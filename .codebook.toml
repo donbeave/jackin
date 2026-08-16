@@ -45,6 +45,10 @@ ignore_patterns = [
 ]
 
 words = [
+  "ecr",
+  "kube",
+  "Rustacean",
+  "tokei",
   "staticlib",
   "LSUI",
   "LSUIElement",
