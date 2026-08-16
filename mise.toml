@@ -20,7 +20,7 @@ cargo-binstall = "1.21.1"
 # Provides `uniffi-bindgen`; pin matches jackin-usage-ffi UniFFI (needs cli feature).
 "cargo:uniffi" = { version = "0.32.0", default-features = true, features = "cli" }
 "cargo:cargo-zigbuild" = "0.23.0"
-"cargo:codebook-lsp" = { version = "0.3.41", default-features = false }
+"cargo:codebook-lsp" = { version = "0.3.42", default-features = false }
 "cargo:sccache" = "0.16.0"
 "cargo:dylint-link" = "6.0.4"
 cosign = "3.1.2"
