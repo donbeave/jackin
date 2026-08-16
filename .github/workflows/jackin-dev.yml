@@ -12,10 +12,10 @@ on:
     inputs:
       lanes:
         description: |
-          Which runner(s) to run on. Default github; use both for parity runs.
+          Which runner(s) to run on. Default Velnor; use both for parity runs.
         type: choice
-        default: github
-        options: [github, velnor, both]
+        default: velnor
+        options: [velnor, github, both]
 
 concurrency:
   # PR validation may cancel superseded work. Publishing runs serialize and
@@ -26,7 +26,7 @@ concurrency:
 jobs:
   validate-version-bump:
     if: github.event_name == 'pull_request'
-    runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'velnor') && fromJSON('["self-hosted","velnor-target-mvp"]') || 'ubuntu-26.04' }}
+    runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'github') && 'ubuntu-26.04' || fromJSON('["self-hosted","velnor-target-mvp"]') }}
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -140,11 +140,11 @@ jobs:
           fi
 
   version:
-    runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'velnor') && fromJSON('["self-hosted","velnor-target-mvp"]') || 'ubuntu-26.04' }}
+    runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'github') && 'ubuntu-26.04' || fromJSON('["self-hosted","velnor-target-mvp"]') }}
     timeout-minutes: 5
     outputs:
       version: ${{ steps.version.outputs.version }}
-      runner-configs: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'both') && '[{"lane":"GitHub","runner":"\"ubuntu-26.04\"","runner_os":"Linux","runner_arch":"X64","writer":true},{"lane":"Velnor","runner":"[\"self-hosted\",\"velnor-target-mvp\"]","runner_os":"Linux","runner_arch":"X64","writer":false}]' || (github.event_name == 'workflow_dispatch' && inputs.lanes == 'velnor') && '[{"lane":"Velnor","runner":"[\"self-hosted\",\"velnor-target-mvp\"]","runner_os":"Linux","runner_arch":"X64","writer":false}]' || '[{"lane":"GitHub","runner":"\"ubuntu-26.04\"","runner_os":"Linux","runner_arch":"X64","writer":true}]' }}
+      runner-configs: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'both') && '[{"lane":"Velnor","runner":"[\"self-hosted\",\"velnor-target-mvp\"]","runner_os":"Linux","runner_arch":"X64","writer":true},{"lane":"GitHub","runner":"\"ubuntu-26.04\"","runner_os":"Linux","runner_arch":"X64","writer":false}]' || (github.event_name == 'workflow_dispatch' && inputs.lanes == 'github') && '[{"lane":"GitHub","runner":"\"ubuntu-26.04\"","runner_os":"Linux","runner_arch":"X64","writer":true}]' || '[{"lane":"Velnor","runner":"[\"self-hosted\",\"velnor-target-mvp\"]","runner_os":"Linux","runner_arch":"X64","writer":true}]' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - id: version
@@ -155,7 +155,7 @@ jobs:
 
   assert-version:
     needs: version
-    runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'velnor') && fromJSON('["self-hosted","velnor-target-mvp"]') || 'ubuntu-26.04' }}
+    runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'github') && 'ubuntu-26.04' || fromJSON('["self-hosted","velnor-target-mvp"]') }}
     timeout-minutes: 60
     outputs:
       published: ${{ steps.result.outputs.published || steps.off-main.outputs.published }}
@@ -337,7 +337,7 @@ jobs:
       github.ref == 'refs/heads/main' &&
       needs.assert-version.outputs.published != 'true'
     needs: [version, assert-version, build]
-    runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'velnor') && fromJSON('["self-hosted","velnor-target-mvp"]') || 'ubuntu-26.04' }}
+    runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'github') && 'ubuntu-26.04' || fromJSON('["self-hosted","velnor-target-mvp"]') }}
     timeout-minutes: 60
     concurrency:
       group: homebrew-tap-publish

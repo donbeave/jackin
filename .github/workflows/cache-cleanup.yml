@@ -7,10 +7,10 @@ on:
   workflow_dispatch:
     inputs:
       lanes:
-        description: github (default) | velnor
+        description: velnor (default) | github
         type: choice
-        default: github
-        options: [github, velnor]
+        default: velnor
+        options: [velnor, github]
       ref:
         description: Cache ref to delete, for example refs/pull/632/merge.
         required: true
@@ -22,7 +22,7 @@ permissions:
 
 jobs:
   cleanup:
-    runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'velnor') && fromJSON('["self-hosted","velnor-target-mvp"]') || 'ubuntu-26.04' }}
+    runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'github') && 'ubuntu-26.04' || fromJSON('["self-hosted","velnor-target-mvp"]') }}
     timeout-minutes: 15
     steps:
       - name: Delete scoped caches

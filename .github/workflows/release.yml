@@ -18,11 +18,11 @@ on:
         options: [validate]
       lanes:
         description: |
-          Which runner(s) to run on for Linux CLI/capsule builds. Default github; use both for parity runs.
+          Which runner(s) to run on for Linux CLI/capsule builds. Default Velnor; use both for parity runs.
           Menu-bar signing always uses GitHub-hosted macOS (never Velnor).
         type: choice
-        default: github
-        options: [github, velnor, both]
+        default: velnor
+        options: [velnor, github, both]
 
 permissions:
   actions: read
@@ -40,7 +40,7 @@ concurrency:
 jobs:
   matrix-setup:
     name: Select runner lane
-    runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'velnor') && fromJSON('["self-hosted","velnor-target-mvp"]') || 'ubuntu-26.04' }}
+    runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'github') && 'ubuntu-26.04' || fromJSON('["self-hosted","velnor-target-mvp"]') }}
     timeout-minutes: 5
     outputs:
       configs: ${{ steps.set.outputs.configs }}
@@ -48,7 +48,7 @@ jobs:
     steps:
       - id: set
         env:
-          LANES: ${{ github.event_name == 'workflow_dispatch' && inputs.lanes || 'github' }}
+          LANES: ${{ github.event_name == 'workflow_dispatch' && inputs.lanes || 'velnor' }}
         run: |
           github='{"lane":"GitHub","runner":"\"ubuntu-26.04\"","runner_os":"Linux","runner_arch":"X64"}'
           velnor='{"lane":"Velnor","runner":"[\"self-hosted\",\"velnor-target-mvp\"]","runner_os":"Linux","runner_arch":"X64"}'
@@ -58,7 +58,7 @@ jobs:
               has_github=false
               ;;
             both)
-              configs="[$github,$velnor]"
+              configs="[$velnor,$github]"
               has_github=true
               ;;
             *)
@@ -72,7 +72,7 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
   check-version:
-    runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'velnor') && fromJSON('["self-hosted","velnor-target-mvp"]') || 'ubuntu-26.04' }}
+    runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'github') && 'ubuntu-26.04' || fromJSON('["self-hosted","velnor-target-mvp"]') }}
     timeout-minutes: 5
     outputs:
       published: ${{ steps.published.outputs.published }}
