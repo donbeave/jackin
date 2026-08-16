@@ -46,9 +46,11 @@ ignore_patterns = [
 
 words = [
   "ecr",
+  "forgejo",
   "kube",
   "Rustacean",
   "tokei",
+  "Xauthority",
   "staticlib",
   "LSUI",
   "LSUIElement",
