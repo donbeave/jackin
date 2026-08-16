@@ -20,6 +20,10 @@ permissions:
   actions: write
   contents: read
 
+concurrency:
+  group: cache-cleanup-${{ github.ref }}-${{ inputs.ref }}
+  cancel-in-progress: false
+
 jobs:
   cleanup:
     runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'github') && 'ubuntu-26.04' || fromJSON('["self-hosted","velnor-target-mvp"]') }}
