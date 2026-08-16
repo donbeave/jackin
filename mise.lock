@@ -272,7 +272,7 @@ backend = "cargo:codebook-lsp"
 default-features = "false"
 
 [[tools."cargo:dylint-link"]]
-version = "6.0.1"
+version = "6.0.4"
 backend = "cargo:dylint-link"
 
 [[tools."cargo:sccache"]]
