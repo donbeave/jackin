@@ -21,14 +21,13 @@ permissions:
 concurrency:
   # Branch dispatches are build-only and must not contend with the main publish.
   group: homebrew-preview-${{ github.ref == 'refs/heads/main' && 'publish' || github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   source-changed:
     if: >-
-      github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'workflow_run' &&
-       github.event.workflow_run.conclusion == 'success')
+      github.ref == 'refs/heads/main' &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'velnor') && fromJSON('["self-hosted","velnor-target-mvp"]') || 'ubuntu-26.04' }}
     timeout-minutes: 5
     outputs:
@@ -43,26 +42,7 @@ jobs:
     steps:
       - name: Resolve source SHA
         id: source
-        env:
-          # Pre-resolve into env vars so the inline shell never sees a
-          # template substitution — keeps the script style identical to
-          # the rest of this workflow's run blocks.
-          DISPATCH_SHA: ${{ github.sha }}
-          WORKFLOW_SHA: ${{ github.event.workflow_run.head_sha }}
-          EVENT_NAME: ${{ github.event_name }}
-        run: |
-          case "$EVENT_NAME" in
-            workflow_dispatch)
-              echo "sha=${DISPATCH_SHA}" >> "$GITHUB_OUTPUT"
-              ;;
-            workflow_run)
-              echo "sha=${WORKFLOW_SHA}" >> "$GITHUB_OUTPUT"
-              ;;
-            *)
-              echo "::error::Unsupported event: ${EVENT_NAME}"
-              exit 1
-              ;;
-          esac
+        run: echo "sha=${{ github.sha }}" >> "$GITHUB_OUTPUT"
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -492,7 +472,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+          if [ "$EVENT_NAME" = "push" ] || [ "$EVENT_NAME" = "workflow_dispatch" ]; then
             echo "ok=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
