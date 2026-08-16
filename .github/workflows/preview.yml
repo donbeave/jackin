@@ -262,6 +262,11 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.source-changed.outputs.sha }}
+      # Velnor admission is fail-closed and must see remote dependencies of
+      # local composites in the workflow graph before checkout executes.
+      - name: Bind package-result resolver into admitted closure
+        if: github.event_name == 'velnor-admission-closure'
+        uses: dawidd6/action-download-artifact@b6e2e70617bc3265edd6dab6c906732b2f1ae151 # v21
       - name: Restore input-identical jackin archive set
         id: archive-result
         uses: ./.github/actions/restore-package-result
@@ -374,6 +379,10 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.source-changed.outputs.sha }}
+      # Keep the nested dependency explicit for per-job admission closure.
+      - name: Bind package-result resolver into admitted closure
+        if: github.event_name == 'velnor-admission-closure'
+        uses: dawidd6/action-download-artifact@b6e2e70617bc3265edd6dab6c906732b2f1ae151 # v21
       - name: Restore input-identical capsule archive set
         id: archive-result
         uses: ./.github/actions/restore-package-result
