@@ -237,7 +237,7 @@ jobs:
     # Cold four-platform archive builds measured just over 60 minutes on GitHub.
     timeout-minutes: 90
     concurrency:
-      group: preview-jackin-${{ needs.source-changed.outputs.jackin_archive_contract }}
+      group: preview-jackin-${{ needs.source-changed.outputs.jackin_archive_contract }}-${{ needs.source-changed.outputs.version }}
       cancel-in-progress: false
     permissions:
       actions: read
@@ -262,15 +262,26 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.source-changed.outputs.sha }}
+      # Velnor admission is fail-closed and must see remote dependencies of
+      # local composites in the workflow graph before checkout executes.
+      - name: Bind package-result resolver into admitted closure
+        if: github.event_name == 'velnor-admission-closure'
+        uses: dawidd6/action-download-artifact@b6e2e70617bc3265edd6dab6c906732b2f1ae151 # v21
+      - name: Bind nested cache save into admitted closure
+        if: github.event_name == 'velnor-admission-closure'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      - name: Bind nested xtask resolver into admitted closure
+        if: github.event_name == 'velnor-admission-closure'
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
       - name: Restore input-identical jackin archive set
         id: archive-result
         uses: ./.github/actions/restore-package-result
         with:
           workflow: preview.yml
           branch: ${{ github.ref_name }}
-          primary-name: preview-GitHub-jackin-${{ needs.source-changed.outputs.jackin_archive_contract }}
-          alternate-name: preview-Velnor-jackin-${{ needs.source-changed.outputs.jackin_archive_contract }}
-          current-name-regexp: ^preview-(GitHub|Velnor)-jackin-${{ needs.source-changed.outputs.jackin_archive_contract }}$
+          primary-name: preview-GitHub-jackin-${{ needs.source-changed.outputs.jackin_archive_contract }}-${{ needs.source-changed.outputs.version }}
+          alternate-name: preview-Velnor-jackin-${{ needs.source-changed.outputs.jackin_archive_contract }}-${{ needs.source-changed.outputs.version }}
+          current-name-regexp: ^preview-(GitHub|Velnor)-jackin-${{ needs.source-changed.outputs.jackin_archive_contract }}-${{ needs.source-changed.outputs.version }}$
           dry-run: ${{ github.event_name == 'workflow_dispatch' }}
       - uses: ./.github/actions/download-ci-xtask
         if: steps.archive-result.outputs.found != 'true'
@@ -331,7 +342,7 @@ jobs:
         if: steps.archive-result.outputs.found != 'true' || github.event_name != 'workflow_dispatch'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: preview-${{ matrix.config.lane }}-jackin-${{ needs.source-changed.outputs.jackin_archive_contract }}
+          name: preview-${{ matrix.config.lane }}-jackin-${{ needs.source-changed.outputs.jackin_archive_contract }}-${{ needs.source-changed.outputs.version }}
           path: dist/*.tar.gz*
       - name: Upload jackin cargo timings
         if: always() && steps.archive-result.outputs.found != 'true'
@@ -349,7 +360,7 @@ jobs:
     runs-on: ${{ fromJSON(matrix.config.runner) }}
     timeout-minutes: 60
     concurrency:
-      group: preview-capsule-${{ needs.source-changed.outputs.capsule_archive_contract }}
+      group: preview-capsule-${{ needs.source-changed.outputs.capsule_archive_contract }}-${{ needs.source-changed.outputs.version }}
       cancel-in-progress: false
     permissions:
       actions: read
@@ -374,15 +385,25 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.source-changed.outputs.sha }}
+      # Keep the nested dependency explicit for per-job admission closure.
+      - name: Bind package-result resolver into admitted closure
+        if: github.event_name == 'velnor-admission-closure'
+        uses: dawidd6/action-download-artifact@b6e2e70617bc3265edd6dab6c906732b2f1ae151 # v21
+      - name: Bind nested cache save into admitted closure
+        if: github.event_name == 'velnor-admission-closure'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      - name: Bind nested xtask resolver into admitted closure
+        if: github.event_name == 'velnor-admission-closure'
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
       - name: Restore input-identical capsule archive set
         id: archive-result
         uses: ./.github/actions/restore-package-result
         with:
           workflow: preview.yml
           branch: ${{ github.ref_name }}
-          primary-name: preview-GitHub-jackin-capsule-${{ needs.source-changed.outputs.capsule_archive_contract }}
-          alternate-name: preview-Velnor-jackin-capsule-${{ needs.source-changed.outputs.capsule_archive_contract }}
-          current-name-regexp: ^preview-(GitHub|Velnor)-jackin-capsule-${{ needs.source-changed.outputs.capsule_archive_contract }}$
+          primary-name: preview-GitHub-jackin-capsule-${{ needs.source-changed.outputs.capsule_archive_contract }}-${{ needs.source-changed.outputs.version }}
+          alternate-name: preview-Velnor-jackin-capsule-${{ needs.source-changed.outputs.capsule_archive_contract }}-${{ needs.source-changed.outputs.version }}
+          current-name-regexp: ^preview-(GitHub|Velnor)-jackin-capsule-${{ needs.source-changed.outputs.capsule_archive_contract }}-${{ needs.source-changed.outputs.version }}$
           dry-run: ${{ github.event_name == 'workflow_dispatch' }}
       - uses: ./.github/actions/download-ci-xtask
         if: steps.archive-result.outputs.found != 'true'
@@ -437,7 +458,7 @@ jobs:
         if: steps.archive-result.outputs.found != 'true' || github.event_name != 'workflow_dispatch'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: preview-${{ matrix.config.lane }}-jackin-capsule-${{ needs.source-changed.outputs.capsule_archive_contract }}
+          name: preview-${{ matrix.config.lane }}-jackin-capsule-${{ needs.source-changed.outputs.capsule_archive_contract }}-${{ needs.source-changed.outputs.version }}
           path: dist/*.tar.gz*
       - name: Upload capsule cargo timings
         if: always() && steps.archive-result.outputs.found != 'true'
@@ -496,18 +517,30 @@ jobs:
           ref: ${{ needs.source-changed.outputs.sha }}
           # Publishing verifies source ancestry before updating the formula.
           fetch-depth: 0
+      - name: Bind publisher cache restore into admitted closure
+        if: github.event_name == 'velnor-admission-closure'
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      - name: Bind publisher cache save into admitted closure
+        if: github.event_name == 'velnor-admission-closure'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      - name: Bind publisher xtask resolver into admitted closure
+        if: github.event_name == 'velnor-admission-closure'
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+      - name: Bind publisher fallback toolchain into admitted closure
+        if: github.event_name == 'velnor-admission-closure'
+        uses: jdx/mise-action@7e36c90d9ab29c415a2384db3006f3ec8a8cc654 # v4.2.4
 
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           path: artifacts
-          pattern: preview-GitHub-*
+          pattern: preview-${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'github') && 'GitHub' || 'Velnor' }}-*
           merge-multiple: true
 
       - name: Restore prepared CI xtask
         uses: ./.github/actions/download-ci-xtask
         with:
           token: ${{ github.token }}
-          lane: GitHub
+          lane: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'github') && 'GitHub' || 'Velnor' }}
           xtask-contract: ${{ hashFiles('Cargo.lock', 'Cargo.toml', 'rust-toolchain.toml', '.cargo/**', 'crates/*/Cargo.toml', 'crates/jackin-xtask/src/**', 'crates/jackin-process/src/**') }}
           include-tools: "false"
 
