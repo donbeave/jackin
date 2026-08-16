@@ -237,7 +237,7 @@ jobs:
     # Cold four-platform archive builds measured just over 60 minutes on GitHub.
     timeout-minutes: 90
     concurrency:
-      group: preview-jackin-${{ needs.source-changed.outputs.jackin_archive_contract }}
+      group: preview-jackin-${{ needs.source-changed.outputs.jackin_archive_contract }}-${{ needs.source-changed.outputs.version }}
       cancel-in-progress: false
     permissions:
       actions: read
@@ -279,9 +279,9 @@ jobs:
         with:
           workflow: preview.yml
           branch: ${{ github.ref_name }}
-          primary-name: preview-GitHub-jackin-${{ needs.source-changed.outputs.jackin_archive_contract }}
-          alternate-name: preview-Velnor-jackin-${{ needs.source-changed.outputs.jackin_archive_contract }}
-          current-name-regexp: ^preview-(GitHub|Velnor)-jackin-${{ needs.source-changed.outputs.jackin_archive_contract }}$
+          primary-name: preview-GitHub-jackin-${{ needs.source-changed.outputs.jackin_archive_contract }}-${{ needs.source-changed.outputs.version }}
+          alternate-name: preview-Velnor-jackin-${{ needs.source-changed.outputs.jackin_archive_contract }}-${{ needs.source-changed.outputs.version }}
+          current-name-regexp: ^preview-(GitHub|Velnor)-jackin-${{ needs.source-changed.outputs.jackin_archive_contract }}-${{ needs.source-changed.outputs.version }}$
           dry-run: ${{ github.event_name == 'workflow_dispatch' }}
       - uses: ./.github/actions/download-ci-xtask
         if: steps.archive-result.outputs.found != 'true'
@@ -342,7 +342,7 @@ jobs:
         if: steps.archive-result.outputs.found != 'true' || github.event_name != 'workflow_dispatch'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: preview-${{ matrix.config.lane }}-jackin-${{ needs.source-changed.outputs.jackin_archive_contract }}
+          name: preview-${{ matrix.config.lane }}-jackin-${{ needs.source-changed.outputs.jackin_archive_contract }}-${{ needs.source-changed.outputs.version }}
           path: dist/*.tar.gz*
       - name: Upload jackin cargo timings
         if: always() && steps.archive-result.outputs.found != 'true'
@@ -360,7 +360,7 @@ jobs:
     runs-on: ${{ fromJSON(matrix.config.runner) }}
     timeout-minutes: 60
     concurrency:
-      group: preview-capsule-${{ needs.source-changed.outputs.capsule_archive_contract }}
+      group: preview-capsule-${{ needs.source-changed.outputs.capsule_archive_contract }}-${{ needs.source-changed.outputs.version }}
       cancel-in-progress: false
     permissions:
       actions: read
@@ -401,9 +401,9 @@ jobs:
         with:
           workflow: preview.yml
           branch: ${{ github.ref_name }}
-          primary-name: preview-GitHub-jackin-capsule-${{ needs.source-changed.outputs.capsule_archive_contract }}
-          alternate-name: preview-Velnor-jackin-capsule-${{ needs.source-changed.outputs.capsule_archive_contract }}
-          current-name-regexp: ^preview-(GitHub|Velnor)-jackin-capsule-${{ needs.source-changed.outputs.capsule_archive_contract }}$
+          primary-name: preview-GitHub-jackin-capsule-${{ needs.source-changed.outputs.capsule_archive_contract }}-${{ needs.source-changed.outputs.version }}
+          alternate-name: preview-Velnor-jackin-capsule-${{ needs.source-changed.outputs.capsule_archive_contract }}-${{ needs.source-changed.outputs.version }}
+          current-name-regexp: ^preview-(GitHub|Velnor)-jackin-capsule-${{ needs.source-changed.outputs.capsule_archive_contract }}-${{ needs.source-changed.outputs.version }}$
           dry-run: ${{ github.event_name == 'workflow_dispatch' }}
       - uses: ./.github/actions/download-ci-xtask
         if: steps.archive-result.outputs.found != 'true'
@@ -458,7 +458,7 @@ jobs:
         if: steps.archive-result.outputs.found != 'true' || github.event_name != 'workflow_dispatch'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: preview-${{ matrix.config.lane }}-jackin-capsule-${{ needs.source-changed.outputs.capsule_archive_contract }}
+          name: preview-${{ matrix.config.lane }}-jackin-capsule-${{ needs.source-changed.outputs.capsule_archive_contract }}-${{ needs.source-changed.outputs.version }}
           path: dist/*.tar.gz*
       - name: Upload capsule cargo timings
         if: always() && steps.archive-result.outputs.found != 'true'
