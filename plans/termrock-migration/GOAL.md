@@ -36,6 +36,13 @@ Plan 003 pauses on user input by design (OPERATOR_BACKGROUND_PICK — the
 operator's surface-background variant choice from the side-by-side render);
 that BLOCKED state is a correct outcome, not a failure.
 
+TermRock is jackin❯-controlled (hub repo law): if a TermRock API turns out
+not to fit, do not work around it in jackin❯ code — mark the row
+`BLOCKED (termrock API misfit — recommend upstream change: <one line>)`
+naming the gap and the upstream change you would make, and stop; the
+operator changes TermRock (breaking changes acceptable), re-pins, and
+resumes. That BLOCKED state is also a correct outcome.
+
 Done means: after the last repository or status change, `cargo xtask ci`
 exits 0; a tailrocks-reconcile pass (or its manual steps) changes no row;
 and every status row is DONE or REJECTED, with no row STALE, BLOCKED, or
@@ -72,7 +79,10 @@ resume". Never build on a STALE or BLOCKED row.
 
 Plan 003's OPERATOR_BACKGROUND_PICK pause is a by-design BLOCKED state; if
 the operator has since provided the pick, record it and continue plan 003
-at its step 4.
+at its step 4. A `termrock API misfit` BLOCKED is likewise by design (hub
+repo law): if the operator has since landed the TermRock change and
+re-pinned, verify the new rev per the hub, then resume; if the pin moved
+past `e1d61f4d`, treat the package as drifted and stop for re-planning.
 
 Run `sh plans/termrock-migration/goal-check.sh` before resuming work and
 paste its final line. Route dirty-tree to cleanup and stop, plan-drift to
