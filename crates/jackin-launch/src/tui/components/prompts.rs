@@ -200,6 +200,10 @@ impl PromptConfirm {
         match key.code {
             KeyCode::Char('y' | 'Y') => Outcome::Activated(true),
             KeyCode::Char('n' | 'N') => Outcome::Activated(false),
+            // Head TermRock leaves Tab/BackTab to the host; pre-bump the
+            // choice dialog cycled its own actions on them.
+            KeyCode::Tab => self.state.select_next(&confirm_actions()),
+            KeyCode::BackTab => self.state.select_previous(&confirm_actions()),
             _ => self.state.handle_key(&confirm_actions(), key.into()),
         }
     }

@@ -257,6 +257,19 @@ impl ConfirmState {
         if let Some(value) = direct {
             return ModalOutcome::Commit(value);
         }
+        // Head TermRock leaves Tab/BackTab to the host; pre-bump the choice
+        // dialog cycled its own actions on them.
+        match key.code {
+            KeyCode::Tab => {
+                self.choice.select_next(&confirm_actions());
+                return ModalOutcome::Continue;
+            }
+            KeyCode::BackTab => {
+                self.choice.select_previous(&confirm_actions());
+                return ModalOutcome::Continue;
+            }
+            _ => {}
+        }
         match self.choice.handle_key(&confirm_actions(), key) {
             Outcome::Activated(value) => ModalOutcome::Commit(value),
             Outcome::Cancelled => ModalOutcome::Cancel,
