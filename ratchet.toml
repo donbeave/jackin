@@ -554,7 +554,7 @@ key = "crates/jackin-isolation/README.md"
 bound = 2171
 [[family.entry]]
 key = "crates/jackin-launch/README.md"
-bound = 1892
+bound = 1937
 [[family.entry]]
 key = "crates/jackin-lints/README.md"
 bound = 2038
