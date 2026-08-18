@@ -14,9 +14,9 @@ Destination: all six consuming crates build against the TermRock head rev `e1d61
 ## Vocabulary
 
 - **Surface**: the TUI area of one consuming crate — console (`jackin-console`), capsule (`jackin-capsule`), launch (`jackin-launch`), adapter (`jackin`), facade (`jackin-tui`), oppicker (`jackin-oppicker`). The host-console adapter code in `crates/jackin/src/console/` belongs to the adapter surface, not console. _Avoid_: screen, app.
-- **Bump phase**: the first PR — rev bump plus mechanical API migration only; no judgement changes. _Avoid_: upgrade PR, port.
+- **Bump phase**: the first PR — rev bump + mechanical API migration + the minimum compiler-forced redesigns (focus/modal, diff scrolling), each behaviorally parity-tested; no other judgement changes (decision 2026-08-19). _Avoid_: upgrade PR, port.
 - **Modernization phase**: a per-surface PR that re-platforms that surface's hand-rolled machinery on the new TermRock component set. _Avoid_: refactor, redesign.
-- **Brand compositions**: BrandHeader, digital rain, launch animation — jackin❯-owned visuals upstream declined to absorb. _Avoid_: brand widgets, chrome.
+- **Brand compositions**: BrandHeader, digital rain, launch animation, and the launch progress rail (added by decision 2026-08-19) — jackin❯-owned visuals upstream declined to absorb (rail: jackin❯'s own designation). _Avoid_: brand widgets, chrome.
 
 ## Decisions
 
@@ -27,6 +27,12 @@ Destination: all six consuming crates build against the TermRock head rev `e1d61
 - 2026-08-19 — **Phasing: bump first, then modernize surface-by-surface.** PR 1 is the rev bump + mechanical migration (compiles everywhere, snapshots re-baselined, upstream visuals accepted); each subsequent PR modernizes one surface (console, capsule, launch, …). Because the mechanical layer must never mix with judgement changes — bisectable, and each surface gets its own TUI-design-decision review.
 - 2026-08-19 — **Visual proof: adopt the upstream `termrock-raster` PNG baseline pipeline in jackin❯ during modernization phases, in addition to re-baselined text snapshots.** Because zero-tolerance pixel baselines are the strongest visual-regression proof for a look-changing migration, and upstream built that pipeline specifically for jackin❯ parity.
 - 2026-08-19 — **Modernization order: console → capsule → launch → small surfaces (jackin adapter, jackin-tui facade, oppicker).** Because console is the largest surface (636 refs, most component variety) and modernizing it first sets the patterns every other surface copies, with the cheapest host-side smoke path.
+- 2026-08-19 — **Brand-look invariant binds from the bump PR onward.** The bump PR compensates in consumer code (pin affected brand spans to jackin-brand constants or explicit styles) so brand compositions render identically despite the theme swap. Because research proved the swap recolors BrandHeader, the launch header, and capsule row-0 chrome with jackin❯ code untouched, and no text snapshot catches color shifts.
+- 2026-08-19 — **Bump PR = mechanical migration plus the minimum forced redesigns, each behaviorally parity-tested.** The three redesigns the compiler forces (`SurfaceFocus`/`ModalFlow` onto `InteractionScene`/`FocusGraph`/`OverlayStack`; `DiffViewState` scrolling) land inside the bump PR with named parity tests for Esc cascade, focus restore, and diff scrolling. Because the bump cannot compile without them, so they cannot be deferred past it — and untested redesigns inside a "mechanical" PR are how regressions hide.
+- 2026-08-19 — **Surface background treatment is decided at bump-PR review from a side-by-side render** of the upstream obsidian surface ladder vs `RolePalette::terminal_native()`. Because a look decision should be made seeing both variants; research chapter 03 supplies the exact value tables. (Deferred entry records the trigger.)
+- 2026-08-19 — **The launch progress rail is brand: look preserved.** The rail joins the protected brand set alongside BrandHeader, digital rain, and the launch animation — rebuild on new primitives allowed, current look preserved. Chosen over the recommended product-UI option: the rail is part of the launch brand experience.
+- 2026-08-19 — **Adoption rule: swap wherever an upstream equivalent exists.** The concrete per-surface pairing map and each surface's key-screen list for PNG baselines are settled at that surface's finalization, console first, from research chapter 04's pairing tables. Because pairing decisions are best made next to the code with the vetted tables in hand.
+- 2026-08-19 — **jackin-tui facade end-state deferred to console-phase finalization.** Until then the facade keeps its product runtime traits (`Component`/`View`/`Subscription`). Because the first modernized surface supplies the evidence the choice needs. (Deferred entry records the trigger.)
 
 ## Capabilities
 
@@ -74,23 +80,18 @@ Delta survey `5ff94ee..e1d61f4d` (method: git log/diff + upstream `migrations/` 
 
 ## Must not
 
-- MUST NOT move brand/domain compositions (BrandHeader, digital rain, launch animation) into TermRock or change their visual identity — upstream explicitly declined to absorb them (migration doc 0331); ownership and look are invariants, implementation is not (see Decisions 2026-08-19).
+- MUST NOT move brand/domain compositions (BrandHeader, digital rain, launch animation, launch progress rail) into TermRock or change their visual identity — upstream explicitly declined to absorb the first three (migration doc 0331); the rail is jackin❯-designated brand (decision 2026-08-19); ownership and look are invariants, implementation is not.
 - MUST NOT introduce compatibility facades or shim layers over renamed TermRock APIs — repository latest-only law; upstream migration docs direct the same.
 
 ## Quality bar
 
-- Bump phase: all six crates compile against rev `e1d61f4d`, full test suite green, the 18 existing text snapshots deliberately re-baselined (upstream visuals accepted), TUI docs under `docs/content/reference/tui/` updated in the same PR.
+- Bump phase: all six crates compile against rev `e1d61f4d`, full test suite green, the 18 existing text snapshots deliberately re-baselined (upstream visuals accepted), TUI docs under `docs/content/reference/tui/` updated in the same PR; named behavioral parity tests pass for the three forced redesigns (Esc cascade, focus restore, diff scrolling); brand compositions render identically via consumer-code compensation (decisions 2026-08-19).
 - Modernization phases: each surface additionally adopts the `termrock-raster` PNG baseline pipeline for its key screens — zero-tolerance pixel compare with a bless workflow, per the pipeline upstream built for jackin❯ parity (decision 2026-08-19).
 - Brand surfaces: the brand compositions' own rendering stays identical before/after re-implementation; surrounding chrome may change with its surface's modernization. The exact proof mechanism (text snapshot vs PNG-baseline crop) is settled at finalization.
 
 ## Open questions
 
-- Per-surface component adoption map: which hand-rolled machinery in each surface swaps to which new TermRock component (e.g. does the capsule command palette move to upstream `command_palette`?), and which screens count as that surface's "key screens" for PNG baselines. Recommendation: swap wherever an upstream equivalent exists; settle the concrete map and key-screen list per surface at finalization, console first.
-- Does the brand-look invariant bind already in the bump PR? Research settled the facts (2026-08-19): the swap **does** recolor BrandHeader, the launch header, and capsule row-0 chrome (29 of 38 roles changed values), and no text snapshot catches it. Recommendation unchanged: yes — the invariant binds from the bump PR onward, and the bump PR compensates in consumer code.
-- Can the bump PR stay strictly mechanical? Three break classes are redesigns, not renames: `FocusRing`/`ModalStack` went crate-private (jackin-tui `SurfaceFocus`/`ModalFlow` must move to `InteractionScene`/`FocusGraph`/`OverlayStack`), and `DiffViewState.offset` lost its setter (12 launch sites). Their behavior (Esc cascade, focus restore, diff scrolling) has no test proving parity. Decide: allow these three redesigns inside the bump PR with named behavioral parity tests, or split them into a gate of their own. Recommendation: keep them in the bump PR but add explicit parity tests — a bump that doesn't compile isn't shippable, so they cannot be deferred past it.
-- jackin-tui facade end-state: keep the product runtime traits (`Component`/`View`/`Subscription`) or adopt upstream `event_result`/`runtime` contracts? Both satisfy the arch gate; they cannot coexist (research chapter 04, Dead ends). Recommendation: decide at console-phase finalization, after the first surface exercises the upstream contracts.
-- Surface background treatment: adopt the new obsidian surface ladder (upstream default — backgrounds on every surface) or `RolePalette::terminal_native()` (restores background-free surfaces, keeps new text values)? Changes the look of every jackin❯ surface. Recommendation: decide with a side-by-side render during bump-PR review.
-- Is the launch progress rail inside the protected "launch animation" brand boundary? Settled ground names BrandHeader, rain, launch animation; the rail is unlisted. Recommendation: treat the rail as product UI (modernizable), not brand.
+All six 2026-08-19 open questions are settled — see Decisions (2026-08-19): brand invariant binds from bump PR; bump PR carries the three forced redesigns with parity tests; background treatment decided at bump-PR review (Deferred); progress rail designated brand; adoption rule settled with per-surface maps at finalization (Deferred); facade end-state deferred to console finalization (Deferred).
 
 ## Open research questions
 
@@ -102,8 +103,13 @@ Delta survey `5ff94ee..e1d61f4d` (method: git log/diff + upstream `migrations/` 
 
 ## Deferred
 
+- Surface background variant: obsidian ladder vs `RolePalette::terminal_native()` — revisit at bump-PR review with a side-by-side render (decision 2026-08-19 fixed the method; research ch03 has the value tables).
+- Per-surface component adoption map + key-screen list — revisit at each surface's finalization, console first (rule settled 2026-08-19: swap wherever an upstream equivalent exists; research ch04 holds the pairing tables).
+- jackin-tui facade end-state (product traits vs upstream `event_result`/`runtime` contracts) — revisit at console-phase finalization, once the first surface has exercised the upstream contracts.
+
 ## Log
 
 - 2026-08-19 — tailrocks-idea — created (DRAFT).
 - 2026-08-19 — tailrocks-brainstorm — shaped (DRAFT → SHAPING): settled target rev, one-off cadence, full-modernization scope, bump-first phasing, brand invariants, PNG-baseline quality bar, console-first order; corrected the stale `src/console/tui/` surface fact to the six-crate usage map; delta survey `5ff94ee..e1d61f4d` recorded.
+- 2026-08-19 — tailrocks-record-decision — recorded six decisions (brand-invariant@bump, bump-scope redesigns+parity-tests, background-at-review, rail=brand, adoption rule, facade deferral); struck all open questions; three Deferred entries added; vocabulary, must-not, and quality bar reconciled. Status stays SHAPING.
 - 2026-08-19 — tailrocks-research — deep pass produced [`research/termrock-head-adoption/`](../../research/termrock-head-adoption/README.md) (5 vetted chapters + 2 critic rounds): compile-break inventory answered (384 errors / 15 classes / cargo-deny gate), 40 applicable migration docs, brand-recolor facts confirmed, adoption pairing tables, PNG-pipeline contract; struck the answered research question, added four plan-time research questions and four surfaced decision questions.
