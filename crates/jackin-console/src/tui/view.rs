@@ -341,7 +341,7 @@ pub const fn workspace_header_title() -> &'static str {
 pub fn footer_height(items: &[termrock::widgets::HintSpan<'_>], width: u16) -> u16 {
     // +1 for the mandatory leading spacer row above the hints on every screen.
     u16::try_from(
-        termrock::widgets::wrapped_hint_lines(items, width, &termrock::Theme::default()).len(),
+        termrock::widgets::wrapped_hint_lines(items, width, &termrock::style::DesignSystem::default()).len(),
     )
     .unwrap_or(u16::MAX)
     .saturating_add(1)
@@ -373,7 +373,7 @@ pub fn render_footer(frame: &mut Frame<'_>, area: Rect, items: &[termrock::widge
         ratatui::widgets::Paragraph::new(termrock::widgets::wrapped_hint_lines(
             items,
             hint_area.width,
-            &termrock::Theme::default(),
+            &termrock::style::DesignSystem::default(),
         ))
         .alignment(ratatui::layout::Alignment::Center),
         hint_area,

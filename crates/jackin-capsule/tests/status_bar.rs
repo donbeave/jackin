@@ -66,7 +66,7 @@ fn active_tab_background_differs_from_brand_pill() {
     let active_tab_cells = (0..80)
         .filter(|x| {
             buf[(*x, 0)].bg
-                == termrock::Theme::default()
+                == termrock::style::DesignSystem::default()
                     .style(termrock::style::Role::TabActive)
                     .bg
                     .unwrap_or_default()
@@ -85,7 +85,7 @@ fn hovered_tab_uses_lifted_background() {
     let (_, buf) = draw(80, &tabs, 0, &[], Some(1), PrefixMode::Idle);
     assert!(
         (0..80).any(|x| buf[(x, 0)].bg
-            == termrock::Theme::default()
+            == termrock::style::DesignSystem::default()
                 .style(termrock::style::Role::TabInactiveHovered)
                 .bg
                 .unwrap_or_default()),
@@ -102,7 +102,7 @@ fn active_tab_hover_uses_lifted_graphite_background() {
     let (_, buf) = draw(80, &tabs, 0, &[], Some(0), PrefixMode::Idle);
     assert!(
         (0..80).any(|x| buf[(x, 0)].bg
-            == termrock::Theme::default()
+            == termrock::style::DesignSystem::default()
                 .style(termrock::style::Role::TabActiveHovered)
                 .bg
                 .unwrap_or_default()),

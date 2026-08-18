@@ -491,7 +491,7 @@ pub fn workspace_mount_preview_row(
 
 #[must_use]
 pub fn collapse_section_lines(collapses: &[(String, String)]) -> Vec<Line<'static>> {
-    let style = Style::default().fg(termrock::Theme::default()
+    let style = Style::default().fg(termrock::style::DesignSystem::default()
         .style(termrock::style::Role::TextMuted)
         .fg
         .unwrap_or_default());
@@ -738,12 +738,12 @@ pub struct TrustPreviewRow {
               per-section readability."
 )]
 pub fn workspace_save_lines(preview: &WorkspaceSavePreview) -> Vec<Line<'static>> {
-    let heading = termrock::Theme::default().style(termrock::style::Role::TextStrong);
-    let value = Style::default().fg(termrock::Theme::default()
+    let heading = termrock::style::DesignSystem::default().style(termrock::style::Role::TextStrong);
+    let value = Style::default().fg(termrock::style::DesignSystem::default()
         .style(termrock::style::Role::Accent)
         .fg
         .unwrap_or_default());
-    let dim = Style::default().fg(termrock::Theme::default()
+    let dim = Style::default().fg(termrock::style::DesignSystem::default()
         .style(termrock::style::Role::TextMuted)
         .fg
         .unwrap_or_default());
@@ -1013,16 +1013,16 @@ fn allowed_roles_summary(preview: &WorkspaceSavePreview) -> String {
 
 #[must_use]
 pub fn settings_save_lines(preview: &SettingsSavePreview) -> Vec<Line<'static>> {
-    let heading = termrock::Theme::default().style(termrock::style::Role::TextStrong);
-    let add_style = Style::default().fg(termrock::Theme::default()
+    let heading = termrock::style::DesignSystem::default().style(termrock::style::Role::TextStrong);
+    let add_style = Style::default().fg(termrock::style::DesignSystem::default()
         .style(termrock::style::Role::Accent)
         .fg
         .unwrap_or_default());
-    let remove_style = Style::default().fg(termrock::Theme::default()
+    let remove_style = Style::default().fg(termrock::style::DesignSystem::default()
         .style(termrock::style::Role::TextMuted)
         .fg
         .unwrap_or_default());
-    let sep_style = Style::default().fg(termrock::Theme::default()
+    let sep_style = Style::default().fg(termrock::style::DesignSystem::default()
         .style(termrock::style::Role::ScrollTrack)
         .fg
         .unwrap_or_default());

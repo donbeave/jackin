@@ -77,7 +77,7 @@ pub(crate) fn mount_lines(
         let hovered = !selected && hovered_row == Some(i);
         let hb = |s: Style| {
             if hovered {
-                s.bg(termrock::Theme::default()
+                s.bg(termrock::style::DesignSystem::default()
                     .style(termrock::style::Role::TabInactiveHovered)
                     .bg
                     .unwrap_or_default())
@@ -88,19 +88,19 @@ pub(crate) fn mount_lines(
         let prefix = if selected { "\u{25b8} " } else { "  " };
         let base_style = if selected {
             Style::default()
-                .fg(termrock::Theme::default()
+                .fg(termrock::style::DesignSystem::default()
                     .style(termrock::style::Role::Accent)
                     .fg
                     .unwrap_or_default())
                 .add_modifier(Modifier::BOLD)
         } else {
-            Style::default().fg(termrock::Theme::default()
+            Style::default().fg(termrock::style::DesignSystem::default()
                 .style(termrock::style::Role::Accent)
                 .fg
                 .unwrap_or_default())
         };
         let dim_style = Style::default()
-            .fg(termrock::Theme::default()
+            .fg(termrock::style::DesignSystem::default()
                 .style(termrock::style::Role::TextMuted)
                 .fg
                 .unwrap_or_default())
@@ -112,7 +112,7 @@ pub(crate) fn mount_lines(
             ),
             Span::styled(
                 format!("{:<MOUNT_MODE_COL_WIDTH$}", row.mode),
-                hb(Style::default().fg(termrock::Theme::default()
+                hb(Style::default().fg(termrock::style::DesignSystem::default()
                     .style(termrock::style::Role::TextMuted)
                     .fg
                     .unwrap_or_default())),
@@ -120,7 +120,7 @@ pub(crate) fn mount_lines(
             Span::styled("  ", hb(Style::default())),
             Span::styled(
                 format!("{:<MOUNT_ISOLATION_COL_WIDTH$}", row.isolation),
-                hb(Style::default().fg(termrock::Theme::default()
+                hb(Style::default().fg(termrock::style::DesignSystem::default()
                     .style(termrock::style::Role::TextMuted)
                     .fg
                     .unwrap_or_default())),
@@ -131,7 +131,7 @@ pub(crate) fn mount_lines(
         if let Some(host_source) = &row.host_source {
             lines.push(Line::from(Span::styled(
                 format!("  {host_source:<path_w$}"),
-                Style::default().fg(termrock::Theme::default()
+                Style::default().fg(termrock::style::DesignSystem::default()
                     .style(termrock::style::Role::TextMuted)
                     .fg
                     .unwrap_or_default()),

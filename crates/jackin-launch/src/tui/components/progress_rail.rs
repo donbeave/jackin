@@ -40,7 +40,7 @@ pub fn render_progress(frame: &mut Frame<'_>, area: Rect, view: &LaunchView, fro
     // and non-color percentage cue stay on the shared widget contract.
     if area.height >= 3 {
         let fraction = overall_stage_fraction(view);
-        let theme = termrock::Theme::default();
+        let theme = termrock::style::DesignSystem::default();
         let progress = termrock::widgets::Progress::new(
             termrock::widgets::ProgressKind::Determinate { fraction },
             &theme,
@@ -113,7 +113,7 @@ fn blocks_line(view: &LaunchView, frozen: bool) -> Line<'static> {
         let (glyph, color) = match status {
             StageStatus::Done | StageStatus::Skipped => (
                 '━',
-                termrock::Theme::default()
+                termrock::style::DesignSystem::default()
                     .style(termrock::style::Role::Accent)
                     .fg
                     .unwrap_or_default(),
@@ -121,12 +121,12 @@ fn blocks_line(view: &LaunchView, frozen: bool) -> Line<'static> {
             StageStatus::Running => (
                 '━',
                 if pulse {
-                    termrock::Theme::default()
+                    termrock::style::DesignSystem::default()
                         .style(termrock::style::Role::Text)
                         .fg
                         .unwrap_or_default()
                 } else {
-                    termrock::Theme::default()
+                    termrock::style::DesignSystem::default()
                         .style(termrock::style::Role::Accent)
                         .fg
                         .unwrap_or_default()
@@ -134,21 +134,21 @@ fn blocks_line(view: &LaunchView, frozen: bool) -> Line<'static> {
             ),
             StageStatus::Failed => (
                 '━',
-                termrock::Theme::default()
+                termrock::style::DesignSystem::default()
                     .style(termrock::style::Role::Danger)
                     .fg
                     .unwrap_or_default(),
             ),
             StageStatus::Blocked => (
                 '━',
-                termrock::Theme::default()
+                termrock::style::DesignSystem::default()
                     .style(termrock::style::Role::Text)
                     .fg
                     .unwrap_or_default(),
             ),
             StageStatus::Queued => (
                 '─',
-                termrock::Theme::default()
+                termrock::style::DesignSystem::default()
                     .style(termrock::style::Role::ScrollTrack)
                     .fg
                     .unwrap_or_default(),
@@ -231,10 +231,10 @@ pub fn label_strip(
 fn label_style_for_stage(status: StageStatus, active: bool, bright: bool) -> Style {
     if active {
         return match status {
-            StageStatus::Failed => termrock::Theme::default().style(termrock::style::Role::Danger),
-            _ if bright => termrock::Theme::default().style(termrock::style::Role::TextStrong),
+            StageStatus::Failed => termrock::style::DesignSystem::default().style(termrock::style::Role::Danger),
+            _ if bright => termrock::style::DesignSystem::default().style(termrock::style::Role::TextStrong),
             _ => Style::default()
-                .fg(termrock::Theme::default()
+                .fg(termrock::style::DesignSystem::default()
                     .style(termrock::style::Role::Accent)
                     .fg
                     .unwrap_or_default())
@@ -244,16 +244,16 @@ fn label_style_for_stage(status: StageStatus, active: bool, bright: bool) -> Sty
 
     match status {
         StageStatus::Done | StageStatus::Skipped => {
-            termrock::Theme::default().style(termrock::style::Role::TextMuted)
+            termrock::style::DesignSystem::default().style(termrock::style::Role::TextMuted)
         }
-        StageStatus::Failed => Style::default().fg(termrock::Theme::default()
+        StageStatus::Failed => Style::default().fg(termrock::style::DesignSystem::default()
             .style(termrock::style::Role::Danger)
             .fg
             .unwrap_or_default()),
         StageStatus::Running | StageStatus::Blocked => {
-            termrock::Theme::default().style(termrock::style::Role::Accent)
+            termrock::style::DesignSystem::default().style(termrock::style::Role::Accent)
         }
-        StageStatus::Queued => Style::default().fg(termrock::Theme::default()
+        StageStatus::Queued => Style::default().fg(termrock::style::DesignSystem::default()
             .style(termrock::style::Role::ScrollTrack)
             .fg
             .unwrap_or_default()),

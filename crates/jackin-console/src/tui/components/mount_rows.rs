@@ -24,7 +24,7 @@ pub fn render_mount_header(path_w: usize) -> Line<'static> {
             "  {path:<path_w$}  {mode_col}  {iso_col}  Type",
             path = "Destination"
         ),
-        Style::default().fg(termrock::Theme::default()
+        Style::default().fg(termrock::style::DesignSystem::default()
             .style(termrock::style::Role::Text)
             .fg
             .unwrap_or_default()),
@@ -39,18 +39,18 @@ pub fn render_mount_lines(rows: &[MountDisplayRow], path_w: usize) -> Vec<Line<'
             Span::raw(format!("  {:<path_w$}  ", row.destination)),
             Span::styled(
                 format!("{:<MOUNT_MODE_COL_WIDTH$}", row.mode),
-                termrock::Theme::default().style(termrock::style::Role::TextMuted),
+                termrock::style::DesignSystem::default().style(termrock::style::Role::TextMuted),
             ),
             Span::raw("  "),
             Span::styled(
                 format!("{:<MOUNT_ISOLATION_COL_WIDTH$}", row.isolation),
-                termrock::Theme::default().style(termrock::style::Role::TextMuted),
+                termrock::style::DesignSystem::default().style(termrock::style::Role::TextMuted),
             ),
             Span::raw("  "),
             Span::styled(
                 row.kind.clone(),
                 Style::default()
-                    .fg(termrock::Theme::default()
+                    .fg(termrock::style::DesignSystem::default()
                         .style(termrock::style::Role::TextMuted)
                         .fg
                         .unwrap_or_default())
@@ -60,7 +60,7 @@ pub fn render_mount_lines(rows: &[MountDisplayRow], path_w: usize) -> Vec<Line<'
         if let Some(host_source) = &row.host_source {
             lines.push(Line::from(Span::styled(
                 format!("  {host_source:<path_w$}"),
-                termrock::Theme::default().style(termrock::style::Role::TextMuted),
+                termrock::style::DesignSystem::default().style(termrock::style::Role::TextMuted),
             )));
         }
     }
@@ -71,7 +71,7 @@ pub fn render_mount_lines(rows: &[MountDisplayRow], path_w: usize) -> Vec<Line<'
 pub fn render_global_mount_header(path_w: usize) -> Line<'static> {
     Line::from(Span::styled(
         format!("  {path:<path_w$}  Mode", path = "Destination"),
-        Style::default().fg(termrock::Theme::default()
+        Style::default().fg(termrock::style::DesignSystem::default()
             .style(termrock::style::Role::Text)
             .fg
             .unwrap_or_default()),
@@ -86,13 +86,13 @@ pub fn render_global_mount_lines(rows: &[MountDisplayRow], path_w: usize) -> Vec
             Span::raw(format!("  {:<path_w$}  ", row.destination)),
             Span::styled(
                 row.mode.to_owned(),
-                termrock::Theme::default().style(termrock::style::Role::TextMuted),
+                termrock::style::DesignSystem::default().style(termrock::style::Role::TextMuted),
             ),
         ]));
         if let Some(host_source) = &row.host_source {
             lines.push(Line::from(Span::styled(
                 format!("  {host_source:<path_w$}"),
-                termrock::Theme::default().style(termrock::style::Role::TextMuted),
+                termrock::style::DesignSystem::default().style(termrock::style::Role::TextMuted),
             )));
         }
     }

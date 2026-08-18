@@ -12,14 +12,14 @@ use crate::tui::op_breadcrumb::parse_path_breadcrumb;
 
 /// Render an `OpRef.path` as `vault / item [subtitle] / section -> field ?query`.
 pub fn push_op_breadcrumb_spans(spans: &mut Vec<Span<'static>>, path: &str) {
-    let dim = termrock::Theme::default().style(termrock::style::Role::TextMuted);
-    let white_style = Style::default().fg(termrock::Theme::default()
+    let dim = termrock::style::DesignSystem::default().style(termrock::style::Role::TextMuted);
+    let white_style = Style::default().fg(termrock::style::DesignSystem::default()
         .style(termrock::style::Role::Text)
         .fg
         .unwrap_or_default());
-    let green = termrock::Theme::default().style(termrock::style::Role::Accent);
+    let green = termrock::style::DesignSystem::default().style(termrock::style::Role::Accent);
     let green_bold = Style::default()
-        .fg(termrock::Theme::default()
+        .fg(termrock::style::DesignSystem::default()
             .style(termrock::style::Role::Accent)
             .fg
             .unwrap_or_default())

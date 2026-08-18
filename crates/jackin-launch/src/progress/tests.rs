@@ -312,7 +312,7 @@ fn failed_stage_is_the_active_progress_label() {
     assert_eq!(
         failed.style.fg,
         Some(
-            termrock::Theme::default()
+            termrock::style::DesignSystem::default()
                 .style(termrock::style::Role::Danger)
                 .fg
                 .unwrap_or_default()

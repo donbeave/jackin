@@ -109,7 +109,7 @@ fn apply_pane_scrollbar(frame: &mut Frame<'_>, pane: &VisiblePane, offset: usize
     let top_offset = termrock::scroll::TailScroll::new(offset)
         .to_top_offset(content_len, interior_rows)
         .min(usize::from(u16::MAX)) as u16;
-    let theme = termrock::Theme::default();
+    let theme = termrock::style::DesignSystem::default();
     termrock::scroll::render_scrollbar(
         frame.buffer_mut(),
         track,
@@ -336,7 +336,7 @@ fn render_link_hover_notice(frame: &mut Frame<'_>, view: &CapsuleRatatuiFrame<'_
 }
 
 fn render_notice_toast(frame: &mut Frame<'_>, area: RatatuiRect, message: &str) {
-    let theme = termrock::Theme::default();
+    let theme = termrock::style::DesignSystem::default();
     // Full TermRock toast contract: severity border role, bottom-left anchor
     // under the status strip, and theme-derived text — no product local chrome.
     frame.render_widget(
@@ -370,11 +370,11 @@ fn apply_tab_codename_tooltip(
         tooltip_row,
         &pill,
         Style::default()
-            .bg(termrock::Theme::default()
+            .bg(termrock::style::DesignSystem::default()
                 .style(termrock::style::Role::TabInactive)
                 .bg
                 .unwrap_or_default())
-            .fg(termrock::Theme::default()
+            .fg(termrock::style::DesignSystem::default()
                 .style(termrock::style::Role::Accent)
                 .fg
                 .unwrap_or_default())

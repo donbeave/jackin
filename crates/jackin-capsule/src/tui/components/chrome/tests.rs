@@ -7,7 +7,7 @@ use crate::tui::components::status_bar::status_bar_plan;
 use crate::tui::layout::Tab;
 use crate::tui::model::VisibleAgentState;
 use ratatui::{Terminal, backend::TestBackend};
-use termrock::Theme;
+use termrock::style::DesignSystem;
 
 #[test]
 fn status_bar_renders_without_tabs() {
@@ -119,7 +119,7 @@ fn status_bar_renders_working_idle_done_and_unknown_glyphs() {
         glyph_cell(&plan.cells[1]),
         (
             "◆".to_owned(),
-            Theme::default()
+            DesignSystem::default()
                 .style(termrock::style::Role::Accent)
                 .fg
                 .unwrap_or_default()
@@ -131,8 +131,8 @@ fn status_bar_renders_working_idle_done_and_unknown_glyphs() {
 
 #[test]
 fn pane_border_projects_focus_into_shared_emphasis() {
-    assert_eq!(pane_border_emphasis(true), PanelEmphasis::Focused);
-    assert_eq!(pane_border_emphasis(false), PanelEmphasis::Normal);
+    assert_eq!(pane_border_emphasis(true), PanelChrome::Focused);
+    assert_eq!(pane_border_emphasis(false), PanelChrome::Normal);
 }
 
 // ── wrapped hint rows ─────────────────────────────────────────────────────────

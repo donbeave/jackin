@@ -19,7 +19,7 @@ use super::{
 pub fn sentinel_line(text: &str, _is_selected: bool) -> Line<'static> {
     Line::from(Span::styled(
         text.to_owned(),
-        termrock::Theme::default().style(termrock::style::Role::TextMuted),
+        termrock::style::DesignSystem::default().style(termrock::style::Role::TextMuted),
     ))
 }
 
@@ -33,7 +33,7 @@ pub fn account_lines<'a>(
             Line::from(vec![
                 Span::styled(
                     account.email.to_owned(),
-                    Style::default().fg(termrock::Theme::default()
+                    Style::default().fg(termrock::style::DesignSystem::default()
                         .style(termrock::style::Role::Text)
                         .fg
                         .unwrap_or_default()),
@@ -41,7 +41,7 @@ pub fn account_lines<'a>(
                 Span::raw("  "),
                 Span::styled(
                     format!("({})", account.url),
-                    termrock::Theme::default().style(termrock::style::Role::TextMuted),
+                    termrock::style::DesignSystem::default().style(termrock::style::Role::TextMuted),
                 ),
             ])
         })
@@ -57,7 +57,7 @@ pub fn vault_lines<'a>(
         .map(|vault| {
             Line::from(Span::styled(
                 vault.name.to_owned(),
-                Style::default().fg(termrock::Theme::default()
+                Style::default().fg(termrock::style::DesignSystem::default()
                     .style(termrock::style::Role::Text)
                     .fg
                     .unwrap_or_default()),
@@ -78,14 +78,14 @@ pub fn item_choice_lines<'a>(
                 |item| {
                     let mut spans = vec![Span::styled(
                         item.name.to_owned(),
-                        Style::default().fg(termrock::Theme::default()
+                        Style::default().fg(termrock::style::DesignSystem::default()
                             .style(termrock::style::Role::Text)
                             .fg
                             .unwrap_or_default()),
                     )];
                     if !item.subtitle.is_empty() {
                         let dim =
-                            termrock::Theme::default().style(termrock::style::Role::TextMuted);
+                            termrock::style::DesignSystem::default().style(termrock::style::Role::TextMuted);
                         spans.push(Span::styled(" (", dim));
                         spans.push(Span::styled(item.subtitle.to_owned(), dim));
                         spans.push(Span::styled(")", dim));
@@ -110,7 +110,7 @@ pub fn section_lines(
             let label = choice.unwrap_or_else(|| "(root)".to_owned());
             Line::from(Span::styled(
                 label,
-                Style::default().fg(termrock::Theme::default()
+                Style::default().fg(termrock::style::DesignSystem::default()
                     .style(termrock::style::Role::Text)
                     .fg
                     .unwrap_or_default()),
@@ -162,7 +162,7 @@ fn section_header_line(
     } else {
         "\u{25bc}"
     };
-    let style = termrock::Theme::default().style(termrock::style::Role::TextMuted);
+    let style = termrock::style::DesignSystem::default().style(termrock::style::Role::TextMuted);
     let count_label = format!(
         "({} {})",
         field_count,
@@ -173,7 +173,7 @@ fn section_header_line(
         Span::styled(format!(" {name}  "), style),
         Span::styled(
             count_label,
-            termrock::Theme::default().style(termrock::style::Role::TextMuted),
+            termrock::style::DesignSystem::default().style(termrock::style::Role::TextMuted),
         ),
     ])
 }
@@ -181,7 +181,7 @@ fn section_header_line(
 fn field_line(field: OpPickerFieldDisplayRef<'_>, label_w: usize) -> Line<'static> {
     let label = field_display_label(field);
     let pad = label_w.saturating_sub(label.chars().count());
-    let label_style = Style::default().fg(termrock::Theme::default()
+    let label_style = Style::default().fg(termrock::style::DesignSystem::default()
         .style(termrock::style::Role::Text)
         .fg
         .unwrap_or_default());
@@ -195,7 +195,7 @@ fn field_line(field: OpPickerFieldDisplayRef<'_>, label_w: usize) -> Line<'stati
         Span::raw(format!("{}  ", " ".repeat(pad))),
         Span::styled(
             annotation,
-            termrock::Theme::default().style(termrock::style::Role::TextMuted),
+            termrock::style::DesignSystem::default().style(termrock::style::Role::TextMuted),
         ),
     ])
 }
@@ -255,52 +255,52 @@ pub fn fatal_body_lines(fatal: &OpPickerFatalState) -> Vec<Line<'static>> {
         OpPickerFatalState::NotInstalled => vec![
             Line::from(Span::styled(
                 "1Password CLI not found.",
-                termrock::Theme::default().style(termrock::style::Role::TextStrong),
+                termrock::style::DesignSystem::default().style(termrock::style::Role::TextStrong),
             )),
             Line::from(""),
             Line::from(Span::styled(
                 "Install: brew install 1password-cli (macOS)",
-                termrock::Theme::default().style(termrock::style::Role::Accent),
+                termrock::style::DesignSystem::default().style(termrock::style::Role::Accent),
             )),
             Line::from(Span::styled(
                 "or visit 1password.com/downloads/command-line/",
-                termrock::Theme::default().style(termrock::style::Role::Accent),
+                termrock::style::DesignSystem::default().style(termrock::style::Role::Accent),
             )),
             Line::from(""),
             Line::from(Span::styled(
                 "After install, run `op signin`, then press P to retry.",
-                termrock::Theme::default().style(termrock::style::Role::TextMuted),
+                termrock::style::DesignSystem::default().style(termrock::style::Role::TextMuted),
             )),
         ],
         OpPickerFatalState::NotSignedIn => vec![
             Line::from(Span::styled(
                 "1Password CLI is not signed in.",
-                termrock::Theme::default().style(termrock::style::Role::TextStrong),
+                termrock::style::DesignSystem::default().style(termrock::style::Role::TextStrong),
             )),
             Line::from(""),
             Line::from(Span::styled(
                 "Run `op signin` in your shell, then retry.",
-                termrock::Theme::default().style(termrock::style::Role::Accent),
+                termrock::style::DesignSystem::default().style(termrock::style::Role::Accent),
             )),
             Line::from(""),
             Line::from(Span::styled(
                 "jackin❯ uses your existing op session — there is no separate jackin❯ auth.",
-                termrock::Theme::default().style(termrock::style::Role::TextMuted),
+                termrock::style::DesignSystem::default().style(termrock::style::Role::TextMuted),
             )),
         ],
         OpPickerFatalState::NoVaults => vec![
             Line::from(Span::styled(
                 "No vaults available.",
-                termrock::Theme::default().style(termrock::style::Role::TextStrong),
+                termrock::style::DesignSystem::default().style(termrock::style::Role::TextStrong),
             )),
             Line::from(""),
             Line::from(Span::styled(
                 "Check 1Password's app integration settings:",
-                termrock::Theme::default().style(termrock::style::Role::Accent),
+                termrock::style::DesignSystem::default().style(termrock::style::Role::Accent),
             )),
             Line::from(Span::styled(
                 "Settings \u{2192} Developer \u{2192} CLI integration.",
-                termrock::Theme::default().style(termrock::style::Role::Accent),
+                termrock::style::DesignSystem::default().style(termrock::style::Role::Accent),
             )),
         ],
         OpPickerFatalState::GenericFatal { message } => {
@@ -308,12 +308,12 @@ pub fn fatal_body_lines(fatal: &OpPickerFatalState) -> Vec<Line<'static>> {
             vec![
                 Line::from(Span::styled(
                     "1Password CLI error.",
-                    termrock::Theme::default().style(termrock::style::Role::TextStrong),
+                    termrock::style::DesignSystem::default().style(termrock::style::Role::TextStrong),
                 )),
                 Line::from(""),
                 Line::from(Span::styled(
                     truncated,
-                    termrock::Theme::default().style(termrock::style::Role::TextMuted),
+                    termrock::style::DesignSystem::default().style(termrock::style::Role::TextMuted),
                 )),
             ]
         }

@@ -2,7 +2,7 @@
 
 use jackin_brand::Rgb;
 use std::io::Write as _;
-use termrock::{Theme, style::Role};
+use termrock::{style::DesignSystem, style::Role};
 
 pub const RESET: &str = "\x1b[0m";
 pub const BRAND_BANNER: &str = "\n  \x1b[1m\x1b[48;2;0;255;65m\x1b[38;2;0;0;0m jackin\x1b[38;2;255;255;255m❯\x1b[38;2;0;0;0m \x1b[0m\n";
@@ -14,7 +14,7 @@ pub fn rgb_fg(rgb: Rgb) -> String {
 /// Resolve a semantic `TermRock` foreground for capsule-only raw ANSI output.
 #[must_use]
 pub fn role_rgb(role: Role) -> Rgb {
-    match Theme::default().style(role).fg.unwrap_or_default() {
+    match DesignSystem::default().style(role).fg.unwrap_or_default() {
         ratatui::style::Color::Rgb(r, g, b) => Rgb::new(r, g, b),
         _ => Rgb::new(255, 255, 255),
     }

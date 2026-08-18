@@ -759,7 +759,7 @@ pub fn trust_lines(
 ) -> Vec<Line<'static>> {
     let mut lines = vec![Line::from(Span::styled(
         "  Role                         Trust      Git",
-        Style::default().fg(termrock::Theme::default()
+        Style::default().fg(termrock::style::DesignSystem::default()
             .style(termrock::style::Role::Text)
             .fg
             .unwrap_or_default()),
@@ -767,7 +767,7 @@ pub fn trust_lines(
     if rows.is_empty() {
         lines.push(Line::from(Span::styled(
             "  (none)",
-            Style::default().fg(termrock::Theme::default()
+            Style::default().fg(termrock::style::DesignSystem::default()
                 .style(termrock::style::Role::TextMuted)
                 .fg
                 .unwrap_or_default()),
@@ -777,19 +777,19 @@ pub fn trust_lines(
         let selected = show_cursor && (selected_row == i);
         let mut style = if selected {
             Style::default()
-                .fg(termrock::Theme::default()
+                .fg(termrock::style::DesignSystem::default()
                     .style(termrock::style::Role::Accent)
                     .fg
                     .unwrap_or_default())
                 .add_modifier(Modifier::BOLD)
         } else {
-            Style::default().fg(termrock::Theme::default()
+            Style::default().fg(termrock::style::DesignSystem::default()
                 .style(termrock::style::Role::Accent)
                 .fg
                 .unwrap_or_default())
         };
         if !selected && hovered_row == Some(i) {
-            style = style.bg(termrock::Theme::default()
+            style = style.bg(termrock::style::DesignSystem::default()
                 .style(termrock::style::Role::TabInactiveHovered)
                 .bg
                 .unwrap_or_default());
@@ -974,19 +974,19 @@ pub fn global_mount_lines(
         let prefix = if is_selected { "\u{25b8} " } else { "  " };
         let base_style = if is_selected {
             Style::default()
-                .fg(termrock::Theme::default()
+                .fg(termrock::style::DesignSystem::default()
                     .style(termrock::style::Role::Accent)
                     .fg
                     .unwrap_or_default())
                 .add_modifier(Modifier::BOLD)
         } else {
-            Style::default().fg(termrock::Theme::default()
+            Style::default().fg(termrock::style::DesignSystem::default()
                 .style(termrock::style::Role::Accent)
                 .fg
                 .unwrap_or_default())
         };
         let dim_style = Style::default()
-            .fg(termrock::Theme::default()
+            .fg(termrock::style::DesignSystem::default()
                 .style(termrock::style::Role::TextMuted)
                 .fg
                 .unwrap_or_default())
@@ -998,7 +998,7 @@ pub fn global_mount_lines(
             ),
             Span::styled(
                 format!("{:<MOUNT_MODE_COL_WIDTH$}", row.mode),
-                Style::default().fg(termrock::Theme::default()
+                Style::default().fg(termrock::style::DesignSystem::default()
                     .style(termrock::style::Role::TextMuted)
                     .fg
                     .unwrap_or_default()),
@@ -1009,7 +1009,7 @@ pub fn global_mount_lines(
         if let Some(host_source) = &row.host_source {
             lines.push(Line::from(Span::styled(
                 format!("  {host_source:<path_w$}"),
-                Style::default().fg(termrock::Theme::default()
+                Style::default().fg(termrock::style::DesignSystem::default()
                     .style(termrock::style::Role::TextMuted)
                     .fg
                     .unwrap_or_default()),

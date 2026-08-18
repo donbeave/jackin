@@ -22,7 +22,7 @@ fn draw(lines: &[String], scroll: &mut DiffScroll, width: u16, height: u16) -> V
             kind: DiffKind::Context,
         })
         .collect();
-    let theme = termrock::Theme::default();
+    let theme = termrock::style::DesignSystem::default();
     let backend = TestBackend::new(width, height);
     let mut term = Terminal::new(backend).expect("backend");
     term.draw(|f| {

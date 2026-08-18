@@ -58,12 +58,12 @@ pub(crate) fn role_lines(
 ) -> Vec<Line<'static>> {
     let badge_text = if is_all { "  all  " } else { "  custom  " };
     let badge_bg = if is_all {
-        termrock::Theme::default()
+        termrock::style::DesignSystem::default()
             .style(termrock::style::Role::Accent)
             .fg
             .unwrap_or_default()
     } else {
-        termrock::Theme::default()
+        termrock::style::DesignSystem::default()
             .style(termrock::style::Role::Text)
             .fg
             .unwrap_or_default()
@@ -76,7 +76,7 @@ pub(crate) fn role_lines(
     let mut status_spans = vec![
         Span::styled(
             "  Allowed roles:  ",
-            termrock::Theme::default().style(termrock::style::Role::TextStrong),
+            termrock::style::DesignSystem::default().style(termrock::style::Role::TextStrong),
         ),
         Span::styled(badge_text, badge_style),
     ];
@@ -103,13 +103,13 @@ pub(crate) fn role_lines(
         let text = format!("{prefix}{check} {star} {}", row.name);
         let style = if selected {
             Style::default()
-                .fg(termrock::Theme::default()
+                .fg(termrock::style::DesignSystem::default()
                     .style(termrock::style::Role::Accent)
                     .fg
                     .unwrap_or_default())
                 .add_modifier(Modifier::BOLD)
         } else {
-            Style::default().fg(termrock::Theme::default()
+            Style::default().fg(termrock::style::DesignSystem::default()
                 .style(termrock::style::Role::Accent)
                 .fg
                 .unwrap_or_default())

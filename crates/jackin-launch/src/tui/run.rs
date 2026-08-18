@@ -756,7 +756,7 @@ impl RichRenderer {
                             frame,
                             hint_area,
                             hint_normal,
-                            &termrock::Theme::default(),
+                            &termrock::style::DesignSystem::default(),
                         );
                     })
                     .context("rendering launch dialog")?;
@@ -919,7 +919,7 @@ impl RichRenderer {
                     frame,
                     hint_area,
                     hint,
-                    &termrock::Theme::default(),
+                    &termrock::style::DesignSystem::default(),
                 );
 
                 // Split body: repos (if >1) | files | diff
@@ -984,17 +984,17 @@ impl RichRenderer {
                         .iter()
                         .map(|(text, kind)| DiffLine { text, kind: *kind })
                         .collect::<Vec<_>>();
-                    let diff_theme = termrock::Theme::default()
+                    let diff_theme = termrock::style::DesignSystem::default()
                         .with_role(
                             termrock::style::Role::DiffAdded,
-                            Style::default().fg(termrock::Theme::default()
+                            Style::default().fg(termrock::style::DesignSystem::default()
                                 .style(termrock::style::Role::Accent)
                                 .fg
                                 .unwrap_or_default()),
                         )
                         .with_role(
                             termrock::style::Role::DiffRemoved,
-                            Style::default().fg(termrock::Theme::default()
+                            Style::default().fg(termrock::style::DesignSystem::default()
                                 .style(termrock::style::Role::Danger)
                                 .fg
                                 .unwrap_or_default()),
@@ -1156,11 +1156,11 @@ fn prompt_context_lines(context: &[PromptContextLine]) -> Vec<Line<'static>> {
         .map(|line| match line {
             PromptContextLine::Emphasis(text) => Line::from(Span::styled(
                 text.clone(),
-                termrock::Theme::default().style(termrock::style::Role::TextStrong),
+                termrock::style::DesignSystem::default().style(termrock::style::Role::TextStrong),
             )),
             PromptContextLine::Muted(text) => Line::from(Span::styled(
                 text.clone(),
-                Style::default().fg(termrock::Theme::default()
+                Style::default().fg(termrock::style::DesignSystem::default()
                     .style(termrock::style::Role::TextMuted)
                     .fg
                     .unwrap_or_default()),

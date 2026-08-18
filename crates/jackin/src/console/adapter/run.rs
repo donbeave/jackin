@@ -387,7 +387,7 @@ where
                     frame,
                     hint_row,
                     &jackin_console::tui::components::confirm_hint_spans(),
-                    &termrock::Theme::default(),
+                    &termrock::style::DesignSystem::default(),
                 );
             }
             context.mouse_state.chrome_regions.clear();
@@ -404,22 +404,22 @@ where
                     min_width: 0,
                     enabled: true,
                     style: ratatui::style::Style::default()
-                        .bg(termrock::Theme::default()
+                        .bg(termrock::style::DesignSystem::default()
                             .style(termrock::style::Role::Danger)
                             .fg
                             .unwrap_or_default())
-                        .fg(termrock::Theme::default()
+                        .fg(termrock::style::DesignSystem::default()
                             .style(termrock::style::Role::Text)
                             .fg
                             .unwrap_or_default())
                         .add_modifier(ratatui::style::Modifier::BOLD),
                     hover_style: Some(
                         ratatui::style::Style::default()
-                            .bg(termrock::Theme::default()
+                            .bg(termrock::style::DesignSystem::default()
                                 .style(termrock::style::Role::Text)
                                 .fg
                                 .unwrap_or_default())
-                            .fg(termrock::Theme::default()
+                            .fg(termrock::style::DesignSystem::default()
                                 .style(termrock::style::Role::Danger)
                                 .fg
                                 .unwrap_or_default())
@@ -432,10 +432,10 @@ where
                     .then_some(ConsoleChromeHover::DebugChip),
                     regions: Vec::new(),
                 };
-                let theme = termrock::Theme::default().with_role(
+                let theme = termrock::style::DesignSystem::default().with_role(
                     termrock::style::Role::StatusBar,
                     ratatui::style::Style::default()
-                        .bg(termrock::Theme::default()
+                        .bg(termrock::style::DesignSystem::default()
                             .style(termrock::style::Role::Text)
                             .fg
                             .unwrap_or_default())
