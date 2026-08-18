@@ -863,7 +863,7 @@ impl RichRenderer {
         } else {
             InspFocus::Files
         };
-        let mut diff_scroll_y: usize = 0;
+        let mut diff_scroll = crate::tui::diff_scroll::DiffScroll::new();
 
         #[derive(Clone)]
         struct InspectDiff {
@@ -978,7 +978,7 @@ impl RichRenderer {
                 );
 
                 if let Some(diff) = diff_cloned.as_mut() {
-                    diff.state.offset = diff_scroll_y.min(diff.lines.len().saturating_sub(1));
+                    diff.state.offset = diff_scroll.offset_for_render(diff.lines.len());
                     let lines = diff
                         .lines
                         .iter()
@@ -1004,7 +1004,7 @@ impl RichRenderer {
                         diff_area,
                         &mut diff.state,
                     );
-                    diff_scroll_y = diff.state.offset;
+                    diff_scroll.record_rendered(diff.state.offset);
                 }
             })
             .context("rendering inspect surface")?;
@@ -1030,17 +1030,16 @@ impl RichRenderer {
                         wt_sel = wt_sel.saturating_sub(1);
                         file_sel = 0;
                         diff_state = build_diff(&worktrees[wt_sel], file_sel);
-                        diff_scroll_y = 0;
+                        diff_scroll.reset();
                     }
                     InspFocus::Files => {
                         file_sel = file_sel.saturating_sub(1);
                         diff_state = build_diff(&worktrees[wt_sel], file_sel);
-                        diff_scroll_y = 0;
+                        diff_scroll.reset();
                     }
                     InspFocus::Diff => {
-                        if let Some(d) = diff_state.as_mut() {
-                            d.state.offset = d.state.offset.saturating_sub(1);
-                            diff_scroll_y = d.state.offset;
+                        if diff_state.is_some() {
+                            diff_scroll.line_up();
                         }
                     }
                 },
@@ -1050,7 +1049,7 @@ impl RichRenderer {
                             wt_sel += 1;
                             file_sel = 0;
                             diff_state = build_diff(&worktrees[wt_sel], file_sel);
-                            diff_scroll_y = 0;
+                            diff_scroll.reset();
                         }
                     }
                     InspFocus::Files => {
@@ -1058,31 +1057,22 @@ impl RichRenderer {
                         if file_sel < max {
                             file_sel += 1;
                             diff_state = build_diff(&worktrees[wt_sel], file_sel);
-                            diff_scroll_y = 0;
+                            diff_scroll.reset();
                         }
                     }
                     InspFocus::Diff => {
-                        if let Some(d) = diff_state.as_mut() {
-                            d.state.offset = d
-                                .state
-                                .offset
-                                .saturating_add(1)
-                                .min(d.lines.len().saturating_sub(1));
-                            diff_scroll_y = d.state.offset;
+                        if let Some(d) = diff_state.as_ref() {
+                            diff_scroll.line_down(d.lines.len());
                         }
                     }
                 },
                 KeyCode::PageUp | KeyCode::PageDown => {
-                    if let Some(d) = diff_state.as_mut() {
-                        d.state.offset = if key.code == KeyCode::PageUp {
-                            d.state.offset.saturating_sub(10)
+                    if let Some(d) = diff_state.as_ref() {
+                        if key.code == KeyCode::PageUp {
+                            diff_scroll.page_up();
                         } else {
-                            d.state
-                                .offset
-                                .saturating_add(10)
-                                .min(d.lines.len().saturating_sub(1))
-                        };
-                        diff_scroll_y = d.state.offset;
+                            diff_scroll.page_down(d.lines.len());
+                        }
                     }
                 }
                 _ => {}
