@@ -263,7 +263,8 @@ pub fn auth_line_width(row: &AuthLineRow) -> usize {
 }
 
 fn render_auth_line(selected: bool, row: &AuthLineRow) -> Line<'static> {
-    let bold_white = termrock::style::DesignSystem::default().style(termrock::style::Role::TextStrong);
+    let bold_white =
+        termrock::style::DesignSystem::default().style(termrock::style::Role::TextStrong);
     let dim_green = Style::default().fg(termrock::style::DesignSystem::default()
         .style(termrock::style::Role::TextMuted)
         .fg

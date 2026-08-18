@@ -231,8 +231,12 @@ pub fn label_strip(
 fn label_style_for_stage(status: StageStatus, active: bool, bright: bool) -> Style {
     if active {
         return match status {
-            StageStatus::Failed => termrock::style::DesignSystem::default().style(termrock::style::Role::Danger),
-            _ if bright => termrock::style::DesignSystem::default().style(termrock::style::Role::TextStrong),
+            StageStatus::Failed => {
+                termrock::style::DesignSystem::default().style(termrock::style::Role::Danger)
+            }
+            _ if bright => {
+                termrock::style::DesignSystem::default().style(termrock::style::Role::TextStrong)
+            }
             _ => Style::default()
                 .fg(termrock::style::DesignSystem::default()
                     .style(termrock::style::Role::Accent)

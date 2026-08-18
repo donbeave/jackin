@@ -47,8 +47,10 @@ impl<Content: Clone + Copy + Eq> SurfaceFocus<Content> {
         self.graph.begin_frame();
         // No painted geometry exists at this seam; zero areas keep the graph
         // to pure keyboard identity, never hit testing.
-        self.graph
-            .register(FocusNode::leaf(SurfaceFocusTarget::TabBar, Rect::new(0, 0, 0, 0)));
+        self.graph.register(FocusNode::leaf(
+            SurfaceFocusTarget::TabBar,
+            Rect::new(0, 0, 0, 0),
+        ));
         self.graph.register(FocusNode::leaf(
             SurfaceFocusTarget::Content(self.content),
             Rect::new(0, 0, 0, 0),

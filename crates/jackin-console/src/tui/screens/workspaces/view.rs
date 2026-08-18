@@ -1417,7 +1417,8 @@ fn live_instance_lines(tabs: &[WorkspaceInstanceTab]) -> Vec<Line<'static>> {
             Span::styled(
                 tab.label.clone(),
                 if tab.active {
-                    termrock::style::DesignSystem::default().style(termrock::style::Role::TextStrong)
+                    termrock::style::DesignSystem::default()
+                        .style(termrock::style::Role::TextStrong)
                 } else {
                     termrock::style::DesignSystem::default().style(termrock::style::Role::Text)
                 },

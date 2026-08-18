@@ -341,7 +341,12 @@ pub const fn workspace_header_title() -> &'static str {
 pub fn footer_height(items: &[termrock::widgets::HintSpan<'_>], width: u16) -> u16 {
     // +1 for the mandatory leading spacer row above the hints on every screen.
     u16::try_from(
-        termrock::widgets::wrapped_hint_lines(items, width, &termrock::style::DesignSystem::default()).len(),
+        termrock::widgets::wrapped_hint_lines(
+            items,
+            width,
+            &termrock::style::DesignSystem::default(),
+        )
+        .len(),
     )
     .unwrap_or(u16::MAX)
     .saturating_add(1)

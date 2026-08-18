@@ -428,7 +428,12 @@ pub fn draw_confirm(frame: &mut Frame<'_>, state: &mut PromptConfirm) {
         area,
         &mut state.state,
     );
-    termrock::widgets::render_hint_bar(frame, hint_area, &confirm_hint_spans(), &DesignSystem::default());
+    termrock::widgets::render_hint_bar(
+        frame,
+        hint_area,
+        &confirm_hint_spans(),
+        &DesignSystem::default(),
+    );
 }
 
 pub fn draw_error_popup(frame: &mut Frame<'_>, state: &mut PromptError) {

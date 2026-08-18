@@ -20,8 +20,8 @@ use ratatui::widgets::{Clear, Widget};
 use termrock::style::DesignSystem;
 use termrock::widgets::{
     Action, ChoiceDialog, ChoiceDialogState, DetailTableState, Dialog as MessageShell, List,
-    ListRow, ListState, MessageDialog, Panel, PanelChrome, Tab, Tabs, TabsState,
-    TextInput, TextInputState, Validation,
+    ListRow, ListState, MessageDialog, Panel, PanelChrome, Tab, Tabs, TabsState, TextInput,
+    TextInputState, Validation,
 };
 
 use crate::tui::components::dialog::{Dialog, GithubContextView};

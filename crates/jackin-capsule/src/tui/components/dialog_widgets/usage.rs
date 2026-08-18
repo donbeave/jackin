@@ -299,7 +299,8 @@ pub(crate) fn usage_lines_for_row(
                 usage_content_indent(),
                 Span::styled(
                     value.to_owned(),
-                    termrock::style::DesignSystem::default().style(termrock::style::Role::TextStrong),
+                    termrock::style::DesignSystem::default()
+                        .style(termrock::style::Role::TextStrong),
                 ),
             ]));
         }

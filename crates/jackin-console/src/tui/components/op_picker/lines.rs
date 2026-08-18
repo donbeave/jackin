@@ -41,7 +41,8 @@ pub fn account_lines<'a>(
                 Span::raw("  "),
                 Span::styled(
                     format!("({})", account.url),
-                    termrock::style::DesignSystem::default().style(termrock::style::Role::TextMuted),
+                    termrock::style::DesignSystem::default()
+                        .style(termrock::style::Role::TextMuted),
                 ),
             ])
         })
@@ -84,8 +85,8 @@ pub fn item_choice_lines<'a>(
                             .unwrap_or_default()),
                     )];
                     if !item.subtitle.is_empty() {
-                        let dim =
-                            termrock::style::DesignSystem::default().style(termrock::style::Role::TextMuted);
+                        let dim = termrock::style::DesignSystem::default()
+                            .style(termrock::style::Role::TextMuted);
                         spans.push(Span::styled(" (", dim));
                         spans.push(Span::styled(item.subtitle.to_owned(), dim));
                         spans.push(Span::styled(")", dim));
@@ -308,12 +309,14 @@ pub fn fatal_body_lines(fatal: &OpPickerFatalState) -> Vec<Line<'static>> {
             vec![
                 Line::from(Span::styled(
                     "1Password CLI error.",
-                    termrock::style::DesignSystem::default().style(termrock::style::Role::TextStrong),
+                    termrock::style::DesignSystem::default()
+                        .style(termrock::style::Role::TextStrong),
                 )),
                 Line::from(""),
                 Line::from(Span::styled(
                     truncated,
-                    termrock::style::DesignSystem::default().style(termrock::style::Role::TextMuted),
+                    termrock::style::DesignSystem::default()
+                        .style(termrock::style::Role::TextMuted),
                 )),
             ]
         }

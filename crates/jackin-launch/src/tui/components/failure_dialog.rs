@@ -14,8 +14,7 @@ use ratatui::{
 use termrock::{
     style::DesignSystem,
     widgets::{
-        DetailCapability, DetailRow, DetailTableState, Dialog, HintSpan, MessageDialog,
-        PanelChrome,
+        DetailCapability, DetailRow, DetailTableState, Dialog, HintSpan, MessageDialog, PanelChrome,
     },
 };
 

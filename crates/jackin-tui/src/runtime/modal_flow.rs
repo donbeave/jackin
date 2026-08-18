@@ -113,11 +113,7 @@ impl<Modal> ModalFlow<Modal> {
         let depth = self.stack.entries().len();
         drop(self.stack.open(
             Rect::new(0, 0, 0, 0),
-            OverlaySpec::dialog(
-                format!("modal-{depth}"),
-                OverlaySize::dialog(0, 0),
-                None,
-            ),
+            OverlaySpec::dialog(format!("modal-{depth}"), OverlaySize::dialog(0, 0), None),
         ));
     }
 }
