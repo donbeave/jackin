@@ -889,10 +889,13 @@ impl RichRenderer {
                         .map(|line| (format!("+ {line}"), DiffKind::Added)),
                 );
             }
-            Some(InspectDiff {
-                lines,
-                state: DiffState::default(),
-            })
+            let mut state = DiffState::new();
+            // Pre-bump surface painted no line-number gutter; keep parity.
+            state.show_line_numbers = false;
+            // The inspect diff scrolls without a cursor; suppress the
+            // selection chrome the head widget paints on the cursor row.
+            state.show_cursor = false;
+            Some(InspectDiff { lines, state })
         };
 
         // Build initial diff
@@ -978,11 +981,17 @@ impl RichRenderer {
                 );
 
                 if let Some(diff) = diff_cloned.as_mut() {
-                    diff.state.offset = diff_scroll.offset_for_render(diff.lines.len());
+                    let offset = u16::try_from(diff_scroll.offset_for_render(diff.lines.len()))
+                        .unwrap_or(u16::MAX);
+                    diff.state.scroll_mut().set_offset_y(offset);
+                    let ids = (0..diff.lines.len())
+                        .map(|index| format!("diff-line-{index}"))
+                        .collect::<Vec<_>>();
                     let lines = diff
                         .lines
                         .iter()
-                        .map(|(text, kind)| DiffLine { text, kind: *kind })
+                        .zip(&ids)
+                        .map(|((text, kind), id)| DiffLine::new(id, *kind, text))
                         .collect::<Vec<_>>();
                     let diff_theme = termrock::style::DesignSystem::default()
                         .with_role(
@@ -1004,10 +1013,14 @@ impl RichRenderer {
                         diff_area,
                         &mut diff.state,
                     );
-                    diff_scroll.record_rendered(diff.state.offset);
+                    diff_scroll.record_rendered(usize::from(diff.state.offset()));
                 }
             })
             .context("rendering inspect surface")?;
+
+            // Persist the widget-synced scroll metrics so the next frame's
+            // host offset injection clamps against real content/viewport.
+            diff_state = diff_cloned;
 
             let key = read_pressed_key(&self.input, "reading inspect surface input")?;
             match key.code {

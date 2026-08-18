@@ -10,34 +10,46 @@ fn draw(lines: &[String], scroll: &mut DiffScroll, width: u16, height: u16) -> V
     use ratatui::backend::TestBackend;
     use termrock::widgets::{DiffKind, DiffLine, DiffState, DiffView};
 
-    // Mirrors run.rs: the render arm hands the widget `offset_for_render`...
-    let mut state = DiffState {
-        offset: scroll.offset_for_render(lines.len()),
-        ..Default::default()
-    };
+    // Mirrors run.rs: the render arm hands the widget `offset_for_render`
+    // through the host scroll seam. A fresh state's scroll clamps against
+    // zero metrics, so publish content/viewport before injecting. Head
+    // `DiffView` always reserves a bottom chip row when the area is at least
+    // three rows tall, so render one row taller and crop the chip row; the
+    // pre-bump paint had no gutter/prefix chrome, so trim both ends.
+    let mut state = DiffState::new();
+    state.show_line_numbers = false;
+    // No cursor on this surface — chrome suppressed as in run.rs.
+    state.show_cursor = false;
+    state
+        .scroll_mut()
+        .set_content_size(1, u16::try_from(lines.len()).unwrap_or(u16::MAX));
+    state.scroll_mut().set_viewport(1, height);
+    let offset = u16::try_from(scroll.offset_for_render(lines.len())).unwrap_or(u16::MAX);
+    state.scroll_mut().set_offset_y(offset);
+    let ids: Vec<String> = (0..lines.len())
+        .map(|index| format!("diff-line-{index}"))
+        .collect();
     let diff_lines: Vec<DiffLine<'_>> = lines
         .iter()
-        .map(|text| DiffLine {
-            text,
-            kind: DiffKind::Context,
-        })
+        .zip(&ids)
+        .map(|(text, id)| DiffLine::new(id, DiffKind::Context, text))
         .collect();
     let theme = termrock::style::DesignSystem::default();
-    let backend = TestBackend::new(width, height);
+    let backend = TestBackend::new(width, height + 1);
     let mut term = Terminal::new(backend).expect("backend");
     term.draw(|f| {
         f.render_stateful_widget(&DiffView::new(&diff_lines, &theme), f.area(), &mut state);
     })
     .expect("draw");
     // ...and stores back the offset the widget kept after its viewport clamp.
-    scroll.record_rendered(state.offset);
+    scroll.record_rendered(usize::from(state.offset()));
     let buf = term.backend().buffer();
-    (0..buf.area.height)
+    (0..height)
         .map(|y| {
-            (0..buf.area.width)
+            (0..width)
                 .map(|x| buf[(x, y)].symbol())
                 .collect::<String>()
-                .trim_end()
+                .trim()
                 .to_owned()
         })
         .collect()
