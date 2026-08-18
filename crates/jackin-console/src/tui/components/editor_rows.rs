@@ -208,7 +208,7 @@ pub fn render_tab_strip(
     let tabs = labels
         .iter()
         .enumerate()
-        .map(|(id, (label, active))| termrock::widgets::Tab::new(id, *label).active(*active))
+        .map(|(id, (label, active))| termrock::widgets::Tab::new(id, label).active(*active))
         .collect::<Vec<_>>();
     let mut tabs_state = termrock::widgets::TabsState::new();
     tabs_state.selected = tabs.iter().find(|tab| tab.active).map(|tab| tab.id);

@@ -24,7 +24,8 @@ pub struct GithubPickerState {
 pub enum GithubOpenPlan {
     Continue,
     OpenUrl(String),
-    Pick(GithubPickerState),
+    // Head ListState is large; box to keep the plan enum small.
+    Pick(Box<GithubPickerState>),
 }
 
 #[must_use]
@@ -32,7 +33,7 @@ pub fn github_open_plan(choices: Vec<GithubChoice>) -> GithubOpenPlan {
     match choices.len() {
         0 => GithubOpenPlan::Continue,
         1 => GithubOpenPlan::OpenUrl(choices[0].url.clone()),
-        _ => GithubOpenPlan::Pick(GithubPickerState::new(choices)),
+        _ => GithubOpenPlan::Pick(Box::new(GithubPickerState::new(choices))),
     }
 }
 

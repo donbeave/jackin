@@ -506,7 +506,7 @@ fn handle_list_open_in_github(state: &mut ManagerState<'_>, config: &AppConfig) 
             dispatch_manager(
                 state,
                 ManagerMessage::OpenListGithubPicker {
-                    state: picker_state,
+                    state: *picker_state,
                 },
             );
             InputOutcome::Continue
