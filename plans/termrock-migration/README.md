@@ -11,7 +11,7 @@ Package scope: the **bump phase** only. Modernization phases (console → capsul
 | Plan | Title | Covers | Priority | Effort | Depends on | Status |
 |------|-------|--------|----------|--------|------------|--------|
 | 001 | Parity characterization tests at the old pin | B5 (pre-half), A4, W1 | P1 | M | — | DONE |
-| 002 | Bump to head e1d61f4d, workspace green | F1, B1, B2, B7, B8, D1, D9, D14, D15, W1, S1 | P1 | L | 001 | IN PROGRESS |
+| 002 | Bump to head e1d61f4d, workspace green | F1, B1, B2, B7, B8, D1, D9, D14, D15, W1, S1 | P1 | L | 001 | BLOCKED (termrock API misfit — head dropped the `▸` selection marker plus hover/redraw chrome with no host override, breaking 15 pinned non-snapshot assertions; recommend upstream change: host-configurable selection/hover glyphs on `GlyphSet` + friends, then resume — census in item Log 2026-08-19) |
 | 003 | Brand compensation, background pick, snapshot re-baseline | F3 (bump half), B3, B6, B9, D8, D10, D11, D13 | P1 | M | 002 | TODO |
 | 004 | Docs alignment, drift checks, merge-readiness | B4, B7 (drift check) | P2 | S | 003 | TODO |
 
