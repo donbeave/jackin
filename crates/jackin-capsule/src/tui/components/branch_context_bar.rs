@@ -325,14 +325,10 @@ pub(crate) fn render_branch_context_bar(
         termrock::style::Role::StatusBar,
         white_bg.fg(jackin_tui::tokens::INK),
     );
-    (&StatusBar::new(&left, &right, &theme)).render(
-        area,
-        buffer,
-        &mut StatusBarState {
-            hovered,
-            regions: Vec::new(),
-        },
-    );
+    // Head made the state's region storage private; hovered stays public.
+    let mut state = StatusBarState::new();
+    state.hovered = hovered;
+    (&StatusBar::new(&left, &right, &theme)).render(area, buffer, &mut state);
 }
 
 pub(crate) fn debug_run_id_label() -> Option<String> {
