@@ -428,12 +428,10 @@ pub fn render_container_info(frame: &mut Frame<'_>, area: Rect, state: &Containe
 }
 
 fn detail_table_area(inner: Rect) -> Rect {
-    Rect::new(
-        inner.x,
-        inner.y.saturating_add(1),
-        inner.width,
-        inner.height.saturating_sub(1),
-    )
+    // Head `Panel::inner` already applies the design-token top padding the
+    // pre-bump spacer row compensated for; a second spacer would clip the
+    // last detail row out of the budgeted height.
+    inner
 }
 
 fn detail_rows(state: &ContainerInfoState) -> Vec<DetailRow<'_, usize>> {
