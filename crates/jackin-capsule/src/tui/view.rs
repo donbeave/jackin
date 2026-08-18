@@ -201,7 +201,10 @@ pub(crate) fn render_capsule_ratatui_frame(frame: &mut Frame<'_>, view: CapsuleR
                 .term_rows
                 .saturating_sub(crate::tui::components::status_bar::STATUS_BAR_ROWS),
         };
-        frame.render_widget(termrock::widgets::Backdrop::default(), backdrop_area);
+        // Head's default backdrop is a stippled dim wash; pre-bump jackin❯
+        // painted the terminal background under modals. `reset()` keeps that
+        // product behavior (plan 003 owns any paint compensation).
+        frame.render_widget(termrock::widgets::Backdrop::reset(), backdrop_area);
         if let Some((snapshot, rect)) = view.dialog_snapshot {
             render_dialog_ratatui(frame, *rect, snapshot);
         }
