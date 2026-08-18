@@ -195,14 +195,14 @@ pub fn git_prompt_url_row_rect(modal_area: Rect, has_rejection: bool) -> Option<
 /// modal background so only the focused choice pops (canonical template).
 pub(super) fn git_prompt_buttons(focus: GitPromptFocus) -> Line<'static> {
     let focused = Style::default()
-        .bg(termrock::Theme::default()
+        .bg(termrock::style::DesignSystem::default()
             .style(termrock::style::Role::Text)
             .fg
             .unwrap_or_default())
         .fg(Color::Black)
         .add_modifier(Modifier::BOLD);
     let unfocused = Style::default()
-        .fg(termrock::Theme::default()
+        .fg(termrock::style::DesignSystem::default()
             .style(termrock::style::Role::Accent)
             .fg
             .unwrap_or_default())
@@ -277,8 +277,8 @@ pub(super) fn render_git_prompt(frame: &mut Frame<'_>, parent: Rect, state: &Fil
         frame,
         area,
         Some("Git repository detected"),
-        termrock::widgets::PanelEmphasis::Focused,
-        &termrock::Theme::default(),
+        termrock::widgets::PanelChrome::Focused,
+        &termrock::style::DesignSystem::default(),
     );
 
     let (content, action_row) = crate::tui::dialog_layout::dialog_content_and_actions(inner);
@@ -290,7 +290,7 @@ pub(super) fn render_git_prompt(frame: &mut Frame<'_>, parent: Rect, state: &Fil
     frame.render_widget(
         Paragraph::new(Span::styled(
             "What would you like to do?",
-            termrock::Theme::default().style(termrock::style::Role::TextStrong),
+            termrock::style::DesignSystem::default().style(termrock::style::Role::TextStrong),
         ))
         .alignment(Alignment::Center),
         prompt_row,
@@ -307,7 +307,7 @@ pub(super) fn render_git_prompt(frame: &mut Frame<'_>, parent: Rect, state: &Fil
             Paragraph::new(Span::styled(
                 url.to_owned(),
                 Style::default()
-                    .fg(termrock::Theme::default()
+                    .fg(termrock::style::DesignSystem::default()
                         .style(termrock::style::Role::TextMuted)
                         .fg
                         .unwrap_or_default())

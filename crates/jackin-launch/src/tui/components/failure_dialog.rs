@@ -12,10 +12,10 @@ use ratatui::{
     widgets::{Clear, StatefulWidget},
 };
 use termrock::{
-    Theme,
+    style::DesignSystem,
     widgets::{
         DetailCapability, DetailRow, DetailTableState, Dialog, HintSpan, MessageDialog,
-        PanelEmphasis,
+        PanelChrome,
     },
 };
 
@@ -143,7 +143,7 @@ fn layout_state(
     copied: Option<FailureCopyTarget>,
 ) -> DetailTableState<usize> {
     let details = detail_rows(rows);
-    let theme = Theme::default();
+    let theme = DesignSystem::default();
     let mut state = DetailTableState::default();
     state.hovered = hovered.and_then(|target| target_id(rows, target));
     state.copied = copied.and_then(|target| target_id(rows, target));
@@ -151,7 +151,7 @@ fn layout_state(
     let mut buffer = Buffer::empty(rect);
     let dialog = Dialog::new(title, Text::from(message(rows)), &theme)
         .style(Style::default())
-        .emphasis(PanelEmphasis::Focused);
+        .emphasis(PanelChrome::Focused);
     StatefulWidget::render(
         &MessageDialog::new(dialog, &details, &theme).wrap(true),
         rect,
@@ -280,7 +280,7 @@ pub fn render_failure_popup(
     let rows = failure_popup_rows(failure, run_id);
     let details = detail_rows(&rows);
     let rect = failure_popup_rect(chrome.body, &rows);
-    let theme = Theme::default();
+    let theme = DesignSystem::default();
     let mut state = DetailTableState::default();
     state.hovered = view
         .failure_copy_hover
@@ -291,7 +291,7 @@ pub fn render_failure_popup(
     state.scroll = view.failure_scroll.clone();
     let dialog = Dialog::new(&failure.title, Text::from(failure.summary.as_str()), &theme)
         .style(Style::default())
-        .emphasis(PanelEmphasis::Focused);
+        .emphasis(PanelChrome::Focused);
     frame.render_stateful_widget(
         &MessageDialog::new(dialog, &details, &theme).wrap(true),
         rect,
@@ -304,7 +304,7 @@ pub fn render_failure_popup(
         frame,
         chrome.hint,
         &failure_hint_spans(),
-        &Theme::default(),
+        &DesignSystem::default(),
     );
 }
 
@@ -350,7 +350,7 @@ pub fn failure_popup_hyperlink_overlay(
             .as_bytes(),
         );
         out.extend_from_slice(&termrock::osc::encode_hyperlink_open(None, href));
-        let ratatui::style::Color::Rgb(red, green, blue) = Theme::default()
+        let ratatui::style::Color::Rgb(red, green, blue) = DesignSystem::default()
             .style(termrock::style::Role::Link)
             .fg
             .unwrap_or_default()
