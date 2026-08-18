@@ -17,10 +17,10 @@ use ratatui::style::Style;
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Clear, Widget};
 
-use termrock::Theme;
+use termrock::style::DesignSystem;
 use termrock::widgets::{
     Action, ChoiceDialog, ChoiceDialogState, DetailTableState, Dialog as MessageShell, List,
-    ListRow, ListState, MessageDialog, Panel, PanelEmphasis, RowRole, Tab, Tabs, TabsState,
+    ListRow, ListState, MessageDialog, Panel, PanelChrome, Tab, Tabs, TabsState,
     TextInput, TextInputState, Validation,
 };
 
@@ -473,14 +473,14 @@ pub(crate) fn render_dialog_ratatui(
             render_text_input_dialog(frame, area, dialog_title, label, value, *cursor);
         }
         DialogRatatuiSnapshot::ErrorPopup(state) => {
-            let theme = Theme::default();
+            let theme = DesignSystem::default();
             let dialog = MessageShell::new(
                 &state.title,
                 ratatui::text::Text::from(state.message.as_str()),
                 &theme,
             )
             .style(Style::default())
-            .emphasis(PanelEmphasis::Focused);
+            .emphasis(PanelChrome::Focused);
             frame.render_stateful_widget(
                 &MessageDialog::new(dialog, &[], &theme).wrap(true),
                 area,
@@ -515,7 +515,7 @@ fn render_confirm_action(
     selected_yes: bool,
     data_loss: bool,
 ) {
-    let theme = Theme::default();
+    let theme = DesignSystem::default();
     // Exit uses the shared data-loss variant (prompt + warning notes); every
     // other confirm keeps the plain title+body prompt. Same widget either way.
     let body = if data_loss {
@@ -539,7 +539,7 @@ fn render_confirm_action(
     ];
     let dialog = MessageShell::new("Confirm", ratatui::text::Text::from(body), &theme)
         .style(Style::default())
-        .emphasis(PanelEmphasis::Focused);
+        .emphasis(PanelChrome::Focused);
     frame.render_stateful_widget(
         &ChoiceDialog::new(dialog, &actions).gap(" "),
         area,
@@ -556,12 +556,12 @@ fn render_usage_info(
     hovered_tab: Option<usize>,
 ) {
     let title = usage_panel_title(state, area.width);
-    let theme = Theme::default();
+    let theme = DesignSystem::default();
     let inner = termrock::layout::render_dialog_shell(
         frame,
         area,
         Some(title.as_str()),
-        PanelEmphasis::Focused,
+        PanelChrome::Focused,
         &theme,
     );
     if inner.height == 0 {
@@ -571,26 +571,19 @@ fn render_usage_info(
     let canonical_tabs = tabs
         .iter()
         .enumerate()
-        .map(|(id, (label, active))| Tab {
-            id,
-            label,
-            glyph: None,
-            active: *active,
-            enabled: true,
-        })
+        .map(|(id, (label, active))| Tab::new(id, label).active(*active))
         .collect::<Vec<_>>();
+    let mut tabs_state = TabsState::new();
+    tabs_state.selected = canonical_tabs
+        .iter()
+        .find(|tab| tab.active)
+        .map(|tab| tab.id);
+    tabs_state.hovered = hovered_tab;
+    tabs_state.focused = tab_bar_focused;
     frame.render_stateful_widget(
-        &Tabs::new(&canonical_tabs, &Theme::default()).gap(termrock::widgets::TAB_GAP),
+        &Tabs::new(&canonical_tabs, &DesignSystem::default()).gap(termrock::widgets::TAB_GAP),
         tab_area,
-        &mut TabsState {
-            selected: canonical_tabs
-                .iter()
-                .find(|tab| tab.active)
-                .map(|tab| tab.id),
-            hovered: hovered_tab,
-            focused: tab_bar_focused,
-            regions: Vec::new(),
-        },
+        &mut tabs_state,
     );
     // Body geometry comes from the shared `usage_body_rect`, the same source the
     // scroll-bound path uses, so the rendered viewport and the scroll clamp can
@@ -612,11 +605,11 @@ fn render_filter_picker(
     show_filter: bool,
 ) {
     // Reuse the shared modal panel so the menu/pickers match every other
-    // jackin❯ dialog: Theme::default().style(termrock::style::Role::Accent).fg.unwrap_or_default() focused border + bold-white title.
-    let theme = Theme::default();
+    // jackin❯ dialog: DesignSystem::default().style(termrock::style::Role::Accent).fg.unwrap_or_default() focused border + bold-white title.
+    let theme = DesignSystem::default();
     let block = Panel::new(&theme)
         .title(title)
-        .emphasis(PanelEmphasis::Focused)
+        .emphasis(PanelChrome::Focused)
         .block();
     let inner = block.inner(area);
     Clear.render(area, frame.buffer_mut());
@@ -662,26 +655,19 @@ fn render_filter_picker(
         .iter()
         .enumerate()
         .map(|(id, item)| match item {
-            PickerItem::Section(label) => ListRow {
+            PickerItem::Section(label) => {
+                ListRow::separator(id, Line::from(label.clone())).disabled()
+            }
+            PickerItem::Item(label) => ListRow::item(
                 id,
-                label: Line::from(label.clone()),
-                trailing: None,
-                role: RowRole::Separator,
-                enabled: false,
-            },
-            PickerItem::Item(label) => ListRow {
-                id,
-                label: Line::from(Span::styled(
+                Line::from(Span::styled(
                     label.clone(),
-                    Style::default().fg(Theme::default()
+                    Style::default().fg(DesignSystem::default()
                         .style(termrock::style::Role::Accent)
                         .fg
                         .unwrap_or_default()),
                 )),
-                trailing: None,
-                role: RowRole::Item,
-                enabled: true,
-            },
+            ),
         })
         .collect::<Vec<_>>();
     frame.render_stateful_widget(
@@ -699,10 +685,10 @@ fn render_text_input_dialog(
     value: &str,
     cursor: usize,
 ) {
-    let theme = Theme::default();
+    let theme = DesignSystem::default();
     let panel = Panel::new(&theme)
         .title(dialog_title)
-        .emphasis(PanelEmphasis::Focused);
+        .emphasis(PanelChrome::Focused);
     let inner = panel.inner(area);
     frame.render_widget(&panel, area);
     if inner.height < 2 {

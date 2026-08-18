@@ -16,14 +16,14 @@ use crate::tui::mount_display::MountDisplayRow;
 use crate::tui::screens::workspaces::model::ManagerListRow;
 
 fn panel<'a>(
-    theme: &'a termrock::Theme,
+    theme: &'a termrock::style::DesignSystem,
     title: Option<&'a str>,
     focused: bool,
 ) -> termrock::widgets::Panel<'a> {
     let panel = termrock::widgets::Panel::new(theme).emphasis(if focused {
-        termrock::widgets::PanelEmphasis::Focused
+        termrock::widgets::PanelChrome::Focused
     } else {
-        termrock::widgets::PanelEmphasis::Normal
+        termrock::widgets::PanelChrome::Normal
     });
     if let Some(title) = title {
         panel.title(title)
@@ -430,7 +430,7 @@ pub fn list_name_lines(
         if current_w < content_w {
             let bg = match visual_rows[selected_idx].as_ref().map(|row| row.tone) {
                 Some(WorkspaceListRowTone::Instance) => jackin_tui::tokens::CYAN,
-                _ => termrock::Theme::default()
+                _ => termrock::style::DesignSystem::default()
                     .style(termrock::style::Role::Accent)
                     .fg
                     .unwrap_or_default(),
@@ -448,7 +448,7 @@ pub fn list_name_lines(
         && let Some(line) = lines.get_mut(hovered_idx)
     {
         for span in &mut line.spans {
-            span.style = span.style.bg(termrock::Theme::default()
+            span.style = span.style.bg(termrock::style::DesignSystem::default()
                 .style(termrock::style::Role::TabInactiveHovered)
                 .bg
                 .unwrap_or_default());
@@ -457,7 +457,7 @@ pub fn list_name_lines(
         if current_w < content_w {
             line.spans.push(Span::styled(
                 " ".repeat(content_w - current_w),
-                Style::default().bg(termrock::Theme::default()
+                Style::default().bg(termrock::style::DesignSystem::default()
                     .style(termrock::style::Role::TabInactiveHovered)
                     .bg
                     .unwrap_or_default()),
@@ -498,7 +498,7 @@ pub fn render_list_names_block(
     let viewport_h = termrock::scroll::viewport_height(area);
     let h_scrollable = termrock::scroll::is_scrollable(content_width, viewport_w);
     let v_scrollable = termrock::scroll::is_scrollable(content_height, viewport_h);
-    let theme = termrock::Theme::default();
+    let theme = termrock::style::DesignSystem::default();
     let block = panel(&theme, None, focused).block();
     let inner = block.inner(area);
     frame.render_widget(block, area);
@@ -557,11 +557,11 @@ fn render_list_name_line(
 
 fn row_fg(row: &WorkspaceListDisplayRow) -> Color {
     match row.tone {
-        WorkspaceListRowTone::White => termrock::Theme::default()
+        WorkspaceListRowTone::White => termrock::style::DesignSystem::default()
             .style(termrock::style::Role::Text)
             .fg
             .unwrap_or_default(),
-        WorkspaceListRowTone::Workspace => termrock::Theme::default()
+        WorkspaceListRowTone::Workspace => termrock::style::DesignSystem::default()
             .style(termrock::style::Role::Accent)
             .fg
             .unwrap_or_default(),
@@ -599,7 +599,7 @@ fn push_tree_workspace_line(
                 Span::styled(
                     cursor,
                     Style::default()
-                        .bg(termrock::Theme::default()
+                        .bg(termrock::style::DesignSystem::default()
                             .style(termrock::style::Role::Accent)
                             .fg
                             .unwrap_or_default())
@@ -608,7 +608,7 @@ fn push_tree_workspace_line(
                 Span::styled(
                     arrow,
                     Style::default()
-                        .bg(termrock::Theme::default()
+                        .bg(termrock::style::DesignSystem::default()
                             .style(termrock::style::Role::Accent)
                             .fg
                             .unwrap_or_default())
@@ -617,7 +617,7 @@ fn push_tree_workspace_line(
                 Span::styled(
                     format!(" {}", row.label),
                     Style::default()
-                        .bg(termrock::Theme::default()
+                        .bg(termrock::style::DesignSystem::default()
                             .style(termrock::style::Role::Accent)
                             .fg
                             .unwrap_or_default())
@@ -638,7 +638,7 @@ fn push_tree_workspace_line(
             Line::from(Span::styled(
                 format!("{cursor}  {}", row.label),
                 Style::default()
-                    .bg(termrock::Theme::default()
+                    .bg(termrock::style::DesignSystem::default()
                         .style(termrock::style::Role::Accent)
                         .fg
                         .unwrap_or_default())
@@ -790,26 +790,26 @@ pub fn render_sentinel_description_pane(frame: &mut Frame<'_>, area: Rect) {
         .constraints([Constraint::Length(5), Constraint::Min(9)])
         .split(area);
 
-    let theme = termrock::Theme::default();
+    let theme = termrock::style::DesignSystem::default();
     let intro_block = panel(&theme, Some(" What is a workspace? "), false).block();
     let intro_lines = vec![
         Line::from(Span::styled(
             "  A workspace saves a project boundary once so you",
-            Style::default().fg(termrock::Theme::default()
+            Style::default().fg(termrock::style::DesignSystem::default()
                 .style(termrock::style::Role::Accent)
                 .fg
                 .unwrap_or_default()),
         )),
         Line::from(Span::styled(
             "  can launch roles into it from anywhere \u{2014} without",
-            Style::default().fg(termrock::Theme::default()
+            Style::default().fg(termrock::style::DesignSystem::default()
                 .style(termrock::style::Role::Accent)
                 .fg
                 .unwrap_or_default()),
         )),
         Line::from(Span::styled(
             "  retyping mount paths.",
-            Style::default().fg(termrock::Theme::default()
+            Style::default().fg(termrock::style::DesignSystem::default()
                 .style(termrock::style::Role::Accent)
                 .fg
                 .unwrap_or_default()),
@@ -818,7 +818,7 @@ pub fn render_sentinel_description_pane(frame: &mut Frame<'_>, area: Rect) {
     frame.render_widget(Paragraph::new(intro_lines).block(intro_block), rows[0]);
 
     let why_block = panel(&theme, Some(" Why create one? "), false).block();
-    let bullet_style = Style::default().fg(termrock::Theme::default()
+    let bullet_style = Style::default().fg(termrock::style::DesignSystem::default()
         .style(termrock::style::Role::Accent)
         .fg
         .unwrap_or_default());
@@ -852,20 +852,14 @@ pub fn render_picker_sidebar(
     selected: Option<usize>,
     focused: bool,
 ) {
-    let theme = termrock::Theme::default();
+    let theme = termrock::style::DesignSystem::default();
     let block = panel(&theme, Some(title), focused).block();
     let inner = block.inner(area);
     frame.render_widget(block, area);
     let rows = labels
         .into_iter()
         .enumerate()
-        .map(|(id, label)| termrock::widgets::ListRow {
-            id,
-            label: Line::from(label),
-            trailing: None,
-            role: termrock::widgets::RowRole::Item,
-            enabled: true,
-        })
+        .map(|(id, label)| termrock::widgets::ListRow::item(id, Line::from(label)))
         .collect::<Vec<_>>();
     frame.render_stateful_widget(
         &termrock::widgets::List::new(&rows, &theme),
@@ -930,13 +924,13 @@ pub fn render_agent_picker_sidebar<A: crate::tui::components::agent_choice::Agen
 }
 
 pub fn render_general_subpanel(frame: &mut Frame<'_>, area: Rect, workdir_display: &str) {
-    let theme = termrock::Theme::default();
+    let theme = termrock::style::DesignSystem::default();
     let block = panel(&theme, Some(" General "), false).block();
     let lines = vec![Line::from(vec![
         Span::raw("  "),
         Span::styled(
             "Working dir ",
-            Style::default().fg(termrock::Theme::default()
+            Style::default().fg(termrock::style::DesignSystem::default()
                 .style(termrock::style::Role::Text)
                 .fg
                 .unwrap_or_default()),
@@ -944,7 +938,7 @@ pub fn render_general_subpanel(frame: &mut Frame<'_>, area: Rect, workdir_displa
         Span::raw(workdir_display.to_owned()),
     ])];
     let panel = Paragraph::new(lines).block(block).style(
-        Style::default().fg(termrock::Theme::default()
+        Style::default().fg(termrock::style::DesignSystem::default()
             .style(termrock::style::Role::Accent)
             .fg
             .unwrap_or_default()),
@@ -990,7 +984,7 @@ pub fn render_environments_subpanel(
     area: Rect,
     mut rows: Vec<WorkspaceEnvRow>,
 ) {
-    let theme = termrock::Theme::default();
+    let theme = termrock::style::DesignSystem::default();
     let block = panel(&theme, Some(" Environments "), false).block();
 
     rows.sort_by(|a, b| {
@@ -1011,7 +1005,7 @@ pub fn render_environments_subpanel(
         .collect();
 
     let panel = Paragraph::new(lines).block(block).style(
-        Style::default().fg(termrock::Theme::default()
+        Style::default().fg(termrock::style::DesignSystem::default()
             .style(termrock::style::Role::Accent)
             .fg
             .unwrap_or_default()),
@@ -1122,7 +1116,7 @@ pub fn render_roles_subpanel(
         || {
             (
                 "(none)".to_owned(),
-                Style::default().fg(termrock::Theme::default()
+                Style::default().fg(termrock::style::DesignSystem::default()
                     .style(termrock::style::Role::TextMuted)
                     .fg
                     .unwrap_or_default()),
@@ -1131,7 +1125,7 @@ pub fn render_roles_subpanel(
         |name| {
             (
                 name.to_owned(),
-                Style::default().fg(termrock::Theme::default()
+                Style::default().fg(termrock::style::DesignSystem::default()
                     .style(termrock::style::Role::Accent)
                     .fg
                     .unwrap_or_default()),
@@ -1142,7 +1136,7 @@ pub fn render_roles_subpanel(
         Span::raw("  "),
         Span::styled(
             "Default ",
-            Style::default().fg(termrock::Theme::default()
+            Style::default().fg(termrock::style::DesignSystem::default()
                 .style(termrock::style::Role::Text)
                 .fg
                 .unwrap_or_default()),
@@ -1153,12 +1147,12 @@ pub fn render_roles_subpanel(
 
     for row in rows {
         let name_style = if row.exists {
-            Style::default().fg(termrock::Theme::default()
+            Style::default().fg(termrock::style::DesignSystem::default()
                 .style(termrock::style::Role::Accent)
                 .fg
                 .unwrap_or_default())
         } else {
-            Style::default().fg(termrock::Theme::default()
+            Style::default().fg(termrock::style::DesignSystem::default()
                 .style(termrock::style::Role::TextMuted)
                 .fg
                 .unwrap_or_default())
@@ -1167,7 +1161,7 @@ pub fn render_roles_subpanel(
         if row.is_default {
             spans.push(Span::styled(
                 " \u{2605}",
-                Style::default().fg(termrock::Theme::default()
+                Style::default().fg(termrock::style::DesignSystem::default()
                     .style(termrock::style::Role::TextMuted)
                     .fg
                     .unwrap_or_default()),
@@ -1176,7 +1170,7 @@ pub fn render_roles_subpanel(
         if row.scoped_mount_count > 0 {
             spans.push(Span::styled(
                 format!("    +{} role mounts", row.scoped_mount_count),
-                Style::default().fg(termrock::Theme::default()
+                Style::default().fg(termrock::style::DesignSystem::default()
                     .style(termrock::style::Role::TextMuted)
                     .fg
                     .unwrap_or_default()),
@@ -1358,12 +1352,12 @@ pub fn render_instance_details_pane(
     pane: &WorkspaceInstancePane,
 ) {
     let instance_title = format!(" Instance: {} ", pane.instance_id);
-    let theme = termrock::Theme::default();
+    let theme = termrock::style::DesignSystem::default();
     let block = panel(&theme, Some(&instance_title), pane.focused).block();
     let lines = instance_detail_lines(&pane.content);
     frame.render_widget(
         Paragraph::new(lines).block(block).style(
-            Style::default().fg(termrock::Theme::default()
+            Style::default().fg(termrock::style::DesignSystem::default()
                 .style(termrock::style::Role::Accent)
                 .fg
                 .unwrap_or_default()),
@@ -1378,7 +1372,7 @@ fn instance_detail_lines(content: &WorkspaceInstancePaneContent) -> Vec<Line<'st
         WorkspaceInstancePaneContent::Sessions { rows } => session_instance_lines(rows),
         WorkspaceInstancePaneContent::Empty { message } => vec![Line::from(Span::styled(
             format!("  {message}"),
-            Style::default().fg(termrock::Theme::default()
+            Style::default().fg(termrock::style::DesignSystem::default()
                 .style(termrock::style::Role::TextMuted)
                 .fg
                 .unwrap_or_default()),
@@ -1391,7 +1385,7 @@ fn live_instance_lines(tabs: &[WorkspaceInstanceTab]) -> Vec<Line<'static>> {
     if tabs.is_empty() {
         lines.push(Line::from(Span::styled(
             "  Daemon reports no tabs",
-            Style::default().fg(termrock::Theme::default()
+            Style::default().fg(termrock::style::DesignSystem::default()
                 .style(termrock::style::Role::TextMuted)
                 .fg
                 .unwrap_or_default()),
@@ -1401,7 +1395,7 @@ fn live_instance_lines(tabs: &[WorkspaceInstanceTab]) -> Vec<Line<'static>> {
 
     lines.push(Line::from(Span::styled(
         "  Live tab/pane tree (from container daemon)",
-        termrock::Theme::default().style(termrock::style::Role::TextStrong),
+        termrock::style::DesignSystem::default().style(termrock::style::Role::TextStrong),
     )));
     for tab in tabs {
         let prefix = if tab.active { "▸" } else { " " };
@@ -1409,12 +1403,12 @@ fn live_instance_lines(tabs: &[WorkspaceInstanceTab]) -> Vec<Line<'static>> {
             Span::styled(
                 format!("  {prefix} Tab {}:  ", tab.index + 1),
                 Style::default().fg(if tab.active {
-                    termrock::Theme::default()
+                    termrock::style::DesignSystem::default()
                         .style(termrock::style::Role::Accent)
                         .fg
                         .unwrap_or_default()
                 } else {
-                    termrock::Theme::default()
+                    termrock::style::DesignSystem::default()
                         .style(termrock::style::Role::TextMuted)
                         .fg
                         .unwrap_or_default()
@@ -1423,9 +1417,9 @@ fn live_instance_lines(tabs: &[WorkspaceInstanceTab]) -> Vec<Line<'static>> {
             Span::styled(
                 tab.label.clone(),
                 if tab.active {
-                    termrock::Theme::default().style(termrock::style::Role::TextStrong)
+                    termrock::style::DesignSystem::default().style(termrock::style::Role::TextStrong)
                 } else {
-                    termrock::Theme::default().style(termrock::style::Role::Text)
+                    termrock::style::DesignSystem::default().style(termrock::style::Role::Text)
                 },
             ),
         ]));
@@ -1434,17 +1428,17 @@ fn live_instance_lines(tabs: &[WorkspaceInstanceTab]) -> Vec<Line<'static>> {
             let cursor_prefix = if pane.selected { "▶ " } else { "  " };
             let label_style = if pane.selected {
                 Style::default()
-                    .fg(termrock::Theme::default()
+                    .fg(termrock::style::DesignSystem::default()
                         .style(termrock::style::Role::Text)
                         .fg
                         .unwrap_or_default())
-                    .bg(termrock::Theme::default()
+                    .bg(termrock::style::DesignSystem::default()
                         .style(termrock::style::Role::ScrollTrack)
                         .fg
                         .unwrap_or_default())
                     .add_modifier(Modifier::BOLD)
             } else {
-                Style::default().fg(termrock::Theme::default()
+                Style::default().fg(termrock::style::DesignSystem::default()
                     .style(termrock::style::Role::Accent)
                     .fg
                     .unwrap_or_default())
@@ -1453,12 +1447,12 @@ fn live_instance_lines(tabs: &[WorkspaceInstanceTab]) -> Vec<Line<'static>> {
                 Span::styled(
                     format!("    {cursor_prefix}{marker} "),
                     Style::default().fg(if pane.focused {
-                        termrock::Theme::default()
+                        termrock::style::DesignSystem::default()
                             .style(termrock::style::Role::Accent)
                             .fg
                             .unwrap_or_default()
                     } else {
-                        termrock::Theme::default()
+                        termrock::style::DesignSystem::default()
                             .style(termrock::style::Role::TextMuted)
                             .fg
                             .unwrap_or_default()
@@ -1467,14 +1461,14 @@ fn live_instance_lines(tabs: &[WorkspaceInstanceTab]) -> Vec<Line<'static>> {
                 Span::styled(format!("{:<16}", pane.label), label_style),
                 Span::styled(
                     format!("  ({}) ", pane.agent_label),
-                    Style::default().fg(termrock::Theme::default()
+                    Style::default().fg(termrock::style::DesignSystem::default()
                         .style(termrock::style::Role::TextMuted)
                         .fg
                         .unwrap_or_default()),
                 ),
                 Span::styled(
                     format!("[{}]", pane.state_label),
-                    Style::default().fg(termrock::Theme::default()
+                    Style::default().fg(termrock::style::DesignSystem::default()
                         .style(termrock::style::Role::TextMuted)
                         .fg
                         .unwrap_or_default()),
@@ -1488,7 +1482,7 @@ fn live_instance_lines(tabs: &[WorkspaceInstanceTab]) -> Vec<Line<'static>> {
 fn session_instance_lines(rows: &[WorkspaceInstanceSessionRow]) -> Vec<Line<'static>> {
     let mut lines = vec![Line::from(Span::styled(
         format!("  {:<24}  Agent", "Session"),
-        termrock::Theme::default().style(termrock::style::Role::TextStrong),
+        termrock::style::DesignSystem::default().style(termrock::style::Role::TextStrong),
     ))];
     for row in rows {
         let name = if row.name.chars().count() > 24 {
@@ -1500,14 +1494,14 @@ fn session_instance_lines(rows: &[WorkspaceInstanceSessionRow]) -> Vec<Line<'sta
         lines.push(Line::from(vec![
             Span::styled(
                 format!("  {name:<24}  "),
-                Style::default().fg(termrock::Theme::default()
+                Style::default().fg(termrock::style::DesignSystem::default()
                     .style(termrock::style::Role::Accent)
                     .fg
                     .unwrap_or_default()),
             ),
             Span::styled(
                 row.agent_runtime.clone(),
-                Style::default().fg(termrock::Theme::default()
+                Style::default().fg(termrock::style::DesignSystem::default()
                     .style(termrock::style::Role::TextMuted)
                     .fg
                     .unwrap_or_default()),
@@ -1530,7 +1524,7 @@ fn env_row_line(row: &WorkspaceEnvRow, inner_width: usize) -> Line<'static> {
         spans.push(Span::styled(
             marker_text,
             Style::default()
-                .fg(termrock::Theme::default()
+                .fg(termrock::style::DesignSystem::default()
                     .style(termrock::style::Role::TextMuted)
                     .fg
                     .unwrap_or_default())
@@ -1542,7 +1536,7 @@ fn env_row_line(row: &WorkspaceEnvRow, inner_width: usize) -> Line<'static> {
     spans.push(Span::raw(gap));
     spans.push(Span::styled(
         row.name.clone(),
-        Style::default().fg(termrock::Theme::default()
+        Style::default().fg(termrock::style::DesignSystem::default()
             .style(termrock::style::Role::Accent)
             .fg
             .unwrap_or_default()),
@@ -1557,7 +1551,7 @@ fn env_row_line(row: &WorkspaceEnvRow, inner_width: usize) -> Line<'static> {
         spans.push(Span::raw(" ".repeat(pad_count)));
         spans.push(Span::styled(
             role.clone(),
-            Style::default().fg(termrock::Theme::default()
+            Style::default().fg(termrock::style::DesignSystem::default()
                 .style(termrock::style::Role::TextMuted)
                 .fg
                 .unwrap_or_default()),
