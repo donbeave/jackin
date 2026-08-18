@@ -1,6 +1,6 @@
 # TermRock migration
 
-- **Status**: PLANNED
+- **Status**: IN EXECUTION
 - **Slug**: termrock-migration
 - **Created**: 2026-08-19 · **Updated**: 2026-08-19
 - **Plan**: [plans/termrock-migration/](../../plans/termrock-migration/README.md)
@@ -120,6 +120,8 @@ All six 2026-08-19 open questions are settled — see Decisions (2026-08-19): br
 - jackin-tui facade end-state (product traits vs upstream `event_result`/`runtime` contracts) — revisit at console-phase finalization, once the first surface has exercised the upstream contracts.
 
 ## Log
+
+- 2026-08-19 — execution — bump phase started (PLANNED → IN EXECUTION): plan 001 (parity characterization tests at the old pin) IN PROGRESS on `feature/termrock-head-bump` (cut off `roadmap/termrock-migration`; docs PR #896 still open — fallback branch-origin path per the hub).
 
 - 2026-08-19 — tailrocks-idea — created (DRAFT).
 - 2026-08-19 — tailrocks-brainstorm — shaped (DRAFT → SHAPING): settled target rev, one-off cadence, full-modernization scope, bump-first phasing, brand invariants, PNG-baseline quality bar, console-first order; corrected the stale `src/console/tui/` surface fact to the six-crate usage map; delta survey `5ff94ee..e1d61f4d` recorded.
