@@ -1,9 +1,9 @@
 # TermRock migration
 
-- **Status**: READY
+- **Status**: PLANNED
 - **Slug**: termrock-migration
 - **Created**: 2026-08-19 · **Updated**: 2026-08-19
-- **Plan**: — (plans/termrock-migration/ once planned)
+- **Plan**: [plans/termrock-migration/](../../plans/termrock-migration/README.md)
 
 ## Intent
 
@@ -122,6 +122,7 @@ All six 2026-08-19 open questions are settled — see Decisions (2026-08-19): br
 
 - 2026-08-19 — tailrocks-idea — created (DRAFT).
 - 2026-08-19 — tailrocks-brainstorm — shaped (DRAFT → SHAPING): settled target rev, one-off cadence, full-modernization scope, bump-first phasing, brand invariants, PNG-baseline quality bar, console-first order; corrected the stale `src/console/tui/` surface fact to the six-crate usage map; delta survey `5ff94ee..e1d61f4d` recorded.
+- 2026-08-19 — tailrocks-plan — planned (READY → PLANNED): bump-phase package at plans/termrock-migration/ — coverage ledger, 6-file spec, 4 plans (parity tests → bump → brand/re-baseline → docs/gates), GOAL.md handoff; excerpt-verified per plan, cold-reviewed per plan (all majors fixed, incl. progress-rail recolor defect found in the spec), traceability gate PASS; new research topic jackin-verification-tooling (vetted). Modernization phases deliberately not planned — each waits on its surface's finalization per the item's Deferred triggers.
 - 2026-08-19 — tailrocks-finalize — closed (SHAPING → READY): screen-set/flow-preserving declarations written and confirmed; capsule row-0 ownership split decided (pill = brand, rest = product); vocabulary gained "Key screens", "Surface finalization", warp/pill clarifications; quality bar gained side-task ownership, background landing vehicle, dep-ripple coverage, plan-owned delegations; readiness checklist passed in full; planning dry run passed with fresh eyes on the third round (rounds 1–2 findings written back). Next: tailrocks-plan termrock-migration.
 - 2026-08-19 — tailrocks-record-decision — recorded six decisions (brand-invariant@bump, bump-scope redesigns+parity-tests, background-at-review, rail=brand, adoption rule, facade deferral); struck all open questions; three Deferred entries added; vocabulary, must-not, and quality bar reconciled. Status stays SHAPING.
 - 2026-08-19 — tailrocks-research — deep pass produced [`research/termrock-head-adoption/`](../../research/termrock-head-adoption/README.md) (5 vetted chapters + 2 critic rounds): compile-break inventory answered (384 errors / 15 classes / cargo-deny gate), 40 applicable migration docs, brand-recolor facts confirmed, adoption pairing tables, PNG-pipeline contract; struck the answered research question, added four plan-time research questions and four surfaced decision questions.
