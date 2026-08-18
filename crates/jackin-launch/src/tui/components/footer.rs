@@ -176,10 +176,7 @@ pub fn render_footer(
     frame.render_stateful_widget(
         &StatusBar::new(&left, &right, &theme).alpha(alpha),
         area,
-        &mut StatusBarState {
-            hovered: None,
-            regions: Vec::new(),
-        },
+        &mut StatusBarState::new(),
     );
 }
 
