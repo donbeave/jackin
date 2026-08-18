@@ -4,7 +4,7 @@
 use super::*;
 
 /// Renders one frame the way `inspect_surface_loop` does and returns the
-/// visible diff rows. Single place naming TermRock's diff types.
+/// visible diff rows. Single place naming the TermRock diff types.
 fn draw(lines: &[String], scroll: &mut DiffScroll, width: u16, height: u16) -> Vec<String> {
     use ratatui::Terminal;
     use ratatui::backend::TestBackend;
