@@ -20,7 +20,7 @@ use ratatui::{
 use jackin_core::shorten_home;
 use jackin_tui::ModalOutcome;
 use termrock::layout::render_dialog_shell;
-use termrock::widgets::PanelEmphasis;
+use termrock::widgets::PanelChrome;
 use termrock::widgets::{Action, ActionBar, ActionBarState};
 
 /// Outcome of the mount-destination modal.
@@ -96,8 +96,8 @@ pub fn render(frame: &mut Frame<'_>, area: Rect, state: &MountDstChoiceState) {
         frame,
         area,
         Some("Mount destination"),
-        PanelEmphasis::Focused,
-        &termrock::Theme::default(),
+        PanelChrome::Focused,
+        &termrock::style::DesignSystem::default(),
     );
 
     // Canonical dialog layout: leading spacer + content + spacer + buttons + trailing spacer.
@@ -116,7 +116,7 @@ pub fn render(frame: &mut Frame<'_>, area: Rect, state: &MountDstChoiceState) {
     frame.render_widget(
         Paragraph::new(Span::styled(
             "What would you like to do?",
-            termrock::Theme::default().style(termrock::style::Role::TextStrong),
+            termrock::style::DesignSystem::default().style(termrock::style::Role::TextStrong),
         ))
         .alignment(Alignment::Center),
         chunks[1],
@@ -128,7 +128,7 @@ pub fn render(frame: &mut Frame<'_>, area: Rect, state: &MountDstChoiceState) {
         Paragraph::new(Span::styled(
             shortened,
             Style::default()
-                .fg(termrock::Theme::default()
+                .fg(termrock::style::DesignSystem::default()
                     .style(termrock::style::Role::TextMuted)
                     .fg
                     .unwrap_or_default())
@@ -158,12 +158,12 @@ pub fn render(frame: &mut Frame<'_>, area: Rect, state: &MountDstChoiceState) {
             style: None,
         },
     ];
-    let theme = termrock::Theme::default();
+    let theme = termrock::style::DesignSystem::default();
     frame.render_stateful_widget(
         &ActionBar::new(&actions, &theme).gap(" "),
         chunks[4],
         &mut ActionBarState {
-            focused: Some(state.focus),
+            cursor: Some(state.focus),
             regions: Vec::new(),
         },
     );

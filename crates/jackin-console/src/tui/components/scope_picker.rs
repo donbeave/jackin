@@ -73,15 +73,15 @@ use ratatui::{
 };
 
 use termrock::layout::render_dialog_shell;
-use termrock::widgets::PanelEmphasis;
+use termrock::widgets::PanelChrome;
 
 pub fn render(frame: &mut Frame<'_>, area: Rect, state: &ScopePickerState) {
     let inner = render_dialog_shell(
         frame,
         area,
         Some(state.title),
-        PanelEmphasis::Focused,
-        &termrock::Theme::default(),
+        PanelChrome::Focused,
+        &termrock::style::DesignSystem::default(),
     );
 
     // inner area is 3 rows (5 outer − 2 border): blank, button, blank.
@@ -107,12 +107,12 @@ pub fn render(frame: &mut Frame<'_>, area: Rect, state: &ScopePickerState) {
             style: None,
         },
     ];
-    let theme = termrock::Theme::default();
+    let theme = termrock::style::DesignSystem::default();
     frame.render_stateful_widget(
         &ActionBar::new(&actions, &theme).gap(" "),
         chunks[1],
         &mut ActionBarState {
-            focused: Some(state.focused),
+            cursor: Some(state.focused),
             regions: Vec::new(),
         },
     );

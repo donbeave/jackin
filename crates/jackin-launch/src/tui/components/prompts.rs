@@ -12,9 +12,9 @@ use ratatui::widgets::Paragraph;
 use termrock::interaction::Outcome;
 use termrock::widgets::{
     Action, ChoiceDialog, ChoiceDialogState, Dialog, List, ListRow, ListState, MessageDialog,
-    PanelEmphasis, RowRole, TextInput, TextInputOutcome, TextInputState, Validation,
+    PanelChrome, TextInput, TextInputOutcome, TextInputState, Validation,
 };
-use termrock::{Theme, widgets::HintSpan};
+use termrock::{style::DesignSystem, widgets::HintSpan};
 
 use crate::tui::components::dialog::dialog_backdrop;
 use crate::tui::components::dialog::{exact_dialog_rect, percent_dialog_rect};
@@ -120,13 +120,7 @@ impl PromptPicker {
     fn rows(&self) -> Vec<ListRow<'static, usize>> {
         self.filtered
             .iter()
-            .map(|index| ListRow {
-                id: *index,
-                label: Line::from(self.items[*index].clone()),
-                trailing: None,
-                role: RowRole::Item,
-                enabled: true,
-            })
+            .map(|index| ListRow::item(*index, Line::from(self.items[*index].clone())))
             .collect()
     }
 }
@@ -198,7 +192,7 @@ impl PromptConfirm {
 
     #[must_use]
     pub fn with_focus_yes(mut self) -> Self {
-        self.state.focused = Some(true);
+        self.state.cursor = Some(true);
         self
     }
 
@@ -341,7 +335,7 @@ pub fn draw_select(
         frame,
         hint_area,
         &select_list_hint_spans(),
-        &Theme::default(),
+        &DesignSystem::default(),
     );
 }
 
@@ -352,10 +346,10 @@ pub(crate) fn render_picker(
     context: &[Line<'_>],
     picker: &mut PromptPicker,
 ) {
-    let theme = Theme::default();
+    let theme = DesignSystem::default();
     let panel = termrock::widgets::Panel::new(&theme)
         .title(title)
-        .emphasis(PanelEmphasis::Focused);
+        .emphasis(PanelChrome::Focused);
     let inner = panel.inner(area);
     frame.render_widget(&panel, area);
     let context_height = u16::try_from(context.len()).unwrap_or(u16::MAX);
@@ -381,10 +375,10 @@ pub(crate) fn render_picker(
 pub fn draw_text_prompt(frame: &mut Frame<'_>, input: &mut PromptText, skippable: bool) {
     let (box_area, hint_area) = dialog_backdrop(frame, frame.area());
     let area = text_input_prompt_rect(box_area);
-    let theme = Theme::default();
+    let theme = DesignSystem::default();
     let panel = termrock::widgets::Panel::new(&theme)
         .title(&input.label)
-        .emphasis(PanelEmphasis::Focused);
+        .emphasis(PanelChrome::Focused);
     let inner = panel.inner(area);
     frame.render_widget(&panel, area);
     frame.render_stateful_widget(
@@ -398,7 +392,7 @@ pub fn draw_text_prompt(frame: &mut Frame<'_>, input: &mut PromptText, skippable
         frame,
         hint_area,
         text_prompt_hint(skippable),
-        &Theme::default(),
+        &DesignSystem::default(),
     );
 }
 
@@ -418,26 +412,26 @@ pub fn draw_confirm(frame: &mut Frame<'_>, state: &mut PromptConfirm) {
             .iter()
             .map(|note| Line::from(format!("! {note}"))),
     );
-    let theme = Theme::default();
+    let theme = DesignSystem::default();
     let actions = confirm_actions();
     let dialog = Dialog::new(&state.title, Text::from(body), &theme)
         .style(Style::default())
-        .emphasis(PanelEmphasis::Focused);
+        .emphasis(PanelChrome::Focused);
     frame.render_stateful_widget(
         &ChoiceDialog::new(dialog, &actions).gap(" "),
         area,
         &mut state.state,
     );
-    termrock::widgets::render_hint_bar(frame, hint_area, &confirm_hint_spans(), &Theme::default());
+    termrock::widgets::render_hint_bar(frame, hint_area, &confirm_hint_spans(), &DesignSystem::default());
 }
 
 pub fn draw_error_popup(frame: &mut Frame<'_>, state: &mut PromptError) {
     let (box_area, hint_area) = dialog_backdrop(frame, frame.area());
     let area = error_popup_rect(box_area, state);
-    let theme = Theme::default();
+    let theme = DesignSystem::default();
     let dialog = Dialog::new(&state.title, Text::from(state.message.as_str()), &theme)
         .style(Style::default())
-        .emphasis(PanelEmphasis::Focused);
+        .emphasis(PanelChrome::Focused);
     frame.render_stateful_widget(
         &MessageDialog::new(dialog, &[], &theme).wrap(true),
         area,
@@ -447,7 +441,7 @@ pub fn draw_error_popup(frame: &mut Frame<'_>, state: &mut PromptError) {
         frame,
         hint_area,
         &error_popup_hint_spans(),
-        &Theme::default(),
+        &DesignSystem::default(),
     );
 }
 
