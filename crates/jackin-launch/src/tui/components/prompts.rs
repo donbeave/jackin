@@ -381,11 +381,13 @@ pub fn draw_text_prompt(frame: &mut Frame<'_>, input: &mut PromptText, skippable
         .emphasis(PanelChrome::Focused);
     let inner = panel.inner(area);
     frame.render_widget(&panel, area);
+    // Head `Panel::inner` already applies the design-system padding; a second
+    // host margin would zero the one-row content band.
     frame.render_stateful_widget(
         &TextInput::new(&input.label, &theme)
             .placeholder("")
             .validation(Validation::Valid),
-        inner.inner(ratatui::layout::Margin::new(1, 1)),
+        inner,
         &mut input.state,
     );
     termrock::widgets::render_hint_bar(
