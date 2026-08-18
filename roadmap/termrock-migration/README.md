@@ -1,6 +1,6 @@
 # TermRock migration
 
-- **Status**: SHAPING
+- **Status**: READY
 - **Slug**: termrock-migration
 - **Created**: 2026-08-19 · **Updated**: 2026-08-19
 - **Plan**: — (plans/termrock-migration/ once planned)
@@ -16,7 +16,9 @@ Destination: all six consuming crates build against the TermRock head rev `e1d61
 - **Surface**: the TUI area of one consuming crate — console (`jackin-console`), capsule (`jackin-capsule`), launch (`jackin-launch`), adapter (`jackin`), facade (`jackin-tui`), oppicker (`jackin-oppicker`). The host-console adapter code in `crates/jackin/src/console/` belongs to the adapter surface, not console. _Avoid_: screen, app.
 - **Bump phase**: the first PR — rev bump + mechanical API migration + the minimum compiler-forced redesigns (focus/modal, diff scrolling), each behaviorally parity-tested; no other judgement changes (decision 2026-08-19). _Avoid_: upgrade PR, port.
 - **Modernization phase**: a per-surface PR that re-platforms that surface's hand-rolled machinery on the new TermRock component set. _Avoid_: refactor, redesign.
-- **Brand compositions**: BrandHeader, digital rain, launch animation, and the launch progress rail (added by decision 2026-08-19) — jackin❯-owned visuals upstream declined to absorb (rail: jackin❯'s own designation). _Avoid_: brand widgets, chrome.
+- **Brand compositions**: BrandHeader, digital rain, the launch animation (= the warp intro/outro), the launch progress rail, and the capsule brand pill (block + word + chevron) — jackin❯-owned visuals upstream declined to absorb (rail and pill: jackin❯'s own designations, decisions 2026-08-19). The rest of capsule row 0 (tabs, underline, menu, fills) is product chrome. _Avoid_: brand widgets, chrome.
+- **Surface finalization**: the follow-up closing session on this item scoped to one surface (a `tailrocks-finalize`/`tailrocks-record-decision` round), run before `tailrocks-plan` produces that surface's modernization plan; it fixes that surface's adoption map, key-screen list, and brand proof mechanism. _Avoid_: sign-off, review.
+- **Key screens**: the subset of a surface's existing screens selected for zero-tolerance PNG baselines; the list is fixed at that surface's finalization (Deferred). _Avoid_: main screens, critical screens.
 
 ## Decisions
 
@@ -32,6 +34,8 @@ Destination: all six consuming crates build against the TermRock head rev `e1d61
 - 2026-08-19 — **Surface background treatment is decided at bump-PR review from a side-by-side render** of the upstream obsidian surface ladder vs `RolePalette::terminal_native()`. Because a look decision should be made seeing both variants; research chapter 03 supplies the exact value tables. (Deferred entry records the trigger.)
 - 2026-08-19 — **The launch progress rail is brand: look preserved.** The rail joins the protected brand set alongside BrandHeader, digital rain, and the launch animation — rebuild on new primitives allowed, current look preserved. Chosen over the recommended product-UI option: the rail is part of the launch brand experience.
 - 2026-08-19 — **Adoption rule: swap wherever an upstream equivalent exists.** The concrete per-surface pairing map and each surface's key-screen list for PNG baselines are settled at that surface's finalization, console first, from research chapter 04's pairing tables. Because pairing decisions are best made next to the code with the vetted tables in hand.
+- 2026-08-19 — **Capsule status-bar row 0: the brand pill is brand, the rest is product chrome.** The pill (block + word + chevron) gets bump-PR color compensation and stays frozen; tabs, underline, menu, and fills adopt the accepted upstream look. Because the protected set is compositions, not whole bars, and the capsule should stay visually coherent with modernized surfaces.
+- 2026-08-19 — **Screen-set and flow preserving.** This item adds no new operator-visible screens or overlays and changes no operator journeys — existing screens change substrate and (accepted) look only; upstream new-UI candidates (e.g. `keyboard_help`, `notification_center`) become separate roadmap ideas. Because the migration must stay finishable and reviewable against a fixed screen inventory, and journey parity is exactly what the decided parity tests protect.
 - 2026-08-19 — **jackin-tui facade end-state deferred to console-phase finalization.** Until then the facade keeps its product runtime traits (`Component`/`View`/`Subscription`). Because the first modernized surface supplies the evidence the choice needs. (Deferred entry records the trigger.)
 
 ## Capabilities
@@ -43,7 +47,11 @@ Destination: all six consuming crates build against the TermRock head rev `e1d61
 
 ## Screens
 
+No new screens — explicit declaration (decision 2026-08-19). This item is screen-set preserving: every existing screen keeps its purpose, information architecture, states, interactions, and navigation; only the rendering substrate (TermRock head components) and the accepted upstream visuals change. The complete existing-screen inventory per surface (console stages + 19 modals, capsule multiplexer + 15 dialogs, launch cockpit + overlays + standalone prompts, small surfaces) is cited with `file:line` in [`research/termrock-head-adoption/04-component-adoption-candidates.md`](../../research/termrock-head-adoption/04-component-adoption-candidates.md). Visual truth per screen is owned by the quality bar's snapshot/PNG-baseline gates, not by mockups here. Upstream components that would introduce new operator-visible UI are out of scope and become separate roadmap ideas.
+
 ## Flows
+
+No new or changed flows — explicit declaration (decision 2026-08-19). Every operator journey (workspace create/edit/save, launch, capsule dialog chains, exit paths) keeps its steps, screens, and failure points. The three compiler-forced redesigns touch flow-adjacent behavior (Esc cascade, focus restore, diff scrolling); the bump PR's named behavioral parity tests are the gate proving those journeys unchanged (decision 2026-08-19, Quality bar).
 
 ## Data & integrations
 
@@ -85,9 +93,12 @@ Delta survey `5ff94ee..e1d61f4d` (method: git log/diff + upstream `migrations/` 
 
 ## Quality bar
 
-- Bump phase: all six crates compile against rev `e1d61f4d`, full test suite green, the 18 existing text snapshots deliberately re-baselined (upstream visuals accepted), TUI docs under `docs/content/reference/tui/` updated in the same PR; named behavioral parity tests pass for the three forced redesigns (Esc cascade, focus restore, diff scrolling); brand compositions render identically via consumer-code compensation (decisions 2026-08-19).
-- Modernization phases: each surface additionally adopts the `termrock-raster` PNG baseline pipeline for its key screens — zero-tolerance pixel compare with a bless workflow, per the pipeline upstream built for jackin❯ parity (decision 2026-08-19).
-- Brand surfaces: the brand compositions' own rendering stays identical before/after re-implementation; surrounding chrome may change with its surface's modernization. The exact proof mechanism (text snapshot vs PNG-baseline crop) is settled at finalization.
+- Bump phase: all six crates compile against rev `e1d61f4d`, full test suite green, the 18 existing text snapshots deliberately re-baselined (upstream visuals accepted — wholesale, in bump-PR review under TESTING.md's snapshot gate), TUI docs under `docs/content/reference/tui/` updated in the same PR; named behavioral parity tests pass for the three forced redesigns (Esc cascade, focus restore, diff scrolling); brand compositions render identically via consumer-code compensation (decisions 2026-08-19).
+- Bump phase additionally owns the forced side-tasks: `Cargo.lock` bump (serde 1.0.229 wave), the two cargo-deny skip entries (`base64@0.22.1`, `syn@2.0.119`), the three docs pages pinning dead names plus the stale AGENTS.md TUI-table path (same-PR docs gate), and the `hint.rs:25` chord_glyph-mirror drift check. Toolchain/dependency ripples (MSRV 1.97.1, `web-time`, `ratatui default-features = false`) carry no separate gate — the compile + suite-green gate covers them. The background variant chosen at bump-PR review lands inside the bump PR before merge (snapshots re-baselined on the chosen variant).
+- Modernization phases: each surface additionally adopts the `termrock-raster` PNG baseline pipeline for its key screens — zero-tolerance pixel compare with a bless workflow, per the pipeline upstream built for jackin❯ parity (decision 2026-08-19). The pipeline's CI wiring lands with the first modernization phase (console); the gate binds on CI's runner platform, and cross-OS identity stays a parked research question, not a merge blocker. Text snapshots remain the standing suite; PNG baselines are additive.
+- Brand surfaces: the brand compositions' own rendering stays identical before/after re-implementation; surrounding chrome may change with its surface's modernization. Each brand composition is rebuilt in its owning surface's modernization phase (BrandHeader: console + launch copies; rain, warp, rail: launch); the bump PR only compensates colors. The exact proof mechanism (text snapshot vs PNG-baseline crop) is settled at that surface's finalization.
+- Usage-limits-only hard rule wins over adoption: if the `context_meter`/`metric_tile` render-path read fails it, those widgets are not adopted and the hand-rolled meter stays.
+- Deliberately plan-owned (not specified here): PR granularity and internal sequencing for the small surfaces, concrete parity-test names/harness/locations, and the per-span brand compensation mechanism (jackin-brand constants vs explicit styles) — the affected-span inventory itself is research-supplied ([ch03](../../research/termrock-head-adoption/03-theme-brand-impact.md), Brand composition color sources).
 
 ## Open questions
 
@@ -111,5 +122,6 @@ All six 2026-08-19 open questions are settled — see Decisions (2026-08-19): br
 
 - 2026-08-19 — tailrocks-idea — created (DRAFT).
 - 2026-08-19 — tailrocks-brainstorm — shaped (DRAFT → SHAPING): settled target rev, one-off cadence, full-modernization scope, bump-first phasing, brand invariants, PNG-baseline quality bar, console-first order; corrected the stale `src/console/tui/` surface fact to the six-crate usage map; delta survey `5ff94ee..e1d61f4d` recorded.
+- 2026-08-19 — tailrocks-finalize — closed (SHAPING → READY): screen-set/flow-preserving declarations written and confirmed; capsule row-0 ownership split decided (pill = brand, rest = product); vocabulary gained "Key screens", "Surface finalization", warp/pill clarifications; quality bar gained side-task ownership, background landing vehicle, dep-ripple coverage, plan-owned delegations; readiness checklist passed in full; planning dry run passed with fresh eyes on the third round (rounds 1–2 findings written back). Next: tailrocks-plan termrock-migration.
 - 2026-08-19 — tailrocks-record-decision — recorded six decisions (brand-invariant@bump, bump-scope redesigns+parity-tests, background-at-review, rail=brand, adoption rule, facade deferral); struck all open questions; three Deferred entries added; vocabulary, must-not, and quality bar reconciled. Status stays SHAPING.
 - 2026-08-19 — tailrocks-research — deep pass produced [`research/termrock-head-adoption/`](../../research/termrock-head-adoption/README.md) (5 vetted chapters + 2 critic rounds): compile-break inventory answered (384 errors / 15 classes / cargo-deny gate), 40 applicable migration docs, brand-recolor facts confirmed, adoption pairing tables, PNG-pipeline contract; struck the answered research question, added four plan-time research questions and four surfaced decision questions.
