@@ -50,7 +50,7 @@ pub const CYAN_DIM: Color = color(CYAN_DIM_RGB);
 /// Text on bright product chips.
 pub const INK: Color = Color::Black;
 /// Brand chevron foreground (pre-bump `Role::Text` white; the palette value
-/// shifted at TermRock head, so the brand span pins the brand constant).
+/// shifted at `TermRock` head, so the brand span pins the brand constant).
 pub const BRAND_CHEVRON: Color = color(WHITE_RGB);
 /// Brand header separator foreground (pre-bump `Role::ScrollTrack` dark
 /// phosphor).

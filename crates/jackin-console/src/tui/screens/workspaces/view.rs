@@ -943,9 +943,12 @@ pub fn render_general_subpanel(frame: &mut Frame<'_>, area: Rect, workdir_displa
         termrock::widgets::Viewport::new(&lines, &theme)
             .title("General")
             .padded_content()
-            .content_style(Style::default().fg(theme.style(termrock::style::Role::Accent)
-                .fg
-                .unwrap_or_default())),
+            .content_style(
+                Style::default().fg(theme
+                    .style(termrock::style::Role::Accent)
+                    .fg
+                    .unwrap_or_default()),
+            ),
         area,
         &mut scroll,
     );

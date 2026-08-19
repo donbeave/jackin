@@ -245,21 +245,23 @@ pub(crate) fn render_branch_context_bar(
         .style(termrock::style::Role::Text)
         .fg
         .unwrap_or_default());
-    let left = [status_slot(BranchBarSlot::Context, &left_text, 1, left_clickable)
-        .style(
-            white_bg
-                .fg(if left_clickable {
-                    jackin_tui::tokens::LINK_BLUE
-                } else {
-                    jackin_tui::tokens::INK
-                })
-                .add_modifier(Modifier::BOLD),
-        )
-        .hover_style(
-            white_bg
-                .fg(jackin_tui::tokens::DEBUG_AMBER)
-                .add_modifier(Modifier::BOLD),
-        )];
+    let left = [
+        status_slot(BranchBarSlot::Context, &left_text, 1, left_clickable)
+            .style(
+                white_bg
+                    .fg(if left_clickable {
+                        jackin_tui::tokens::LINK_BLUE
+                    } else {
+                        jackin_tui::tokens::INK
+                    })
+                    .add_modifier(Modifier::BOLD),
+            )
+            .hover_style(
+                white_bg
+                    .fg(jackin_tui::tokens::DEBUG_AMBER)
+                    .add_modifier(Modifier::BOLD),
+            ),
+    ];
     let right = [
         status_slot(BranchBarSlot::Usage, &usage, 2, !usage.is_empty())
             .style(
