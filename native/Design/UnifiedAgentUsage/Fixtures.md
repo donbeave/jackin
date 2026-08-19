@@ -10,8 +10,8 @@ not implement this contract. After human structural selection, create the
 separate committed SwiftPM package
 `native/Design/Prototypes/UnifiedAgentUsage/`; do not retrofit the incumbent app
 into the design prototype. Its fixture source consumes every record in this
-file, and its `default` scenario is an explicit alias to the selected normal
-fixture. Its harness implements only the standard five arguments:
+file, and its `default` scenario is an exact alias to F02. Its harness implements
+only the standard five arguments:
 `--tr-scenario`, `--tr-appearance`, `--tr-window`, `--tr-reduce`, and
 `--tr-backdrop`; unknown scenario names and invalid sizes fail at launch.
 Until sign-off and later baseline capture, current-app captures remain legacy
@@ -209,12 +209,31 @@ an inferred date.
 
 ### F12 — Layout envelope / large dataset
 
-- Seven providers plus at least 40 canonical accounts total.
-- Selected provider: Anthropic / Claude.
-- Selected account: `Research workspace`.
-- Mixed remaining values: 88%, missing, 28%, 0%, 12%, 57%, and 100%.
-- Each selected account may contain up to eight quota windows, including duplicate
-  visible labels with distinct stable row IDs.
+- Exactly 42 canonical accounts: six under each desktop provider in frozen order.
+- Surface key `S` is exactly one of `codex`, `claude`, `amp`, `grok`, `zai`,
+  `kimi`, or `minimax`, in that order.
+- For provider surface `S` and one-based account index `NN`, stable account ID is
+  `S-load-NN` and label is `S-NN@example.test`, except
+  `claude-load-03`, whose label is exactly `Research workspace`.
+- Plan labels by account index 01–06 are exactly `Free`, `Plus`, `Pro`, `Team`,
+  `Enterprise`, and `Default`.
+- Remaining values follow the exact global account-order cycle
+  `[88, missing, 28, 0, 12, 57, 100]`; index zero is `codex-load-01`, then
+  account index advances before provider index.
+- Selected provider/account: Anthropic / Claude, `claude-load-03` /
+  `Research workspace`.
+- Every account has exactly eight windows with stable IDs and labels:
+  `limit-01` / `Hourly`, `limit-02` / `Daily`, `limit-03` / `Daily`,
+  `limit-04` / `Weekly`, `limit-05` / `Monthly`, `limit-06` / `Model`,
+  `limit-07` / `Organization`, and `limit-08` / `Credits`. Duplicate `Daily`
+  labels intentionally retain distinct IDs.
+- Window remaining values rotate the same seven-value cycle by
+  `(globalAccountIndex + windowIndex) mod 7`, with both indices zero-based.
+  Reset labels by zero-based window index 0–7 are exactly `Resets in 1h`,
+  `Resets in 6h`, `Resets in 18h`, `Resets in 3d`, `Resets Sep 1`,
+  `Reset unavailable`, `Resets Tuesday 23:59`, and `No reset supplied`.
+- The committed Rust-produced status-bar projection is exactly
+  `[claude, codex, amp]`; the fixture loader does not recompute it.
 - Purpose: minimum/typical/wide geometry, native scrolling, disclosure stability,
   selection survival, and deterministic ordering.
 
@@ -234,13 +253,19 @@ an inferred date.
 
 ### F15 — Accepted preference mutation
 
-- Setting: percent style changes from remaining to used.
+- Base projection: F02.
+- Before phase: percent style `left`; status rows carry the F02 Rust-owned
+  remaining strings.
+- Mutation: percent style changes from `left` to `used`.
+- After phase: percent style `used`; the accepted Rust projection supplies all
+  used-percent strings while preserving F02 status-row membership and order.
 - Rust accepts mutation and returns the next projection.
 - Purpose: values change only from Rust-supplied strings; selected setting and
   all surfaces update together.
 
 ### F16 — Rejected preference mutation
 
+- Base projection: F02.
 - Setting: refresh floor changes from 5 to 1 minute.
 - Rust rejects the operation with a typed recoverable error.
 - Expected: control returns to accepted 5-minute value; contextual message and
@@ -249,34 +274,57 @@ an inferred date.
 
 ### F17 — Reordered mutation completion
 
-- Two rapid setting changes: value A starts, value B starts, B completes first,
+- Base projection: F02; accepted refresh floor starts at 5 minutes.
+- Mutation A requests 10 minutes and receives intent revision 41. Mutation B
+  immediately requests 15 minutes and receives revision 42. B completes first;
   A completes last.
-- Expected: value B remains accepted; A cannot overwrite newer intent.
+- Expected: 15 minutes and revision 42 remain accepted in Rust projection,
+  Settings, and persistence; A cannot overwrite newer intent.
 - Purpose: prove task ownership, generation ordering, and shutdown guards.
 
 ### F18 — Accessibility display settings
 
-- Variants: Reduce Transparency, Increase Contrast, Differentiate Without Color,
-  Reduce Motion, Full Keyboard Access, light/dark, key/inactive window.
 - Data: F02 and F11.
+- Prototype process-local reductions for each data subscenario are exactly:
+  no `--tr-reduce` argument, `--tr-reduce transparency`, `--tr-reduce motion`,
+  and `--tr-reduce transparency,motion`.
+- Post-signoff real-settings visual QA adds Increase Contrast, Differentiate
+  Without Color, Full Keyboard Access, light/dark, and key/inactive window while
+  preserving snapshot-and-restore evidence.
 - Expected: opacity adapts through system material; all rows remain separated;
   every state has non-color identity; focus remains visible; no spatial/blur
   animation survives Reduce Motion.
 
 ### F19 — Localization and direction
 
-- `en_US`, left-to-right: 2× English versions of every label.
-- `ar_SA`, right-to-left: Arabic provider/account/error sample with mixed
-  left-to-right technical IDs and Arabic locale formatting.
-- `ja_JP`, left-to-right: CJK provider/account/plan sample and Japanese locale
-  formatting.
-- `de_DE`, left-to-right: German reset and permission messages and German locale
-  formatting.
+- Base projection: F02. The following literal tuples are fixture input; provider
+  strings remain Rust-owned and Swift-owned chrome comes from the test catalog.
+- `en_US`, left-to-right, 2× expansion: provider
+  `OpenAI Organization Production Sandbox — Southeast Asia`; account
+  `organization-production-sandbox@example.test`; plan
+  `Enterprise workspace with centrally managed weekly limits`; reset
+  `Resets Tuesday, 18 August 2026 at 23:59 Indochina Time`; error
+  `Provider response could not be refreshed; showing the last successful quota snapshot`;
+  actions `Refresh Refresh` and `Open Usage Open Usage`.
+- `ar_SA`, right-to-left: provider `أوبن إيه آي`; account
+  `team-01@example.test`; plan `فريق`; reset `تتم إعادة الضبط خلال ٣ أيام`;
+  error `تعذّر تحديث الاستخدام؛ تظهر آخر لقطة ناجحة`; actions `تحديث` and
+  `فتح الاستخدام`.
+- `ja_JP`, left-to-right: provider `OpenAI`; account `研究チーム@example.test`;
+  plan `エンタープライズ`; reset `8月18日火曜日 23:59にリセット`;
+  error `使用量を更新できないため、最後に成功した値を表示しています`;
+  actions `更新` and `使用状況を開く`.
+- `de_DE`, left-to-right: provider `OpenAI`; account
+  `forschung@example.test`; plan `Unternehmen`; reset
+  `Zurücksetzung am Dienstag, 18. August 2026 um 23:59 Uhr`; error
+  `Schlüsselbundzugriff verweigert`; actions `Aktualisieren` and
+  `Nutzung öffnen`.
 - Expected: system mirroring, no clipped primary action/identity, locale-safe
   value grouping, complete accessibility summaries.
 
 ### F20 — Destructive pending sentinel
 
+- Base projection: F02.
 - No destructive action exists in the usage experience.
 - Expected: no confirmation dialog, destructive tint, Delete/Remove/Buy action,
   or quota-based launch disablement appears.
@@ -284,16 +332,25 @@ an inferred date.
 
 ### F21 — Keyboard and VoiceOver task completion
 
+- Starting projection: F03 inventory with `codex-personal` initially selected
+  and a single `[codex]` status-bar projection.
 - Starting point: provider status item focused through the macOS menu bar.
 - Sequence: open the popover; hear provider/account/value/reset/state; move
   through account picker, Refresh, and Open Usage; select `codex-plus`; open
   Usage; confirm the same account; traverse provider group, account row, quota
-  windows, stale/error detail, and Retry; close Usage and dismiss the popover.
-- Async event: F07 replaces one refreshing row with current data during
-  traversal; announcement is concise and does not restart the entire table.
+  windows, then move to the F06 `codex-personal` stale/error detail and Retry;
+  close Usage and dismiss the popover.
+- Async event: Retry creates generation 44, retaining the exact F06 last-good row
+  while refreshing; generation 45 then replaces the provider inventory with exact
+  F01 current data. The removed `codex-plus` selection reconciles to the sole
+  `codex-personal` account. The announcement is concise and does not restart the
+  entire table.
 - Expected: no anonymous groups, duplicate row summaries, focus trap, pointer-only
   action, or lost focus. Escape returns focus to the originating status item;
-  reopening restores the accepted selection.
+  reopening restores the accepted selection. Status-item reconciliation is
+  deferred while its popover owns focus, so selecting depleted `codex-plus`
+  cannot destroy the originating control before focus returns. Generation 45
+  retains `[codex]` as the terminal status-bar membership.
 
 ### F22 — Provider-supplied money cap
 
@@ -308,6 +365,8 @@ an inferred date.
 
 ### F23 — Physical display and restoration
 
+- Base projection: F03 inventory with `codex-personal` initially selected and
+  `[codex]` as the committed status-bar projection.
 - Displays: built-in 2× plus external 1× and external 2×, each tested with and
   without its own menu bar where the system permits.
 - Sequence: open from each clicked status item; verify popover anchoring; move
@@ -321,22 +380,79 @@ an inferred date.
 
 - Sweep the Usage window continuously from 1200 × 760 to 760 × 500 and back,
   including 900 and 860-point candidate thresholds.
-- Repeat with F02, F11, F12, Increase Contrast, sidebar shown/hidden, and toolbar
-  items forced into overflow.
+- Live prototype subscenarios use F02, F11, and F12 with sidebar shown/hidden and
+  toolbar items forced into overflow. Post-signoff visual QA repeats each under
+  the real Increase Contrast setting with restoration proof.
 - Expected: no overlapping or concatenated text, horizontal scroll for the
   primary job, hidden focus, selection loss, oscillating layout, or inaccessible
   action. Every toolbar action remains available in its menu.
+
+## Status-item projection contract
+
+Unless a row below overrides it, Settings use percent style `left`, reset style
+`countdown`, strip mode with maximum three, and no pinned surface. The Rust
+`statusBarGlanceRows` list is committed fixture input, never Swift-ranked. The
+visible list is the exact result after applying the named presentation mode.
+
+| Fixture | Rust `statusBarGlanceRows` | Mode/settings | Visible surface IDs |
+|---|---|---|---|
+| F00 | `[]` | icon only | `[]` |
+| F01 | `[codex]` | pinned, `codex` | `[codex]` |
+| F02 | `[claude, amp, codex]` | strip, max 3 | `[claude, amp, codex]` |
+| F03 | `[]` | icon only | `[]` |
+| F04 | `[claude]` | worst provider | `[claude]` |
+| F05 | `[]` | worst provider | `[]` |
+| F06 | `[codex]` | pinned, `codex` | `[codex]` |
+| F07 | `[claude, amp, codex]` | strip, max 3 | `[claude, amp, codex]` |
+| F08 | `[claude, amp, codex]` | strip, max 3 | `[claude, amp, codex]` |
+| F09 | `[]` | pinned, `claude` | `[]` |
+| F10 | `[kimi]` | pinned, `kimi` | `[kimi]` |
+| F11 | `[codex]` | worst provider | `[codex]` |
+| F12 | `[claude, codex, amp]` | strip, max 3 | `[claude, codex, amp]` |
+| F13 | `[]` | icon only | `[]` |
+| F14 | `[]` | icon only | `[]` |
+| F15-before | `[claude, amp, codex]` | strip, max 3, `left` | `[claude, amp, codex]` |
+| F15-after | `[claude, amp, codex]` | strip, max 3, `used` | `[claude, amp, codex]` |
+| F16 | `[claude, amp, codex]` | strip, max 3 | `[claude, amp, codex]` |
+| F17 | `[claude, amp, codex]` | strip, max 3 | `[claude, amp, codex]` |
+| F18-f02 | `[claude, amp, codex]` | strip, max 3 | `[claude, amp, codex]` |
+| F18-f11 | `[codex]` | worst provider | `[codex]` |
+| F19-en-US | `[claude, amp, codex]` | strip, max 3 | `[claude, amp, codex]` |
+| F19-ar-SA | `[claude, amp, codex]` | strip, max 3 | `[claude, amp, codex]` |
+| F19-ja-JP | `[claude, amp, codex]` | strip, max 3 | `[claude, amp, codex]` |
+| F19-de-DE | `[claude, amp, codex]` | strip, max 3 | `[claude, amp, codex]` |
+| F20 | `[claude, amp, codex]` | strip, max 3 | `[claude, amp, codex]` |
+| F21 | `[codex]` throughout | pinned `codex`; deferred reconcile | `[codex]` |
+| F22 | `[minimax]` | pinned, `minimax` | `[minimax]` |
+| F23 | `[codex]` | pinned, `codex` | `[codex]` |
+| F24-f02 | `[claude, amp, codex]` | strip, max 3 | `[claude, amp, codex]` |
+| F24-f11 | `[codex]` | worst provider | `[codex]` |
+| F24-f12 | `[claude, codex, amp]` | strip, max 3 | `[claude, codex, amp]` |
+
+## Executable scenario IDs
+
+Scenario names are case-sensitive. The harness accepts exactly `F00` through
+`F17`, `F20` through `F23`, `F18-f02`, `F18-f11`, `F19-en-US`, `F19-ar-SA`,
+`F19-ja-JP`, `F19-de-DE`, `F24-f02`, `F24-f11`, `F24-f12`, and `default`.
+`default` resolves byte-for-byte to F02. F18, F19, and F24 are documentation
+matrix headings, not launchable aliases; an attempt to launch them fails loudly.
+F15 is one scenario with deterministic before/after phases, not two launch IDs.
+No locale, data-base, or status-row choice comes from an undeclared argument.
 
 ## Prototype walkthrough and later capture coverage
 
 Preselection ASCII schematics use only exact core or named-fixture records;
 OpenAI multi-account examples use F03 tuples. After human structural selection,
-the user walks the running prototype through every F00–F24 scenario plus the
-`default` alias, in light and dark appearances and at every applicable declared
-size. Task scenarios such as F23 and F24 are completed live with their full
-interaction sequence. This walkthrough uses the running material and produces no
-screenshots. `SIGNOFF.md` must enumerate each scenario/appearance/size result and
-record the user's approval before the design can advance.
+the user walks every executable scenario listed above, including the `default`
+alias. Every scenario that opens Usage runs at exactly 760 × 500, 920 × 620, and
+1200 × 760 in both light and dark; every scenario that opens the popover also
+runs at its fixed 380 × 520 in both appearances. F18 repeats that matrix for
+`F18-f02` and `F18-f11` with the four exact process-local reduction settings.
+F19 runs all four locale/direction subscenarios. F23 and every F24 subscenario
+complete their full live interaction sequences at each relevant size/display
+state. This walkthrough uses the running material and produces no screenshots.
+`SIGNOFF.md` must enumerate each scenario/appearance/size result and record the
+user's approval before the design can advance.
 
 Only after recorded sign-off does `tailrocks-macos-visual-qa` drive the
 prototype through the same five-flag launch contract, freeze baseline captures,
