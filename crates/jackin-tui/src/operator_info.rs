@@ -428,10 +428,20 @@ pub fn render_container_info(frame: &mut Frame<'_>, area: Rect, state: &Containe
 }
 
 fn detail_table_area(inner: Rect) -> Rect {
-    // Head `Panel::inner` already applies the design-token top padding the
-    // pre-bump spacer row compensated for; a second spacer would clip the
-    // last detail row out of the budgeted height.
-    inner
+    // `inner` is head Panel::inner (border + density padding). The detail
+    // surface keeps the old pin's geometry: content column flush inside the
+    // border on X, with the pad_y row serving as the one spacer row between
+    // title border and first detail row.
+    let spacing = termrock::style::DesignSystem::default().spacing;
+    Rect {
+        x: inner.x.saturating_sub(spacing.pad_x),
+        width: inner.width.saturating_add(spacing.pad_x.saturating_mul(2)),
+        height: inner
+            .height
+            .saturating_add(spacing.pad_y.saturating_mul(2))
+            .saturating_sub(1),
+        ..inner
+    }
 }
 
 fn detail_rows(state: &ContainerInfoState) -> Vec<DetailRow<'_, usize>> {
