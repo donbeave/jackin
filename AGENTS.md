@@ -92,7 +92,8 @@ Read [TUI Design](docs/content/reference/tui/index.mdx) before any TUI change. L
 |---|---|
 | Shared components | [TermRock](https://github.com/tailrocks/termrock) |
 | Capsule | `crates/jackin-capsule/src/tui/` |
-| Host console | `src/console/tui/` |
+| Host console (TUI) | `crates/jackin-console/src/tui/` |
+| Host console (adapter/effects) | `crates/jackin/src/console/` |
 | Lookbook | [TermRock catalog](https://github.com/tailrocks/termrock/tree/main/docs) |
 
 Cross-cutting TUI behaviour (focusability, navigation, color, modal sizing, hints) → matching page under `docs/content/reference/tui/` same PR.
