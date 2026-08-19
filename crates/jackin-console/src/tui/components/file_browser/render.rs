@@ -98,7 +98,15 @@ fn render_listing(frame: &mut Frame<'_>, area: Rect, state: &FileBrowserState) {
         } else {
             PanelChrome::Focused
         });
-    let inner = panel.inner(area);
+    // Border-only inner: the browser's list owns its own gutter/padding
+    // vocabulary, so it keeps the old pin's geometry (content flush inside
+    // the border) instead of Panel::inner's density padding.
+    let inner = Rect {
+        x: area.x.saturating_add(1),
+        y: area.y.saturating_add(1),
+        width: area.width.saturating_sub(2),
+        height: area.height.saturating_sub(2),
+    };
     frame.render_widget(&panel, area);
 
     let selected = state
