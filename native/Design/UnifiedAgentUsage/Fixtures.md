@@ -20,7 +20,7 @@ Frozen environment:
 - Window sizes: 760 × 500 minimum, 920 × 620 typical, 1200 × 760 wide
 - Popover: 380 × 520
 
-## Candidate desktop provider order
+## Frozen desktop provider order
 
 1. OpenAI / Codex
 2. Anthropic / Claude
@@ -31,9 +31,9 @@ Frozen environment:
 7. MiniMax
 
 OpenCode is intentionally absent from jackin❯ desktop while remaining present
-in host CLI and console fixtures. This current-desktop order becomes frozen only
-with human structural selection; the host order remains the separately settled
-eight-provider order.
+in host CLI and console fixtures. The native subtree contract freezes this order;
+human structural selection does not reopen it. The host order remains the
+separately settled eight-provider order.
 
 ## Core records
 
