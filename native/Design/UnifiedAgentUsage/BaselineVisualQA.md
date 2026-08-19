@@ -73,6 +73,28 @@ The normal personal and secondary email labels wrap at 920 points while wide pla
 
 `performAccessibilityAudit` did not execute. The UI-test launch failed while enabling automation mode, before any test case ran. The ignored result bundle is `native/.build/visual-qa/baseline/accessibility.xcresult`. This is a recorded blocker, not a pass. The implementation plan must repair deterministic UI-test lifecycle and run audits for status item, popover, Usage overview/detail, Settings, every unavailable state, and Increased Contrast.
 
+A second focused retry on 2026-08-20 used:
+
+```sh
+rtk proxy xcodebuild test \
+  -project native/JackinDesktop.xcodeproj \
+  -scheme JackinDesktop \
+  -destination 'platform=macOS' \
+  -parallel-testing-enabled NO \
+  -only-testing:JackinDesktopUITests/JackinDesktopUITests/testOverviewPassesAccessibilityAudit \
+  -derivedDataPath native/DerivedData \
+  -resultBundlePath native/.build/test-results/goal-accessibility-overview.xcresult
+```
+
+The build and selected test launch began, but the one test failed after 61.977
+seconds: XCUITest could not activate `com.jackin-project.desktop` because its
+state remained `Running Background`. `performAccessibilityAudit` again did not
+execute. This isolates the current failure to app activation/lifecycle rather
+than missing test discovery. The result remains ignored local evidence; no
+accessibility pass is claimed. Repairing the harness or app lifecycle is later
+implementation work and is forbidden in this read-only planning-preparation
+phase.
+
 ## Missing baseline states
 
 The following remain required before final approval:
