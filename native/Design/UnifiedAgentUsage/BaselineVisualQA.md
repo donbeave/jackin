@@ -37,9 +37,14 @@ Two later files with spaces in their names are excluded: their malformed launch 
 
 The accepted files were generated from the legacy executable fixture catalog at
 the named source commit. They establish incumbent structural failures only. The
-prototype harness must bind `VisualQAFixtures.swift` to the canonical successor
-records in `Fixtures.md` and recapture F02/F03 before any image can satisfy the
-selected design's evidence matrix.
+selected design must instead create the committed standalone package
+`native/Design/Prototypes/UnifiedAgentUsage/`, load the canonical successor
+records from `Fixtures.md`, and implement the standard five `--tr-*` launch
+arguments with a `default` scenario alias. The incumbent
+`VisualQAFixtures.swift` and bespoke launch flags remain legacy-only. No image
+from the prototype becomes evidence until the user has walked every scenario,
+both appearances, and all declared sizes live and recorded approval in
+`SIGNOFF.md`; post-signoff capture belongs to `tailrocks-macos-visual-qa`.
 
 ## Findings
 

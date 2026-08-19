@@ -3,13 +3,20 @@
 Status: DRAFT
 
 These records are the canonical successor contract shared by every schematic
-alternative and later prototype. F00–F14 reuse the current launch catalog's
-stable scenario IDs, but the existing `VisualQAFixtures.swift` tuples are legacy
-baseline input and do not match this contract. The first prototype-harness task
-must replace those executable tuples with this file's records before any new
-capture can satisfy candidate coverage. Until then, captures from the current
-source are labeled legacy baseline evidence only. Rust-owned strings are treated
-as immutable display input; a preview may change layout only.
+alternative and later prototype. F00–F14 reuse the incumbent catalog's stable
+scenario IDs, but `VisualQAFixtures.swift`, `VisualQALaunchOptions.swift`, and
+their bespoke `--fixture`/`--window-size` flags are legacy baseline input and do
+not implement this contract. After human structural selection, create the
+separate committed SwiftPM package
+`native/Design/Prototypes/UnifiedAgentUsage/`; do not retrofit the incumbent app
+into the design prototype. Its fixture source consumes every record in this
+file, and its `default` scenario is an explicit alias to the selected normal
+fixture. Its harness implements only the standard five arguments:
+`--tr-scenario`, `--tr-appearance`, `--tr-window`, `--tr-reduce`, and
+`--tr-backdrop`; unknown scenario names and invalid sizes fail at launch.
+Until sign-off and later baseline capture, current-app captures remain legacy
+evidence only. Rust-owned strings are immutable display input; a prototype may
+change layout only.
 
 Frozen environment:
 
@@ -320,11 +327,19 @@ an inferred date.
   primary job, hidden focus, selection loss, oscillating layout, or inaccessible
   action. Every toolbar action remains available in its menu.
 
-## Capture coverage
+## Prototype walkthrough and later capture coverage
 
 Preselection ASCII schematics use only exact core or named-fixture records;
 OpenAI multi-account examples use F03 tuples. After human structural selection,
-every selected prototype view is rendered against F00, F02, F03,
-F06, F08, F11, F12, F13, F14, F16, F18, F19, F21, F23, and F24 before live
-signoff. Final visual QA additionally covers F01, F04, F05, F07, F09, F10, F15,
-F17, F20, and F22.
+the user walks the running prototype through every F00–F24 scenario plus the
+`default` alias, in light and dark appearances and at every applicable declared
+size. Task scenarios such as F23 and F24 are completed live with their full
+interaction sequence. This walkthrough uses the running material and produces no
+screenshots. `SIGNOFF.md` must enumerate each scenario/appearance/size result and
+record the user's approval before the design can advance.
+
+Only after recorded sign-off does `tailrocks-macos-visual-qa` drive the
+prototype through the same five-flag launch contract, freeze baseline captures,
+exercise the real accessibility-settings matrix, and apply the region-aware
+match policy. No fixture is deferred from the live blessing gate to final visual
+QA; the later lane adds durable evidence rather than substituting for review.
