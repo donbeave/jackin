@@ -34,6 +34,34 @@ Audit-host observations:
 - XcodeGen 2.46.0.
 - SwiftLint, xcbeautify, and Periphery were not on the unmanaged host `PATH`.
 
+## Audit execution ledger
+
+Revision: `b0c2abbd58b7177c6bc9942116af50dfbff3fda7`. Commands ran on
+2026-08-20 from repository root unless a working directory is named. Generated
+build products remain under `target/`, `native/DerivedData`, `native/dist`, or
+ignored project output; regeneration produced no tracked binding diff.
+
+| Exact command | Result | Evidence boundary |
+|---|---|---|
+| `xcodebuild -version` | PASS — Xcode 26.6, build `17F113` | Shipping compiler host only; no forward lane. |
+| `swift --version` | PASS — Apple Swift 6.3.3, arm64 macOS 26 target | Host toolchain only. |
+| `xcrun swift-format --version` | PASS — 6.3.0 | Formatter availability. |
+| `xcodegen --help` | PASS — XcodeGen 2.46.0 was installed and accepted the current CLI | Availability only. The build command below performed generation. |
+| `find Sources Tests UITests Tools Scripts -name '*.swift' ! -name 'jackin_usage_ffi.swift' -print0 \| xargs -0 xcrun swift-format lint --configuration .swift-format --strict --parallel` from `native/` | PASS — exit 0, no findings | Strict handwritten formatting; generated UniFFI excluded deliberately. |
+| `rtk cargo xtask desktop test` | PASS | Rust/FFI nextest plus `StatusItemChipHarness`, `DesktopArchitectureLint`, and `DesktopParityMatrixHarness`. It confirms the audit defect: two other declared harness products were not run. |
+| `rtk swift test -c release` from `native/` | PASS — 65 XCTest plus 2 Swift Testing tests, zero failures | Current Swift package tests; runner does not machine-enforce the count. |
+| `rtk cargo xtask desktop build --version 0.6.0 --build 1` | PASS — XCFramework, UniFFI generation, XcodeGen, arm64 Release build, ad hoc sign, app assembly | Mutating build pipeline passed. It is not a nonmutating binding-drift gate. |
+| `rtk git diff -- native/Generated native/Sources/JackinUsageBridge/jackin_usage_ffi.swift` after build | PASS — empty | Current regeneration matched tracked bindings. This manual observation does not replace CI drift enforcement. |
+| `rtk cargo xtask desktop verify native/dist/JackinDesktop.app` | PASS — ad hoc/PR verification | Local artifact shape only; no Developer ID/notary/public-download proof. |
+| `rtk mise run desktop-test-ui` | UNAVAILABLE — mise required trusting repository config; trust was declined because it writes host state | Canonical wrapper did not start. |
+| `rtk proxy xcodebuild test -project native/JackinDesktop.xcodeproj -scheme JackinDesktop -destination 'platform=macOS' -parallel-testing-enabled NO -only-testing:JackinDesktopUITests/JackinDesktopUITests/testOverviewPassesAccessibilityAudit -derivedDataPath native/DerivedData -resultBundlePath native/.build/test-results/goal-accessibility-overview.xcresult` | FAIL — one test executed; activation failed after 61.977 s because app state remained `Running Background` | The accessibility audit body did not execute. This is stronger failure evidence than a zero-test timeout, not an accessibility pass. |
+| `command -v swiftlint xcbeautify periphery` | UNAVAILABLE — all absent | Strict lint, canonical UI-test reporting, and dead-code scan could not run unmanaged. |
+| `rtk cargo xtask desktop bindings --help` | INCOMPLETE — only mutating `bindings` exists | No nonmutating drift-check command exists. |
+
+Context7 tools were also absent from the live tool registry; Apple API research
+used official primary sources and records that exception in
+`research/agent-usage-platform/02-apple-native-design.md`.
+
 The skill-supplied comparison baseline, not a value recorded by this project, is
 shipping Xcode 26.6/macOS 26.5 SDK/Swift 6.3 and a nonblocking Xcode 27 beta
 forward-validation lane. The installed audit host matches those shipping values.
