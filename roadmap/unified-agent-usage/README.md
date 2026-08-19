@@ -22,6 +22,7 @@ Finalize one agent usage experience across jackin❯ desktop, `jackin console`, 
 - 2026-08-20 — **`jackin usage` and the `jackin console` usage screen consume the same Rust-owned canonical inventory, deduplication, refresh, cache, and projection; only their presentation differs.** The CLI renders human-readable or JSON output, while the console renders the TUI, so both surfaces stay behaviorally consistent.
 - 2026-08-20 — **One host broker owns provider refresh and durable canonical-account freshness.** Local processes and views may retain immutable projections for presentation, but they never probe providers, own retry deadlines, or queue duplicate refresh generations, because concurrent callers must share cached and in-flight work.
 - 2026-08-20 — **Current read-only discovery across global, role, workspace, and workspace-role scopes owns host inventory membership; durable history only enriches current members, and unsupported or undiscovered providers do not appear as empty rows.** Because host-wide usage should reflect presently available configurations without resurrecting stale accounts or fabricating availability.
+- 2026-08-20 — **Usage is a top-level route in `jackin console`, opening on Overview in the console's established left-list/right-detail structure.** Because usage is a primary host-wide operator surface and should reuse familiar console navigation rather than hide behind a workspace or modal.
 
 ## Capabilities
 
@@ -35,7 +36,7 @@ Finalize one agent usage experience across jackin❯ desktop, `jackin console`, 
 
 - **Purpose**: Show a basic usage overview plus detailed views per provider and account across all available agents and configurations.
 - **States**: Overview; provider detail; account detail.
-- **Key interactions**:
+- **Key interactions**: Enter the top-level Usage route, select provider/account rows in the left list, and inspect the corresponding right-side detail.
 - **Design**: An intuitive TUI similar to the existing `jackin-capsule` usage experience.
 
 ### Desktop usage
@@ -93,7 +94,7 @@ Finalize one agent usage experience across jackin❯ desktop, `jackin console`, 
 ## Open questions
 
 - ~~Which configuration sources make an account part of the host-wide inventory, and should supported but undiscovered providers appear?~~ **Resolved 2026-08-20**: current read-only discovery owns membership; history only enriches current members.
-- Where should Usage live in `jackin console`, and what is its navigation model? **Recommendation**: a top-level Usage route using the console's established left-list/right-detail structure, opening on Overview with provider/account rows and explicit keyboard/footer hints.
+- ~~Where should Usage live in `jackin console`, and what is its navigation model?~~ **Resolved 2026-08-20**: top-level Usage route, Overview first, left-list/right-detail navigation.
 - What exact hierarchy, ordering, filtering, states, and refresh interactions should the console TUI use? **Recommendation**: provider then canonical account, ordered by the settled eight-surface list; show loading, refreshing, empty, stale last-good, partial-provider error, and global failure explicitly; use selection-driven detail, `r` for refresh, standard Back/Escape behavior, and active footer hints.
 - What exact hierarchy should the human `jackin usage` output render from the shared projection? **Recommendation**: provider groups with one canonical row per account followed by limit windows, explicit stale/error annotations, and `--format json` as the stable machine-readable form of the same projection.
 - What roles should the existing `host snapshot`, instance `accounts`/`verify`, cache, `--no-refresh`, and `--sync-host-cache` forms retain after the bare overview is added? **Recommendation**: preserve useful instance verification and diagnostic intent, but route host reads through the canonical broker projection and retire any separate freshness authority or misleading cache bypass rather than retaining compatibility shims.
