@@ -245,61 +245,63 @@ pub(crate) fn render_branch_context_bar(
         .style(termrock::style::Role::Text)
         .fg
         .unwrap_or_default());
-    let left = [StatusSlot {
-        style: white_bg
-            .fg(if left_clickable {
-                jackin_tui::tokens::LINK_BLUE
-            } else {
-                jackin_tui::tokens::INK
-            })
-            .add_modifier(Modifier::BOLD),
-        hover_style: Some(
+    let left = [status_slot(BranchBarSlot::Context, &left_text, 1, left_clickable)
+        .style(
+            white_bg
+                .fg(if left_clickable {
+                    jackin_tui::tokens::LINK_BLUE
+                } else {
+                    jackin_tui::tokens::INK
+                })
+                .add_modifier(Modifier::BOLD),
+        )
+        .hover_style(
+            white_bg
+                .fg(jackin_tui::tokens::DEBUG_AMBER)
+                .add_modifier(Modifier::BOLD),
+        )];
+    let right = [
+        status_slot(BranchBarSlot::Usage, &usage, 2, !usage.is_empty())
+            .style(
+                white_bg
+                    .fg(jackin_tui::tokens::INK)
+                    .add_modifier(Modifier::BOLD),
+            )
+            .hover_style(
+                white_bg
+                    .fg(jackin_tui::tokens::DEBUG_AMBER)
+                    .add_modifier(Modifier::BOLD),
+            ),
+        status_slot(
+            BranchBarSlot::Container,
+            &container,
+            3,
+            !container_name.is_empty(),
+        )
+        .style(
+            white_bg
+                .fg(jackin_tui::tokens::LINK_BLUE)
+                .add_modifier(Modifier::BOLD),
+        )
+        .hover_style(
             white_bg
                 .fg(jackin_tui::tokens::DEBUG_AMBER)
                 .add_modifier(Modifier::BOLD),
         ),
-        ..status_slot(BranchBarSlot::Context, &left_text, 1, left_clickable)
-    }];
-    let right = [
-        StatusSlot {
-            style: white_bg
-                .fg(jackin_tui::tokens::INK)
-                .add_modifier(Modifier::BOLD),
-            hover_style: Some(
-                white_bg
-                    .fg(jackin_tui::tokens::DEBUG_AMBER)
+        status_slot(BranchBarSlot::RunId, &run, 4, !run.is_empty())
+            .style(
+                Style::default()
+                    .bg(termrock::style::DesignSystem::default()
+                        .style(termrock::style::Role::Danger)
+                        .fg
+                        .unwrap_or_default())
+                    .fg(termrock::style::DesignSystem::default()
+                        .style(termrock::style::Role::Text)
+                        .fg
+                        .unwrap_or_default())
                     .add_modifier(Modifier::BOLD),
-            ),
-            ..status_slot(BranchBarSlot::Usage, &usage, 2, !usage.is_empty())
-        },
-        StatusSlot {
-            style: white_bg
-                .fg(jackin_tui::tokens::LINK_BLUE)
-                .add_modifier(Modifier::BOLD),
-            hover_style: Some(
-                white_bg
-                    .fg(jackin_tui::tokens::DEBUG_AMBER)
-                    .add_modifier(Modifier::BOLD),
-            ),
-            ..status_slot(
-                BranchBarSlot::Container,
-                &container,
-                3,
-                !container_name.is_empty(),
             )
-        },
-        StatusSlot {
-            style: Style::default()
-                .bg(termrock::style::DesignSystem::default()
-                    .style(termrock::style::Role::Danger)
-                    .fg
-                    .unwrap_or_default())
-                .fg(termrock::style::DesignSystem::default()
-                    .style(termrock::style::Role::Text)
-                    .fg
-                    .unwrap_or_default())
-                .add_modifier(Modifier::BOLD),
-            hover_style: Some(
+            .hover_style(
                 Style::default()
                     .bg(termrock::style::DesignSystem::default()
                         .style(termrock::style::Role::Text)
@@ -311,8 +313,6 @@ pub(crate) fn render_branch_context_bar(
                         .unwrap_or_default())
                     .add_modifier(Modifier::BOLD),
             ),
-            ..status_slot(BranchBarSlot::RunId, &run, 4, !run.is_empty())
-        },
     ];
     let hovered = match hover_target {
         Some(HoverTarget::BranchContext) => Some(BranchBarSlot::Context),
