@@ -115,7 +115,7 @@ ratatui-core = "=0.1.2"
 # Enable the full public feature matrix TermRock ships: Crossterm session/input
 # adapters plus serde for persistable widget state (DialogScroll, ListState, …).
 # Pin latest reviewed TermRock main; follow migrations sequentially (currently through 0331).
-termrock = { version = "=0.11.0", git = "https://github.com/tailrocks/termrock.git", rev = "9bd01bea33c1fb11353f296adab5ba7728e21da0", features = ["crossterm", "serde"] }
+termrock = { version = "=0.11.0", git = "https://github.com/tailrocks/termrock.git", rev = "e35f1aa5556c8d5355d4572450547c903fbbf200", features = ["crossterm", "serde"] }
 regex = "1"
 reqwest = { version = "0.13", default-features = false }
 rustls = { version = "0.23", default-features = false }
