@@ -18,6 +18,9 @@ Until sign-off and later baseline capture, current-app captures remain legacy
 evidence only. Rust-owned strings are immutable display input; a prototype may
 change layout only.
 
+The complete precondition, revision, package, `SIGNOFF.md`, and `Regions.md`
+sequence is frozen in [PrototypeHandoff.md](PrototypeHandoff.md).
+
 Frozen environment:
 
 - Time: `2026-08-12T12:00:00+07:00`
