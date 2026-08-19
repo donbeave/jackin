@@ -11,7 +11,7 @@ use ratatui::{
 };
 
 use crate::tui::components::spinner::SPINNER_FRAMES;
-use termrock::widgets::{List, ListRow, ListState, RowRole, TextInput, TextInputState, Validation};
+use termrock::widgets::{List, ListRow, ListState, TextInput, TextInputState, Validation};
 
 use super::{
     OpLoadState, OpPickerError, OpPickerFatalState, OpPickerRenderState, OpPickerStage,
@@ -50,8 +50,8 @@ fn render_pane(frame: &mut Frame<'_>, area: Rect, state: &impl OpPickerRenderSta
         frame,
         area,
         Some(&title),
-        termrock::widgets::PanelEmphasis::Focused,
-        &termrock::Theme::default(),
+        termrock::widgets::PanelChrome::Focused,
+        &termrock::style::DesignSystem::default(),
     );
 
     let banner_height: u16 = match state.load_state() {
@@ -76,17 +76,17 @@ fn render_pane(frame: &mut Frame<'_>, area: Rect, state: &impl OpPickerRenderSta
         let line = Line::from(vec![
             Span::styled(
                 "Error: ",
-                termrock::Theme::default().style(termrock::style::Role::TextStrong),
+                termrock::style::DesignSystem::default().style(termrock::style::Role::TextStrong),
             ),
             Span::styled(
                 truncated,
-                termrock::Theme::default().style(termrock::style::Role::TextMuted),
+                termrock::style::DesignSystem::default().style(termrock::style::Role::TextMuted),
             ),
         ]);
         frame.render_widget(Paragraph::new(line), rows[0]);
     }
 
-    let theme = termrock::Theme::default();
+    let theme = termrock::style::DesignSystem::default();
     let mut filter = TextInputState::new(state.filter_buffer()).with_allow_empty(true);
     frame.render_stateful_widget(
         &TextInput::new("Filter", &theme)
@@ -109,7 +109,7 @@ fn render_pane(frame: &mut Frame<'_>, area: Rect, state: &impl OpPickerRenderSta
     if list_lines.is_empty() {
         let para = Paragraph::new(Line::from(Span::styled(
             "(no matches)",
-            termrock::Theme::default().style(termrock::style::Role::TextMuted),
+            termrock::style::DesignSystem::default().style(termrock::style::Role::TextMuted),
         )))
         .alignment(Alignment::Center);
         frame.render_widget(para, rows[3]);
@@ -117,13 +117,7 @@ fn render_pane(frame: &mut Frame<'_>, area: Rect, state: &impl OpPickerRenderSta
         let items = list_lines
             .into_iter()
             .enumerate()
-            .map(|(id, label)| ListRow {
-                id,
-                label,
-                trailing: None,
-                role: RowRole::Item,
-                enabled: true,
-            })
+            .map(|(id, label)| ListRow::item(id, label))
             .collect::<Vec<_>>();
         frame.render_stateful_widget(
             &List::new(&items, &theme),
@@ -146,8 +140,8 @@ fn render_loading(frame: &mut Frame<'_>, area: Rect, state: &impl OpPickerRender
         frame,
         area,
         Some(&title),
-        termrock::widgets::PanelEmphasis::Focused,
-        &termrock::Theme::default(),
+        termrock::widgets::PanelChrome::Focused,
+        &termrock::style::DesignSystem::default(),
     );
 
     let glyph = SPINNER_FRAMES[(tick as usize) % SPINNER_FRAMES.len()];
@@ -168,12 +162,12 @@ fn render_loading(frame: &mut Frame<'_>, area: Rect, state: &impl OpPickerRender
     let body = Line::from(vec![
         Span::styled(
             glyph.to_owned(),
-            termrock::Theme::default().style(termrock::style::Role::Accent),
+            termrock::style::DesignSystem::default().style(termrock::style::Role::Accent),
         ),
         Span::raw("  "),
         Span::styled(
             descriptor,
-            termrock::Theme::default().style(termrock::style::Role::TextMuted),
+            termrock::style::DesignSystem::default().style(termrock::style::Role::TextMuted),
         ),
     ]);
     frame.render_widget(Paragraph::new(body).alignment(Alignment::Center), rows[1]);
@@ -184,8 +178,8 @@ pub fn render_fatal(frame: &mut Frame<'_>, area: Rect, fatal: &OpPickerFatalStat
         frame,
         area,
         Some("1Password"),
-        termrock::widgets::PanelEmphasis::Focused,
-        &termrock::Theme::default(),
+        termrock::widgets::PanelChrome::Focused,
+        &termrock::style::DesignSystem::default(),
     );
 
     let rows = Layout::default()

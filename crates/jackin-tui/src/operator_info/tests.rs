@@ -3,7 +3,7 @@
 
 use super::*;
 use ratatui::{Terminal, backend::TestBackend};
-use termrock::widgets::{Panel, PanelEmphasis};
+use termrock::widgets::{Panel, PanelChrome};
 
 #[test]
 fn render_container_info_paints_product_title_and_row_labels() {
@@ -50,10 +50,10 @@ fn copy_payload_at_returns_copyable_row_value() {
     );
     let area = Rect::new(0, 0, 40, 10);
     // Prime viewport geometry the same way surfaces do after paint.
-    let theme = termrock::Theme::default();
+    let theme = termrock::style::DesignSystem::default();
     let panel = Panel::new(&theme)
         .title(state.title())
-        .emphasis(PanelEmphasis::Focused);
+        .emphasis(PanelChrome::Focused);
     let table_area = detail_table_area(panel.inner(area));
     state.viewport = Some(area);
     // Click roughly on first content row value cell (inside table body).

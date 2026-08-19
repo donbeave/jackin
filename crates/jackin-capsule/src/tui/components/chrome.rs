@@ -17,8 +17,8 @@ use ratatui::{
 
 use crate::tui::components::status_bar::{PrefixMode, StatusBarPlan, StatusTabCell, TabGlyph};
 
-use termrock::Theme;
-use termrock::widgets::{Panel, PanelEmphasis};
+use termrock::style::DesignSystem;
+use termrock::widgets::{Panel, PanelChrome};
 
 // ── Status bar (row 0 + row 1) ────────────────────────────────────────────────
 
@@ -60,24 +60,24 @@ impl StatusBarWidget<'_> {
 
 fn tab_cell_style(active: bool, hovered: bool) -> Style {
     let background = match (active, hovered) {
-        (true, true) => Theme::default()
+        (true, true) => DesignSystem::default()
             .style(termrock::style::Role::TabActiveHovered)
             .bg
             .unwrap_or_default(),
-        (true, false) => Theme::default()
+        (true, false) => DesignSystem::default()
             .style(termrock::style::Role::TabActive)
             .bg
             .unwrap_or_default(),
-        (false, true) => Theme::default()
+        (false, true) => DesignSystem::default()
             .style(termrock::style::Role::TabInactiveHovered)
             .bg
             .unwrap_or_default(),
-        (false, false) => Theme::default()
+        (false, false) => DesignSystem::default()
             .style(termrock::style::Role::TabInactive)
             .bg
             .unwrap_or_default(),
     };
-    let style = Style::default().bg(background).fg(Theme::default()
+    let style = Style::default().bg(background).fg(DesignSystem::default()
         .style(termrock::style::Role::Text)
         .fg
         .unwrap_or_default());
@@ -115,7 +115,7 @@ fn tab_glyph_style(glyph: TabGlyph, bg: Color) -> Option<Style> {
         TabGlyph::Idle => Some(
             Style::default()
                 .bg(bg)
-                .fg(Theme::default()
+                .fg(DesignSystem::default()
                     .style(termrock::style::Role::Accent)
                     .fg
                     .unwrap_or_default())
@@ -141,7 +141,9 @@ impl Widget for StatusBarWidget<'_> {
             }
         }
 
-        // Row 0: brand pill — green block, black word, white chevron.
+        // Row 0: brand pill — green block, black word, white chevron. The
+        // chevron pins the brand constant: head recolored the Role::Text it
+        // used to read, and the brand look is an invariant across the bump.
         let pill = Style::default()
             .bg(jackin_tui::tokens::BRAND_BLOCK)
             .add_modifier(Modifier::BOLD);
@@ -150,10 +152,7 @@ impl Widget for StatusBarWidget<'_> {
             area.x.saturating_add(7),
             area.y,
             "❯",
-            pill.fg(Theme::default()
-                .style(termrock::style::Role::Text)
-                .fg
-                .unwrap_or_default()),
+            pill.fg(jackin_tui::tokens::BRAND_CHEVRON),
         );
         buf.set_string(area.x.saturating_add(8), area.y, " ", pill);
 
@@ -167,14 +166,14 @@ impl Widget for StatusBarWidget<'_> {
             let (bg, fg) = match (self.prefix_mode, self.menu_hovered) {
                 (PrefixMode::Idle, false) => (
                     jackin_tui::tokens::MENU_IDLE_BG,
-                    Theme::default()
+                    DesignSystem::default()
                         .style(termrock::style::Role::Text)
                         .fg
                         .unwrap_or_default(),
                 ),
                 (PrefixMode::Idle, true) => (
                     jackin_tui::tokens::MENU_IDLE_HOVER_BG,
-                    Theme::default()
+                    DesignSystem::default()
                         .style(termrock::style::Role::Text)
                         .fg
                         .unwrap_or_default(),
@@ -200,7 +199,7 @@ impl Widget for StatusBarWidget<'_> {
                 area.x.saturating_add(pos_1based.saturating_sub(1)),
                 area.y,
                 "›",
-                Style::default().fg(Theme::default()
+                Style::default().fg(DesignSystem::default()
                     .style(termrock::style::Role::TextMuted)
                     .fg
                     .unwrap_or_default()),
@@ -214,12 +213,12 @@ impl Widget for StatusBarWidget<'_> {
         {
             let underline = "━".repeat(active.cell_cols as usize);
             let underline_fg = if self.focused {
-                Theme::default()
+                DesignSystem::default()
                     .style(termrock::style::Role::Accent)
                     .fg
                     .unwrap_or_default()
             } else {
-                Theme::default()
+                DesignSystem::default()
                     .style(termrock::style::Role::Text)
                     .fg
                     .unwrap_or_default()
@@ -245,17 +244,17 @@ pub struct PaneBorderWidget {
     pub focused: bool,
 }
 
-const fn pane_border_emphasis(focused: bool) -> PanelEmphasis {
+const fn pane_border_emphasis(focused: bool) -> PanelChrome {
     if focused {
-        PanelEmphasis::Focused
+        PanelChrome::Focused
     } else {
-        PanelEmphasis::Normal
+        PanelChrome::Normal
     }
 }
 
 impl Widget for PaneBorderWidget {
     fn render(self, area: Rect, buf: &mut Buffer) {
-        let theme = Theme::default();
+        let theme = DesignSystem::default();
         let block = Panel::new(&theme)
             .title(&self.title)
             .emphasis(pane_border_emphasis(self.focused))
@@ -399,7 +398,7 @@ fn render_hint_spans_row(buf: &mut Buffer, area: Rect, spans: &[termrock::widget
         return;
     }
     let available = area.width.saturating_sub(4); // 2 col padding each side
-    let lines = termrock::widgets::wrapped_hint_lines(spans, available, &Theme::default());
+    let lines = termrock::widgets::wrapped_hint_lines(spans, available, &DesignSystem::default());
     let hint_rows = usize::from(CAPSULE_HINT_BAR_ROWS);
     if lines.is_empty() {
         return;

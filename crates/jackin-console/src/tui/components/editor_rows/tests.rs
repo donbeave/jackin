@@ -14,7 +14,7 @@ fn selected_action_row_uses_high_contrast_list_fill() {
     assert_eq!(
         style.bg,
         Some(
-            termrock::Theme::default()
+            termrock::style::DesignSystem::default()
                 .style(termrock::style::Role::Accent)
                 .fg
                 .unwrap_or_default()

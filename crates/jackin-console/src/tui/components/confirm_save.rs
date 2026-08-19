@@ -23,7 +23,7 @@ use termrock::scroll::ScrollAxes;
 use termrock::scroll::{
     apply_scroll_delta, clamp_scroll_offset, is_scrollable, render_lines_with_offset_in_area,
 };
-use termrock::widgets::PanelEmphasis;
+use termrock::widgets::PanelChrome;
 use termrock::{
     input::KeyCode,
     keymap::{KeyBinding, KeyChord, Keymap, SCROLL_HINT_KEYMAP, Visibility},
@@ -279,8 +279,8 @@ pub fn render<M: Clone>(frame: &mut Frame<'_>, area: Rect, state: &ConfirmSaveSt
         frame,
         area,
         Some("Confirm changes"),
-        PanelEmphasis::Focused,
-        &termrock::Theme::default(),
+        PanelChrome::Focused,
+        &termrock::style::DesignSystem::default(),
     );
 
     // Content indented by SUBPANEL_CONTENT_INDENT (2). The caller is
@@ -298,7 +298,7 @@ pub fn render<M: Clone>(frame: &mut Frame<'_>, area: Rect, state: &ConfirmSaveSt
         .collect();
 
     let (content, action_row) = crate::tui::dialog_layout::dialog_content_and_actions(inner);
-    let theme = termrock::Theme::default();
+    let theme = termrock::style::DesignSystem::default();
 
     render_lines_with_offset_in_area(frame, content, &indented, state.scroll_offset, &theme);
 
@@ -320,7 +320,7 @@ pub fn render<M: Clone>(frame: &mut Frame<'_>, area: Rect, state: &ConfirmSaveSt
         &ActionBar::new(&actions, &theme).gap(" "),
         action_row,
         &mut ActionBarState {
-            focused: Some(state.focus),
+            cursor: Some(state.focus),
             regions: Vec::new(),
         },
     );

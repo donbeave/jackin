@@ -80,7 +80,7 @@ use ratatui::{
 };
 
 use termrock::layout::render_dialog_shell;
-use termrock::widgets::PanelEmphasis;
+use termrock::widgets::PanelChrome;
 
 pub fn render(frame: &mut Frame<'_>, area: Rect, state: &SourcePickerState) {
     let title = format!("Source for {}", state.key);
@@ -88,8 +88,8 @@ pub fn render(frame: &mut Frame<'_>, area: Rect, state: &SourcePickerState) {
         frame,
         area,
         Some(&title),
-        PanelEmphasis::Focused,
-        &termrock::Theme::default(),
+        PanelChrome::Focused,
+        &termrock::style::DesignSystem::default(),
     );
 
     let chunks = Layout::default()
@@ -115,12 +115,12 @@ pub fn render(frame: &mut Frame<'_>, area: Rect, state: &SourcePickerState) {
             style: None,
         },
     ];
-    let theme = termrock::Theme::default();
+    let theme = termrock::style::DesignSystem::default();
     frame.render_stateful_widget(
         &ActionBar::new(&actions, &theme).gap(" "),
         chunks[1],
         &mut ActionBarState {
-            focused: Some(state.focused),
+            cursor: Some(state.focused),
             regions: Vec::new(),
         },
     );
@@ -130,7 +130,7 @@ pub fn render(frame: &mut Frame<'_>, area: Rect, state: &SourcePickerState) {
             Paragraph::new(Span::styled(
                 "(install op CLI to enable)",
                 Style::default()
-                    .fg(termrock::Theme::default()
+                    .fg(termrock::style::DesignSystem::default()
                         .style(termrock::style::Role::ScrollTrack)
                         .fg
                         .unwrap_or_default())

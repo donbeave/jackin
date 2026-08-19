@@ -109,7 +109,7 @@ fn apply_pane_scrollbar(frame: &mut Frame<'_>, pane: &VisiblePane, offset: usize
     let top_offset = termrock::scroll::TailScroll::new(offset)
         .to_top_offset(content_len, interior_rows)
         .min(usize::from(u16::MAX)) as u16;
-    let theme = termrock::Theme::default();
+    let theme = termrock::style::DesignSystem::default();
     termrock::scroll::render_scrollbar(
         frame.buffer_mut(),
         track,
@@ -201,7 +201,10 @@ pub(crate) fn render_capsule_ratatui_frame(frame: &mut Frame<'_>, view: CapsuleR
                 .term_rows
                 .saturating_sub(crate::tui::components::status_bar::STATUS_BAR_ROWS),
         };
-        frame.render_widget(termrock::widgets::Backdrop::default(), backdrop_area);
+        // Head's default backdrop is a stippled dim wash; pre-bump jackin❯
+        // painted the terminal background under modals. `reset()` keeps that
+        // product behavior (plan 003 owns any paint compensation).
+        frame.render_widget(termrock::widgets::Backdrop::reset(), backdrop_area);
         if let Some((snapshot, rect)) = view.dialog_snapshot {
             render_dialog_ratatui(frame, *rect, snapshot);
         }
@@ -336,7 +339,7 @@ fn render_link_hover_notice(frame: &mut Frame<'_>, view: &CapsuleRatatuiFrame<'_
 }
 
 fn render_notice_toast(frame: &mut Frame<'_>, area: RatatuiRect, message: &str) {
-    let theme = termrock::Theme::default();
+    let theme = termrock::style::DesignSystem::default();
     // Full TermRock toast contract: severity border role, bottom-left anchor
     // under the status strip, and theme-derived text — no product local chrome.
     frame.render_widget(
@@ -370,11 +373,11 @@ fn apply_tab_codename_tooltip(
         tooltip_row,
         &pill,
         Style::default()
-            .bg(termrock::Theme::default()
+            .bg(termrock::style::DesignSystem::default()
                 .style(termrock::style::Role::TabInactive)
                 .bg
                 .unwrap_or_default())
-            .fg(termrock::Theme::default()
+            .fg(termrock::style::DesignSystem::default()
                 .style(termrock::style::Role::Accent)
                 .fg
                 .unwrap_or_default())

@@ -8,7 +8,7 @@ Cross-surface jackin❯ product presentation shared by the console, launch, and 
   - `operator_info` — Debug-info / container-info row policy, `ContainerInfoState`, paint via TermRock `DetailTable`/`Panel`, copy/hyperlink hit geometry, and OSC 8 overlay bytes.
   - `tokens` — Ratatui adapters for product-owned brand/domain color tokens (brand pill, menu chips, status accents).
   - `ModalOutcome` — product workflow lifecycle shared by jackin❯ modal compositions.
-- Does not own neutral widgets, geometry, focus, hover, scroll mechanics, Theme/Role tables, or terminal lifecycle; those belong to TermRock. Surfaces resolve neutral roles via `termrock::Theme::default()` / `Role` directly.
+- Does not own neutral widgets, geometry, focus, hover, scroll mechanics, Theme/Role tables, or terminal lifecycle; those belong to TermRock. Surfaces resolve neutral roles via `termrock::style::DesignSystem::default()` / `Role` directly.
 - Does not own a surface application model or run loop; those remain under each surface crate's `src/tui/`.
 - Does not live in `jackin-core` (L0 domain vocabulary only).
 

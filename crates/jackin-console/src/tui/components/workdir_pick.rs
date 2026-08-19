@@ -128,16 +128,16 @@ use ratatui::{
 };
 
 use termrock::layout::render_dialog_shell;
-use termrock::widgets::PanelEmphasis;
-use termrock::widgets::{List, ListRow, RowRole};
+use termrock::widgets::PanelChrome;
+use termrock::widgets::{List, ListRow};
 
 pub fn render(frame: &mut Frame<'_>, area: Rect, state: &WorkdirPickState) {
     let inner = render_dialog_shell(
         frame,
         area,
         Some("Working directory"),
-        PanelEmphasis::Focused,
-        &termrock::Theme::default(),
+        PanelChrome::Focused,
+        &termrock::style::DesignSystem::default(),
     );
 
     let rows = Layout::default()
@@ -152,7 +152,7 @@ pub fn render(frame: &mut Frame<'_>, area: Rect, state: &WorkdirPickState) {
         frame.render_widget(
             ratatui::widgets::Paragraph::new(Line::from(Span::styled(
                 "no directories",
-                termrock::Theme::default().style(termrock::style::Role::TextMuted),
+                termrock::style::DesignSystem::default().style(termrock::style::Role::TextMuted),
             )))
             .alignment(ratatui::layout::Alignment::Center),
             rows[1],
@@ -179,12 +179,12 @@ pub fn render(frame: &mut Frame<'_>, area: Rect, state: &WorkdirPickState) {
         .map(|(i, c)| {
             let display = &displays[i];
             let pad = path_w.saturating_sub(display.chars().count());
-            ListRow {
-                id: i,
-                label: Line::from(vec![
+            ListRow::item(
+                i,
+                Line::from(vec![
                     Span::styled(
                         display.to_owned(),
-                        Style::default().fg(termrock::Theme::default()
+                        Style::default().fg(termrock::style::DesignSystem::default()
                             .style(termrock::style::Role::Text)
                             .fg
                             .unwrap_or_default()),
@@ -193,20 +193,17 @@ pub fn render(frame: &mut Frame<'_>, area: Rect, state: &WorkdirPickState) {
                     Span::styled(
                         c.label.clone(),
                         Style::default()
-                            .fg(termrock::Theme::default()
+                            .fg(termrock::style::DesignSystem::default()
                                 .style(termrock::style::Role::TextMuted)
                                 .fg
                                 .unwrap_or_default())
                             .add_modifier(Modifier::ITALIC),
                     ),
                 ]),
-                trailing: None,
-                role: RowRole::Item,
-                enabled: true,
-            }
+            )
         })
         .collect();
-    let theme = termrock::Theme::default();
+    let theme = termrock::style::DesignSystem::default();
     frame.render_stateful_widget(
         &List::new(&items, &theme),
         rows[1],

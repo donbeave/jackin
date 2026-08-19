@@ -16,7 +16,7 @@ use termrock::{
     input::{KeyCode, KeyEvent},
     interaction::Outcome,
     widgets::{
-        Action, ChoiceDialog, ChoiceDialogState, Dialog, HintSpan, PanelEmphasis, TextInput,
+        Action, ChoiceDialog, ChoiceDialogState, Dialog, HintSpan, PanelChrome, TextInput,
         TextInputOutcome, TextInputState as CanonicalTextInputState, TextInputValidity, Validation,
     },
 };
@@ -145,10 +145,10 @@ impl TextInputState<'_> {
 }
 
 pub fn render_text_input(frame: &mut Frame<'_>, area: Rect, state: &TextInputState<'_>) {
-    let theme = termrock::Theme::default();
+    let theme = termrock::style::DesignSystem::default();
     let panel = termrock::widgets::Panel::new(&theme)
         .title(&state.label)
-        .emphasis(PanelEmphasis::Focused);
+        .emphasis(PanelChrome::Focused);
     let inner = panel.inner(area);
     frame.render_widget(&panel, area);
     let input_area = Rect {
@@ -228,13 +228,13 @@ impl ConfirmState {
 
     #[must_use]
     pub fn with_focus_yes(mut self) -> Self {
-        self.choice.focused = Some(true);
+        self.choice.cursor = Some(true);
         self
     }
 
     #[must_use]
     pub fn with_focus_no(mut self) -> Self {
-        self.choice.focused = Some(false);
+        self.choice.cursor = Some(false);
         self
     }
 
@@ -256,6 +256,19 @@ impl ConfirmState {
         };
         if let Some(value) = direct {
             return ModalOutcome::Commit(value);
+        }
+        // Head TermRock leaves Tab/BackTab to the host; pre-bump the choice
+        // dialog cycled its own actions on them.
+        match key.code {
+            KeyCode::Tab => {
+                self.choice.select_next(&confirm_actions());
+                return ModalOutcome::Continue;
+            }
+            KeyCode::BackTab => {
+                self.choice.select_previous(&confirm_actions());
+                return ModalOutcome::Continue;
+            }
+            _ => {}
         }
         match self.choice.handle_key(&confirm_actions(), key) {
             Outcome::Activated(value) => ModalOutcome::Commit(value),
@@ -330,10 +343,10 @@ fn confirm_text(state: &ConfirmState) -> Text<'static> {
 pub fn render_confirm_dialog(frame: &mut Frame<'_>, area: Rect, state: &ConfirmState) {
     let actions = confirm_actions();
     let mut choice = state.choice.clone();
-    let theme = termrock::Theme::default();
+    let theme = termrock::style::DesignSystem::default();
     let dialog = Dialog::new(&state.title, confirm_text(state), &theme)
         .style(Style::default())
-        .emphasis(PanelEmphasis::Focused);
+        .emphasis(PanelChrome::Focused);
     frame.render_stateful_widget(
         &ChoiceDialog::new(dialog, &actions).gap(" "),
         area,
@@ -432,10 +445,10 @@ pub fn render_save_discard_dialog(frame: &mut Frame<'_>, area: Rect, state: &Sav
         SaveDiscardFocus::Discard => Decision::Discard,
         SaveDiscardFocus::Cancel => Decision::Cancel,
     };
-    let theme = termrock::Theme::default();
+    let theme = termrock::style::DesignSystem::default();
     let dialog = Dialog::new("Unsaved changes", Text::from(state.prompt.clone()), &theme)
         .style(Style::default())
-        .emphasis(PanelEmphasis::Focused);
+        .emphasis(PanelChrome::Focused);
     frame.render_stateful_widget(
         &ChoiceDialog::new(dialog, &actions).gap(" "),
         area,
@@ -484,16 +497,16 @@ impl ErrorPopupState {
 }
 
 pub fn render_error_dialog(frame: &mut Frame<'_>, area: Rect, state: &ErrorPopupState) {
-    let theme = termrock::Theme::default();
+    let theme = termrock::style::DesignSystem::default();
     frame.render_widget(
         Dialog::new(&state.title, Text::from(state.message.clone()), &theme)
             .style(
-                Style::default().fg(termrock::Theme::default()
+                Style::default().fg(termrock::style::DesignSystem::default()
                     .style(termrock::style::Role::Danger)
                     .fg
                     .unwrap_or_default()),
             )
-            .emphasis(PanelEmphasis::Focused),
+            .emphasis(PanelChrome::Focused),
         area,
     );
 }
@@ -515,7 +528,7 @@ impl StatusPopupState {
 }
 
 pub fn render_status_popup(frame: &mut Frame<'_>, area: Rect, state: &StatusPopupState) {
-    let theme = termrock::Theme::default();
+    let theme = termrock::style::DesignSystem::default();
     frame.render_widget(
         Dialog::new(
             &state.title,
@@ -527,7 +540,7 @@ pub fn render_status_popup(frame: &mut Frame<'_>, area: Rect, state: &StatusPopu
             &theme,
         )
         .style(Style::default())
-        .emphasis(PanelEmphasis::Focused),
+        .emphasis(PanelChrome::Focused),
         area,
     );
 }

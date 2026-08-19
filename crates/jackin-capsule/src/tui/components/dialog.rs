@@ -935,9 +935,7 @@ impl Dialog {
         };
         // Outside the box dismisses; an inside hit falls through to the
         // per-dialog click handling below.
-        if termrock::interaction::classify_click(area, col, row)
-            == termrock::interaction::ModalClickResult::OutsideDismiss
-        {
+        if !area.contains(ratatui::layout::Position { x: col, y: row }) {
             return DialogAction::Dismiss;
         }
         // Text-input dialog has no clickable rows — clicks inside the
@@ -1050,12 +1048,12 @@ impl Dialog {
                 },
             ];
             let mut state = termrock::widgets::ChoiceDialogState::new(Some(*selected_yes));
-            let theme = termrock::Theme::default();
+            let theme = termrock::style::DesignSystem::default();
             let mut buffer = ratatui::buffer::Buffer::empty(area);
             let dialog =
                 termrock::widgets::Dialog::new("Confirm", ratatui::text::Text::from(body), &theme)
                     .style(ratatui::style::Style::default())
-                    .emphasis(termrock::widgets::PanelEmphasis::Focused);
+                    .emphasis(termrock::widgets::PanelChrome::Focused);
             ratatui::widgets::StatefulWidget::render(
                 &termrock::widgets::ChoiceDialog::new(dialog, &actions).gap(" "),
                 area,

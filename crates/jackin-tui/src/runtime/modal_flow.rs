@@ -1,17 +1,17 @@
 // SPDX-FileCopyrightText: 2026 Alexey Zhokhov
 // SPDX-License-Identifier: Apache-2.0
 
-//! Atomic product modal and focus-scope lifecycle.
+//! Atomic product modal and overlay-stack lifecycle.
 
-use termrock::interaction::{FocusRing, ModalStack};
+use ratatui::layout::Rect;
+use termrock::interaction::{OverlaySize, OverlaySpec, OverlayStack};
 
-/// Modal chain coordinated with `TermRock` focus scopes.
+/// Modal chain coordinated with a `TermRock` overlay stack.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ModalFlow<Modal> {
     current: Option<Modal>,
     parents: Vec<Modal>,
-    stack: ModalStack<()>,
-    focus: FocusRing<(), usize>,
+    stack: OverlayStack,
 }
 
 impl<Modal> Default for ModalFlow<Modal> {
@@ -26,8 +26,7 @@ impl<Modal> ModalFlow<Modal> {
         Self {
             current: None,
             parents: Vec::new(),
-            stack: ModalStack::new(),
-            focus: FocusRing::new(0, None),
+            stack: OverlayStack::new(),
         }
     }
 
@@ -61,32 +60,34 @@ impl<Modal> ModalFlow<Modal> {
         !self.parents.is_empty()
     }
 
-    /// Open a root modal and matching scope atomically.
+    /// Open a root modal and matching overlay entry atomically.
     pub fn open(&mut self, modal: Modal) {
-        self.focus.open_modal(&mut self.stack, (), 1);
+        self.stack.clear();
+        self.open_entry();
         self.current = Some(modal);
         self.parents.clear();
     }
 
-    /// Open a child modal and matching scope atomically.
+    /// Open a child modal and matching overlay entry atomically.
     pub fn open_sub(&mut self, modal: Modal) {
-        let scope = self.stack.depth() + 1;
-        self.focus.open_submodal(&mut self.stack, (), scope);
+        self.open_entry();
         if let Some(parent) = self.current.take() {
             self.parents.push(parent);
         }
         self.current = Some(modal);
     }
 
-    /// Close one modal level and restore its parent scope.
+    /// Close one modal level and restore its parent.
     pub fn pop(&mut self) {
-        self.focus.pop_modal(&mut self.stack);
+        if let Some(top) = self.stack.entries().last().map(|entry| entry.id.clone()) {
+            drop(self.stack.dismiss(&top));
+        }
         self.current = self.parents.pop();
     }
 
-    /// Clear the modal chain and restore the root scope.
+    /// Clear the modal chain and the overlay stack.
     pub fn clear(&mut self) {
-        self.focus.clear_modals(&mut self.stack);
+        self.stack.clear();
         self.current = None;
         self.parents.clear();
     }
@@ -96,14 +97,23 @@ impl<Modal> ModalFlow<Modal> {
         self.current.take()
     }
 
-    /// Restore or replace the current product modal without changing scope.
+    /// Restore or replace the current product modal without changing the stack.
     pub fn set_current(&mut self, modal: Modal) {
         self.current = Some(modal);
     }
 
-    /// Push a parent product modal and open a child scope.
+    /// Push a parent product modal and open a child entry.
     pub fn open_pair(&mut self, parent: Modal, child: Modal) {
         self.open(parent);
         self.open_sub(child);
+    }
+
+    /// The stack tracks depth only — jackin❯ owns no overlay geometry here.
+    fn open_entry(&mut self) {
+        let depth = self.stack.entries().len();
+        drop(self.stack.open(
+            Rect::new(0, 0, 0, 0),
+            OverlaySpec::dialog(format!("modal-{depth}"), OverlaySize::dialog(0, 0), None),
+        ));
     }
 }

@@ -375,8 +375,8 @@ pub fn render_form<V: AuthCredential>(
         frame,
         area,
         Some("Edit auth"),
-        termrock::widgets::PanelEmphasis::Focused,
-        &termrock::Theme::default(),
+        termrock::widgets::PanelChrome::Focused,
+        &termrock::style::DesignSystem::default(),
     );
 
     for (idx, row) in build_form_lines(form, focus).into_iter().enumerate() {
@@ -448,7 +448,7 @@ fn build_form_lines<V: AuthCredential>(form: &AuthForm<V>, focus: AuthFormFocus)
         Span::raw(" "),
         Span::styled(
             mode_text.to_owned(),
-            termrock::Theme::default().style(termrock::style::Role::Accent),
+            termrock::style::DesignSystem::default().style(termrock::style::Role::Accent),
         ),
     ])));
 
@@ -480,9 +480,9 @@ fn build_form_lines<V: AuthCredential>(form: &AuthForm<V>, focus: AuthFormFocus)
 
 fn source_folder_line<V: AuthCredential>(form: &AuthForm<V>, selected: bool) -> Line<'static> {
     let label_style = if selected {
-        termrock::Theme::default().style(termrock::style::Role::TextStrong)
+        termrock::style::DesignSystem::default().style(termrock::style::Role::TextStrong)
     } else {
-        Style::default().fg(termrock::Theme::default()
+        Style::default().fg(termrock::style::DesignSystem::default()
             .style(termrock::style::Role::Text)
             .fg
             .unwrap_or_default())
@@ -496,7 +496,7 @@ fn source_folder_line<V: AuthCredential>(form: &AuthForm<V>, selected: bool) -> 
         Span::raw(" "),
         Span::styled(
             source_folder_text(form),
-            termrock::Theme::default().style(termrock::style::Role::Accent),
+            termrock::style::DesignSystem::default().style(termrock::style::Role::Accent),
         ),
     ])
 }
@@ -521,9 +521,9 @@ fn credential_env_line<R: AuthCredentialRef>(
     selected: bool,
 ) -> Line<'static> {
     let label_style = if selected {
-        termrock::Theme::default().style(termrock::style::Role::TextStrong)
+        termrock::style::DesignSystem::default().style(termrock::style::Role::TextStrong)
     } else {
-        Style::default().fg(termrock::Theme::default()
+        Style::default().fg(termrock::style::DesignSystem::default()
             .style(termrock::style::Role::Text)
             .fg
             .unwrap_or_default())
@@ -540,7 +540,7 @@ fn credential_env_line<R: AuthCredentialRef>(
         CredentialInput::None => {
             spans.push(Span::styled(
                 "required".to_owned(),
-                termrock::Theme::default().style(termrock::style::Role::Danger),
+                termrock::style::DesignSystem::default().style(termrock::style::Role::Danger),
             ));
         }
         CredentialInput::Literal(value) => {
@@ -550,9 +550,9 @@ fn credential_env_line<R: AuthCredentialRef>(
                 "●".repeat(value.chars().count().clamp(1, 12))
             };
             let style = if value.is_empty() {
-                termrock::Theme::default().style(termrock::style::Role::Danger)
+                termrock::style::DesignSystem::default().style(termrock::style::Role::Danger)
             } else {
-                termrock::Theme::default().style(termrock::style::Role::Accent)
+                termrock::style::DesignSystem::default().style(termrock::style::Role::Accent)
             };
             spans.push(Span::styled(masked, style));
         }
@@ -566,14 +566,14 @@ fn credential_env_line<R: AuthCredentialRef>(
 fn action_buttons_line(can_save: bool, focus: AuthFormFocus) -> Line<'static> {
     let save_style = if can_save {
         Style::default()
-            .fg(termrock::Theme::default()
+            .fg(termrock::style::DesignSystem::default()
                 .style(termrock::style::Role::Accent)
                 .fg
                 .unwrap_or_default())
             .add_modifier(Modifier::BOLD)
     } else {
         Style::default()
-            .fg(termrock::Theme::default()
+            .fg(termrock::style::DesignSystem::default()
                 .style(termrock::style::Role::TextMuted)
                 .fg
                 .unwrap_or_default())
@@ -589,7 +589,7 @@ fn action_buttons_line(can_save: bool, focus: AuthFormFocus) -> Line<'static> {
             "  Cancel  ".to_owned(),
             selected_button_style(
                 focus == AuthFormFocus::Cancel,
-                termrock::Theme::default().style(termrock::style::Role::TextStrong),
+                termrock::style::DesignSystem::default().style(termrock::style::Role::TextStrong),
             ),
         ),
         Span::raw("    "),
@@ -597,20 +597,20 @@ fn action_buttons_line(can_save: bool, focus: AuthFormFocus) -> Line<'static> {
             "  Reset  ".to_owned(),
             selected_button_style(
                 focus == AuthFormFocus::Reset,
-                termrock::Theme::default().style(termrock::style::Role::TextStrong),
+                termrock::style::DesignSystem::default().style(termrock::style::Role::TextStrong),
             ),
         ),
     ])
 }
 
 fn label_style() -> Style {
-    termrock::Theme::default().style(termrock::style::Role::TextStrong)
+    termrock::style::DesignSystem::default().style(termrock::style::Role::TextStrong)
 }
 
 fn selected_button_style(selected: bool, style: Style) -> Style {
     if selected {
         style
-            .bg(termrock::Theme::default()
+            .bg(termrock::style::DesignSystem::default()
                 .style(termrock::style::Role::Text)
                 .fg
                 .unwrap_or_default())

@@ -11,8 +11,9 @@ use jackin_brand::{
     CYAN_DIM as CYAN_DIM_RGB, DEBUG_AMBER as DEBUG_AMBER_RGB,
     DISCLOSURE_ACCENT as DISCLOSURE_ACCENT_RGB, LINK_BLUE as LINK_BLUE_RGB,
     MENU_AWAITING_BG as MENU_AWAITING_BG_RGB, MENU_AWAITING_HOVER_BG as MENU_AWAITING_HOVER_BG_RGB,
-    MENU_IDLE_BG as MENU_IDLE_BG_RGB, MENU_IDLE_HOVER_BG as MENU_IDLE_HOVER_BG_RGB, Rgb,
-    STATUS_BLOCKED_RED as STATUS_BLOCKED_RED_RGB,
+    MENU_IDLE_BG as MENU_IDLE_BG_RGB, MENU_IDLE_HOVER_BG as MENU_IDLE_HOVER_BG_RGB,
+    PHOSPHOR_DARK as PHOSPHOR_DARK_RGB, PHOSPHOR_DIM as PHOSPHOR_DIM_RGB, Rgb,
+    STATUS_BLOCKED_RED as STATUS_BLOCKED_RED_RGB, WHITE as WHITE_RGB,
 };
 use ratatui::style::Color;
 
@@ -48,6 +49,14 @@ pub const CYAN: Color = color(CYAN_RGB);
 pub const CYAN_DIM: Color = color(CYAN_DIM_RGB);
 /// Text on bright product chips.
 pub const INK: Color = Color::Black;
+/// Brand chevron foreground (pre-bump `Role::Text` white; the palette value
+/// shifted at `TermRock` head, so the brand span pins the brand constant).
+pub const BRAND_CHEVRON: Color = color(WHITE_RGB);
+/// Brand header separator foreground (pre-bump `Role::ScrollTrack` dark
+/// phosphor).
+pub const BRAND_SEPARATOR: Color = color(PHOSPHOR_DARK_RGB);
+/// Brand header label foreground (pre-bump `Role::TextMuted` dim phosphor).
+pub const BRAND_LABEL: Color = color(PHOSPHOR_DIM_RGB);
 
 #[cfg(test)]
 mod tests;

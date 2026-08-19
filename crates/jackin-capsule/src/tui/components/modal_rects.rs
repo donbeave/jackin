@@ -283,6 +283,7 @@ fn resolve_exact(
         termrock::layout::DialogSpec {
             min_width: width,
             preferred_width: width,
+            preferred_reference_pct: None,
             max_width: width,
             min_height: 0,
             preferred_height: height,

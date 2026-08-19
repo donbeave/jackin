@@ -40,36 +40,20 @@ pub fn footer_regions(
     let activity = format!(" {activity}");
     let container = format!(" {instance} ");
     let run = run_id.map(|value| format!(" {value} ")).unwrap_or_default();
-    let left = [StatusSlot {
-        id: FooterSlot::Activity,
-        content: &activity,
-        priority: 0,
-        min_width: 0,
-        enabled: true,
-        style: Style::default(),
-        hover_style: None,
-    }];
+    let left = [StatusSlot::new(FooterSlot::Activity, &activity)
+        .priority(0)
+        .min_width(0)];
     let right = [
-        StatusSlot {
-            id: FooterSlot::Container,
-            content: &container,
-            priority: 0,
-            min_width: 0,
-            enabled: !instance.is_empty(),
-            style: Style::default(),
-            hover_style: None,
-        },
-        StatusSlot {
-            id: FooterSlot::RunId,
-            content: &run,
-            priority: 0,
-            min_width: 0,
-            enabled: run_id.is_some_and(|value| !value.is_empty()),
-            style: Style::default(),
-            hover_style: None,
-        },
+        StatusSlot::new(FooterSlot::Container, &container)
+            .priority(0)
+            .min_width(0)
+            .enabled(!instance.is_empty()),
+        StatusSlot::new(FooterSlot::RunId, &run)
+            .priority(0)
+            .min_width(0)
+            .enabled(run_id.is_some_and(|value| !value.is_empty())),
     ];
-    let theme = termrock::Theme::default();
+    let theme = termrock::style::DesignSystem::default();
     StatusBar::new(&left, &right, &theme).regions(area)
 }
 
@@ -115,82 +99,75 @@ pub fn render_footer(
     let run = debug_chip
         .map(|value| format!(" {value} "))
         .unwrap_or_default();
-    let left = [StatusSlot {
-        id: FooterSlot::Activity,
-        content: &activity,
-        priority: 0,
-        min_width: 0,
-        enabled: true,
-        style: Style::default()
-            .bg(termrock::Theme::default()
-                .style(termrock::style::Role::Text)
-                .fg
-                .unwrap_or_default())
-            .fg(if view.footer_hover.left {
-                jackin_tui::tokens::LINK_BLUE
-            } else {
-                jackin_tui::tokens::INK
-            })
-            .add_modifier(Modifier::BOLD),
-        hover_style: None,
-    }];
-    let right = [
-        StatusSlot {
-            id: FooterSlot::Container,
-            content: &container,
-            priority: 0,
-            min_width: 0,
-            enabled: !instance.is_empty(),
-            style: Style::default()
-                .bg(termrock::Theme::default()
+    let left = [StatusSlot::new(FooterSlot::Activity, &activity)
+        .priority(0)
+        .min_width(0)
+        .style(
+            Style::default()
+                .bg(termrock::style::DesignSystem::default()
                     .style(termrock::style::Role::Text)
                     .fg
                     .unwrap_or_default())
-                .fg(if view.footer_hover.right {
-                    jackin_tui::tokens::DEBUG_AMBER
-                } else {
+                .fg(if view.footer_hover.left {
                     jackin_tui::tokens::LINK_BLUE
+                } else {
+                    jackin_tui::tokens::INK
                 })
                 .add_modifier(Modifier::BOLD),
-            hover_style: None,
-        },
-        StatusSlot {
-            id: FooterSlot::RunId,
-            content: &run,
-            priority: 0,
-            min_width: 0,
-            enabled: debug_chip.is_some_and(|value| !value.is_empty()),
-            style: Style::default()
-                .bg(if view.footer_hover.right_debug {
-                    termrock::Theme::default()
+        )];
+    let right = [
+        StatusSlot::new(FooterSlot::Container, &container)
+            .priority(0)
+            .min_width(0)
+            .enabled(!instance.is_empty())
+            .style(
+                Style::default()
+                    .bg(termrock::style::DesignSystem::default()
                         .style(termrock::style::Role::Text)
                         .fg
-                        .unwrap_or_default()
-                } else {
-                    termrock::Theme::default()
-                        .style(termrock::style::Role::Danger)
-                        .fg
-                        .unwrap_or_default()
-                })
-                .fg(if view.footer_hover.right_debug {
-                    termrock::Theme::default()
-                        .style(termrock::style::Role::Danger)
-                        .fg
-                        .unwrap_or_default()
-                } else {
-                    termrock::Theme::default()
-                        .style(termrock::style::Role::Text)
-                        .fg
-                        .unwrap_or_default()
-                })
-                .add_modifier(Modifier::BOLD),
-            hover_style: None,
-        },
+                        .unwrap_or_default())
+                    .fg(if view.footer_hover.right {
+                        jackin_tui::tokens::DEBUG_AMBER
+                    } else {
+                        jackin_tui::tokens::LINK_BLUE
+                    })
+                    .add_modifier(Modifier::BOLD),
+            ),
+        StatusSlot::new(FooterSlot::RunId, &run)
+            .priority(0)
+            .min_width(0)
+            .enabled(debug_chip.is_some_and(|value| !value.is_empty()))
+            .style(
+                Style::default()
+                    .bg(if view.footer_hover.right_debug {
+                        termrock::style::DesignSystem::default()
+                            .style(termrock::style::Role::Text)
+                            .fg
+                            .unwrap_or_default()
+                    } else {
+                        termrock::style::DesignSystem::default()
+                            .style(termrock::style::Role::Danger)
+                            .fg
+                            .unwrap_or_default()
+                    })
+                    .fg(if view.footer_hover.right_debug {
+                        termrock::style::DesignSystem::default()
+                            .style(termrock::style::Role::Danger)
+                            .fg
+                            .unwrap_or_default()
+                    } else {
+                        termrock::style::DesignSystem::default()
+                            .style(termrock::style::Role::Text)
+                            .fg
+                            .unwrap_or_default()
+                    })
+                    .add_modifier(Modifier::BOLD),
+            ),
     ];
-    let theme = termrock::Theme::default().with_role(
+    let theme = termrock::style::DesignSystem::default().with_role(
         termrock::style::Role::StatusBar,
         Style::default()
-            .bg(termrock::Theme::default()
+            .bg(termrock::style::DesignSystem::default()
                 .style(termrock::style::Role::Text)
                 .fg
                 .unwrap_or_default())
@@ -199,10 +176,7 @@ pub fn render_footer(
     frame.render_stateful_widget(
         &StatusBar::new(&left, &right, &theme).alpha(alpha),
         area,
-        &mut StatusBarState {
-            hovered: None,
-            regions: Vec::new(),
-        },
+        &mut StatusBarState::new(),
     );
 }
 

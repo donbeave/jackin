@@ -433,8 +433,10 @@ const fn mouse_is_wheel(mouse: crossterm::event::MouseEvent) -> bool {
 
 fn mouse_down_outside_rect(mouse: crossterm::event::MouseEvent, rect: Rect) -> bool {
     matches!(mouse.kind, crossterm::event::MouseEventKind::Down(_))
-        && termrock::interaction::classify_click(rect, mouse.column, mouse.row)
-            == termrock::interaction::ModalClickResult::OutsideDismiss
+        && !rect.contains(ratatui::layout::Position {
+            x: mouse.column,
+            y: mouse.row,
+        })
 }
 
 #[must_use]
@@ -448,8 +450,7 @@ pub fn should_dismiss_list_modal_for_outside_click(
         return false;
     }
 
-    termrock::interaction::classify_click(modal_rect, column, row)
-        == termrock::interaction::ModalClickResult::OutsideDismiss
+    !modal_rect.contains(ratatui::layout::Position { x: column, y: row })
 }
 
 /// Split `area` into a main region and an optional 1-row debug bar at the

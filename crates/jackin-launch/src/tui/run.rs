@@ -756,7 +756,7 @@ impl RichRenderer {
                             frame,
                             hint_area,
                             hint_normal,
-                            &termrock::Theme::default(),
+                            &termrock::style::DesignSystem::default(),
                         );
                     })
                     .context("rendering launch dialog")?;
@@ -863,7 +863,7 @@ impl RichRenderer {
         } else {
             InspFocus::Files
         };
-        let mut diff_scroll_y: usize = 0;
+        let mut diff_scroll = crate::tui::diff_scroll::DiffScroll::new();
 
         #[derive(Clone)]
         struct InspectDiff {
@@ -889,10 +889,13 @@ impl RichRenderer {
                         .map(|line| (format!("+ {line}"), DiffKind::Added)),
                 );
             }
-            Some(InspectDiff {
-                lines,
-                state: DiffState::default(),
-            })
+            let mut state = DiffState::new();
+            // Pre-bump surface painted no line-number gutter; keep parity.
+            state.show_line_numbers = false;
+            // The inspect diff scrolls without a cursor; suppress the
+            // selection chrome the head widget paints on the cursor row.
+            state.show_cursor = false;
+            Some(InspectDiff { lines, state })
         };
 
         // Build initial diff
@@ -919,7 +922,7 @@ impl RichRenderer {
                     frame,
                     hint_area,
                     hint,
-                    &termrock::Theme::default(),
+                    &termrock::style::DesignSystem::default(),
                 );
 
                 // Split body: repos (if >1) | files | diff
@@ -978,23 +981,29 @@ impl RichRenderer {
                 );
 
                 if let Some(diff) = diff_cloned.as_mut() {
-                    diff.state.offset = diff_scroll_y.min(diff.lines.len().saturating_sub(1));
+                    let offset = u16::try_from(diff_scroll.offset_for_render(diff.lines.len()))
+                        .unwrap_or(u16::MAX);
+                    diff.state.scroll_mut().set_offset_y(offset);
+                    let ids = (0..diff.lines.len())
+                        .map(|index| format!("diff-line-{index}"))
+                        .collect::<Vec<_>>();
                     let lines = diff
                         .lines
                         .iter()
-                        .map(|(text, kind)| DiffLine { text, kind: *kind })
+                        .zip(&ids)
+                        .map(|((text, kind), id)| DiffLine::new(id, *kind, text))
                         .collect::<Vec<_>>();
-                    let diff_theme = termrock::Theme::default()
+                    let diff_theme = termrock::style::DesignSystem::default()
                         .with_role(
                             termrock::style::Role::DiffAdded,
-                            Style::default().fg(termrock::Theme::default()
+                            Style::default().fg(termrock::style::DesignSystem::default()
                                 .style(termrock::style::Role::Accent)
                                 .fg
                                 .unwrap_or_default()),
                         )
                         .with_role(
                             termrock::style::Role::DiffRemoved,
-                            Style::default().fg(termrock::Theme::default()
+                            Style::default().fg(termrock::style::DesignSystem::default()
                                 .style(termrock::style::Role::Danger)
                                 .fg
                                 .unwrap_or_default()),
@@ -1004,10 +1013,14 @@ impl RichRenderer {
                         diff_area,
                         &mut diff.state,
                     );
-                    diff_scroll_y = diff.state.offset;
+                    diff_scroll.record_rendered(usize::from(diff.state.offset()));
                 }
             })
             .context("rendering inspect surface")?;
+
+            // Persist the widget-synced scroll metrics so the next frame's
+            // host offset injection clamps against real content/viewport.
+            diff_state = diff_cloned;
 
             let key = read_pressed_key(&self.input, "reading inspect surface input")?;
             match key.code {
@@ -1030,17 +1043,16 @@ impl RichRenderer {
                         wt_sel = wt_sel.saturating_sub(1);
                         file_sel = 0;
                         diff_state = build_diff(&worktrees[wt_sel], file_sel);
-                        diff_scroll_y = 0;
+                        diff_scroll.reset();
                     }
                     InspFocus::Files => {
                         file_sel = file_sel.saturating_sub(1);
                         diff_state = build_diff(&worktrees[wt_sel], file_sel);
-                        diff_scroll_y = 0;
+                        diff_scroll.reset();
                     }
                     InspFocus::Diff => {
-                        if let Some(d) = diff_state.as_mut() {
-                            d.state.offset = d.state.offset.saturating_sub(1);
-                            diff_scroll_y = d.state.offset;
+                        if diff_state.is_some() {
+                            diff_scroll.line_up();
                         }
                     }
                 },
@@ -1050,7 +1062,7 @@ impl RichRenderer {
                             wt_sel += 1;
                             file_sel = 0;
                             diff_state = build_diff(&worktrees[wt_sel], file_sel);
-                            diff_scroll_y = 0;
+                            diff_scroll.reset();
                         }
                     }
                     InspFocus::Files => {
@@ -1058,31 +1070,22 @@ impl RichRenderer {
                         if file_sel < max {
                             file_sel += 1;
                             diff_state = build_diff(&worktrees[wt_sel], file_sel);
-                            diff_scroll_y = 0;
+                            diff_scroll.reset();
                         }
                     }
                     InspFocus::Diff => {
-                        if let Some(d) = diff_state.as_mut() {
-                            d.state.offset = d
-                                .state
-                                .offset
-                                .saturating_add(1)
-                                .min(d.lines.len().saturating_sub(1));
-                            diff_scroll_y = d.state.offset;
+                        if let Some(d) = diff_state.as_ref() {
+                            diff_scroll.line_down(d.lines.len());
                         }
                     }
                 },
                 KeyCode::PageUp | KeyCode::PageDown => {
-                    if let Some(d) = diff_state.as_mut() {
-                        d.state.offset = if key.code == KeyCode::PageUp {
-                            d.state.offset.saturating_sub(10)
+                    if let Some(d) = diff_state.as_ref() {
+                        if key.code == KeyCode::PageUp {
+                            diff_scroll.page_up();
                         } else {
-                            d.state
-                                .offset
-                                .saturating_add(10)
-                                .min(d.lines.len().saturating_sub(1))
-                        };
-                        diff_scroll_y = d.state.offset;
+                            diff_scroll.page_down(d.lines.len());
+                        }
                     }
                 }
                 _ => {}
@@ -1166,11 +1169,11 @@ fn prompt_context_lines(context: &[PromptContextLine]) -> Vec<Line<'static>> {
         .map(|line| match line {
             PromptContextLine::Emphasis(text) => Line::from(Span::styled(
                 text.clone(),
-                termrock::Theme::default().style(termrock::style::Role::TextStrong),
+                termrock::style::DesignSystem::default().style(termrock::style::Role::TextStrong),
             )),
             PromptContextLine::Muted(text) => Line::from(Span::styled(
                 text.clone(),
-                Style::default().fg(termrock::Theme::default()
+                Style::default().fg(termrock::style::DesignSystem::default()
                     .style(termrock::style::Role::TextMuted)
                     .fg
                     .unwrap_or_default()),

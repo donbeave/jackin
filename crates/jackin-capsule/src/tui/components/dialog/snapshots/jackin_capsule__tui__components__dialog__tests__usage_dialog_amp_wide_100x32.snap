@@ -1,5 +1,6 @@
 ---
 source: crates/jackin-capsule/src/tui/components/dialog/tests.rs
+assertion_line: 2063
 expression: "render_usage_dialog_snapshot_for_view(100, 32, UsageDialogTab::Provider,\namp_usage_view_fixture())"
 ---
 
@@ -7,7 +8,7 @@ expression: "render_usage_dialog_snapshot_for_view(100, 32, UsageDialogTab::Prov
 
        ┌ Usage ─────────────────────────────────────────────────────────────────────────────┐
        │         Overview   OpenAI   Anthropic   Amp   xAI   Z.AI   Kimi   MiniMax          │
-       │                                        ━━━━━                                       │
+       │                                        ─────                                       │
        │────────────────────────────────────────────────────────────────────────────────────│
        │  Amp                                                        account@personal.test  │
        │  Updated now                                                                       │

@@ -18,7 +18,7 @@ use termrock::style::Role;
 use termrock::text::display_cols;
 use termrock::widgets::{
     DetailCapability, DetailRow, DetailTable, DetailTableOutcome, DetailTableState, HintSpan,
-    Panel, PanelEmphasis,
+    Panel, PanelChrome,
 };
 
 #[derive(Debug, Clone)]
@@ -411,10 +411,10 @@ pub fn render_container_info(frame: &mut Frame<'_>, area: Rect, state: &Containe
     if area.width < 20 || area.height < 5 {
         return;
     }
-    let theme = termrock::Theme::default();
+    let theme = termrock::style::DesignSystem::default();
     let panel = Panel::new(&theme)
         .title(&state.title)
-        .emphasis(PanelEmphasis::Focused);
+        .emphasis(PanelChrome::Focused);
     let table_area = detail_table_area(panel.inner(area));
     frame.render_widget(&panel, area);
 
@@ -428,12 +428,20 @@ pub fn render_container_info(frame: &mut Frame<'_>, area: Rect, state: &Containe
 }
 
 fn detail_table_area(inner: Rect) -> Rect {
-    Rect::new(
-        inner.x,
-        inner.y.saturating_add(1),
-        inner.width,
-        inner.height.saturating_sub(1),
-    )
+    // `inner` is head Panel::inner (border + density padding). The detail
+    // surface keeps the old pin's geometry: content column flush inside the
+    // border on X, with the pad_y row serving as the one spacer row between
+    // title border and first detail row.
+    let spacing = termrock::style::DesignSystem::default().spacing;
+    Rect {
+        x: inner.x.saturating_sub(spacing.pad_x),
+        width: inner.width.saturating_add(spacing.pad_x.saturating_mul(2)),
+        height: inner
+            .height
+            .saturating_add(spacing.pad_y.saturating_mul(2))
+            .saturating_sub(1),
+        ..inner
+    }
 }
 
 fn detail_rows(state: &ContainerInfoState) -> Vec<DetailRow<'_, usize>> {
@@ -481,10 +489,10 @@ fn detail_layout(
     state: &ContainerInfoState,
 ) -> (Vec<DetailRow<'_, usize>>, DetailTableState<usize>, Buffer) {
     let rows = detail_rows(state);
-    let theme = termrock::Theme::default();
+    let theme = termrock::style::DesignSystem::default();
     let panel = Panel::new(&theme)
         .title(&state.title)
-        .emphasis(PanelEmphasis::Focused);
+        .emphasis(PanelChrome::Focused);
     let table_area = detail_table_area(panel.inner(area));
     let table = DetailTable::new(&rows, &theme).content_revision(detail_content_revision(state));
     let mut table_state = detail_state(state);
@@ -532,7 +540,7 @@ pub fn hyperlink_payload_at(
 #[must_use]
 pub fn hyperlink_regions(area: Rect, state: &ContainerInfoState) -> Vec<(Rect, String)> {
     let (rows, table_state, _) = detail_layout(area, state);
-    let theme = termrock::Theme::default();
+    let theme = termrock::style::DesignSystem::default();
     DetailTable::new(&rows, &theme)
         .content_revision(detail_content_revision(state))
         .hyperlink_regions(&table_state)
@@ -545,7 +553,7 @@ pub fn hyperlink_regions(area: Rect, state: &ContainerInfoState) -> Vec<(Rect, S
 pub fn hyperlink_overlay(area: Rect, state: &ContainerInfoState) -> Vec<u8> {
     let mut out = Vec::new();
     let (rows, table_state, buffer) = detail_layout(area, state);
-    let theme = termrock::Theme::default();
+    let theme = termrock::style::DesignSystem::default();
     let table = DetailTable::new(&rows, &theme).content_revision(detail_content_revision(state));
     for region in table.hyperlink_regions(&table_state) {
         let role = if state.hovered_row == Some(region.id) {

@@ -418,7 +418,7 @@ fn render_agents_subpanel(
 }
 
 fn panel_inner(area: Rect) -> Rect {
-    let theme = termrock::Theme::default();
+    let theme = termrock::style::DesignSystem::default();
     termrock::widgets::Panel::new(&theme).inner(area)
 }
 

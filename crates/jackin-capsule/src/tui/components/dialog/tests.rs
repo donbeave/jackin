@@ -2429,3 +2429,60 @@ fn exit_dirty_selection_marker_moves_on_down_arrow() {
         "down-arrow must move the ▸ marker down: before row {before}, after row {after}"
     );
 }
+
+#[test]
+fn trparity_capsule_exit_dirty_esc_keeps_and_exits() {
+    // "Esc is ignored" (dialog.rs:269) is implemented as a redirect: the
+    // dialog never returns Dismiss, so the operator cannot lose work.
+    let mut d = Dialog::new_exit_dirty(vec!["jackin   1 changed".to_owned()], Arc::from([]));
+    assert_eq!(
+        d.handle_key(b"\x1b", None),
+        DialogAction::ExitDirty(ExitDirtyRow::Keep)
+    );
+}
+
+#[test]
+fn trparity_capsule_exit_dirty_ctrl_c_keeps_and_exits() {
+    let mut d = Dialog::new_exit_dirty(vec!["jackin   1 changed".to_owned()], Arc::from([]));
+    assert_eq!(
+        d.handle_key(b"\x03", None),
+        DialogAction::ExitDirty(ExitDirtyRow::Keep)
+    );
+}
+
+#[test]
+fn trparity_capsule_exit_dirty_enter_on_inspect_row_requests_inspect() {
+    // Forward walk: cursor from StartNewAgent to Inspect, Enter requests the
+    // Inspect row — the action that makes the daemon push ExitInspect
+    // (input_dispatch.rs:103-113).
+    let mut d = Dialog::new_exit_dirty(vec!["jackin   1 changed".to_owned()], Arc::from([]));
+    assert_eq!(d.handle_key(b"\x1b[B", None), DialogAction::Redraw);
+    assert_eq!(
+        d.handle_key(b"\r", None),
+        DialogAction::ExitDirty(ExitDirtyRow::Inspect)
+    );
+}
+
+#[test]
+fn trparity_capsule_exit_inspect_esc_walks_back_with_dismiss() {
+    // Dismiss pops one level of the daemon's dialog stack, restoring the
+    // ExitDirty modal underneath.
+    let mut d = Dialog::new_exit_inspect(Arc::from([
+        InspectRow::Repo("jackin".to_owned()),
+        InspectRow::File("M a.rs".to_owned()),
+    ]));
+    assert_eq!(d.handle_key(b"\x1b", None), DialogAction::Dismiss);
+    assert_eq!(d.handle_key(b"\x03", None), DialogAction::Dismiss);
+}
+
+#[test]
+fn trparity_capsule_exit_inspect_arrows_scroll_without_dismissing() {
+    let mut d = Dialog::new_exit_inspect(Arc::from([
+        InspectRow::Repo("jackin".to_owned()),
+        InspectRow::File("M a.rs".to_owned()),
+    ]));
+    assert_eq!(d.handle_key(b"\x1b[B", None), DialogAction::Redraw);
+    // Second Down clamps at the last row.
+    assert_eq!(d.handle_key(b"\x1b[B", None), DialogAction::Redraw);
+    assert_eq!(d.handle_key(b"\x1b[A", None), DialogAction::Redraw);
+}

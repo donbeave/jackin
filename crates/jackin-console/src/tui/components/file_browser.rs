@@ -18,7 +18,7 @@
 //! state, input mapping, geometry, and rendering.
 //!
 //! The browser was originally built on `ratatui-explorer`, but that
-//! crate's `Theme` exposes a single `dir_style` shared by every row —
+//! crate's `DesignSystem` exposes a single `dir_style` shared by every row —
 //! meaning "colour git repos differently" is impossible. Rewriting in-
 //! house costs ~400 lines and unlocks per-entry styling plus a simpler
 //! keymap (`h/l` / arrows / `s` / `Esc` handled directly instead of

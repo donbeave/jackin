@@ -4,6 +4,7 @@
 //! Launch cockpit view helpers.
 
 pub mod components;
+pub mod diff_scroll;
 pub mod effect;
 pub mod input;
 pub mod keymap;

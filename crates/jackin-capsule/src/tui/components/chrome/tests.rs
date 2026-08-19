@@ -7,7 +7,7 @@ use crate::tui::components::status_bar::status_bar_plan;
 use crate::tui::layout::Tab;
 use crate::tui::model::VisibleAgentState;
 use ratatui::{Terminal, backend::TestBackend};
-use termrock::Theme;
+use termrock::style::DesignSystem;
 
 #[test]
 fn status_bar_renders_without_tabs() {
@@ -119,7 +119,7 @@ fn status_bar_renders_working_idle_done_and_unknown_glyphs() {
         glyph_cell(&plan.cells[1]),
         (
             "◆".to_owned(),
-            Theme::default()
+            DesignSystem::default()
                 .style(termrock::style::Role::Accent)
                 .fg
                 .unwrap_or_default()
@@ -131,8 +131,8 @@ fn status_bar_renders_working_idle_done_and_unknown_glyphs() {
 
 #[test]
 fn pane_border_projects_focus_into_shared_emphasis() {
-    assert_eq!(pane_border_emphasis(true), PanelEmphasis::Focused);
-    assert_eq!(pane_border_emphasis(false), PanelEmphasis::Normal);
+    assert_eq!(pane_border_emphasis(true), PanelChrome::Focused);
+    assert_eq!(pane_border_emphasis(false), PanelChrome::Normal);
 }
 
 // ── wrapped hint rows ─────────────────────────────────────────────────────────
@@ -181,4 +181,66 @@ fn hint_row_sits_between_one_blank_row_above_and_below() {
         row_below.trim().is_empty(),
         "bottom spacer polluted: {row_below:?}"
     );
+}
+
+#[test]
+fn brand_pill_chevron_keeps_pre_bump_white() {
+    let backend = TestBackend::new(80, 2);
+    let mut terminal = Terminal::new(backend).unwrap();
+    let plan = status_bar_plan(80, &[], 0, &[], PrefixMode::Idle);
+    terminal
+        .draw(|frame| {
+            frame.render_widget(
+                StatusBarWidget {
+                    plan: &plan,
+                    prefix_mode: PrefixMode::Idle,
+                    hovered_tab: None,
+                    menu_hovered: false,
+                    focused: false,
+                },
+                frame.area(),
+            );
+        })
+        .unwrap();
+    let buf = terminal.backend().buffer();
+    let chevron = &buf[(7, 0)];
+    assert_eq!(chevron.symbol(), "❯");
+    assert_eq!(chevron.fg, Color::Rgb(255, 255, 255));
+    assert_eq!(chevron.bg, Color::Rgb(0, 255, 65));
+}
+
+#[test]
+fn row0_tabs_follow_the_upstream_theme_without_compensation() {
+    let tabs = [
+        Tab::new_single("Claude", 1, "test"),
+        Tab::new_single("Codex", 2, "test"),
+    ];
+    let backend = TestBackend::new(100, 2);
+    let mut terminal = Terminal::new(backend).unwrap();
+    let plan = status_bar_plan(100, &tabs, 1, &[], PrefixMode::Idle);
+    terminal
+        .draw(|frame| {
+            frame.render_widget(
+                StatusBarWidget {
+                    plan: &plan,
+                    prefix_mode: PrefixMode::Idle,
+                    hovered_tab: None,
+                    menu_hovered: false,
+                    focused: false,
+                },
+                frame.area(),
+            );
+        })
+        .unwrap();
+    let buf = terminal.backend().buffer();
+    // First glyph of the inactive "Codex" tab label.
+    let (tab_x, _) = (9..100)
+        .map(|x| (x, buf[(x, 0)].symbol()))
+        .find(|(x, s)| *s == "C" && buf[(*x + 1, 0)].symbol() == "o")
+        .expect("Codex tab label on row 0");
+    let cell = &buf[(tab_x, 0)];
+    // Head clears the non-hovered tab fills (Color::Reset), and no
+    // compensation pins product chrome to the pre-bump white.
+    assert_eq!(cell.bg, Color::Reset);
+    assert_ne!(cell.fg, Color::Rgb(255, 255, 255));
 }

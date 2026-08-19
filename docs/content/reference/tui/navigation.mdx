@@ -21,9 +21,9 @@ jackin❯ TUI follows the **W3C ARIA Tabs interaction pattern** for all tabbed i
 
 Focus state has three layers, and new components must use the narrowest layer that matches the interaction:
 
-1. `jackin_tui::runtime::SurfaceFocus<Target>` is the product projection over TermRock's `FocusRing` for tabbed screens. It answers which region owns input: the tab bar, or one named content block. Borders, tab underlines, cursors, and footer scope derive from that one owner value.
+1. `jackin_tui::runtime::SurfaceFocus<Target>` is the product projection over TermRock's `FocusGraph` for tabbed screens. It answers which region owns input: the tab bar, or one named content block. Borders, tab underlines, cursors, and footer scope derive from that one owner value.
 2. A per-dialog semantic enum is element-level focus inside a button dialog. Use named states such as `Yes` / `No` or `Save` / `Discard` / `Cancel`, and project them through the shared TermRock focus mechanics; do not store a parallel raw index or bool.
-3. `PanelEmphasis` is border styling only. It is computed from screen-level or dialog-level focus state when rendering; do not store it as independent state.
+3. `PanelChrome` is border styling only. It is computed from screen-level or dialog-level focus state when rendering; do not store it as independent state.
 
 ### W3C Tabs pattern (required for all tabbed interfaces)
 
@@ -139,7 +139,7 @@ Footer hints must lead with the focused row's primary action. A mode row leads w
 
 When a tabbed screen's **tab bar** owns focus, its active tab shows a `PHOSPHOR_GREEN` `━` underline and no content block has a green border. When a **content block** owns focus, the active tab underline switches to `WHITE` and the content block gets the `PHOSPHOR_GREEN` border. Exactly one of (tab bar, content block) shows the green signal at a time — never both.
 
-**Implementation:** `tab_bar_focused: bool` is the single owner flag. The tab strip render calls `TabStrip::new(...).focused(tab_bar_focused)` — green when `true`, white when `false`. Content blocks derive their `PanelEmphasis` from `!tab_bar_focused && scroll_focused`. A tab switch (keyboard or click) that returns focus to the tab bar must clear all `scroll_focused` booleans for that screen so no content block keeps a stale green border.
+**Implementation:** `tab_bar_focused: bool` is the single owner flag. The tab strip render calls `TabStrip::new(...).focused(tab_bar_focused)` — green when `true`, white when `false`. Content blocks derive their `PanelChrome` from `!tab_bar_focused && scroll_focused`. A tab switch (keyboard or click) that returns focus to the tab bar must clear all `scroll_focused` booleans for that screen so no content block keeps a stale green border.
 
 ### `↓` and `⇥` are equivalent for entering tab content
 
@@ -193,7 +193,7 @@ On every tabbed screen, while the tab bar owns focus, both `⇥` (Tab) and `↓`
 All keyboard hint text belongs in the footer bar at the bottom of the screen. Dialogs, modals, and overlays **must not** render their own internal hint line. When a modal is open, the main footer must show the modal's available keys instead of the keys for the content behind it.
 
 Enforcement:
-- Every root-console modal widget such as `src/console/tui/op_picker/` must expose a `footer_items` function (or equivalent) and remove its internal hint row.
+- Every root-console modal widget such as `crates/jackin-console/src/tui/op_picker/` must expose a `footer_items` function (or equivalent) and remove its internal hint row.
 - `render_editor` checks `state.modal` first; if a modal is open it calls `modal_footer_items(modal)` and skips the normal contextual items.
 - `render_settings` checks the three settings modal chains (`auth.modal`, `env.modal`, `mounts.modal`) in priority order; if any is `Some`, calls the corresponding `*_modal_footer_items` function.
 - No `Constraint::Length` row for a hint line may remain inside any widget layout.
@@ -246,7 +246,7 @@ For passive detail blocks, the green border is the affordance for scroll. Operat
 
 ### Implementation
 
-TermRock `Viewport` (console `scroll_block` adapter) paints `PanelEmphasis` from the caller's `focused` flag with **no overflow gate**. Caller `focused` means **interaction ownership** — forms, tab content, and other containers that accept keys stay green even when content fits. The passive-scroll focusability rule is enforced in state/input: list-detail surfaces clear `list_scroll_focus` when content no longer overflows (`list_pre_render_focus_plan` / `focused_block_still_scrollable`), so a passive detail block does not remain the focus owner without overflow.
+TermRock `Viewport` (console `scroll_block` adapter) paints `PanelChrome` from the caller's `focused` flag with **no overflow gate**. Caller `focused` means **interaction ownership** — forms, tab content, and other containers that accept keys stay green even when content fits. The passive-scroll focusability rule is enforced in state/input: list-detail surfaces clear `list_scroll_focus` when content no longer overflows (`list_pre_render_focus_plan` / `focused_block_still_scrollable`), so a passive detail block does not remain the focus owner without overflow.
 
 This means the rule is **impossible to accidentally violate** through the shared renderer. What callers must still ensure:
 
@@ -356,7 +356,7 @@ Pass `None` for `title` to suppress the block title. Pass a bare trimmed title (
 
 **Focus sustainability rule (extended):** Focus on a container must persist as long as the operator is interacting within that container. This includes all inline sub-pickers — when an inline agent picker, role picker, or provider picker opens WITHIN a focused sidebar, the sidebar border must remain green because the picker is an inline extension of the sidebar's current action, not a separate container that steals focus. The picker receives keyboard input through the sidebar; it does not claim its own focus indicator.
 
-**Inline picker focus rule:** An inline picker rendered inside a parent container must use the parent's focus state for its panel border. Use `focused = parent.list_names_focused` (or equivalent), never hardcoded `PanelEmphasis::Normal` when the parent owns interaction. The `▸` cursor inside an inline picker follows the same gating: only visible when the parent container is focused. Focus on a container must persist as long as the operator is interacting within that container. Navigation keys (`↑`/`↓`/`←`/`→`) executed inside a focused container must never transfer or clear focus — they navigate within the current owner. Only an explicit user action (mouse click on a different area, `Tab` to another area, `Esc` to a parent screen) may move focus.
+**Inline picker focus rule:** An inline picker rendered inside a parent container must use the parent's focus state for its panel border. Use `focused = parent.list_names_focused` (or equivalent), never hardcoded `PanelChrome::Normal` when the parent owns interaction. The `▸` cursor inside an inline picker follows the same gating: only visible when the parent container is focused. Focus on a container must persist as long as the operator is interacting within that container. Navigation keys (`↑`/`↓`/`←`/`→`) executed inside a focused container must never transfer or clear focus — they navigate within the current owner. Only an explicit user action (mouse click on a different area, `Tab` to another area, `Esc` to a parent screen) may move focus.
 
 **`list_names_focused` (left sidebar) is cleared only when:**
 1. The user clicks in the right pane — `update_scroll_focus` sends `SetListNamesFocused(false)`.

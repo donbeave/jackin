@@ -5,12 +5,7 @@ description: "PHOSPHOR color palette, border color semantics, left sidebar conve
 
 ## TermRock theme and product palette
 
-Reusable component styling flows through TermRock's semantic `Theme` and `Role`
-API ([TermRock source](https://github.com/tailrocks/termrock)). jackin❯ surfaces
-resolve neutral presentation with `Theme::default().style(Role::…)` so ordinary,
-strong, muted, border, focus, danger, warning, tab, input, link, and scroll
-colors stay on TermRock's default phosphor preset. Product-owned brand/domain
-colors (brand pill, menu chips, status accents) live in `jackin_tui::tokens`.
+Reusable component styling flows through TermRock's semantic `DesignSystem` and `Role` API ([TermRock source](https://github.com/tailrocks/termrock)). jackin❯ surfaces resolve neutral presentation with `DesignSystem::default().style(Role::…)` so ordinary, strong, muted, border, focus, danger, warning, tab, input, link, and scroll colors stay on TermRock's default phosphor preset. Product-owned brand/domain colors (brand pill, menu chips, status accents) live in `jackin_tui::tokens`.
 
 Product-owned tokens only — brand pill, launch rain, debug amber, blocked status,
 menu button states, action/disclosure accents, and light-bar `LINK_BLUE` — live
@@ -21,7 +16,7 @@ neutral RGB constants for generic TUI painting.
 
 | Source | Examples | Usage |
 |---|---|---|
-| TermRock `Role` | `Text`, `TextStrong`, `TextMuted`, `Border`, `BorderFocused`, `Accent`, `Danger`, `Warning`, `Tab*`, `Link*`, `Scroll*` | Shared presentation via `Theme::default().style(role)` |
+| TermRock `Role` | `Text`, `TextStrong`, `TextMuted`, `Border`, `BorderFocused`, `Accent`, `Danger`, `Warning`, `Tab*`, `Link*`, `Scroll*` | Shared presentation via `DesignSystem::default().style(role)` |
 | Product tokens | `BRAND_BLOCK`, `DEBUG_AMBER`, `STATUS_BLOCKED_RED`, `MENU_*`, `ACTION_ACCENT`, `DISCLOSURE_ACCENT`, `LINK_BLUE`, rain RGB | Brand chrome and domain/agent states only |
 | TermRock escape hatch | `termrock::style::PHOSPHOR_GREEN`, `PREVIEW_CARD` | When the documented preset color itself is required (rare) |
 
@@ -61,7 +56,7 @@ Every row that begins with `+` is an add/create action and must render through t
 
 ## Block Border Colors
 
-- **Active interaction container**: `PHOSPHOR_GREEN` border — dialogs, pickers, forms, tab panels, and the currently active list/sidebar use the bright border whenever they own keyboard or scroll interaction. The paint path maps `focused = true` → `PanelEmphasis::Focused` with no overflow gate.
+- **Active interaction container**: `PHOSPHOR_GREEN` border — dialogs, pickers, forms, tab panels, and the currently active list/sidebar use the bright border whenever they own keyboard or scroll interaction. The paint path maps `focused = true` → `PanelChrome::Focused` with no overflow gate.
 - **Passive list-detail scroll block that still owns focus**: `PHOSPHOR_GREEN` border — state keeps `focused = true` only while content overflows (see focusability / `focused_block_still_scrollable`). The renderer does not second-guess `focused`.
 - **Passive list-detail block after content fits**: `BORDER_GRAY` border — callers clear focus in pre-render state so `focused` is already false; there is no false scroll affordance.
 - **Unfocused / background container**: `BORDER_GRAY` border regardless of scrollability.
@@ -73,7 +68,7 @@ containers use `Role::Border` (neutral gray). Double-line, heavy, or mixed
 panel borders are a design violation. Scrollbar thumbs may occupy edge cells
 without changing the surrounding panel's border contract.
 
-TermRock `Viewport` paints border emphasis from `PanelEmphasis`. Console scrollable panels go through `scroll_block::render_scrollable_block_at`, which maps the caller's `focused` flag to `PanelEmphasis::Focused` / `Normal`. Passive list-detail surfaces clear focus state when content no longer overflows so a non-scrollable detail block does not keep a false green affordance. Active interaction containers (forms, dialogs, pickers) keep the bright border whenever they own interaction.
+TermRock `Viewport` paints border emphasis from `PanelChrome`. Console scrollable panels go through `scroll_block::render_scrollable_block_at`, which maps the caller's `focused` flag to `PanelChrome::Focused` / `Normal`. Passive list-detail surfaces clear focus state when content no longer overflows so a non-scrollable detail block does not keep a false green affordance. Active interaction containers (forms, dialogs, pickers) keep the bright border whenever they own interaction.
 
 ---
 

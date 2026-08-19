@@ -9,10 +9,10 @@ use crossterm::event::{KeyCode, KeyEvent};
 use jackin_tui::ModalOutcome;
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
-use termrock::widgets::{List, ListRow, ListState, RowRole};
+use termrock::widgets::{List, ListRow, ListState};
 
 use termrock::layout::render_dialog_shell;
-use termrock::widgets::PanelEmphasis;
+use termrock::widgets::PanelChrome;
 
 pub trait AgentChoice: Copy + Eq + 'static {
     const ALL: &'static [Self];
@@ -91,8 +91,8 @@ pub fn render<A: AgentChoice>(frame: &mut Frame<'_>, area: Rect, state: &AgentCh
         frame,
         area,
         Some("Pick Agent"),
-        PanelEmphasis::Focused,
-        &termrock::Theme::default(),
+        PanelChrome::Focused,
+        &termrock::style::DesignSystem::default(),
     );
 
     let rows = Layout::default()
@@ -107,15 +107,9 @@ pub fn render<A: AgentChoice>(frame: &mut Frame<'_>, area: Rect, state: &AgentCh
         .choices
         .iter()
         .enumerate()
-        .map(|(id, agent)| ListRow {
-            id,
-            label: ratatui::text::Line::from(agent_picker_label(*agent)),
-            trailing: None,
-            role: RowRole::Item,
-            enabled: true,
-        })
+        .map(|(id, agent)| ListRow::item(id, ratatui::text::Line::from(agent_picker_label(*agent))))
         .collect();
-    let theme = termrock::Theme::default();
+    let theme = termrock::style::DesignSystem::default();
     frame.render_stateful_widget(
         &List::new(&items, &theme),
         rows[0],

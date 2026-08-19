@@ -1,21 +1,22 @@
 ---
 source: crates/jackin-console/src/tui/view/tests.rs
+assertion_line: 1459
 expression: rendered
 ---
  jackin❯  · edit workspace · ws                                                           
                                                                                           
                                                                                           
  General   Mounts   Roles   Environments   Auth                                           
-                                          ━━━━━━                                          
+                                          ──────                                          
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
-│▸ Claude Code                                                                           │
-│  Codex                                                                                 │
-│  Amp                                                                                   │
-│  OpenCode                                                                              │
-│  Grok                                                                                  │
-│  GitHub CLI                                                                            │
-│  Z.AI                                                                                  │
-│  MiniMax                                                                               │
+│  ▸ Claude Code                                                                         │
+│    Codex                                                                               │
+│    Amp                                                                                 │
+│    OpenCode                                                                            │
+│    Grok                                                                                │
+│    GitHub CLI                                                                          │
+│    Z.AI                                                                                │
+│    MiniMax                                                                             │
 │                                                                                        │
 │                                                                                        │
 │                                                                                        │

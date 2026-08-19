@@ -27,7 +27,7 @@ pub fn cursor_span(selected: bool) -> Span<'static> {
     if selected {
         Span::styled(
             cursor_gutter(true),
-            termrock::Theme::default().style(termrock::style::Role::TextStrong),
+            termrock::style::DesignSystem::default().style(termrock::style::Role::TextStrong),
         )
     } else {
         Span::raw(cursor_gutter(false))
@@ -50,21 +50,21 @@ pub fn labeled_field_line(
     emphasis: FieldEmphasis,
 ) -> Line<'static> {
     let label_style = if selected {
-        termrock::Theme::default().style(termrock::style::Role::TextStrong)
+        termrock::style::DesignSystem::default().style(termrock::style::Role::TextStrong)
     } else {
-        Style::default().fg(termrock::Theme::default()
+        Style::default().fg(termrock::style::DesignSystem::default()
             .style(termrock::style::Role::Text)
             .fg
             .unwrap_or_default())
     };
     let value_style = match (selected, emphasis) {
         (true, FieldEmphasis::SelectedValue) => Style::default()
-            .fg(termrock::Theme::default()
+            .fg(termrock::style::DesignSystem::default()
                 .style(termrock::style::Role::Accent)
                 .fg
                 .unwrap_or_default())
             .add_modifier(Modifier::BOLD),
-        _ => Style::default().fg(termrock::Theme::default()
+        _ => Style::default().fg(termrock::style::DesignSystem::default()
             .style(termrock::style::Role::Accent)
             .fg
             .unwrap_or_default()),
@@ -180,7 +180,7 @@ pub fn auth_source_display_for_required_env(
 pub fn action_row_style(selected: bool) -> Style {
     if selected {
         Style::default()
-            .bg(termrock::Theme::default()
+            .bg(termrock::style::DesignSystem::default()
                 .style(termrock::style::Role::Accent)
                 .fg
                 .unwrap_or_default())
@@ -208,24 +208,17 @@ pub fn render_tab_strip(
     let tabs = labels
         .iter()
         .enumerate()
-        .map(|(id, (label, active))| termrock::widgets::Tab {
-            id,
-            label,
-            glyph: None,
-            active: *active,
-            enabled: true,
-        })
+        .map(|(id, (label, active))| termrock::widgets::Tab::new(id, label).active(*active))
         .collect::<Vec<_>>();
+    let mut tabs_state = termrock::widgets::TabsState::new();
+    tabs_state.selected = tabs.iter().find(|tab| tab.active).map(|tab| tab.id);
+    tabs_state.hovered = hovered;
+    tabs_state.focused = tab_bar_focused;
     frame.render_stateful_widget(
-        &termrock::widgets::Tabs::new(&tabs, &termrock::Theme::default())
+        &termrock::widgets::Tabs::new(&tabs, &termrock::style::DesignSystem::default())
             .gap(termrock::widgets::TAB_GAP),
         area,
-        &mut termrock::widgets::TabsState {
-            selected: tabs.iter().find(|tab| tab.active).map(|tab| tab.id),
-            hovered,
-            focused: tab_bar_focused,
-            regions: Vec::new(),
-        },
+        &mut tabs_state,
     );
 }
 
@@ -270,12 +263,13 @@ pub fn auth_line_width(row: &AuthLineRow) -> usize {
 }
 
 fn render_auth_line(selected: bool, row: &AuthLineRow) -> Line<'static> {
-    let bold_white = termrock::Theme::default().style(termrock::style::Role::TextStrong);
-    let dim_green = Style::default().fg(termrock::Theme::default()
+    let bold_white =
+        termrock::style::DesignSystem::default().style(termrock::style::Role::TextStrong);
+    let dim_green = Style::default().fg(termrock::style::DesignSystem::default()
         .style(termrock::style::Role::TextMuted)
         .fg
         .unwrap_or_default());
-    let phosphor = Style::default().fg(termrock::Theme::default()
+    let phosphor = Style::default().fg(termrock::style::DesignSystem::default()
         .style(termrock::style::Role::Accent)
         .fg
         .unwrap_or_default());
@@ -359,11 +353,11 @@ fn render_source_folder_line(
         Span::raw(prefix),
         Span::styled(
             format!("{label:<label_width$}"),
-            termrock::Theme::default().style(termrock::style::Role::TextStrong),
+            termrock::style::DesignSystem::default().style(termrock::style::Role::TextStrong),
         ),
         Span::styled(
             value,
-            Style::default().fg(termrock::Theme::default()
+            Style::default().fg(termrock::style::DesignSystem::default()
                 .style(termrock::style::Role::TextMuted)
                 .fg
                 .unwrap_or_default()),
@@ -419,7 +413,7 @@ fn render_auth_source_line(
         Span::raw(prefix),
         Span::styled(
             format!("{label:<label_width$}"),
-            termrock::Theme::default().style(termrock::style::Role::TextStrong),
+            termrock::style::DesignSystem::default().style(termrock::style::Role::TextStrong),
         ),
     ];
 
@@ -427,7 +421,7 @@ fn render_auth_source_line(
         AuthSourceDisplay::NotRequired => {
             spans.push(Span::styled(
                 "not required",
-                Style::default().fg(termrock::Theme::default()
+                Style::default().fg(termrock::style::DesignSystem::default()
                     .style(termrock::style::Role::TextMuted)
                     .fg
                     .unwrap_or_default()),
@@ -436,7 +430,7 @@ fn render_auth_source_line(
         AuthSourceDisplay::OpRefPath(path) => {
             spans.push(Span::styled(
                 "[op] ",
-                Style::default().fg(termrock::Theme::default()
+                Style::default().fg(termrock::style::DesignSystem::default()
                     .style(termrock::style::Role::TextMuted)
                     .fg
                     .unwrap_or_default()),
@@ -446,7 +440,7 @@ fn render_auth_source_line(
         AuthSourceDisplay::MaskedPlain { chars } => {
             spans.push(Span::styled(
                 "\u{25cf}".repeat((*chars).clamp(1, 12)),
-                Style::default().fg(termrock::Theme::default()
+                Style::default().fg(termrock::style::DesignSystem::default()
                     .style(termrock::style::Role::TextMuted)
                     .fg
                     .unwrap_or_default()),
@@ -458,7 +452,7 @@ fn render_auth_source_line(
         } => {
             spans.push(Span::styled(
                 format!("unset  ({env_name} for {mode_label})"),
-                Style::default().fg(termrock::Theme::default()
+                Style::default().fg(termrock::style::DesignSystem::default()
                     .style(termrock::style::Role::Danger)
                     .fg
                     .unwrap_or_default()),
@@ -518,7 +512,7 @@ pub fn secret_env_lines<'a, S>(
                     spans.push(Span::styled(
                         "  (not in registry)",
                         Style::default()
-                            .fg(termrock::Theme::default()
+                            .fg(termrock::style::DesignSystem::default()
                                 .style(termrock::style::Role::TextMuted)
                                 .fg
                                 .unwrap_or_default())
@@ -559,14 +553,14 @@ pub fn render_secret_key_line(
     const OP_REF_REPICK_PLACEHOLDER: &str = "<unparseable path \u{2014} re-pick>";
 
     let label_style = if selected {
-        termrock::Theme::default().style(termrock::style::Role::TextStrong)
+        termrock::style::DesignSystem::default().style(termrock::style::Role::TextStrong)
     } else {
-        Style::default().fg(termrock::Theme::default()
+        Style::default().fg(termrock::style::DesignSystem::default()
             .style(termrock::style::Role::Text)
             .fg
             .unwrap_or_default())
     };
-    let dim = termrock::Theme::default().style(termrock::style::Role::TextMuted);
+    let dim = termrock::style::DesignSystem::default().style(termrock::style::Role::TextMuted);
     let op_breadcrumb = match value {
         SecretValueDisplay::OpRefPath(path) => {
             crate::tui::op_breadcrumb::parse_path_breadcrumb(path)
@@ -598,16 +592,16 @@ pub fn render_secret_key_line(
     };
 
     let value_style = if masked {
-        termrock::Theme::default().style(termrock::style::Role::TextMuted)
+        termrock::style::DesignSystem::default().style(termrock::style::Role::TextMuted)
     } else if selected {
         Style::default()
-            .fg(termrock::Theme::default()
+            .fg(termrock::style::DesignSystem::default()
                 .style(termrock::style::Role::Accent)
                 .fg
                 .unwrap_or_default())
             .add_modifier(Modifier::BOLD)
     } else {
-        termrock::Theme::default().style(termrock::style::Role::Accent)
+        termrock::style::DesignSystem::default().style(termrock::style::Role::Accent)
     };
 
     let rendered_value: String = if masked {

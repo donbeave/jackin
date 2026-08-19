@@ -66,7 +66,7 @@ pub fn build_log_wrapped_lines(raw: &[String], width: usize) -> Vec<Line<'static
     if raw.is_empty() {
         vec![Line::from(Span::styled(
             "(waiting for docker build output…)",
-            termrock::Theme::default().style(termrock::style::Role::TextMuted),
+            termrock::style::DesignSystem::default().style(termrock::style::Role::TextMuted),
         ))]
     } else {
         wrap_build_log_lines(raw, width)
@@ -223,7 +223,7 @@ pub fn render_build_log_dialog(
     let mut scroll = termrock::scroll::DialogScroll::default();
     scroll.scroll_y = u16::try_from(view.build_log_scroll.to_top_offset(lines_len, viewport_h))
         .unwrap_or(u16::MAX);
-    let theme = termrock::Theme::default();
+    let theme = termrock::style::DesignSystem::default();
     // Revision tracks wrap width + line count so TermRock reuses measurement
     // across cursor-only repaints while still invalidating on wrap changes.
     let content_revision = (view.build_log_wrapped_width as u64)
@@ -231,7 +231,7 @@ pub fn render_build_log_dialog(
         .wrapping_add(lines_len as u64);
     let viewport = termrock::widgets::Viewport::new(&lines, &theme)
         .title(title)
-        .emphasis(termrock::widgets::PanelEmphasis::Focused)
+        .emphasis(termrock::widgets::PanelChrome::Focused)
         .content_style(theme.style(termrock::style::Role::Accent))
         .content_revision(content_revision);
     frame.render_stateful_widget(&viewport, box_area, &mut scroll);
@@ -328,7 +328,7 @@ fn push_wrapped_build_line(
             0,
             Span::styled(
                 BUILD_LOG_WRAP_PREFIX,
-                termrock::Theme::default()
+                termrock::style::DesignSystem::default()
                     .style(termrock::style::Role::TextMuted)
                     .bg(Color::Reset),
             ),

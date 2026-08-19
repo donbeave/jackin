@@ -13,7 +13,7 @@ use ratatui::{
 
 use super::git_prompt::render_git_prompt;
 use super::state::FileBrowserState;
-use termrock::widgets::{List, ListRow, ListState, Panel, PanelEmphasis, RowRole};
+use termrock::widgets::{List, ListRow, ListState, Panel, PanelChrome};
 
 /// Vertical-layout constraints used by `render` and by the geometry-only
 /// helpers consumed by the mouse-click hit-tester. Keep these in sync.
@@ -62,7 +62,7 @@ pub fn render(frame: &mut Frame<'_>, area: Rect, state: &FileBrowserState) {
         frame.render_widget(
             Paragraph::new(Span::styled(
                 format!("\u{2717} {reason}"),
-                termrock::Theme::default().style(termrock::style::Role::Danger),
+                termrock::style::DesignSystem::default().style(termrock::style::Role::Danger),
             ))
             .alignment(Alignment::Center),
             chunks[0],
@@ -86,19 +86,27 @@ fn render_listing(frame: &mut Frame<'_>, area: Rect, state: &FileBrowserState) {
         " {} ",
         jackin_core::shorten_home(&state.cwd.display().to_string())
     );
-    // File browser is normally the active modal (termrock::Theme::default().style(termrock::style::Role::Accent).fg.unwrap_or_default() border). When a
+    // File browser is normally the active modal (termrock::style::DesignSystem::default().style(termrock::style::Role::Accent).fg.unwrap_or_default() border). When a
     // child dialog (Git repo prompt) is stacked on top, the file browser becomes
     // a background modal and must use the inactive border so exactly one bright
     // border is visible (Defect 9 — one-bright-border rule).
-    let theme = termrock::Theme::default();
+    let theme = termrock::style::DesignSystem::default();
     let panel = Panel::new(&theme)
         .title(&title)
         .emphasis(if state.pending_git_prompt.is_some() {
-            PanelEmphasis::Normal
+            PanelChrome::Normal
         } else {
-            PanelEmphasis::Focused
+            PanelChrome::Focused
         });
-    let inner = panel.inner(area);
+    // Border-only inner: the browser's list owns its own gutter/padding
+    // vocabulary, so it keeps the old pin's geometry (content flush inside
+    // the border) instead of the `Panel::inner` density padding.
+    let inner = Rect {
+        x: area.x.saturating_add(1),
+        y: area.y.saturating_add(1),
+        width: area.width.saturating_sub(2),
+        height: area.height.saturating_sub(2),
+    };
     frame.render_widget(&panel, area);
 
     let selected = state
@@ -106,12 +114,12 @@ fn render_listing(frame: &mut Frame<'_>, area: Rect, state: &FileBrowserState) {
         .is_none()
         .then_some(state.list_state.selected().copied())
         .flatten();
-    let base_style = Style::default().fg(termrock::Theme::default()
+    let base_style = Style::default().fg(termrock::style::DesignSystem::default()
         .style(termrock::style::Role::Text)
         .fg
         .unwrap_or_default());
     let git_suffix_style = Style::default()
-        .fg(termrock::Theme::default()
+        .fg(termrock::style::DesignSystem::default()
             .style(termrock::style::Role::Accent)
             .fg
             .unwrap_or_default())
@@ -135,13 +143,7 @@ fn render_listing(frame: &mut Frame<'_>, area: Rect, state: &FileBrowserState) {
             } else {
                 Line::from(Span::styled(name_slash, base_style))
             };
-            ListRow {
-                id,
-                label: line,
-                trailing: None,
-                role: RowRole::Item,
-                enabled: true,
-            }
+            ListRow::item(id, line)
         })
         .collect();
     let mut list_state = ListState::new(selected);

@@ -118,16 +118,16 @@ use ratatui::{
 };
 
 use termrock::layout::render_dialog_shell;
-use termrock::widgets::PanelEmphasis;
-use termrock::widgets::{List, ListRow, RowRole, TextInput, TextInputState, Validation};
+use termrock::widgets::PanelChrome;
+use termrock::widgets::{List, ListRow, TextInput, TextInputState, Validation};
 
 pub fn render<R: RoleChoice>(frame: &mut Frame<'_>, area: Rect, state: &RolePickerState<R>) {
     let inner = render_dialog_shell(
         frame,
         area,
         Some("Select Role"),
-        PanelEmphasis::Focused,
-        &termrock::Theme::default(),
+        PanelChrome::Focused,
+        &termrock::style::DesignSystem::default(),
     );
 
     let rows = Layout::default()
@@ -139,11 +139,14 @@ pub fn render<R: RoleChoice>(frame: &mut Frame<'_>, area: Rect, state: &RolePick
         ])
         .split(inner);
 
-    let theme = termrock::Theme::default();
+    let theme = termrock::style::DesignSystem::default();
     let mut filter = TextInputState::new(&state.filter).with_allow_empty(true);
+    // Head's TextInput always reserves a 1-col prompt cell at its left edge;
+    // the label column gives the input one column back so that prompt cell
+    // supplies the space after "Filter:".
     let filter_columns = Layout::default()
         .direction(Direction::Horizontal)
-        .constraints([Constraint::Length(8), Constraint::Min(1)])
+        .constraints([Constraint::Length(7), Constraint::Min(1)])
         .split(rows[0]);
     frame.render_widget(
         ratatui::widgets::Paragraph::new("Filter: "),
@@ -164,7 +167,7 @@ pub fn render<R: RoleChoice>(frame: &mut Frame<'_>, area: Rect, state: &RolePick
         frame.render_widget(
             ratatui::widgets::Paragraph::new(Line::from(Span::styled(
                 "no matches",
-                termrock::Theme::default().style(termrock::style::Role::TextMuted),
+                termrock::style::DesignSystem::default().style(termrock::style::Role::TextMuted),
             )))
             .alignment(ratatui::layout::Alignment::Center),
             rows[2],
@@ -175,18 +178,17 @@ pub fn render<R: RoleChoice>(frame: &mut Frame<'_>, area: Rect, state: &RolePick
         .filtered
         .iter()
         .enumerate()
-        .map(|(id, role)| ListRow {
-            id,
-            label: Line::from(vec![Span::styled(
-                role.key(),
-                Style::default().fg(termrock::Theme::default()
-                    .style(termrock::style::Role::Text)
-                    .fg
-                    .unwrap_or_default()),
-            )]),
-            trailing: None,
-            role: RowRole::Item,
-            enabled: true,
+        .map(|(id, role)| {
+            ListRow::item(
+                id,
+                Line::from(vec![Span::styled(
+                    role.key(),
+                    Style::default().fg(termrock::style::DesignSystem::default()
+                        .style(termrock::style::Role::Text)
+                        .fg
+                        .unwrap_or_default()),
+                )]),
+            )
         })
         .collect();
     frame.render_stateful_widget(

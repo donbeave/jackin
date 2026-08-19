@@ -262,7 +262,7 @@ impl OpPickerState {
 }
 
 #[must_use]
-pub(crate) const fn list_state_for_count(count: usize) -> ListState<usize> {
+pub(crate) fn list_state_for_count(count: usize) -> ListState<usize> {
     ListState::for_count(count)
 }
 

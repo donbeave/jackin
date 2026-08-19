@@ -111,7 +111,7 @@ pub fn render_launch_container_info(
         frame,
         chrome.hint,
         &hint_spans,
-        &termrock::Theme::default(),
+        &termrock::style::DesignSystem::default(),
     );
     if debug_mode {
         frame.render_widget(Clear, chrome.spacer);

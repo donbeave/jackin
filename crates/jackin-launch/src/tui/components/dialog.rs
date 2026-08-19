@@ -22,6 +22,7 @@ pub fn exact_dialog_rect(area: Rect, width: u16, height: u16) -> Rect {
         termrock::layout::DialogSpec {
             min_width: width,
             preferred_width: width,
+            preferred_reference_pct: None,
             max_width: width,
             min_height: height,
             preferred_height: height,

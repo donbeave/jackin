@@ -8,7 +8,7 @@
 //! call shape used across workspace/settings/editor tabs.
 //!
 //! `focused` means **interaction ownership** (green border via
-//! [`PanelEmphasis::Focused`]). Callers that implement the passive-scroll
+//! [`PanelChrome::Focused`]). Callers that implement the passive-scroll
 //! focusability rule must clear their focus state when content fits, before
 //! calling this helper.
 //!
@@ -18,9 +18,9 @@
 
 use ratatui::{Frame, layout::Rect, text::Line};
 use termrock::{
-    Theme,
     scroll::DialogScroll,
-    widgets::{PanelEmphasis, Viewport},
+    style::DesignSystem,
+    widgets::{PanelChrome, Viewport},
 };
 
 /// Render a bordered scrollable block using `TermRock` `Viewport`.
@@ -33,16 +33,20 @@ pub fn render_scrollable_block_at(
     focused: bool,
     title: Option<&str>,
 ) {
-    let theme = Theme::default();
+    let theme = DesignSystem::default();
     let mut scroll = DialogScroll::default();
     scroll.scroll_x = scroll_x;
     scroll.scroll_y = scroll_y;
     let emphasis = if focused {
-        PanelEmphasis::Focused
+        PanelChrome::Focused
     } else {
-        PanelEmphasis::Normal
+        PanelChrome::Normal
     };
-    let mut viewport = Viewport::new(&lines, &theme).emphasis(emphasis);
+    let mut viewport = Viewport::new(&lines, &theme)
+        .emphasis(emphasis)
+        // Bordered subpanels keep the Panel body column: content insets by
+        // the density pad on X while rows stay flush with the border on Y.
+        .padded_content();
     if let Some(title) = title {
         viewport = viewport.title(title);
     }

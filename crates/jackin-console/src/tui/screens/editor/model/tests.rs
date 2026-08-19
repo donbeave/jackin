@@ -8,11 +8,12 @@ use jackin_config::{
 
 use super::{
     AuthEnterPlan, AuthRow, EditorAuthActionKeyPlan, EditorEnterKeyPlan, EditorEscapeKeyPlan,
-    EditorFieldSelectionKeyPlan, EditorHorizontalScrollKeyPlan, EditorImmediateActionKeyPlan,
-    EditorMode, EditorMountActionKeyPlan, EditorMountGithubOpenPlan, EditorNavigationKeyPlan,
-    EditorRoleActionKeyPlan, EditorRoleHeaderExpansionKeyPlan, EditorSaveKeyPlan,
-    EditorSaveModePlan, EditorSecretsActionKeyPlan, EditorState, EditorStatusPopupModal, EditorTab,
-    EditorTabActionKeyPlan, FieldFocus, RoleHeaderExpansionPlan, SecretsRow, editor_save_mode_plan,
+    EditorFieldSelectionKeyPlan, EditorFocusTarget, EditorHorizontalScrollKeyPlan,
+    EditorImmediateActionKeyPlan, EditorMode, EditorMountActionKeyPlan, EditorMountGithubOpenPlan,
+    EditorNavigationKeyPlan, EditorRoleActionKeyPlan, EditorRoleHeaderExpansionKeyPlan,
+    EditorSaveKeyPlan, EditorSaveModePlan, EditorSecretsActionKeyPlan, EditorState,
+    EditorStatusPopupModal, EditorTab, EditorTabActionKeyPlan, FieldFocus, RoleHeaderExpansionPlan,
+    SecretsRow, editor_save_mode_plan,
 };
 
 type TestEditor = EditorState<(), (), (), jackin_config::EnvValue, (), (), (), (), (), ()>;
@@ -1838,4 +1839,62 @@ fn editor_toggle_default_role_at_cursor_only_sets_allowed_role() {
     editor.pending.default_role = None;
     editor.toggle_default_role_at_cursor(&role_names);
     assert_eq!(editor.pending.default_role, None);
+}
+
+#[test]
+fn trparity_editor_focus_owner_survives_modal_cancel() {
+    use jackin_tui::runtime::SurfaceFocusTarget;
+
+    let mut editor =
+        TestEditorWithStatusModal::new_edit("alpha".into(), WorkspaceConfig::default());
+    editor.set_focus_owner(SurfaceFocusTarget::Content(
+        EditorFocusTarget::WorkspaceMounts,
+    ));
+    editor.open_sub_modal(TestStatusModal::Other);
+
+    assert_eq!(
+        editor.focus_owner(),
+        SurfaceFocusTarget::Content(EditorFocusTarget::WorkspaceMounts)
+    );
+
+    editor.dismiss_active_modal();
+
+    assert!(editor.modal.is_none());
+    assert_eq!(
+        editor.focus_owner(),
+        SurfaceFocusTarget::Content(EditorFocusTarget::WorkspaceMounts)
+    );
+}
+
+#[test]
+fn trparity_editor_focus_owner_survives_modal_commit() {
+    use jackin_tui::runtime::SurfaceFocusTarget;
+
+    let mut editor =
+        TestEditorWithStatusModal::new_edit("alpha".into(), WorkspaceConfig::default());
+    editor.set_focus_owner(SurfaceFocusTarget::Content(
+        EditorFocusTarget::WorkspaceMounts,
+    ));
+    editor.open_sub_modal(TestStatusModal::Status);
+    editor.open_sub_modal(TestStatusModal::Other);
+
+    // Commit path: clear the whole chain.
+    editor.clear_modal_chain();
+    assert!(editor.modal.is_none());
+    assert!(!editor.has_modal_parent());
+    assert_eq!(
+        editor.focus_owner(),
+        SurfaceFocusTarget::Content(EditorFocusTarget::WorkspaceMounts)
+    );
+
+    // Pop path from a two-level chain restores the parent modal, focus unchanged.
+    editor.open_sub_modal(TestStatusModal::Status);
+    editor.open_sub_modal(TestStatusModal::Other);
+    editor.pop_modal_chain();
+    assert!(matches!(editor.modal, Some(TestStatusModal::Status)));
+    assert!(!editor.has_modal_parent());
+    assert_eq!(
+        editor.focus_owner(),
+        SurfaceFocusTarget::Content(EditorFocusTarget::WorkspaceMounts)
+    );
 }

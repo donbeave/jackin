@@ -24,7 +24,7 @@ impl Dialog {
             jackin_protocol::control::UsageSeverity::Normal => None,
             jackin_protocol::control::UsageSeverity::Warn => Some(jackin_tui::tokens::DEBUG_AMBER),
             jackin_protocol::control::UsageSeverity::Danger => Some(
-                termrock::Theme::default()
+                termrock::style::DesignSystem::default()
                     .style(termrock::style::Role::Danger)
                     .fg
                     .unwrap_or_default(),

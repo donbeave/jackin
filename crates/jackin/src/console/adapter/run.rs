@@ -387,7 +387,7 @@ where
                     frame,
                     hint_row,
                     &jackin_console::tui::components::confirm_hint_spans(),
-                    &termrock::Theme::default(),
+                    &termrock::style::DesignSystem::default(),
                 );
             }
             context.mouse_state.chrome_regions.clear();
@@ -397,45 +397,47 @@ where
                 let invocation_id = debug_invocation_id_label(invocation_id.as_deref());
                 let chip_row = debug_chip_row(bar_area);
                 let content = format!(" {invocation_id} ");
-                let slots = [termrock::widgets::StatusSlot {
-                    id: ConsoleChromeHover::DebugChip,
-                    content: &content,
-                    priority: 1,
-                    min_width: 0,
-                    enabled: true,
-                    style: ratatui::style::Style::default()
-                        .bg(termrock::Theme::default()
-                            .style(termrock::style::Role::Danger)
-                            .fg
-                            .unwrap_or_default())
-                        .fg(termrock::Theme::default()
-                            .style(termrock::style::Role::Text)
-                            .fg
-                            .unwrap_or_default())
-                        .add_modifier(ratatui::style::Modifier::BOLD),
-                    hover_style: Some(
-                        ratatui::style::Style::default()
-                            .bg(termrock::Theme::default()
-                                .style(termrock::style::Role::Text)
-                                .fg
-                                .unwrap_or_default())
-                            .fg(termrock::Theme::default()
-                                .style(termrock::style::Role::Danger)
-                                .fg
-                                .unwrap_or_default())
-                            .add_modifier(ratatui::style::Modifier::BOLD),
-                    ),
-                }];
-                let mut status_state = termrock::widgets::StatusBarState {
-                    hovered: (context.mouse_state.chrome_hover
-                        == Some(ConsoleChromeHover::DebugChip))
-                    .then_some(ConsoleChromeHover::DebugChip),
-                    regions: Vec::new(),
-                };
-                let theme = termrock::Theme::default().with_role(
+                let slots =
+                    [
+                        termrock::widgets::StatusSlot::new(ConsoleChromeHover::DebugChip, &content)
+                            .priority(1)
+                            .min_width(0)
+                            .enabled(true)
+                            .style(
+                                ratatui::style::Style::default()
+                                    .bg(termrock::style::DesignSystem::default()
+                                        .style(termrock::style::Role::Danger)
+                                        .fg
+                                        .unwrap_or_default())
+                                    .fg(termrock::style::DesignSystem::default()
+                                        .style(termrock::style::Role::Text)
+                                        .fg
+                                        .unwrap_or_default())
+                                    .add_modifier(ratatui::style::Modifier::BOLD),
+                            )
+                            .hover_style(
+                                ratatui::style::Style::default()
+                                    .bg(termrock::style::DesignSystem::default()
+                                        .style(termrock::style::Role::Text)
+                                        .fg
+                                        .unwrap_or_default())
+                                    .fg(termrock::style::DesignSystem::default()
+                                        .style(termrock::style::Role::Danger)
+                                        .fg
+                                        .unwrap_or_default())
+                                    .add_modifier(ratatui::style::Modifier::BOLD),
+                            ),
+                    ];
+                // Head made the state's region storage private; hovered
+                // stays public.
+                let mut status_state = termrock::widgets::StatusBarState::new();
+                status_state.hovered = (context.mouse_state.chrome_hover
+                    == Some(ConsoleChromeHover::DebugChip))
+                .then_some(ConsoleChromeHover::DebugChip);
+                let theme = termrock::style::DesignSystem::default().with_role(
                     termrock::style::Role::StatusBar,
                     ratatui::style::Style::default()
-                        .bg(termrock::Theme::default()
+                        .bg(termrock::style::DesignSystem::default()
                             .style(termrock::style::Role::Text)
                             .fg
                             .unwrap_or_default())

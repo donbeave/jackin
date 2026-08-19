@@ -497,10 +497,10 @@ mode = "enforce"
 cap = 0
 [[family.entry]]
 key = "AGENTS.md"
-bound = 7278
+bound = 7364
 [[family.entry]]
 key = "CLAUDE.md"
-bound = 7278
+bound = 7364
 [[family.entry]]
 key = "crates/AGENTS.md"
 bound = 14740
@@ -554,7 +554,7 @@ key = "crates/jackin-isolation/README.md"
 bound = 2171
 [[family.entry]]
 key = "crates/jackin-launch/README.md"
-bound = 1892
+bound = 1937
 [[family.entry]]
 key = "crates/jackin-lints/README.md"
 bound = 2038
@@ -587,7 +587,7 @@ key = "crates/jackin-test-support/README.md"
 bound = 2633
 [[family.entry]]
 key = "crates/jackin-tui/README.md"
-bound = 1812
+bound = 1826
 [[family.entry]]
 key = "crates/jackin-usage/README.md"
 bound = 6547
