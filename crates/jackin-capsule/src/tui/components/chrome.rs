@@ -141,7 +141,9 @@ impl Widget for StatusBarWidget<'_> {
             }
         }
 
-        // Row 0: brand pill — green block, black word, white chevron.
+        // Row 0: brand pill — green block, black word, white chevron. The
+        // chevron pins the brand constant: head recolored the Role::Text it
+        // used to read, and the brand look is an invariant across the bump.
         let pill = Style::default()
             .bg(jackin_tui::tokens::BRAND_BLOCK)
             .add_modifier(Modifier::BOLD);
@@ -150,10 +152,7 @@ impl Widget for StatusBarWidget<'_> {
             area.x.saturating_add(7),
             area.y,
             "❯",
-            pill.fg(DesignSystem::default()
-                .style(termrock::style::Role::Text)
-                .fg
-                .unwrap_or_default()),
+            pill.fg(jackin_tui::tokens::BRAND_CHEVRON),
         );
         buf.set_string(area.x.saturating_add(8), area.y, " ", pill);
 
