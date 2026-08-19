@@ -1,16 +1,16 @@
 ---
 source: crates/jackin-console/src/tui/view/tests.rs
-assertion_line: 977
+assertion_line: 796
 expression: rendered
 ---
  jackin❯  · settings                                                                      
                                                                                           
                                                                                           
  General   Mounts   Environments   Auth   Trust                                           
-━━━━━━━━━                                                                                 
+─────────                                                                                 
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
-│  Co-author trailer         disabled                                                    │
-│  DCO sign-off              disabled                                                    │
+│    Co-author trailer         disabled                                                  │
+│    DCO sign-off              disabled                                                  │
 │                                                                                        │
 │                                                                                        │
 │                                                                                        │
