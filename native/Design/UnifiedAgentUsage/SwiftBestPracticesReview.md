@@ -269,6 +269,39 @@ Required tests: accepted 26.1/27 guarded fixtures, rejected unguarded symbol
 registry entry, rejected pre-26 compatibility branch, rejected trapping fallback,
 and rejected compatibility key.
 
+### SWIFT-13 — behavior-driving bridge strings are not exhaustively typed
+
+Evidence:
+
+- `BucketRow.severity`, `percentStyle`, and `resetStyle` are raw strings
+  (`PresentationStore.swift:97,412-429`). The format values are persisted before
+  the bridge accepts them and can contain values outside the Rust contract.
+- `severityTint(_:)` treats every unknown severity as the normal phosphor color
+  (`PresentationHelpers.swift:9-14`). A newly added or malformed critical state
+  therefore degrades silently instead of failing closed.
+- The current review requires typed failures and settings rollback, but does not
+  close the broader class of behavior-driving string contracts at the Swift/Rust
+  boundary.
+
+Implementation:
+
+1. Define small handwritten semantic enums for every behavior-driving bridge
+   value consumed by Swift, beginning with severity, percent style, and reset
+   style. Keep Rust wire values explicit in one exhaustive boundary mapper.
+2. Keep the generated DTO strings inside the generated target and typed facade.
+   SwiftUI/AppKit feature state must never switch on raw bridge strings.
+3. Treat an unknown value as a typed schema/projection failure with last-good
+   state preserved and a resync/update recovery. Never render it as a normal or
+   healthy state.
+4. Give display-only Rust-owned strings a distinct wrapper or naming convention
+   so static source-graph tests can distinguish verbatim copy from semantic input.
+5. Use the typed format values with the accepted-projection persistence and
+   rollback contract in SWIFT-02; do not create a second preference authority.
+
+Required tests: exhaustive known-value mapping, unknown severity failure,
+unknown format-value rollback, last-good preservation, and a source-graph test
+that rejects raw string switching or comparison outside the typed facade.
+
 ## P1 findings
 
 ### SWIFT-07 — observation is app-wide and derived work runs during `body`
@@ -490,6 +523,34 @@ Acceptance: all Swift-owned user-facing and accessibility copy resolves from the
 catalog in production; Rust-owned usage strings remain byte-identical across CLI,
 TUI, Capsule, FFI, and desktop fixtures.
 
+### SWIFT-14 — Settings uses a rigid frame instead of adaptive native sizing
+
+Evidence: `SettingsView` forces a 420 × 640 frame
+(`SettingsView.swift:134`). This makes the form insensitive to 2× text expansion,
+long localization, right-to-left layout, display scaling, and future system
+control metrics. The localization finding asks for long-string captures but does
+not define a sizing remediation or no-clipping criterion.
+
+Implementation:
+
+1. Remove the fixed width and height. Give the Settings scene a tested minimum
+   size plus content-driven ideal size, and let the native window remain user
+   resizable where the scene API supports it.
+2. Put only the form content that can legitimately exceed the available height
+   in a system scroll container; do not scale, truncate, or compress labels to
+   preserve the old dimensions.
+3. Persist window geometry through the scene/window system, clamp restored
+   geometry to the current display, and do not let geometry become business or
+   bridge state.
+4. Verify standard and 2× expanded text, pseudo-localized, German, CJK,
+   right-to-left, and supported display-scaling layouts at minimum and ideal
+   sizes. All labels, recovery text, values, toggles, and focus rings must remain
+   visible or reachable by scrolling.
+
+Acceptance: no fixed two-axis Settings frame remains; the window opens at a
+native useful ideal size, honors its tested minimum, restores valid geometry,
+and has zero clipped or unreachable content across the required layout matrix.
+
 ## Existing strengths to preserve
 
 - Rust owns provider detection, account deduplication, quota semantics, refresh
@@ -530,6 +591,8 @@ The Swift remediation is complete only when all hold:
   gesture after all synchronous bridge work drains.
 - Exactly one facade owns generated FFI; source-graph tests reject bypasses.
 - Operational errors stay typed through presentation and expose exact recovery.
+- Every behavior-driving bridge value is exhaustively typed; unknown values fail
+  closed while preserving last-good state.
 - No Rust-owned preference persists before acceptance.
 - Feature-scoped observable state replaces app-wide invalidation.
 - No sorting, filtering, tree construction, array allocation, formatter work, or
@@ -539,6 +602,7 @@ The Swift remediation is complete only when all hold:
 - Accessibility exceptions are fingerprinted, versioned, and fail closed.
 - Swift-owned chrome, recovery, and accessibility copy resolves from the String
   Catalog while Rust-owned usage strings remain unchanged.
+- Settings uses adaptive native sizing and passes the no-clipping layout matrix.
 - Failure-path, cancellation, ordering, duplicate-identity, settings-revert,
   focus, UI, and accessibility tests pass.
 - Final running-app visual QA has no hard failure.
