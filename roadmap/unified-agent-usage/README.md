@@ -34,6 +34,7 @@ Finalize one agent usage experience across jackin❯ desktop, `jackin console`, 
 - 2026-08-20 — **Bare `jackin usage` renders every usable row with explicit partial-provider stale or error state and exits successfully; it exits nonzero only for an invalid invocation or when no usable projection can be produced.** Its JSON envelope preserves structured partial failures, because partial degradation is usable output rather than total command failure.
 - 2026-08-20 — **jackin❯ desktop retains Rust-ranked provider-focused status items with icon-only, worst-provider, pinned-provider, and bounded-strip modes.** Clicking an item focuses that provider and its selected canonical account, while the Usage window remains the all-provider overview, because glanceable urgency and complete exploration serve different operator moments.
 - 2026-08-20 — **jackin❯ desktop preserves its native popover, retained two-pane Usage window, and Settings information architecture unless prototype evidence proves a specific structural defect.** Because the existing structure is native and coherent, while design work should target evidenced usability and craft gaps instead of decorative replacement.
+- 2026-08-20 — **Finalizing jackin❯ desktop includes Developer ID signing, notarization, a public artifact, and Homebrew cask installation proof.** Because the native application is not complete until its release path satisfies the platform trust boundary and an operator can install the shipped artifact.
 
 ## Capabilities
 
@@ -41,6 +42,7 @@ Finalize one agent usage experience across jackin❯ desktop, `jackin console`, 
 - Preserve explicit Capsule-instance account inspection and verification while eliminating host-side cache and refresh bypasses.
 - Make agent usage available inside `jackin console`.
 - Show subscription and quota usage limits only, including remaining or used percentage, reset countdowns, plan and status, and provider-supplied limit windows such as money caps when they are quota bounds, as required by [`AGENTS.md`](../../AGENTS.md).
+- Ship jackin❯ desktop with Developer ID signing, notarization, a public artifact, and verified Homebrew cask installation.
 
 ## Screens
 
@@ -123,6 +125,7 @@ Finalize one agent usage experience across jackin❯ desktop, `jackin console`, 
 - The desktop app uses system-owned native components and Liquid Glass, answers “Where am I?”, “What can I do?”, and “Where can I go from here?” in every state, passes the macOS design rubric with zero hard failures, and has running-app visual evidence plus accessibility audits across required appearance and Reduce-settings states.
 - Concurrent usage reads and refreshes for one canonical account reuse shared cached data and join one in-flight refresh generation instead of issuing parallel duplicate provider requests; every usage surface must be verified against this invariant and any bypass fixed before shipping.
 - CLI, console, Capsule, and desktop fixtures prove identical Rust-owned labels and values for the same projection, with only surface-appropriate layout differences.
+- Release evidence proves Developer ID signing, notarization, public artifact publication, and installation through the Homebrew cask.
 
 ## Open questions
 
@@ -139,7 +142,7 @@ Finalize one agent usage experience across jackin❯ desktop, `jackin console`, 
 - ~~How should bare `jackin usage` exit when some providers are stale or failed but last-good rows remain usable?~~ **Resolved 2026-08-20**: render usable rows with provider state and exit zero; use nonzero only for invalid invocation or no usable projection; preserve structured partial failures in JSON.
 - ~~Should the jackin❯ desktop menu bar use one aggregate status item or retain provider-focused status items, and which account/window should each glance prioritize?~~ **Resolved 2026-08-20**: retain Rust-ranked provider-focused status items and existing display modes; focus the clicked provider and selected canonical account; keep the Usage window as all-provider overview.
 - ~~Should jackin❯ desktop retain its current native popover, two-pane Usage window, and Settings information architecture while design work focuses on evidence-led refinement, or permit a structural replacement?~~ **Resolved 2026-08-20**: preserve the current native structure unless prototype evidence proves a specific structural defect; avoid decorative replacement.
-- Does “finalize jackin❯ desktop” include the first Developer ID signing, notarization, public artifact, and Homebrew cask proof? **Recommendation**: include them, because the existing desktop roadmap identifies them as the remaining release boundary.
+- ~~Does “finalize jackin❯ desktop” include the first Developer ID signing, notarization, public artifact, and Homebrew cask proof?~~ **Resolved 2026-08-20**: include Developer ID signing, notarization, public artifact publication, and Homebrew cask installation proof.
 
 ## Open research questions
 
