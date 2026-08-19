@@ -141,9 +141,12 @@ pub fn render<R: RoleChoice>(frame: &mut Frame<'_>, area: Rect, state: &RolePick
 
     let theme = termrock::style::DesignSystem::default();
     let mut filter = TextInputState::new(&state.filter).with_allow_empty(true);
+    // Head's TextInput always reserves a 1-col prompt cell at its left edge;
+    // the label column gives the input one column back so that prompt cell
+    // supplies the space after "Filter:".
     let filter_columns = Layout::default()
         .direction(Direction::Horizontal)
-        .constraints([Constraint::Length(8), Constraint::Min(1)])
+        .constraints([Constraint::Length(7), Constraint::Min(1)])
         .split(rows[0]);
     frame.render_widget(
         ratatui::widgets::Paragraph::new("Filter: "),
