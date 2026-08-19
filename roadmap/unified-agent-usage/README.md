@@ -29,6 +29,7 @@ Finalize one agent usage experience across jackin❯ desktop, `jackin console`, 
 - 2026-08-20 — **When a Capsule receives multiple launch-forwarded accounts for one allowed agent, its quota preview shows every deduplicated canonical account and supports account detail or selection.** Because collapsing to a surface-only request is ambiguous and hiding accounts would make the preview incomplete.
 - 2026-08-20 — **The Capsule quota preview orders rows by allowed agent then canonical account and distinguishes `Not started`, loading, available limits, no-capability, stale last-good, and recoverable error states.** Its single refresh action joins active broker work, and selection survives the transition to an initialized session, because lifecycle and data freshness are independent and should not disrupt operator context.
 - 2026-08-20 — **Quota data is informational and never authorizes or blocks Capsule agent launch or session actions, including when limits are exhausted, unknown, stale, or failed.** Because usage observation and launch policy are separate responsibilities, while explicit state remains sufficient for informed operator choice.
+- 2026-08-20 — **Every usage surface consumes Rust-owned remaining/used conventions, rounding, countdowns, stale markers, missing-plan fallbacks, and money-cap units verbatim, adapting layout only.** Because presentation code must not infer or reinterpret quota meaning and create cross-surface disagreement.
 
 ## Capabilities
 
@@ -82,6 +83,7 @@ Finalize one agent usage experience across jackin❯ desktop, `jackin console`, 
 - The host projection covers all eight usage surfaces. The separate jackin❯ desktop projection remains limited to its fixed seven-provider catalog.
 - Rust owns desktop discovery, account identity, deduplication, broker coordination, quota shaping, and immutable projections; the UniFFI boundary exports sanitized display data, and Swift remains display-only.
 - Current read-only configuration discovery owns host inventory membership; history may enrich but never create membership.
+- Rust owns all quota labels and formatting semantics; CLI, TUI, Capsule, FFI, and Swift adapt only layout and never infer usage meaning.
 
 ## References
 
@@ -113,6 +115,7 @@ Finalize one agent usage experience across jackin❯ desktop, `jackin console`, 
 - The console TUI satisfies the repository's TUI decisions for non-blocking rendering, visible loading/refresh state, keyboard navigation, footer hints, focus and scroll behavior, modal geometry, and shared component reuse, with render-conformance fixtures for its major states.
 - The desktop app uses system-owned native components and Liquid Glass, answers “Where am I?”, “What can I do?”, and “Where can I go from here?” in every state, passes the macOS design rubric with zero hard failures, and has running-app visual evidence plus accessibility audits across required appearance and Reduce-settings states.
 - Concurrent usage reads and refreshes for one canonical account reuse shared cached data and join one in-flight refresh generation instead of issuing parallel duplicate provider requests; every usage surface must be verified against this invariant and any bypass fixed before shipping.
+- CLI, console, Capsule, and desktop fixtures prove identical Rust-owned labels and values for the same projection, with only surface-appropriate layout differences.
 
 ## Open questions
 
@@ -124,7 +127,7 @@ Finalize one agent usage experience across jackin❯ desktop, `jackin console`, 
 - ~~When `jackin-capsule` receives multiple launch-forwarded accounts for one allowed agent, should the quota preview show every canonical account or one selected account?~~ **Resolved 2026-08-20**: show every deduplicated canonical account and support account detail or selection.
 - ~~What are the full Capsule quota-preview presentation rules?~~ **Resolved 2026-08-20**: order by allowed agent then canonical account; distinguish lifecycle, loading, limits, no-capability, stale, and error states; join active work on refresh; preserve selection through initialization.
 - ~~May exhausted, unknown, stale, or failed quota data block or disable Capsule agent launch and session actions?~~ **Resolved 2026-08-20**: no; usage remains informational and explicit states never become launch authorization or enforcement.
-- Which remaining/used convention, rounding, countdown form, stale marker, missing-plan fallback, and money-cap units should all output surfaces use? **Recommendation**: consume the existing Rust-owned formatting preferences and labels verbatim, with only layout adaptation per surface and no presentation-side quota inference.
+- ~~Which remaining/used convention, rounding, countdown form, stale marker, missing-plan fallback, and money-cap units should all output surfaces use?~~ **Resolved 2026-08-20**: consume Rust-owned labels and formatting semantics verbatim, adapt layout only, and perform no presentation-side quota inference.
 - Is jackin❯ desktop a filtered view of the same canonical host inventory or a separate discovery/inventory pipeline sharing only broker work? **Recommendation**: use one canonical host discovery and account graph, then derive the fixed seven-provider desktop projection by filtering OpenCode and applying native presentation settings; do not maintain a second identity or discovery pipeline.
 - How should bare `jackin usage` exit when some providers are stale or failed but last-good rows remain usable? **Recommendation**: render usable rows with explicit per-provider stale/error state and exit successfully; return nonzero only when no usable projection can be produced or the invocation itself is invalid, while JSON preserves structured partial failures.
 - Should the jackin❯ desktop menu bar use one aggregate status item or retain provider-focused status items, and which account/window should each glance prioritize? **Recommendation**: retain the current Rust-ranked provider-focused model and its icon-only, worst-provider, pinned-provider, and bounded-strip modes; clicking an item focuses that provider and its selected canonical account, while the Usage window remains the all-provider overview.
