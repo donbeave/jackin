@@ -27,6 +27,7 @@ Finalize one agent usage experience across jackin❯ desktop, `jackin console`, 
 - 2026-08-20 — **Human `jackin usage` output renders provider groups, one canonical row per account, then that account's limit windows, with explicit stale and error annotations; `--format json` exposes the same projection as a stable machine-readable envelope.** Because CLI and TUI must express the same truth without flattening canonical accounts back into duplicated window rows.
 - 2026-08-20 — **Instance `accounts` and `verify` retain their Capsule inspection and verification intent; every host read is moved onto the canonical broker projection, and cache, `--no-refresh`, `--sync-host-cache`, or snapshot forms that preserve an independent freshness authority or misleading bypass are removed or redefined rather than kept as compatibility shims.** Because diagnostic value must survive without preserving the architecture that permits duplicate or stale authority.
 - 2026-08-20 — **When a Capsule receives multiple launch-forwarded accounts for one allowed agent, its quota preview shows every deduplicated canonical account and supports account detail or selection.** Because collapsing to a surface-only request is ambiguous and hiding accounts would make the preview incomplete.
+- 2026-08-20 — **The Capsule quota preview orders rows by allowed agent then canonical account and distinguishes `Not started`, loading, available limits, no-capability, stale last-good, and recoverable error states.** Its single refresh action joins active broker work, and selection survives the transition to an initialized session, because lifecycle and data freshness are independent and should not disrupt operator context.
 
 ## Capabilities
 
@@ -57,6 +58,13 @@ Finalize one agent usage experience across jackin❯ desktop, `jackin console`, 
 - **States**: Current, refreshing, stale last-good, partial-provider error, empty, and global failure.
 - **Key interactions**: Use human output by default or `--format json` for the stable envelope; pass an instance for Capsule-scoped inspection.
 - **Design**: Provider groups contain one canonical row per account followed by that account's limit windows.
+
+### Capsule usage
+
+- **Purpose**: Preview quota limits for every launch-allowed agent and its canonical accounts, including before the first session starts.
+- **States**: `Not started`; loading; available limits; no-capability explanation; stale last-good; recoverable error; initialized session.
+- **Key interactions**: Select an agent and canonical account; inspect its windows; use one refresh action that joins active broker work; retain selection when the agent becomes initialized.
+- **Design**: Order by allowed agent then canonical account, and keep lifecycle state separate from quota availability or freshness.
 
 ## Flows
 
@@ -112,7 +120,7 @@ Finalize one agent usage experience across jackin❯ desktop, `jackin console`, 
 - ~~What exact hierarchy should the human `jackin usage` output render from the shared projection?~~ **Resolved 2026-08-20**: provider groups, canonical account rows, limit windows, stale/error annotations, and stable JSON for the same projection.
 - ~~What roles should the existing `host snapshot`, instance `accounts`/`verify`, cache, `--no-refresh`, and `--sync-host-cache` forms retain after the bare overview is added?~~ **Resolved 2026-08-20**: keep instance inspection/verification intent, move host reads to the canonical broker projection, and remove or redefine bypassing forms without compatibility shims.
 - ~~When `jackin-capsule` receives multiple launch-forwarded accounts for one allowed agent, should the quota preview show every canonical account or one selected account?~~ **Resolved 2026-08-20**: show every deduplicated canonical account and support account detail or selection.
-- What are the full Capsule quota-preview presentation rules? **Recommendation**: order by allowed agent then canonical account; show `Not started`, loading, available limits, no-capability explanation, stale last-good, and recoverable error distinctly; expose one refresh action that joins active work and preserve the transition into initialized state without losing selection.
+- ~~What are the full Capsule quota-preview presentation rules?~~ **Resolved 2026-08-20**: order by allowed agent then canonical account; distinguish lifecycle, loading, limits, no-capability, stale, and error states; join active work on refresh; preserve selection through initialization.
 - May exhausted, unknown, stale, or failed quota data block or disable Capsule agent launch and session actions? **Recommendation**: no; usage is informational, states remain explicit, and quota observation never becomes launch authorization or enforcement.
 - Which remaining/used convention, rounding, countdown form, stale marker, missing-plan fallback, and money-cap units should all output surfaces use? **Recommendation**: consume the existing Rust-owned formatting preferences and labels verbatim, with only layout adaptation per surface and no presentation-side quota inference.
 - Is jackin❯ desktop a filtered view of the same canonical host inventory or a separate discovery/inventory pipeline sharing only broker work? **Recommendation**: use one canonical host discovery and account graph, then derive the fixed seven-provider desktop projection by filtering OpenCode and applying native presentation settings; do not maintain a second identity or discovery pipeline.
