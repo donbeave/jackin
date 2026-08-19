@@ -12,12 +12,16 @@ Finalize one agent usage experience across jackin❯ desktop, `jackin console`, 
 ## Vocabulary
 
 - **Initialized agent**: An agent for which at least one session has been started in the current Capsule. _Avoid_: using “initialized” to mean that a usage account or capability was resolved.
+- **Agent-uninitialized error**: The typed Capsule-only lifecycle error
+  `agent_uninitialized`, emitted when a fully resolved launch-config agent has no
+  started session. A quota preview may accompany it, but must not downgrade it
+  to success or turn it into a provider-refresh failure.
 - **Capsule quota preview**: Subscription or quota limits shown by `jackin-capsule` before an agent's first session, using a resolved usage capability when one exists. _Avoid_: applying this lifecycle state to the console, CLI, or jackin❯ desktop; model context-window tokens; token prices; or historical token usage.
 
 ## Decisions
 
 - 2026-08-20 — **Bare `jackin usage` opens the host-wide deduplicated overview, while `jackin usage <instance> …` remains available for inspecting a particular Capsule instance.** Because the normal operator path should show all host usage immediately without removing instance-scoped inspection.
-- 2026-08-20 — **Capsule shows every agent allowed by its launch configuration before the first session as neutral `Not started`, with a quota preview when a usable capability exists; usage resolution and refresh failures remain errors.** Because an agent not yet started is not a failure, and its known limits are still useful.
+- 2026-08-20 — **Capsule shows every agent in the current fully resolved instance launch configuration; an agent with no started session carries the typed `agent_uninitialized` lifecycle error, with a quota preview when a resolved usage capability exists.** The lifecycle error remains visible beside any preview, is distinct from usage resolution or refresh failure, and never blocks launch.
 - 2026-08-20 — **The host-wide `jackin usage` and `jackin console` views include all eight host usage surfaces: Claude, Codex, Amp, Grok, Kimi, OpenCode, Z.AI, and MiniMax; jackin❯ desktop retains the same catalog except OpenCode.** Because the host surfaces must cover every discovered agent and configuration while the desktop catalog remains a separate settled product boundary.
 - 2026-08-20 — **`jackin usage` and the `jackin console` usage screen consume the same Rust-owned canonical inventory, deduplication, refresh, cache, and projection; only their presentation differs.** The CLI renders human-readable or JSON output, while the console renders the TUI, so both surfaces stay behaviorally consistent.
 - 2026-08-20 — **One host broker owns provider refresh and durable canonical-account freshness.** Local processes and views may retain immutable projections for presentation, but they never probe providers, own retry deadlines, or queue duplicate refresh generations, because concurrent callers must share cached and in-flight work.
@@ -26,8 +30,8 @@ Finalize one agent usage experience across jackin❯ desktop, `jackin console`, 
 - 2026-08-20 — **The console TUI orders provider groups by the settled eight-surface list and canonical accounts beneath them; it explicitly represents loading, refreshing, empty, stale last-good, partial-provider error, and global failure.** Selection drives detail, `r` refreshes, Back/Escape follows the shared navigation contract, and active keys appear in footer hints, because every state and action must remain visible and predictable.
 - 2026-08-20 — **Human `jackin usage` output renders provider groups, one canonical row per account, then that account's limit windows, with explicit stale and error annotations; `--format json` exposes the same projection as a stable machine-readable envelope.** Because CLI and TUI must express the same truth without flattening canonical accounts back into duplicated window rows.
 - 2026-08-20 — **Instance `accounts` and `verify` retain their Capsule inspection and verification intent; every host read is moved onto the canonical broker projection, and cache, `--no-refresh`, `--sync-host-cache`, or snapshot forms that preserve an independent freshness authority or misleading bypass are removed or redefined rather than kept as compatibility shims.** Because diagnostic value must survive without preserving the architecture that permits duplicate or stale authority.
-- 2026-08-20 — **When a Capsule receives multiple launch-forwarded accounts for one allowed agent, its quota preview shows every deduplicated canonical account and supports account detail or selection.** Because collapsing to a surface-only request is ambiguous and hiding accounts would make the preview incomplete.
-- 2026-08-20 — **The Capsule quota preview orders rows by allowed agent then canonical account and distinguishes `Not started`, loading, available limits, no-capability, stale last-good, and recoverable error states.** Its single refresh action joins active broker work, and selection survives the transition to an initialized session, because lifecycle and data freshness are independent and should not disrupt operator context.
+- 2026-08-20 — **When a Capsule receives multiple launch-forwarded accounts for one fully resolved launch-config agent, its quota preview shows every deduplicated canonical account and supports account detail or selection.** Because collapsing to a surface-only request is ambiguous and hiding accounts would make the preview incomplete.
+- 2026-08-20 — **The Capsule quota preview orders rows by fully resolved launch-config agent then canonical account and distinguishes `agent_uninitialized`, loading, available limits, no-capability, stale last-good, usage resolution failure, and refresh failure.** Its single refresh action joins active broker work, and selection survives the transition to an initialized session, because lifecycle and data freshness are independent and should not disrupt operator context.
 - 2026-08-20 — **Quota data is informational and never authorizes or blocks Capsule agent launch or session actions, including when limits are exhausted, unknown, stale, or failed.** Because usage observation and launch policy are separate responsibilities, while explicit state remains sufficient for informed operator choice.
 - 2026-08-20 — **Every usage surface consumes Rust-owned remaining/used conventions, rounding, countdowns, stale markers, missing-plan fallbacks, and money-cap units verbatim, adapting layout only.** Because presentation code must not infer or reinterpret quota meaning and create cross-surface disagreement.
 - 2026-08-20 — **jackin❯ desktop derives a filtered view from the same canonical host discovery and account graph, excluding OpenCode and applying its frozen Codex, Claude, Amp, Grok, Z.AI, Kimi, MiniMax order plus native presentation settings without a second identity or discovery pipeline.** Because one account graph preserves deduplication and broker authority while retaining the settled seven-provider desktop boundary and order.
@@ -72,17 +76,17 @@ Finalize one agent usage experience across jackin❯ desktop, `jackin console`, 
 
 ### Capsule usage
 
-- **Purpose**: Preview quota limits for every launch-allowed agent and its canonical accounts, including before the first session starts.
-- **States**: `Not started`; loading; available limits; no-capability explanation; stale last-good; recoverable error; initialized session.
+- **Purpose**: Show quota limits for every agent in the current fully resolved instance launch configuration and its canonical accounts, including an optional preview before the first session starts.
+- **States**: `agent_uninitialized`; loading; available limits; no-capability explanation; stale last-good; usage resolution failure; refresh failure; initialized session.
 - **Key interactions**: Select an agent and canonical account; inspect its windows; use one refresh action that joins active broker work; retain selection when the agent becomes initialized.
-- **Design**: Order by allowed agent then canonical account, and keep lifecycle state separate from quota availability or freshness.
+- **Design**: Derive membership only from the fully resolved instance launch configuration, order by resolved agent then canonical account, and keep lifecycle error separate from quota availability or freshness. Never render fixed global tabs or unresolved/global agent rows.
 
 ## Flows
 
 1. The operator runs bare `jackin usage` or enters Usage in `jackin console`; both request the same host projection, join an active canonical-account refresh when one exists, and render the result as CLI output or TUI respectively.
 2. From the console Overview, the operator moves into provider and account detail without triggering a second discovery, deduplication, or provider-fetch path.
 3. The operator runs `jackin usage <instance> …` to inspect one Capsule instance's current usage projection without losing the host-wide default path.
-4. In `jackin-capsule`, every launch-allowed agent appears before its first session as `Not started`; a known quota preview is available, and the row transitions after the first session starts.
+4. In `jackin-capsule`, every agent in the fully resolved instance launch configuration appears before its first session with `agent_uninitialized`; a known quota preview accompanies that error when possible, and the lifecycle error clears after the first session starts.
    When an agent has multiple launch-forwarded accounts, each canonical account remains visible and selectable.
 5. In jackin❯ desktop, the operator glances from the status item and popover, then opens the retained Usage window for Overview or provider/account detail.
 
@@ -92,6 +96,10 @@ Finalize one agent usage experience across jackin❯ desktop, `jackin console`, 
 - The host projection covers all eight usage surfaces. A derived filtered jackin❯ desktop projection remains limited to its fixed seven-provider catalog by excluding OpenCode.
 - Rust owns desktop discovery, account identity, deduplication, broker coordination, quota shaping, and immutable projections; the UniFFI boundary exports sanitized display data, and Swift remains display-only.
 - Current read-only configuration discovery owns host inventory membership; history may enrich but never create membership.
+- Capsule inventory membership is a separate instance-scoped filter derived only
+  from the current fully resolved launch configuration. A resolved usage
+  capability enriches an eligible agent with preview rows but never creates an
+  agent row by itself.
 - Rust owns all quota labels and formatting semantics; CLI, TUI, Capsule, FFI, and Swift adapt only layout and never infer usage meaning.
 
 ## References
@@ -104,6 +112,9 @@ Finalize one agent usage experience across jackin❯ desktop, `jackin console`, 
 - [Agent usage platform research](../../research/agent-usage-platform/README.md) — vetted architecture, Apple-native, reference-implementation, cache-authority, identity, projection, and delivery evidence.
 - A static code-path trace found that Capsule provider work is correctly restricted to launch-forwarded capabilities derived from the resolved workspace, role, profiles, and credential environment ([relay capability construction](../../crates/jackin-runtime/src/usage_relay.rs#L189-L215), [exact scope filtering](../../crates/jackin-runtime/src/usage_relay.rs#L385-L419)). Confidence: HIGH.
 - The same trace found that the Capsule usage dialog still displays all seven provider tabs rather than filtering its display by those capabilities ([fixed provider tabs](../../crates/jackin-usage/src/usage/view.rs#L470-L489)); unavailable tabs fail closed at the relay instead of disappearing. Confidence: HIGH.
+- The target contract removes those fixed tabs: Capsule presentation membership
+  must equal the current fully resolved instance launch configuration, with no
+  global, unresolved, or capability-only rows.
 - The host runtime already exposes a canonical deduplicated account inventory and atomic grouped provider/account projection ([canonical identity](../../crates/jackin-usage/src/host/accounts.rs#L19-L57), [inventory and projection](../../crates/jackin-usage/src/host.rs#L1163-L1303)); the current CLI instead renders raw account-window rows and can duplicate one account across sources or windows ([cache identity](../../crates/jackin/src/cli/usage/store.rs#L75-L93), [flat rendering](../../crates/jackin/src/cli/usage.rs#L403-L424)). Confidence: HIGH.
 - Host usage has eight surfaces, including OpenCode, while jackin❯ desktop has a frozen seven-provider catalog that excludes OpenCode ([host and desktop surface sets](../../crates/jackin-usage/src/host.rs#L54-L98)). Confidence: HIGH.
 - `jackin console` currently has no usage route, state, component, or effect, but its workspace screen already establishes a left-list/right-detail navigation pattern ([current routes](../../crates/jackin-console/src/tui/model/stage.rs#L11-L36), [workspace split layout](../../crates/jackin-console/src/tui/screens/workspaces/view.rs#L105-L175)). Confidence: HIGH.
@@ -119,6 +130,12 @@ Finalize one agent usage experience across jackin❯ desktop, `jackin console`, 
 - MUST NOT let a CLI, console, desktop, Capsule, diagnostic, or presentation-cache path call a provider directly, queue a refresh behind active canonical-account work, or become an independent freshness/retry authority — one broker owns provider work.
 - MUST NOT use unstable source ordinals as durable canonical account identity when they can fragment one account or alias persisted broker state.
 - MUST NOT disable or block Capsule launch or session actions based on exhausted, unknown, stale, or failed quota observations.
+- MUST NOT downgrade `agent_uninitialized` to a neutral/success state merely
+  because a quota preview is available, or confuse that lifecycle error with a
+  provider usage failure.
+- MUST NOT populate Capsule presentation from the fixed provider catalog, global
+  host discovery, unresolved configuration, or usage capability alone; the
+  fully resolved instance launch configuration owns membership.
 
 ## Quality bar
 
@@ -135,8 +152,8 @@ Finalize one agent usage experience across jackin❯ desktop, `jackin console`, 
 - ~~What exact hierarchy, ordering, filtering, states, and refresh interactions should the console TUI use?~~ **Resolved 2026-08-20**: settled provider order, canonical accounts, explicit lifecycle/error states, selection-driven detail, `r`, shared Back/Escape, and footer hints.
 - ~~What exact hierarchy should the human `jackin usage` output render from the shared projection?~~ **Resolved 2026-08-20**: provider groups, canonical account rows, limit windows, stale/error annotations, and stable JSON for the same projection.
 - ~~What roles should the existing `host snapshot`, instance `accounts`/`verify`, cache, `--no-refresh`, and `--sync-host-cache` forms retain after the bare overview is added?~~ **Resolved 2026-08-20**: keep instance inspection/verification intent, move host reads to the canonical broker projection, and remove or redefine bypassing forms without compatibility shims.
-- ~~When `jackin-capsule` receives multiple launch-forwarded accounts for one allowed agent, should the quota preview show every canonical account or one selected account?~~ **Resolved 2026-08-20**: show every deduplicated canonical account and support account detail or selection.
-- ~~What are the full Capsule quota-preview presentation rules?~~ **Resolved 2026-08-20**: order by allowed agent then canonical account; distinguish lifecycle, loading, limits, no-capability, stale, and error states; join active work on refresh; preserve selection through initialization.
+- ~~When `jackin-capsule` receives multiple launch-forwarded accounts for one resolved launch-config agent, should the quota preview show every canonical account or one selected account?~~ **Resolved 2026-08-20**: show every deduplicated canonical account and support account detail or selection.
+- ~~What are the full Capsule quota-preview presentation rules?~~ **Resolved 2026-08-20**: membership comes only from the fully resolved instance launch configuration; order by resolved agent then canonical account; show typed `agent_uninitialized` until a session starts, optionally accompanied by limits; distinguish loading, limits, no-capability, stale, usage-resolution, and refresh states; join active work on refresh; preserve selection through initialization.
 - ~~May exhausted, unknown, stale, or failed quota data block or disable Capsule agent launch and session actions?~~ **Resolved 2026-08-20**: no; usage remains informational and explicit states never become launch authorization or enforcement.
 - ~~Which remaining/used convention, rounding, countdown form, stale marker, missing-plan fallback, and money-cap units should all output surfaces use?~~ **Resolved 2026-08-20**: consume Rust-owned labels and formatting semantics verbatim, adapt layout only, and perform no presentation-side quota inference.
 - ~~Is jackin❯ desktop a filtered view of the same canonical host inventory or a separate discovery/inventory pipeline sharing only broker work?~~ **Resolved 2026-08-20**: derive the fixed seven-provider desktop projection from the canonical host account graph, excluding OpenCode and applying native presentation settings without a second discovery pipeline.

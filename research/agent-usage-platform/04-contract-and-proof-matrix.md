@@ -62,6 +62,35 @@ partial-failure, and exit decisions rather than current CLI behavior. — [roadm
 decisions](../../roadmap/unified-agent-usage/README.md#decisions), [CLI screen
 contract](../../roadmap/unified-agent-usage/README.md#cli-usage-output)
 
+### Capsule membership and lifecycle contract
+
+Capsule presentation membership is not the host inventory or the fixed provider
+catalog. It is exactly the agent set in the current fully resolved instance
+launch configuration. Global discovery, unresolved configuration, historical
+membership, or a usage capability alone cannot add a row. A resolved usage
+capability may enrich an eligible agent with canonical-account quota previews;
+without one, the eligible agent remains visible with an explicit no-preview
+explanation.
+
+An eligible agent has lifecycle `initialized` only after at least one session has
+started in that Capsule. Until then, the row carries the typed issue code
+`agent_uninitialized`. That issue is an agent-scoped lifecycle error, not a
+provider-refresh failure. A successful quota preview may coexist with it but
+cannot clear, downgrade, or replace it. Starting the first session clears only
+the lifecycle error; it does not rewrite quota freshness or provider issues.
+Neither lifecycle nor quota state authorizes or blocks launch.
+
+Required proof fixtures cover: fixed/global provider excluded; unresolved agent
+excluded; capability-only provider excluded; resolved agent without capability;
+resolved uninitialized agent with preview; initialized agent; multiple canonical
+accounts; launch-config add/remove/reorder; selection retained across first
+session; and simultaneous lifecycle plus stale/refresh failure. Every surface
+adapter must preserve the structured issue code and Rust-owned preview strings.
+— [roadmap decisions](../../roadmap/unified-agent-usage/README.md#decisions),
+`crates/jackin-runtime/src/usage_relay.rs:189-215`,
+`crates/jackin-runtime/src/usage_relay.rs:385-419`,
+`crates/jackin-usage/src/usage/view.rs:470-489`
+
 ## Broker policy matrix
 
 Planning must choose exact mechanisms and numeric values where the evidence does
