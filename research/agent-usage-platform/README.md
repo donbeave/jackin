@@ -24,6 +24,13 @@ This topic establishes the architectural, native macOS, reference-implementation
 7. **Repository dependencies impose a verifiable implementation order.** Identity and protocol records precede broker and projection work; consumer migrations then proceed through CLI/diagnostics, console/Capsule, FFI/Swift, native QA, and signed distribution. Each migrated consumer needs a regression gate proving it cannot fetch providers independently. — [Codebase dependency findings](01-codebase-architecture.md), [Apple distribution evidence](02-apple-native-design.md)
 8. **Capsule membership and initialization are separate from host discovery and quota freshness.** The current fully resolved instance launch configuration exclusively owns agent rows. Before the first session, an eligible agent carries typed `agent_uninitialized`; a resolved usage capability may add quota preview rows without clearing that lifecycle error. Fixed/global tabs and capability-only rows are excluded, and no usage state gates launch. — [Contract and proof matrix](04-contract-and-proof-matrix.md#capsule-membership-and-lifecycle-contract), [current Capsule findings](01-codebase-architecture.md)
 
+## Reproducible verification
+
+[Verification ledger](05-verification-ledger.md) records the source revision,
+literal bypass-audit commands, focused test commands/results, expected
+assertions, zero-test/unavailable lanes, and exact later proof targets. It is the
+authority for what was executed; prescriptive matrices elsewhere are not passes.
+
 ## Candidate broker directions
 
 ### Resident per-user service
