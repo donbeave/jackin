@@ -671,7 +671,13 @@ fn render_filter_picker(
         })
         .collect::<Vec<_>>();
     frame.render_stateful_widget(
-        &List::new(&rows, &theme),
+        // The picker speaks the classic loud-cursor vocabulary: full-row fill
+        // with a leading ▸ marker (SelectionChrome::Marker), not the quiet
+        // default gutter.
+        &List::new(
+            &rows,
+            &DesignSystem::default().selection(termrock::style::SelectionChrome::Marker),
+        ),
         list_area,
         &mut ListState::new(Some(selected)),
     );
