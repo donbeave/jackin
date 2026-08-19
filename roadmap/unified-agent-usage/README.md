@@ -21,6 +21,7 @@ Finalize one agent usage experience across jackin❯ desktop, `jackin console`, 
 - 2026-08-20 — **The host-wide `jackin usage` and `jackin console` views include all eight host usage surfaces: Claude, Codex, Amp, Grok, Kimi, OpenCode, Z.AI, and MiniMax; jackin❯ desktop retains the same catalog except OpenCode.** Because the host surfaces must cover every discovered agent and configuration while the desktop catalog remains a separate settled product boundary.
 - 2026-08-20 — **`jackin usage` and the `jackin console` usage screen consume the same Rust-owned canonical inventory, deduplication, refresh, cache, and projection; only their presentation differs.** The CLI renders human-readable or JSON output, while the console renders the TUI, so both surfaces stay behaviorally consistent.
 - 2026-08-20 — **One host broker owns provider refresh and durable canonical-account freshness.** Local processes and views may retain immutable projections for presentation, but they never probe providers, own retry deadlines, or queue duplicate refresh generations, because concurrent callers must share cached and in-flight work.
+- 2026-08-20 — **Current read-only discovery across global, role, workspace, and workspace-role scopes owns host inventory membership; durable history only enriches current members, and unsupported or undiscovered providers do not appear as empty rows.** Because host-wide usage should reflect presently available configurations without resurrecting stale accounts or fabricating availability.
 
 ## Capabilities
 
@@ -57,6 +58,7 @@ Finalize one agent usage experience across jackin❯ desktop, `jackin console`, 
 - Rust owns the shared host provider/account projection consumed by both `jackin usage` and `jackin console`; their output adapters do not rediscover, rededuplicate, or refresh accounts independently.
 - The host projection covers all eight usage surfaces. The separate jackin❯ desktop projection remains limited to its fixed seven-provider catalog.
 - Rust owns desktop discovery, account identity, deduplication, broker coordination, quota shaping, and immutable projections; the UniFFI boundary exports sanitized display data, and Swift remains display-only.
+- Current read-only configuration discovery owns host inventory membership; history may enrich but never create membership.
 
 ## References
 
@@ -90,7 +92,7 @@ Finalize one agent usage experience across jackin❯ desktop, `jackin console`, 
 
 ## Open questions
 
-- Which configuration sources make an account part of the host-wide inventory, and should supported but undiscovered providers appear? **Recommendation**: current read-only discovery across global, role, workspace, and workspace-role scopes owns membership; durable history only enriches current members, and providers with no current configuration/account evidence stay absent rather than appearing as empty rows.
+- ~~Which configuration sources make an account part of the host-wide inventory, and should supported but undiscovered providers appear?~~ **Resolved 2026-08-20**: current read-only discovery owns membership; history only enriches current members.
 - Where should Usage live in `jackin console`, and what is its navigation model? **Recommendation**: a top-level Usage route using the console's established left-list/right-detail structure, opening on Overview with provider/account rows and explicit keyboard/footer hints.
 - What exact hierarchy, ordering, filtering, states, and refresh interactions should the console TUI use? **Recommendation**: provider then canonical account, ordered by the settled eight-surface list; show loading, refreshing, empty, stale last-good, partial-provider error, and global failure explicitly; use selection-driven detail, `r` for refresh, standard Back/Escape behavior, and active footer hints.
 - What exact hierarchy should the human `jackin usage` output render from the shared projection? **Recommendation**: provider groups with one canonical row per account followed by limit windows, explicit stale/error annotations, and `--format json` as the stable machine-readable form of the same projection.
