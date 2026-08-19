@@ -205,13 +205,18 @@ native/.build/visual-qa/tools/window-id 'jackin❯ desktop' \
 ```
 
 The wrapper printed restoration for every governed key after each failure.
-After each run, this command exited zero with no diff:
+After the respective runs, both exact comparisons exited zero with no diff:
 
 ```sh
 native/Scripts/VisualQA/state.sh snapshot \
-  native/.build/visual-qa/baseline/settings-after-extra-state.txt
+  native/.build/visual-qa/baseline/settings-after-reduce-motion.txt
 diff -u native/.build/visual-qa/baseline/settings-before-extra-states.txt \
-  native/.build/visual-qa/baseline/settings-after-extra-state.txt
+  native/.build/visual-qa/baseline/settings-after-reduce-motion.txt
+
+native/Scripts/VisualQA/state.sh snapshot \
+  native/.build/visual-qa/baseline/settings-after-differentiate-without-color.txt
+diff -u native/.build/visual-qa/baseline/settings-before-extra-states.txt \
+  native/.build/visual-qa/baseline/settings-after-differentiate-without-color.txt
 ```
 
 The toggles and restoration are proven; static visual behavior under those two
