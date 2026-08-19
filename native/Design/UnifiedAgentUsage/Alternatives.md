@@ -10,6 +10,9 @@ spacing.
 
 Every preview below uses exact records from [Fixtures.md](Fixtures.md); every
 OpenAI multi-account example uses F03 without inventing a tuple.
+[AntiReferences.md](AntiReferences.md) records every already-rejected direction
+and incumbent failure as a reason/correction/learned-rule entry; pending eligible
+directions are added only after human selection.
 Alternatives A, B, and G preserve the settled two-pane structure and are
 eligible for selection. C, D, E, and F are documented counter-directions and
 permanently ineligible in this design round because they remove or add a region
