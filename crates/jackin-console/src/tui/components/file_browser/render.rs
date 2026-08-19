@@ -100,7 +100,7 @@ fn render_listing(frame: &mut Frame<'_>, area: Rect, state: &FileBrowserState) {
         });
     // Border-only inner: the browser's list owns its own gutter/padding
     // vocabulary, so it keeps the old pin's geometry (content flush inside
-    // the border) instead of Panel::inner's density padding.
+    // the border) instead of the `Panel::inner` density padding.
     let inner = Rect {
         x: area.x.saturating_add(1),
         y: area.y.saturating_add(1),
