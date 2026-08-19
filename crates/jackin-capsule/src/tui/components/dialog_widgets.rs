@@ -13,7 +13,7 @@
 
 use ratatui::Frame;
 use ratatui::layout::Rect;
-use ratatui::style::Style;
+use ratatui::style::{Modifier, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Clear, Widget};
 
@@ -580,8 +580,21 @@ fn render_usage_info(
         .map(|tab| tab.id);
     tabs_state.hovered = hovered_tab;
     tabs_state.focused = tab_bar_focused;
+    // The usage dialog keeps the old pin's hover vocabulary: an underlined
+    // tab label. Head dropped the underline in favor of a pure tint wash, so
+    // the hovered roles get the modifier back via theme override.
+    let base = DesignSystem::default();
+    let active_hovered = base
+        .style(termrock::style::Role::TabActiveHovered)
+        .add_modifier(Modifier::UNDERLINED);
+    let inactive_hovered = base
+        .style(termrock::style::Role::TabInactiveHovered)
+        .add_modifier(Modifier::UNDERLINED);
+    let tabs_theme = base
+        .with_role(termrock::style::Role::TabActiveHovered, active_hovered)
+        .with_role(termrock::style::Role::TabInactiveHovered, inactive_hovered);
     frame.render_stateful_widget(
-        &Tabs::new(&canonical_tabs, &DesignSystem::default()).gap(termrock::widgets::TAB_GAP),
+        &Tabs::new(&canonical_tabs, &tabs_theme).gap(termrock::widgets::TAB_GAP),
         tab_area,
         &mut tabs_state,
     );
