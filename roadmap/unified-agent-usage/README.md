@@ -107,6 +107,35 @@ Finalize one agent usage experience across jackin❯ desktop, `jackin console`, 
 - [`crates/jackin-capsule/`](../../crates/jackin-capsule/) — existing capsule usage experience named as the console TUI reference.
 - [`native/`](../../native/) — native macOS application surface.
 
+## Native design preparation
+
+- [Experience brief](../../native/Design/UnifiedAgentUsage/ExperienceBrief.md) —
+  archetype, jobs, hierarchy, actions, window model, accessibility, and release
+  acceptance contract.
+- [Native component map](../../native/Design/UnifiedAgentUsage/NativeComponentMap.md)
+  — system-owned component choices, region classifications, interaction
+  contracts, and explicit custom-component absence.
+- [Structural alternatives](../../native/Design/UnifiedAgentUsage/Alternatives.md)
+  — eligible A, B, and G Usage-window directions, optional H popover remix,
+  rejected counter-directions, and evidence-led recommendation A without H.
+- [Canonical fixture matrix](../../native/Design/UnifiedAgentUsage/Fixtures.md) —
+  deterministic F00–F24 scenario/task definitions, future prototype subscenario
+  IDs and launch contract, status-item projections, and live/post-signoff
+  coverage.
+- [Legacy baseline visual QA](../../native/Design/UnifiedAgentUsage/BaselineVisualQA.md)
+  — running-app evidence, Increased Contrast hard failure, missing automation,
+  restoration proof, and states still requiring final QA.
+- [Swift project readiness audit](../../native/Design/UnifiedAgentUsage/SwiftProjectReadiness.md)
+  — generation, toolchain, CI, test, signing, binding, and Rust-core remediation
+  inputs.
+- [Swift best-practices review](../../native/Design/UnifiedAgentUsage/SwiftBestPracticesReview.md)
+  — concurrency, ownership, typed boundary, adaptive sizing, accessibility,
+  AppKit, localization, and failure-path remediation inputs.
+
+Human structural selection remains pending. No prototype package,
+`SIGNOFF.md`, post-signoff baseline, design approval, READY transition, or plan is
+claimed by these preselection artifacts.
+
 ## Research
 
 - [Agent usage platform research](../../research/agent-usage-platform/README.md) — vetted architecture, Apple-native, reference-implementation, cache-authority, identity, projection, and delivery evidence.
@@ -179,3 +208,7 @@ Finalize one agent usage experience across jackin❯ desktop, `jackin console`, 
 - 2026-08-20 — tailrocks-brainstorm — moved to SHAPING after settling the default CLI overview behavior.
 - 2026-08-20 — tailrocks-brainstorm — closed shaping session after settling shared CLI/TUI behavior and Capsule pre-session usage; remaining decisions recorded with recommendations.
 - 2026-08-20 — tailrocks-research — completed and linked vetted architecture, Apple-native, reference-implementation, and delivery research.
+- 2026-08-20 — tailrocks-swift-project-setup — completed the read-only native project-readiness audit.
+- 2026-08-20 — tailrocks-swift-best-practices — completed the read-only Swift architecture and implementation-practices review.
+- 2026-08-20 — tailrocks-macos-visual-qa — recorded the failed incumbent running-app baseline and honest missing-state matrix.
+- 2026-08-20 — tailrocks-macos-design — completed the preselection brief, component map, alternatives, and deterministic fixture contract; human selection remains mandatory.
