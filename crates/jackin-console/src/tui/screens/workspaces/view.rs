@@ -925,7 +925,6 @@ pub fn render_agent_picker_sidebar<A: crate::tui::components::agent_choice::Agen
 
 pub fn render_general_subpanel(frame: &mut Frame<'_>, area: Rect, workdir_display: &str) {
     let theme = termrock::style::DesignSystem::default();
-    let block = panel(&theme, Some(" General "), false).block();
     let lines = vec![Line::from(vec![
         Span::raw("  "),
         Span::styled(
@@ -937,13 +936,19 @@ pub fn render_general_subpanel(frame: &mut Frame<'_>, area: Rect, workdir_displa
         ),
         Span::raw(workdir_display.to_owned()),
     ])];
-    let panel = Paragraph::new(lines).block(block).style(
-        Style::default().fg(termrock::style::DesignSystem::default()
-            .style(termrock::style::Role::Accent)
-            .fg
-            .unwrap_or_default()),
+    // Same padded viewport as the sibling subpanels so every block's content
+    // column agrees (SUBPANEL_CONTENT_INDENT from the Panel body column).
+    let mut scroll = termrock::scroll::DialogScroll::default();
+    frame.render_stateful_widget(
+        termrock::widgets::Viewport::new(&lines, &theme)
+            .title("General")
+            .padded_content()
+            .content_style(Style::default().fg(theme.style(termrock::style::Role::Accent)
+                .fg
+                .unwrap_or_default())),
+        area,
+        &mut scroll,
     );
-    frame.render_widget(panel, area);
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

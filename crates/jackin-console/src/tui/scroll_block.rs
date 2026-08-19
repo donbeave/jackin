@@ -42,7 +42,11 @@ pub fn render_scrollable_block_at(
     } else {
         PanelChrome::Normal
     };
-    let mut viewport = Viewport::new(&lines, &theme).emphasis(emphasis);
+    let mut viewport = Viewport::new(&lines, &theme)
+        .emphasis(emphasis)
+        // Bordered subpanels keep the Panel body column: content insets by
+        // the density pad on X while rows stay flush with the border on Y.
+        .padded_content();
     if let Some(title) = title {
         viewport = viewport.title(title);
     }
