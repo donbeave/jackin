@@ -22,9 +22,13 @@ fn key_span(glyph: impl Into<Cow<'static, str>>) -> HintSpan<'static> {
 
 /// Derive a display glyph for a raw palette-key byte.
 ///
-/// Mirrors the `Ctrl-` prefix convention used by [`termrock::keymap::chord_glyph`]
-/// so the hint bar is visually consistent regardless of which key the operator
-/// configured via `JACKIN_PALETTE_KEY`.
+/// Mirrors the `Ctrl-` prefix convention of [`termrock::keymap::chord_glyph`]
+/// (`Ctrl-<UPPER>`) so the hint bar is visually consistent regardless of which
+/// key the operator configured via `JACKIN_PALETTE_KEY`. Upstream spells only
+/// the common-shortcut set and delegates every other Ctrl chord to the caller;
+/// the palette key is operator-configured to any byte, so the arms beyond that
+/// set (`0x1C` as `Ctrl-\`, the hex fallback) are deliberately caller-supplied
+/// here.
 fn format_key_glyph(byte: u8) -> String {
     match byte {
         0x01..=0x1A => format!("Ctrl-{}", (b'@' + byte) as char),
