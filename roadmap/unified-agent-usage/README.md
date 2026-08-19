@@ -32,6 +32,7 @@ Finalize one agent usage experience across jackin❯ desktop, `jackin console`, 
 - 2026-08-20 — **Every usage surface consumes Rust-owned remaining/used conventions, rounding, countdowns, stale markers, missing-plan fallbacks, and money-cap units verbatim, adapting layout only.** Because presentation code must not infer or reinterpret quota meaning and create cross-surface disagreement.
 - 2026-08-20 — **jackin❯ desktop derives a filtered view from the same canonical host discovery and account graph, excluding OpenCode and applying native presentation settings without a second identity or discovery pipeline.** Because one account graph preserves deduplication and broker authority while retaining the settled seven-provider desktop boundary.
 - 2026-08-20 — **Bare `jackin usage` renders every usable row with explicit partial-provider stale or error state and exits successfully; it exits nonzero only for an invalid invocation or when no usable projection can be produced.** Its JSON envelope preserves structured partial failures, because partial degradation is usable output rather than total command failure.
+- 2026-08-20 — **jackin❯ desktop retains Rust-ranked provider-focused status items with icon-only, worst-provider, pinned-provider, and bounded-strip modes.** Clicking an item focuses that provider and its selected canonical account, while the Usage window remains the all-provider overview, because glanceable urgency and complete exploration serve different operator moments.
 
 ## Capabilities
 
@@ -54,7 +55,8 @@ Finalize one agent usage experience across jackin❯ desktop, `jackin console`, 
 - **Purpose**: Provide the agent usage experience as a native macOS app.
 - **States**: Current baseline includes loading, global unavailable with Retry, Overview, provider detail, provider failure with Retry, and empty inventory.
 - **Key interactions**: Current baseline includes provider and account selection, Refresh, opening the retained Usage window from the popover, toggling its sidebar, and opening Settings through the application menu.
-- **Design**: Swift and system-owned native Liquid Glass; the current baseline uses status items, a native popover, a retained two-pane Usage window, and a standard Settings window.
+- **Design**: Swift and system-owned native Liquid Glass; Rust-ranked provider-focused status items support icon-only, worst-provider, pinned-provider, and bounded-strip modes; the Usage window remains the all-provider overview.
+- **Glance behavior**: Clicking a provider status item focuses that provider and its selected canonical account in the popover before deeper navigation.
 
 ### CLI usage output
 
@@ -133,7 +135,7 @@ Finalize one agent usage experience across jackin❯ desktop, `jackin console`, 
 - ~~Which remaining/used convention, rounding, countdown form, stale marker, missing-plan fallback, and money-cap units should all output surfaces use?~~ **Resolved 2026-08-20**: consume Rust-owned labels and formatting semantics verbatim, adapt layout only, and perform no presentation-side quota inference.
 - ~~Is jackin❯ desktop a filtered view of the same canonical host inventory or a separate discovery/inventory pipeline sharing only broker work?~~ **Resolved 2026-08-20**: derive the fixed seven-provider desktop projection from the canonical host account graph, excluding OpenCode and applying native presentation settings without a second discovery pipeline.
 - ~~How should bare `jackin usage` exit when some providers are stale or failed but last-good rows remain usable?~~ **Resolved 2026-08-20**: render usable rows with provider state and exit zero; use nonzero only for invalid invocation or no usable projection; preserve structured partial failures in JSON.
-- Should the jackin❯ desktop menu bar use one aggregate status item or retain provider-focused status items, and which account/window should each glance prioritize? **Recommendation**: retain the current Rust-ranked provider-focused model and its icon-only, worst-provider, pinned-provider, and bounded-strip modes; clicking an item focuses that provider and its selected canonical account, while the Usage window remains the all-provider overview.
+- ~~Should the jackin❯ desktop menu bar use one aggregate status item or retain provider-focused status items, and which account/window should each glance prioritize?~~ **Resolved 2026-08-20**: retain Rust-ranked provider-focused status items and existing display modes; focus the clicked provider and selected canonical account; keep the Usage window as all-provider overview.
 - Should jackin❯ desktop retain its current native popover, two-pane Usage window, and Settings information architecture while design work focuses on evidence-led refinement, or permit a structural replacement? **Recommendation**: preserve the current native structure unless prototype evidence proves a specific structural defect; avoid a decorative rewrite.
 - Does “finalize jackin❯ desktop” include the first Developer ID signing, notarization, public artifact, and Homebrew cask proof? **Recommendation**: include them, because the existing desktop roadmap identifies them as the remaining release boundary.
 
