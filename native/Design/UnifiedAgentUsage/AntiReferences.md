@@ -44,4 +44,3 @@ decision rationale rather than retroactively inferred by an agent.
   forbidden customizations.
 - [Apple-native research](../../../research/agent-usage-platform/02-apple-native-design.md)
   — primary-source component and material constraints.
-
