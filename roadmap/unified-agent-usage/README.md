@@ -118,10 +118,16 @@ Finalize one agent usage experience across jackin❯ desktop, `jackin console`, 
 - [Structural alternatives](../../native/Design/UnifiedAgentUsage/Alternatives.md)
   — eligible A, B, and G Usage-window directions, optional H popover remix,
   rejected counter-directions, and evidence-led recommendation A without H.
+- [Anti-reference corpus](../../native/Design/UnifiedAgentUsage/AntiReferences.md)
+  — explicit rejected states, failure reasons, corrections, and learned rules;
+  pending eligible directions remain human-owned.
 - [Canonical fixture matrix](../../native/Design/UnifiedAgentUsage/Fixtures.md) —
   deterministic F00–F24 scenario/task definitions, future prototype subscenario
   IDs and launch contract, status-item projections, and live/post-signoff
   coverage.
+- [Prototype handoff](../../native/Design/UnifiedAgentUsage/PrototypeHandoff.md)
+  — exact selection preconditions, skill invocation, revision ledger, package,
+  live blessing, `SIGNOFF.md`, `Regions.md`, and post-signoff QA gates.
 - [Legacy baseline visual QA](../../native/Design/UnifiedAgentUsage/BaselineVisualQA.md)
   — running-app evidence, Increased Contrast hard failure, missing automation,
   restoration proof, and states still requiring final QA.
@@ -139,6 +145,9 @@ claimed by these preselection artifacts.
 ## Research
 
 - [Agent usage platform research](../../research/agent-usage-platform/README.md) — vetted architecture, Apple-native, reference-implementation, cache-authority, identity, projection, and delivery evidence.
+- [Research verification ledger](../../research/agent-usage-platform/05-verification-ledger.md)
+  — exact source searches, test commands/results, expected assertions, and
+  explicit zero-test/unavailable proof gaps.
 - A static code-path trace found that Capsule provider work is correctly restricted to launch-forwarded capabilities derived from the resolved workspace, role, profiles, and credential environment ([relay capability construction](../../crates/jackin-runtime/src/usage_relay.rs#L189-L215), [exact scope filtering](../../crates/jackin-runtime/src/usage_relay.rs#L385-L419)). Confidence: HIGH.
 - The same trace found that the Capsule usage dialog still displays all seven provider tabs rather than filtering its display by those capabilities ([fixed provider tabs](../../crates/jackin-usage/src/usage/view.rs#L470-L489)); unavailable tabs fail closed at the relay instead of disappearing. Confidence: HIGH.
 - The target contract removes those fixed tabs: Capsule presentation membership
