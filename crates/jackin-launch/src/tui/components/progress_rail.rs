@@ -121,10 +121,7 @@ fn blocks_line(view: &LaunchView, frozen: bool) -> Line<'static> {
             StageStatus::Running => (
                 '━',
                 if pulse {
-                    termrock::style::DesignSystem::default()
-                        .style(termrock::style::Role::Text)
-                        .fg
-                        .unwrap_or_default()
+                    jackin_tui::tokens::BRAND_CHEVRON
                 } else {
                     termrock::style::DesignSystem::default()
                         .style(termrock::style::Role::Accent)
@@ -139,20 +136,8 @@ fn blocks_line(view: &LaunchView, frozen: bool) -> Line<'static> {
                     .fg
                     .unwrap_or_default(),
             ),
-            StageStatus::Blocked => (
-                '━',
-                termrock::style::DesignSystem::default()
-                    .style(termrock::style::Role::Text)
-                    .fg
-                    .unwrap_or_default(),
-            ),
-            StageStatus::Queued => (
-                '─',
-                termrock::style::DesignSystem::default()
-                    .style(termrock::style::Role::ScrollTrack)
-                    .fg
-                    .unwrap_or_default(),
-            ),
+            StageStatus::Blocked => ('━', jackin_tui::tokens::BRAND_CHEVRON),
+            StageStatus::Queued => ('─', jackin_tui::tokens::BRAND_SEPARATOR),
         };
         spans.push(Span::styled(
             glyph.to_string().repeat(BLOCK_WIDTH),
@@ -234,9 +219,9 @@ fn label_style_for_stage(status: StageStatus, active: bool, bright: bool) -> Sty
             StageStatus::Failed => {
                 termrock::style::DesignSystem::default().style(termrock::style::Role::Danger)
             }
-            _ if bright => {
-                termrock::style::DesignSystem::default().style(termrock::style::Role::TextStrong)
-            }
+            _ if bright => Style::default()
+                .fg(jackin_tui::tokens::BRAND_CHEVRON)
+                .add_modifier(Modifier::BOLD),
             _ => Style::default()
                 .fg(termrock::style::DesignSystem::default()
                     .style(termrock::style::Role::Accent)
@@ -248,7 +233,7 @@ fn label_style_for_stage(status: StageStatus, active: bool, bright: bool) -> Sty
 
     match status {
         StageStatus::Done | StageStatus::Skipped => {
-            termrock::style::DesignSystem::default().style(termrock::style::Role::TextMuted)
+            Style::default().fg(jackin_tui::tokens::BRAND_LABEL)
         }
         StageStatus::Failed => Style::default().fg(termrock::style::DesignSystem::default()
             .style(termrock::style::Role::Danger)
@@ -257,10 +242,7 @@ fn label_style_for_stage(status: StageStatus, active: bool, bright: bool) -> Sty
         StageStatus::Running | StageStatus::Blocked => {
             termrock::style::DesignSystem::default().style(termrock::style::Role::Accent)
         }
-        StageStatus::Queued => Style::default().fg(termrock::style::DesignSystem::default()
-            .style(termrock::style::Role::ScrollTrack)
-            .fg
-            .unwrap_or_default()),
+        StageStatus::Queued => Style::default().fg(jackin_tui::tokens::BRAND_SEPARATOR),
     }
 }
 
@@ -320,3 +302,6 @@ pub fn animated_label_center(view: &LaunchView, centers: &[usize]) -> Option<usi
         Some(center.round() as usize)
     }
 }
+
+#[cfg(test)]
+mod tests;
