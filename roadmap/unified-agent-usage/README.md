@@ -276,3 +276,6 @@ approval, READY transition, and plan remain unclaimed.
   the explicit interaction/visual reference, documented the production ownership
   seam, added contract tests, and phased the future desktop adaptation without
   claiming human visual blessing or implementation completion.
+- 2026-08-20 — prototype operator signoff — Alexey Zhokhov completed and
+  blessed the dark-only matrix in `SIGNOFF.md`; roadmap status remains SHAPING
+  pending `$tailrocks-finalize`.

@@ -9,7 +9,8 @@
 
 Completed: research/readiness reviews, incumbent baseline, native design corpus,
 human selection of A without H, and the runnable dark-only prototype reference.
-The current gate is human visual signoff from the dark matrix in `SIGNOFF.md`.
+Human visual signoff of the dark matrix is recorded in `SIGNOFF.md`. The next
+gate is `$tailrocks-finalize`; READY remains unclaimed until it passes.
 Production adaptation follows `PRODUCTION_MAPPING.md`; prototype fixture, store,
 and harness code is never lifted.
 
