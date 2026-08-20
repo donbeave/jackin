@@ -172,8 +172,7 @@ mise run desktop-bindings
 mise run desktop-format-check
 mise run desktop-lint
 mise run desktop-test
-cd native
-swift test -c release
+cargo xtask desktop test-swift
 '''
 
 [tasks.desktop-run]

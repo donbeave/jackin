@@ -51,4 +51,5 @@ Display-only Swift shell over `jackin-usage-ffi` (UniFFI). Product: **jackin❯ 
   proving multi-provider remaining % strips, dual-bucket, depleted countdown, and
   displayability of Rust-supplied Desktop catalog fixtures without inventing token
   prices or trends.
-  Full Xcode CI may also run `cd native && swift test -c release`.
+  Full Xcode CI runs `cargo xtask desktop test-swift` — counted proof (nonzero
+  XCTest + Swift Testing totals, zero failures); never bare `swift test`.

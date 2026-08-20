@@ -119,8 +119,7 @@ mise run desktop-deadcode
 mise run desktop-test
 mise run desktop-test-ui
 
-cd native
-swift test -c release
+cargo xtask desktop test-swift
 ```
 
 `desktop-ci` is the required macOS PR contract: generated bindings, formatting,

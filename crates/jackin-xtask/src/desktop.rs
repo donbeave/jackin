@@ -59,6 +59,8 @@ pub(crate) enum DesktopCommand {
     Run(RunArgs),
     /// Run host + pure Swift parity harnesses (OpenUsage/CodexBar limits-only matrix).
     Test,
+    /// Counted `SwiftPM` unit tests: parse the xUnit report, reject zero/corrupt results.
+    TestSwift,
     /// Developer ID sign + notarize + staple + final release ZIP.
     SignNotarize(sign_notarize::SignNotarizeArgs),
     /// Independent publication state (`KEY=value` lines for `GITHUB_OUTPUT`).
@@ -122,6 +124,7 @@ pub(crate) fn run(command: DesktopCommand) -> Result<()> {
             build_app(&docs::repo_root()?, &version, &build)
         }
         DesktopCommand::Test => run_desktop_tests(&docs::repo_root()?),
+        DesktopCommand::TestSwift => run_swift_unit_tests(&docs::repo_root()?),
         DesktopCommand::Verify(args) => {
             let release = args.release || env_truthy("RELEASE_MODE");
             let app = resolve_app_path(&args.app)?;
@@ -183,6 +186,8 @@ fn run_desktop_tests(root: &Path) -> Result<()> {
         ("StatusItemChipHarness", "StatusItemChipHarness"),
         ("DesktopArchitectureLint", "DesktopArchitectureLint"),
         ("DesktopParityMatrixHarness", "DesktopParityMatrixHarness"),
+        ("DesktopSoTParityHarness", "DesktopSoTParityHarness"),
+        ("ProviderMarksHarness", "ProviderMarksHarness"),
     ] {
         progress(format!("==> swift run -c release {name}"));
         let mut swift = cmd::command("swift");
@@ -195,11 +200,162 @@ fn run_desktop_tests(root: &Path) -> Result<()> {
     progress("");
     progress("┌─────────────────────────────────────────────────────────────");
     progress("│ jackin❯ desktop — tests OK");
-    progress("│   host nextest + StatusItemChipHarness");
-    progress("│   DesktopArchitectureLint + DesktopParityMatrixHarness");
-    progress("│   (full Xcode: cd native && swift test -c release)");
+    progress("│   host nextest + all five pure Swift harnesses");
+    progress("│   (counted SwiftPM unit tests: cargo xtask desktop test-swift)");
     progress("└─────────────────────────────────────────────────────────────");
     Ok(())
+}
+
+/// `SwiftPM` unit tests with a count proof. `SwiftPM` writes xUnit only for
+/// Swift Testing tests (`<name>-swift-testing.xml`); `XCTest` totals come from
+/// the runner's `All tests` summary line in the captured log. Both halves
+/// must be present and nonzero — a mistyped selector, crashed runner, or
+/// missing report can never look green.
+fn run_swift_unit_tests(root: &Path) -> Result<()> {
+    require_macos("desktop test-swift")?;
+    let native = root.join("native");
+    let log = native.join(".build/swift-unit-tests.log");
+    let xunit_base = native.join(".build/swift-unit-tests.xml");
+    let swift_testing_report = native.join(".build/swift-unit-tests-swift-testing.xml");
+    for stale in [&log, &xunit_base, &swift_testing_report] {
+        if stale.exists() {
+            fs::remove_file(stale)
+                .with_context(|| format!("removing stale report {}", stale.display()))?;
+        }
+    }
+    progress("==> swift test -c release (counted)");
+    let mut swift = cmd::command("swift");
+    swift.current_dir(&native).args([
+        "test",
+        "-c",
+        "release",
+        "--xunit-output",
+        xunit_base.to_str().context("xunit path utf-8")?,
+    ]);
+    let run = cmd::run_stdout_file(&mut swift, &log);
+    if run.is_err() {
+        let tail = fs::read_to_string(&log)
+            .map(|text| text.lines().rev().take(20).collect::<Vec<_>>().join("\n"))
+            .unwrap_or_default();
+        progress(format!("swift test failed; log tail:\n{tail}"));
+        run?;
+    }
+
+    let log_text = fs::read_to_string(&log)
+        .with_context(|| format!("missing captured swift test log {}", log.display()))?;
+    let xctest = parse_xctest_summary(&log_text)?;
+    if xctest.tests == 0 {
+        bail!("XCTest executed zero tests — refusing the false-green selection trap");
+    }
+    if xctest.failures > 0 {
+        bail!("XCTest reported {} failures across {} tests", xctest.failures, xctest.tests);
+    }
+
+    let swift_testing_text = fs::read_to_string(&swift_testing_report).with_context(|| {
+        format!(
+            "missing Swift Testing xUnit report {}; the package declares swift-testing tests, so its absence is corruption",
+            swift_testing_report.display()
+        )
+    })?;
+    let swift_testing = parse_xunit_totals(&swift_testing_text)?;
+    if swift_testing.tests == 0 {
+        bail!("Swift Testing executed zero tests — refusing the false-green selection trap");
+    }
+    if swift_testing.failures > 0 || swift_testing.errors > 0 {
+        bail!(
+            "Swift Testing reported {} failures and {} errors across {} tests",
+            swift_testing.failures,
+            swift_testing.errors,
+            swift_testing.tests
+        );
+    }
+
+    progress(format!(
+        "==> swift unit tests OK: {} XCTest + {} Swift Testing executed, 0 failures",
+        xctest.tests, swift_testing.tests
+    ));
+    Ok(())
+}
+
+/// Extract the final `XCTest` `All tests` summary from captured runner output.
+/// Missing or malformed summary lines are corruption, never zero.
+fn parse_xctest_summary(log: &str) -> Result<XunitTotals> {
+    let mut totals: Option<XunitTotals> = None;
+    let mut in_all_tests = false;
+    for line in log.lines() {
+        if line.contains("Test Suite 'All tests'") {
+            in_all_tests = true;
+            continue;
+        }
+        if in_all_tests && line.contains("Executed ") {
+            let numbers: Vec<u64> = line
+                .split(|c: char| !c.is_ascii_digit())
+                .filter(|part| !part.is_empty())
+                .filter_map(|part| part.parse().ok())
+                .collect();
+            // `Executed N tests, with M failures (K unexpected) in X (Y) seconds`
+            let (Some(&tests), Some(&failures)) = (numbers.first(), numbers.get(1)) else {
+                bail!("corrupt XCTest summary line: {line}");
+            };
+            totals = Some(XunitTotals {
+                tests,
+                failures,
+                errors: 0,
+            });
+            in_all_tests = false;
+        }
+    }
+    totals.context("corrupt swift test log: no 'All tests' XCTest summary found")
+}
+
+#[derive(Debug, PartialEq, Eq)]
+struct XunitTotals {
+    tests: u64,
+    failures: u64,
+    errors: u64,
+}
+
+/// Sum `tests`/`failures`/`errors` across every `<testsuite>` element.
+/// Missing elements or attributes are corruption, never zero.
+fn parse_xunit_totals(source: &str) -> Result<XunitTotals> {
+    fn attr_u64(tag: &str, name: &str) -> Result<u64> {
+        let needle = format!("{name}=\"");
+        let start = tag
+            .find(&needle)
+            .with_context(|| format!("corrupt xUnit: testsuite missing {name} attribute"))?
+            + needle.len();
+        let rest = &tag[start..];
+        let end = rest
+            .find('"')
+            .context("corrupt xUnit: unterminated attribute")?;
+        rest[..end]
+            .parse()
+            .with_context(|| format!("corrupt xUnit: non-numeric {name} attribute"))
+    }
+
+    let mut totals = XunitTotals {
+        tests: 0,
+        failures: 0,
+        errors: 0,
+    };
+    let mut suites = 0_u64;
+    let mut rest = source;
+    while let Some(index) = rest.find("<testsuite ") {
+        rest = &rest[index + "<testsuite ".len()..];
+        let end = rest
+            .find('>')
+            .context("corrupt xUnit: unterminated testsuite tag")?;
+        let tag = &rest[..end];
+        totals.tests += attr_u64(tag, "tests")?;
+        totals.failures += attr_u64(tag, "failures")?;
+        totals.errors += attr_u64(tag, "errors")?;
+        suites += 1;
+        rest = &rest[end..];
+    }
+    if suites == 0 {
+        bail!("corrupt xUnit: no testsuite elements");
+    }
+    Ok(totals)
 }
 
 fn run_app(args: &RunArgs) -> Result<()> {

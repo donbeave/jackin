@@ -1,6 +1,6 @@
 use super::{
-    MIN_OS, minos_matches_target, normalize_generated_text, tree_differences, validate_build,
-    validate_version,
+    MIN_OS, XunitTotals, minos_matches_target, normalize_generated_text, parse_xctest_summary,
+    parse_xunit_totals, tree_differences, validate_build, validate_version,
 };
 
 #[test]
@@ -83,4 +83,62 @@ fn tree_differences_flags_stale_missing_and_extra() {
         ]
     );
     std::fs::remove_dir_all(&temp).unwrap();
+}
+
+#[test]
+fn xunit_totals_sum_every_testsuite() {
+    let source = concat!(
+        "<?xml version=\"1.0\"?>\n",
+        "<testsuites>\n",
+        "<testsuite name=\"a\" tests=\"3\" failures=\"0\" errors=\"0\"></testsuite>\n",
+        "<testsuite name=\"b\" tests=\"4\" failures=\"1\" errors=\"2\"></testsuite>\n",
+        "</testsuites>\n"
+    );
+    assert_eq!(
+        parse_xunit_totals(source).unwrap(),
+        XunitTotals {
+            tests: 7,
+            failures: 1,
+            errors: 2,
+        }
+    );
+}
+
+#[test]
+fn xunit_totals_reject_corrupt_reports() {
+    parse_xunit_totals("").unwrap_err();
+    parse_xunit_totals("<testsuites></testsuites>").unwrap_err();
+    parse_xunit_totals("<testsuite name=\"a\" tests=\"1\">").unwrap_err();
+    parse_xunit_totals("<testsuite name=\"a\" tests=\"1\" failures=\"0\" errors=\"0\"").unwrap_err();
+}
+
+#[test]
+fn xctest_summary_reads_last_all_tests_block() {
+    let log = concat!(
+        "Test Suite 'PlatformLaneTests' started\n",
+        "\t Executed 3 tests, with 0 failures (0 unexpected) in 0.012 (0.013) seconds\n",
+        "Test Suite 'All tests' passed at 2026-08-20 10:00:00.000\n",
+        "\t Executed 71 tests, with 0 failures (0 unexpected) in 2.733 (2.738) seconds\n"
+    );
+    assert_eq!(
+        parse_xctest_summary(log).unwrap(),
+        XunitTotals {
+            tests: 71,
+            failures: 0,
+            errors: 0,
+        }
+    );
+}
+
+#[test]
+fn xctest_summary_rejects_missing_or_truncated_block() {
+    parse_xctest_summary("nothing here").unwrap_err();
+    // 'All tests' header without the following Executed line = crashed runner.
+    parse_xctest_summary("Test Suite 'All tests' started\n").unwrap_err();
+    // Executed line without parseable numbers is corruption, never zero.
+    let log = concat!(
+        "Test Suite 'All tests' passed\n",
+        "\t Executed many tests, with no failures\n"
+    );
+    parse_xctest_summary(log).unwrap_err();
 }
