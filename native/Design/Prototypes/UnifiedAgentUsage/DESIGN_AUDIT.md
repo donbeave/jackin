@@ -71,3 +71,13 @@ No exception. Glass remains confined to native toolbar/popover controls.
 Sidebar, List, Form, LabeledContent, Picker, Toggle, and system menu patterns
 remain native. Overview quota cards are content, use no glass or blur, and use
 the minimal custom boundary required for the scannable adaptive grid signature.
+
+## Render-stability sweep
+
+After the revision, all 36 supported fixture names (F00–F29 plus the named
+F18, F19, and F24 variants) remained alive after initial render at 760 × 500,
+920 × 620, and 1200 × 760 in Light and Dark: 216 launches. F18-f02 and
+F18-f11 also passed at 920 × 620 in both appearances with reduction unset,
+Transparency, Motion, and Transparency + Motion: 16 additional launches.
+This proves launch/render stability; visual blessing and real system
+accessibility-setting verification remain the operator-owned SIGNOFF lane.
