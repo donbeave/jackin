@@ -74,10 +74,13 @@ final class ProtoShell: NSObject, NSMenuDelegate {
         let menu = NSMenu(title: "Scenario")
         for group in ProtoFixtures.scenarioMenu {
             for name in group.names {
+                let description = ProtoFixtures.scenarioDescriptions[name] ?? name
                 let item = NSMenuItem(
-                    title: name, action: #selector(loadScenario(_:)), keyEquivalent: "")
+                    title: "\(name) — \(description)",
+                    action: #selector(loadScenario(_:)), keyEquivalent: "")
                 item.target = self
                 item.representedObject = name
+                item.toolTip = description
                 if name == store.projection.scenario { item.state = .on }
                 menu.addItem(item)
             }
@@ -212,6 +215,10 @@ final class ProtoShell: NSObject, NSMenuDelegate {
         split.splitView.isVertical = true
 
         let sidebarHost = NSHostingController(rootView: wrap(SidebarView(store: store)))
+        // NSHostingController defaults to propagating SwiftUI's preferred
+        // content size; in a split view that resizes the window on every
+        // selection swap. Opt out — the split/window owns geometry.
+        sidebarHost.sizingOptions = []
         let sidebarItem = NSSplitViewItem(sidebarWithViewController: sidebarHost)
         sidebarItem.allowsFullHeightLayout = true
         sidebarItem.minimumThickness = 190
@@ -223,6 +230,7 @@ final class ProtoShell: NSObject, NSMenuDelegate {
                 DetailRootView(store: store) { [weak self] in
                     self?.showSettings()
                 }))
+        detailHost.sizingOptions = []
         let detailItem = NSSplitViewItem(viewController: detailHost)
         detailItem.automaticallyAdjustsSafeAreaInsets = true
         detailItem.addTopAlignedAccessoryViewController(
@@ -239,7 +247,6 @@ final class ProtoShell: NSObject, NSMenuDelegate {
             defer: false)
         window.title = "jackin❯ desktop"
         window.isReleasedWhenClosed = false
-        window.contentMinSize = NSSize(width: 760, height: 500)
         window.setContentSize(config.window ?? NSSize(width: 920, height: 620))
         window.contentViewController = split
 
@@ -263,6 +270,18 @@ final class ProtoShell: NSObject, NSMenuDelegate {
         let toolbar = toolbarController.makeToolbar()
         window.toolbar = toolbar
         toolbarController.installStandardItems(in: toolbar)
+
+        // Set after contentViewController/toolbar — assigning those resets
+        // the window's size limits. Sidebar min 190 + a usable detail list
+        // is the floor; below that the design does not hold. minSize in
+        // frame units: contentMinSize alone is not honored once a split
+        // view controller owns the content. (Limits constrain interactive
+        // resize; programmatic setContentSize bypasses them by design.)
+        window.contentMinSize = NSSize(width: 760, height: 500)
+        window.minSize = NSWindow.frameRect(
+            forContentRect: NSRect(x: 0, y: 0, width: 760, height: 500),
+            styleMask: window.styleMask
+        ).size
         return window
     }
 

@@ -263,6 +263,48 @@ enum ProtoFixtures {
         ("Contract pins", ["F18-f02", "F18-f11", "F20", "F21", "F23", "F24-f02", "F24-f11", "F24-f12"]),
     ]
 
+    /// One-line human description per scenario — surfaced as the Scenario
+    /// menu item subtitle/tooltip so a code like "F24-f11" is never the only
+    /// label. Mirrors the `### Fxx —` headings in Fixtures.md.
+    static let scenarioDescriptions: [String: String] = [
+        "F00": "No providers detected — empty state with add-provider prompt",
+        "F01": "Single provider, healthy quota",
+        "F02": "Full provider catalog, all healthy (default)",
+        "F03": "Multi-account provider with account switcher",
+        "F04": "Nearly exhausted quota — warning severity",
+        "F05": "Exhausted quota — depleted state",
+        "F06": "Stale last-good data after a failed refresh",
+        "F07": "Refresh in progress over last-good data",
+        "F08": "One provider timed out, the rest healthy",
+        "F09": "Permission denied — re-authorization required",
+        "F10": "Offline, showing cached data",
+        "F11": "Long labels and emails — truncation stress",
+        "F12": "Large dataset layout envelope",
+        "F13": "Initial loading state",
+        "F14": "Global bridge error",
+        "F15": "Accepted preference mutation (percent style)",
+        "F16": "Rejected preference mutation with retry",
+        "F17": "Mutation completions arriving out of order",
+        "F18-f02": "Accessibility display settings pinned over F02",
+        "F18-f11": "Accessibility display settings pinned over F11",
+        "F19-en-US": "Localization — English (US)",
+        "F19-de-DE": "Localization — German (Germany)",
+        "F19-ja-JP": "Localization — Japanese (Japan)",
+        "F19-ar-SA": "Localization — Arabic (Saudi Arabia), right-to-left",
+        "F20": "Destructive pending sentinel",
+        "F21": "Keyboard and VoiceOver task completion",
+        "F22": "Provider-supplied money cap window",
+        "F23": "Physical display and window restoration",
+        "F24-f02": "Continuous resize and overflow pinned over F02",
+        "F24-f11": "Continuous resize and overflow pinned over F11",
+        "F24-f12": "Continuous resize and overflow pinned over F12",
+        "F25": "Multi-account rich overview grid",
+        "F26": "Sign-in required state",
+        "F27": "API key required state",
+        "F28": "Unsupported credential state",
+        "F29": "Rate limited with backoff, last-good rows",
+    ]
+
     // MARK: Core records
 
     static let codexPersonal = ProtoAccount(
