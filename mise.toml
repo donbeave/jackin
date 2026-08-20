@@ -135,7 +135,9 @@ run = "cd native && find Sources Tests UITests Tools Scripts -name '*.swift' ! -
 
 [tasks.desktop-lint]
 description = "Fail on jackin❯ desktop SwiftLint violations"
-run = "cd native && swiftlint lint --strict --config .swiftlint.yml"
+# No --config flag: an explicit config path disables SwiftLint's nested-config
+# discovery, which the per-directory test-policy and size-debt files rely on.
+run = "cd native && swiftlint lint --strict"
 
 [tasks.desktop-test-ui]
 description = "Run jackin❯ desktop UI tests against the real app host"
