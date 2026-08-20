@@ -60,19 +60,17 @@ live-resolvable during the audit; repo records match the skill baseline.
   workspace nextest runs in the same pipeline.
 - Forward-lane exception dated 2026-08-20 with owner and exit condition.
 
-## Gaps
+## Gaps — both closed 2026-08-20 (remediate mode)
 
-1. **Merge cadence never runs.** `desktop-merge` (PR graph plus
-   `desktop-test-ui` — UI tests and the accessibility audit against the real
-   app host) is defined in `mise.toml` but no event invokes it; the pinned
-   reusable workflow calls only `mise run desktop-ci`. The skill's merge tier
-   (UI tests + accessibility audit at merge) is unmet.
-   Owner: `velnor-actions` `ci-native.yml` (local `ci.yml` is generated —
-   never hand-edited).
-2. **Scheduled cadence never runs.** `desktop-scheduled` (merge graph plus the
-   periphery dead-code scan) has no caller; the weekly cron in `ci.yml`
-   re-runs `desktop-ci` only. The dead-code scan is local-only.
-   Owner: same upstream reusable workflow.
+1. ~~**Merge cadence never runs.**~~ Closed by
+   `.github/workflows/desktop-cadence.yml`: push to `main` and manual dispatch
+   run `mise run desktop-merge` (PR graph + UI tests + accessibility audit) on
+   the macos-26 / Xcode 26.6 shipping lane.
+2. ~~**Scheduled cadence never runs.**~~ Closed by the same workflow: weekly
+   cron (Mon 04:41) runs `mise run desktop-scheduled` (merge graph + periphery
+   dead-code scan).
 
-Both gaps live in the pinned upstream reusable workflow, the same source that
-owns the recorded forward-lane exception.
+Fix landed locally because `ci.yml` is generated upstream by
+`velnor-actions-generator` and never hand-edited; the repo's other workflows
+are hand-written, so a separate cadence workflow follows existing convention.
+Task names stay the single source of truth in `mise.toml`.
