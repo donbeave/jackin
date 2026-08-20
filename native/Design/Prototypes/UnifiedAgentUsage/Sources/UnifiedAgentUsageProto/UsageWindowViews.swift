@@ -103,7 +103,11 @@ struct SidebarView: View {
     }
 
     private func accountRow(_ account: ProtoAccount, provider: ProtoProvider) -> some View {
-        HStack {
+        HStack(spacing: 8) {
+            Circle()
+                .fill(meterTint(account.state))
+                .frame(width: 6, height: 6)
+                .accessibilityHidden(true)
             Text(account.label)
                 .lineLimit(1)
                 .truncationMode(.middle)
@@ -198,13 +202,7 @@ struct ProviderCardView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(spacing: 10) {
-                if let mark = ProviderMarks.swiftUIImage(forIconKey: provider.iconKey) {
-                    mark
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 20, height: 20)
-                        .accessibilityHidden(true)
-                }
+                BrandMarkChip(iconKey: provider.iconKey, fallbackGlyph: provider.fallbackGlyph)
                 Text(provider.name)
                     .font(.headline)
                     .lineLimit(1)
@@ -304,7 +302,7 @@ struct ProviderCardView: View {
                     if let remaining = account.remaining {
                         HStack(alignment: .firstTextBaseline, spacing: 3) {
                             Text("\(remaining)")
-                                .font(.system(size: 24, weight: .semibold))
+                                .font(.system(size: 26, weight: .semibold, design: .rounded))
                                 .monospacedDigit()
                             Text("% left")
                                 .font(.caption)
@@ -392,17 +390,9 @@ struct ProviderDetailView: View {
         List {
             Section {
                 HStack(spacing: 12) {
-                    if let mark = ProviderMarks.swiftUIImage(forIconKey: provider.iconKey) {
-                        mark
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 32, height: 32)
-                            .accessibilityHidden(true)
-                    } else {
-                        Text(provider.fallbackGlyph)
-                            .font(.headline)
-                            .accessibilityHidden(true)
-                    }
+                    BrandMarkChip(
+                        iconKey: provider.iconKey, fallbackGlyph: provider.fallbackGlyph,
+                        markSize: 26, chipSize: 40)
                     VStack(alignment: .leading, spacing: 2) {
                         Text(provider.name)
                             .font(.title2)
@@ -505,8 +495,7 @@ struct LimitRowView: View {
                     .foregroundStyle(window.notStarted ? .secondary : .primary)
             }
             if let meter = window.meter {
-                ProgressView(value: Double(meter), total: 100)
-                    .tint(meterTint(window.state))
+                QuotaMeter(percent: meter, tint: meterTint(window.state))
                     .accessibilityHidden(true)
             }
             if let pace = window.pace {

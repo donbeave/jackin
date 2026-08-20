@@ -249,15 +249,17 @@ final class ProtoShell: NSObject, NSMenuDelegate {
             styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
             backing: .buffered,
             defer: false)
-        window.title = "jackin❯ desktop"
+        window.title = "Usage"
         window.isReleasedWhenClosed = false
         window.setContentSize(config.window ?? NSSize(width: 920, height: 620))
         window.contentViewController = split
 
         // Unified titlebar + standard AppKit split toolbar; no app-painted chrome.
+        // Title follows the selection (System Settings wayfinding): section
+        // name as title, account as subtitle.
         window.toolbarStyle = .unified
         window.titlebarAppearsTransparent = true
-        window.titleVisibility = .hidden
+        window.titleVisibility = .visible
         window.titlebarSeparatorStyle = .automatic
 
         sidebarKeyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) {
@@ -290,7 +292,37 @@ final class ProtoShell: NSObject, NSMenuDelegate {
             forContentRect: NSRect(x: 0, y: 0, width: 760, height: 500),
             styleMask: window.styleMask
         ).size
+        observeWindowTitles(window)
         return window
+    }
+
+    /// Selection-driven window title/subtitle, re-registered after every
+    /// change (withObservationTracking fires once).
+    private func observeWindowTitles(_ window: NSWindow) {
+        withObservationTracking {
+            applyWindowTitles(window)
+        } onChange: { [weak self, weak window] in
+            Task { @MainActor in
+                guard let self, let window else { return }
+                self.observeWindowTitles(window)
+            }
+        }
+    }
+
+    private func applyWindowTitles(_ window: NSWindow) {
+        switch store.resolvedSidebar {
+        case .overview:
+            window.title = "Usage"
+            window.subtitle = ""
+        case .provider(let key):
+            window.title = store.provider(key)?.name ?? "Usage"
+            window.subtitle = ""
+        case .account(let providerKey, _):
+            let provider = store.provider(providerKey)
+            window.title = provider?.name ?? "Usage"
+            window.subtitle =
+                provider.flatMap { store.account(for: $0) }?.label ?? ""
+        }
     }
 
     static func isSidebarKeyEquivalent(_ event: NSEvent) -> Bool {

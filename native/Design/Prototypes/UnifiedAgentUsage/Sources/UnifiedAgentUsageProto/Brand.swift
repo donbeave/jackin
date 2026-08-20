@@ -44,6 +44,39 @@ func meterTint(_ state: ProtoState) -> Color {
     }
 }
 
+/// Brand well behind a provider mark: phosphor at whisper alpha on a
+/// continuous squircle. The one place chrome-adjacent content wears the
+/// brand color as a fill — quiet enough to stay content, loud enough to
+/// read jackin❯ at a glance.
+struct BrandMarkChip: View {
+    let iconKey: String
+    var fallbackGlyph: String = ""
+    var markSize: CGFloat = 18
+    var chipSize: CGFloat = 30
+
+    var body: some View {
+        Group {
+            if let mark = ProviderMarks.swiftUIImage(forIconKey: iconKey) {
+                mark
+                    .resizable()
+                    .scaledToFit()
+                    .foregroundStyle(.primary)
+            } else if !fallbackGlyph.isEmpty {
+                Text(fallbackGlyph)
+                    .font(.system(size: markSize * 0.6, weight: .semibold))
+                    .foregroundStyle(.primary)
+            }
+        }
+        .frame(width: markSize, height: markSize)
+        .frame(width: chipSize, height: chipSize)
+        .background(
+            RoundedRectangle(cornerRadius: chipSize * 0.28, style: .continuous)
+                .fill(Color.jackinPhosphor.opacity(0.14))
+        )
+        .accessibilityHidden(true)
+    }
+}
+
 /// Canonical generated jackin❯ identity assets for native surfaces.
 @MainActor
 enum JackinBrandIdentity {
