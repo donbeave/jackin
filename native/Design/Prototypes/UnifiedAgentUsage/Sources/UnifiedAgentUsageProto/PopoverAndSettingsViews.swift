@@ -36,6 +36,7 @@ struct PopoverView: View {
                 Image(nsImage: monogram)
                     .resizable()
                     .scaledToFit()
+                    .foregroundStyle(JackinBrand.phosphor)
                     .frame(width: 18, height: 18)
                     .accessibilityHidden(true)
             }
@@ -172,7 +173,7 @@ struct SettingsView: View {
                         "Detected providers use native menu-bar items with system-owned appearance."
                     )
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(JackinBrand.muted)
                 }
 
                 if store.displayMode == .pinnedSurface {
@@ -202,7 +203,7 @@ struct SettingsView: View {
                 .accessibilityLabel("Percent format: remaining left or used")
                 Text("Menu bar chips and compact labels use this style together.")
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(JackinBrand.muted)
 
                 Picker("Reset style", selection: $store.resetStyle) {
                     Text("Countdown").tag(ProtoStore.ResetStyle.countdown)
@@ -248,7 +249,7 @@ struct SettingsView: View {
                 }
                 Text("Probe at most every \(store.refreshFloorMinutes) minutes (Rust floor).")
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(JackinBrand.muted)
                     .accessibilityLabel("Refresh floor \(store.refreshFloorMinutes) minutes")
                 if let error = store.floorError {
                     Label(error, systemImage: "exclamationmark.triangle")
@@ -268,12 +269,14 @@ struct SettingsView: View {
                     "Refreshing here updates the same account snapshot every jackin❯ container reads (and vice versa)."
                 )
                 .font(.caption)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(JackinBrand.muted)
                 Text("No passwords stored. No Capsule required.")
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(JackinBrand.muted)
             }
         }
         .formStyle(.grouped)
+        .scrollContentBackground(.hidden)
+        .background(JackinBrand.stage)
     }
 }

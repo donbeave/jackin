@@ -18,10 +18,12 @@ enum JackinBrand {
     static var phosphorWash: Color { Color(nsColor: phosphorWashNSColor) }
     static var warning: Color { Color(nsColor: warningNSColor) }
     static var danger: Color { Color(nsColor: dangerNSColor) }
-    static var stage: Color { Color(nsColor: .underPageBackgroundColor) }
-    static var card: Color { Color(nsColor: .controlBackgroundColor) }
-    static var separator: Color { Color(nsColor: .separatorColor) }
+    static var stage: Color { Color(nsColor: stageNSColor) }
+    static var card: Color { Color(nsColor: cardNSColor) }
+    static var separator: Color { Color(nsColor: separatorNSColor) }
     static var meterTrack: Color { Color(nsColor: meterTrackNSColor) }
+    static var muted: Color { Color(nsColor: mutedNSColor) }
+    static var quiet: Color { Color(nsColor: quietNSColor) }
 
     static let phosphorNSColor = NSColor(
         name: "jackinPhosphor",
@@ -41,26 +43,58 @@ enum JackinBrand {
     ///
     /// Explicit semantic endpoints keep small status
     /// text above WCAG AA against the native content grounds in both appearances.
-    /// Light: warning #7A4B00, danger #B42318. Dark: warning #FFC15A,
-    /// danger #FF7B72. Wash/track alpha also adapts here, never in a view.
+    /// Light grounds: stage #EEF5F0, card #FCFEFC. Dark grounds: stage
+    /// #0D1410, card #151F18. Semantic and supporting colors adapt here,
+    /// never in a view.
     static let phosphorWashNSColor = dynamicColor(
         name: "jackinPhosphorWash",
-        light: (phosphorLightSRGB.r, phosphorLightSRGB.g, phosphorLightSRGB.b, 0.12),
-        dark: (phosphorDarkSRGB.r, phosphorDarkSRGB.g, phosphorDarkSRGB.b, 0.10))
+        light: rgb(0xD9F4DF),
+        dark: rgb(0x173D22))
+    static let stageNSColor = dynamicColor(
+        name: "jackinStage",
+        light: rgb(0xEEF5F0),
+        dark: rgb(0x0D1410))
+    static let cardNSColor = dynamicColor(
+        name: "jackinCard",
+        light: rgb(0xFCFEFC),
+        dark: rgb(0x151F18))
+    static let separatorNSColor = dynamicColor(
+        name: "jackinSeparator",
+        light: rgb(0xA8C2AD),
+        dark: rgb(0x35513C))
+    static let meterTrackNSColor = dynamicColor(
+        name: "jackinMeterTrack",
+        light: rgb(0xCCDCCF),
+        dark: rgb(0x294431))
+    static let mutedNSColor = dynamicColor(
+        name: "jackinMuted",
+        light: rgb(0x4E6556),
+        dark: rgb(0xA8BDAE))
+    static let quietNSColor = dynamicColor(
+        name: "jackinQuiet",
+        light: rgb(0x5B7061),
+        dark: rgb(0x8FA493))
     static let warningNSColor = dynamicColor(
         name: "jackinWarning",
-        light: (0x7A / 255, 0x4B / 255, 0x00 / 255, 1),
-        dark: (0xFF / 255, 0xC1 / 255, 0x5A / 255, 1))
+        light: rgb(0x7A4B00),
+        dark: rgb(0xFFC15A))
     static let dangerNSColor = dynamicColor(
         name: "jackinDanger",
-        light: (0xB4 / 255, 0x23 / 255, 0x18 / 255, 1),
-        dark: (0xFF / 255, 0x7B / 255, 0x72 / 255, 1))
-    static let meterTrackNSColor = NSColor(
-        name: "jackinMeterTrack",
-        dynamicProvider: { appearance in
-            let dark = appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
-            return NSColor.separatorColor.withAlphaComponent(dark ? 0.62 : 0.52)
-        })
+        light: rgb(0xB42318),
+        dark: rgb(0xFF7B72))
+
+    private static func rgb(
+        _ hex: UInt32, alpha: CGFloat = 1
+    ) -> (
+        CGFloat, CGFloat, CGFloat, CGFloat
+    ) {
+        (
+            CGFloat((hex >> 16) & 0xFF) / 255,
+            CGFloat((hex >> 8) & 0xFF) / 255,
+            CGFloat(hex & 0xFF) / 255,
+            alpha
+        )
+    }
 
     private static func dynamicColor(
         name: String,
@@ -101,6 +135,8 @@ enum JackinType {
 extension Color {
     /// Product phosphor accent — prefer over `Color.accentColor` for jackin chrome.
     static var jackinPhosphor: Color { JackinBrand.phosphor }
+    static var jackinMuted: Color { JackinBrand.muted }
+    static var jackinQuiet: Color { JackinBrand.quiet }
 }
 
 /// Meter tint from row state: danger red, warning orange, otherwise phosphor.

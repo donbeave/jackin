@@ -210,7 +210,8 @@ final class ProtoShell: NSObject, NSMenuDelegate {
         NSApp.orderFrontStandardAboutPanel(options: [
             .applicationName: "jackin❯ desktop",
             .credits: NSAttributedString(
-                string: "Limits-only usage for agent credentials.\nDisplay shell over jackin-usage."),
+                string: "Limits-only usage for agent credentials.\nDisplay shell over jackin-usage."
+            ),
         ])
     }
 
@@ -288,10 +289,11 @@ final class ProtoShell: NSObject, NSMenuDelegate {
         // view controller owns the content. (Limits constrain interactive
         // resize; programmatic setContentSize bypasses them by design.)
         window.contentMinSize = NSSize(width: 760, height: 500)
-        window.minSize = NSWindow.frameRect(
-            forContentRect: NSRect(x: 0, y: 0, width: 760, height: 500),
-            styleMask: window.styleMask
-        ).size
+        window.minSize =
+            NSWindow.frameRect(
+                forContentRect: NSRect(x: 0, y: 0, width: 760, height: 500),
+                styleMask: window.styleMask
+            ).size
         observeWindowTitles(window)
         return window
     }
@@ -434,8 +436,9 @@ final class ProtoShell: NSObject, NSMenuDelegate {
             withTitle: "Quit jackin❯ desktop",
             action: #selector(NSApplication.terminate(_:)), keyEquivalent: "")
         for item in menu.items { item.target = self }
-        menu.popUp(positioning: nil, at: NSPoint(x: 0, y: button.bounds.height + 4),
-                   in: button)
+        menu.popUp(
+            positioning: nil, at: NSPoint(x: 0, y: button.bounds.height + 4),
+            in: button)
     }
 
     private func togglePopover(for provider: ProtoProvider, from button: NSView) {
@@ -555,7 +558,7 @@ enum StatusItemRendering {
                 string: compactResetLabel + "\n",
                 attributes: [
                     .font: topFont,
-                    .foregroundColor: NSColor.secondaryLabelColor,
+                    .foregroundColor: JackinBrand.mutedNSColor,
                     .paragraphStyle: paragraph,
                     .baselineOffset: -0.5,
                 ]))

@@ -95,7 +95,7 @@ struct SidebarView: View {
                     Text("\(percent)%")
                         .font(.caption)
                         .monospacedDigit()
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(meterTint(provider.state))
                 }
             }
         } icon: {
@@ -151,11 +151,14 @@ struct OverviewContentView: View {
                     .disabled(store.refreshInProgress)
                     .accessibilityIdentifier("usage.retry")
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(JackinBrand.stage)
             .accessibilityIdentifier("usage.global-error")
         } else if store.projection.isLoading {
             ProgressView("Loading usage")
                 .controlSize(.large)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(JackinBrand.stage)
                 .accessibilityIdentifier("usage.loading")
         } else if store.projection.providers.isEmpty {
             ContentUnavailableView {
@@ -165,6 +168,8 @@ struct OverviewContentView: View {
             } actions: {
                 Button("Open Settings…") { onOpenSettings() }
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(JackinBrand.stage)
             .accessibilityIdentifier("usage.overview.empty")
         } else {
             ScrollView {
@@ -236,14 +241,14 @@ struct ProviderCardView: View {
                 VStack(alignment: .leading, spacing: JackinSpace.xs) {
                     Label(error, systemImage: "exclamationmark.triangle")
                         .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(JackinBrand.muted)
                         .lineLimit(3)
                         .fixedSize(horizontal: false, vertical: true)
                     HStack(spacing: JackinSpace.xs) {
                         if let ago = provider.updatedAgo {
                             Text(ago)
                                 .font(.caption)
-                                .foregroundStyle(.tertiary)
+                                .foregroundStyle(JackinBrand.quiet)
                         }
                         Spacer()
                         Button(store.chrome.retryTitle) { store.refresh() }
@@ -273,7 +278,7 @@ struct ProviderCardView: View {
         } else {
             Text("No accounts discovered")
                 .font(.callout)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(JackinBrand.muted)
         }
     }
 
@@ -291,7 +296,7 @@ struct ProviderCardView: View {
                     } else {
                         Text(account.plan)
                             .font(.callout)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(JackinBrand.muted)
                     }
                     Spacer(minLength: 8)
                     if let remaining = account.remaining {
@@ -301,13 +306,13 @@ struct ProviderCardView: View {
                                 .monospacedDigit()
                             Text("% left")
                                 .font(JackinType.metadata)
-                                .foregroundStyle(.secondary)
+                                .foregroundStyle(JackinBrand.muted)
                         }
                         .foregroundStyle(meterTint(account.state))
                     } else {
                         Text("—")
                             .font(.title2)
-                            .foregroundStyle(.tertiary)
+                            .foregroundStyle(JackinBrand.quiet)
                     }
                 }
 
@@ -332,7 +337,7 @@ struct ProviderCardView: View {
                 }
                 .font(JackinType.metadata)
                 .monospacedDigit()
-                .foregroundStyle(.secondary)
+                .foregroundStyle(JackinBrand.muted)
             }
             .contentShape(Rectangle())
         }
@@ -410,6 +415,8 @@ struct ProviderDetailView: View {
                 store: store, provider: provider, identifierPrefix: "usage")
         }
         .listStyle(.inset)
+        .scrollContentBackground(.hidden)
+        .background(JackinBrand.stage)
         .accessibilityLabel("\(provider.name) usage details")
         .accessibilityIdentifier("usage.provider.\(provider.key)")
     }
@@ -441,7 +448,7 @@ struct ProviderDetailSections: View {
                     }
                 } else if provider.errorText == nil {
                     Text("No limit details available")
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(JackinBrand.muted)
                 }
             } header: {
                 sectionHeader("Limits")
@@ -477,7 +484,7 @@ struct ProviderDetailSections: View {
                     if let ago = provider.updatedAgo {
                         Text(ago)
                             .font(JackinType.metadata)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(JackinBrand.muted)
                     }
                     Button(store.chrome.retryTitle) { store.refresh() }
                         .disabled(store.refreshInProgress)
@@ -504,7 +511,7 @@ struct ProviderDetailSections: View {
                 }
                 Text(provider.activityLabel)
                     .font(.callout)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(JackinBrand.muted)
                     .accessibilityIdentifier("\(identifierPrefix).provider-activity")
             }
             Spacer()
@@ -552,7 +559,7 @@ struct LimitRowView: View {
             if let pace = window.pace {
                 Text(pace)
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(JackinBrand.muted)
                     .accessibilityHidden(true)
             }
         }
