@@ -345,7 +345,7 @@ where
 
     // Primary render: a direct `Terminal::draw` with the confirm-dialog /
     // debug-bar overlay composited into the same in-progress frame — exactly
-    // what the retired facade `drive_frame` wrapped. The run loop stays
+    // what the retired facade frame driver wrapped. The run loop stays
     // surface-owned (arch gate).
     let confirm_state = state.quit_confirm.as_ref();
     let screen = screen_of(state);
