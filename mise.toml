@@ -240,6 +240,7 @@ arg "[backdrop]" help="Optional harness backdrop hex color"
 run = '''
 set -euo pipefail
 binary="native/Design/Prototypes/UnifiedAgentUsage/.build/debug/UnifiedAgentUsageProto"
+label="com.jackin.prototype.unified-agent-usage"
 args=(
   --tr-scenario "$usage_scenario"
   --tr-window "$usage_window"
@@ -247,7 +248,12 @@ args=(
 )
 if [ -n "${usage_reduce:-}" ]; then args+=(--tr-reduce "$usage_reduce"); fi
 if [ -n "${usage_backdrop:-}" ]; then args+=(--tr-backdrop "$usage_backdrop"); fi
-open -n "$binary" --args "${args[@]}"
+launchctl remove "$label" 2>/dev/null || true
+for _ in {1..20}; do
+  if ! launchctl print "gui/$(id -u)/$label" >/dev/null 2>&1; then break; fi
+  sleep 0.1
+done
+launchctl submit -l "$label" -- "$PWD/$binary" "${args[@]}"
 '''
 
 [tasks.desktop-prototype]
