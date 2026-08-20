@@ -3338,7 +3338,6 @@ dependencies = [
  "crossterm",
  "jackin-core",
  "jackin-telemetry",
- "jackin-tui",
  "termrock",
  "tokio",
 ]

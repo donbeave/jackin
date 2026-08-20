@@ -11,8 +11,8 @@ pub mod state;
 use std::collections::HashSet;
 
 pub use adapters::{
-    BlockingSubscription, ModalOutcome, TextInputState, ready_blocking_subscription,
-    spawn_named_blocking_subscription,
+    LoadPoll, LoadSubscription, ModalOutcome, TextInputState, WorkerSubscription,
+    ready_load_subscription, spawn_named_worker_subscription,
 };
 
 pub use state::{LoadResult, OpPickerState};

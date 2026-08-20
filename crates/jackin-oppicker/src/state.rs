@@ -10,7 +10,7 @@ use std::cell::RefCell;
 use std::collections::HashSet;
 use std::rc::Rc;
 
-use crate::{BlockingSubscription, TextInputState};
+use crate::{LoadSubscription, TextInputState};
 use termrock::widgets::ListState;
 
 use crate::{
@@ -78,7 +78,7 @@ pub struct OpPickerState {
     pub field_refresh_in_place: bool,
 
     /// In-flight subscription waiting for a background load result.
-    pub rx: Option<BlockingSubscription<LoadResult>>,
+    pub rx: Option<LoadSubscription<LoadResult>>,
     /// Pending load request queued by state-mutation methods; the host
     /// crate's load-execution layer picks this up and starts the worker.
     /// Runner is `()` here — the host injects the real runner at execution

@@ -3,8 +3,8 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use crate::BlockingSubscription;
-use jackin_tui::runtime::{Subscription, SubscriptionPoll};
+use crate::LoadSubscription;
+use crate::adapters::LoadPoll;
 
 use crate::{
     AccountsLoadedPlan, FieldsLoadedPlan, OpLoadState, OpPickerAccount, OpPickerCache,
@@ -204,7 +204,7 @@ impl OpPickerState {
         self.pending_load.take()
     }
 
-    pub fn attach_load_receiver(&mut self, rx: BlockingSubscription<LoadResult>) {
+    pub fn attach_load_receiver(&mut self, rx: LoadSubscription<LoadResult>) {
         self.rx = Some(rx);
     }
 
@@ -231,12 +231,12 @@ impl OpPickerState {
             return false;
         };
         match rx.poll_next() {
-            SubscriptionPoll::Ready(LoadResult::Accounts(Ok(accounts))) => {
+            LoadPoll::Ready(LoadResult::Accounts(Ok(accounts))) => {
                 self.rx = None;
                 self.handle_accounts_loaded(accounts);
                 true
             }
-            SubscriptionPoll::Ready(LoadResult::Vaults(Ok(vaults))) => {
+            LoadPoll::Ready(LoadResult::Vaults(Ok(vaults))) => {
                 self.rx = None;
                 let plan = vaults_loaded_plan(vaults.len());
                 if matches!(plan, VaultsLoadedPlan::NoVaults) {
@@ -254,14 +254,12 @@ impl OpPickerState {
                 self.load_state = OpLoadState::Ready;
                 true
             }
-            SubscriptionPoll::Ready(
-                LoadResult::Accounts(Err(err)) | LoadResult::Vaults(Err(err)),
-            ) => {
+            LoadPoll::Ready(LoadResult::Accounts(Err(err)) | LoadResult::Vaults(Err(err))) => {
                 self.rx = None;
                 self.load_state = probe_load_error_from_anyhow(&err);
                 true
             }
-            SubscriptionPoll::Ready(LoadResult::Items(Ok(items))) => {
+            LoadPoll::Ready(LoadResult::Items(Ok(items))) => {
                 self.rx = None;
                 let vault_id = self.selected_vault_id_or_default();
                 self.op_cache.borrow_mut().put_items(
@@ -275,12 +273,12 @@ impl OpPickerState {
                 self.load_state = OpLoadState::Ready;
                 true
             }
-            SubscriptionPoll::Ready(LoadResult::Items(Err(err)) | LoadResult::Fields(Err(err))) => {
+            LoadPoll::Ready(LoadResult::Items(Err(err)) | LoadResult::Fields(Err(err))) => {
                 self.rx = None;
                 self.load_state = recoverable_load_error_state(err.to_string());
                 true
             }
-            SubscriptionPoll::Ready(LoadResult::Fields(Ok(mut fields))) => {
+            LoadPoll::Ready(LoadResult::Fields(Ok(mut fields))) => {
                 self.rx = None;
                 sort_fields_by_concealed_first(&mut fields, |field| field.concealed);
                 let vault_id = self.selected_vault_id_or_default();
@@ -334,8 +332,8 @@ impl OpPickerState {
                 self.load_state = OpLoadState::Ready;
                 true
             }
-            SubscriptionPoll::Pending => false,
-            SubscriptionPoll::Closed => {
+            LoadPoll::Pending => false,
+            LoadPoll::Closed => {
                 self.rx = None;
                 self.load_state = disconnected_worker_error_state();
                 true

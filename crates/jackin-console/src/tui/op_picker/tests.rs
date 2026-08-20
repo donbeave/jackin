@@ -547,7 +547,7 @@ fn create_mode_field_refresh_stays_on_field_and_keeps_section() {
     s.fields.clear();
     s.field_refresh_in_place = true;
     // Publish the reloaded fields through the same arm the worker uses.
-    s.rx = Some(jackin_oppicker::ready_blocking_subscription(
+    s.rx = Some(jackin_oppicker::ready_load_subscription(
         LoadResult::Fields(Ok(vec![
             field_with_reference("user", "op://Personal/login/user"),
             field_with_reference("api", "op://Personal/login/auth/api"),

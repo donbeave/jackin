@@ -8,11 +8,11 @@ Split out of the console so the picker's decision logic is unit-testable without
 
 - Picker state machine (`state`) and input handling (`input`).
 - Load/planning helpers (`load`) — what to fetch and how to present it, with no I/O.
-- Async receiver adapters (`adapters`) that connect product sources to TermRock's executor-neutral subscription contract.
+- Load subscriptions (`adapters`): the cached arm rides upstream `termrock::runtime::ReadySubscription`; the worker arm is a product-owned one-shot receiver over a named, join-tracked thread.
 
 ## Architecture tier and allowed dependencies
 
-**Presentation-adjacent model.** Dependencies include `jackin-core`, `jackin-diagnostics`, `jackin-tui`, Tokio runtime/channels, and TermRock. No `op` or filesystem — those effects live in `jackin-env`.
+**Presentation-adjacent model.** Dependencies include `jackin-core`, `jackin-telemetry`, Tokio runtime/channels, and TermRock. No `op` or filesystem — those effects live in `jackin-env`.
 
 ## Structure
 
@@ -22,7 +22,7 @@ Split out of the console so the picker's decision logic is unit-testable without
 | [`state.rs`](src/state.rs) | picker state machine | — |
 | [`input.rs`](src/input.rs) | input handling | — |
 | [`load.rs`](src/load.rs) | load/planning helpers | — |
-| [`adapters.rs`](src/adapters.rs) | receiver-to-subscription adapters | inline |
+| [`adapters.rs`](src/adapters.rs) | load subscription adapters | — |
 
 ## Public API
 
