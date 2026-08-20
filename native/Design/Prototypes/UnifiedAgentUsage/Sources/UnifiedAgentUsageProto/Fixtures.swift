@@ -6,6 +6,7 @@ import SwiftUI
 
 enum ProtoState: String, Sendable {
     case current, warning, danger, depleted, stale, refreshing, unavailable
+    case needsLogin, needsSecret, unsupported, rateLimited
 
     var label: String? {
         switch self {
@@ -16,6 +17,10 @@ enum ProtoState: String, Sendable {
         case .stale: "Stale"
         case .refreshing: "Updating…"
         case .unavailable: "Unavailable"
+        case .needsLogin: "Sign in required"
+        case .needsSecret: "API key required"
+        case .unsupported: "Not supported"
+        case .rateLimited: "Rate limited"
         }
     }
 
@@ -27,6 +32,10 @@ enum ProtoState: String, Sendable {
         case .stale: "clock.arrow.circlepath"
         case .refreshing: "arrow.triangle.2.circlepath"
         case .unavailable: "exclamationmark.icloud.fill"
+        case .needsLogin: "person.crop.circle.badge.exclamationmark"
+        case .needsSecret: "key.fill"
+        case .unsupported: "minus.circle"
+        case .rateLimited: "clock.badge.exclamationmark"
         }
     }
 }
@@ -231,9 +240,28 @@ enum ProtoFixtures {
         case "F24-f02": f02(scenario: "F24-f02")
         case "F24-f11": f11(scenario: "F24-f11")
         case "F24-f12": f12(scenario: "F24-f12")
+        case "F25": f25()
+        case "F26": f26()
+        case "F27": f27()
+        case "F28": f28()
+        case "F29": f29()
         default: fatalError("unknown --tr-scenario \(name)")
         }
     }
+
+    /// Every previewable scenario, grouped for the in-prototype Scenario menu.
+    /// Launch contract names stay identical — the menu only re-drives them.
+    static let scenarioMenu: [(title: String, names: [String])] = [
+        ("Everyday", ["F02", "F01", "F03", "F25"]),
+        ("Quota pressure", ["F04", "F05", "F22"]),
+        ("Degraded", ["F06", "F07", "F08", "F10", "F29"]),
+        ("Credential gaps", ["F09", "F26", "F27", "F28"]),
+        ("Scale and stress", ["F11", "F12"]),
+        ("Global states", ["F00", "F13", "F14"]),
+        ("Localization", ["F19-en-US", "F19-de-DE", "F19-ja-JP", "F19-ar-SA"]),
+        ("Mutations", ["F15", "F16", "F17"]),
+        ("Contract pins", ["F18-f02", "F18-f11", "F20", "F21", "F23", "F24-f02", "F24-f11", "F24-f12"]),
+    ]
 
     // MARK: Core records
 
@@ -339,11 +367,14 @@ enum ProtoFixtures {
             accounts: usable ? [claudePersonal] : [], state: state, error: error)
     }
 
-    /// Seven desktop providers in frozen canonical order, one account each.
+    /// Seven desktop providers in frozen canonical order; Codex carries two
+    /// accounts so the default scenario previews multi-account presentation.
     static func catalog(codexState: ProtoState = .current, codexActivity: String? = nil,
                         kimiUnavailable: Bool = false) -> [ProtoProvider] {
         [
-            codexProvider(state: codexState, activity: codexActivity),
+            codexProvider(
+                accounts: [codexPersonal, codexPlus],
+                state: codexState, activity: codexActivity),
             claudeProvider(),
             provider("amp", "Amp", percent: 100, reset: "Resets in 18h",
                      accounts: [
@@ -650,5 +681,95 @@ enum ProtoFixtures {
             ],
             statusRows: ["minimax"], selectedProvider: "minimax",
             selectedAccount: "minimax-default")
+    }
+
+    /// Multi-account rich: Codex three accounts, Claude two — the canonical
+    /// deduplicated account graph across plan tiers and states.
+    static func f25() -> ProtoProjection {
+        projection(
+            "F25",
+            providers: [
+                codexProvider(
+                    accounts: [codexPersonal, codexPlus, codexOrganization],
+                    selected: "codex-personal"),
+                provider(
+                    "claude", "Anthropic / Claude", percent: 12, reset: "Resets in 1h",
+                    accounts: [
+                        claudePersonal,
+                        ProtoAccount(
+                            key: "claude-work", label: "work@example.test", plan: "Team",
+                            remaining: 91, resetText: "Resets in 4d", state: .current,
+                            windows: [
+                                ProtoQuotaWindow(
+                                    stableID: "bucket:weekly", label: "Weekly",
+                                    display: "91% left · Resets in 4d", meter: 91,
+                                    state: .current, pace: "On pace"),
+                                ProtoQuotaWindow(
+                                    stableID: "bucket:session", label: "Session",
+                                    display: "Not started · Resets in 5h",
+                                    meter: 100, state: .current, notStarted: true),
+                            ]),
+                    ],
+                    selected: "claude-personal"),
+            ],
+            statusRows: ["claude", "codex"], selectedProvider: "codex",
+            selectedAccount: "codex-personal")
+    }
+
+    /// needs_login: credential present but expired/revoked — re-auth required.
+    static func f26() -> ProtoProjection {
+        projection(
+            "F26",
+            providers: [
+                provider(
+                    "claude", "Anthropic / Claude", percent: nil, reset: nil,
+                    accounts: [], state: .needsLogin,
+                    updatedAgo: "Updated 2h ago",
+                    error: "Claude sign-in expired — sign in again to resume quota updates")
+            ],
+            statusRows: ["claude"], selectedProvider: "claude")
+    }
+
+    /// needs_secret: no API key discovered anywhere for a key-only provider.
+    static func f27() -> ProtoProjection {
+        projection(
+            "F27",
+            providers: [
+                provider(
+                    "zai", "Z.AI / GLM", percent: nil, reset: nil,
+                    accounts: [], state: .needsSecret,
+                    error: "No Z.AI API key found — set ZAI_API_KEY to enable quota tracking")
+            ],
+            statusRows: ["zai"], selectedProvider: "zai")
+    }
+
+    /// unsupported: credential exists but exposes no quota surface
+    /// (presence-only, e.g. an OpenAI API key without a ChatGPT subscription).
+    static func f28() -> ProtoProjection {
+        projection(
+            "F28",
+            providers: [
+                provider(
+                    "codex", "OpenAI / Codex", percent: nil, reset: nil,
+                    accounts: [], state: .unsupported,
+                    error: "OpenAI API-key subscription quota is unavailable")
+            ],
+            statusRows: ["codex"], selectedProvider: "codex")
+    }
+
+    /// Rate limited: provider 429 with a Retry-After deadline; last-good rows
+    /// stay visible under the backoff marker.
+    static func f29() -> ProtoProjection {
+        projection(
+            "F29",
+            providers: [
+                provider(
+                    "grok", "xAI / Grok", percent: 72, reset: nil,
+                    accounts: [catalogAccount("grok", remaining: 72, reset: nil)],
+                    state: .rateLimited, updatedAgo: "Updated 6m ago",
+                    error: "Grok billing endpoint rate limited · Retry in 12m")
+            ],
+            statusRows: ["grok"], selectedProvider: "grok",
+            selectedAccount: "grok-default")
     }
 }

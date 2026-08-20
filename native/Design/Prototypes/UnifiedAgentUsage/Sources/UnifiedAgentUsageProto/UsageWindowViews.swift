@@ -62,62 +62,9 @@ struct SidebarView: View {
     }
 }
 
-struct OverviewRow: Identifiable {
-    let id: String
-    let providerKey: String
-    let accountKey: String?
-    let providerLabel: String
-    let accountLabel: String
-    let planOrStatus: String
-    let remaining: String
-    let reset: String
-    let state: ProtoState
-    let error: String?
-    var children: [OverviewRow]?
-}
-
 struct OverviewContentView: View {
     let store: ProtoStore
     let onOpenSettings: () -> Void
-    @State private var selection: OverviewRow.ID?
-    @State private var expanded: Set<OverviewRow.ID>
-
-    init(store: ProtoStore, onOpenSettings: @escaping () -> Void) {
-        self.store = store
-        self.onOpenSettings = onOpenSettings
-        _expanded = State(initialValue: Set(store.projection.providers.map(\.key)))
-    }
-
-    private var rows: [OverviewRow] {
-        store.projection.providers.map { provider in
-            OverviewRow(
-                id: provider.key,
-                providerKey: provider.key,
-                accountKey: nil,
-                providerLabel: provider.name,
-                accountLabel: "",
-                planOrStatus: provider.state.label ?? "",
-                remaining: "",
-                reset: "",
-                state: provider.state,
-                error: provider.errorText,
-                children: provider.accounts.map { account in
-                    OverviewRow(
-                        id: "\(provider.key)/\(account.key)",
-                        providerKey: provider.key,
-                        accountKey: account.key,
-                        providerLabel: "",
-                        accountLabel: account.label,
-                        planOrStatus: account.state == .current
-                            ? account.plan
-                            : "\(account.plan) · \(account.state.label ?? "")",
-                        remaining: account.remaining.map { "\($0)%" } ?? "",
-                        reset: account.resetText ?? "",
-                        state: account.state,
-                        error: nil)
-                })
-        }
-    }
 
     var body: some View {
         if let error = store.projection.globalError {
@@ -136,7 +83,7 @@ struct OverviewContentView: View {
                 .controlSize(.large)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .accessibilityIdentifier("usage.loading")
-        } else if rows.isEmpty {
+        } else if store.projection.providers.isEmpty {
             ContentUnavailableView {
                 Label("No providers detected", systemImage: "chevron.right")
             } description: {
@@ -146,108 +93,179 @@ struct OverviewContentView: View {
             }
             .accessibilityIdentifier("usage.overview.empty")
         } else {
-            Table(of: OverviewRow.self, selection: $selection) {
-                TableColumn("Provider") { row in
-                    Text(row.providerLabel)
-                        .lineLimit(2)
-                        .accessibilityIdentifier(providerIdentifier(row))
-                }
-                TableColumn("Account") { row in
-                    Text(row.accountLabel)
-                        .lineLimit(2)
-                        .accessibilityHidden(true)
-                }
-                TableColumn("Plan or status") { row in
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text(row.planOrStatus)
-                            .foregroundStyle(.primary)
-                        if let error = row.error {
-                            Text(error)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                                .lineLimit(2)
-                                .accessibilityIdentifier("usage.overview.error.\(row.providerKey)")
-                            Button(store.chrome.retryTitle) { store.refresh() }
-                                .controlSize(.small)
-                                .buttonStyle(.bordered)
-                                .accessibilityIdentifier("usage.overview.retry.\(row.providerKey)")
-                        }
-                    }
-                    .accessibilityHidden(row.error == nil)
-                }
-                .width(min: 120, ideal: 210)
-                TableColumn("Remaining") { row in
-                    Text(row.remaining)
-                        .monospacedDigit()
-                        .accessibilityHidden(true)
-                }
-                .width(min: 90, ideal: 110)
-                TableColumn("Reset") { row in
-                    Text(row.reset)
-                        .foregroundStyle(.primary)
-                        .lineLimit(2)
-                        .accessibilityHidden(true)
-                }
-                .width(min: 140, ideal: 210)
-            } rows: {
-                ForEach(rows) { row in
-                    if let children = row.children {
-                        DisclosureTableRow(
-                            row,
-                            isExpanded: expansionBinding(for: row.id)
-                        ) {
-                            ForEach(children) { child in
-                                TableRow(child)
-                            }
-                        }
-                    } else {
-                        TableRow(row)
+            ScrollView {
+                LazyVGrid(
+                    columns: [GridItem(.adaptive(minimum: 280), spacing: 16)],
+                    spacing: 16
+                ) {
+                    ForEach(store.projection.providers) { provider in
+                        ProviderCardView(store: store, provider: provider)
                     }
                 }
+                .padding(20)
             }
             .accessibilityLabel("Usage overview")
-            .accessibilityIdentifier("usage.overview.table")
-            .onChange(of: selection) { _, selectedID in
-                guard let selectedID, let row = findRow(id: selectedID) else { return }
-                // Selection arrives inside the table's delegate callback;
-                // mutating navigation state there is reentrant — defer.
-                DispatchQueue.main.async {
-                    if let accountKey = row.accountKey,
-                        let provider = store.provider(row.providerKey)
-                    {
-                        store.selectAccount(accountKey, for: provider)
-                    }
-                    store.sidebar = .provider(row.providerKey)
+            .accessibilityIdentifier("usage.overview.grid")
+        }
+    }
+}
+
+/// One provider card in the Overview grid. Content layer: standard material,
+/// no glass. Every canonical account renders as its own block — the overview
+/// never collapses multi-account providers to one row. A tap focuses the
+/// provider (and account) in the sidebar detail.
+struct ProviderCardView: View {
+    let store: ProtoStore
+    let provider: ProtoProvider
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 10) {
+                if let mark = ProviderMarks.swiftUIImage(forIconKey: provider.iconKey) {
+                    mark
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 22, height: 22)
+                        .accessibilityHidden(true)
+                }
+                Text(provider.name)
+                    .font(.headline)
+                    .lineLimit(1)
+                Spacer(minLength: 8)
+                if let stateLabel = provider.state.label {
+                    Label(stateLabel, systemImage: provider.state.symbol)
+                        .font(.caption)
+                        .foregroundStyle(badgeTint(provider.state))
+                        .labelStyle(.titleAndIcon)
+                        .accessibilityHidden(true)
                 }
             }
-        }
-    }
 
-    private func findRow(id: OverviewRow.ID) -> OverviewRow? {
-        for row in rows {
-            if row.id == id { return row }
-            if let child = row.children?.first(where: { $0.id == id }) { return child }
-        }
-        return nil
-    }
-
-    private func providerIdentifier(_ row: OverviewRow) -> String {
-        if let accountKey = row.accountKey {
-            return "usage.overview.account.\(row.providerKey).\(accountKey)"
-        }
-        return "usage.overview.provider.\(row.providerKey)"
-    }
-
-    private func expansionBinding(for id: OverviewRow.ID) -> Binding<Bool> {
-        Binding(
-            get: { expanded.contains(id) },
-            set: { isExpanded in
-                // Mutating expansion state synchronously inside the table's
-                // delegate callback is reentrant; defer to the next turn.
-                DispatchQueue.main.async {
-                    if isExpanded { expanded.insert(id) } else { expanded.remove(id) }
+            if provider.accounts.isEmpty {
+                emptyAccountsBlock
+            } else {
+                ForEach(Array(provider.accounts.enumerated()), id: \.element.id) {
+                    index, account in
+                    if index > 0 { Divider() }
+                    accountBlock(account)
                 }
-            })
+            }
+
+            if let error = provider.errorText {
+                VStack(alignment: .leading, spacing: 6) {
+                    Label(error, systemImage: "exclamationmark.triangle")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(3)
+                        .fixedSize(horizontal: false, vertical: true)
+                    HStack(spacing: 8) {
+                        if let ago = provider.updatedAgo {
+                            Text(ago)
+                                .font(.caption)
+                                .foregroundStyle(.tertiary)
+                        }
+                        Spacer()
+                        Button(store.chrome.retryTitle) { store.refresh() }
+                            .controlSize(.small)
+                            .buttonStyle(.bordered)
+                            .disabled(store.refreshInProgress)
+                            .accessibilityIdentifier("usage.overview.retry.\(provider.key)")
+                    }
+                }
+                .accessibilityIdentifier("usage.overview.error.\(provider.key)")
+            }
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(Color(nsColor: .controlBackgroundColor))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .strokeBorder(Color(nsColor: .separatorColor), lineWidth: 0.5)
+        )
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("usage.overview.provider.\(provider.key)")
+    }
+
+    @ViewBuilder
+    private var emptyAccountsBlock: some View {
+        if provider.errorText != nil {
+            EmptyView()
+        } else {
+            Text("No accounts discovered")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private func accountBlock(_ account: ProtoAccount) -> some View {
+        Button {
+            store.selectAccount(account.key, for: provider)
+            store.sidebar = .provider(provider.key)
+        } label: {
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(alignment: .firstTextBaseline) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        if provider.accounts.count > 1 {
+                            Text(account.label)
+                                .font(.callout)
+                                .lineLimit(1)
+                                .truncationMode(.middle)
+                        }
+                        Text(account.plan)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer(minLength: 8)
+                    if let remaining = account.remaining {
+                        Text("\(remaining)%")
+                            .font(.title3)
+                            .fontWeight(.semibold)
+                            .monospacedDigit()
+                            .foregroundStyle(meterTint(account.state))
+                    } else {
+                        Text("—")
+                            .font(.title3)
+                            .foregroundStyle(.tertiary)
+                    }
+                }
+                if let remaining = account.remaining {
+                    ProgressView(value: Double(remaining), total: 100)
+                        .tint(meterTint(account.state))
+                        .accessibilityHidden(true)
+                }
+                HStack {
+                    if let stateLabel = account.state.label {
+                        Text(stateLabel)
+                            .foregroundStyle(badgeTint(account.state))
+                    }
+                    Spacer()
+                    if let reset = account.resetText {
+                        Text(reset)
+                    }
+                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(
+            "\(provider.name), \(account.label), \(account.remaining.map { "\($0) percent left" } ?? "remaining unavailable")"
+        )
+        .accessibilityIdentifier("usage.overview.account.\(provider.key).\(account.key)")
+    }
+
+    private func badgeTint(_ state: ProtoState) -> Color {
+        switch state {
+        case .warning: .orange
+        case .danger, .depleted: .red
+        case .stale, .rateLimited: .orange
+        case .needsLogin, .needsSecret, .unsupported, .unavailable: .secondary
+        default: .secondary
+        }
     }
 }
 

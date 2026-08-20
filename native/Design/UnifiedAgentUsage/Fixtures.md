@@ -390,6 +390,43 @@ an inferred date.
   primary job, hidden focus, selection loss, oscillating layout, or inaccessible
   action. Every toolbar action remains available in its menu.
 
+### F25 — Multi-account rich overview
+
+- Providers: Codex with three canonical accounts (personal Plus 57 % warning,
+  team Plus depleted, organization Enterprise 88 % with a monthly credit-pool
+  money cap), Claude with two accounts (personal Pro 12 % danger, work Team
+  91 % with a not-started session window).
+- Status rows: `[claude, codex]`.
+- Purpose: prove the Overview cards and every detail surface render every
+  canonical account per provider without collapsing duplicates, across plan
+  tiers, states, and window mixes.
+
+### F26 — Needs login
+
+- Provider: Claude; state `needsLogin`; no accounts; error
+  `Claude sign-in expired — sign in again to resume quota updates`.
+- Purpose: expired/revoked credential presentation — distinct from a probe
+  failure, with last-updated provenance.
+
+### F27 — Needs secret
+
+- Provider: Z.AI / GLM; state `needsSecret`; no accounts; error
+  `No Z.AI API key found — set ZAI_API_KEY to enable quota tracking`.
+- Purpose: key-only provider with no discovered credential anywhere.
+
+### F28 — Unsupported credential
+
+- Provider: Codex; state `unsupported`; no accounts; error
+  `OpenAI API-key subscription quota is unavailable`.
+- Purpose: presence-only credential that exposes no quota surface.
+
+### F29 — Rate limited with backoff
+
+- Provider: Grok; state `rateLimited`; last-good account rows stay visible;
+  error `Grok billing endpoint rate limited · Retry in 12m`.
+- Purpose: provider 429 with a Retry-After deadline — honest backoff marker
+  over preserved last-good data, never a silent gap.
+
 ## Status-item projection contract
 
 Unless a row below overrides it, Settings use percent style `left`, reset style

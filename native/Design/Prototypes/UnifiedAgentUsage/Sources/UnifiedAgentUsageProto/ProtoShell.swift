@@ -60,11 +60,36 @@ final class ProtoShell: NSObject, NSMenuDelegate {
         main.addItem(wrap(editMenu(), title: "Edit"))
         let view = viewMenu()
         main.addItem(wrap(view, title: "View"))
+        main.addItem(wrap(scenarioMenu(), title: "Scenario"))
         let window = windowMenu()
         main.addItem(wrap(window, title: "Window"))
         main.addItem(wrap(helpMenu(), title: "Help"))
         NSApp.windowsMenu = window
         return main
+    }
+
+    /// Prototype-only preview driver: re-runs every fixture live without a
+    /// relaunch. Not part of the product menu structure.
+    private func scenarioMenu() -> NSMenu {
+        let menu = NSMenu(title: "Scenario")
+        for group in ProtoFixtures.scenarioMenu {
+            for name in group.names {
+                let item = NSMenuItem(
+                    title: name, action: #selector(loadScenario(_:)), keyEquivalent: "")
+                item.target = self
+                item.representedObject = name
+                if name == store.projection.scenario { item.state = .on }
+                menu.addItem(item)
+            }
+            menu.addItem(.separator())
+        }
+        menu.delegate = self
+        return menu
+    }
+
+    @objc private func loadScenario(_ sender: NSMenuItem) {
+        guard let name = sender.representedObject as? String else { return }
+        store.loadScenario(name)
     }
 
     private func appMenu() -> NSMenu {
@@ -249,8 +274,17 @@ final class ProtoShell: NSObject, NSMenuDelegate {
             && event.modifierFlags.intersection(commandModifiers) == [.command, .control]
     }
 
-    /// Sidebar command title follows collapse state, like the incumbent.
+    /// Sidebar command title follows collapse state, like the incumbent;
+    /// Scenario items check the live projection.
     func menuWillOpen(_ menu: NSMenu) {
+        if menu.title == "Scenario" {
+            for item in menu.items {
+                if let name = item.representedObject as? String {
+                    item.state = name == store.projection.scenario ? .on : .off
+                }
+            }
+            return
+        }
         guard menu.title == "View",
             let toggle = menu.items.first(where: {
                 $0.action == #selector(NSSplitViewController.toggleSidebar(_:))
@@ -289,36 +323,42 @@ final class ProtoShell: NSObject, NSMenuDelegate {
     // MARK: Status items and popover
 
     private func installStatusItems() {
-        for key in store.projection.statusRows {
-            guard let provider = store.provider(key) else { continue }
-            let item = NSStatusBar.system.statusItem(
-                withLength: NSStatusItem.variableLength)
-            if let button = item.button {
-                button.image =
-                    ProviderMarks.templateImage(forIconKey: provider.iconKey)
-                    ?? JackinBrandIdentity.templateMonogram()
-                button.imagePosition = .imageLeading
-                // System-minimum icon–title gap; default spacing leaves a
-                // loose pad the dual-stack title makes obvious.
-                button.imageHugsTitle = true
-                button.attributedTitle = StatusItemRendering.title(
-                    barLabel: store.statusPercent(provider) ?? "",
-                    compactResetLabel: provider.compactResetLabel,
-                    percentTint: store.statusTint(provider))
-                button.toolTip = provider.name
-                button.setAccessibilityLabel(provider.name)
-                button.target = self
-                button.action = #selector(statusItemClicked(_:))
-                button.sendAction(on: [.leftMouseUp, .rightMouseUp])
-            }
-            statusItems[key] = item
-        }
-        observeStatusLabels()
+        reconcileStatusItems()
     }
 
-    /// Status-item labels follow accepted mutations (F15) without a relaunch.
-    private func observeStatusLabels() {
+    private func makeStatusItem(for key: String) {
+        guard let provider = store.provider(key) else { return }
+        let item = NSStatusBar.system.statusItem(
+            withLength: NSStatusItem.variableLength)
+        if let button = item.button {
+            button.image =
+                ProviderMarks.templateImage(forIconKey: provider.iconKey)
+                ?? JackinBrandIdentity.templateMonogram()
+            button.imagePosition = .imageLeading
+            // System-minimum icon–title gap; default spacing leaves a
+            // loose pad the dual-stack title makes obvious.
+            button.imageHugsTitle = true
+            button.toolTip = provider.name
+            button.setAccessibilityLabel(provider.name)
+            button.target = self
+            button.action = #selector(statusItemClicked(_:))
+            button.sendAction(on: [.leftMouseUp, .rightMouseUp])
+        }
+        statusItems[key] = item
+    }
+
+    /// Status items follow the live projection: scenario swaps and accepted
+    /// mutations (F15) add, remove, and relabel items without a relaunch.
+    private func reconcileStatusItems() {
         withObservationTracking {
+            let wanted = store.projection.statusRows
+            for (key, item) in statusItems where !wanted.contains(key) {
+                NSStatusBar.system.removeStatusItem(item)
+                statusItems.removeValue(forKey: key)
+            }
+            for key in wanted where statusItems[key] == nil {
+                makeStatusItem(for: key)
+            }
             for (key, item) in statusItems {
                 if let provider = store.provider(key) {
                     item.button?.attributedTitle = StatusItemRendering.title(
@@ -329,7 +369,7 @@ final class ProtoShell: NSObject, NSMenuDelegate {
             }
         } onChange: { [weak self] in
             Task { @MainActor in
-                self?.observeStatusLabels()
+                self?.reconcileStatusItems()
             }
         }
     }

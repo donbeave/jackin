@@ -14,7 +14,9 @@ enum SidebarSelection: Hashable, Sendable {
 @MainActor
 @Observable
 final class ProtoStore {
-    let projection: ProtoProjection
+    /// Swappable at runtime by the Scenario menu — one projection swap redraws
+    /// every surface and rebuilds the status items (shell observes this).
+    private(set) var projection: ProtoProjection
     private(set) var percentStyle: PercentStyle = .left
     private(set) var refreshFloorMinutes = 5
     private(set) var floorError: String?
@@ -55,6 +57,22 @@ final class ProtoStore {
     }
 
     var chrome: ProtoChrome { projection.chrome }
+
+    /// Scenario-menu drive: swap the whole fixture projection and reset the
+    /// selection surface state the old projection owned.
+    func loadScenario(_ name: String) {
+        let next = ProtoFixtures.load(name)
+        projection = next
+        sidebar = next.selectedProviderKey.map { .provider($0) } ?? .overview
+        accountSelection = Dictionary(
+            uniqueKeysWithValues: next.providers.compactMap { provider in
+                provider.selectedAccountKey.map { (provider.key, $0) }
+            })
+        surfaceEnabled = Dictionary(
+            uniqueKeysWithValues: next.providers.map { ($0.key, true) })
+        floorError = nil
+        refreshInProgress = false
+    }
 
     /// A removed/disabled provider normalizes to Overview here, not in a view.
     var resolvedSidebar: SidebarSelection {
