@@ -859,6 +859,36 @@ fn multi_account_list_select_and_snapshot() {
 }
 
 #[test]
+fn canonical_identity_domain_separates_evidence_and_normalizes_stable_handles() {
+    use crate::host::accounts::{CanonicalAccountIdentity, CanonicalAccountSubject};
+
+    let provider_id = CanonicalAccountIdentity {
+        surface: HostSurfaceId::Codex,
+        subject: CanonicalAccountSubject::ProviderId("Same@Example.Test".to_owned()),
+    };
+    let stable_handle = CanonicalAccountIdentity {
+        surface: HostSurfaceId::Codex,
+        subject: CanonicalAccountSubject::ProviderStableHandle("same@example.test".to_owned()),
+    };
+    assert_ne!(
+        provider_id.canonical_id_v1(),
+        stable_handle.canonical_id_v1()
+    );
+
+    let mut uppercase = FocusedUsageView::unavailable("seed", 1);
+    uppercase.focused_agent = Some("codex".to_owned());
+    uppercase.account.provider_label = "OpenAI".to_owned();
+    uppercase.account.account_label = " Person@Example.Test ".to_owned();
+    uppercase.confidence = UsageConfidence::Authoritative;
+    let mut lowercase = uppercase.clone();
+    lowercase.account.account_label = "person@example.test".to_owned();
+    assert_eq!(
+        canonical_account_id_for_view(&uppercase),
+        canonical_account_id_for_view(&lowercase)
+    );
+}
+
+#[test]
 fn provider_display_label_cases() {
     assert_eq!(provider_display_label("Codex"), "OpenAI");
     assert_eq!(provider_display_label("OpenAI / Codex"), "OpenAI");

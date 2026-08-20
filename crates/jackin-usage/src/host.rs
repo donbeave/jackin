@@ -27,7 +27,8 @@ use crate::usage::{
 
 pub use accounts::{
     AccountLifecycle, AccountProvenance, CanonicalAccountIdentity, CanonicalAccountSubject,
-    HostAccountDescriptor, account_key_for_view, min_remaining, short_account_identity,
+    HostAccountDescriptor, account_key_for_view, canonical_account_id_for_view, min_remaining,
+    short_account_identity,
 };
 pub use broker::{
     ForwardedUsageSources, UsageBrokerClient, UsageBrokerConfig, UsageBrokerHandle,

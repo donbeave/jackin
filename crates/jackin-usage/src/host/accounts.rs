@@ -21,8 +21,8 @@ use super::HostSurfaceId;
 pub enum CanonicalAccountSubject {
     /// Provider-issued account or organization identifier, when available.
     ProviderId(String),
-    /// Authenticated provider account label when no stronger ID exists.
-    AuthenticatedLabel(String),
+    /// Provider-authenticated stable non-secret handle when no stronger ID exists.
+    ProviderStableHandle(String),
 }
 
 /// Exact account identity. Probe-routing slugs and source paths are excluded.
@@ -44,17 +44,34 @@ impl CanonicalAccountIdentity {
         let label = stable_account_label(&view.account.account_label)?;
         Some(Self {
             surface,
-            subject: CanonicalAccountSubject::AuthenticatedLabel(label.to_owned()),
+            subject: CanonicalAccountSubject::ProviderStableHandle(label.to_owned()),
         })
     }
 
     pub(super) fn account_key(&self) -> String {
         let subject = match &self.subject {
             CanonicalAccountSubject::ProviderId(id)
-            | CanonicalAccountSubject::AuthenticatedLabel(id) => id,
+            | CanonicalAccountSubject::ProviderStableHandle(id) => id,
         };
         account_key_hash(self.surface.account_provider_label(), subject)
     }
+
+    pub(super) fn canonical_id_v1(&self) -> String {
+        let evidence = match &self.subject {
+            CanonicalAccountSubject::ProviderId(id) => {
+                format!("canonical-account-v1:provider-id:{}", id.trim())
+            }
+            CanonicalAccountSubject::ProviderStableHandle(handle) => format!(
+                "canonical-account-v1:stable-handle:{}",
+                normalize_stable_handle(handle)
+            ),
+        };
+        account_key_hash(self.surface.id(), &evidence)
+    }
+}
+
+fn normalize_stable_handle(handle: &str) -> String {
+    handle.trim().to_lowercase()
 }
 
 /// Account lifecycle is independent from snapshot freshness.
@@ -234,6 +251,13 @@ pub(super) fn save_selected_accounts(
 pub fn account_key_for_view(view: &FocusedUsageView) -> Option<String> {
     let surface = surface_for_view(view)?;
     CanonicalAccountIdentity::from_view(surface, view).map(|identity| identity.account_key())
+}
+
+/// Canonical V1 identity for a focused usage view.
+#[must_use]
+pub fn canonical_account_id_for_view(view: &FocusedUsageView) -> Option<String> {
+    let surface = surface_for_view(view)?;
+    CanonicalAccountIdentity::from_view(surface, view).map(|identity| identity.canonical_id_v1())
 }
 
 /// Compact identity for status chips (email local-part when possible).

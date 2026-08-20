@@ -328,6 +328,8 @@ pub struct UsageSourceCandidateDescriptor {
     pub credential_kind: UsageCredentialKind,
     /// Opaque process-local source identifier.
     pub source_id: String,
+    /// Stable opaque capability identity; never a source ordinal or credential hash.
+    pub capability_id: String,
     /// Every config scope that resolved to this source.
     pub provenance: Vec<String>,
 }
@@ -392,6 +394,7 @@ pub(super) struct ValidatedCredentialBinding {
     pub surface: HostSurfaceId,
     pub identity: Option<CanonicalAccountIdentity>,
     pub source_id: String,
+    pub capability_id: String,
     pub provenance: BTreeSet<String>,
     pub source: ValidatedCredentialSource,
 }
@@ -460,6 +463,7 @@ pub(super) enum DiscoveredCredentialSource {
         root: PathBuf,
         operator_home: PathBuf,
         source_id: String,
+        capability_id: String,
         provenance: BTreeSet<String>,
     },
     Env {
@@ -468,13 +472,14 @@ pub(super) enum DiscoveredCredentialSource {
         key: String,
         kind: UsageCredentialKind,
         source_id: String,
+        capability_id: String,
         provenance: BTreeSet<String>,
     },
     Capability {
         surface: HostSurfaceId,
-        capability_id: String,
         account_label: Option<String>,
         source_id: String,
+        capability_id: String,
     },
 }
 
@@ -817,11 +822,13 @@ fn materialize_catalog(
     let mut sources = Vec::with_capacity(candidates.len());
     for (index, (key, candidate)) in candidates.into_iter().enumerate() {
         let source_id = format!("source-{:04}", index + 1);
+        let capability_id = source_capability_id(candidate.surface, &key);
         let provenance = candidate.provenance.iter().cloned().collect::<Vec<_>>();
         descriptors.push(UsageSourceCandidateDescriptor {
             surface_id: candidate.surface.id().to_owned(),
             credential_kind: candidate.kind,
             source_id: source_id.clone(),
+            capability_id: capability_id.clone(),
             provenance,
         });
         let source = match key {
@@ -831,6 +838,7 @@ fn materialize_catalog(
                 root,
                 operator_home: candidate.operator_home.unwrap_or_default(),
                 source_id,
+                capability_id,
                 provenance: candidate.provenance,
             },
             CredentialSourceKey::Env { surface, handle } => DiscoveredCredentialSource::Env {
@@ -839,14 +847,15 @@ fn materialize_catalog(
                 key: candidate.env_key.unwrap_or_default(),
                 kind: candidate.kind,
                 source_id,
+                capability_id,
                 provenance: candidate.provenance,
             },
             CredentialSourceKey::Capability { surface, id } => {
                 DiscoveredCredentialSource::Capability {
                     surface,
-                    capability_id: id,
                     account_label: candidate.account_label,
                     source_id,
+                    capability_id: id,
                 }
             }
         };
@@ -858,6 +867,21 @@ fn materialize_catalog(
         diagnostics,
         sources,
     }
+}
+
+fn source_capability_id(surface: HostSurfaceId, key: &CredentialSourceKey) -> String {
+    if let CredentialSourceKey::Capability { id, .. } = key {
+        return id.clone();
+    }
+    let evidence = match key {
+        CredentialSourceKey::Profile { agent, root } => {
+            format!("profile-v1:{}:{}", agent.slug(), root.to_string_lossy())
+        }
+        CredentialSourceKey::Env { handle, .. } => format!("env-v1:{}", handle.0),
+        CredentialSourceKey::Capability { .. } => unreachable!("returned above"),
+    };
+    let hashed = jackin_core::account_key_hash(surface.id(), &evidence);
+    hashed.strip_prefix("sha256:").unwrap_or(&hashed).to_owned()
 }
 
 enum ProfileReadOutcome {
@@ -942,7 +966,7 @@ fn validate_usage_sources_with_reader(
     let mut accounts = BTreeMap::<CanonicalAccountIdentity, AccountAccumulator>::new();
 
     for source in catalog.sources {
-        let (surface, source_id, provenance, source, outcome) =
+        let (surface, source_id, capability_id, provenance, source, outcome) =
             validate_source(source, env_resolver, profile_reader);
 
         match outcome {
@@ -960,7 +984,9 @@ fn validate_usage_sources_with_reader(
                             .as_ref()
                             .filter(|label| !label.trim().is_empty())
                             .map(|label| {
-                                CanonicalAccountSubject::AuthenticatedLabel(label.trim().to_owned())
+                                CanonicalAccountSubject::ProviderStableHandle(
+                                    label.trim().to_owned(),
+                                )
                             })
                     });
                 let Some(subject) = subject else {
@@ -968,6 +994,7 @@ fn validate_usage_sources_with_reader(
                         surface,
                         identity: None,
                         source_id,
+                        capability_id,
                         provenance,
                         source,
                     });
@@ -995,6 +1022,7 @@ fn validate_usage_sources_with_reader(
                     surface,
                     identity: Some(identity),
                     source_id,
+                    capability_id,
                     provenance,
                     source,
                 });
@@ -1003,6 +1031,7 @@ fn validate_usage_sources_with_reader(
                 surface,
                 identity: None,
                 source_id,
+                capability_id,
                 provenance,
                 source,
             }),
@@ -1048,6 +1077,7 @@ fn validate_usage_sources_with_reader(
 type ValidatedSourceParts = (
     HostSurfaceId,
     String,
+    String,
     BTreeSet<String>,
     ValidatedCredentialSource,
     ProfileValidation,
@@ -1065,6 +1095,7 @@ fn validate_source(
             root,
             operator_home,
             source_id,
+            capability_id,
             provenance,
         } => {
             let outcome = profile_identity(profile_reader, agent, &root, &operator_home);
@@ -1077,7 +1108,14 @@ fn validate_source(
                     }),
                 _ => ValidatedCredentialSource::Capability,
             };
-            (surface, source_id, provenance, source, outcome)
+            (
+                surface,
+                source_id,
+                capability_id,
+                provenance,
+                source,
+                outcome,
+            )
         }
         DiscoveredCredentialSource::Env {
             surface,
@@ -1085,6 +1123,7 @@ fn validate_source(
             key,
             kind: _,
             source_id,
+            capability_id,
             provenance,
         } => {
             let outcome = match env_resolver.identify_provider_credential(surface, &handle) {
@@ -1104,6 +1143,7 @@ fn validate_source(
             (
                 surface,
                 source_id,
+                capability_id,
                 provenance,
                 ValidatedCredentialSource::Env { handle, key },
                 outcome,
@@ -1111,9 +1151,9 @@ fn validate_source(
         }
         DiscoveredCredentialSource::Capability {
             surface,
-            capability_id: _,
             account_label,
             source_id,
+            capability_id,
         } => {
             let provenance = BTreeSet::from(["forwarded to Capsule".to_owned()]);
             let outcome = account_label.map_or(ProfileValidation::Anonymous(None), |label| {
@@ -1126,6 +1166,7 @@ fn validate_source(
             (
                 surface,
                 source_id,
+                capability_id,
                 provenance,
                 ValidatedCredentialSource::Capability,
                 outcome,

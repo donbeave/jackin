@@ -89,11 +89,11 @@ fn forwarded_scope_selects_only_accounts_backed_by_forwarded_sources() {
 
     let profile_identity = CanonicalAccountIdentity {
         surface: HostSurfaceId::Amp,
-        subject: CanonicalAccountSubject::AuthenticatedLabel("profile@example.test".to_owned()),
+        subject: CanonicalAccountSubject::ProviderStableHandle("profile@example.test".to_owned()),
     };
     let env_identity = CanonicalAccountIdentity {
         surface: HostSurfaceId::Amp,
-        subject: CanonicalAccountSubject::AuthenticatedLabel("env@example.test".to_owned()),
+        subject: CanonicalAccountSubject::ProviderStableHandle("env@example.test".to_owned()),
     };
     let scope = "workspace sample role test";
     let discovery = ValidatedUsageDiscovery {
@@ -106,6 +106,7 @@ fn forwarded_scope_selects_only_accounts_backed_by_forwarded_sources() {
                 surface: HostSurfaceId::Amp,
                 identity: Some(profile_identity),
                 source_id: "profile-source".to_owned(),
+                capability_id: "profile-capability".to_owned(),
                 provenance: std::collections::BTreeSet::from([scope.to_owned()]),
                 source: ValidatedCredentialSource::Profile(
                     super::super::discovery::ProfileCredentialMaterial::Amp {
@@ -117,6 +118,7 @@ fn forwarded_scope_selects_only_accounts_backed_by_forwarded_sources() {
                 surface: HostSurfaceId::Amp,
                 identity: Some(env_identity),
                 source_id: "env-source".to_owned(),
+                capability_id: "env-capability".to_owned(),
                 provenance: std::collections::BTreeSet::from([scope.to_owned()]),
                 source: ValidatedCredentialSource::Env {
                     handle: super::super::OpaqueCredentialHandle::new("env-handle"),

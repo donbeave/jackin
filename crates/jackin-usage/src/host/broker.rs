@@ -825,7 +825,7 @@ pub(super) fn capability_for_binding(
     let subject = if let Some(identity) = &binding.identity {
         identity.account_key()
     } else {
-        format!("bootstrap:{}", binding.source_id)
+        format!("provisional-capability-v1:{}", binding.capability_id)
     };
     let hashed = jackin_core::account_key_hash(binding.surface.id(), &subject);
     let account_id = hashed.strip_prefix("sha256:").unwrap_or(&hashed).to_owned();
