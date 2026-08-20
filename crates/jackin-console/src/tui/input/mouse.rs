@@ -19,7 +19,7 @@ use crossterm::event::{MouseButton, MouseEvent, MouseEventKind};
 use ratatui::layout::Rect;
 
 use crate::tui::components::file_browser::FileBrowserState;
-use crate::tui::components::modal_rects::{self, ModalRectMode};
+use crate::tui::components::modal_overlay;
 use crate::tui::layout::{
     LIST_FOOTER_HEIGHT, LIST_HEADER_HEIGHT, MIN_DRAGGABLE_WIDTH, MOUSE_VERTICAL_SCROLL_STEP,
     SCREEN_HEADER_HEIGHT, ScrollbarAxis, TAB_STRIP_HEIGHT, apply_scrollbar_drag,

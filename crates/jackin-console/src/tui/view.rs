@@ -395,13 +395,15 @@ pub fn render_modal_backdrop(frame: &mut Frame<'_>, area: Rect) {
 
 #[must_use]
 pub fn delete_confirm_area(area: Rect) -> Rect {
-    // Structural exception: legacy console confirm helpers wrap shared centering until all view modals are routed through `modal_rects`.
+    // Stage-level confirm (not a `ConsoleModal`): wraps shared centering
+    // directly, as it did beside the retired rect registry.
     crate::tui::layout::centered_rect_fixed(area, 60, 7)
 }
 
 #[must_use]
 pub fn purge_confirm_area(area: Rect) -> Rect {
-    // Structural exception: legacy console confirm helpers wrap shared centering until all view modals are routed through `modal_rects`.
+    // Stage-level confirm (not a `ConsoleModal`): wraps shared centering
+    // directly, as it did beside the retired rect registry.
     crate::tui::layout::centered_rect_fixed(area, 70, 9)
 }
 

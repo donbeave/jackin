@@ -10,10 +10,9 @@ use crate::tui::components::footer_hints::{
     ModalAuthFormFooterState, ModalConfirmSaveFooterState, ModalContainerInfoFooterState,
     ModalFileBrowserFooterState, ModalFooterMode, ModalOpPickerFooterState,
 };
-use crate::tui::components::modal_rects::{
+use crate::tui::components::modal_overlay::{
     ModalAuthFormState, ModalConfirmSaveState, ModalConfirmState, ModalContainerInfoState,
-    ModalErrorPopupState, ModalGithubPickerState, ModalOpPickerState, ModalRectMode,
-    ModalRolePickerState,
+    ModalErrorPopupState, ModalGithubPickerState, ModalOpPickerState, ModalRolePickerState,
 };
 use crate::tui::debug::{
     ConsoleEditorDebugFacts, ConsoleModalDebugKind, ConsoleSettingsDebugFacts, ConsoleStageDebug,
@@ -2234,27 +2233,156 @@ fn console_modal_applies_auth_op_ref() {
 }
 
 #[test]
-fn console_modal_reports_rect_mode() {
+fn console_modal_role_picker_overlay_size_uses_filtered_rows() {
     let modal = RectTestModal::RolePicker {
         state: TestRolePicker(5),
     };
 
-    assert_eq!(
-        modal.rect_mode(Rect::new(0, 0, 100, 40)),
-        ModalRectMode::RolePicker { filtered_len: 5 }
-    );
+    let size = modal.overlay_size(Rect::new(0, 0, 100, 40));
+    // 50% of the 160-column reference, 5 filtered rows + 6 chrome rows.
+    assert_eq!(size.width, 80);
+    assert_eq!(size.height, 11);
 }
 
 #[test]
-fn console_modal_error_rect_mode_uses_required_height() {
+fn console_modal_error_overlay_size_uses_required_height() {
     let modal = RectTestModal::ErrorPopup { state: TestError };
 
-    assert_eq!(
-        modal.rect_mode(Rect::new(0, 0, 100, 40)),
-        ModalRectMode::ErrorPopup {
-            required_height: 14
-        }
-    );
+    let size = modal.overlay_size(Rect::new(0, 0, 100, 40));
+    assert_eq!(size.width, 96);
+    assert_eq!(size.height, 14);
+}
+
+/// Plan 009 step 4 mapping gate: each variant's `DismissPolicy`
+/// escape/outside actions equal the pre-cutover behavior — Esc cancels
+/// outright everywhere except the file browser and op-picker (whose
+/// components spend Esc on internal back-navigation first), and outside
+/// clicks are inert for every variant (ch06 row 13: background-inert, no
+/// click-outside dismissal exists).
+#[test]
+fn console_modal_dismiss_policy_matches_pre_cutover_behavior() {
+    use termrock::interaction::DismissAction;
+    let cases: [(RectTestModal, DismissAction); 19] = [
+        (
+            RectTestModal::TextInput {
+                target: (),
+                state: (),
+            },
+            DismissAction::Dismiss,
+        ),
+        (
+            RectTestModal::FileBrowser {
+                target: (),
+                state: TestFileBrowser,
+            },
+            DismissAction::Bubble,
+        ),
+        (
+            RectTestModal::MountDstChoice {
+                target: (),
+                state: (),
+            },
+            DismissAction::Dismiss,
+        ),
+        (
+            RectTestModal::WorkdirPick { state: () },
+            DismissAction::Dismiss,
+        ),
+        (
+            RectTestModal::Confirm {
+                target: (),
+                state: TestConfirm,
+            },
+            DismissAction::Dismiss,
+        ),
+        (
+            RectTestModal::SaveDiscardCancel { state: () },
+            DismissAction::Dismiss,
+        ),
+        (
+            RectTestModal::GithubPicker {
+                state: TestGithubPicker(3),
+            },
+            DismissAction::Dismiss,
+        ),
+        (
+            RectTestModal::ConfirmSave {
+                state: TestConfirmSave,
+            },
+            DismissAction::Dismiss,
+        ),
+        (
+            RectTestModal::ErrorPopup { state: TestError },
+            DismissAction::Dismiss,
+        ),
+        (
+            RectTestModal::ContainerInfo {
+                state: TestContainerInfo,
+            },
+            DismissAction::Dismiss,
+        ),
+        (
+            RectTestModal::StatusPopup { state: () },
+            DismissAction::Dismiss,
+        ),
+        (
+            RectTestModal::OpPicker {
+                secrets_target: None,
+                state: Box::new(TestOpPicker(false)),
+            },
+            DismissAction::Bubble,
+        ),
+        (
+            RectTestModal::RolePicker {
+                state: TestRolePicker(2),
+            },
+            DismissAction::Dismiss,
+        ),
+        (
+            RectTestModal::RoleOverridePicker {
+                state: TestRolePicker(2),
+            },
+            DismissAction::Dismiss,
+        ),
+        (
+            RectTestModal::AuthRolePicker {
+                state: TestRolePicker(2),
+            },
+            DismissAction::Dismiss,
+        ),
+        (
+            RectTestModal::SourcePicker {
+                state: (),
+                env_key: None,
+            },
+            DismissAction::Dismiss,
+        ),
+        (
+            RectTestModal::AuthSourcePicker { state: () },
+            DismissAction::Dismiss,
+        ),
+        (
+            RectTestModal::ScopePicker { state: () },
+            DismissAction::Dismiss,
+        ),
+        (
+            RectTestModal::AuthForm {
+                target: (),
+                state: Box::new(TestAuthForm),
+                focus: (),
+                literal_buffer: String::new(),
+            },
+            DismissAction::Dismiss,
+        ),
+    ];
+    assert_eq!(cases.len(), 19);
+    for (modal, escape) in &cases {
+        let policy = modal.dismiss_policy();
+        assert_eq!(policy.escape, *escape);
+        assert_eq!(policy.outside, DismissAction::Trap);
+        assert_eq!(policy.parent_closed, DismissAction::Dismiss);
+        assert_eq!(policy.explicit, DismissAction::Dismiss);
+    }
 }
 
 #[test]

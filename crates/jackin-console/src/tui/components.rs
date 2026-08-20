@@ -16,7 +16,7 @@ pub mod error_popup;
 pub mod file_browser;
 pub mod footer_hints;
 pub mod github_picker;
-pub mod modal_rects;
+pub mod modal_overlay;
 pub mod mount_dst_choice;
 pub mod mount_rows;
 pub mod op_breadcrumb;

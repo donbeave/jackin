@@ -539,8 +539,7 @@ fn settings_env_value_is_op_ref<
 }
 
 pub fn render_global_mount_modal(frame: &mut Frame<'_>, modal: &SettingsModal<'_>) {
-    let area =
-        crate::tui::components::modal_rects::modal_rect_for_mode(frame.area(), modal.rect_mode());
+    let area = modal.rect(frame.area());
     match modal {
         SettingsModal::MountText { state, .. } => {
             crate::tui::components::render_text_input(frame, area, state);
@@ -568,8 +567,7 @@ pub fn render_global_mount_modal(frame: &mut Frame<'_>, modal: &SettingsModal<'_
 }
 
 pub fn render_settings_env_modal(frame: &mut Frame<'_>, modal: &SettingsModal<'_>) {
-    let area =
-        crate::tui::components::modal_rects::modal_rect_for_mode(frame.area(), modal.rect_mode());
+    let area = modal.rect(frame.area());
     match modal {
         SettingsModal::EnvText { state, .. } => {
             crate::tui::components::render_text_input(frame, area, state);
@@ -594,8 +592,7 @@ pub fn render_settings_env_modal(frame: &mut Frame<'_>, modal: &SettingsModal<'_
 }
 
 pub fn render_settings_auth_modal(frame: &mut Frame<'_>, modal: &SettingsModal<'_>) {
-    let area =
-        crate::tui::components::modal_rects::modal_rect_for_mode(frame.area(), modal.rect_mode());
+    let area = modal.rect(frame.area());
     match modal {
         SettingsModal::AuthForm { state, focus, .. } => {
             crate::tui::components::auth_panel::render_form(frame, area, state, *focus);

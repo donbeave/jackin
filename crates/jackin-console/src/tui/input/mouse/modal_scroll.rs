@@ -12,8 +12,8 @@ use termrock::scroll::{ScrollAxes, ScrollAxis, ScrollDelta, mouse_scroll_delta};
 
 use super::{
     FileBrowserState, ListModalScrollTarget, MOUSE_VERTICAL_SCROLL_STEP, ManagerStage,
-    ManagerState, Modal, ModalRectMode, MouseEvent, Rect, SettingsModal, SettingsModalScrollTarget,
-    SharedModalScrollTarget, modal_rects, point_in_rect, scroll_selection_at_position,
+    ManagerState, Modal, MouseEvent, Rect, SettingsModal, SettingsModalScrollTarget,
+    SharedModalScrollTarget, modal_overlay, point_in_rect, scroll_selection_at_position,
 };
 
 /// Vertical modal wheel delta via the shared classifier (vertical-only axes).
@@ -62,7 +62,7 @@ pub fn try_scroll_file_browser_modal(
             scroll_file_browser_state_at(state, area, mouse, delta)
         }
         ManagerStage::Settings(settings) => {
-            let area = modal_rects::modal_rect_for_mode(term_size, ModalRectMode::FileBrowser);
+            let area = modal_overlay::file_browser_overlay_rect(term_size);
             if let Some(SettingsModal::MountFileBrowser { state }) =
                 settings.mounts.modals.current_mut()
             {
@@ -207,7 +207,7 @@ pub fn scroll_global_mount_modal_selection(
     let target = modal.mount_scroll_target();
     match (target, modal) {
         (SettingsModalScrollTarget::MountRolePicker, SettingsModal::MountRolePicker { state }) => {
-            let area = modal_rects::role_picker_rect_for_count(term_size, state.filtered.len());
+            let area = modal_overlay::role_picker_overlay_rect(term_size, state.filtered.len());
             scroll_selection_at_position(area, mouse.column, mouse.row, delta, |delta| {
                 state.scroll_selection(delta)
             })
@@ -226,13 +226,13 @@ pub fn scroll_settings_env_modal_selection(
     let target = modal.env_scroll_target();
     match (target, modal) {
         (SettingsModalScrollTarget::EnvOpPicker, SettingsModal::EnvOpPicker { state, .. }) => {
-            let area = modal_rects::op_picker_rect(term_size);
+            let area = modal_overlay::op_picker_overlay_rect(term_size);
             scroll_selection_at_position(area, mouse.column, mouse.row, delta, |delta| {
                 state.scroll_selection(delta)
             })
         }
         (SettingsModalScrollTarget::EnvRolePicker, SettingsModal::EnvRolePicker { state }) => {
-            let area = modal_rects::role_picker_rect_for_count(term_size, state.filtered.len());
+            let area = modal_overlay::role_picker_overlay_rect(term_size, state.filtered.len());
             scroll_selection_at_position(area, mouse.column, mouse.row, delta, |delta| {
                 state.scroll_selection(delta)
             })
@@ -251,7 +251,7 @@ pub fn scroll_settings_auth_modal_selection(
     let target = modal.auth_scroll_target();
     match (target, modal) {
         (SettingsModalScrollTarget::AuthOpPicker, SettingsModal::AuthOpPicker { state }) => {
-            let area = modal_rects::op_picker_rect(term_size);
+            let area = modal_overlay::op_picker_overlay_rect(term_size);
             scroll_selection_at_position(area, mouse.column, mouse.row, delta, |delta| {
                 state.scroll_selection(delta)
             })

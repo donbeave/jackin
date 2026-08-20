@@ -38,9 +38,10 @@ use crate::tui::components::footer_hints::{
     ModalAuthFormFooterState, ModalConfirmSaveFooterState, ModalFileBrowserFooterState,
     ModalFooterMode, ModalOpPickerFooterState,
 };
-use crate::tui::components::modal_rects::{
+use crate::tui::components::modal_overlay::{
     ModalAuthFormState, ModalConfirmSavePrepareState, ModalConfirmSaveState, ModalConfirmState,
-    ModalOpPickerState, ModalRectMode, ModalRolePickerState,
+    ModalOpPickerState, ModalRolePickerState, exact_dialog_size, fixed_dialog_size,
+    modal_overlay_rect,
 };
 use crate::tui::focus::{ConsoleFocusTarget, TabFocus};
 
@@ -810,54 +811,89 @@ where
         }
     }
 
+    /// Overlay kind for the stack entry: confirm-class blockers are alert
+    /// dialogs; behavior comes from the explicit policy, not the preset.
     #[must_use]
-    pub fn rect_mode(&self) -> ModalRectMode {
+    pub const fn overlay_kind(&self) -> termrock::interaction::OverlayKind {
+        match self {
+            Self::MountConfirm { .. } | Self::EnvConfirm { .. } => {
+                termrock::interaction::OverlayKind::AlertDialog
+            }
+            _ => termrock::interaction::OverlayKind::Dialog,
+        }
+    }
+
+    /// Esc classification: file-browser and op-picker components spend Esc
+    /// on internal back-navigation first; every other variant cancels
+    /// outright.
+    #[must_use]
+    pub const fn dismiss_policy(&self) -> termrock::interaction::DismissPolicy {
+        let escape = match self {
+            Self::MountFileBrowser { .. }
+            | Self::AuthSourceFolderPicker { .. }
+            | Self::EnvOpPicker { .. }
+            | Self::AuthOpPicker { .. } => termrock::interaction::DismissAction::Bubble,
+            _ => termrock::interaction::DismissAction::Dismiss,
+        };
+        crate::tui::components::modal_overlay::console_modal_dismiss_policy(escape)
+    }
+
+    /// Preferred overlay size: the retired `ModalRectMode` numbers, kept
+    /// byte-identical per variant.
+    #[must_use]
+    pub fn overlay_size(&self, outer: ratatui::layout::Rect) -> termrock::interaction::OverlaySize {
         match self {
             Self::MountText { .. } | Self::EnvText { .. } | Self::AuthTextInput { .. } => {
-                ModalRectMode::TextInput
+                fixed_dialog_size(outer, 60, 5)
             }
             Self::MountFileBrowser { .. } | Self::AuthSourceFolderPicker { .. } => {
-                ModalRectMode::FileBrowser
+                fixed_dialog_size(outer, 70, 22)
             }
-            Self::MountDstChoice { .. } => ModalRectMode::MountChoice,
+            Self::MountDstChoice { .. } => exact_dialog_size(outer, 80, 8),
             Self::MountScopePicker { .. } | Self::EnvScopePicker { .. } => {
-                ModalRectMode::ScopePicker
+                fixed_dialog_size(outer, 50, 5)
             }
             Self::MountRolePicker { state } | Self::EnvRolePicker { state } => {
-                ModalRectMode::RolePicker {
-                    filtered_len: state.filtered_len(),
-                }
+                let rows = (state.filtered_len() as u16).saturating_add(6).min(15);
+                fixed_dialog_size(outer, 50, rows)
             }
             Self::EnvSourcePicker { .. } | Self::AuthSourcePicker { .. } => {
-                ModalRectMode::SourcePicker
+                fixed_dialog_size(outer, 50, 5)
             }
             Self::EnvOpPicker { state, .. } | Self::AuthOpPicker { state }
                 if state.has_naming_stage_input() =>
             {
-                ModalRectMode::TextInput
+                fixed_dialog_size(outer, 60, 5)
             }
-            Self::EnvOpPicker { .. } | Self::AuthOpPicker { .. } => ModalRectMode::OpPicker,
+            Self::EnvOpPicker { .. } | Self::AuthOpPicker { .. } => {
+                fixed_dialog_size(outer, 80, 22)
+            }
             Self::MountConfirm { state, .. } | Self::EnvConfirm { state, .. } => {
-                ModalRectMode::Confirm {
-                    width_pct: state.width_pct(),
-                    height: state.required_height(),
-                }
+                fixed_dialog_size(outer, state.width_pct(), state.required_height())
             }
-            Self::MountPreviewSave { state } => ModalRectMode::ConfirmSave {
-                required_height: state.required_height(),
-            },
-            Self::AuthForm { state, .. } => ModalRectMode::AuthForm {
-                required_height: state.required_height(),
-            },
+            Self::MountPreviewSave { state } => {
+                fixed_dialog_size(outer, 80, state.required_height().min(outer.height))
+            }
+            Self::AuthForm { state, .. } => fixed_dialog_size(outer, 80, state.required_height()),
         }
+    }
+
+    /// Stack-resolved modal rect.
+    #[must_use]
+    pub fn rect(&self, outer: ratatui::layout::Rect) -> ratatui::layout::Rect {
+        modal_overlay_rect(
+            outer,
+            self.overlay_kind(),
+            self.overlay_size(outer),
+            self.dismiss_policy().escape,
+        )
     }
 
     pub fn prepare_for_render(&mut self, outer: ratatui::layout::Rect)
     where
         ConfirmSaveState: ModalConfirmSavePrepareState,
     {
-        let modal_area =
-            crate::tui::components::modal_rects::modal_rect_for_mode(outer, self.rect_mode());
+        let modal_area = self.rect(outer);
         if let Self::MountPreviewSave { state } = self {
             state.prepare_for_render(modal_area);
         }
