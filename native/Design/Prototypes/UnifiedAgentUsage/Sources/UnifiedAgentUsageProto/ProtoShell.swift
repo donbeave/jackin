@@ -40,7 +40,13 @@ final class ProtoShell: NSObject, NSMenuDelegate {
         // animations here; Reduce Transparency has no SwiftUI-owned material
         // to adapt in this design (system materials follow the real setting,
         // proven post-signoff by visual-qa).
+        //
+        // Brand accent lives here so every hosted surface — window, popover,
+        // settings — renders selection wells, toggles, pickers, and the one
+        // prominent button in phosphor instead of system blue ("never system
+        // accentColor for jackin chrome" — BrandColors).
         view
+            .tint(.jackinPhosphor)
             .environment(\.locale, store.chrome.locale)
             .environment(\.layoutDirection, store.chrome.layoutDirection)
             .transaction { transaction in
