@@ -25,7 +25,7 @@ Plans 006–013 re-platformed the console onto upstream machinery — focus on `
 
 Run from the repository root. Any failed precondition is a STOP.
 
-- Branch (hub repo law): `git branch --show-current` → `feature/termrock-console-modernization`.
+- Branch (hub repo law, operator directive 2026-08-20): `git branch --show-current` → `roadmap/termrock-migration` (the whole package executes on this one branch; never create a new branch).
 - Hub rows 005–013 all DONE: `rg -n '^\| 01[0-3] |^\| 00[5-9] ' plans/termrock-migration/README.md` → nine rows, every Status column reads `DONE`. Any other value (TODO, IN PROGRESS, BLOCKED, STALE) → STOP per the hub protocol; never build on a non-DONE row.
 - Roadmap-branch ancestry (needed by step 14's flip sync): `git fetch origin roadmap/termrock-migration && git merge-base --is-ancestor origin/roadmap/termrock-migration HEAD` → exit 0. Non-zero means the artifact home moved independently of the execution branch → STOP and report; the sync route needs operator input.
 - Cheapest re-verification per dependency (current-session output; cite it in the DONE flip):
@@ -396,7 +396,7 @@ Run on the post-strip tree — this is the exact tree that merges. Not `--fast` 
 
 ### Step 13: Refresh the PR body to match the final diff
 
-The package is one PR on `feature/termrock-console-modernization` (opened as draft after plan 005's first push per the hub); PR-body refresh happens at merge-readiness — this step — not per commit (PULL_REQUESTS.md:231).
+The package is one PR opened from `roadmap/termrock-migration` (opened as draft after plan 005's first push per the hub, operator directive 2026-08-20); PR-body refresh happens at merge-readiness — this step — not per commit (PULL_REQUESTS.md:231).
 
 1. Read the current body and number: `gh pr view --json number,title,body`.
 2. Rewrite it against the finished diff, following `.github/PULL_REQUEST_TEMPLATE.md` and `PULL_REQUESTS.md`:
@@ -412,23 +412,13 @@ The package is one PR on `feature/termrock-console-modernization` (opened as dra
 
 ### Step 14: Protocol writes on the roadmap branch + final goal check
 
-The execution branch's tree no longer carries `plans/` — the hub status flip for row 014 and the item Log entry land on `roadmap/termrock-migration` (the artifact home), per this plan's git workflow:
+Under the one-branch law (operator directive 2026-08-20), the artifact strip commit and the protocol writes both land directly on `roadmap/termrock-migration`:
 
-1. Confirm the strip is the execution tip: `git log -1 --format=%s` → the strip subject. If anything landed after the strip on the execution branch, STOP and report.
-2. Switch and fast-forward the artifact home to the strip's parent (the complete pre-strip state, all rows 005–013 DONE):
+1. Confirm the strip is the branch tip: `git log -1 --format=%s` → the strip subject. If anything landed after the strip, STOP and report.
+2. Update the hub row 014 to DONE, citing this session's command output (the proof-set lines, the strip verification, the `cargo xtask ci` exit 0). Record "console modernization phase DONE" in the roadmap item's Log with the PR reference (draft, merge is the operator's — mirror the bump phase's Log entry shape), and update the item's `roadmap/README.md` row in the same edit. The item itself stays IN EXECUTION (capsule/launch/small phases pending — hub protocol step 7). Note: with the strip applied, `plans/` and `roadmap/` no longer exist in the worktree — restore them for these protocol writes from the strip's parent (`git checkout 'HEAD^' -- plans/ roadmap/ research/`), so the status row and item Log remain the artifact home while the merge diff still strips them. Commit and push.
+3. Final act (hub protocol): `sh plans/termrock-migration/goal-check.sh` on the clean tree → paste its final line; it must start with `TAILROCKS GOAL: PASS`.
 
-   ```sh
-   git checkout roadmap/termrock-migration
-   git merge --ff-only 'feature/termrock-console-modernization^'
-   ```
-
-   A non-fast-forward means the ancestry precondition's assumption broke mid-run → STOP and report.
-3. Update the hub row 014 to DONE, citing this session's command output (the proof-set lines, the strip verification, the `cargo xtask ci` exit 0). Record "console modernization phase DONE" in the roadmap item's Log with the PR reference (draft, merge is the operator's — mirror the bump phase's Log entry shape), and update the item's `roadmap/README.md` row in the same edit. The item itself stays IN EXECUTION (capsule/launch/small phases pending — hub protocol step 7).
-4. Commit per the git workflow and push: `git push`.
-5. Final act (hub protocol): `sh plans/termrock-migration/goal-check.sh` on the clean tree → paste its final line; it must start with `TAILROCKS GOAL: PASS`. (On the execution branch post-strip this script would report `BLOCKED malformed=missing-readme` — run it only here, on the roadmap branch.)
-6. Return to the execution branch for the operator's merge: `git checkout feature/termrock-console-modernization`.
-
-**Verify**: the goal-check final line starts with `TAILROCKS GOAL: PASS`; `git branch --show-current` → `feature/termrock-console-modernization`; both branches pushed (`git status` on each shows no unpushed commits — `git log origin/roadmap/termrock-migration..roadmap/termrock-migration --oneline` empty when checked out on the roadmap branch, likewise for the execution branch).
+**Verify**: the goal-check final line starts with `TAILROCKS GOAL: PASS`; `git branch --show-current` → `roadmap/termrock-migration`; branch fully pushed (`git log origin/roadmap/termrock-migration..roadmap/termrock-migration --oneline` empty).
 
 ## Test plan
 

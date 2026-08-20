@@ -225,7 +225,7 @@ The hub `plans/termrock-migration/README.md` and the roadmap item are protocol-w
 
 ## Git workflow
 
-Commit boundaries instantiate the hub's repo law for this plan (one branch `feature/termrock-console-modernization`, DCO sign-off, push after every commit — hub law, not restated here as procedure). N2 atomicity binds each cutover to one commit with all its call sites:
+Commit boundaries instantiate the hub's repo law for this plan (one branch `roadmap/termrock-migration` — operator directive 2026-08-20, never create a new branch; DCO sign-off, push after every commit — hub law, not restated here as procedure). N2 atomicity binds each cutover to one commit with all its call sites:
 
 1. `refactor(jackin-tui)!: migrate operator_info off facade ModalOutcome onto its own outcome contract` — step 1.
 2. `refactor(console)!: replace facade UpdateResult/Dirty/NoEffect with upstream EventResult/Redraw` — step 2.

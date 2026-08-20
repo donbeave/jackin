@@ -196,7 +196,7 @@ PNG baselines: run via plan 005's harness command — open `plans/termrock-migra
 
 ## Git workflow
 
-One execution branch `feature/termrock-console-modernization` (hub law); this plan is a commit group on it. Suggested commit boundaries, one per landed cutover, each pushed immediately with DCO sign-off:
+One execution branch `roadmap/termrock-migration` (hub law; operator directive 2026-08-20: never create a new branch); this plan is a commit group on it. Suggested commit boundaries, one per landed cutover, each pushed immediately with DCO sign-off:
 
 1. `refactor(console): adopt panel_stack for sidebar block layout`
 2. `refactor(console): re-host footer hints on kbd + hint_bar`

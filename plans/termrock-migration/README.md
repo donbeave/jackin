@@ -55,7 +55,7 @@ Status values: TODO | IN PROGRESS | DONE | BLOCKED (one-line reason) | REJECTED 
 - 012 requires 010 (wizard step bodies come from the C7/C8 picker/file-browser pairings) and 011 (keyboard_help content is sourced from `keymap_bridge`).
 - 013 requires 006 only (subscription split + shared ModalOutcome canonical); it may run any time after 006.
 - 014 requires every console plan DONE: it is the final proof pass, docs sweep, artifact strip, and merge-readiness gate.
-- One execution branch for all ten plans (`feature/termrock-console-modernization`); plans are commit groups on it, not separate PRs. Between 005 DONE and the last modernization plan DONE the PR's PNG lane may be red only when a plan's own STOP rule (text-snapshot diff = parity break) is being honored — no other red window is acceptable.
+- One execution branch for all ten plans; plans are commit groups on it, not separate PRs. **Operator directive 2026-08-20: the whole package executes on `roadmap/termrock-migration` — never create any new branch** (supersedes the original `feature/termrock-console-modernization` law; plan files below updated to match). Between 005 DONE and the last modernization plan DONE the PR's PNG lane may be red only when a plan's own STOP rule (text-snapshot diff = parity break) is being honored — no other red window is acceptable.
 
 ## Deferrals carried from the spec
 
@@ -64,7 +64,7 @@ Status values: TODO | IN PROGRESS | DONE | BLOCKED (one-line reason) | REJECTED 
 
 ## Repo law binding every plan
 
-- Never commit to `main`. All ten plans execute on one feature branch `feature/termrock-console-modernization`, cut off `roadmap/termrock-migration` so the working tree carries this plans package (check before the first commit: `test -f plans/termrock-migration/goal-check.sh`). `git branch --show-current` must print `feature/termrock-console-modernization` before any code commit. One PR for the package; open it as draft after plan 005's first push with `gh pr create --draft --body-file` per the PR template at `.github/PULL_REQUEST_TEMPLATE.md`.
+- Never commit to `main`. All ten plans execute on `roadmap/termrock-migration` (operator directive 2026-08-20: one branch only, never create new branches) so the working tree carries this plans package (check before the first commit: `test -f plans/termrock-migration/goal-check.sh`). `git branch --show-current` must print `roadmap/termrock-migration` before any code commit. One PR for the package, opened from `roadmap/termrock-migration`; open it as draft after plan 005's first push with `gh pr create --draft --body-file` per the PR template at `.github/PULL_REQUEST_TEMPLATE.md`.
 - **Artifacts never merge.** Planning artifacts (`plans/`, `roadmap/`, `research/`) ride the execution branch during work (status flips commit with the work), and plan 014 strips them from the merge diff with a dedicated `git rm -rq plans/ roadmap/ research/` commit before merge-readiness — the merged PR carries code only, exactly like PR #897. A PR carrying artifacts into main's history is closed, not merged (standing operator rule).
 - Every commit: Conventional Commits subject, DCO sign-off (`git commit -s`), push immediately after every commit. Never force-push without explicit operator approval.
 - Brand word in prose/docs/PR text is `jackin❯` (plain `jackin` only for identifiers/paths/commands).

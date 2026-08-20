@@ -33,7 +33,7 @@ Run each; any failure is a STOP.
 6. **No raster machinery yet**: `grep -c 'swash\|tiny-skia\|termrock-raster' Cargo.lock` → `0` (planning-time measurement; any nonzero count is drift — STOP).
 7. **Parity gate starts green**: `cargo nextest run -p jackin-console --locked` → all pass.
 8. **Clean tree**: `git status --porcelain` → empty.
-9. **Branch** (hub law): `git branch --show-current` → `feature/termrock-console-modernization` (create it off `roadmap/termrock-migration` if this is the package's first code commit, per the hub).
+9. **Branch** (hub law, operator directive 2026-08-20): `git branch --show-current` → `roadmap/termrock-migration` (the whole package executes on this one branch; never create a new branch).
 
 ## Spec contract
 
@@ -196,7 +196,7 @@ JACKIN_BLESS_PNGS=1 cargo nextest run -p jackin-console --locked -E 'test(/png_b
 
 ## Git workflow
 
-Commit boundaries for this plan (all on `feature/termrock-console-modernization` per the hub):
+Commit boundaries for this plan (all on `roadmap/termrock-migration` per the hub, operator directive 2026-08-20):
 
 1. `build(deps): add termrock-raster at termrock pin rev 29a16b5b` — root `Cargo.toml` + `crates/jackin-console/Cargo.toml` + `Cargo.lock` + `deny.toml` in ONE commit (hub law: deny/lock deltas ride the dependency change).
 2. `test(console): add PNG baseline harness over full screen inventory` — the harness module with its inventory-enumeration tests, before any PNG exists (compare mode must fail cleanly naming missing baselines, or skip-with-explicit-list behavior of your choosing that CI step 6 renders impossible to pass silently — prefer fail).
