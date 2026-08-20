@@ -76,7 +76,7 @@ fn list_name_render_clamps_scroll_to_rendered_width() {
     let config = config_with_long_workspace_name();
     let tmp = tempfile::tempdir().unwrap();
     let mut state = ManagerState::from_config(&config, tmp.path());
-    state.list_names_scroll_x = u16::MAX;
+    crate::tui::scroll_block::scroll_area_set_x(&mut state.list_names_scroll, u16::MAX);
     state.set_list_names_focused(true);
 
     let backend = TestBackend::new(70, 24);
@@ -89,7 +89,7 @@ fn list_name_render_clamps_scroll_to_rendered_width() {
         })
         .unwrap();
 
-    assert_eq!(state.list_names_scroll_x, 14);
+    assert_eq!(state.list_names_scroll.offset_x(), 14);
 }
 
 #[test]

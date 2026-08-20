@@ -133,7 +133,7 @@ pub fn update_row_hover(state: &mut ManagerState<'_>, mouse: MouseEvent, term_si
                 editor_scroll_area(editor, term_size).area,
                 mouse.column,
                 mouse.row,
-                editor.tab_scroll_y,
+                editor.tab_scroll.offset_y(),
                 editor.pending.mounts.as_slice(),
             ) {
                 editor.set_hover_target(Some(target));
@@ -148,7 +148,7 @@ pub fn update_row_hover(state: &mut ManagerState<'_>, mouse: MouseEvent, term_si
                 settings.content_area(term_size),
                 mouse.column,
                 mouse.row,
-                settings.trust.scroll_y,
+                settings.trust.scroll.offset_y(),
                 settings.trust.pending.len(),
             ) {
                 settings.set_hover_target(Some(target));

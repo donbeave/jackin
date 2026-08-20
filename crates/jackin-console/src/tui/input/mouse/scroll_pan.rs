@@ -162,7 +162,7 @@ pub fn scroll_active_panel(
                 let viewport = scroll_viewport_width(area);
                 let content_width = list_names_content_width(state, viewport);
                 return apply_horizontal_scroll(
-                    &mut state.list_names_scroll_x,
+                    &mut state.list_names_scroll,
                     delta,
                     area,
                     content_width,
@@ -188,7 +188,7 @@ pub fn scroll_active_panel(
                 return false;
             };
             apply_horizontal_scroll(
-                state.list_scroll_x_mut(focus),
+                state.list_scroll_state_mut(focus),
                 delta,
                 area_info.area,
                 area_info.content_width,
@@ -211,7 +211,7 @@ pub fn scroll_active_panel(
                 editor.apply_scroll_focus_plan(plan);
                 return plan.tab_content_scroll_focused
                     && apply_horizontal_scroll(
-                        &mut editor.tab_scroll_x,
+                        &mut editor.tab_scroll,
                         delta,
                         area,
                         editor.tab_content_width,
@@ -225,7 +225,7 @@ pub fn scroll_active_panel(
             editor.apply_scroll_focus_plan(plan);
             plan.workspace_mounts_scroll_focused
                 && apply_horizontal_scroll(
-                    &mut editor.workspace_mounts_scroll_x,
+                    &mut editor.workspace_mounts_scroll,
                     delta,
                     area.area,
                     area.content_width,
@@ -244,7 +244,7 @@ pub fn scroll_active_panel(
                 SettingsTab::Mounts => {
                     let content_width = settings.mounts.content_width();
                     apply_horizontal_scroll(
-                        &mut settings.mounts.scroll_x,
+                        &mut settings.mounts.scroll,
                         delta,
                         content_area,
                         content_width,
@@ -253,7 +253,7 @@ pub fn scroll_active_panel(
                 SettingsTab::Trust => {
                     let cw =
                         crate::tui::screens::settings::update::trust_content_width(&settings.trust);
-                    apply_horizontal_scroll(&mut settings.trust.scroll_x, delta, content_area, cw)
+                    apply_horizontal_scroll(&mut settings.trust.scroll, delta, content_area, cw)
                 }
                 _ => false,
             }
@@ -289,7 +289,7 @@ pub fn scroll_active_panel_vertical(
                 SettingsTab::Mounts => {
                     let content_height = settings.mounts_content_height();
                     apply_vertical_scroll(
-                        &mut settings.mounts.scroll_y,
+                        &mut settings.mounts.scroll,
                         delta,
                         content_area,
                         content_height,
@@ -298,7 +298,7 @@ pub fn scroll_active_panel_vertical(
                 SettingsTab::Environments => {
                     let content_height = settings.env_content_height();
                     apply_vertical_scroll(
-                        &mut settings.env.scroll_y,
+                        &mut settings.env.scroll,
                         delta,
                         content_area,
                         content_height,
@@ -307,7 +307,7 @@ pub fn scroll_active_panel_vertical(
                 SettingsTab::Trust => {
                     let content_height = settings.trust_content_height();
                     apply_vertical_scroll(
-                        &mut settings.trust.scroll_y,
+                        &mut settings.trust.scroll,
                         delta,
                         content_area,
                         content_height,
@@ -316,7 +316,7 @@ pub fn scroll_active_panel_vertical(
                 SettingsTab::Auth => {
                     let content_height = settings.auth_content_height();
                     apply_vertical_scroll(
-                        settings.auth.scroll_y_mut(),
+                        settings.auth.scroll_state_mut(),
                         delta,
                         content_area,
                         content_height,
@@ -333,7 +333,7 @@ pub fn scroll_active_panel_vertical(
                 return;
             }
             let content_height = editor.tab_content_height;
-            apply_vertical_scroll(&mut editor.tab_scroll_y, delta, area, content_height);
+            apply_vertical_scroll(&mut editor.tab_scroll, delta, area, content_height);
         }
         ManagerStage::List => {
             if state.list_modal.is_some() {
@@ -345,7 +345,7 @@ pub fn scroll_active_panel_vertical(
                 Some(MountScrollFocus::Workspace) => {
                     if let Some(areas) = list_scroll_areas(state, term_size, config) {
                         apply_vertical_scroll(
-                            &mut state.list_mounts_scroll_y,
+                            &mut state.list_mounts_scroll,
                             delta,
                             areas.workspace.area,
                             areas.workspace.content_height,
@@ -355,7 +355,7 @@ pub fn scroll_active_panel_vertical(
                 Some(MountScrollFocus::Global) => {
                     if let Some(areas) = list_scroll_areas(state, term_size, config) {
                         apply_vertical_scroll(
-                            &mut state.list_global_mounts_scroll_y,
+                            &mut state.list_global_mounts_scroll,
                             delta,
                             areas.global.area,
                             areas.global.content_height,
@@ -367,7 +367,7 @@ pub fn scroll_active_panel_vertical(
                         && let Some(area) = areas.role_global
                     {
                         apply_vertical_scroll(
-                            &mut state.list_role_global_mounts_scroll_y,
+                            &mut state.list_role_global_mounts_scroll,
                             delta,
                             area.area,
                             area.content_height,
@@ -379,7 +379,7 @@ pub fn scroll_active_panel_vertical(
                         && let Some(area) = areas.roles
                     {
                         apply_vertical_scroll(
-                            &mut state.list_roles_scroll_y,
+                            &mut state.list_roles_scroll,
                             delta,
                             area.area,
                             area.content_height,

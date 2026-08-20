@@ -427,7 +427,7 @@ fn editor_workdir_picker_wheel_scrolls_modal_selection_not_background() {
     let ManagerStage::Editor(editor) = &state.stage else {
         panic!("editor stage expected");
     };
-    assert_eq!(editor.tab_scroll_y, 0, "background editor must not scroll");
+    assert_eq!(editor.tab_scroll.offset_y(), 0, "background editor must not scroll");
     let Some(Modal::WorkdirPick { state: picker }) = &editor.modal else {
         panic!("workdir picker modal expected");
     };
@@ -438,7 +438,7 @@ fn editor_workdir_picker_wheel_scrolls_modal_selection_not_background() {
 fn settings_role_picker_wheel_scrolls_modal_selection_not_background() {
     let mut state = list_state();
     let mut settings = SettingsState::from_config(&jackin_config::AppConfig::default());
-    settings.mounts.scroll_y = 4;
+    crate::tui::scroll_block::scroll_area_set_y(&mut settings.mounts.scroll, 4);
     settings.mounts.modals.open(SettingsModal::MountRolePicker {
         state: crate::tui::state::RolePickerState::new(vec![
             jackin_core::RoleSelector::parse("chainargos/agent-brown").unwrap(),
@@ -457,7 +457,7 @@ fn settings_role_picker_wheel_scrolls_modal_selection_not_background() {
         panic!("settings stage expected");
     };
     assert_eq!(
-        settings.mounts.scroll_y, 4,
+        settings.mounts.scroll.offset_y(), 4,
         "background settings must not scroll"
     );
     let Some(SettingsModal::MountRolePicker { state: picker }) = settings.mounts.modals.current()
@@ -1163,7 +1163,7 @@ fn click_current_directory_mount_block_focuses_and_scrolls_it() {
         Some(&config),
     );
 
-    assert_eq!(state.list_mounts_scroll_x, MOUSE_HORIZONTAL_SCROLL_STEP);
+    assert_eq!(state.list_mounts_scroll.offset_x(), MOUSE_HORIZONTAL_SCROLL_STEP);
 }
 
 #[test]
@@ -1194,9 +1194,9 @@ fn horizontal_mouse_wheel_scrolls_block_under_pointer() {
         Some(&config),
     );
 
-    assert_eq!(state.list_mounts_scroll_x, 0);
+    assert_eq!(state.list_mounts_scroll.offset_x(), 0);
     assert_eq!(
-        state.list_global_mounts_scroll_x,
+        state.list_global_mounts_scroll.offset_x(),
         MOUSE_HORIZONTAL_SCROLL_STEP
     );
     assert_eq!(state.list_scroll_focus(), Some(MountScrollFocus::Global));
@@ -1217,7 +1217,7 @@ fn vertical_mouse_wheel_does_not_scroll_horizontal_only_list_block() {
     );
 
     assert_eq!(
-        state.list_global_mounts_scroll_x, 0,
+        state.list_global_mounts_scroll.offset_x(), 0,
         "ScrollDown must not change horizontal scroll on a horizontal-only block"
     );
 
@@ -1228,7 +1228,7 @@ fn vertical_mouse_wheel_does_not_scroll_horizontal_only_list_block() {
         Some(&config),
     );
 
-    assert_eq!(state.list_global_mounts_scroll_x, 0);
+    assert_eq!(state.list_global_mounts_scroll.offset_x(), 0);
 }
 
 #[test]
@@ -1259,8 +1259,8 @@ fn vertical_mouse_wheel_routes_to_block_under_pointer_not_stale_focus() {
     handle_mouse_with_config(&mut state, mouse, term(100), Some(&config));
 
     assert_eq!(state.list_scroll_focus(), Some(MountScrollFocus::Global));
-    assert_eq!(state.list_mounts_scroll_y, 0);
-    assert_eq!(state.list_global_mounts_scroll_y, 1);
+    assert_eq!(state.list_mounts_scroll.offset_y(), 0);
+    assert_eq!(state.list_global_mounts_scroll.offset_y(), 1);
 }
 
 #[test]
@@ -1293,7 +1293,7 @@ fn horizontal_mouse_wheel_clamps_stored_offset_at_block_end() {
         super::global_mounts_content_width(global_mounts.as_slice()),
         super::scroll_viewport_width(global_area),
     );
-    assert_eq!(state.list_global_mounts_scroll_x, expected_max);
+    assert_eq!(state.list_global_mounts_scroll.offset_x(), expected_max);
 
     handle_mouse_with_config(
         &mut state,
@@ -1303,7 +1303,7 @@ fn horizontal_mouse_wheel_clamps_stored_offset_at_block_end() {
     );
 
     assert_eq!(
-        state.list_global_mounts_scroll_x,
+        state.list_global_mounts_scroll.offset_x(),
         expected_max.saturating_sub(MOUSE_HORIZONTAL_SCROLL_STEP),
         "left-scroll after overscrolling right must move immediately, not burn hidden offset"
     );
@@ -1351,7 +1351,7 @@ fn horizontal_mouse_wheel_reaches_rendered_workspace_width() {
     );
 
     assert_eq!(
-        state.list_mounts_scroll_x, expected_max,
+        state.list_mounts_scroll.offset_x(), expected_max,
         "mouse/touch scroll must clamp at the same rendered width keyboard scrolling reaches"
     );
 }
@@ -1360,7 +1360,7 @@ fn horizontal_mouse_wheel_reaches_rendered_workspace_width() {
 fn horizontal_mouse_wheel_clamps_before_applying_left_delta() {
     let config = config_with_scrollable_workspace_and_global_mounts();
     let mut state = selected_demo_state(&config);
-    state.list_global_mounts_scroll_x = u16::MAX;
+    crate::tui::scroll_block::scroll_area_set_x(&mut state.list_global_mounts_scroll, u16::MAX);
 
     let global_mounts: Vec<MountConfig> = config
         .list_mount_rows()
@@ -1387,7 +1387,7 @@ fn horizontal_mouse_wheel_clamps_before_applying_left_delta() {
     );
 
     assert_eq!(
-        state.list_global_mounts_scroll_x,
+        state.list_global_mounts_scroll.offset_x(),
         expected_max.saturating_sub(MOUSE_HORIZONTAL_SCROLL_STEP),
         "left-scroll must first clamp stale resize/overscroll state, then move left"
     );
@@ -1422,7 +1422,7 @@ fn editor_mounts_tab_horizontal_wheel_requires_mounts_tab() {
     };
     assert!(editor.workspace_mounts_scroll_focused());
     assert_eq!(
-        editor.workspace_mounts_scroll_x,
+        editor.workspace_mounts_scroll.offset_x(),
         MOUSE_HORIZONTAL_SCROLL_STEP
     );
 
@@ -1438,7 +1438,7 @@ fn editor_mounts_tab_horizontal_wheel_requires_mounts_tab() {
     };
     assert!(!editor.workspace_mounts_scroll_focused());
     assert_eq!(
-        editor.workspace_mounts_scroll_x,
+        editor.workspace_mounts_scroll.offset_x(),
         MOUSE_HORIZONTAL_SCROLL_STEP
     );
 }
@@ -1469,7 +1469,7 @@ fn editor_non_mounts_tab_click_focuses_horizontal_scroll_block() {
     let ManagerStage::Editor(editor) = &state.stage else {
         panic!("editor stage expected");
     };
-    assert_eq!(editor.tab_scroll_x, MOUSE_HORIZONTAL_SCROLL_STEP);
+    assert_eq!(editor.tab_scroll.offset_x(), MOUSE_HORIZONTAL_SCROLL_STEP);
     assert!(editor.tab_content_scroll_focused());
 }
 
@@ -1490,7 +1490,7 @@ fn editor_vertical_wheel_scrolls_only_inside_content_area() {
     let ManagerStage::Editor(editor) = &state.stage else {
         panic!("editor stage expected");
     };
-    assert_eq!(editor.tab_scroll_y, 0);
+    assert_eq!(editor.tab_scroll.offset_y(), 0);
 
     handle_mouse_with_config(
         &mut state,
@@ -1501,7 +1501,7 @@ fn editor_vertical_wheel_scrolls_only_inside_content_area() {
     let ManagerStage::Editor(editor) = &state.stage else {
         panic!("editor stage expected");
     };
-    assert_eq!(editor.tab_scroll_y, 1);
+    assert_eq!(editor.tab_scroll.offset_y(), 1);
 }
 
 #[test]
@@ -1523,7 +1523,7 @@ fn editor_general_tab_vertical_wheel_uses_shared_scroll_path() {
         panic!("editor stage expected");
     };
     assert_eq!(
-        editor.tab_scroll_y, 1,
+        editor.tab_scroll.offset_y(), 1,
         "General must use the same vertical wheel path as every editor tab"
     );
 }
@@ -1547,7 +1547,7 @@ fn editor_general_tab_vertical_scrollbar_drag_uses_shared_scroll_path() {
         panic!("editor stage expected");
     };
     assert!(
-        editor.tab_scroll_y > 0,
+        editor.tab_scroll.offset_y() > 0,
         "General scrollbar dragging must use the same vertical path as every editor tab"
     );
 }
@@ -1573,7 +1573,7 @@ fn editor_vertical_wheel_ignores_background_when_modal_open() {
     let ManagerStage::Editor(editor) = &state.stage else {
         panic!("editor stage expected");
     };
-    assert_eq!(editor.tab_scroll_y, 0);
+    assert_eq!(editor.tab_scroll.offset_y(), 0);
 }
 
 #[test]
@@ -1600,7 +1600,7 @@ fn editor_file_browser_wheel_scrolls_modal_selection_not_background() {
     let ManagerStage::Editor(editor) = &state.stage else {
         panic!("editor stage expected");
     };
-    assert_eq!(editor.tab_scroll_y, 0, "background editor must not scroll");
+    assert_eq!(editor.tab_scroll.offset_y(), 0, "background editor must not scroll");
     let Some(Modal::FileBrowser { state: fb, .. }) = &editor.modal else {
         panic!("file browser modal expected");
     };
@@ -1658,7 +1658,7 @@ fn editor_file_browser_smoke_hints_pagedown_and_wheel_share_modal_context() {
     let ManagerStage::Editor(editor) = &state.stage else {
         panic!("editor stage expected");
     };
-    assert_eq!(editor.tab_scroll_y, 0, "background editor must not scroll");
+    assert_eq!(editor.tab_scroll.offset_y(), 0, "background editor must not scroll");
     let Some(Modal::FileBrowser { state: fb, .. }) = &editor.modal else {
         panic!("file browser modal expected");
     };
@@ -1702,7 +1702,7 @@ fn settings_mounts_file_browser_wheel_scrolls_modal_selection_not_background() {
     let tmp = tempfile::tempdir().unwrap();
     let fb = file_browser_with_dirs(tmp.path(), 8);
     let mut settings = SettingsState::from_config(&jackin_config::AppConfig::default());
-    settings.mounts.scroll_y = 4;
+    crate::tui::scroll_block::scroll_area_set_y(&mut settings.mounts.scroll, 4);
     settings
         .mounts
         .modals
@@ -1722,7 +1722,7 @@ fn settings_mounts_file_browser_wheel_scrolls_modal_selection_not_background() {
         panic!("settings stage expected");
     };
     assert_eq!(
-        settings.mounts.scroll_y, 4,
+        settings.mounts.scroll.offset_y(), 4,
         "background settings must not scroll"
     );
     let Some(SettingsModal::MountFileBrowser { state: fb }) = settings.mounts.modals.current()
@@ -1786,7 +1786,7 @@ fn file_browser_wheel_at_edge_is_consumed_before_background_scroll() {
         panic!("editor stage expected");
     };
     assert_eq!(
-        editor.tab_scroll_y, 0,
+        editor.tab_scroll.offset_y(), 0,
         "saturated modal wheel must not leak"
     );
     let Some(Modal::FileBrowser { state: fb, .. }) = &editor.modal else {
@@ -1816,7 +1816,7 @@ fn editor_vertical_scrollbar_drag_ignores_background_when_modal_open() {
     let ManagerStage::Editor(editor) = &state.stage else {
         panic!("editor stage expected");
     };
-    assert_eq!(editor.tab_scroll_y, 0);
+    assert_eq!(editor.tab_scroll.offset_y(), 0);
 }
 
 #[test]
@@ -1852,7 +1852,7 @@ fn settings_vertical_scrollbar_drag_ignores_background_when_modal_open() {
     let ManagerStage::Settings(settings) = &state.stage else {
         panic!("settings stage expected");
     };
-    assert_eq!(settings.mounts.scroll_y, 0);
+    assert_eq!(settings.mounts.scroll.offset_y(), 0);
 }
 
 #[test]
@@ -1926,7 +1926,7 @@ fn scroll_up_decrements_vertical_scroll_offset() {
     let config = config_with_scrollable_workspace_and_global_mounts();
     let mut state = selected_demo_state(&config);
     state.set_list_scroll_focus(Some(MountScrollFocus::Global));
-    state.list_global_mounts_scroll_y = 3;
+    crate::tui::scroll_block::scroll_area_set_y(&mut state.list_global_mounts_scroll, 3);
 
     handle_mouse_with_config(
         &mut state,
@@ -1935,7 +1935,7 @@ fn scroll_up_decrements_vertical_scroll_offset() {
         Some(&config),
     );
 
-    assert_eq!(state.list_global_mounts_scroll_y, 0);
+    assert_eq!(state.list_global_mounts_scroll.offset_y(), 0);
 }
 
 #[test]

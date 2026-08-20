@@ -83,7 +83,7 @@ pub fn try_select_settings_trust_row(
         area,
         mouse.column,
         mouse.row,
-        settings.trust.scroll_y,
+        settings.trust.scroll.offset_y(),
         settings.trust.pending.len(),
     ) {
         dispatch_manager(state, ManagerMessage::SelectSettingsTrustRow(row));
@@ -107,7 +107,7 @@ pub fn editor_mount_index_at(
         editor_scroll_area(editor, term_size).area,
         mouse.column,
         mouse.row,
-        editor.tab_scroll_y,
+        editor.tab_scroll.offset_y(),
         editor.pending.mounts.as_slice(),
     )
 }
@@ -159,7 +159,7 @@ pub fn editor_auth_row_index_at(
         editor.content_area(term_size),
         mouse.column,
         mouse.row,
-        editor.tab_scroll_y,
+        editor.tab_scroll.offset_y(),
         &rows,
     )
 }

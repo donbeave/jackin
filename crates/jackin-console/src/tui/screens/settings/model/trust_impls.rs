@@ -20,8 +20,7 @@ impl SettingsTrustState {
             original: pending.clone(),
             pending,
             error: None,
-            scroll_x: 0,
-            scroll_y: 0,
+            scroll: crate::tui::scroll_block::console_scroll_area_state(),
         }
     }
 
@@ -48,7 +47,7 @@ impl SettingsTrustState {
         plan: crate::tui::screens::settings::update::SettingsSelectionScrollPlan,
     ) {
         self.selected = plan.selected;
-        self.scroll_y = plan.scroll_y;
+        crate::tui::scroll_block::scroll_area_set_y(&mut self.scroll, plan.scroll_y);
     }
 
     pub fn apply_row_select_plan(
@@ -62,7 +61,7 @@ impl SettingsTrustState {
     }
 
     pub fn apply_horizontal_scroll(&mut self, scroll_x: u16) {
-        self.scroll_x = scroll_x;
+        crate::tui::scroll_block::scroll_area_set_x(&mut self.scroll, scroll_x);
     }
 
     pub fn toggle_selected(&mut self) {

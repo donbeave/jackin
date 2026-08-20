@@ -110,7 +110,7 @@ fn apply_scrollbar_drag_updates_offset_when_pointer_hits_track() {
         width: 20,
         height: 5,
     };
-    let mut value = 0;
+    let mut value = crate::tui::scroll_block::console_scroll_area_state();
 
     assert!(apply_scrollbar_drag(
         ScrollbarAxis::Horizontal,
@@ -120,7 +120,7 @@ fn apply_scrollbar_drag_updates_offset_when_pointer_hits_track() {
         10,
         4
     ));
-    assert_eq!(value, 44);
+    assert_eq!(value.offset_x(), 44);
     assert!(!apply_scrollbar_drag(
         ScrollbarAxis::Horizontal,
         &mut value,
@@ -129,7 +129,7 @@ fn apply_scrollbar_drag_updates_offset_when_pointer_hits_track() {
         10,
         4
     ));
-    assert_eq!(value, 44);
+    assert_eq!(value.offset_x(), 44);
 }
 
 #[test]
@@ -209,17 +209,17 @@ fn scroll_apply_helpers_use_scrollable_panel_viewports() {
         height: 6,
     };
 
-    let mut horizontal = 0;
+    let mut horizontal = crate::tui::scroll_block::console_scroll_area_state();
     apply_horizontal_scroll(&mut horizontal, 20, area, 40);
-    assert_eq!(horizontal, 20);
+    assert_eq!(horizontal.offset_x(), 20);
     apply_horizontal_scroll(&mut horizontal, 20, area, 40);
-    assert_eq!(horizontal, 32);
+    assert_eq!(horizontal.offset_x(), 32);
 
-    let mut vertical = 0;
+    let mut vertical = crate::tui::scroll_block::console_scroll_area_state();
     apply_vertical_scroll(&mut vertical, 20, area, 40);
-    assert_eq!(vertical, 20);
+    assert_eq!(vertical.offset_y(), 20);
     apply_vertical_scroll(&mut vertical, 20, area, 40);
-    assert_eq!(vertical, 36);
+    assert_eq!(vertical.offset_y(), 36);
 
     assert_eq!(scroll_viewport_width(area), 8);
     assert_eq!(scroll_viewport_height(area), 4);

@@ -57,12 +57,12 @@ fn move_list_selection_clamps() {
 fn select_list_row_resets_selection_local_state() {
     let mut state = state_with_saved_count(2);
     state.selected = 0;
-    state.list_mounts_scroll_x = 4;
+    crate::tui::scroll_block::scroll_area_set_x(&mut state.list_mounts_scroll, 4);
 
     update_manager(&mut state, ManagerMessage::SelectListRow(1));
 
     assert_eq!(state.selected, 1);
-    assert_eq!(state.list_mounts_scroll_x, 0);
+    assert_eq!(state.list_mounts_scroll.offset_x(), 0);
 }
 
 #[test]
@@ -188,7 +188,7 @@ fn scroll_focused_list_block_updates_selected_axis() {
         ManagerMessage::ScrollFocusedListBlockVertical(3),
     );
 
-    assert_eq!(state.list_mounts_scroll_y, 3);
+    assert_eq!(state.list_mounts_scroll.offset_y(), 3);
 }
 
 #[test]
@@ -213,8 +213,8 @@ fn move_editor_tab_resets_tab_local_view_state() {
     editor.active_tab = EditorTab::Secrets;
     editor.set_tab_bar_focused(false);
     editor.active_field = FieldFocus::Row(7);
-    editor.tab_scroll_x = 4;
-    editor.tab_scroll_y = 5;
+    crate::tui::scroll_block::scroll_area_set_x(&mut editor.tab_scroll, 4);
+    crate::tui::scroll_block::scroll_area_set_y(&mut editor.tab_scroll, 5);
     editor.secrets_expanded.insert("role".into());
     state.stage = ManagerStage::Editor(editor);
 
@@ -232,8 +232,8 @@ fn move_editor_tab_resets_tab_local_view_state() {
     assert_eq!(editor.active_tab, EditorTab::Auth);
     assert!(editor.tab_bar_focused());
     assert_eq!(editor.active_field, FieldFocus::Row(0));
-    assert_eq!(editor.tab_scroll_x, 0);
-    assert_eq!(editor.tab_scroll_y, 0);
+    assert_eq!(editor.tab_scroll.offset_x(), 0);
+    assert_eq!(editor.tab_scroll.offset_y(), 0);
     assert!(editor.secrets_expanded.is_empty());
 }
 
@@ -245,8 +245,8 @@ fn editor_auth_kind_messages_reset_local_view_state() {
         jackin_config::WorkspaceConfig::default(),
     );
     editor.active_field = FieldFocus::Row(5);
-    editor.tab_scroll_x = 9;
-    editor.tab_scroll_y = 7;
+    crate::tui::scroll_block::scroll_area_set_x(&mut editor.tab_scroll, 9);
+    crate::tui::scroll_block::scroll_area_set_y(&mut editor.tab_scroll, 7);
     state.stage = ManagerStage::Editor(editor);
 
     update_manager(
@@ -261,8 +261,8 @@ fn editor_auth_kind_messages_reset_local_view_state() {
     };
     assert_eq!(editor.auth_selected_kind, Some(AuthKind::Claude));
     assert_eq!(editor.active_field, FieldFocus::Row(0));
-    assert_eq!(editor.tab_scroll_x, 0);
-    assert_eq!(editor.tab_scroll_y, 0);
+    assert_eq!(editor.tab_scroll.offset_x(), 0);
+    assert_eq!(editor.tab_scroll.offset_y(), 0);
 
     update_manager(&mut state, ManagerMessage::ClearEditorAuthKind);
 
@@ -621,7 +621,7 @@ fn scroll_editor_tab_marks_panel_focus_and_updates_offset() {
         panic!("expected editor stage");
     };
     assert!(editor.tab_content_scroll_focused());
-    assert_eq!(editor.tab_scroll_x, 8);
+    assert_eq!(editor.tab_scroll.offset_x(), 8);
 }
 
 #[test]
@@ -645,7 +645,7 @@ fn scroll_editor_workspace_mounts_marks_mounts_focus_and_updates_offset() {
         panic!("expected editor stage");
     };
     assert!(editor.workspace_mounts_scroll_focused());
-    assert_eq!(editor.workspace_mounts_scroll_x, 8);
+    assert_eq!(editor.workspace_mounts_scroll.offset_x(), 8);
 }
 
 #[test]
@@ -667,7 +667,7 @@ fn scroll_settings_global_mounts_updates_offset() {
     let ManagerStage::Settings(settings) = state.stage else {
         panic!("expected settings stage");
     };
-    assert_eq!(settings.mounts.scroll_x, 8);
+    assert_eq!(settings.mounts.scroll.offset_x(), 8);
 }
 
 #[test]
@@ -818,7 +818,7 @@ fn scroll_settings_trust_updates_offset() {
     let ManagerStage::Settings(settings) = state.stage else {
         panic!("expected settings stage");
     };
-    assert_eq!(settings.trust.scroll_x, 8);
+    assert_eq!(settings.trust.scroll.offset_x(), 8);
 }
 
 #[test]

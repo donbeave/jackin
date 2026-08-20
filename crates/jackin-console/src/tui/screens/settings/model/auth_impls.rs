@@ -42,7 +42,7 @@ impl<EnvValue, Modal, PendingOpCommit> SettingsAuthState<EnvValue, Modal, Pendin
             generating_token: false,
             error: None,
             pending_op_commit: None,
-            scroll_y: 0,
+            scroll: crate::tui::scroll_block::console_scroll_area_state(),
         }
     }
 
@@ -89,8 +89,8 @@ impl<EnvValue, Modal, PendingOpCommit> SettingsAuthState<EnvValue, Modal, Pendin
         self.selected_kind.is_some()
     }
 
-    pub const fn scroll_y_mut(&mut self) -> &mut u16 {
-        &mut self.scroll_y
+    pub fn scroll_state_mut(&mut self) -> &mut termrock::widgets::ScrollAreaState {
+        &mut self.scroll
     }
 
     #[must_use]

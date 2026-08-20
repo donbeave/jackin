@@ -46,36 +46,26 @@ use super::{
 };
 
 impl ManagerState<'_> {
-    pub const fn list_scroll_x_mut(&mut self, focus: MountScrollFocus) -> &mut u16 {
+    pub fn list_scroll_state_mut(
+        &mut self,
+        focus: MountScrollFocus,
+    ) -> &mut termrock::widgets::ScrollAreaState {
         match focus {
-            MountScrollFocus::Workspace => &mut self.list_mounts_scroll_x,
-            MountScrollFocus::Global => &mut self.list_global_mounts_scroll_x,
-            MountScrollFocus::RoleGlobal => &mut self.list_role_global_mounts_scroll_x,
-            MountScrollFocus::Roles => &mut self.list_roles_scroll_x,
-        }
-    }
-
-    pub const fn list_scroll_y_mut(&mut self, focus: MountScrollFocus) -> &mut u16 {
-        match focus {
-            MountScrollFocus::Workspace => &mut self.list_mounts_scroll_y,
-            MountScrollFocus::Global => &mut self.list_global_mounts_scroll_y,
-            MountScrollFocus::RoleGlobal => &mut self.list_role_global_mounts_scroll_y,
-            MountScrollFocus::Roles => &mut self.list_roles_scroll_y,
+            MountScrollFocus::Workspace => &mut self.list_mounts_scroll,
+            MountScrollFocus::Global => &mut self.list_global_mounts_scroll,
+            MountScrollFocus::RoleGlobal => &mut self.list_role_global_mounts_scroll,
+            MountScrollFocus::Roles => &mut self.list_roles_scroll,
         }
     }
 
     pub fn reset_list_scroll(&mut self) {
-        self.list_mounts_scroll_x = 0;
-        self.list_mounts_scroll_y = 0;
-        self.list_global_mounts_scroll_x = 0;
-        self.list_global_mounts_scroll_y = 0;
-        self.list_role_global_mounts_scroll_x = 0;
-        self.list_role_global_mounts_scroll_y = 0;
-        self.list_roles_scroll_x = 0;
-        self.list_roles_scroll_y = 0;
+        self.list_mounts_scroll = crate::tui::scroll_block::console_scroll_area_state();
+        self.list_global_mounts_scroll = crate::tui::scroll_block::console_scroll_area_state();
+        self.list_role_global_mounts_scroll =
+            crate::tui::scroll_block::console_scroll_area_state();
+        self.list_roles_scroll = crate::tui::scroll_block::console_scroll_area_state();
         self.list_focus_owner.focus_tab_bar();
-        self.list_names_scroll_x = 0;
-        self.list_names_scroll_y = 0;
+        self.list_names_scroll = crate::tui::scroll_block::console_scroll_area_state();
     }
 
     pub fn list_names_focused(&self) -> bool {
@@ -148,17 +138,12 @@ impl ManagerState<'_> {
             inline_new_session_picker: None,
             inline_provider_picker: None,
             launch_provider_picker: None,
-            list_mounts_scroll_x: 0,
-            list_mounts_scroll_y: 0,
-            list_global_mounts_scroll_x: 0,
-            list_global_mounts_scroll_y: 0,
-            list_role_global_mounts_scroll_x: 0,
-            list_role_global_mounts_scroll_y: 0,
-            list_roles_scroll_x: 0,
-            list_roles_scroll_y: 0,
+            list_mounts_scroll: crate::tui::scroll_block::console_scroll_area_state(),
+            list_global_mounts_scroll: crate::tui::scroll_block::console_scroll_area_state(),
+            list_role_global_mounts_scroll: crate::tui::scroll_block::console_scroll_area_state(),
+            list_roles_scroll: crate::tui::scroll_block::console_scroll_area_state(),
             list_focus_owner: crate::tui::focus::TabFocus::tab_bar(MountScrollFocus::Workspace),
-            list_names_scroll_x: 0,
-            list_names_scroll_y: 0,
+            list_names_scroll: crate::tui::scroll_block::console_scroll_area_state(),
             list_split_pct: DEFAULT_SPLIT_PCT,
             drag_state: None,
             hover_target: None,
@@ -1115,37 +1100,37 @@ impl PreviewPaneCursorState for ManagerState<'_> {
 
 impl crate::tui::screens::workspaces::update::WorkspaceListScrollState for ManagerState<'_> {
     fn list_names_scroll_x(&self) -> u16 {
-        self.list_names_scroll_x
+        self.list_names_scroll.offset_x()
     }
 
     fn set_list_names_scroll_x(&mut self, value: u16) {
-        self.list_names_scroll_x = value;
+        crate::tui::scroll_block::scroll_area_set_x(&mut self.list_names_scroll, value);
     }
 
     fn block_scroll_x(&self, focus: MountScrollFocus) -> u16 {
         match focus {
-            MountScrollFocus::Workspace => self.list_mounts_scroll_x,
-            MountScrollFocus::Global => self.list_global_mounts_scroll_x,
-            MountScrollFocus::RoleGlobal => self.list_role_global_mounts_scroll_x,
-            MountScrollFocus::Roles => self.list_roles_scroll_x,
+            MountScrollFocus::Workspace => self.list_mounts_scroll.offset_x(),
+            MountScrollFocus::Global => self.list_global_mounts_scroll.offset_x(),
+            MountScrollFocus::RoleGlobal => self.list_role_global_mounts_scroll.offset_x(),
+            MountScrollFocus::Roles => self.list_roles_scroll.offset_x(),
         }
     }
 
     fn set_block_scroll_x(&mut self, focus: MountScrollFocus, value: u16) {
-        *self.list_scroll_x_mut(focus) = value;
+        crate::tui::scroll_block::scroll_area_set_x(self.list_scroll_state_mut(focus), value);
     }
 
     fn block_scroll_y(&self, focus: MountScrollFocus) -> u16 {
         match focus {
-            MountScrollFocus::Workspace => self.list_mounts_scroll_y,
-            MountScrollFocus::Global => self.list_global_mounts_scroll_y,
-            MountScrollFocus::RoleGlobal => self.list_role_global_mounts_scroll_y,
-            MountScrollFocus::Roles => self.list_roles_scroll_y,
+            MountScrollFocus::Workspace => self.list_mounts_scroll.offset_y(),
+            MountScrollFocus::Global => self.list_global_mounts_scroll.offset_y(),
+            MountScrollFocus::RoleGlobal => self.list_role_global_mounts_scroll.offset_y(),
+            MountScrollFocus::Roles => self.list_roles_scroll.offset_y(),
         }
     }
 
     fn set_block_scroll_y(&mut self, focus: MountScrollFocus, value: u16) {
-        *self.list_scroll_y_mut(focus) = value;
+        crate::tui::scroll_block::scroll_area_set_y(self.list_scroll_state_mut(focus), value);
     }
 }
 

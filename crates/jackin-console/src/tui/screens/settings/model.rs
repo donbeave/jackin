@@ -452,7 +452,7 @@ impl<MountModal, EnvModal, AuthModal, PendingOpCommit, ErrorPopup, PendingToken>
                 &self.mounts.pending,
                 &self.mounts.mount_info_cache,
             ),
-            &mut self.mounts.scroll_x,
+            &mut self.mounts.scroll,
         );
     }
 
@@ -1105,8 +1105,7 @@ pub struct GlobalMountsState<Row, Modal> {
     pub modals: crate::tui::modal_chain::ModalChain<Modal>,
     pub add_draft: Option<GlobalMountDraft>,
     pub error: Option<String>,
-    pub scroll_x: u16,
-    pub scroll_y: u16,
+    pub scroll: termrock::widgets::ScrollAreaState,
     /// Dispatcher pops back to the workspace list when set.
     pub exit_requested: bool,
 }
@@ -1131,8 +1130,7 @@ impl<Row, Modal> GlobalMountsState<Row, Modal> {
             modals: crate::tui::modal_chain::ModalChain::new(),
             add_draft: None,
             error: None,
-            scroll_x: 0,
-            scroll_y: 0,
+            scroll: crate::tui::scroll_block::console_scroll_area_state(),
             exit_requested: false,
         }
     }
@@ -1170,11 +1168,11 @@ impl<Row, Modal> GlobalMountsState<Row, Modal> {
         plan: crate::tui::screens::settings::update::SettingsSelectionScrollPlan,
     ) {
         self.selected = plan.selected;
-        self.scroll_y = plan.scroll_y;
+        crate::tui::scroll_block::scroll_area_set_y(&mut self.scroll, plan.scroll_y);
     }
 
     pub fn apply_horizontal_scroll(&mut self, scroll_x: u16) {
-        self.scroll_x = scroll_x;
+        crate::tui::scroll_block::scroll_area_set_x(&mut self.scroll, scroll_x);
     }
 
     pub fn mark_saved(&mut self)
@@ -1317,8 +1315,7 @@ pub struct SettingsTrustState {
     pub pending: Vec<SettingsTrustRow>,
     pub original: Vec<SettingsTrustRow>,
     pub error: Option<String>,
-    pub scroll_x: u16,
-    pub scroll_y: u16,
+    pub scroll: termrock::widgets::ScrollAreaState,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -1353,7 +1350,7 @@ pub struct SettingsAuthState<EnvValue, Modal, PendingOpCommit> {
     pub error: Option<String>,
     /// In-flight 1Password read for an op-picker auth-form commit.
     pub pending_op_commit: Option<PendingOpCommit>,
-    pub scroll_y: u16,
+    pub scroll: termrock::widgets::ScrollAreaState,
 }
 
 #[derive(Debug, Clone, Copy)]

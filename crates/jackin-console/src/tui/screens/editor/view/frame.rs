@@ -323,8 +323,8 @@ pub(crate) fn render_general_tab<
         frame,
         area,
         rows,
-        state.tab_scroll_x,
-        state.tab_scroll_y,
+        state.tab_scroll.offset_x(),
+        state.tab_scroll.offset_y(),
         focused,
         None,
     );
@@ -360,8 +360,8 @@ pub(crate) fn render_mounts_tab<
         frame,
         area,
         lines,
-        state.workspace_mounts_scroll_x,
-        state.tab_scroll_y,
+        state.workspace_mounts_scroll.offset_x(),
+        state.tab_scroll.offset_y(),
         state.workspace_mounts_scroll_focused() && state.modal.is_none(),
         None,
     );
@@ -399,8 +399,8 @@ pub(crate) fn render_roles_tab<
         frame,
         area,
         lines,
-        state.tab_scroll_x,
-        state.tab_scroll_y,
+        state.tab_scroll.offset_x(),
+        state.tab_scroll.offset_y(),
         focused,
         None,
     );
@@ -438,8 +438,8 @@ pub(crate) fn render_secrets_tab<
         frame,
         area,
         lines,
-        state.tab_scroll_x,
-        state.tab_scroll_y,
+        state.tab_scroll.offset_x(),
+        state.tab_scroll.offset_y(),
         focused,
         None,
     );
@@ -480,8 +480,8 @@ pub(crate) fn render_auth_tab<
         frame,
         area,
         lines,
-        state.tab_scroll_x,
-        state.tab_scroll_y,
+        state.tab_scroll.offset_x(),
+        state.tab_scroll.offset_y(),
         focused,
         title.as_deref(),
     );
@@ -728,9 +728,8 @@ pub(crate) fn prepare_editor_tab_for_area<
                     &state.mount_info_cache,
                 ),
         },
-        &mut state.tab_scroll_x,
-        &mut state.tab_scroll_y,
-        &mut state.workspace_mounts_scroll_x,
+        &mut state.tab_scroll,
+        &mut state.workspace_mounts_scroll,
     );
 }
 
@@ -776,22 +775,32 @@ pub(crate) fn editor_tab_geometry<
 pub(crate) fn clamp_editor_scroll_for_frame(
     body: Rect,
     geometry: EditorScrollGeometry,
-    tab_scroll_x: &mut u16,
-    tab_scroll_y: &mut u16,
-    mounts_scroll_x: &mut u16,
+    tab_scroll: &mut termrock::widgets::ScrollAreaState,
+    mounts_scroll: &mut termrock::widgets::ScrollAreaState,
 ) {
     let viewport_w = termrock::scroll::viewport_width(body);
     let viewport_h = termrock::scroll::viewport_height(body);
     if geometry.active_mounts {
-        termrock::scroll::clamp_scroll_offset(
-            geometry.mounts_content_width,
-            viewport_w,
-            mounts_scroll_x,
+        mounts_scroll.set_content_size(
+            u16::try_from(geometry.mounts_content_width).unwrap_or(u16::MAX),
+            u16::MAX,
         );
+        mounts_scroll.set_viewport(u16::try_from(viewport_w).unwrap_or(u16::MAX), 1);
+        mounts_scroll.clamp();
     } else {
-        termrock::scroll::clamp_scroll_offset(geometry.content_width, viewport_w, tab_scroll_x);
+        tab_scroll.set_content_size(
+            u16::try_from(geometry.content_width).unwrap_or(u16::MAX),
+            u16::MAX,
+        );
+        tab_scroll.set_viewport(u16::try_from(viewport_w).unwrap_or(u16::MAX), 1);
+        tab_scroll.clamp();
     }
-    termrock::scroll::clamp_scroll_offset(geometry.content_height, viewport_h, tab_scroll_y);
+    tab_scroll.set_content_size(
+        u16::MAX,
+        u16::try_from(geometry.content_height).unwrap_or(u16::MAX),
+    );
+    tab_scroll.set_viewport(1, u16::try_from(viewport_h).unwrap_or(u16::MAX));
+    tab_scroll.clamp();
 }
 
 pub(crate) fn editor_body_area(area: Rect, footer_h: u16) -> Rect {

@@ -488,21 +488,16 @@ fn global_mounts_content_height_from_rows(rows: &[&jackin_config::GlobalMountRow
     global_mounts_content_height(rows.iter().map(|row| row.mount.src == row.mount.dst))
 }
 
-pub fn clamp_scroll_area_x(area: SidebarScrollArea, value: &mut u16) {
-    clamp_scroll_x(area.content_width, scroll_viewport_width(area.area), value);
-}
-
-pub fn clamp_scroll_area_y(area: SidebarScrollArea, value: &mut u16) {
-    clamp_scroll_x(
-        area.content_height,
-        scroll_viewport_height(area.area),
-        value,
+pub fn clamp_scroll_area(area: SidebarScrollArea, scroll: &mut termrock::widgets::ScrollAreaState) {
+    scroll.set_content_size(
+        u16::try_from(area.content_width).unwrap_or(u16::MAX),
+        u16::try_from(area.content_height).unwrap_or(u16::MAX),
     );
-}
-
-pub fn clamp_scroll_area(area: SidebarScrollArea, scroll_x: &mut u16, scroll_y: &mut u16) {
-    clamp_scroll_area_x(area, scroll_x);
-    clamp_scroll_area_y(area, scroll_y);
+    scroll.set_viewport(
+        u16::try_from(scroll_viewport_width(area.area)).unwrap_or(u16::MAX),
+        u16::try_from(scroll_viewport_height(area.area)).unwrap_or(u16::MAX),
+    );
+    scroll.clamp();
 }
 
 #[must_use]
@@ -526,10 +521,6 @@ fn mount_data_row_count(same_path_rows: impl IntoIterator<Item = bool>) -> Optio
         lines += if same_path { 1 } else { 2 };
     }
     saw_row.then_some(lines)
-}
-
-fn clamp_scroll_x(content: usize, viewport: usize, value: &mut u16) {
-    termrock::scroll::clamp_scroll_offset(content, viewport, value);
 }
 
 fn scroll_viewport_width(area: Rect) -> usize {

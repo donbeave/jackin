@@ -593,7 +593,7 @@ fn move_editor_field_selection(
         delta,
         max_row,
         skipped_rows,
-        editor.tab_scroll_y,
+        editor.tab_scroll.offset_y(),
         term.height,
         footer_h,
     );
@@ -695,7 +695,7 @@ fn scroll_editor_tab_horizontal(
         return;
     };
     let plan =
-        editor_tab_horizontal_scroll_plan(editor.tab_scroll_x, delta, term_width, content_width);
+        editor_tab_horizontal_scroll_plan(editor.tab_scroll.offset_x(), delta, term_width, content_width);
     editor.apply_tab_horizontal_scroll_plan(plan);
 }
 
@@ -709,7 +709,7 @@ fn scroll_editor_workspace_mounts_horizontal(
         return;
     };
     let plan = editor_workspace_mounts_horizontal_scroll_plan(
-        editor.workspace_mounts_scroll_x,
+        editor.workspace_mounts_scroll.offset_x(),
         delta,
         term_width,
         content_width,
@@ -727,7 +727,7 @@ fn scroll_settings_global_mounts_horizontal(
         return;
     };
     let scroll_x =
-        settings_horizontal_scroll_plan(settings.mounts.scroll_x, delta, term_width, content_width);
+        settings_horizontal_scroll_plan(settings.mounts.scroll.offset_x(), delta, term_width, content_width);
     settings.mounts.apply_horizontal_scroll(scroll_x);
 }
 
@@ -741,7 +741,7 @@ fn scroll_settings_trust_horizontal(
         return;
     };
     let scroll_x =
-        settings_horizontal_scroll_plan(settings.trust.scroll_x, delta, term_width, content_width);
+        settings_horizontal_scroll_plan(settings.trust.scroll.offset_x(), delta, term_width, content_width);
     settings.trust.apply_horizontal_scroll(scroll_x);
 }
 
@@ -758,7 +758,7 @@ fn move_settings_global_mounts_selection(
         settings.mounts.selected,
         settings.mounts.pending.len(),
         delta,
-        settings.mounts.scroll_y,
+        settings.mounts.scroll.offset_y(),
         term.height,
         footer_h,
     );
@@ -779,7 +779,7 @@ fn move_settings_env_selection(
         settings.env.selected,
         &rows,
         delta,
-        settings.env.scroll_y,
+        settings.env.scroll.offset_y(),
         term.height,
         footer_h,
     );
@@ -799,7 +799,7 @@ fn move_settings_trust_selection(
         settings.trust.selected,
         settings.trust.pending.len(),
         delta,
-        settings.trust.scroll_y,
+        settings.trust.scroll.offset_y(),
         term.height,
         footer_h,
     );

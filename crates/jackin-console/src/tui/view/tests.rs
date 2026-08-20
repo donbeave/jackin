@@ -412,10 +412,10 @@ fn list_vertical_clamp_uses_rendered_sidebar_height() {
     let expected = max_scroll_offset(areas.workspace.content_height, rendered_viewport);
     assert!(expected > max_scroll_offset(areas.workspace.content_height, desired_viewport));
 
-    state.list_mounts_scroll_y = u16::MAX;
+    crate::tui::scroll_block::scroll_area_set_y(&mut state.list_mounts_scroll, u16::MAX);
     clamp_list_scroll_for_area(body, &mut state, &config, tmp.path());
 
-    assert_eq!(state.list_mounts_scroll_y, expected);
+    assert_eq!(state.list_mounts_scroll.offset_y(), expected);
 }
 
 #[test]

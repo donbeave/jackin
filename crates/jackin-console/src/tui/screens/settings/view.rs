@@ -248,8 +248,8 @@ pub fn render_mounts_tab<
         frame,
         area,
         lines,
-        state.mounts.scroll_x,
-        state.mounts.scroll_y,
+        state.mounts.scroll.offset_x(),
+        state.mounts.scroll.offset_y(),
         focused,
         None,
     );
@@ -281,7 +281,7 @@ pub fn render_env_tab<
         area,
         lines,
         0,
-        state.env.scroll_y,
+        state.env.scroll.offset_y(),
         focused,
         None,
     );
@@ -317,7 +317,7 @@ pub fn render_auth_tab<
         area,
         lines,
         0,
-        state.auth.scroll_y,
+        state.auth.scroll.offset_y(),
         focused,
         title.as_deref(),
     );
@@ -348,8 +348,8 @@ pub fn render_trust_tab<
         frame,
         area,
         lines,
-        state.trust.scroll_x,
-        state.trust.scroll_y,
+        state.trust.scroll.offset_x(),
+        state.trust.scroll.offset_y(),
         focused,
         None,
     );
@@ -1054,13 +1054,25 @@ fn truncate(value: &str, width: usize) -> String {
     out
 }
 
-pub fn clamp_mounts_scroll_x_for_frame(area: Rect, content_width: usize, scroll_x: &mut u16) {
+pub fn clamp_mounts_scroll_x_for_frame(
+    area: Rect,
+    content_width: usize,
+    scroll: &mut termrock::widgets::ScrollAreaState,
+) {
     let areas = settings_frame_areas(area, 2);
-    termrock::scroll::clamp_scroll_offset(
-        content_width,
-        termrock::scroll::viewport_width(areas.body),
-        scroll_x,
+    // Clamp the X axis only, exactly as the retired raw-offset helper did:
+    // Y dims stay pinned so `clamp` can never touch the vertical offset.
+    // The pinned viewport is 1, not 0 — upstream `max_offset(_, 0)` is 0,
+    // which would clamp the vertical offset to zero.
+    scroll.set_content_size(
+        u16::try_from(content_width).unwrap_or(u16::MAX),
+        u16::MAX,
     );
+    scroll.set_viewport(
+        u16::try_from(termrock::scroll::viewport_width(areas.body)).unwrap_or(u16::MAX),
+        1,
+    );
+    scroll.clamp();
 }
 
 #[must_use]

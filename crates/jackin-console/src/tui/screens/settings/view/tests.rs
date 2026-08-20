@@ -64,14 +64,15 @@ fn settings_modal_render_plan_prioritizes_visible_modal_family() {
 
 #[test]
 fn clamp_mounts_scroll_x_for_frame_uses_settings_body_area() {
-    let mut scroll_x = u16::MAX;
+    let mut scroll = crate::tui::scroll_block::console_scroll_area_state();
+    crate::tui::scroll_block::scroll_area_set_x(&mut scroll, u16::MAX);
     let area = Rect::new(0, 0, 80, 20);
 
-    clamp_mounts_scroll_x_for_frame(area, 100, &mut scroll_x);
+    clamp_mounts_scroll_x_for_frame(area, 100, &mut scroll);
 
     let body = settings_frame_areas(area, 2).body;
     let expected = termrock::scroll::max_offset_u16(100, termrock::scroll::viewport_width(body));
-    assert_eq!(scroll_x, expected);
+    assert_eq!(scroll.offset_x(), expected);
 }
 
 #[test]

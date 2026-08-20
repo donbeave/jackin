@@ -115,9 +115,20 @@ pub fn manager_list_names_content_width(
     )
 }
 
-pub fn clamp_list_names_scroll(list_area: Rect, content_width: usize, scroll_x: &mut u16) {
-    let viewport = termrock::scroll::viewport_width(list_area);
-    termrock::scroll::clamp_scroll_offset(content_width, viewport, scroll_x);
+pub fn clamp_list_names_scroll(
+    list_area: Rect,
+    content_width: usize,
+    scroll: &mut termrock::widgets::ScrollAreaState,
+) {
+    scroll.set_content_size(
+        u16::try_from(content_width).unwrap_or(u16::MAX),
+        u16::MAX,
+    );
+    scroll.set_viewport(
+        u16::try_from(termrock::scroll::viewport_width(list_area)).unwrap_or(u16::MAX),
+        1,
+    );
+    scroll.clamp();
 }
 
 #[must_use]
