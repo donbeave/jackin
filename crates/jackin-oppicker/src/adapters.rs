@@ -2,6 +2,9 @@ use crossterm::event::KeyEvent;
 use jackin_tui::runtime::{Subscription, SubscriptionPoll};
 use termrock::widgets::{TextInputOutcome, TextInputState as TermRockTextInputState};
 
+/// The product's single shared modal-outcome contract: the console's
+/// `jackin_tui` facade twin was retired onto this enum (plan 006). Do not
+/// reorder or rename variants — every consumer matches on this set.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ModalOutcome<T> {
     Continue,
