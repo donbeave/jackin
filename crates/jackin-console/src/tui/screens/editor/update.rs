@@ -332,7 +332,7 @@ pub fn editor_field_selection_plan(
     footer_h: u16,
 ) -> EditorFieldSelectionPlan {
     let candidate =
-        crate::tui::focus::moved_selection(active_row, max_row.saturating_add(1), delta);
+        crate::tui::focus::collection_move_index(active_row, max_row.saturating_add(1), delta);
     let next = if delta.is_negative() {
         step_cursor_up(skipped_rows, candidate)
     } else {

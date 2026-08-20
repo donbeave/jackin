@@ -852,7 +852,7 @@ pub fn apply_list_split_pct_plan(state: &mut impl ListShellState, plan: u16) {
 
 #[must_use]
 pub fn selection_move_plan(selected: usize, row_count: usize, delta: isize) -> usize {
-    crate::tui::focus::moved_selection(selected, row_count, delta)
+    crate::tui::focus::collection_move_index(selected, row_count, delta)
 }
 
 #[must_use]

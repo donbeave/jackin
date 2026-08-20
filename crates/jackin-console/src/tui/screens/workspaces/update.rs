@@ -777,11 +777,6 @@ pub fn workspace_list_hover_row_at_position(
 }
 
 #[must_use]
-pub fn moved_selection(selected: usize, row_count: usize, delta: isize) -> usize {
-    crate::tui::focus::moved_selection(selected, row_count, delta)
-}
-
-#[must_use]
 pub fn selected_index(selected: usize, row_count: usize) -> usize {
     crate::tui::focus::selected_index(selected, row_count)
 }
@@ -1062,7 +1057,7 @@ pub fn workspace_list_move_selection_plan(
     row_count: usize,
     delta: isize,
 ) -> WorkspaceListSelectionPlan {
-    let next = crate::tui::focus::moved_selection(selected, row_count, delta);
+    let next = crate::tui::focus::collection_move_index(selected, row_count, delta);
     WorkspaceListSelectionPlan {
         selected: next,
         changed: next != selected,
@@ -1304,7 +1299,7 @@ pub fn preview_pane_cursor_plan(
     delta: isize,
 ) -> Option<usize> {
     let cursor = preview_pane_selected_index(pane_count, current_cursor)?;
-    Some(crate::tui::focus::moved_selection(
+    Some(crate::tui::focus::collection_move_index(
         cursor, pane_count, delta,
     ))
 }

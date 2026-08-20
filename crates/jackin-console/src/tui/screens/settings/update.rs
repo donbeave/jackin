@@ -1119,7 +1119,7 @@ pub fn settings_auth_selection_plan(
                 .position(|index| *index > selected)
                 .unwrap_or(focusable.len() - 1)
         });
-    let next = crate::tui::focus::moved_selection(pos, focusable.len(), delta);
+    let next = crate::tui::focus::collection_move_index(pos, focusable.len(), delta);
     focusable[next]
 }
 
@@ -1229,7 +1229,7 @@ pub fn settings_trust_selection_plan(
     term_height: u16,
     footer_h: u16,
 ) -> SettingsSelectionScrollPlan {
-    let selected = crate::tui::focus::moved_selection(selected, row_count, delta);
+    let selected = crate::tui::focus::collection_move_index(selected, row_count, delta);
     SettingsSelectionScrollPlan {
         selected,
         scroll_y: crate::tui::focus::cursor_scroll_for_panel(

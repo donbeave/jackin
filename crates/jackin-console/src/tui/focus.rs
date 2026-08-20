@@ -121,14 +121,24 @@ pub enum MountScrollFocus {
     Roles,
 }
 
+/// Flat selection movement driven by upstream `CollectionState`
+/// (saturating both ends — the retired hand-rolled helper never wrapped,
+/// so every console list rides `.wrap(false)`). One-shot construction:
+/// these lists keep no persistent collection state (no viewport of their
+/// own; the workspaces list's persistent state is the step-2 wrapper).
 #[must_use]
-pub fn moved_selection(selected: usize, row_count: usize, delta: isize) -> usize {
-    let last = row_count.saturating_sub(1);
-    if delta.is_negative() {
-        selected.saturating_sub(delta.unsigned_abs())
-    } else {
-        selected.saturating_add(delta.unsigned_abs()).min(last)
+pub fn collection_move_index(selected: usize, row_count: usize, delta: isize) -> usize {
+    let items: Vec<termrock::interaction::CollectionItem<usize>> = (0..row_count)
+        .map(|index| termrock::interaction::CollectionItem::new(index, String::new()))
+        .collect();
+    let mut collection = termrock::interaction::CollectionState::new().wrap(false);
+    let _ = collection.reconcile(&items);
+    if selected > 0 {
+        // Seed the cursor at `selected` (reconcile lands on the first item).
+        let _ = collection.move_by(&items, isize::try_from(selected).unwrap_or(isize::MAX));
     }
+    let _ = collection.move_by(&items, delta);
+    collection.active_index(&items).unwrap_or(0)
 }
 
 #[must_use]
