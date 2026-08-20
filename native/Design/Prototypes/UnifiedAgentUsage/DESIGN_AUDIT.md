@@ -140,19 +140,19 @@ Blocked spellings were searched and are absent:
 
 Every authored color resolves through `JackinBrand`. The content hierarchy is:
 
-- stage: mineral green #EEF5F0 Light and near-black green #0D1410 Dark;
-- cards: near-white green #FCFEFC Light and deep green #151F18 Dark;
-- boundary: #A8C2AD Light and #35513C Dark;
-- meter track: #CCDCCF Light and #294431 Dark;
+- stage: warm industrial neutral #F3F4F1 Light and blue-black #101618 Dark;
+- cards: paper white #FCFCFA Light and raised graphite #162022 Dark;
+- boundary: #D4D7D2 Light and #343D3F Dark;
+- meter track: #E2E5E0 Light and #293335 Dark;
 - healthy/brand: phosphor #0B774E Light and #5CF07A Dark;
-- metadata: #4E6556 Light and #A8BDAE Dark;
-- quiet metadata: #5B7061 Light and #8FA493 Dark;
+- metadata: #59615D Light and #ADB5B2 Dark;
+- quiet metadata: #6A726E Light and #858E8B Dark;
 - warning: #7A4B00 Light and #FFC15A Dark;
 - danger: #B42318 Light and #FF7B72 Dark;
-- brand wash: #D9F4DF Light and #173D22 Dark.
+- brand wash: #E3F3E7 Light and #16372A Dark.
 
 Status-bar and content severity now share the same adaptive endpoints. Increase
-Contrast doubles the authored card edge from 0.5pt to 1pt. State always pairs
+Contrast strengthens the authored card edge from 1pt to 1.5pt. State always pairs
 color with a symbol or label. System glass keeps its content-derived color;
 brand color enters it only through the standard accent and the sole prominent
 action.
@@ -161,11 +161,11 @@ WCAG contrast against the adaptive card ground:
 
 | Token | Light | Dark |
 |---|---:|---:|
-| Phosphor | 5.51:1 | 11.44:1 |
-| Metadata | 6.24:1 | 8.50:1 |
-| Quiet metadata | 5.27:1 | 6.37:1 |
-| Warning | 7.31:1 | 10.50:1 |
-| Danger | 6.49:1 | 6.71:1 |
+| Phosphor | 5.43:1 | 11.24:1 |
+| Metadata | 6.21:1 | 7.94:1 |
+| Quiet metadata | 4.82:1 | 4.94:1 |
+| Warning | 7.21:1 | 10.31:1 |
+| Danger | 6.40:1 | 6.59:1 |
 
 ## Typography, rhythm, hierarchy, and multi-account
 

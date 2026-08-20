@@ -361,22 +361,22 @@ struct ProviderCardView: View {
 
 /// Authored content boundary for the preferred overview cards.
 ///
-/// This is standard opaque content material, never glass. Increase Contrast
-/// strengthens the edge instead of changing the card's color hierarchy.
+/// This is standard opaque content material, never glass. Its compact technical
+/// radius and crisp edge separate providers without ornamental depth.
 private struct ProviderCardSurface: ViewModifier {
     @Environment(\.colorSchemeContrast) private var contrast
 
     func body(content: Content) -> some View {
         content
             .background(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
                     .fill(JackinBrand.card)
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
                     .strokeBorder(
                         JackinBrand.separator,
-                        lineWidth: contrast == .increased ? 1 : 0.5)
+                        lineWidth: contrast == .increased ? 1.5 : 1)
             )
     }
 }

@@ -43,37 +43,37 @@ enum JackinBrand {
     ///
     /// Explicit semantic endpoints keep small status
     /// text above WCAG AA against the native content grounds in both appearances.
-    /// Light grounds: stage #EEF5F0, card #FCFEFC. Dark grounds: stage
-    /// #0D1410, card #151F18. Semantic and supporting colors adapt here,
+    /// Light grounds: stage #F3F4F1, card #FCFCFA. Dark grounds: stage
+    /// #101618, card #162022. Semantic and supporting colors adapt here,
     /// never in a view.
     static let phosphorWashNSColor = dynamicColor(
         name: "jackinPhosphorWash",
-        light: rgb(0xD9F4DF),
-        dark: rgb(0x173D22))
+        light: rgb(0xE3F3E7),
+        dark: rgb(0x16372A))
     static let stageNSColor = dynamicColor(
         name: "jackinStage",
-        light: rgb(0xEEF5F0),
-        dark: rgb(0x0D1410))
+        light: rgb(0xF3F4F1),
+        dark: rgb(0x101618))
     static let cardNSColor = dynamicColor(
         name: "jackinCard",
-        light: rgb(0xFCFEFC),
-        dark: rgb(0x151F18))
+        light: rgb(0xFCFCFA),
+        dark: rgb(0x162022))
     static let separatorNSColor = dynamicColor(
         name: "jackinSeparator",
-        light: rgb(0xA8C2AD),
-        dark: rgb(0x35513C))
+        light: rgb(0xD4D7D2),
+        dark: rgb(0x343D3F))
     static let meterTrackNSColor = dynamicColor(
         name: "jackinMeterTrack",
-        light: rgb(0xCCDCCF),
-        dark: rgb(0x294431))
+        light: rgb(0xE2E5E0),
+        dark: rgb(0x293335))
     static let mutedNSColor = dynamicColor(
         name: "jackinMuted",
-        light: rgb(0x4E6556),
-        dark: rgb(0xA8BDAE))
+        light: rgb(0x59615D),
+        dark: rgb(0xADB5B2))
     static let quietNSColor = dynamicColor(
         name: "jackinQuiet",
-        light: rgb(0x5B7061),
-        dark: rgb(0x8FA493))
+        light: rgb(0x6A726E),
+        dark: rgb(0x858E8B))
     static let warningNSColor = dynamicColor(
         name: "jackinWarning",
         light: rgb(0x7A4B00),
