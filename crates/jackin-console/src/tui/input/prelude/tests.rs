@@ -10,6 +10,9 @@ use super::{
     PreludeModalOutcome, create_prelude_mount_dst_choice_state, create_prelude_workdir_pick_state,
     create_prelude_workspace_name_input_state, handle_prelude_modal as raw_handle_prelude_modal,
 };
+use crate::tui::model::{
+    CreatePreludeCompletionStatus, CreatePreludeModalStep, create_prelude_completion_status,
+};
 use crate::tui::state::{FileBrowserTarget, Modal};
 use crossterm::event::KeyCode;
 use ratatui::layout::Rect;
@@ -268,4 +271,318 @@ fn prelude_esc_at_file_browser_src_returns_to_list() {
         prelude.modal
     );
     assert!(prelude.pending_name.is_none());
+}
+
+// ---------------------------------------------------------------------------
+// Golden wizard step-walk sequences (plan 012 step 4)
+//
+// Characterization pins for the boolean-priority step resolver's observable
+// behavior, recorded before the FormWizard re-host. Every expected value
+// below is a hand-written literal derived from the current arms in
+// `input/prelude.rs` (SamePath chain :108-116, Edit :117-127, rewind rules
+// :128-134/:152-155/:165-189/:205-209, cancel :79-85) — never recomputed
+// through the code under test.
+// ---------------------------------------------------------------------------
+
+const GOLDEN_SRC: &str = "/home/user/project";
+
+/// Observable step after a key: which `CreatePreludeModalStep` the open
+/// modal maps to, `Other` once the modal is closed.
+fn observed_step(prelude: &crate::tui::state::CreatePreludeState<'_>) -> CreatePreludeModalStep {
+    prelude
+        .modal
+        .as_ref()
+        .map_or(CreatePreludeModalStep::Other, Modal::create_prelude_step)
+}
+
+fn observed_completion(
+    prelude: &crate::tui::state::CreatePreludeState<'_>,
+) -> CreatePreludeCompletionStatus {
+    create_prelude_completion_status(prelude.modal.is_some(), prelude.completed().is_some())
+}
+
+fn file_browser_src_prelude() -> crate::tui::state::CreatePreludeState<'static> {
+    let mut prelude = crate::tui::state::CreatePreludeState::new();
+    let fb = crate::tui::components::file_browser::FileBrowserState::from_listing(
+        crate::services::file_browser::listing_from_home()
+            .expect("file browser should build in test env"),
+    );
+    prelude.modal = Some(Modal::FileBrowser {
+        target: FileBrowserTarget::CreateFirstMountSrc,
+        state: fb,
+    });
+    prelude
+}
+
+#[test]
+fn golden_walk_1_same_path_forward_completes() {
+    // FileBrowser commit (seeded) → SamePath → WorkdirPick commit →
+    // TextInputName commit ⇒ Complete, dst = src, workdir = src,
+    // name = dst basename.
+    let mut prelude = prelude_with_browser_committed(GOLDEN_SRC);
+    let mut steps = vec![observed_step(&prelude)];
+    assert_eq!(
+        observed_completion(&prelude),
+        CreatePreludeCompletionStatus::InProgress
+    );
+
+    handle_prelude_modal(&mut prelude, key(KeyCode::Char('m')));
+    steps.push(observed_step(&prelude));
+    handle_prelude_modal(&mut prelude, key(KeyCode::Enter));
+    steps.push(observed_step(&prelude));
+    handle_prelude_modal(&mut prelude, key(KeyCode::Enter));
+    steps.push(observed_step(&prelude));
+
+    assert_eq!(
+        steps,
+        [
+            CreatePreludeModalStep::MountDstChoice,
+            CreatePreludeModalStep::WorkdirPick,
+            CreatePreludeModalStep::TextInputName,
+            CreatePreludeModalStep::Other,
+        ]
+    );
+    assert_eq!(prelude.pending_mount_dst.as_deref(), Some(GOLDEN_SRC));
+    assert!(!prelude.pending_readonly);
+    assert!(!prelude.used_edit_dst);
+    assert_eq!(prelude.pending_workdir.as_deref(), Some(GOLDEN_SRC));
+    assert_eq!(prelude.pending_name.as_deref(), Some("project"));
+    assert_eq!(
+        observed_completion(&prelude),
+        CreatePreludeCompletionStatus::Complete
+    );
+}
+
+#[test]
+fn golden_walk_2_edit_dst_forward_completes() {
+    // FileBrowser commit (seeded) → Edit → TextInputDst commit →
+    // WorkdirPick commit → TextInputName commit ⇒ Complete.
+    let mut prelude = prelude_with_browser_committed(GOLDEN_SRC);
+    let mut steps = vec![observed_step(&prelude)];
+
+    handle_prelude_modal(&mut prelude, key(KeyCode::Char('e')));
+    steps.push(observed_step(&prelude));
+    assert_eq!(
+        observed_completion(&prelude),
+        CreatePreludeCompletionStatus::InProgress
+    );
+    handle_prelude_modal(&mut prelude, key(KeyCode::Enter));
+    steps.push(observed_step(&prelude));
+    handle_prelude_modal(&mut prelude, key(KeyCode::Enter));
+    steps.push(observed_step(&prelude));
+    handle_prelude_modal(&mut prelude, key(KeyCode::Enter));
+    steps.push(observed_step(&prelude));
+
+    assert_eq!(
+        steps,
+        [
+            CreatePreludeModalStep::MountDstChoice,
+            CreatePreludeModalStep::TextInputDst,
+            CreatePreludeModalStep::WorkdirPick,
+            CreatePreludeModalStep::TextInputName,
+            CreatePreludeModalStep::Other,
+        ]
+    );
+    assert_eq!(prelude.pending_mount_dst.as_deref(), Some(GOLDEN_SRC));
+    assert!(!prelude.pending_readonly);
+    assert!(prelude.used_edit_dst);
+    assert_eq!(prelude.pending_workdir.as_deref(), Some(GOLDEN_SRC));
+    assert_eq!(prelude.pending_name.as_deref(), Some("project"));
+    assert_eq!(
+        observed_completion(&prelude),
+        CreatePreludeCompletionStatus::Complete
+    );
+}
+
+#[test]
+fn golden_walk_3_same_path_full_rewind_cancels() {
+    // Walk 1 to TextInputName, then Esc at each step:
+    // TextInputName → WorkdirPick → MountDstChoice → FileBrowser (at
+    // last cwd) → Esc ⇒ Cancelled.
+    let mut prelude = prelude_with_browser_committed(GOLDEN_SRC);
+    handle_prelude_modal(&mut prelude, key(KeyCode::Char('m')));
+    handle_prelude_modal(&mut prelude, key(KeyCode::Enter));
+    assert_eq!(
+        observed_step(&prelude),
+        CreatePreludeModalStep::TextInputName
+    );
+
+    let mut steps = Vec::new();
+    handle_prelude_modal(&mut prelude, key(KeyCode::Esc));
+    steps.push(observed_step(&prelude));
+    handle_prelude_modal(&mut prelude, key(KeyCode::Esc));
+    steps.push(observed_step(&prelude));
+    handle_prelude_modal_with_effects(&mut prelude, key(KeyCode::Esc));
+    steps.push(observed_step(&prelude));
+    handle_prelude_modal(&mut prelude, key(KeyCode::Esc));
+    steps.push(observed_step(&prelude));
+
+    assert_eq!(
+        steps,
+        [
+            CreatePreludeModalStep::WorkdirPick,
+            CreatePreludeModalStep::MountDstChoice,
+            CreatePreludeModalStep::FileBrowserSrc,
+            CreatePreludeModalStep::Other,
+        ]
+    );
+    assert!(
+        prelude.pending_name.is_none(),
+        "Esc rewinds never commit a name"
+    );
+    assert_eq!(
+        observed_completion(&prelude),
+        CreatePreludeCompletionStatus::Cancelled
+    );
+}
+
+#[test]
+fn golden_walk_4_edit_dst_full_rewind_cancels() {
+    // Walk 2 to TextInputName, then Esc at each step:
+    // TextInputName → WorkdirPick → TextInputDst (used_edit_dst rule) →
+    // MountDstChoice → FileBrowser → Esc ⇒ Cancelled.
+    let mut prelude = prelude_with_browser_committed(GOLDEN_SRC);
+    handle_prelude_modal(&mut prelude, key(KeyCode::Char('e')));
+    handle_prelude_modal(&mut prelude, key(KeyCode::Enter));
+    handle_prelude_modal(&mut prelude, key(KeyCode::Enter));
+    assert_eq!(
+        observed_step(&prelude),
+        CreatePreludeModalStep::TextInputName
+    );
+
+    let mut steps = Vec::new();
+    handle_prelude_modal(&mut prelude, key(KeyCode::Esc));
+    steps.push(observed_step(&prelude));
+    handle_prelude_modal(&mut prelude, key(KeyCode::Esc));
+    steps.push(observed_step(&prelude));
+    handle_prelude_modal(&mut prelude, key(KeyCode::Esc));
+    steps.push(observed_step(&prelude));
+    handle_prelude_modal_with_effects(&mut prelude, key(KeyCode::Esc));
+    steps.push(observed_step(&prelude));
+    handle_prelude_modal(&mut prelude, key(KeyCode::Esc));
+    steps.push(observed_step(&prelude));
+
+    assert_eq!(
+        steps,
+        [
+            CreatePreludeModalStep::WorkdirPick,
+            CreatePreludeModalStep::TextInputDst,
+            CreatePreludeModalStep::MountDstChoice,
+            CreatePreludeModalStep::FileBrowserSrc,
+            CreatePreludeModalStep::Other,
+        ]
+    );
+    assert!(prelude.pending_name.is_none());
+    assert_eq!(
+        observed_completion(&prelude),
+        CreatePreludeCompletionStatus::Cancelled
+    );
+}
+
+#[test]
+fn golden_walk_5a_direction_change_edit_branch_matches_uninterrupted() {
+    // Forward 2 (Edit → TextInputDst commit), back 1 (Esc →
+    // TextInputDst... forward again): the final pending fields are
+    // identical to walk 2's.
+    let mut prelude = prelude_with_browser_committed(GOLDEN_SRC);
+    let mut steps = vec![observed_step(&prelude)];
+
+    handle_prelude_modal(&mut prelude, key(KeyCode::Char('e')));
+    steps.push(observed_step(&prelude));
+    handle_prelude_modal(&mut prelude, key(KeyCode::Enter));
+    steps.push(observed_step(&prelude));
+    // Back 1: used_edit_dst rewind lands on TextInputDst.
+    handle_prelude_modal(&mut prelude, key(KeyCode::Esc));
+    steps.push(observed_step(&prelude));
+    // Forward again to completion.
+    handle_prelude_modal(&mut prelude, key(KeyCode::Enter));
+    steps.push(observed_step(&prelude));
+    handle_prelude_modal(&mut prelude, key(KeyCode::Enter));
+    steps.push(observed_step(&prelude));
+    handle_prelude_modal(&mut prelude, key(KeyCode::Enter));
+    steps.push(observed_step(&prelude));
+
+    assert_eq!(
+        steps,
+        [
+            CreatePreludeModalStep::MountDstChoice,
+            CreatePreludeModalStep::TextInputDst,
+            CreatePreludeModalStep::WorkdirPick,
+            CreatePreludeModalStep::TextInputDst,
+            CreatePreludeModalStep::WorkdirPick,
+            CreatePreludeModalStep::TextInputName,
+            CreatePreludeModalStep::Other,
+        ]
+    );
+    assert_eq!(prelude.pending_mount_dst.as_deref(), Some(GOLDEN_SRC));
+    assert!(!prelude.pending_readonly);
+    assert!(prelude.used_edit_dst);
+    assert_eq!(prelude.pending_workdir.as_deref(), Some(GOLDEN_SRC));
+    assert_eq!(prelude.pending_name.as_deref(), Some("project"));
+    assert_eq!(
+        observed_completion(&prelude),
+        CreatePreludeCompletionStatus::Complete
+    );
+}
+
+#[test]
+fn golden_walk_5b_direction_change_same_path_branch_matches_uninterrupted() {
+    // Forward 2 (SamePath → WorkdirPick commit), back 1 (Esc →
+    // WorkdirPick), forward again: identical to walk 1.
+    let mut prelude = prelude_with_browser_committed(GOLDEN_SRC);
+    let mut steps = vec![observed_step(&prelude)];
+
+    handle_prelude_modal(&mut prelude, key(KeyCode::Char('m')));
+    steps.push(observed_step(&prelude));
+    handle_prelude_modal(&mut prelude, key(KeyCode::Enter));
+    steps.push(observed_step(&prelude));
+    // Back 1: Esc at TextInputName reopens WorkdirPick.
+    handle_prelude_modal(&mut prelude, key(KeyCode::Esc));
+    steps.push(observed_step(&prelude));
+    // Forward again to completion: WorkdirPick commit →
+    // TextInputName commit.
+    handle_prelude_modal(&mut prelude, key(KeyCode::Enter));
+    steps.push(observed_step(&prelude));
+    handle_prelude_modal(&mut prelude, key(KeyCode::Enter));
+    steps.push(observed_step(&prelude));
+
+    assert_eq!(
+        steps,
+        [
+            CreatePreludeModalStep::MountDstChoice,
+            CreatePreludeModalStep::WorkdirPick,
+            CreatePreludeModalStep::TextInputName,
+            CreatePreludeModalStep::WorkdirPick,
+            CreatePreludeModalStep::TextInputName,
+            CreatePreludeModalStep::Other,
+        ]
+    );
+    assert_eq!(prelude.pending_mount_dst.as_deref(), Some(GOLDEN_SRC));
+    assert!(!prelude.pending_readonly);
+    assert!(!prelude.used_edit_dst);
+    assert_eq!(prelude.pending_workdir.as_deref(), Some(GOLDEN_SRC));
+    assert_eq!(prelude.pending_name.as_deref(), Some("project"));
+    assert_eq!(
+        observed_completion(&prelude),
+        CreatePreludeCompletionStatus::Complete
+    );
+}
+
+#[test]
+fn golden_walk_6_esc_at_file_browser_src_cancels() {
+    // Esc at step 1 (FileBrowserSrc) cancels the whole prelude.
+    let mut prelude = file_browser_src_prelude();
+    assert_eq!(
+        observed_step(&prelude),
+        CreatePreludeModalStep::FileBrowserSrc
+    );
+
+    handle_prelude_modal(&mut prelude, key(KeyCode::Esc));
+
+    assert_eq!(observed_step(&prelude), CreatePreludeModalStep::Other);
+    assert!(prelude.pending_mount_src.is_none());
+    assert_eq!(
+        observed_completion(&prelude),
+        CreatePreludeCompletionStatus::Cancelled
+    );
 }
