@@ -1,25 +1,31 @@
 # Prototype Handoff — Unified Agent Usage
 
-Status: PRESELECTION — NOT AUTHORIZED TO BUILD
+Status: PRECONDITIONS MET — selection A without H recorded 2026-08-20; live
+blessing still required before any READY claim
 
 This is the exact gate from approved design to the committed runnable prototype.
-It does not approve a direction, create a prototype, or record human blessing.
+It does not replace live blessing or `SIGNOFF.md`.
 
 ## Preconditions
 
 All must exist before prototype source is written:
 
-1. `ExperienceBrief.md` records human approval with selector and date.
+1. `ExperienceBrief.md` records human approval with selector and date. ✅
+   Approved by Alexey Zhokhov, 2026-08-20.
 2. `Alternatives.md` records selected A, B, or G; optional H; selector and date;
    chosen hierarchy, toolbar/accessory, minimum-width, and popover structure;
-   why the winner won; why every unselected eligible direction lost; and risks.
+   why the winner won; why every unselected eligible direction lost; and risks. ✅
+   A without H, Alexey Zhokhov, 2026-08-20.
 3. `AntiReferences.md` appends the newly rejected eligible directions with
-   reason, correction, and learned rule.
+   reason, correction, and learned rule. ✅ B, G, and H appended 2026-08-20.
 4. The selected direction is compatible with `NativeComponentMap.md` and every
-   canonical record/subscenario in `Fixtures.md`.
+   canonical record/subscenario in `Fixtures.md`. ✅ A maps to the
+   component-map sidebar/split/toolbar/accessory/popover regions and binds to
+   the canonical fixtures without a new tuple.
 
-Human approval/selection prerequisites 1–3 are still pending, so prototype work
-is not authorized.
+Preconditions 1–4 are met as of 2026-08-20; the prototype invocation below is
+authorized. Live blessing and `SIGNOFF.md` remain mandatory after the package
+exists.
 
 ## Exact invocation and package
 

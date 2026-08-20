@@ -39,6 +39,7 @@ Finalize one agent usage experience across jackin❯ desktop, `jackin console`, 
 - 2026-08-20 — **jackin❯ desktop retains Rust-ranked provider-focused status items with icon-only, worst-provider, pinned-provider, and bounded-strip modes.** Clicking an item focuses that provider and its selected canonical account, while the Usage window remains the all-provider overview, because glanceable urgency and complete exploration serve different operator moments.
 - 2026-08-20 — **jackin❯ desktop preserves its native popover, retained two-pane Usage window, and Settings information architecture unless prototype evidence proves a specific structural defect.** Because the existing structure is native and coherent, while design work should target evidenced usability and craft gaps instead of decorative replacement.
 - 2026-08-20 — **Finalizing jackin❯ desktop includes Developer ID signing, notarization, a public artifact, and Homebrew cask installation proof.** Because the native application is not complete until its release path satisfies the platform trust boundary and an operator can install the shipped artifact.
+- 2026-08-20 — **The jackin❯ desktop Usage window keeps alternative A (Grouped Overview, Provider Detail) without the H popover remix, as selected by Alexey Zhokhov.** A is the structure the running incumbent prototype already proves buildable; every recorded baseline defect is a row/composition failure, not a structural one, so the fix is targeted rather than a re-architecture. B moves too many long account labels into navigation, G adds an urgency destination without baseline evidence that reaching depleted/stale rows is slow, and H removes complete quota-window detail from a popover whose baseline hierarchy already passed visual review. Full selection record: [`native/Design/UnifiedAgentUsage/Alternatives.md`](../../native/Design/UnifiedAgentUsage/Alternatives.md).
 
 ## Capabilities
 
@@ -64,7 +65,7 @@ Finalize one agent usage experience across jackin❯ desktop, `jackin console`, 
 - **Key interactions**: Current baseline includes provider and account selection, Refresh, opening the retained Usage window from the popover, toggling its sidebar, and opening Settings through the application menu.
 - **Design**: Swift and system-owned native Liquid Glass; Rust-ranked provider-focused status items support icon-only, worst-provider, pinned-provider, and bounded-strip modes; the Usage window remains the all-provider overview.
 - **Glance behavior**: Clicking a provider status item focuses that provider and its selected canonical account in the popover before deeper navigation.
-- **Structure rule**: Preserve the native popover, retained two-pane Usage window, and Settings architecture unless prototype evidence identifies a concrete structural defect.
+- **Structure rule**: Human selection 2026-08-20 (Alexey Zhokhov): alternative A — Grouped Overview, Provider Detail — without the H popover remix; the native popover, two-pane Usage window, and Settings architecture are retained.
 
 ### CLI usage output
 
@@ -117,7 +118,8 @@ Finalize one agent usage experience across jackin❯ desktop, `jackin console`, 
   contracts, and explicit custom-component absence.
 - [Structural alternatives](../../native/Design/UnifiedAgentUsage/Alternatives.md)
   — eligible A, B, and G Usage-window directions, optional H popover remix,
-  rejected counter-directions, and evidence-led recommendation A without H.
+  rejected counter-directions, and the recorded human selection of A without H
+  (2026-08-20).
 - [Anti-reference corpus](../../native/Design/UnifiedAgentUsage/AntiReferences.md)
   — explicit rejected states, failure reasons, corrections, and learned rules;
   pending eligible directions remain human-owned.
@@ -138,9 +140,10 @@ Finalize one agent usage experience across jackin❯ desktop, `jackin console`, 
   — concurrency, ownership, typed boundary, adaptive sizing, accessibility,
   AppKit, localization, and failure-path remediation inputs.
 
-Human structural selection remains pending. No prototype package,
-`SIGNOFF.md`, post-signoff baseline, design approval, READY transition, or plan is
-claimed by these preselection artifacts.
+Human structural selection is recorded: alternative A without H (Alexey
+Zhokhov, 2026-08-20). The prototype handoff preconditions are met; the runnable
+prototype package, `SIGNOFF.md` live blessing, post-signoff baseline, design
+approval, READY transition, and plan remain unclaimed.
 
 ## Research
 
@@ -221,3 +224,4 @@ claimed by these preselection artifacts.
 - 2026-08-20 — tailrocks-swift-best-practices — completed the read-only Swift architecture and implementation-practices review.
 - 2026-08-20 — tailrocks-macos-visual-qa — recorded the failed incumbent running-app baseline and honest missing-state matrix.
 - 2026-08-20 — tailrocks-macos-design — completed the preselection brief, component map, alternatives, and deterministic fixture contract; human selection remains mandatory.
+- 2026-08-20 — tailrocks-record-decision — recorded the human structural selection of Usage-window alternative A without H (Alexey Zhokhov); propagated the selection record, anti-reference rejections, brief approval, and prototype-handoff preconditions; status stays SHAPING pending prototype blessing.

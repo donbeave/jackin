@@ -1,12 +1,11 @@
 # Anti-Reference Corpus — Unified Agent Usage
 
-Status: PRESELECTION CORPUS
+Status: SELECTION RECORDED — A without H, 2026-08-20
 
 This corpus records rejected states, why they failed, the correction, and the
-rule that must survive implementation. Eligible alternatives A, B, and G and the
-optional H popover remix remain pending human selection; none is rejected here.
-After selection, every unselected eligible direction is appended with the human
-decision rationale rather than retroactively inferred by an agent.
+rule that must survive implementation. Human selection on 2026-08-20 (Alexey
+Zhokhov) chose alternative A without H; the unselected eligible directions B,
+G, and H are appended below with the recorded human decision rationale.
 
 ## Rejected structural directions
 
@@ -16,6 +15,9 @@ decision rationale rather than retroactively inferred by an agent.
 | Alternative D — three-column drilldown | Rejected and ineligible this round | Adds a third permanent region for a seven-provider inventory, fails the 760-point envelope, and changes account navigation into a different control below 900 points. | Keep one sidebar and one detail region; use a native account picker inside provider detail when needed. | Do not add a split merely to keep every relationship simultaneously visible. |
 | Alternative E — native inspector | Rejected and ineligible this round | Treats primary quota windows as incidental metadata, adds a third region, and permits narrow-width overlay over the comparison surface. | Keep quota windows in primary detail content reached by stable provider/account selection. | Inspectors are for secondary properties, not the main reason the window exists. |
 | Alternative F — provider workspace with nested account source list | Rejected and ineligible this round | Creates a split inside a split, wastes space for single-account providers, and introduces two layouts plus a second account-selection model. | Keep one canonical account-selection owner and one provider-detail composition across window sizes. | Responsive substitution must not duplicate navigation state or create two interaction models. |
+| Alternative B — hierarchical navigation sidebar | Rejected by human selection 2026-08-20 (A without H) | Moves too many long canonical account labels into navigation, crowding the sidebar and weakening all-provider overview scanning. | Keep the sidebar to Overview plus provider destinations; canonical accounts live in the grouped Overview table and the provider-detail account picker. | Navigation structure must not absorb content identity that belongs in the content region. |
+| Alternative G — attention queue plus complete inventory | Rejected by human selection 2026-08-20 (A without H) | Adds an urgency destination with no baseline evidence that reaching depleted or stale rows is slow; duplicates Overview rows and adds a navigation concept. | Surface urgency through the settled Rust-ranked provider-focused status items and explicit row states inside the grouped Overview. | Do not add a destination for a bottleneck the running baseline has not demonstrated. |
+| Alternative H — compact focused popover, deep window handoff | Rejected by human selection 2026-08-20 (A without H) | Removes complete quota-window detail from a popover whose baseline hierarchy already passed visual review, hiding multi-window data from the glance. | Retain the complete popover: identity, full quota windows, explicit state, account picker, and Refresh/Open Usage footer. | Do not shrink a surface that already passes review to satisfy an unproven scope rule. |
 
 ## Rejected incumbent states
 

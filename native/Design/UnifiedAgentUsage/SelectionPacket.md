@@ -1,8 +1,10 @@
 # Selection Packet — Unified Agent Usage
 
-Status: AWAITING HUMAN SELECTION. No agent or subagent may fill the record
-below. This packet does not approve a direction; it names the ballot, the
-evidence-led recommendation, and the exact record the human selector writes.
+Status: SELECTION RECORDED — A without H, Alexey Zhokhov, 2026-08-20. The
+record lives in [Alternatives.md](Alternatives.md) `## Selection record`;
+rejected eligible directions are appended in
+[AntiReferences.md](AntiReferences.md); [ExperienceBrief.md](ExperienceBrief.md)
+is approved. This packet remains as the ballot and rationale record.
 
 ## Eligible ballot
 

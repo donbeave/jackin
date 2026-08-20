@@ -1,6 +1,6 @@
 # Structural Alternatives — Unified Agent Usage
 
-Status: DRAFT FOR HUMAN SELECTION
+Status: SELECTED — A without H, 2026-08-20, Alexey Zhokhov
 
 All alternatives preserve the settled provider-focused status items, native
 `NSPopover`, one retained resizable Usage window, Settings, Rust-owned quota
@@ -278,7 +278,7 @@ found so far is structural; none justifies C, D, E, or F.
 
 ## Selection record
 
-Human selection: PENDING
+Human selection: **A without H** — Alexey Zhokhov, 2026-08-20.
 
 Eligible ballot: A, B, or G as the Usage-window hierarchy, optionally remixed
 with H for the popover. C, D, E, and F document rejected structural trade-offs
@@ -290,16 +290,39 @@ the incumbent sidebar, overview, provider detail, and complete popover. B moves
 too many long account labels into navigation; G introduces an urgency
 destination without baseline evidence that navigation to depleted/stale rows is
 slow; H would remove useful complete quota-window detail from a popover whose
-baseline hierarchy already passed visual review. This recommendation does not
-replace human selection.
+baseline hierarchy already passed visual review. The human selection adopted
+this recommendation.
 
 Remix inputs:
 
-- Primary hierarchy: PENDING
-- Toolbar/accessory model: PENDING
-- Minimum-width behavior: PENDING
-- Popover structure: PENDING
+- Primary hierarchy: A — Overview and providers in the native sidebar; grouped
+  Overview table with canonical account children; provider detail with a native
+  account picker shown only for multi-account providers.
+- Toolbar/accessory model: retained native `NSToolbar` with the standard
+  sidebar tracking item and the detail top accessory hosting product title and
+  Refresh, as mapped in [NativeComponentMap.md](NativeComponentMap.md); no
+  selection-specific accessory change.
+- Minimum-width behavior: A's declared behavior — sidebar hideable on request;
+  group labels span the table; secondary plan/reset text contracts before
+  account identity and explicit state.
+- Popover structure: retained complete popover (identity, full quota windows,
+  state, account picker, Refresh/Open Usage footer). H is not remixed.
 
-The selected candidate must record why it won, why every unselected alternative
-lost, which parts were remixed, and which risks remain. No production Swift or
-prototype direction is approved until this record names a human selector.
+Winner rationale: A is the structure the running incumbent prototype already
+proves buildable; every baseline defect recorded against it is a
+row/composition failure, not a structural one, so the fix is targeted rather
+than a re-architecture. A removes the observed provider-row placeholder defect
+and protects account/state columns while preserving the incumbent sidebar,
+Overview, provider detail, and complete popover.
+
+Loser rationale: B moves too many long canonical account labels into
+navigation, crowding the sidebar. G adds an attention-queue destination with no
+baseline evidence that reaching depleted or stale rows is slow. H removes
+complete quota-window detail from a popover whose baseline hierarchy already
+passed visual review.
+
+Remaining risks accepted: A's declared risks stand — group rows must span the
+hierarchy instead of rendering placeholder dashes; table contraction must
+protect state and identity before plan/reset; the two routes to provider detail
+must retain one selection. These are tracked as the rejected-incumbent-state
+corrections in [AntiReferences.md](AntiReferences.md).

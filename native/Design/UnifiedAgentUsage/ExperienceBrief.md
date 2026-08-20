@@ -1,8 +1,8 @@
 # Experience Brief — Unified Agent Usage
 
-Status: DRAFT
-Approved by:
-Approved on:
+Status: APPROVED
+Approved by: Alexey Zhokhov
+Approved on: 2026-08-20
 
 ## Platform baseline
 
