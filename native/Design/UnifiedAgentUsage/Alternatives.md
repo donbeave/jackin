@@ -254,6 +254,28 @@ window direction.
 Minimum-width behavior: not applicable to fixed transient width; 2× strings and
 all states must still fit or scroll without moving the footer.
 
+## Incumbent implementation evidence
+
+The running prototype in this repository is real code, and its structure is
+recorded here as evidence, not as an approval shortcut:
+
+- `native/Sources/JackinDesktop/UsageWindow/UsageWindowSplitController.swift` —
+  `NSSplitViewController` with a 190–280-point sidebar item and detail item.
+- `native/Sources/JackinDesktop/UsageWindow/OverviewListView.swift` — native
+  `Table` of provider group rows with canonical account children.
+- `native/Sources/JackinDesktop/UsageWindow/ProviderDetailView.swift` — native
+  `List`/`Section`/`LabeledContent` provider detail with a menu-style account
+  `Picker` shown only for multi-account providers.
+
+The incumbent therefore implements alternative A's skeleton: sidebar Overview
+plus providers, grouped Overview table, provider detail with account picker.
+[BaselineVisualQA.md](BaselineVisualQA.md) records its observed defects
+(Increase Contrast collapse, placeholder-filled provider rows, early
+account-label wrapping) as the incumbent-failure entries in
+[AntiReferences.md](AntiReferences.md). Selecting A means fixing those defects
+on the proven structure, not adopting the incumbent as-is. No baseline defect
+found so far is structural; none justifies C, D, E, or F.
+
 ## Selection record
 
 Human selection: PENDING
