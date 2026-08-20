@@ -446,7 +446,14 @@ final class ProtoShell: NSObject, NSMenuDelegate {
                     onOpenUsage: { [weak self] in
                         guard let self else { return }
                         // Exact popover-to-Usage handoff: same provider/account.
-                        store.sidebar = .provider(provider.key)
+                        if let account = store.account(for: provider),
+                            provider.accounts.count > 1
+                        {
+                            store.navigate(
+                                to: .account(provider: provider.key, account: account.key))
+                        } else {
+                            store.navigate(to: .provider(provider.key))
+                        }
                         popover.performClose(nil)
                         self.popover = nil
                         showUsage()

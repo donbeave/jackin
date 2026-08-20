@@ -7,6 +7,7 @@ enum PercentStyle: String, Sendable {
 enum SidebarSelection: Hashable, Sendable {
     case overview
     case provider(String)
+    case account(provider: String, account: String)
 }
 
 /// Stands in for the Rust-owned PresentationStore: every value change here is
@@ -74,14 +75,20 @@ final class ProtoStore {
         refreshInProgress = false
     }
 
-    /// A removed/disabled provider normalizes to Overview here, not in a view.
+    /// A removed/disabled provider or account normalizes here, not in a view.
     var resolvedSidebar: SidebarSelection {
-        if case .provider(let key) = sidebar,
-            !projection.providers.contains(where: { $0.key == key })
-        {
+        switch sidebar {
+        case .provider(let key):
+            return projection.providers.contains(where: { $0.key == key })
+                ? sidebar : .overview
+        case .account(let providerKey, let accountKey):
+            guard let provider = projection.providers.first(where: { $0.key == providerKey })
+            else { return .overview }
+            return provider.accounts.contains(where: { $0.key == accountKey })
+                ? sidebar : .provider(providerKey)
+        case .overview:
             return .overview
         }
-        return sidebar
     }
 
     func provider(_ key: String) -> ProtoProvider? {
@@ -96,6 +103,15 @@ final class ProtoStore {
 
     func selectAccount(_ key: String, for provider: ProtoProvider) {
         accountSelection[provider.key] = key
+    }
+
+    /// Sidebar navigation: account rows carry the account selection with
+    /// them so detail, popover, and status item follow one source of truth.
+    func navigate(to selection: SidebarSelection) {
+        sidebar = selection
+        if case .account(let providerKey, let accountKey) = selection {
+            accountSelection[providerKey] = accountKey
+        }
     }
 
     func summaryRemaining(_ provider: ProtoProvider) -> String? {

@@ -6,11 +6,26 @@ import SwiftUI
 
 struct SidebarView: View {
     let store: ProtoStore
+    /// Multi-account providers render expanded by default; collapse is pure
+    /// chrome state, so it lives in the view, not the store.
+    @State private var expandedProviders: Set<String> = []
 
     private var selection: Binding<SidebarSelection?> {
         Binding(
             get: { store.sidebar },
-            set: { store.sidebar = $0 ?? .overview })
+            set: { store.navigate(to: $0 ?? .overview) })
+    }
+
+    private func expansion(for providerKey: String) -> Binding<Bool> {
+        Binding(
+            get: { expandedProviders.contains(providerKey) },
+            set: { expanded in
+                if expanded {
+                    expandedProviders.insert(providerKey)
+                } else {
+                    expandedProviders.remove(providerKey)
+                }
+            })
     }
 
     var body: some View {
@@ -22,14 +37,27 @@ struct SidebarView: View {
 
                 Section {
                     ForEach(store.projection.providers) { provider in
-                        Label {
-                            Text(provider.name)
-                                .foregroundStyle(.primary)
-                        } icon: {
-                            providerMark(provider)
+                        if provider.accounts.count > 1 {
+                            DisclosureGroup(isExpanded: expansion(for: provider.key)) {
+                                ForEach(provider.accounts) { account in
+                                    accountRow(account, provider: provider)
+                                        .tag(
+                                            SidebarSelection.account(
+                                                provider: provider.key, account: account.key))
+                                        .accessibilityIdentifier(
+                                            "usage.sidebar.account.\(provider.key).\(account.key)")
+                                }
+                            } label: {
+                                providerRow(provider)
+                                    .tag(SidebarSelection.provider(provider.key))
+                                    .accessibilityIdentifier(
+                                        "usage.sidebar.provider.\(provider.key)")
+                            }
+                        } else {
+                            providerRow(provider)
+                                .tag(SidebarSelection.provider(provider.key))
+                                .accessibilityIdentifier("usage.sidebar.provider.\(provider.key)")
                         }
-                        .tag(SidebarSelection.provider(provider.key))
-                        .accessibilityIdentifier("usage.sidebar.provider.\(provider.key)")
                     }
                 } header: {
                     Text("Providers")
@@ -39,6 +67,8 @@ struct SidebarView: View {
             .listStyle(.sidebar)
             .accessibilityLabel("Usage providers sidebar")
             .accessibilityIdentifier("usage.sidebar")
+            .onAppear { expandAllMultiAccountProviders() }
+            .onChange(of: store.projection.scenario) { expandAllMultiAccountProviders() }
 
             JackinBrandSignature()
                 .padding(.horizontal, 16)
@@ -46,6 +76,45 @@ struct SidebarView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
         .frame(minWidth: 190, idealWidth: 220, maxWidth: 280)
+    }
+
+    private func expandAllMultiAccountProviders() {
+        expandedProviders = Set(
+            store.projection.providers.filter { $0.accounts.count > 1 }.map(\.key))
+    }
+
+    @ViewBuilder
+    private func providerRow(_ provider: ProtoProvider) -> some View {
+        Label {
+            HStack {
+                Text(provider.name)
+                    .foregroundStyle(.primary)
+                Spacer()
+                if let percent = provider.summaryPercent {
+                    Text("\(percent)%")
+                        .font(.caption)
+                        .monospacedDigit()
+                        .foregroundStyle(.secondary)
+                }
+            }
+        } icon: {
+            providerMark(provider)
+        }
+    }
+
+    private func accountRow(_ account: ProtoAccount, provider: ProtoProvider) -> some View {
+        HStack {
+            Text(account.label)
+                .lineLimit(1)
+                .truncationMode(.middle)
+            Spacer()
+            if let remaining = account.remaining {
+                Text("\(remaining)%")
+                    .font(.caption)
+                    .monospacedDigit()
+                    .foregroundStyle(meterTint(account.state))
+            }
+        }
     }
 
     @ViewBuilder
@@ -202,8 +271,7 @@ struct ProviderCardView: View {
 
     private func accountBlock(_ account: ProtoAccount) -> some View {
         Button {
-            store.selectAccount(account.key, for: provider)
-            store.sidebar = .provider(provider.key)
+            store.navigate(to: .account(provider: provider.key, account: account.key))
         } label: {
             VStack(alignment: .leading, spacing: 6) {
                 HStack(alignment: .firstTextBaseline) {
@@ -273,12 +341,6 @@ struct ProviderDetailView: View {
     let store: ProtoStore
     let provider: ProtoProvider
 
-    private var accountBinding: Binding<String> {
-        Binding(
-            get: { store.account(for: provider)?.key ?? "" },
-            set: { store.selectAccount($0, for: provider) })
-    }
-
     var body: some View {
         let account = store.account(for: provider)
         List {
@@ -314,21 +376,8 @@ struct ProviderDetailView: View {
                 .accessibilityIdentifier("usage.provider-identity")
             }
 
-            if provider.accounts.count > 1 {
-                Section {
-                    Picker("Account", selection: accountBinding) {
-                        ForEach(provider.accounts) { entry in
-                            Text(entry.label).tag(entry.key)
-                        }
-                    }
-                    .pickerStyle(.menu)
-                    .accessibilityLabel("Account")
-                    .accessibilityIdentifier("usage.account-picker")
-                } header: {
-                    sectionHeader("Account")
-                }
-            }
-
+            // Account switching lives in the sidebar (per-account rows);
+            // a second picker here would duplicate the control.
             Section {
                 if let plan = account?.plan {
                     LabeledContent {
@@ -440,6 +489,12 @@ struct DetailRootView: View {
             OverviewContentView(store: store, onOpenSettings: onOpenSettings)
         case .provider(let key):
             if let provider = store.provider(key) {
+                ProviderDetailView(store: store, provider: provider)
+            } else {
+                OverviewContentView(store: store, onOpenSettings: onOpenSettings)
+            }
+        case .account(let providerKey, _):
+            if let provider = store.provider(providerKey) {
                 ProviderDetailView(store: store, provider: provider)
             } else {
                 OverviewContentView(store: store, onOpenSettings: onOpenSettings)
