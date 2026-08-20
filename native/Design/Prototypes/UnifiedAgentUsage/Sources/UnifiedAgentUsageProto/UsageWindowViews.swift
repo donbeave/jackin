@@ -164,14 +164,14 @@ struct OverviewContentView: View {
         } else {
             ScrollView {
                 LazyVGrid(
-                    columns: [GridItem(.adaptive(minimum: 280), spacing: 16)],
-                    spacing: 16
+                    columns: [GridItem(.adaptive(minimum: 300), spacing: 20)],
+                    spacing: 20
                 ) {
                     ForEach(store.projection.providers) { provider in
                         ProviderCardView(store: store, provider: provider)
                     }
                 }
-                .padding(20)
+                .padding(24)
             }
             .accessibilityLabel("Usage overview")
             .accessibilityIdentifier("usage.overview.grid")
@@ -182,19 +182,24 @@ struct OverviewContentView: View {
 /// One provider card in the Overview grid. Content layer: standard material,
 /// no glass. Every canonical account renders as its own block — the overview
 /// never collapses multi-account providers to one row. A tap focuses the
-/// provider (and account) in the sidebar detail.
+/// account in the sidebar detail.
+///
+/// Visual hierarchy per account block: the remaining percent is the hero
+/// (largest type, state-tinted), the identity line is secondary, the meter
+/// is a hairline with a visible track, and metadata is a single quiet
+/// caption row. Healthy states render no badge — silence means fine.
 struct ProviderCardView: View {
     let store: ProtoStore
     let provider: ProtoProvider
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 14) {
             HStack(spacing: 10) {
                 if let mark = ProviderMarks.swiftUIImage(forIconKey: provider.iconKey) {
                     mark
                         .resizable()
                         .scaledToFit()
-                        .frame(width: 22, height: 22)
+                        .frame(width: 20, height: 20)
                         .accessibilityHidden(true)
                 }
                 Text(provider.name)
@@ -215,7 +220,10 @@ struct ProviderCardView: View {
             } else {
                 ForEach(Array(provider.accounts.enumerated()), id: \.element.id) {
                     index, account in
-                    if index > 0 { Divider() }
+                    if index > 0 {
+                        Divider()
+                            .padding(.vertical, 2)
+                    }
                     accountBlock(account)
                 }
             }
@@ -244,14 +252,15 @@ struct ProviderCardView: View {
                 .accessibilityIdentifier("usage.overview.error.\(provider.key)")
             }
         }
-        .padding(14)
+        .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .fill(Color(nsColor: .controlBackgroundColor))
+                .shadow(color: .black.opacity(0.06), radius: 1.5, y: 1)
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .strokeBorder(Color(nsColor: .separatorColor), lineWidth: 0.5)
         )
         .accessibilityElement(children: .contain)
@@ -273,40 +282,48 @@ struct ProviderCardView: View {
         Button {
             store.navigate(to: .account(provider: provider.key, account: account.key))
         } label: {
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: 8) {
                 HStack(alignment: .firstTextBaseline) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        if provider.accounts.count > 1 {
-                            Text(account.label)
-                                .font(.callout)
-                                .lineLimit(1)
-                                .truncationMode(.middle)
-                        }
+                    if provider.accounts.count > 1 {
+                        Text(account.label)
+                            .font(.callout)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                    } else {
                         Text(account.plan)
-                            .font(.caption)
+                            .font(.callout)
                             .foregroundStyle(.secondary)
                     }
                     Spacer(minLength: 8)
                     if let remaining = account.remaining {
-                        Text("\(remaining)%")
-                            .font(.title3)
-                            .fontWeight(.semibold)
-                            .monospacedDigit()
-                            .foregroundStyle(meterTint(account.state))
+                        HStack(alignment: .firstTextBaseline, spacing: 3) {
+                            Text("\(remaining)")
+                                .font(.system(size: 24, weight: .semibold))
+                                .monospacedDigit()
+                            Text("% left")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        .foregroundStyle(meterTint(account.state))
                     } else {
                         Text("—")
-                            .font(.title3)
+                            .font(.title2)
                             .foregroundStyle(.tertiary)
                     }
                 }
+
                 if let remaining = account.remaining {
-                    ProgressView(value: Double(remaining), total: 100)
-                        .tint(meterTint(account.state))
+                    QuotaMeter(percent: remaining, tint: meterTint(account.state))
                         .accessibilityHidden(true)
                 }
-                HStack {
+
+                HStack(spacing: 6) {
+                    if provider.accounts.count > 1 {
+                        Text(account.plan)
+                    }
                     if let stateLabel = account.state.label {
-                        Text(stateLabel)
+                        Label(stateLabel, systemImage: account.state.symbol)
+                            .labelStyle(.titleAndIcon)
                             .foregroundStyle(badgeTint(account.state))
                     }
                     Spacer()
@@ -334,6 +351,29 @@ struct ProviderCardView: View {
         case .needsLogin, .needsSecret, .unsupported, .unavailable: .secondary
         default: .secondary
         }
+    }
+}
+
+/// Hairline quota meter: 4pt capsule, visible track, state-tinted fill.
+/// Content-layer drawing, not chrome — a plain deterministic bar.
+struct QuotaMeter: View {
+    let percent: Int
+    let tint: Color
+
+    var body: some View {
+        GeometryReader { proxy in
+            ZStack(alignment: .leading) {
+                Capsule()
+                    .fill(Color(nsColor: .separatorColor).opacity(0.5))
+                Capsule()
+                    .fill(tint)
+                    .frame(
+                        width: proxy.size.width
+                            * CGFloat(min(max(percent, 0), 100)) / 100)
+            }
+        }
+        .frame(height: 4)
+        .accessibilityHidden(true)
     }
 }
 
