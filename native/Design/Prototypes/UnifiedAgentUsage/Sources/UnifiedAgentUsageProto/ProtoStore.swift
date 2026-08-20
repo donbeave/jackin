@@ -136,8 +136,8 @@ final class ProtoStore {
     /// danger/depleted red, warning orange, otherwise phosphor.
     func statusTint(_ provider: ProtoProvider) -> NSColor {
         switch provider.summaryWindow?.state ?? provider.state {
-        case .danger, .depleted: .systemRed
-        case .warning: .systemOrange
+        case .danger, .depleted: JackinBrand.dangerNSColor
+        case .warning: JackinBrand.warningNSColor
         default: JackinBrand.phosphorNSColor
         }
     }
@@ -181,6 +181,7 @@ final class ProtoStore {
     }
 
     /// Refresh intent joins existing broker work; repeated calls never fork.
+    ///
     /// The busy window is a fixed 900 ms fixture so the spinner swap is
     /// visible live without real probe latency.
     func refresh() {

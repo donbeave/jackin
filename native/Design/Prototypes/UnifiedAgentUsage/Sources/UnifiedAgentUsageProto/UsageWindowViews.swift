@@ -258,14 +258,7 @@ struct ProviderCardView: View {
         }
         .padding(JackinSpace.md)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(JackinBrand.card)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .strokeBorder(JackinBrand.separator, lineWidth: 0.5)
-        )
+        .modifier(ProviderCardSurface())
         // Grid rows size to the tallest card; short cards pin to the top of
         // their cell instead of floating centered.
         .frame(maxHeight: .infinity, alignment: .top)
@@ -361,6 +354,28 @@ struct ProviderCardView: View {
     }
 }
 
+/// Authored content boundary for the preferred overview cards.
+///
+/// This is standard opaque content material, never glass. Increase Contrast
+/// strengthens the edge instead of changing the card's color hierarchy.
+private struct ProviderCardSurface: ViewModifier {
+    @Environment(\.colorSchemeContrast) private var contrast
+
+    func body(content: Content) -> some View {
+        content
+            .background(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .fill(JackinBrand.card)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .strokeBorder(
+                        JackinBrand.separator,
+                        lineWidth: contrast == .increased ? 1 : 0.5)
+            )
+    }
+}
+
 /// Hairline quota meter: 4pt capsule, visible track, state-tinted fill.
 ///
 /// Content-layer drawing, not chrome — a plain deterministic bar.
@@ -390,36 +405,50 @@ struct ProviderDetailView: View {
     let provider: ProtoProvider
 
     var body: some View {
-        let account = store.account(for: provider)
         List {
+            ProviderDetailSections(
+                store: store, provider: provider, identifierPrefix: "usage")
+        }
+        .listStyle(.inset)
+        .accessibilityLabel("\(provider.name) usage details")
+        .accessibilityIdentifier("usage.provider.\(provider.key)")
+    }
+}
+
+/// Shared content projection for the Usage detail and transient popover.
+///
+/// Each host supplies its system-owned List/Form material; this view owns the
+/// content once so labels, ordering, states, and actions cannot drift.
+struct ProviderDetailSections: View {
+    let store: ProtoStore
+    let provider: ProtoProvider
+    let identifierPrefix: String
+
+    var body: some View {
+        let account = store.account(for: provider)
+
+        Group {
             Section {
-                HStack(spacing: JackinSpace.sm) {
-                    BrandMarkChip(
-                        iconKey: provider.iconKey, fallbackGlyph: provider.fallbackGlyph,
-                        markSize: 26, chipSize: 40)
-                    VStack(alignment: .leading, spacing: JackinSpace.xxs) {
-                        Text(provider.name)
-                            .font(.title2)
-                        if let account {
-                            Text(account.label)
-                                .foregroundStyle(.primary)
-                                .accessibilityIdentifier("usage.provider-account")
-                        }
-                        Text(provider.activityLabel)
-                            .font(.callout)
-                            .foregroundStyle(.secondary)
-                            .accessibilityIdentifier("usage.provider-activity")
-                    }
-                }
-                .accessibilityElement(children: .ignore)
-                .accessibilityLabel(
-                    "\(provider.name), \(account?.label ?? ""), \(provider.activityLabel)"
-                )
-                .accessibilityIdentifier("usage.provider-identity")
+                providerIdentity(account)
             }
 
-            // Account switching lives in the sidebar (per-account rows);
-            // a second picker here would duplicate the control.
+            Section {
+                if let account, !account.windows.isEmpty {
+                    ForEach(account.windows) { window in
+                        LimitRowView(
+                            window: window,
+                            identifierPrefix: "\(identifierPrefix).limit")
+                    }
+                } else if provider.errorText == nil {
+                    Text("No limit details available")
+                        .foregroundStyle(.secondary)
+                }
+            } header: {
+                sectionHeader("Limits")
+            }
+
+            // Account switching lives in the sidebar or popover footer; a
+            // second picker in content would duplicate the control.
             Section {
                 if let plan = account?.plan {
                     LabeledContent {
@@ -441,39 +470,55 @@ struct ProviderDetailView: View {
                 sectionHeader("Details")
             }
 
-            Section {
-                if let account, !account.windows.isEmpty {
-                    ForEach(account.windows) { window in
-                        LimitRowView(window: window)
-                    }
-                } else if provider.errorText == nil {
-                    Text("No limit details available")
-                        .foregroundStyle(.secondary)
-                }
-            } header: {
-                sectionHeader("Limits")
-            }
-
             if let error = provider.errorText {
                 Section {
                     Label(error, systemImage: "exclamationmark.triangle")
-                        .accessibilityIdentifier("usage.provider-error")
+                        .accessibilityIdentifier("\(identifierPrefix).provider-error")
                     if let ago = provider.updatedAgo {
                         Text(ago)
-                            .font(.caption)
+                            .font(JackinType.metadata)
                             .foregroundStyle(.secondary)
                     }
                     Button(store.chrome.retryTitle) { store.refresh() }
                         .disabled(store.refreshInProgress)
-                        .accessibilityIdentifier("usage.provider-retry")
+                        .accessibilityIdentifier("\(identifierPrefix).provider-retry")
                 } header: {
                     sectionHeader("Provider status")
                 }
             }
         }
-        .listStyle(.inset)
-        .accessibilityLabel("\(provider.name) usage details")
-        .accessibilityIdentifier("usage.provider.\(provider.key)")
+    }
+
+    private func providerIdentity(_ account: ProtoAccount?) -> some View {
+        HStack(spacing: JackinSpace.sm) {
+            BrandMarkChip(
+                iconKey: provider.iconKey, fallbackGlyph: provider.fallbackGlyph,
+                markSize: 26, chipSize: 40)
+            VStack(alignment: .leading, spacing: JackinSpace.xxs) {
+                Text(provider.name)
+                    .font(.title2)
+                if let account {
+                    Text(account.label)
+                        .foregroundStyle(.primary)
+                        .accessibilityIdentifier("\(identifierPrefix).provider-account")
+                }
+                Text(provider.activityLabel)
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .accessibilityIdentifier("\(identifierPrefix).provider-activity")
+            }
+            Spacer()
+            if provider.isRefreshing || store.refreshInProgress {
+                ProgressView()
+                    .controlSize(.small)
+                    .accessibilityLabel(provider.activityLabel)
+            }
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(
+            "\(provider.name), \(account?.label ?? ""), \(provider.activityLabel)"
+        )
+        .accessibilityIdentifier("\(identifierPrefix).provider-identity")
     }
 
     private func sectionHeader(_ title: String) -> some View {
@@ -481,7 +526,7 @@ struct ProviderDetailView: View {
             .foregroundStyle(.primary)
             .accessibilityLabel(title)
             .accessibilityIdentifier(
-                "usage.section.\(title.lowercased().replacingOccurrences(of: " ", with: "-"))"
+                "\(identifierPrefix).section.\(title.lowercased().replacingOccurrences(of: " ", with: "-"))"
             )
     }
 }
@@ -523,24 +568,36 @@ struct LimitRowView: View {
 struct DetailRootView: View {
     let store: ProtoStore
     let onOpenSettings: () -> Void
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        switch store.resolvedSidebar {
-        case .overview:
-            OverviewContentView(store: store, onOpenSettings: onOpenSettings)
-        case .provider(let key):
-            if let provider = store.provider(key) {
-                ProviderDetailView(store: store, provider: provider)
-            } else {
+        Group {
+            switch store.resolvedSidebar {
+            case .overview:
                 OverviewContentView(store: store, onOpenSettings: onOpenSettings)
-            }
-        case .account(let providerKey, _):
-            if let provider = store.provider(providerKey) {
-                ProviderDetailView(store: store, provider: provider)
-            } else {
-                OverviewContentView(store: store, onOpenSettings: onOpenSettings)
+            case .provider(let key):
+                if let provider = store.provider(key) {
+                    ProviderDetailView(store: store, provider: provider)
+                } else {
+                    OverviewContentView(store: store, onOpenSettings: onOpenSettings)
+                }
+            case .account(let providerKey, _):
+                if let provider = store.provider(providerKey) {
+                    ProviderDetailView(store: store, provider: provider)
+                } else {
+                    OverviewContentView(store: store, onOpenSettings: onOpenSettings)
+                }
             }
         }
+        .id("\(store.projection.scenario)-\(String(describing: store.resolvedSidebar))")
+        .transition(reduceMotion ? .identity : .opacity)
+        .animation(
+            reduceMotion ? nil : .easeInOut(duration: 0.2),
+            value: store.resolvedSidebar
+        )
+        .animation(
+            reduceMotion ? nil : .easeInOut(duration: 0.2),
+            value: store.projection.scenario)
     }
 }
 
@@ -552,6 +609,7 @@ struct DetailRootView: View {
 /// affects glass outside toolbars).
 struct RefreshToolbarButton: View {
     let store: ProtoStore
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         Button {
@@ -565,6 +623,9 @@ struct RefreshToolbarButton: View {
                     .opacity(store.refreshInProgress ? 1 : 0)
             }
             .frame(width: 16, height: 16)
+            .animation(
+                reduceMotion ? nil : .easeOut(duration: 0.18),
+                value: store.refreshInProgress)
         }
         .buttonStyle(.glass)
         .help(store.chrome.refreshTitle)

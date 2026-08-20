@@ -71,105 +71,13 @@ struct PopoverView: View {
     }
 
     private func providerForm(_ provider: ProtoProvider) -> some View {
-        let account = store.account(for: provider)
-        return Form {
-            Section {
-                providerIdentity(provider, account: account)
-            }
-
-            Section {
-                if let account, !account.windows.isEmpty {
-                    ForEach(account.windows) { window in
-                        LimitRowView(window: window, identifierPrefix: "popover.limit")
-                    }
-                } else if provider.errorText == nil {
-                    Text("No limit details available")
-                        .foregroundStyle(.secondary)
-                }
-            } header: {
-                sectionHeader("Limits")
-            }
-
-            Section {
-                if let plan = account?.plan {
-                    LabeledContent {
-                        Text(plan).foregroundStyle(.primary)
-                    } label: {
-                        Text("Plan").foregroundStyle(.primary)
-                    }
-                    .accessibilityLabel("Plan, \(plan)")
-                }
-                if let reset = account?.resetText ?? provider.summaryReset {
-                    LabeledContent {
-                        Text(reset).foregroundStyle(.primary)
-                    } label: {
-                        Text("Reset").foregroundStyle(.primary)
-                    }
-                    .accessibilityLabel("Reset, \(reset)")
-                }
-            } header: {
-                sectionHeader("Details")
-            }
-
-            if let error = provider.errorText {
-                Section {
-                    Label(error, systemImage: "exclamationmark.triangle")
-                        .accessibilityIdentifier("popover.provider-error")
-                    if let ago = provider.updatedAgo {
-                        Text(ago)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                    Button(store.chrome.retryTitle) { store.refresh() }
-                        .disabled(store.refreshInProgress)
-                        .accessibilityIdentifier("popover.provider-retry")
-                } header: {
-                    sectionHeader("Provider status")
-                }
-            }
+        Form {
+            ProviderDetailSections(
+                store: store, provider: provider, identifierPrefix: "popover")
         }
         .formStyle(.grouped)
         .accessibilityLabel("\(provider.name) usage details")
         .accessibilityIdentifier("popover.provider.\(provider.key)")
-    }
-
-    private func providerIdentity(_ provider: ProtoProvider, account: ProtoAccount?) -> some View {
-        HStack(spacing: JackinSpace.xs) {
-            if let mark = ProviderMarks.swiftUIImage(forIconKey: provider.iconKey) {
-                mark
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 28, height: 28)
-                    .accessibilityHidden(true)
-            }
-            VStack(alignment: .leading, spacing: JackinSpace.xxs) {
-                Text(provider.name)
-                    .font(.headline)
-                if let account {
-                    Text(account.label)
-                        .foregroundStyle(.primary)
-                        .accessibilityIdentifier("popover.provider-account")
-                }
-                Text(provider.activityLabel)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .accessibilityIdentifier("popover.provider-activity")
-            }
-            Spacer()
-            if provider.isRefreshing || store.refreshInProgress {
-                ProgressView()
-                    .controlSize(.small)
-                    .accessibilityLabel(provider.activityLabel)
-            }
-        }
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(provider.name), \(account?.label ?? ""), \(provider.activityLabel)")
-        .accessibilityIdentifier("popover.provider-identity")
-    }
-
-    private func sectionHeader(_ title: String) -> some View {
-        Text(title)
-            .accessibilityLabel(title)
     }
 
     private var accountSelection: Binding<String> {
@@ -184,31 +92,33 @@ struct PopoverView: View {
     // state outside a toolbar (fixed in 27); verified live.
     private var controls: some View {
         HStack(spacing: JackinSpace.sm) {
-            HStack(spacing: JackinSpace.xs) {
-                Button {
-                    store.refresh()
-                } label: {
-                    Label(store.chrome.refreshTitle, systemImage: "arrow.clockwise")
-                        .labelStyle(.iconOnly)
-                }
-                .buttonStyle(.glass)
-                .keyboardShortcut("r", modifiers: [.command])
-                .disabled(store.refreshInProgress)
-                .accessibilityLabel(store.chrome.refreshTitle)
-                .accessibilityIdentifier("popover.refresh")
-                .help(store.chrome.refreshTitle)
+            GlassEffectContainer(spacing: JackinSpace.xs) {
+                HStack(spacing: JackinSpace.xs) {
+                    Button {
+                        store.refresh()
+                    } label: {
+                        Label(store.chrome.refreshTitle, systemImage: "arrow.clockwise")
+                            .labelStyle(.iconOnly)
+                    }
+                    .buttonStyle(.glass)
+                    .keyboardShortcut("r", modifiers: [.command])
+                    .disabled(store.refreshInProgress)
+                    .accessibilityLabel(store.chrome.refreshTitle)
+                    .accessibilityIdentifier("popover.refresh")
+                    .help(store.chrome.refreshTitle)
 
-                Button {
-                    onOpenUsage()
-                } label: {
-                    Label(store.chrome.openUsageTitle, systemImage: "macwindow")
-                        .labelStyle(.iconOnly)
+                    Button {
+                        onOpenUsage()
+                    } label: {
+                        Label(store.chrome.openUsageTitle, systemImage: "macwindow")
+                            .labelStyle(.iconOnly)
+                    }
+                    .buttonStyle(.glassProminent)
+                    .keyboardShortcut(.defaultAction)
+                    .accessibilityLabel(store.chrome.openUsageTitle)
+                    .accessibilityIdentifier("popover.open-usage")
+                    .help(store.chrome.openUsageTitle)
                 }
-                .buttonStyle(.glassProminent)
-                .keyboardShortcut(.defaultAction)
-                .accessibilityLabel(store.chrome.openUsageTitle)
-                .accessibilityIdentifier("popover.open-usage")
-                .help(store.chrome.openUsageTitle)
             }
             Spacer(minLength: 12)
 
