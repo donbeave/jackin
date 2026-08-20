@@ -18,7 +18,7 @@ use crate::tui::auth::{AuthKind, AuthMode, auth_mode_requires_credential};
 use crate::tui::components::scope_picker::ScopeChoice;
 use crossterm::event::KeyCode;
 use jackin_core::{EnvValue, RoleSelector};
-use jackin_tui::ModalOutcome;
+use jackin_oppicker::ModalOutcome;
 use ratatui::layout::Rect;
 
 #[must_use]

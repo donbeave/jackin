@@ -1051,7 +1051,9 @@ fn dispatch_editor_mount_dst_choice(
     editor: &mut EditorState<'_>,
     target: FileBrowserTarget,
     src: &str,
-    outcome: &jackin_tui::ModalOutcome<crate::tui::components::mount_dst_choice::MountDstChoice>,
+    outcome: &jackin_oppicker::ModalOutcome<
+        crate::tui::components::mount_dst_choice::MountDstChoice,
+    >,
 ) {
     match mount_dst_choice_plan(outcome.clone()) {
         MountDstChoicePlan::CommitSamePath => {

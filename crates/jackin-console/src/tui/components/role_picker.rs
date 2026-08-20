@@ -4,7 +4,7 @@
 //! Modal picker for role disambiguation.
 
 use crossterm::event::{KeyCode, KeyEvent};
-use jackin_tui::ModalOutcome;
+use jackin_oppicker::ModalOutcome;
 use termrock::widgets::ListState;
 
 pub trait RoleChoice: Clone {

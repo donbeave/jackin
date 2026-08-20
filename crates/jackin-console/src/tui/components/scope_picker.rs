@@ -5,7 +5,7 @@
 
 use crossterm::event::{KeyCode, KeyEvent};
 
-use jackin_tui::ModalOutcome;
+use jackin_oppicker::ModalOutcome;
 use termrock::widgets::{Action, ActionBar, ActionBarState};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

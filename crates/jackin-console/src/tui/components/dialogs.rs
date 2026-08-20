@@ -5,7 +5,7 @@
 
 use std::marker::PhantomData;
 
-use jackin_tui::ModalOutcome;
+use jackin_oppicker::ModalOutcome;
 use ratatui::{
     Frame,
     layout::Rect,
