@@ -22,7 +22,7 @@ Package scope: plans 005–014 modernize the **console surface** (`crates/jackin
 | 010 | Dialog and form layer adoption | F5 (C6–C8, C10, C11, C19), B14, D16 | P1 | L | 009 | TODO |
 | 011 | Layout, chrome, runtime adoption | F5 (C3, C12, C13, C15–C17), B14, D16 | P1 | L | 008 | TODO |
 | 012 | Whole-screen recipes, create wizard, keyboard_help overlay | F5 (recipes, form_wizard), F9, S2, N4, D24 | P2 | M | 010, 011 | TODO |
-| 013 | Op-picker drill-down re-base + jackin-oppicker modernization | F5 (op-picker), D25 | P2 | M | 006 | TODO |
+| 013 | Op-picker drill-down re-base + jackin-oppicker modernization | F5 (op-picker), D25 | P2 | M | 006 | DONE |
 | 014 | Console docs alignment + merge-readiness | B14, B16 (final proof), N4, docs same-PR law | P2 | S | 005–013 | TODO |
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED (one-line reason) | REJECTED (one-line rationale) | STALE (decision reopened it; re-plan pending)
@@ -41,7 +41,7 @@ Status values: TODO | IN PROGRESS | DONE | BLOCKED (one-line reason) | REJECTED 
 - **010 — Dialog and form layer**: adopt `confirm_prompt`/`alert_dialog`/`error_state`/`loading_overlay` (default-focus-No verified), `file_picker`/`file_tree`/`path_input` (domain rules re-hosted), `select`/`combobox`, `form`/`field_row`/`key_value_table`/`password_input`, render-only `diff`, and `key_value_table` + `link`.
 - **011 — Layout, chrome, runtime**: adopt `panel_stack`, `kbd` + `hint_bar` (hint priorities and RULES.md labels re-verified), `SpinnerState`, `keymap_bridge`/`UiIntent` (Visibility metadata survives), `Presenter`/`FrameClock`/`ReadySubscription` (run loop stays surface-owned), and `resizable_panel_group` with seam-drag parity.
 - **012 — Recipes, wizard, keyboard_help**: copy-adapt the workspaces/settings/auth screen recipes, re-host the create-prelude wizard on `form_wizard`, and add the sanctioned `keyboard_help` overlay (`?` everywhere, keymap_bridge-sourced, footer-hint discovery, PNG-baselined).
-- **013 — Op-picker**: keep the staged drill-down hand-rolled with breadcrumbs re-based on `widgets/breadcrumbs`; modernize `jackin-oppicker` (`ReadySubscription`, `interaction/collection` filtering, single shared ModalOutcome).
+- **013 — Op-picker**: keep the staged drill-down hand-rolled with breadcrumbs re-based on `widgets/breadcrumbs`; modernize `jackin-oppicker` (`ReadySubscription`, `interaction/collection` filtering, single shared ModalOutcome). **Outcome note**: steps 1–3 landed DONE; the step-4 breadcrumb re-base took the misfit route — recommend upstream change: a uniform-style title presentation for `Breadcrumbs` (a title-slot mode painting the whole trail in one host-chosen style with host-controlled padding, or a helper returning the joined trail for panel-title slots). Gate-proven: title-row crumbs → `modal-op-picker` PNG diff at (27, 26) (hard-coded bold current crumb + muted separators vs the uniform no-bold title); body-row crumbs → same class of diff; the panel/dialog title slot accepts only `Option<&str>` in one style. `breadcrumb_title` stays the title source until the upstream change lands.
 - **014 — Docs alignment + merge-readiness**: update the TUI reference pages for the adopted machinery same-PR, run the full parity proof set one final time, strip the planning artifacts from the merge diff, and run the merge-readiness gate.
 
 ## Dependency notes
