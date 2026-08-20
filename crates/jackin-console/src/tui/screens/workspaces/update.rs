@@ -80,6 +80,46 @@ pub struct PreviewFocusPlan {
     pub focused: bool,
 }
 
+/// Focus owners of the workspaces list screen, in the order the key-driven
+/// focus cycle walks them. Mirrors the upstream `project_launcher` recipe's
+/// `ProjectLauncherPane::focus_order()` (copy-adapted composition reference):
+/// the master list first, then the preview pane. The sidebar scroll blocks
+/// are pointer-targeted (plan 008) and the footer action bar is chrome-only
+/// (like the recipe's status strip), so neither joins the key cycle.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum WorkspaceListFocusOwner {
+    /// Master workspace/instance list (recipe: projects pane).
+    ListNames,
+    /// Instance snapshot preview pane (recipe: preview pane).
+    Preview,
+}
+
+/// The ordered focus-owner chain — the recipe's `focus_order()` walk.
+#[must_use]
+pub const fn workspace_list_focus_order() -> [WorkspaceListFocusOwner; 2] {
+    [
+        WorkspaceListFocusOwner::ListNames,
+        WorkspaceListFocusOwner::Preview,
+    ]
+}
+
+/// Head of the focus chain: the cycle's start and the exit's return target.
+#[must_use]
+pub const fn workspace_list_focus_head() -> WorkspaceListFocusOwner {
+    let [head, ..] = workspace_list_focus_order();
+    head
+}
+
+/// The owner after `owner` in the chain, wrapping to the head at the end.
+#[must_use]
+pub const fn workspace_list_focus_next(owner: WorkspaceListFocusOwner) -> WorkspaceListFocusOwner {
+    let [head, second] = workspace_list_focus_order();
+    match owner {
+        WorkspaceListFocusOwner::ListNames => second,
+        WorkspaceListFocusOwner::Preview => head,
+    }
+}
+
 pub trait PreviewFocusState {
     fn set_preview_focused(&mut self, focused: bool);
 }
@@ -1263,12 +1303,24 @@ pub fn workspace_list_top_level_key_plan(
 
 #[must_use]
 pub const fn enter_preview_focus_plan() -> PreviewFocusPlan {
-    PreviewFocusPlan { focused: true }
+    // Entering the preview walks the focus chain one step past its head.
+    PreviewFocusPlan {
+        focused: matches!(
+            workspace_list_focus_next(workspace_list_focus_head()),
+            WorkspaceListFocusOwner::Preview
+        ),
+    }
 }
 
 #[must_use]
 pub const fn exit_preview_focus_plan() -> PreviewFocusPlan {
-    PreviewFocusPlan { focused: false }
+    // Exiting the preview returns focus to the chain head.
+    PreviewFocusPlan {
+        focused: matches!(
+            workspace_list_focus_head(),
+            WorkspaceListFocusOwner::Preview
+        ),
+    }
 }
 
 /// Preview-pane navigation mode: Esc / Left / `BackTab` exits, Up/Down

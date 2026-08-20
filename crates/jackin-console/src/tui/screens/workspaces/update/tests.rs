@@ -1320,6 +1320,30 @@ fn preview_focus_plans_set_focus_state() {
 }
 
 #[test]
+fn focus_chain_walks_list_then_preview_and_wraps() {
+    let order = workspace_list_focus_order();
+    assert_eq!(
+        order,
+        [
+            WorkspaceListFocusOwner::ListNames,
+            WorkspaceListFocusOwner::Preview
+        ]
+    );
+    assert_eq!(
+        workspace_list_focus_head(),
+        WorkspaceListFocusOwner::ListNames
+    );
+    assert_eq!(
+        workspace_list_focus_next(WorkspaceListFocusOwner::ListNames),
+        WorkspaceListFocusOwner::Preview
+    );
+    assert_eq!(
+        workspace_list_focus_next(WorkspaceListFocusOwner::Preview),
+        WorkspaceListFocusOwner::ListNames
+    );
+}
+
+#[test]
 fn instance_action_accepts_status_grid_smoke() {
     use WorkspaceInstanceAction as A;
     use WorkspaceInstanceStatus as S;
