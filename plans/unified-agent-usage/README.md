@@ -14,13 +14,13 @@ same integration seams.
 | [001](001-freeze-contract-and-baseline.md) | Executable contract/baseline gates | — | DONE |
 | [002](002-build-canonical-projection.md) | Canonical identity and V1 projection | 001 | DONE |
 | [003](003-build-durable-broker.md) | Process-independent broker authority | 002 | DONE |
-| [004](004-complete-provider-adapters.md) | Eight-provider quota parity | 002, 003 | TODO |
+| [004](004-complete-provider-adapters.md) | Eight-provider quota parity | 002, 003 | DONE |
 | [005](005-ship-cli-and-console.md) | Simple CLI and native Console Usage | 003, 004 | TODO |
 | [006](006-ship-capsule-usage.md) | Resolved-agent Capsule Usage | 003, 004 | TODO |
 | [007](007-ship-desktop-usage.md) | FFI, popover, and native Usage window | 003, 004 | TODO |
 | [008](008-prove-parity-and-release.md) | Cross-surface proof and signed distribution | 005, 006, 007 | TODO |
 
-Frozen package fingerprint: `9b109e7849bc8b9c92ba380a202fbf804cbf9f2d`.
+Frozen package fingerprint: `28ce26ff69afbe2b1a0b05ffb8e3b0e2c09736be`.
 
 ## Execution rules
 

@@ -1,7 +1,7 @@
 # Plan 004: Complete the eight-provider quota contracts
 
 ## Status
-TODO
+DONE
 
 ## Why this matters
 Shared surfaces are only truthful when each adapter has proven identity, windows, and failure semantics.
@@ -57,3 +57,24 @@ Only browser/scraping credential path exists; upstream payload lacks claimed fie
 ## Maintenance notes
 Pin upstream evidence revisions and update fixtures with provider contract changes.
 
+## Completion evidence
+
+- Codex classifies primary/secondary windows by exact provider duration first,
+  uses constrained slot fallback only for unknown or missing durations, and
+  extracts top-level and `spend_control.individual_limit` monthly money caps.
+- Z.AI accepts `CREDIT_LIMIT` and legacy `TOKENS_LIMIT`, maps only recognized
+  explicit durations to Session/Weekly, retains provider order, and leaves
+  malformed or unknown durations unclassified.
+- Grok production refresh uses the supported CLI-proxy REST billing contract
+  with optional settings enrichment; ACP remains a bounded fallback and the old
+  grpc-web scan is no longer called by production refresh or discovery.
+- OpenCode Go reads only the `opencode-go` API entry from the trusted profile
+  path, parses rolling/weekly/monthly limits with typed 401/403/malformed states,
+  and keeps identity provisional because no durable non-secret identifier exists.
+- Provider-facing labels are provider-only (`OpenAI`, `Anthropic`, `Amp`, `xAI`,
+  `Z.AI`, `Kimi`, `MiniMax`, `OpenCode`); runtime names remain internal aliases.
+- Focused fixture proof covers Codex duration/cap, Z.AI classification, OpenCode
+  auth/windows, Grok REST shapes, host discovery, and existing provider suites;
+  `jackin-usage` clippy passes with `-D warnings`. The broker lifecycle test now
+  runs from `jackin-runtime`, the owning tier for environment-backed service
+  resolution; the lower-tier `jackin-usage` dependency on `jackin-env` is removed.

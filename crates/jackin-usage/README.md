@@ -15,6 +15,8 @@ usage/spend trends as product features.
 - Host broker/coordinator (`host/broker`, `coordinator`) — canonical per-account
   generations, bounded provider dispatch, atomic state, shared retry policy, and
   capability-scoped clients.
+- The process service executable is owned by `jackin-runtime`; this crate exposes
+  the lower-tier broker protocol, coordinator, and client seams only.
 - Rust-owned account discovery (`host/discovery`) — read-only global, workspace,
   role, and workspace-role enumeration; explicit profile/protected-source probes;
   pre-source and post-auth account deduplication; sanitized diagnostics.

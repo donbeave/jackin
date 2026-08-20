@@ -70,7 +70,7 @@ key = "clippy::cast_sign_loss@jackin-launch"
 bound = 9
 [[family.entry]]
 key = "clippy::cast_sign_loss@jackin-usage"
-bound = 11
+bound = 10
 [[family.entry]]
 key = "clippy::cognitive_complexity@jackin-runtime"
 bound = 1

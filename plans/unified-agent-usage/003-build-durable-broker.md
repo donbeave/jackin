@@ -22,7 +22,7 @@ V1 protocol, current coordinator/broker/store, fake clock/executor, process test
 Broker thread belongs to first caller, PID-only election exists, consumers retain bypass/cache controls.
 
 ## Commands you will need
-`rtk cargo test -p jackin-usage broker_service_lifecycle -- --test-threads=1`; coordinator/broker suites; fmt/clippy.
+`rtk cargo test -p jackin-runtime --test broker_service_lifecycle -- --test-threads=1`; coordinator/broker suites; fmt/clippy.
 
 ## Suggested executor toolkit
 Independent broker executable, mode-0600 Unix socket, atomic lease/state, process-level integration tests.
@@ -64,7 +64,8 @@ Broker protocol/persistence versions and policy constants live in one module wit
 
 ## Completion evidence
 
-- Added the shipped sibling `jackin-usage-broker` executable. Process activation uses a
+- Added the shipped sibling `jackin-usage-broker` executable under `jackin-runtime`,
+  the owning orchestration tier. Process activation uses a
   per-user mode-0600 Unix socket and JSON lease with protocol/build identity and epoch
   expiry; PID is not authority. The service survives the activating client and exits only
   after the configured ten-minute idle interval with no active coordinator work.

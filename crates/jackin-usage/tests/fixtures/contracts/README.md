@@ -32,7 +32,7 @@ tests fail that plan; Plan 001 does not commit known-failing tests.
 | Target | Owner |
 |---|---|
 | `jackin-usage canonical_projection` | Plan 002 |
-| `jackin-usage broker_service_lifecycle` | Plan 003 |
+| `jackin-runtime broker_service_lifecycle` | Plan 003 |
 | provider-specific classifier/source fixtures | Plan 004 |
 | `jackin cli::usage::canonical_overview` | Plan 005 |
 | `jackin-console usage` | Plan 005 |

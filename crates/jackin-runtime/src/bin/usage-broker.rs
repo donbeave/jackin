@@ -3,11 +3,7 @@
 
 //! Demand-activated host usage broker process.
 
-#![expect(
-    clippy::print_stderr,
-    reason = "service entrypoint reports one sanitized startup error and exits"
-)]
-
+use std::io::Write as _;
 use std::path::PathBuf;
 use std::sync::Arc;
 
@@ -76,7 +72,7 @@ type ServiceResolver = CachedProviderCredentialResolver<ServiceSecretSource>;
 
 fn main() {
     if let Err(error) = run() {
-        eprintln!("usage broker unavailable: {error:?}");
+        let _write_result = writeln!(std::io::stderr(), "usage broker unavailable: {error:?}");
         std::process::exit(1);
     }
 }

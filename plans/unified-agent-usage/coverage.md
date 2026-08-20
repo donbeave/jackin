@@ -34,9 +34,9 @@ PR may be created.
 | F5 | Durable process-independent broker with shared in-flight generations | D5; W6 | covered | 003 | DONE |
 | F6 | Broker-owned cache, retry, cancellation, crash recovery, and atomic last-good publication | D5; §Planning-owned closure | covered | 003 | DONE |
 | F7 | Adaptive 2/5/15/30-minute refresh policy and due-on-open behavior | D22 | covered | 003 | DONE |
-| F8 | Rust-owned quota semantics, formatting, category/order, summary selection, severity | D14; D30; §Data & integrations | pending | pending | pending |
-| F9 | Provider quota parity including Codex money cap, supported extra windows, OpenCode | D21; Q1-Q3; §Research | pending | pending | pending |
-| F10 | Provider-backed Not started and confidence-gated rich-surface run-out estimate | D23; D24 | pending | pending | pending |
+| F8 | Rust-owned quota semantics, formatting, category/order, summary selection, severity | D14; D30; §Data & integrations | covered | 002, 004 | DONE |
+| F9 | Provider quota parity including Codex money cap, supported extra windows, OpenCode | D21; Q1-Q3; §Research | covered | 004 | DONE |
+| F10 | Provider-backed Not started and confidence-gated rich-surface run-out estimate | D23; D24 | covered | 004 | DONE |
 | F11 | Bare host CLI human/JSON projection and settled exit behavior | D1; D4; D9; D16; D27 | pending | pending | pending |
 | F12 | Instance accounts/verify retained without cache/refresh bypass authority | D10; W3 | pending | pending | pending |
 | F13 | Top-level Console Usage route using confirmed native Console grammar | D7; D8; D26 | pending | pending | pending |
@@ -186,7 +186,7 @@ authoritative resolved mapping is:
 | S11-S13, F14, W4, B7 | `spec/capsule-usage.md` | 001-004, 006, 008 | covered |
 | F1-F4, F8, F17 | `spec/canonical-projection.md` | 001-002, 005-008 | covered |
 | F5-F7, W6, B3 | `spec/broker-refresh.md` | 001-003, 005-008 | covered |
-| F3, F8-F10, Q1-Q3 | `spec/provider-quotas.md` | 001-004, 008 | direction closed; fixtures in 004 |
+| F3, F8-F10, Q1-Q3 | `spec/provider-quotas.md` | 001-004, 008 | covered |
 | F18-F20, B4, B8, N1-N14 | `spec/parity-release.md` and sole registry | 001-008 | covered |
 
 All plans execute on `chore/roadmap-unified-agent-usage` in PR #898. No coverage
@@ -199,3 +199,4 @@ item authorizes another branch or PR.
 | 001 | Contract fixtures, baseline ownership, N1-N14 enforcement inventory | `contract_baseline` 5; repository format/lint/test |
 | 002 | F1-F4 canonical V1 foundation; F8 typed category/order seam; F17 destination normalization; N1, N4, N8-N10, N14 | canonical 5; protocol 8; crate nextest 290; full workspace and E2E gates |
 | 003 | F5-F7 broker authority, policy, projection operations, atomic envelope, N3 process activation seam | `broker_service_lifecycle` 1; coordinator 14; broker 8; policy 2; state 6; protocol 9; usage clippy; dependent checks |
+| 004 | F3, F8-F10, F9 provider parity, Q1-Q3 adapter contracts and typed failures | 4 focused fixtures; usage 146; host 59; usage clippy |

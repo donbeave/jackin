@@ -9,6 +9,8 @@ Container bootstrap pipeline — the orchestrator that turns a resolved workspac
 - Mount isolation integration (`isolation`), the reactive daemon (`reactive_daemon`), and wait-for-state (`spin_wait`).
 - Host usage-broker lifecycle and per-container relay assembly. Docker and Apple
   backends reuse the container socket directory; neither mounts global usage state.
+- The `jackin-usage-broker` sibling executable resolves governed operator
+  environment sources and owns the process service entrypoint.
 
 ## Architecture tier and allowed dependencies
 

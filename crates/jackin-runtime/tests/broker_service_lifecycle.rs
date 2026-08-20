@@ -83,8 +83,6 @@ fn broker_service_lifecycle() {
 }
 
 fn client_socket(client: &jackin_usage::host::UsageBrokerClient) -> PathBuf {
-    // The public client intentionally hides its endpoint. Reconstruct the
-    // contract path under this workspace-owned test root.
     let _ = client;
     workspace_state_dir().join("data/usage-broker/run/usage-broker.sock")
 }

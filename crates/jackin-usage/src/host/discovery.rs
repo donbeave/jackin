@@ -75,7 +75,7 @@ pub fn host_credential_root_matrix() -> Vec<HostCredentialRootRow> {
         },
         HostCredentialRootRow {
             surface: "opencode",
-            host_paths: "OpenCode home (probe-defined)",
+            host_paths: "$XDG_DATA_HOME/opencode/auth.json or ~/.local/share/opencode/auth.json",
             env_vars: "",
             container_handoff: "",
         },
@@ -448,6 +448,9 @@ pub(super) enum ProfileCredentialMaterial {
     Kimi {
         root: PathBuf,
     },
+    OpenCode {
+        auth_path: PathBuf,
+    },
 }
 
 impl std::fmt::Debug for UsageDiscoveryCatalog {
@@ -639,11 +642,7 @@ fn enumerate_profile_candidates(
     scope: &EffectiveScope,
     candidates: &mut BTreeMap<CredentialSourceKey, CandidateAccumulator>,
 ) {
-    for agent in Agent::ALL
-        .iter()
-        .copied()
-        .filter(|agent| *agent != Agent::Opencode)
-    {
+    for agent in Agent::ALL.iter().copied() {
         let role = scope.role.as_deref().unwrap_or("");
         let mode = jackin_config::resolve_mode(config, agent, scope.workspace.as_ref(), role);
         if mode != AuthForwardMode::Sync {
@@ -652,9 +651,20 @@ fn enumerate_profile_candidates(
         let configured =
             jackin_config::resolve_sync_source_dir(config, agent, scope.workspace.as_ref(), role);
         let root = configured.map_or_else(
-            || operator_home.join(agent.runtime().state_paths().credential_dir),
+            || {
+                if agent == Agent::Opencode {
+                    std::env::var_os("XDG_DATA_HOME")
+                        .map_or_else(|| operator_home.join(".local/share"), PathBuf::from)
+                        .join("opencode")
+                } else {
+                    operator_home.join(agent.runtime().state_paths().credential_dir)
+                }
+            },
             |path| resolve_profile_root(operator_home, &path),
         );
+        if agent == Agent::Opencode && !root.join("auth.json").is_file() {
+            continue;
+        }
         let key = CredentialSourceKey::Profile { agent, root };
         candidates
             .entry(key)
@@ -1236,7 +1246,38 @@ fn profile_identity(
             }
         }
         Agent::Grok => grok_profile_identity(reader, &root.join("auth.json")),
-        Agent::Opencode => ProfileValidation::Missing,
+        Agent::Opencode => opencode_profile_identity(reader, &root.join("auth.json")),
+    }
+}
+
+fn opencode_profile_identity(
+    reader: &dyn ProfileCredentialReader,
+    path: &Path,
+) -> ProfileValidation {
+    match reader.read(path) {
+        ProfileReadOutcome::Missing => ProfileValidation::Missing,
+        ProfileReadOutcome::Denied => ProfileValidation::Denied,
+        ProfileReadOutcome::Bytes(bytes) => {
+            let Ok(value) = serde_json::from_slice::<serde_json::Value>(&bytes) else {
+                return ProfileValidation::Malformed;
+            };
+            let entry = value.get("opencode-go");
+            let Some(entry) = entry else {
+                return ProfileValidation::Missing;
+            };
+            let kind = entry.get("type").and_then(serde_json::Value::as_str);
+            let key = entry
+                .get("key")
+                .and_then(serde_json::Value::as_str)
+                .map(str::trim)
+                .filter(|key| !key.is_empty());
+            if kind != Some("api") || key.is_none() {
+                return ProfileValidation::Malformed;
+            }
+            ProfileValidation::Anonymous(Some(Box::new(ProfileCredentialMaterial::OpenCode {
+                auth_path: path.to_path_buf(),
+            })))
+        }
     }
 }
 
@@ -1482,8 +1523,8 @@ pub(super) fn refresh_credential_binding(
         }
         ValidatedCredentialSource::Profile(ProfileCredentialMaterial::Grok { auth_path }) => {
             let now = chrono::Utc::now().timestamp();
-            let result = crate::usage::fetch_grok_web_billing(auth_path, now)
-                .map(crate::usage::GrokBillingSnapshot::Web);
+            let result = crate::usage::fetch_grok_rest_billing(auth_path, now)
+                .map(|response| crate::usage::GrokBillingSnapshot::Rest(Box::new(response)));
             crate::usage::grok_snapshot_from_rpc_result(
                 binding.surface.agent_slug(),
                 now,
@@ -1498,6 +1539,13 @@ pub(super) fn refresh_credential_binding(
             let now = chrono::Utc::now().timestamp();
             let token = crate::usage::load_kimi_local_token_from_home(root, now);
             crate::usage::kimi_snapshot(binding.surface.agent_slug(), token.as_deref(), now)
+        }
+        ValidatedCredentialSource::Profile(ProfileCredentialMaterial::OpenCode { auth_path }) => {
+            crate::usage::opencode_profile_snapshot(
+                binding.surface.agent_slug(),
+                auth_path,
+                chrono::Utc::now().timestamp(),
+            )
         }
     };
     ProviderCredentialRefreshOutcome::Snapshot(Box::new(view))

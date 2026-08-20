@@ -456,6 +456,9 @@ authenticated and failure fixtures before shipping; these are not product questi
 - 2026-08-21 — Plan 003 — shipped the demand-activated sibling broker executable,
   lease/idle/retry policy, projection operations, atomic publication envelope, and
   process lifecycle proof; Plans 004–008 remain sequentially pending.
+- 2026-08-21 — Plan 004 — completed provider parity: duration-first Codex and
+  Z.AI classifiers, Codex individual cap, Grok CLI-proxy REST, OpenCode Go limits
+  with provisional identity, provider-only labels, and sanitized fixtures.
   moved to PLANNED. All implementation remains on the current branch and PR #898.
 - 2026-08-21 — Plan 001 — froze secret-free V1 contract fixtures, the surface-state
   matrix, classified provider-call inventory with injection detection, reserved test

@@ -178,16 +178,7 @@ impl HostSurfaceId {
     /// Canonical provider label used by durable account-key hashing.
     #[must_use]
     pub const fn account_provider_label(self) -> &'static str {
-        match self {
-            Self::Claude => "Anthropic / Claude",
-            Self::Codex => "OpenAI / Codex",
-            Self::Amp => "Amp",
-            Self::Grok => "xAI / Grok",
-            Self::Zai => "GLM / Z.AI",
-            Self::Kimi => "Kimi",
-            Self::Minimax => "MiniMax",
-            Self::OpenCode => "OpenCode",
-        }
+        self.label()
     }
 
     /// Rust-owned fallback glyph used only when the native icon cannot load.
@@ -229,11 +220,11 @@ impl HostSurfaceId {
     #[must_use]
     pub const fn provider_label(self) -> Option<&'static str> {
         match self {
-            Self::Claude => Some("Claude"),
-            Self::Codex => Some("Codex"),
+            Self::Claude => Some("Anthropic"),
+            Self::Codex => Some("OpenAI"),
             Self::Amp => Some("Amp"),
-            Self::Grok => Some("Grok Build"),
-            Self::Zai => Some("GLM / Z.AI"),
+            Self::Grok => Some("xAI"),
+            Self::Zai => Some("Z.AI"),
             Self::Kimi => Some("Kimi"),
             Self::Minimax => Some("MiniMax"),
             Self::OpenCode => Some("OpenCode"),
