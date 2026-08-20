@@ -78,10 +78,9 @@ Host display APIs are presentation-only:
 | `HostUsageRuntime::desktop_inventory` | Atomic canonical provider/account groups with complete display fields |
 | `host::HostProbePolicy` | `Live` / `Disabled` (smoke-mode probe suppression) |
 
-`CanonicalAccountIdentity` uses closed provider aliases; routing slugs never own
-accounts. Presence-only evidence stays provider state. Inventory scans broker state
-and durable history once. `DESKTOP_PROVIDER_ORDER` is the seven-provider boundary;
-OpenCode remains host-only.
+Canonical identity uses typed provider IDs or stable non-secret handles—not source
+ordinals, secrets, agent names, or display labels. Rust publishes current membership
+with ICU4X ranks; unresolved evidence stays separate. Desktop filters OpenCode.
 
 ## Desktop account contract
 

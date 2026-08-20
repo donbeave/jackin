@@ -1,7 +1,7 @@
 # Plan 002: Build canonical identity and projection V1
 
 ## Status
-TODO
+DONE
 
 ## Why this matters
 Deduplication, order, selection, and parity require one surface-neutral Rust truth.
@@ -57,3 +57,11 @@ Provider lacks non-secret identity and implementation guesses one; cross-platfor
 ## Maintenance notes
 Breaking V1 meaning needs major schema; additive fields require compatibility fixture.
 
+## Completion evidence
+
+- Additive V1 protocol records retain the account-generation wire during consumer migration; unknown majors, conflicting percentages, ranks, golden JSON, and the 40-account transport margin are tested.
+- Canonical IDs use typed provider evidence and provider-only machine identities; legacy routing/source IDs remain operational but cannot become V1 identity.
+- Current discovery owns membership; unresolved capabilities never become account rows. ICU4X 2.2 `und`, English, Turkish, and Vietnamese goldens freeze account ranks.
+- Immutable reads retain one publication until content changes; stale last-good windows survive partial failure. Alias replay is idempotent and collisions fail before mutation.
+- Typed destination normalization preserves valid account selection and returns removed selections to Overview with `Selected account is no longer available.`
+- Proof: `canonical_projection` 5 passed; protocol `usage_broker` 8 passed; `jackin-usage` nextest 290 passed; `rtk mise run fmt`, `lint`, `test`, and `rtk cargo xtask ci --e2e` passed.

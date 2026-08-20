@@ -94,6 +94,10 @@ fn canonical_projection_uses_current_membership_provider_names_and_rust_ranks() 
     let mut runtime = open_runtime(dir.path());
     let mut zulu = codex_fixture_view();
     zulu.account.account_label = "zulu@example.test".to_owned();
+    zulu.status = UsageSnapshotStatus::Stale;
+    zulu.buckets
+        .iter_mut()
+        .for_each(|bucket| bucket.status = UsageSnapshotStatus::Stale);
     let mut alpha = codex_fixture_view();
     alpha.account.account_label = "Alpha@example.test".to_owned();
     alpha.buckets[0].severity = UsageSeverity::Danger;
@@ -133,6 +137,11 @@ fn canonical_projection_uses_current_membership_provider_names_and_rust_ranks() 
     assert_eq!(projection.providers[0].accounts[0].rank, 0);
     assert_eq!(projection.providers[0].accounts[1].rank, 1);
     assert_eq!(projection.providers[0].accounts[0].windows[0].rank, 0);
+    assert_eq!(
+        projection.providers[0].accounts[1].freshness.phase,
+        jackin_protocol::usage_broker::UsageFreshnessPhaseV1::Stale
+    );
+    assert_eq!(projection.providers[0].accounts[1].windows.len(), 2);
 
     let selected = UsageDestination::Account {
         provider_id: "openai".to_owned(),
@@ -155,6 +164,38 @@ fn canonical_projection_uses_current_membership_provider_names_and_rust_ranks() 
             notice: Some("Selected account is no longer available.".to_owned()),
         }
     );
+}
+
+#[test]
+fn canonical_projection_keeps_unresolved_capability_out_of_account_rows() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let mut runtime = open_runtime(dir.path());
+    runtime.discovery = Some(ValidatedUsageDiscovery {
+        config_generation: Some("unresolved-generation".to_owned()),
+        accounts: Vec::new(),
+        diagnostics: Vec::new(),
+        candidates: vec![UsageSourceCandidateDescriptor {
+            surface_id: "codex".to_owned(),
+            credential_kind: UsageCredentialKind::ForwardedCapability,
+            source_id: "source-0001".to_owned(),
+            capability_id: "opaque-capability".to_owned(),
+            provenance: vec!["workspace sample".to_owned()],
+        }],
+        bindings: vec![discovery::ValidatedCredentialBinding {
+            surface: HostSurfaceId::Codex,
+            identity: None,
+            source_id: "source-0001".to_owned(),
+            capability_id: "opaque-capability".to_owned(),
+            provenance: std::collections::BTreeSet::from(["workspace sample".to_owned()]),
+            source: discovery::ValidatedCredentialSource::Capability,
+        }],
+    });
+
+    let projection = runtime.canonical_projection("und").expect("projection");
+    assert_eq!(projection.providers.len(), 1);
+    assert!(projection.providers[0].accounts.is_empty());
+    assert_eq!(projection.unresolved.len(), 1);
+    assert_eq!(projection.unresolved[0].provider_id, "openai");
 }
 
 #[test]

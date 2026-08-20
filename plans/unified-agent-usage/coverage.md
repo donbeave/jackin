@@ -191,3 +191,10 @@ authoritative resolved mapping is:
 
 All plans execute on `chore/roadmap-unified-agent-usage` in PR #898. No coverage
 item authorizes another branch or PR.
+
+## Execution evidence
+
+| Plan | Delivered coverage | Proof |
+|---|---|---|
+| 001 | Contract fixtures, baseline ownership, N1-N14 enforcement inventory | `contract_baseline` 5; repository format/lint/test |
+| 002 | F1-F4 canonical V1 foundation; F8 typed category/order seam; F17 destination normalization; N1, N4, N8-N10, N14 | canonical 5; protocol 8; crate nextest 290; full workspace and E2E gates |

@@ -457,3 +457,8 @@ authenticated and failure fixtures before shipping; these are not product questi
 - 2026-08-21 — Plan 001 — froze secret-free V1 contract fixtures, the surface-state
   matrix, classified provider-call inventory with injection detection, reserved test
   ownership, and passing repository format/lint/test baselines. PR #898 remains open.
+- 2026-08-21 — Plan 002 — shipped the additive canonical projection V1, typed
+  provider/account evidence, stable capability aliases, current-discovery membership,
+  provider-only identity, ICU4X Rust ranks, immutable publication reads, typed quota
+  categories, and removed-selection normalization. Full workspace and OrbStack E2E
+  gates pass; PR #898 remains open and unmerged.
