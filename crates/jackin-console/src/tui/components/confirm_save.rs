@@ -8,6 +8,16 @@
 //! caller in [`ConfirmSaveState`]), then picks `Save` or `Cancel`.
 //! Mount-collapse warnings fold into the same dialog as an extra
 //! section so the operator sees ONE confirm for the full plan.
+//!
+//! Plan 010 step 5 (C11) reviewed the `diff`-widget pairing at rev
+//! `29a16b5b` and recorded a behavior-preserving non-adoption
+//! (commit-message carve-out): `paint_unified_line` (diff.rs:1437)
+//! paints a one-column kind prefix with hunk gutters, full-row
+//! Added/Removed backgrounds, optional line-number columns, and
+//! prefix-stripped/escaped body text, while the preview rows are
+//! host-composed semantic lines ("  + ", "  ~ ", section headers) with
+//! product span styles — no byte-identical mapping exists. Semantic diff
+//! computation (`save_preview.rs`) is untouched either way.
 
 use crossterm::event::KeyEvent;
 use ratatui::{
