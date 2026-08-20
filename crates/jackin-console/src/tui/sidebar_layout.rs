@@ -3,7 +3,8 @@
 
 //! Pure sidebar rectangle allocation for the workspace list preview pane.
 
-use ratatui::layout::{Constraint, Direction, Layout, Rect};
+use ratatui::layout::Rect;
+use termrock::layout::{PanelStackBlock, ShrinkPolicy, panel_stack_with_policy};
 use termrock::scroll::ScrollAxes;
 
 use crate::mount_info_cache::MountInfoCache;
@@ -272,43 +273,42 @@ pub fn focused_scroll_area_axes(
 
 #[must_use]
 pub fn compute_sidebar_layout(area: Rect, metrics: SidebarLayoutMetrics) -> SidebarLayout {
-    let mut constraints = Vec::new();
-    if metrics.instance_count > 0 {
-        constraints.push(Constraint::Length(COMPACT_INSTANCES_HEIGHT));
-    }
-    constraints.push(Constraint::Length(3));
-    constraints.push(Constraint::Length(metrics.workspace_mount_height));
-    if let Some(height) = metrics.global_mount_height {
-        constraints.push(Constraint::Length(height));
-    }
-    if let Some(height) = metrics.role_global_mount_height {
-        constraints.push(Constraint::Length(height));
-    }
-    if let Some(height) = metrics.env_height {
-        constraints.push(Constraint::Length(height));
-    }
-    if metrics.show_roles {
-        constraints.push(Constraint::Length(agents_block_height(metrics.agent_count)));
-    }
-
-    let rows = Layout::default()
-        .direction(Direction::Vertical)
-        .constraints(constraints)
-        .split(area);
+    // ShrinkPolicy::Equal keeps the previous ratatui `Constraint::Length`
+    // solver semantics byte-identical under overflow (equal-strength
+    // relaxation), unlike panel_stack's default tail-first shrink.
+    let block = |height: u16, visible: bool| PanelStackBlock {
+        content_rows: height,
+        chrome_rows: 0,
+        min: 0,
+        max: height,
+        visible,
+    };
+    let blocks = [
+        block(COMPACT_INSTANCES_HEIGHT, metrics.instance_count > 0),
+        block(3, true),
+        block(metrics.workspace_mount_height, true),
+        metrics
+            .global_mount_height
+            .map_or_else(|| block(0, false), |height| block(height, true)),
+        metrics
+            .role_global_mount_height
+            .map_or_else(|| block(0, false), |height| block(height, true)),
+        metrics
+            .env_height
+            .map_or_else(|| block(0, false), |height| block(height, true)),
+        block(agents_block_height(metrics.agent_count), metrics.show_roles),
+    ];
+    let rows = panel_stack_with_policy(area, &blocks, 0, ShrinkPolicy::Equal);
     let mut iter = rows.iter().copied();
-    let mut next_row = || iter.next().unwrap_or(Rect::default());
 
     SidebarLayout {
-        instances: (metrics.instance_count > 0).then(&mut next_row),
-        general: next_row(),
-        mounts: next_row(),
-        global: metrics.global_mount_height.is_some().then(&mut next_row),
-        role_global: metrics
-            .role_global_mount_height
-            .is_some()
-            .then(&mut next_row),
-        env: metrics.env_height.is_some().then(&mut next_row),
-        roles: metrics.show_roles.then(&mut next_row),
+        instances: iter.next().unwrap_or(None),
+        general: iter.next().unwrap_or(None).unwrap_or_default(),
+        mounts: iter.next().unwrap_or(None).unwrap_or_default(),
+        global: iter.next().unwrap_or(None),
+        role_global: iter.next().unwrap_or(None),
+        env: iter.next().unwrap_or(None),
+        roles: iter.next().unwrap_or(None),
     }
 }
 
