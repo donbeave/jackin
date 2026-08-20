@@ -1,6 +1,6 @@
 # Unified Agent Usage Experience
 
-- **Status**: PLANNED
+- **Status**: IN PROGRESS
 - **Slug**: unified-agent-usage
 - **Created**: 2026-08-20 · **Updated**: 2026-08-21
 - **Plan**: [plans/unified-agent-usage/](../../plans/unified-agent-usage/)
@@ -453,6 +453,9 @@ authenticated and failure fixtures before shipping; these are not product questi
   inventions or user questions; moved to READY.
 - 2026-08-21 — tailrocks-plan --deep — froze coverage, specifications,
   broker/provider/surface research, eight sequential plans, and the goal gate;
+- 2026-08-21 — Plan 003 — shipped the demand-activated sibling broker executable,
+  lease/idle/retry policy, projection operations, atomic publication envelope, and
+  process lifecycle proof; Plans 004–008 remain sequentially pending.
   moved to PLANNED. All implementation remains on the current branch and PR #898.
 - 2026-08-21 — Plan 001 — froze secret-free V1 contract fixtures, the surface-state
   matrix, classified provider-call inventory with injection detection, reserved test

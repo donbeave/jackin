@@ -3527,6 +3527,7 @@ dependencies = [
  "jackin-config",
  "jackin-core",
  "jackin-diagnostics",
+ "jackin-env",
  "jackin-otlp-testbed",
  "jackin-protocol",
  "jackin-telemetry",

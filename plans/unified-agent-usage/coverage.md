@@ -31,9 +31,9 @@ PR may be created.
 | F2 | Current-config host membership across global/role/workspace/workspace-role scopes | D6; §Data & integrations | pending | pending | pending |
 | F3 | Eight host providers and seven-provider desktop filter/order | D3; D15; D29 | pending | pending | pending |
 | F4 | Stable canonical identity, deduplication, merge, and deterministic account ordering | D5; D33; Planning-owned closure | pending | pending | pending |
-| F5 | Durable process-independent broker with shared in-flight generations | D5; W6 | pending | pending | pending |
-| F6 | Broker-owned cache, retry, cancellation, crash recovery, and atomic last-good publication | D5; §Planning-owned closure | pending | pending | pending |
-| F7 | Adaptive 2/5/15/30-minute refresh policy and due-on-open behavior | D22 | pending | pending | pending |
+| F5 | Durable process-independent broker with shared in-flight generations | D5; W6 | covered | 003 | DONE |
+| F6 | Broker-owned cache, retry, cancellation, crash recovery, and atomic last-good publication | D5; §Planning-owned closure | covered | 003 | DONE |
+| F7 | Adaptive 2/5/15/30-minute refresh policy and due-on-open behavior | D22 | covered | 003 | DONE |
 | F8 | Rust-owned quota semantics, formatting, category/order, summary selection, severity | D14; D30; §Data & integrations | pending | pending | pending |
 | F9 | Provider quota parity including Codex money cap, supported extra windows, OpenCode | D21; Q1-Q3; §Research | pending | pending | pending |
 | F10 | Provider-backed Not started and confidence-gated rich-surface run-out estimate | D23; D24 | pending | pending | pending |
@@ -57,7 +57,7 @@ PR may be created.
 | W3 | Instance inspection through CLI | S10, S11-S13 | pending | pending | pending |
 | W4 | Capsule pre-session quota preview and initialization transition | S11-S13 | pending | pending | pending |
 | W5 | Desktop status glance to Usage detail | S7-S8 | pending | pending | pending |
-| W6 | Shared refresh, degradation, cancellation, owner exit, and recovery | S1-S13 | pending | pending | pending |
+| W6 | Shared refresh, degradation, cancellation, owner exit, and recovery | S1-S13 | covered | 003, 005-008 | IN PROGRESS |
 
 ## Must-not anchors
 
@@ -84,7 +84,7 @@ PR may be created.
 |---|---|---|---|
 | B1 | Console TUI repository rules and major-state render conformance | pending | pending |
 | B2 | Desktop native/Liquid Glass rubric and accessibility/runtime matrix | pending | pending |
-| B3 | Concurrent reads join one generation; every bypass removed | pending | pending |
+| B3 | Concurrent reads join one generation; every bypass removed | 003 process/coordinator proof; later consumer audit | IN PROGRESS |
 | B4 | Cross-surface Rust-owned value/label parity | pending | pending |
 | B5 | Console golden matrix including 80×24/focus/scroll/removal | pending | pending |
 | B6 | CLI golden matrix including JSON, TTY/non-TTY, plaintext | pending | pending |
@@ -198,3 +198,4 @@ item authorizes another branch or PR.
 |---|---|---|
 | 001 | Contract fixtures, baseline ownership, N1-N14 enforcement inventory | `contract_baseline` 5; repository format/lint/test |
 | 002 | F1-F4 canonical V1 foundation; F8 typed category/order seam; F17 destination normalization; N1, N4, N8-N10, N14 | canonical 5; protocol 8; crate nextest 290; full workspace and E2E gates |
+| 003 | F5-F7 broker authority, policy, projection operations, atomic envelope, N3 process activation seam | `broker_service_lifecycle` 1; coordinator 14; broker 8; policy 2; state 6; protocol 9; usage clippy; dependent checks |

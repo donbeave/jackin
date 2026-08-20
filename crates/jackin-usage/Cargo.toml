@@ -24,6 +24,7 @@ jackin-core = { workspace = true }
 jackin-config = { workspace = true }
 jackin-protocol = { workspace = true }
 jackin-diagnostics = { workspace = true }
+jackin-env = { workspace = true }
 jackin-telemetry = { workspace = true }
 base64 = { workspace = true }
 chrono = { workspace = true, features = ["clock"] }
@@ -62,6 +63,10 @@ workspace = true
 [[bench]]
 name = "token_log_reread"
 harness = false
+
+[[bin]]
+name = "jackin-usage-broker"
+path = "src/bin/usage-broker.rs"
 
 [[bench]]
 name = "snapshot_upsert"

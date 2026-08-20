@@ -506,6 +506,38 @@ pub struct UsageGenerationView {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(tag = "operation", rename_all = "snake_case")]
 pub enum UsageBrokerOperation {
+    /// Read the latest immutable canonical projection without provider work.
+    CurrentProjection,
+    /// Request one broker-owned projection refresh and return the latest publication.
+    RequestRefresh {
+        /// True only for an explicit operator refresh.
+        force: bool,
+        /// Publication observed by the caller, when available.
+        observed_projection_id: Option<String>,
+    },
+    /// Join a named immutable projection publication.
+    JoinPublication {
+        /// Publication identifier returned by a refresh request.
+        projection_id: String,
+        /// Bounded client wait in milliseconds.
+        timeout_ms: u64,
+    },
+    /// Relay-only current canonical projection request.
+    CurrentProjectionForSurface,
+    /// Relay-only projection refresh request.
+    RequestRefreshForSurface {
+        /// True only for an explicit operator refresh.
+        force: bool,
+        /// Publication observed by the caller, when available.
+        observed_projection_id: Option<String>,
+    },
+    /// Relay-only projection publication join.
+    JoinPublicationForSurface {
+        /// Publication identifier returned by a refresh request.
+        projection_id: String,
+        /// Bounded client wait in milliseconds.
+        timeout_ms: u64,
+    },
     /// Relay-only current-state request for one known provider surface.
     /// The per-container relay resolves this to exactly one allowed capability;
     /// the global host broker rejects this operation directly.
@@ -586,6 +618,11 @@ pub enum UsageBrokerResponse {
     State {
         /// Current generation projection.
         state: Box<UsageGenerationView>,
+    },
+    /// Immutable canonical projection publication.
+    Projection {
+        /// Current surface-neutral projection.
+        projection: Box<UsageProjectionV1>,
     },
     /// Operation failed before provider dispatch.
     Error {

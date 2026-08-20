@@ -12,7 +12,7 @@ use jackin_protocol::usage_broker::{
 };
 use jackin_usage::host::{
     HostUsageRuntime, UsageBrokerClient, UsageBrokerConfig, UsageDiscoveryScope,
-    ensure_usage_broker, usage_broker_capabilities,
+    usage_broker_capabilities,
 };
 
 use crate::discovery::DesktopCredentialResolver;
@@ -73,16 +73,11 @@ impl UsageMenuBarBridge {
                     || (fallback.clone(), Vec::new()),
                     |discovery| {
                         let capabilities = usage_broker_capabilities(&discovery);
-                        let resolver = Arc::clone(&self.credential_resolver);
-                        let resolver: Arc<dyn jackin_usage::host::ProviderCredentialEnvResolver> =
-                            resolver;
-                        let client = ensure_usage_broker(
+                        let client = jackin_usage::host::ensure_usage_broker_process(
                             broker_config.clone(),
-                            discovery_scope.clone(),
-                            discovery,
-                            resolver,
+                            &discovery_scope,
                         )
-                        .map_or_else(|_| fallback.clone(), |handle| handle.client);
+                        .unwrap_or_else(|_| fallback.clone());
                         (client, capabilities)
                     },
                 )
@@ -476,15 +471,9 @@ impl UsageMenuBarBridge {
             return Ok(());
         };
         let capabilities = usage_broker_capabilities(&discovery);
-        let resolver = Arc::clone(&self.credential_resolver);
-        let resolver: Arc<dyn jackin_usage::host::ProviderCredentialEnvResolver> = resolver;
-        let client = ensure_usage_broker(
-            current.config.clone(),
-            current.scope.clone(),
-            discovery,
-            resolver,
-        )
-        .map_or(current.client, |handle| handle.client);
+        let client =
+            jackin_usage::host::ensure_usage_broker_process(current.config.clone(), &current.scope)
+                .unwrap_or(current.client);
         *self.broker_lock()? = Some(DesktopBroker {
             client,
             capabilities,

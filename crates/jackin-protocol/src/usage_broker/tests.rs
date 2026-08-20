@@ -45,6 +45,45 @@ fn response_round_trip_keeps_typed_sanitized_failure() {
 }
 
 #[test]
+fn projection_operations_and_publication_response_round_trip() {
+    let operations = [
+        UsageBrokerOperation::CurrentProjection,
+        UsageBrokerOperation::RequestRefresh {
+            force: true,
+            observed_projection_id: Some("projection-1".into()),
+        },
+        UsageBrokerOperation::JoinPublication {
+            projection_id: "projection-1".into(),
+            timeout_ms: 500,
+        },
+    ];
+    for operation in operations {
+        let request = UsageBrokerRequest {
+            protocol_version: USAGE_BROKER_PROTOCOL_VERSION.into(),
+            build_id: "test-build".into(),
+            operation,
+        };
+        let bytes = serde_json::to_vec(&request).unwrap();
+        assert_eq!(
+            serde_json::from_slice::<UsageBrokerRequest>(&bytes).unwrap(),
+            request
+        );
+    }
+    let projection: UsageProjectionV1 = serde_json::from_str(include_str!(
+        "../../../jackin-usage/tests/fixtures/contracts/usage-projection-v1-current.json"
+    ))
+    .unwrap();
+    let response = UsageBrokerResponse::Projection {
+        projection: Box::new(projection),
+    };
+    let bytes = serde_json::to_vec(&response).unwrap();
+    assert_eq!(
+        serde_json::from_slice::<UsageBrokerResponse>(&bytes).unwrap(),
+        response
+    );
+}
+
+#[test]
 fn scoped_surface_request_round_trip_exposes_no_capability() {
     let request = UsageBrokerRequest {
         protocol_version: USAGE_BROKER_PROTOCOL_VERSION.into(),

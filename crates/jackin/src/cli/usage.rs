@@ -192,7 +192,7 @@ fn run_host_snapshot(
 ) -> Result<()> {
     use jackin_usage::host::{
         HostProbePolicy, HostRuntimeConfig, HostSurfaceId, HostUsageRuntime, UsageBrokerConfig,
-        UsageDiscoveryScope, ensure_usage_broker,
+        UsageDiscoveryScope, ensure_usage_broker_process, usage_broker_capabilities,
     };
 
     let surface = HostSurfaceId::from_id(&scope.agent).ok_or_else(|| {
@@ -229,24 +229,20 @@ fn run_host_snapshot(
         let discovery = runtime
             .validated_discovery()
             .ok_or_else(|| anyhow::anyhow!("host usage discovery unavailable"))?;
-        let broker = ensure_usage_broker(broker_config, discovery_scope, discovery, resolver)
+        let client = ensure_usage_broker_process(broker_config, &discovery_scope)
             .map_err(|error| anyhow::anyhow!(error.message))?;
-        for capability in broker
-            .capabilities
+        for capability in usage_broker_capabilities(&discovery)
             .into_iter()
             .filter(|capability| capability.surface_id == surface.id())
         {
-            let current = broker
-                .client
+            let current = client
                 .current(capability.clone())
                 .map_err(|error| anyhow::anyhow!(error.message))?;
-            let mut state = broker
-                .client
+            let mut state = client
                 .refresh(capability.clone(), current.generation, true)
                 .map_err(|error| anyhow::anyhow!(error.message))?;
             if state.phase.is_active() {
-                state = broker
-                    .client
+                state = client
                     .join(capability, state.generation, Duration::from_secs(30))
                     .map_err(|error| anyhow::anyhow!(error.message))?;
             }

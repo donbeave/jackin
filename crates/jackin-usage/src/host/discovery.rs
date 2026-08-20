@@ -471,6 +471,7 @@ enum CredentialSourceKey {
     Env {
         surface: HostSurfaceId,
         handle: OpaqueCredentialHandle,
+        key: String,
     },
     Capability {
         surface: HostSurfaceId,
@@ -707,6 +708,7 @@ fn enumerate_env_candidates(
                 let key = CredentialSourceKey::Env {
                     surface,
                     handle: handle.clone(),
+                    key: resolution.key.clone(),
                 };
                 candidates
                     .entry(key)
@@ -864,7 +866,9 @@ fn materialize_catalog(
                 capability_id,
                 provenance: candidate.provenance,
             },
-            CredentialSourceKey::Env { surface, handle } => DiscoveredCredentialSource::Env {
+            CredentialSourceKey::Env {
+                surface, handle, ..
+            } => DiscoveredCredentialSource::Env {
                 surface,
                 handle,
                 key: candidate.env_key.unwrap_or_default(),
@@ -900,7 +904,9 @@ fn source_capability_id(surface: HostSurfaceId, key: &CredentialSourceKey) -> St
         CredentialSourceKey::Profile { agent, root } => {
             format!("profile-v1:{}:{}", agent.slug(), root.to_string_lossy())
         }
-        CredentialSourceKey::Env { handle, .. } => format!("env-v1:{}", handle.0),
+        CredentialSourceKey::Env { surface, key, .. } => {
+            format!("env-v1:{}:{key}", surface.id())
+        }
         CredentialSourceKey::Capability { .. } => unreachable!("returned above"),
     };
     let hashed = jackin_core::account_key_hash(surface.id(), &evidence);
