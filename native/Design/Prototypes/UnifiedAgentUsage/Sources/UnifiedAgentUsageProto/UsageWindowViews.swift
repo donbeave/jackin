@@ -503,46 +503,30 @@ struct DetailRootView: View {
     }
 }
 
-/// Native split-item top accessory: centered identity, trailing Refresh with
-/// the in-progress spinner swap. The system owns the material.
-struct DetailAccessoryView: View {
+/// Trailing Refresh in the window toolbar: spinner swaps in while the
+/// broker round-trip runs. The toolbar owns the material; `.glass` inside a
+/// toolbar gets the correct hover treatment (the macOS 26 hover defect only
+/// affects glass outside toolbars).
+struct RefreshToolbarButton: View {
     let store: ProtoStore
 
     var body: some View {
-        ZStack {
-            Text("jackin❯ desktop")
-                .font(.headline)
-                .accessibilityAddTraits(.isHeader)
-                .accessibilityIdentifier("usage.brand-title")
-
-            HStack {
-                Spacer()
-                refreshButton
-            }
-        }
-        .frame(minHeight: 40)
-    }
-
-    private var refreshButton: some View {
         Button {
             store.refresh()
         } label: {
-            Label {
-                Text(store.chrome.refreshTitle)
-            } icon: {
-                ZStack {
-                    Image(systemName: "arrow.clockwise")
-                        .opacity(store.refreshInProgress ? 0 : 1)
-                    ProgressView()
-                        .controlSize(.small)
-                        .opacity(store.refreshInProgress ? 1 : 0)
-                }
-                .frame(width: 16, height: 16)
+            ZStack {
+                Image(systemName: "arrow.clockwise")
+                    .opacity(store.refreshInProgress ? 0 : 1)
+                ProgressView()
+                    .controlSize(.small)
+                    .opacity(store.refreshInProgress ? 1 : 0)
             }
+            .frame(width: 16, height: 16)
         }
         .buttonStyle(.glass)
-        .keyboardShortcut("r", modifiers: [.command])
+        .help(store.chrome.refreshTitle)
         .disabled(store.refreshInProgress)
+        .accessibilityLabel(store.chrome.refreshTitle)
         .accessibilityValue(store.refreshInProgress ? "In progress" : "")
         .accessibilityIdentifier("usage.refresh")
     }

@@ -233,8 +233,6 @@ final class ProtoShell: NSObject, NSMenuDelegate {
         detailHost.sizingOptions = []
         let detailItem = NSSplitViewItem(viewController: detailHost)
         detailItem.automaticallyAdjustsSafeAreaInsets = true
-        detailItem.addTopAlignedAccessoryViewController(
-            makeDetailAccessory(store: store))
 
         split.addSplitViewItem(sidebarItem)
         split.addSplitViewItem(detailItem)
@@ -265,7 +263,11 @@ final class ProtoShell: NSObject, NSMenuDelegate {
             return nil
         }
 
-        let toolbarController = UsageWindowToolbar(sidebarItem: sidebarItem)
+        let refreshHost = NSHostingView(
+            rootView: AnyView(wrap(RefreshToolbarButton(store: store))))
+        let toolbarController = UsageWindowToolbar(
+            sidebarItem: sidebarItem, refreshView: refreshHost,
+            refreshTitle: store.chrome.refreshTitle)
         self.toolbarController = toolbarController
         let toolbar = toolbarController.makeToolbar()
         window.toolbar = toolbar
@@ -313,34 +315,7 @@ final class ProtoShell: NSObject, NSMenuDelegate {
         toggle.title = collapsed ? "Show Sidebar" : "Hide Sidebar"
     }
 
-    private func makeDetailAccessory(store: ProtoStore)
-        -> NSSplitViewItemAccessoryViewController
-    {
-        let accessory = NSSplitViewItemAccessoryViewController()
-        accessory.automaticallyAppliesContentInsets = true
-        accessory.preferredContentSize = NSSize(width: 0, height: 40)
-
-        let host = NSHostingController(rootView: wrap(DetailAccessoryView(store: store)))
-        accessory.addChild(host)
-        accessory.view = NSView()
-        accessory.view.setAccessibilityElement(true)
-        accessory.view.setAccessibilityRole(.group)
-        accessory.view.setAccessibilityIdentifier("usage.detail-pane")
-        accessory.view.setAccessibilityLabel("Usage detail pane")
-        accessory.view.addSubview(host.view)
-        host.view.translatesAutoresizingMaskIntoConstraints = false
-        NSLayoutConstraint.activate([
-            host.view.leadingAnchor.constraint(equalTo: accessory.view.leadingAnchor),
-            host.view.trailingAnchor.constraint(equalTo: accessory.view.trailingAnchor),
-            host.view.topAnchor.constraint(equalTo: accessory.view.topAnchor),
-            host.view.bottomAnchor.constraint(equalTo: accessory.view.bottomAnchor),
-            accessory.view.heightAnchor.constraint(equalToConstant: 40),
-        ])
-        return accessory
-    }
-
     // MARK: Status items and popover
-
     private func installStatusItems() {
         reconcileStatusItems()
     }
@@ -564,13 +539,18 @@ enum StatusItemRendering {
 @MainActor
 final class UsageWindowToolbar: NSObject, NSToolbarDelegate {
     static let identifier = NSToolbar.Identifier("usage.window-toolbar")
+    static let refreshIdentifier = NSToolbarItem.Identifier("usage.refresh")
     private weak var sidebarItem: NSSplitViewItem?
     private weak var toolbar: NSToolbar?
+    private let refreshView: NSView
+    private let refreshTitle: String
     private var sidebarObservation: NSKeyValueObservation?
     private var sidebarToggleWidthConstraint: NSLayoutConstraint?
 
-    init(sidebarItem: NSSplitViewItem) {
+    init(sidebarItem: NSSplitViewItem, refreshView: NSView, refreshTitle: String) {
         self.sidebarItem = sidebarItem
+        self.refreshView = refreshView
+        self.refreshTitle = refreshTitle
         super.init()
         sidebarObservation = sidebarItem.observe(\.isCollapsed, options: [.initial, .new]) {
             [weak self] _, _ in
@@ -591,7 +571,9 @@ final class UsageWindowToolbar: NSObject, NSToolbarDelegate {
 
     func installStandardItems(in toolbar: NSToolbar) {
         self.toolbar = toolbar
-        toolbar.itemIdentifiers = [.toggleSidebar, .sidebarTrackingSeparator]
+        toolbar.itemIdentifiers = [
+            .toggleSidebar, .sidebarTrackingSeparator, .flexibleSpace, Self.refreshIdentifier,
+        ]
         updateSidebarItemLabel()
         lockSidebarToggleWidth()
         DispatchQueue.main.async { [weak self] in
@@ -600,12 +582,26 @@ final class UsageWindowToolbar: NSObject, NSToolbarDelegate {
         }
     }
 
+    func toolbar(
+        _ toolbar: NSToolbar, itemForItemIdentifier itemIdentifier: NSToolbarItem.Identifier,
+        willBeInsertedIntoToolbar flag: Bool
+    ) -> NSToolbarItem? {
+        guard itemIdentifier == Self.refreshIdentifier else { return nil }
+        let item = NSToolbarItem(itemIdentifier: itemIdentifier)
+        item.view = refreshView
+        item.label = refreshTitle
+        item.paletteLabel = refreshTitle
+        item.toolTip = refreshTitle
+        item.visibilityPriority = .high
+        return item
+    }
+
     func toolbarAllowedItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
-        [.toggleSidebar, .sidebarTrackingSeparator]
+        [.toggleSidebar, .sidebarTrackingSeparator, Self.refreshIdentifier]
     }
 
     func toolbarDefaultItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
-        [.toggleSidebar, .sidebarTrackingSeparator]
+        [.toggleSidebar, .sidebarTrackingSeparator, .flexibleSpace, Self.refreshIdentifier]
     }
 
     private func updateSidebarItemLabel() {
