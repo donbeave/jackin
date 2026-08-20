@@ -16,9 +16,9 @@ mise run desktop-prototype -- F02 920x620 dark
 
 The combined `desktop-prototype` task builds then launches. Optional fourth and
 fifth positional arguments map to the existing reduction and backdrop flags;
-the executable launch contract remains unchanged. The run task submits directly
-to the current macOS GUI launchd session, so it opens only the prototype window,
-never a Terminal window. Re-running replaces the prior prototype process.
+the executable launch contract remains unchanged. Build assembles a local
+`UnifiedAgentUsageProto.app`; run opens that app through macOS, so it opens only
+the prototype window, never Terminal. Re-running replaces the prior prototype.
 
 ## Design inputs (consumed revisions)
 

@@ -10,12 +10,6 @@ struct SidebarView: View {
     /// chrome state, so it lives in the view, not the store.
     @State private var expandedProviders: Set<String> = []
 
-    private var selection: Binding<SidebarSelection?> {
-        Binding(
-            get: { store.sidebar },
-            set: { store.navigate(to: $0 ?? .overview) })
-    }
-
     private func expansion(for providerKey: String) -> Binding<Bool> {
         Binding(
             get: { expandedProviders.contains(providerKey) },
@@ -30,9 +24,10 @@ struct SidebarView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            List(selection: selection) {
-                Label("Overview", systemImage: "rectangle.grid.2x2")
-                    .tag(SidebarSelection.overview)
+            List {
+                sidebarButton(target: .overview) {
+                    Label("Overview", systemImage: "rectangle.grid.2x2")
+                }
                     .accessibilityIdentifier("usage.sidebar.overview")
 
                 Section {
@@ -40,23 +35,26 @@ struct SidebarView: View {
                         if provider.accounts.count > 1 {
                             DisclosureGroup(isExpanded: expansion(for: provider.key)) {
                                 ForEach(provider.accounts) { account in
-                                    accountRow(account, provider: provider)
-                                        .tag(
-                                            SidebarSelection.account(
-                                                provider: provider.key, account: account.key)
-                                        )
+                                    sidebarButton(
+                                        target: .account(
+                                            provider: provider.key, account: account.key)
+                                    ) {
+                                        accountRow(account, provider: provider)
+                                    }
                                         .accessibilityIdentifier(
                                             "usage.sidebar.account.\(provider.key).\(account.key)")
                                 }
                             } label: {
-                                providerRow(provider)
-                                    .tag(SidebarSelection.provider(provider.key))
+                                sidebarButton(target: .provider(provider.key)) {
+                                    providerRow(provider)
+                                }
                                     .accessibilityIdentifier(
                                         "usage.sidebar.provider.\(provider.key)")
                             }
                         } else {
-                            providerRow(provider)
-                                .tag(SidebarSelection.provider(provider.key))
+                            sidebarButton(target: .provider(provider.key)) {
+                                providerRow(provider)
+                            }
                                 .accessibilityIdentifier("usage.sidebar.provider.\(provider.key)")
                         }
                     }
@@ -71,6 +69,7 @@ struct SidebarView: View {
             .onAppear { expandAllMultiAccountProviders() }
             .onChange(of: store.projection.scenario) { expandAllMultiAccountProviders() }
 
+            Divider()
             JackinBrandSignature()
                 .padding(.horizontal, JackinSpace.md)
                 .padding(.vertical, JackinSpace.xs)
@@ -84,18 +83,50 @@ struct SidebarView: View {
             store.projection.providers.filter { $0.accounts.count > 1 }.map(\.key))
     }
 
+    private func sidebarButton<Content: View>(
+        target: SidebarSelection,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        let selected = store.sidebar == target
+        return Button {
+            store.navigate(to: target)
+        } label: {
+            content()
+                .foregroundStyle(selected ? JackinBrand.selectionText : Color.primary)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 5)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(
+                    RoundedRectangle(cornerRadius: 6, style: .continuous)
+                        .fill(selected ? JackinBrand.selectionWell : Color.clear)
+                )
+                .overlay(alignment: .leading) {
+                    if selected {
+                        RoundedRectangle(cornerRadius: 1.5, style: .continuous)
+                            .fill(JackinBrand.phosphor)
+                            .frame(width: 3)
+                            .padding(.vertical, 5)
+                    }
+                }
+        }
+        .buttonStyle(.plain)
+        .listRowInsets(EdgeInsets(top: 1, leading: 6, bottom: 1, trailing: 6))
+    }
+
     @ViewBuilder
     private func providerRow(_ provider: ProtoProvider) -> some View {
         Label {
             HStack {
                 Text(provider.name)
-                    .foregroundStyle(.primary)
                 Spacer()
                 if let percent = provider.summaryPercent {
                     Text("\(percent)%")
                         .font(.caption)
                         .monospacedDigit()
-                        .foregroundStyle(meterTint(provider.state))
+                        .foregroundStyle(
+                            store.sidebar == .provider(provider.key)
+                                ? JackinBrand.selectionText
+                                : sidebarMetricTint(provider.state))
                 }
             }
         } icon: {
@@ -117,8 +148,20 @@ struct SidebarView: View {
                 Text("\(remaining)%")
                     .font(.caption)
                     .monospacedDigit()
-                    .foregroundStyle(meterTint(account.state))
+                    .foregroundStyle(
+                        store.sidebar
+                            == .account(provider: provider.key, account: account.key)
+                            ? JackinBrand.selectionText
+                            : sidebarMetricTint(account.state))
             }
+        }
+    }
+
+    private func sidebarMetricTint(_ state: ProtoState) -> Color {
+        switch state {
+        case .warning: JackinBrand.warning
+        case .danger, .depleted: JackinBrand.danger
+        default: JackinBrand.muted
         }
     }
 
@@ -128,7 +171,6 @@ struct SidebarView: View {
             mark
                 .resizable()
                 .scaledToFit()
-                .foregroundStyle(.primary)
         } else {
             Text(provider.fallbackGlyph)
                 .font(.caption2)
@@ -174,14 +216,14 @@ struct OverviewContentView: View {
         } else {
             ScrollView {
                 LazyVGrid(
-                    columns: [GridItem(.adaptive(minimum: 300), spacing: JackinSpace.lg)],
-                    spacing: JackinSpace.lg
+                    columns: [GridItem(.adaptive(minimum: 320), spacing: 18)],
+                    spacing: 18
                 ) {
                     ForEach(store.projection.providers) { provider in
                         ProviderCardView(store: store, provider: provider)
                     }
                 }
-                .padding(JackinSpace.xl)
+                .padding(28)
             }
             // Grouped-content stage: the gray under-page ground is what the
             // card white contrasts against, in both appearances.
@@ -261,7 +303,7 @@ struct ProviderCardView: View {
                 .accessibilityIdentifier("usage.overview.error.\(provider.key)")
             }
         }
-        .padding(JackinSpace.md)
+        .padding(JackinSpace.lg)
         .frame(maxWidth: .infinity, alignment: .leading)
         .modifier(ProviderCardSurface())
         // Grid rows size to the tallest card; short cards pin to the top of
@@ -308,7 +350,7 @@ struct ProviderCardView: View {
                                 .font(JackinType.metadata)
                                 .foregroundStyle(JackinBrand.muted)
                         }
-                        .foregroundStyle(meterTint(account.state))
+                        .foregroundStyle(metricTint(account.state))
                     } else {
                         Text("—")
                             .font(.title2)
@@ -341,7 +383,7 @@ struct ProviderCardView: View {
             }
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(OverviewAccountButtonStyle())
         .accessibilityLabel(
             "\(provider.name), \(account.label), \(account.remaining.map { "\($0) percent left" } ?? "remaining unavailable")"
         )
@@ -357,6 +399,49 @@ struct ProviderCardView: View {
         default: .secondary
         }
     }
+
+    private func metricTint(_ state: ProtoState) -> Color {
+        switch state {
+        case .warning: JackinBrand.warning
+        case .danger, .depleted: JackinBrand.danger
+        default: .primary
+        }
+    }
+}
+
+private struct OverviewAccountButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        OverviewAccountButtonBody(configuration: configuration)
+    }
+
+    private struct OverviewAccountButtonBody: View {
+        let configuration: Configuration
+        @State private var isHovered = false
+        @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+        var body: some View {
+            let isActive = isHovered || configuration.isPressed
+            configuration.label
+                .padding(.vertical, 10)
+                .background(
+                    RoundedRectangle(cornerRadius: 6, style: .continuous)
+                        .fill(
+                            isActive ? JackinBrand.hover : Color.clear)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 6, style: .continuous)
+                        .strokeBorder(
+                            isHovered ? JackinBrand.separator : Color.clear,
+                            lineWidth: 1)
+                )
+                .opacity(configuration.isPressed ? 0.82 : 1)
+                .contentShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                .onHover { isHovered = $0 }
+                .animation(
+                    reduceMotion ? nil : .easeOut(duration: 0.12),
+                    value: isActive)
+        }
+    }
 }
 
 /// Authored content boundary for the preferred overview cards.
@@ -369,19 +454,20 @@ private struct ProviderCardSurface: ViewModifier {
     func body(content: Content) -> some View {
         content
             .background(
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
                     .fill(JackinBrand.card)
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
                     .strokeBorder(
-                        JackinBrand.separator,
+                        contrast == .increased
+                            ? JackinBrand.strongSeparator : JackinBrand.separator,
                         lineWidth: contrast == .increased ? 1.5 : 1)
             )
     }
 }
 
-/// Hairline quota meter: 4pt capsule, visible track, state-tinted fill.
+/// Calibrated quota meter: a low-radius 6pt track, state-tinted fill.
 ///
 /// Content-layer drawing, not chrome — a plain deterministic bar.
 struct QuotaMeter: View {
@@ -391,16 +477,16 @@ struct QuotaMeter: View {
     var body: some View {
         GeometryReader { proxy in
             ZStack(alignment: .leading) {
-                Capsule()
+                RoundedRectangle(cornerRadius: 2, style: .continuous)
                     .fill(JackinBrand.meterTrack)
-                Capsule()
+                RoundedRectangle(cornerRadius: 2, style: .continuous)
                     .fill(tint)
                     .frame(
                         width: proxy.size.width
                             * CGFloat(min(max(percent, 0), 100)) / 100)
             }
         }
-        .frame(height: 4)
+        .frame(height: 6)
         .accessibilityHidden(true)
     }
 }
@@ -410,12 +496,14 @@ struct ProviderDetailView: View {
     let provider: ProtoProvider
 
     var body: some View {
-        List {
+        ScrollView {
             ProviderDetailSections(
                 store: store, provider: provider, identifierPrefix: "usage")
+                .frame(maxWidth: 760)
+                .padding(.horizontal, 28)
+                .padding(.vertical, 28)
+                .frame(maxWidth: .infinity)
         }
-        .listStyle(.inset)
-        .scrollContentBackground(.hidden)
         .background(JackinBrand.stage)
         .accessibilityLabel("\(provider.name) usage details")
         .accessibilityIdentifier("usage.provider.\(provider.key)")
@@ -430,92 +518,163 @@ struct ProviderDetailSections: View {
     let store: ProtoStore
     let provider: ProtoProvider
     let identifierPrefix: String
+    var compact = false
 
     var body: some View {
         let account = store.account(for: provider)
 
-        Group {
-            Section {
+        VStack(alignment: .leading, spacing: compact ? 16 : 28) {
+            if compact {
+                compactProviderIdentity(account)
+                compactLimits(account)
+            } else {
                 providerIdentity(account)
+                if let account { currentPressure(account) }
+                fullLimits(account)
             }
 
-            Section {
-                if let account, !account.windows.isEmpty {
-                    ForEach(account.windows) { window in
-                        LimitRowView(
-                            window: window,
-                            identifierPrefix: "\(identifierPrefix).limit")
+            if !compact {
+                TechnicalPanel(title: "Account", detail: "Credential source") {
+                    if let username = account?.username {
+                        DetailFactItem(
+                            icon: "person.text.rectangle", label: "Username", value: username)
+                        Divider()
                     }
-                } else if provider.errorText == nil {
-                    Text("No limit details available")
-                        .foregroundStyle(JackinBrand.muted)
+                    if let plan = account?.plan {
+                        DetailFactItem(
+                            icon: "checkmark.seal", label: "Plan", value: plan)
+                        if account?.auth != nil { Divider() }
+                    }
+                    if let auth = account?.auth {
+                        DetailFactItem(
+                            icon: "key", label: "Authentication", value: auth)
+                    }
                 }
-            } header: {
-                sectionHeader("Limits")
-            }
-
-            // Account switching lives in the sidebar or popover footer; a
-            // second picker in content would duplicate the control.
-            Section {
-                if let username = account?.username {
-                    DetailFactItem(
-                        icon: "person.text.rectangle", label: "Username", value: username)
-                }
-                if let plan = account?.plan {
-                    DetailFactItem(
-                        icon: "checkmark.seal", label: "Plan", value: plan)
-                }
-                if let auth = account?.auth {
-                    DetailFactItem(
-                        icon: "key", label: "Authentication", value: auth)
-                }
-            } header: {
-                sectionHeader("Account")
             }
 
             if let error = provider.errorText {
-                Section {
-                    Label(error, systemImage: "exclamationmark.triangle")
-                        .accessibilityIdentifier("\(identifierPrefix).provider-error")
-                    if let ago = provider.updatedAgo {
-                        Text(ago)
-                            .font(JackinType.metadata)
-                            .foregroundStyle(JackinBrand.muted)
+                TechnicalPanel(title: "Provider status", detail: "Attention required") {
+                    VStack(alignment: .leading, spacing: JackinSpace.sm) {
+                        Label(error, systemImage: "exclamationmark.triangle")
+                            .foregroundStyle(JackinBrand.warning)
+                            .accessibilityIdentifier("\(identifierPrefix).provider-error")
+                        if let ago = provider.updatedAgo {
+                            Text(ago)
+                                .font(JackinType.metadata)
+                                .foregroundStyle(JackinBrand.muted)
+                        }
+                        Button(store.chrome.retryTitle) { store.refresh() }
+                            .disabled(store.refreshInProgress)
+                            .accessibilityIdentifier("\(identifierPrefix).provider-retry")
                     }
-                    Button(store.chrome.retryTitle) { store.refresh() }
-                        .disabled(store.refreshInProgress)
-                        .accessibilityIdentifier("\(identifierPrefix).provider-retry")
-                } header: {
-                    sectionHeader("Provider status")
                 }
             }
         }
     }
 
-    private func providerIdentity(_ account: ProtoAccount?) -> some View {
-        HStack(spacing: JackinSpace.sm) {
-            BrandMarkChip(
-                iconKey: provider.iconKey, fallbackGlyph: provider.fallbackGlyph,
-                markSize: 26, chipSize: 40)
-            VStack(alignment: .leading, spacing: JackinSpace.xxs) {
-                Text(provider.name)
-                    .font(.title2)
-                if let account {
-                    Text(account.label)
-                        .foregroundStyle(.primary)
-                        .accessibilityIdentifier("\(identifierPrefix).provider-account")
+    @ViewBuilder
+    private func fullLimits(_ account: ProtoAccount?) -> some View {
+        VStack(alignment: .leading, spacing: JackinSpace.sm) {
+            technicalSectionHeader("Limits", detail: "\(account?.windows.count ?? 0) limits")
+            if let account, !account.windows.isEmpty {
+                LazyVGrid(
+                    columns: [GridItem(.adaptive(minimum: 260), spacing: JackinSpace.sm)],
+                    spacing: JackinSpace.sm
+                ) {
+                    ForEach(account.windows) { window in
+                        LimitModule(
+                            window: window,
+                            identifierPrefix: "\(identifierPrefix).limit")
+                    }
                 }
-                Text(provider.activityLabel)
-                    .font(.callout)
+            } else if provider.errorText == nil {
+                Text("No limit details available")
                     .foregroundStyle(JackinBrand.muted)
-                    .accessibilityIdentifier("\(identifierPrefix).provider-activity")
             }
+        }
+    }
+
+    @ViewBuilder
+    private func compactLimits(_ account: ProtoAccount?) -> some View {
+        if let account, !account.windows.isEmpty {
+            let ranked = rankedWindows(account.windows)
+            VStack(alignment: .leading, spacing: JackinSpace.sm) {
+                technicalSectionHeader("Limits", detail: "\(account.windows.count) limits")
+                LimitModule(
+                    window: ranked[0],
+                    identifierPrefix: "\(identifierPrefix).limit")
+                ForEach(ranked.dropFirst().prefix(2)) { window in
+                    CompactLimitRow(
+                        window: window,
+                        identifierPrefix: "\(identifierPrefix).limit")
+                }
+                if account.windows.count > 3 {
+                    Text("+\(account.windows.count - 3) more limits in Usage")
+                        .font(JackinType.metadata)
+                        .foregroundStyle(JackinBrand.muted)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .padding(.top, JackinSpace.xxs)
+                }
+            }
+        } else if provider.errorText == nil {
+            Text("No limit details available")
+                .foregroundStyle(JackinBrand.muted)
+        }
+    }
+
+    private func rankedWindows(_ windows: [ProtoQuotaWindow]) -> [ProtoQuotaWindow] {
+        windows.enumerated().sorted { left, right in
+            let leftRank = severityRank(left.element.state)
+            let rightRank = severityRank(right.element.state)
+            if leftRank != rightRank { return leftRank > rightRank }
+            let leftMeter = left.element.meter ?? 101
+            let rightMeter = right.element.meter ?? 101
+            if leftMeter != rightMeter { return leftMeter < rightMeter }
+            return left.offset < right.offset
+        }.map(\.element)
+    }
+
+    private func severityRank(_ state: ProtoState) -> Int {
+        switch state {
+        case .depleted: 5
+        case .danger: 4
+        case .warning, .rateLimited: 3
+        case .stale, .unavailable, .needsLogin, .needsSecret: 2
+        default: 1
+        }
+    }
+
+    private func technicalSectionHeader(_ title: String, detail: String) -> some View {
+        HStack(alignment: .firstTextBaseline) {
+            Text(title.uppercased())
+                .font(JackinType.sectionTitle)
+                .tracking(0.45)
             Spacer()
-            if provider.isRefreshing || store.refreshInProgress {
-                ProgressView()
-                    .controlSize(.small)
-                    .accessibilityLabel(provider.activityLabel)
+            Text(detail)
+                .font(JackinType.tertiary)
+                .foregroundStyle(JackinBrand.quiet)
+        }
+    }
+
+    private func providerIdentity(_ account: ProtoAccount?) -> some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(alignment: .center, spacing: JackinSpace.md) {
+                providerIdentityMark
+                providerIdentityCopy(account)
+                Spacer(minLength: JackinSpace.md)
+                providerActivity
             }
+            .fixedSize(horizontal: true, vertical: false)
+
+            VStack(alignment: .leading, spacing: JackinSpace.sm) {
+                HStack(alignment: .top, spacing: JackinSpace.md) {
+                    providerIdentityMark
+                    providerIdentityCopy(account)
+                }
+                providerActivity
+                    .padding(.leading, 60)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(
@@ -524,13 +683,220 @@ struct ProviderDetailSections: View {
         .accessibilityIdentifier("\(identifierPrefix).provider-identity")
     }
 
-    private func sectionHeader(_ title: String) -> some View {
-        Text(title)
-            .foregroundStyle(.primary)
-            .accessibilityLabel(title)
-            .accessibilityIdentifier(
-                "\(identifierPrefix).section.\(title.lowercased().replacingOccurrences(of: " ", with: "-"))"
+    private var providerIdentityMark: some View {
+        BrandMarkChip(
+            iconKey: provider.iconKey, fallbackGlyph: provider.fallbackGlyph,
+            markSize: 28, chipSize: 44)
+    }
+
+    private func providerIdentityCopy(_ account: ProtoAccount?) -> some View {
+        VStack(alignment: .leading, spacing: 5) {
+            Text("PROVIDER")
+                .font(JackinType.technicalLabel)
+                .tracking(0.45)
+                .foregroundStyle(JackinBrand.quiet)
+            Text(provider.name)
+                .font(.title2.weight(.semibold))
+            if let account {
+                Text([account.label, account.plan].joined(separator: "  ·  "))
+                    .font(.callout)
+                    .foregroundStyle(JackinBrand.muted)
+                    .accessibilityIdentifier("\(identifierPrefix).provider-account")
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var providerActivity: some View {
+        if provider.isRefreshing || store.refreshInProgress {
+            ProgressView()
+                .controlSize(.small)
+                .accessibilityLabel(provider.activityLabel)
+        } else {
+            Label(provider.activityLabel, systemImage: provider.state.symbol)
+                .font(JackinType.metadata)
+                .foregroundStyle(JackinBrand.muted)
+                .labelStyle(.titleAndIcon)
+                .fixedSize(horizontal: false, vertical: true)
+                .accessibilityIdentifier("\(identifierPrefix).provider-activity")
+        }
+    }
+
+    private func compactProviderIdentity(_ account: ProtoAccount?) -> some View {
+        VStack(alignment: .leading, spacing: JackinSpace.sm) {
+            HStack(spacing: JackinSpace.sm) {
+                BrandMarkChip(
+                    iconKey: provider.iconKey, fallbackGlyph: provider.fallbackGlyph,
+                    markSize: 24, chipSize: 40)
+                VStack(alignment: .leading, spacing: JackinSpace.xxs) {
+                    Text(provider.name)
+                        .font(.headline)
+                    if let account {
+                        Text(account.label)
+                            .font(.callout)
+                            .foregroundStyle(JackinBrand.muted)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                    }
+                }
+            }
+            Label(provider.activityLabel, systemImage: provider.state.symbol)
+                .font(JackinType.metadata)
+                .foregroundStyle(JackinBrand.muted)
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(
+            "\(provider.name), \(account?.label ?? ""), \(provider.activityLabel)")
+    }
+
+    private func currentPressure(_ account: ProtoAccount) -> some View {
+        HStack(spacing: 0) {
+            pressureFact(
+                "CURRENT PRESSURE",
+                account.remaining.map { "\($0)% left" } ?? "Unavailable",
+                tint: pressureTint(account.state))
+            Divider().frame(height: 38)
+            pressureFact("NEXT RESET", account.resetText ?? "Unavailable")
+            Divider().frame(height: 38)
+            pressureFact("STATE", account.state.label ?? "Available")
+        }
+        .padding(.vertical, 14)
+        .background(
+            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                .fill(JackinBrand.inset)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                .strokeBorder(JackinBrand.separator, lineWidth: 1)
+        )
+    }
+
+    private func pressureFact(_ label: String, _ value: String, tint: Color = .primary) -> some View {
+        VStack(alignment: .leading, spacing: 5) {
+            Text(label)
+                .font(JackinType.technicalLabel)
+                .tracking(0.45)
+                .foregroundStyle(JackinBrand.quiet)
+            Text(value)
+                .font(.callout.weight(.semibold))
+                .monospacedDigit()
+                .foregroundStyle(tint)
+                .lineLimit(2)
+        }
+        .padding(.horizontal, 16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func pressureTint(_ state: ProtoState) -> Color {
+        switch state {
+        case .warning: JackinBrand.warning
+        case .danger, .depleted: JackinBrand.danger
+        default: .primary
+        }
+    }
+
+}
+
+/// Raised technical dossier panel. The native window/popover remains the
+/// structural glass host; authored quota content stays opaque and precise.
+private struct TechnicalPanel<Content: View>: View {
+    let title: String
+    let detail: String
+    @ViewBuilder let content: Content
+
+    init(
+        title: String, detail: String,
+        @ViewBuilder content: () -> Content
+    ) {
+        self.title = title
+        self.detail = detail
+        self.content = content()
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(title.uppercased())
+                    .font(JackinType.sectionTitle)
+                    .tracking(0.45)
+                    .foregroundStyle(.primary)
+                Spacer()
+                Text(detail)
+                    .font(JackinType.tertiary)
+                    .foregroundStyle(JackinBrand.quiet)
+            }
+            .padding(.horizontal, 18)
+            .padding(.vertical, 14)
+
+            Divider()
+
+            VStack(alignment: .leading, spacing: 0) {
+                content
+            }
+            .padding(.horizontal, 18)
+            .padding(.vertical, 16)
+        }
+        .background(
+            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                .fill(JackinBrand.card)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                .strokeBorder(JackinBrand.separator, lineWidth: 1)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+    }
+}
+
+private struct LimitModule: View {
+    let window: ProtoQuotaWindow
+    let identifierPrefix: String
+
+    var body: some View {
+        LimitRowView(window: window, identifierPrefix: identifierPrefix)
+            .padding(.horizontal, 16)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .background(
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .fill(JackinBrand.card)
             )
+            .overlay(
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .strokeBorder(JackinBrand.separator, lineWidth: 1)
+            )
+    }
+}
+
+private struct CompactLimitRow: View {
+    let window: ProtoQuotaWindow
+    let identifierPrefix: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(alignment: .firstTextBaseline, spacing: JackinSpace.xs) {
+                Text(window.label)
+                    .font(.callout.weight(.medium))
+                    .lineLimit(1)
+                Spacer()
+                Text(window.primaryValue)
+                    .font(.callout.weight(.semibold))
+                    .monospacedDigit()
+            }
+            if let reset = window.resetLabel {
+                Text(reset)
+                    .font(JackinType.metadata)
+                    .monospacedDigit()
+                    .foregroundStyle(JackinBrand.muted)
+            }
+        }
+        .padding(12)
+        .background(
+            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                .fill(JackinBrand.inset)
+        )
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(window.accessibilitySummary)
+        .accessibilityIdentifier("\(identifierPrefix).\(window.stableID)")
     }
 }
 
@@ -542,31 +908,54 @@ struct LimitRowView: View {
     var identifierPrefix = "usage.limit"
 
     var body: some View {
-        VStack(alignment: .leading, spacing: JackinSpace.xs) {
-            Text(window.label.uppercased())
-                .font(.caption2.weight(.semibold))
-                .tracking(0.7)
-                .foregroundStyle(JackinBrand.quiet)
-            Text(window.display)
-                .font(.callout.weight(.medium))
-                .monospacedDigit()
-                .foregroundStyle(window.notStarted ? .secondary : .primary)
-                .fixedSize(horizontal: false, vertical: true)
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .firstTextBaseline, spacing: JackinSpace.sm) {
+                Text(window.label.uppercased())
+                    .font(JackinType.technicalLabel)
+                    .tracking(0.45)
+                    .foregroundStyle(JackinBrand.quiet)
+                Spacer()
+                if let reset = window.resetLabel {
+                    Text(reset)
+                        .font(JackinType.metadata)
+                        .monospacedDigit()
+                        .foregroundStyle(JackinBrand.muted)
+                }
+            }
+            HStack(alignment: .firstTextBaseline, spacing: JackinSpace.sm) {
+                Text(window.primaryValue)
+                    .font(JackinType.detailMetric)
+                    .monospacedDigit()
+                    .foregroundStyle(window.notStarted ? .secondary : .primary)
+                Spacer()
+                if let secondary = window.secondaryValue {
+                    Text(secondary)
+                        .font(JackinType.metadata)
+                        .monospacedDigit()
+                        .foregroundStyle(JackinBrand.muted)
+                }
+            }
             if let meter = window.meter {
                 QuotaMeter(percent: meter, tint: meterTint(window.state))
                     .accessibilityHidden(true)
             }
-            if let pace = window.pace {
-                Text(pace)
-                    .font(.caption)
-                    .foregroundStyle(JackinBrand.muted)
-                    .accessibilityHidden(true)
+            HStack(alignment: .firstTextBaseline, spacing: JackinSpace.sm) {
+                if let supplemental = window.supplementalValue {
+                    Text(supplemental)
+                }
+                Spacer(minLength: 0)
+                if let pace = window.pace {
+                    Text(pace)
+                }
             }
+            .font(JackinType.metadata)
+                .foregroundStyle(JackinBrand.quiet)
         }
+        .padding(.vertical, 16)
         .accessibilityElement(children: .ignore)
         .accessibilityRepresentation {
             Text(window.display)
-                .accessibilityLabel("\(window.label), \(window.display)")
+                .accessibilityLabel(window.accessibilitySummary)
                 .accessibilityIdentifier("\(identifierPrefix).\(window.stableID)")
         }
     }
@@ -582,13 +971,13 @@ private struct DetailFactItem: View {
     var body: some View {
         HStack(alignment: .top, spacing: JackinSpace.sm) {
             Image(systemName: icon)
-                .foregroundStyle(Color.jackinPhosphor)
+                .foregroundStyle(JackinBrand.muted)
                 .frame(width: 18)
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: JackinSpace.xxs) {
                 Text(label.uppercased())
-                    .font(.caption2.weight(.semibold))
-                    .tracking(0.7)
+                    .font(JackinType.technicalLabel)
+                    .tracking(0.45)
                     .foregroundStyle(JackinBrand.quiet)
                 Text(value)
                     .foregroundStyle(.primary)
@@ -597,6 +986,7 @@ private struct DetailFactItem: View {
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("\(label), \(value)")
+        .padding(.vertical, 12)
     }
 }
 
@@ -606,33 +996,46 @@ struct DetailRootView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        Group {
-            switch store.resolvedSidebar {
-            case .overview:
-                OverviewContentView(store: store, onOpenSettings: onOpenSettings)
-            case .provider(let key):
-                if let provider = store.provider(key) {
-                    ProviderDetailView(store: store, provider: provider)
-                } else {
+        ZStack(alignment: .topLeading) {
+            JackinBrand.stage
+                .ignoresSafeArea()
+            Group {
+                switch store.resolvedSidebar {
+                case .overview:
                     OverviewContentView(store: store, onOpenSettings: onOpenSettings)
-                }
-            case .account(let providerKey, _):
-                if let provider = store.provider(providerKey) {
-                    ProviderDetailView(store: store, provider: provider)
-                } else {
-                    OverviewContentView(store: store, onOpenSettings: onOpenSettings)
+                case .provider(let key):
+                    if let provider = store.provider(key) {
+                        ProviderDetailView(store: store, provider: provider)
+                    } else {
+                        OverviewContentView(store: store, onOpenSettings: onOpenSettings)
+                    }
+                case .account(let providerKey, _):
+                    if let provider = store.provider(providerKey) {
+                        ProviderDetailView(store: store, provider: provider)
+                    } else {
+                        OverviewContentView(store: store, onOpenSettings: onOpenSettings)
+                    }
                 }
             }
+            .id(transitionKey)
+            .transition(
+                reduceMotion
+                    ? .identity
+                    : .asymmetric(
+                        insertion: .opacity.combined(with: .offset(y: 5)),
+                        removal: .opacity))
         }
-        .id("\(store.projection.scenario)-\(String(describing: store.resolvedSidebar))")
-        .transition(reduceMotion ? .identity : .opacity)
         .animation(
-            reduceMotion ? nil : .easeInOut(duration: 0.2),
-            value: store.resolvedSidebar
-        )
-        .animation(
-            reduceMotion ? nil : .easeInOut(duration: 0.2),
-            value: store.projection.scenario)
+            reduceMotion ? nil : .easeOut(duration: 0.15),
+            value: transitionKey)
+    }
+
+    private var transitionKey: String {
+        switch store.resolvedSidebar {
+        case .overview: "overview"
+        case .provider(let key): "provider:\(key)"
+        case .account(let provider, _): "provider:\(provider)"
+        }
     }
 }
 
@@ -659,10 +1062,11 @@ struct RefreshToolbarButton: View {
             }
             .frame(width: 16, height: 16)
             .animation(
-                reduceMotion ? nil : .easeOut(duration: 0.18),
+                reduceMotion ? nil : .easeOut(duration: 0.14),
                 value: store.refreshInProgress)
         }
         .buttonStyle(.glass)
+        .tint(JackinBrand.muted)
         .help(store.chrome.refreshTitle)
         .disabled(store.refreshInProgress)
         .accessibilityLabel(store.chrome.refreshTitle)

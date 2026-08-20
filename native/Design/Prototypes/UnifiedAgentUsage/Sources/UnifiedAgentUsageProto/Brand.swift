@@ -16,11 +16,16 @@ enum JackinBrand {
 
     static var phosphor: Color { Color(nsColor: phosphorNSColor) }
     static var phosphorWash: Color { Color(nsColor: phosphorWashNSColor) }
+    static var selectionWell: Color { Color(nsColor: selectionWellNSColor) }
+    static var selectionText: Color { Color(nsColor: selectionTextNSColor) }
     static var warning: Color { Color(nsColor: warningNSColor) }
     static var danger: Color { Color(nsColor: dangerNSColor) }
     static var stage: Color { Color(nsColor: stageNSColor) }
     static var card: Color { Color(nsColor: cardNSColor) }
+    static var inset: Color { Color(nsColor: insetNSColor) }
+    static var hover: Color { Color(nsColor: hoverNSColor) }
     static var separator: Color { Color(nsColor: separatorNSColor) }
+    static var strongSeparator: Color { Color(nsColor: strongSeparatorNSColor) }
     static var meterTrack: Color { Color(nsColor: meterTrackNSColor) }
     static var muted: Color { Color(nsColor: mutedNSColor) }
     static var quiet: Color { Color(nsColor: quietNSColor) }
@@ -50,6 +55,14 @@ enum JackinBrand {
         name: "jackinPhosphorWash",
         light: rgb(0xE3F3E7),
         dark: rgb(0x16372A))
+    static let selectionWellNSColor = dynamicColor(
+        name: "jackinSelectionWell",
+        light: rgb(0x155F46),
+        dark: rgb(0x173B2B))
+    static let selectionTextNSColor = dynamicColor(
+        name: "jackinSelectionText",
+        light: rgb(0xFFFFFF),
+        dark: rgb(0xE9F7ED))
     static let stageNSColor = dynamicColor(
         name: "jackinStage",
         light: rgb(0xF3F4F1),
@@ -58,10 +71,22 @@ enum JackinBrand {
         name: "jackinCard",
         light: rgb(0xFCFCFA),
         dark: rgb(0x162022))
+    static let insetNSColor = dynamicColor(
+        name: "jackinInset",
+        light: rgb(0xE9EBE7),
+        dark: rgb(0x1C2728))
+    static let hoverNSColor = dynamicColor(
+        name: "jackinHover",
+        light: rgb(0xF0F2EE),
+        dark: rgb(0x202D2E))
     static let separatorNSColor = dynamicColor(
         name: "jackinSeparator",
         light: rgb(0xD4D7D2),
         dark: rgb(0x343D3F))
+    static let strongSeparatorNSColor = dynamicColor(
+        name: "jackinStrongSeparator",
+        light: rgb(0xBEC3BC),
+        dark: rgb(0x465254))
     static let meterTrackNSColor = dynamicColor(
         name: "jackinMeterTrack",
         light: rgb(0xE2E5E0),
@@ -127,7 +152,10 @@ enum JackinSpace {
 
 /// Compact type ramp for authored content; system controls keep native fonts.
 enum JackinType {
-    static let heroMetric = Font.system(size: 28, weight: .semibold, design: .rounded)
+    static let heroMetric = Font.system(size: 28, weight: .semibold, design: .monospaced)
+    static let detailMetric = Font.system(size: 20, weight: .semibold, design: .monospaced)
+    static let technicalLabel = Font.system(size: 10, weight: .semibold, design: .monospaced)
+    static let sectionTitle = Font.system(size: 11, weight: .semibold, design: .monospaced)
     static let metadata = Font.caption
     static let tertiary = Font.caption2
 }
@@ -148,12 +176,8 @@ func meterTint(_ state: ProtoState) -> Color {
     }
 }
 
-/// Brand well behind a provider mark: phosphor at whisper alpha on a
-/// continuous squircle.
-///
-/// The one place chrome-adjacent content wears the
-/// brand color as a fill — quiet enough to stay content, loud enough to
-/// read jackin❯ at a glance.
+/// Neutral instrument tile behind a monochrome provider mark. jackin❯ owns the
+/// surrounding signal color; provider marks never sit in repeated green wells.
 struct BrandMarkChip: View {
     let iconKey: String
     var fallbackGlyph: String = ""
@@ -177,7 +201,11 @@ struct BrandMarkChip: View {
         .frame(width: chipSize, height: chipSize)
         .background(
             RoundedRectangle(cornerRadius: chipSize * 0.28, style: .continuous)
-                .fill(JackinBrand.phosphorWash)
+                .fill(JackinBrand.inset)
+                .overlay(
+                    RoundedRectangle(cornerRadius: chipSize * 0.28, style: .continuous)
+                        .strokeBorder(JackinBrand.separator, lineWidth: 1)
+                )
         )
         .accessibilityHidden(true)
     }
@@ -223,7 +251,7 @@ struct JackinBrandSignature: View {
                     .scaledToFit()
             }
         }
-        .frame(width: 124, height: 34, alignment: .leading)
+        .frame(width: 104, height: 28, alignment: .leading)
         .accessibilityHidden(true)
     }
 }

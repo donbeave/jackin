@@ -44,6 +44,10 @@ struct ProtoQuotaWindow: Identifiable, Sendable {
     let stableID: String
     let label: String
     let display: String
+    let primaryValue: String
+    var secondaryValue: String? = nil
+    var resetLabel: String? = nil
+    var supplementalValue: String? = nil
     let meter: Int?
     let state: ProtoState
     /// Rust-owned pace phrase (QuotaBucketDto.pace_label): even-burn delta or
@@ -75,6 +79,16 @@ struct ProtoQuotaWindow: Identifiable, Sendable {
         case "Weekly", "Daily", "Monthly": true
         default: false
         }
+    }
+
+    var accessibilitySummary: String {
+        var parts = [label, primaryValue]
+        parts.append(contentsOf: [secondaryValue, resetLabel, supplementalValue, pace].compactMap {
+            $0
+        })
+        if notStarted { parts.append("Not started") }
+        if let stateLabel = state.label { parts.append(stateLabel) }
+        return parts.joined(separator: ", ")
     }
 }
 
@@ -315,19 +329,23 @@ enum ProtoFixtures {
         windows: [
             ProtoQuotaWindow(
                 stableID: "bucket:weekly", label: "Weekly",
-                display: "57% left · Resets in 3d", meter: 57, state: .warning,
+                display: "57% left · Resets in 3d", primaryValue: "57% left",
+                resetLabel: "Resets in 3d", meter: 57, state: .warning,
                 pace: "Runs out in 2d at current pace"),
             ProtoQuotaWindow(
                 stableID: "bucket:five-hour", label: "Five-hour",
-                display: "63% left · Resets in 2h", meter: 63, state: .current,
+                display: "63% left · Resets in 2h", primaryValue: "63% left",
+                resetLabel: "Resets in 2h", meter: 63, state: .current,
                 pace: "On pace"),
             ProtoQuotaWindow(
                 stableID: "bucket:credits", label: "Credits",
                 display: "3 manual resets available · Next expires in 3d 4h",
-                meter: nil, state: .current),
+                primaryValue: "3 available", resetLabel: "Next expires in 3d 4h",
+                supplementalValue: "Manual limit resets", meter: nil, state: .current),
             ProtoQuotaWindow(
                 stableID: "bucket:review", label: "Code review · Weekly",
-                display: "91% left · Resets in 3d", meter: 91, state: .current),
+                display: "91% left · Resets in 3d", primaryValue: "91% left",
+                resetLabel: "Resets in 3d", meter: 91, state: .current),
         ], auth: "OAuth · configured profile")
 
     static let codexPlus = ProtoAccount(
@@ -336,7 +354,8 @@ enum ProtoFixtures {
         windows: [
             ProtoQuotaWindow(
                 stableID: "bucket:weekly", label: "Weekly",
-                display: "0% left · Resets in 3d", meter: 0, state: .depleted)
+                display: "0% left · Resets in 3d", primaryValue: "0% left",
+                resetLabel: "Resets in 3d", meter: 0, state: .depleted)
         ])
 
     static let codexOrganization = ProtoAccount(
@@ -345,14 +364,17 @@ enum ProtoFixtures {
         windows: [
             ProtoQuotaWindow(
                 stableID: "bucket:weekly", label: "Weekly",
-                display: "88% left · Resets in 3d", meter: 88, state: .current,
+                display: "88% left · Resets in 3d", primaryValue: "88% left",
+                resetLabel: "Resets in 3d", meter: 88, state: .current,
                 pace: "On pace"),
             // Spend-control lane from the same /wham/usage payload
             // (individual_limit) — a quota-bound money cap, not spend tracking.
             ProtoQuotaWindow(
                 stableID: "bucket:monthly-credit-pool", label: "Monthly credit pool",
                 display: "$312 used of $500 cap · Resets Sep 1",
-                meter: 38, state: .current),
+                primaryValue: "38% left", resetLabel: "Resets Sep 1",
+                supplementalValue: "Monthly cap · $312 / $500", meter: 38,
+                state: .current),
         ])
 
     static let claudePersonal = ProtoAccount(
@@ -361,18 +383,22 @@ enum ProtoFixtures {
         windows: [
             ProtoQuotaWindow(
                 stableID: "bucket:session", label: "Session",
-                display: "74% left", meter: 74, state: .current,
+                display: "74% left", primaryValue: "74% left",
+                meter: 74, state: .current,
                 pace: "On pace"),
             ProtoQuotaWindow(
                 stableID: "bucket:weekly", label: "All models",
-                display: "12% left · Resets in 1h", meter: 12, state: .danger),
+                display: "12% left · Resets in 1h", primaryValue: "12% left",
+                resetLabel: "Resets in 1h", meter: 12, state: .danger),
             ProtoQuotaWindow(
                 stableID: "bucket:fable", label: "Fable",
-                display: "65% left · Resets in 4d", meter: 65, state: .current,
+                display: "65% left · Resets in 4d", primaryValue: "65% left",
+                resetLabel: "Resets in 4d", meter: 65, state: .current,
                 pace: "On pace"),
             ProtoQuotaWindow(
                 stableID: "bucket:extra-usage", label: "Extra usage",
-                display: "28% used · Monthly cap: $14 / $50", meter: 28,
+                display: "28% used · Monthly cap: $14 / $50", primaryValue: "28% used",
+                supplementalValue: "Monthly cap · $14 / $50", meter: 28,
                 state: .current),
         ], auth: "OAuth · macOS Keychain")
 
@@ -382,14 +408,17 @@ enum ProtoFixtures {
         windows: [
             ProtoQuotaWindow(
                 stableID: "bucket:daily", label: "Amp Free",
-                display: "100% left · Resets daily", meter: 100, state: .current,
+                display: "100% left · Resets daily", primaryValue: "100% left",
+                resetLabel: "Resets daily", meter: 100, state: .current,
                 notStarted: true),
             ProtoQuotaWindow(
                 stableID: "bucket:individual", label: "Individual credits",
-                display: "$18.40 remaining", meter: nil, state: .current),
+                display: "$18.40 remaining", primaryValue: "$18.40",
+                supplementalValue: "Remaining balance", meter: nil, state: .current),
             ProtoQuotaWindow(
                 stableID: "bucket:workspace", label: "Workspace Platform",
-                display: "$126.75 remaining", meter: nil, state: .current),
+                display: "$126.75 remaining", primaryValue: "$126.75",
+                supplementalValue: "Remaining balance", meter: nil, state: .current),
         ], auth: "API key · Amp settings")
 
     static let grokDefault = ProtoAccount(
@@ -398,14 +427,17 @@ enum ProtoFixtures {
         windows: [
             ProtoQuotaWindow(
                 stableID: "bucket:monthly", label: "Monthly",
-                display: "72% left · Resets Sep 1", meter: 72, state: .current,
+                display: "72% left · Resets Sep 1", primaryValue: "72% left",
+                resetLabel: "Resets Sep 1", meter: 72, state: .current,
                 pace: "On pace"),
             ProtoQuotaWindow(
                 stableID: "bucket:prepaid", label: "Extra usage credits",
-                display: "$24.80 remaining", meter: nil, state: .current),
+                display: "$24.80 remaining", primaryValue: "$24.80",
+                supplementalValue: "Prepaid balance", meter: nil, state: .current),
             ProtoQuotaWindow(
                 stableID: "bucket:on-demand", label: "On-demand usage",
-                display: "Budget: $12 / $100", meter: 88, state: .current),
+                display: "Budget: $12 / $100", primaryValue: "88% left",
+                supplementalValue: "Budget · $12 / $100", meter: 88, state: .current),
         ], auth: "Grok CLI session")
 
     static let zaiDefault = ProtoAccount(
@@ -414,14 +446,18 @@ enum ProtoFixtures {
         windows: [
             ProtoQuotaWindow(
                 stableID: "bucket:five-hour", label: "5-hour",
-                display: "94% left · Resets in 2h", meter: 94, state: .current),
+                display: "94% left · Resets in 2h", primaryValue: "94% left",
+                resetLabel: "Resets in 2h", meter: 94, state: .current),
             ProtoQuotaWindow(
                 stableID: "bucket:tokens", label: "Tokens",
-                display: "81% left · Resets in 4d", meter: 81, state: .current,
+                display: "81% left · Resets in 4d", primaryValue: "81% left",
+                resetLabel: "Resets in 4d", meter: 81, state: .current,
                 pace: "On pace"),
             ProtoQuotaWindow(
                 stableID: "bucket:mcp", label: "MCP",
-                display: "42 / 100 (58 remaining) · Resets in 4d", meter: 58,
+                display: "42 / 100 (58 remaining) · Resets in 4d",
+                primaryValue: "58 remaining", secondaryValue: "42 / 100 used",
+                resetLabel: "Resets in 4d", meter: 58,
                 state: .current),
         ], auth: "API key · env ZAI_API_KEY")
 
@@ -431,11 +467,13 @@ enum ProtoFixtures {
         windows: [
             ProtoQuotaWindow(
                 stableID: "bucket:rate", label: "Rate Limit",
-                display: "76% left · Resets in 38m", meter: 76, state: .current,
+                display: "76% left · Resets in 38m", primaryValue: "76% left",
+                resetLabel: "Resets in 38m", meter: 76, state: .current,
                 pace: "On pace"),
             ProtoQuotaWindow(
                 stableID: "bucket:weekly", label: "Weekly",
-                display: "45% left · Resets in 5d", meter: 45, state: .current,
+                display: "45% left · Resets in 5d", primaryValue: "45% left",
+                resetLabel: "Resets in 5d", meter: 45, state: .current,
                 pace: "Runs out in 4d at current pace"),
         ], auth: "Local token · Kimi Code credentials")
 
@@ -445,15 +483,21 @@ enum ProtoFixtures {
         windows: [
             ProtoQuotaWindow(
                 stableID: "bucket:general-5h", label: "General · 5h",
-                display: "68% left · Usage: 320 / 1K · Resets in 3h", meter: 68,
+                display: "68% left · Usage: 320 / 1K · Resets in 3h",
+                primaryValue: "68% left", secondaryValue: "320 / 1K used",
+                resetLabel: "Resets in 3h", meter: 68,
                 state: .current),
             ProtoQuotaWindow(
                 stableID: "bucket:general-weekly", label: "General · Weekly",
-                display: "33% left · Usage: 6.7K / 10K · Resets in 2d", meter: 33,
+                display: "33% left · Usage: 6.7K / 10K · Resets in 2d",
+                primaryValue: "33% left", secondaryValue: "6.7K / 10K used",
+                resetLabel: "Resets in 2d", meter: 33,
                 state: .warning),
             ProtoQuotaWindow(
                 stableID: "bucket:lightning", label: "Lightning",
-                display: "84% left · Usage: 160 / 1K · Resets in 3h", meter: 84,
+                display: "84% left · Usage: 160 / 1K · Resets in 3h",
+                primaryValue: "84% left", secondaryValue: "160 / 1K used",
+                resetLabel: "Resets in 3h", meter: 84,
                 state: .current),
         ], auth: "API token · env MINIMAX_API_KEY")
 
@@ -467,6 +511,8 @@ enum ProtoFixtures {
                 ProtoQuotaWindow(
                     stableID: "bucket:weekly", label: "Weekly",
                     display: "\(remaining)% left · \(reset ?? resetUnavailable)",
+                    primaryValue: "\(remaining)% left",
+                    resetLabel: reset ?? resetUnavailable,
                     meter: remaining, state: .current)
             ])
     }
@@ -658,6 +704,9 @@ enum ProtoFixtures {
                                     label: "Organization-wide weekly accelerated-model allocation",
                                     display:
                                         "57% left · Resets Tuesday, 18 August 2026 at 23:59 Indochina Time",
+                                    primaryValue: "57% left",
+                                    resetLabel:
+                                        "Resets Tuesday, 18 August 2026 at 23:59 Indochina Time",
                                     meter: 57, state: .current)
                             ])
                     ],
@@ -707,6 +756,8 @@ enum ProtoFixtures {
                         stableID: "limit-0\(windowIndex + 1)",
                         label: windowLabels[windowIndex],
                         display: "\(remainingText) · \(resets[windowIndex])",
+                        primaryValue: remainingText,
+                        resetLabel: resets[windowIndex],
                         meter: windowRemaining,
                         state: stateFor(remaining: windowRemaining))
                 }
@@ -775,7 +826,8 @@ enum ProtoFixtures {
                     windows: [
                         ProtoQuotaWindow(
                             stableID: "bucket:weekly", label: "Weekly",
-                            display: "57% left · \(reset)", meter: 57,
+                            display: "57% left · \(reset)", primaryValue: "57% left",
+                            resetLabel: reset, meter: 57,
                             state: .current)
                     ])
             ],
@@ -801,6 +853,8 @@ enum ProtoFixtures {
                                     stableID: "bucket:monthly-credit-cap",
                                     label: "Monthly credit allowance",
                                     display: "$6 available of $20 cap · Resets Sep 1",
+                                    primaryValue: "$6 available", resetLabel: "Resets Sep 1",
+                                    supplementalValue: "Monthly cap · $6 / $20",
                                     meter: nil, state: .current)
                             ])
                     ])
@@ -828,11 +882,14 @@ enum ProtoFixtures {
                             windows: [
                                 ProtoQuotaWindow(
                                     stableID: "bucket:weekly", label: "Weekly",
-                                    display: "91% left · Resets in 4d", meter: 91,
+                                    display: "91% left · Resets in 4d",
+                                    primaryValue: "91% left", resetLabel: "Resets in 4d",
+                                    meter: 91,
                                     state: .current, pace: "On pace"),
                                 ProtoQuotaWindow(
                                     stableID: "bucket:session", label: "Session",
                                     display: "Not started · Resets in 5h",
+                                    primaryValue: "100% left", resetLabel: "Resets in 5h",
                                     meter: 100, state: .current, notStarted: true),
                             ]),
                     ],

@@ -226,7 +226,17 @@ fi
 
 [tasks.desktop-prototype-build]
 description = "Build the Unified Agent Usage native design prototype"
-run = "swift build --package-path native/Design/Prototypes/UnifiedAgentUsage"
+run = '''
+set -euo pipefail
+package="native/Design/Prototypes/UnifiedAgentUsage"
+swift build --package-path "$package"
+app="$package/.build/UnifiedAgentUsageProto.app"
+mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
+cp "$package/AppInfo.plist" "$app/Contents/Info.plist"
+cp "$package/.build/debug/UnifiedAgentUsageProto" "$app/Contents/MacOS/UnifiedAgentUsageProto"
+ditto "$package/.build/debug/UnifiedAgentUsageProto_UnifiedAgentUsageProto.bundle" \
+  "$app/Contents/Resources/UnifiedAgentUsageProto_UnifiedAgentUsageProto.bundle"
+'''
 
 [tasks.desktop-prototype-run]
 description = "Launch the Unified Agent Usage native design prototype"
@@ -239,8 +249,7 @@ arg "[backdrop]" help="Optional harness backdrop hex color"
 '''
 run = '''
 set -euo pipefail
-binary="native/Design/Prototypes/UnifiedAgentUsage/.build/debug/UnifiedAgentUsageProto"
-label="com.jackin.prototype.unified-agent-usage"
+app="native/Design/Prototypes/UnifiedAgentUsage/.build/UnifiedAgentUsageProto.app"
 args=(
   --tr-scenario "$usage_scenario"
   --tr-window "$usage_window"
@@ -248,12 +257,9 @@ args=(
 )
 if [ -n "${usage_reduce:-}" ]; then args+=(--tr-reduce "$usage_reduce"); fi
 if [ -n "${usage_backdrop:-}" ]; then args+=(--tr-backdrop "$usage_backdrop"); fi
-launchctl remove "$label" 2>/dev/null || true
-for _ in {1..20}; do
-  if ! launchctl print "gui/$(id -u)/$label" >/dev/null 2>&1; then break; fi
-  sleep 0.1
-done
-launchctl submit -l "$label" -- "$PWD/$binary" "${args[@]}"
+pkill -f "$PWD/$app/Contents/MacOS/UnifiedAgentUsageProto" 2>/dev/null || true
+launchctl remove com.jackin.prototype.unified-agent-usage 2>/dev/null || true
+open -n "$app" --args "${args[@]}"
 '''
 
 [tasks.desktop-prototype]

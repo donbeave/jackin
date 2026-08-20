@@ -37,10 +37,10 @@ No embedded repository instruction changed the skill decision order.
 | Sidebar wordmark | FUNCTIONAL / structural identity | Image inside sidebar plane | Sidebar material only; no effect |
 | Overview stage and provider cards | CONTENT | `ScrollView` + adaptive card grid | Opaque semantic content colors; never glass |
 | Provider and account card rows | CONTENT | Buttons with plain style | No glass |
-| Provider detail | CONTENT | Native `List` + shared `Section` / `LabeledContent` composition | No glass |
+| Provider detail | CONTENT | Authored dossier `ScrollView` + adaptive limit modules | No glass |
 | Quota meters | CONTENT | Deterministic SwiftUI shapes | No glass |
 | Popover shell | FUNCTIONAL / transient | `NSPopover` | Automatic system material |
-| Popover detail | CONTENT inside transient host | Native grouped `Form` + shared detail composition | Form material; no glass |
+| Popover detail | CONTENT inside transient host | Compact priority-ranked quota glance | Opaque content; no glass |
 | Popover action cluster | FUNCTIONAL / transient | Two standard SwiftUI Buttons in one `GlassEffectContainer` | `.glass` + one `.glassProminent` |
 | Settings | CONTENT inside window | Native grouped `Form` | No glass |
 | Menu bar items and menus | FUNCTIONAL / structural + transient | `NSStatusItem`, `NSMenu` | Automatic system material |
@@ -73,7 +73,7 @@ Every region classifies cleanly. No glass exists in content.
 | Variant choice | PASS | Standard regular glass only; no `clear` variant |
 | Toolbar command parity | PASS | Refresh and sidebar toggle also exist in the View menu |
 | Icon accessibility | PASS | Refresh and Open Usage icon buttons have explicit labels and help |
-| Motion | PASS in code | 200ms opacity handoff and 180ms refresh fade; no geometry/blur morph; Reduce Motion returns identity/no animation |
+| Motion | PASS in code | Stable stage with 150ms inner move/fade and 140ms refresh fade; no geometry/blur morph; Reduce Motion returns identity |
 
 ## Availability
 
@@ -115,7 +115,7 @@ Blocked spellings were searched and are absent:
 | Shape | System button-style capsule; no numeric radius |
 | Availability | macOS 26.0, equal to minimum target |
 | Reduce Transparency | System toolbar/Button substitution |
-| Reduce Motion | 180ms opacity swap is disabled; no morph or blur animation |
+| Reduce Motion | 140ms opacity swap is disabled; no morph or blur animation |
 | Verified | Light/Dark launch stability and refresh fixture behavior |
 | Blocked | Real accessibility settings, inactive-window rendering, hover and focus-ring inspection require operator visual QA |
 
@@ -142,9 +142,14 @@ Every authored color resolves through `JackinBrand`. The content hierarchy is:
 
 - stage: warm industrial neutral #F3F4F1 Light and blue-black #101618 Dark;
 - cards: paper white #FCFCFA Light and raised graphite #162022 Dark;
+- inset modules: #E9EBE7 Light and #1C2728 Dark;
+- hover: #F0F2EE Light and #202D2E Dark;
 - boundary: #D4D7D2 Light and #343D3F Dark;
+- strong boundary: #BEC3BC Light and #465254 Dark;
 - meter track: #E2E5E0 Light and #293335 Dark;
 - healthy/brand: phosphor #0B774E Light and #5CF07A Dark;
+- selected navigation: deep green #155F46 Light and #173B2B Dark, with an
+  adaptive light text treatment and a narrow phosphor calibration bar;
 - metadata: #59615D Light and #ADB5B2 Dark;
 - quiet metadata: #6A726E Light and #858E8B Dark;
 - warning: #7A4B00 Light and #FFC15A Dark;
@@ -169,15 +174,25 @@ WCAG contrast against the adaptive card ground:
 
 ## Typography, rhythm, hierarchy, and multi-account
 
-- Type ramp: 28pt rounded semibold hero, system headline/callout, caption and
-  caption2 metadata. Every quota/reset numeral uses monospaced digits.
-- Rhythm: authored 4/8/12/16/20/24 scale; native controls retain system metrics.
+- Type ramp: 28pt monospaced overview metric, 20pt monospaced detail metric,
+  10–11pt monospaced technical labels, system headline/callout body.
+- Rhythm: 28pt page insets, 28pt dossier section gaps, 20pt overview-card
+  insets, 16pt module insets, and the authored 4/8/12/16/20/24 primitive scale.
 - Scan: provider → hero remaining percentage → meter → reset.
 - The preferred overview card grid remains. It is content, never glass, and its
   custom opaque boundary is justified by provider grouping and fast scanning.
 - F25 keeps five accounts inside one provider card with restrained dividers.
-- Usage detail and popover now consume one `ProviderDetailSections`
-  implementation, removing duplicated labels, ordering, state, and retry logic.
+- Usage detail uses a two-column adaptive instrument grid at comfortable width
+  and one column at the minimum. The popover consumes the same semantic records
+  through a separate compact, severity-ranked presentation with explicit
+  overflow disclosure.
+
+The visual thesis is **graphite instrument + phosphor signal**. It borrows the
+industrial neutral planes, calibrated density, technical micro-labels, crisp
+boundaries, and sparse accent discipline visible in
+[Oxide](https://oxide.computer/), while retaining original jackin❯ identity,
+native macOS structure, and provider marks. No Oxide asset or page composition
+is copied.
 
 ## Provider detail coverage
 
@@ -204,21 +219,24 @@ No token price, cost history, or usage trend is represented or planned.
 
 ## Motion and transitions
 
-Navigation and scenario changes use a 200ms ease-in/out opacity handoff.
-Refresh glyph/spinner state uses a 180ms ease-out opacity swap. These durations
-are quick enough to preserve direct manipulation and slow enough to prevent a
-visual cut. No scale, geometry, glass morph, blur animation, or continuous
-decoration exists. Both real Reduce Motion and the prototype reduction contract
-remove app-authored animation.
+Overview/provider navigation keeps the stage and native glass chrome stable,
+then moves the incoming content 5pt while fading it over 150ms ease-out.
+Account changes inside one provider update in place. Refresh glyph/spinner state
+uses a 140ms ease-out opacity swap; overview hover uses 120ms ease-out with an
+immediate lower-opacity pressed state. No scale, spring, geometry, glass morph,
+blur, or glow exists. Both real Reduce Motion and the prototype reduction
+contract remove app-authored animation.
 
 System window, menu, popover, hover, press, and focus transitions remain
-system-owned.
+system-owned. Sidebar selection geometry is authored inside the native sidebar
+material so the dominant navigation signal remains jackin❯ green instead of
+the user's unrelated system accent.
 
 ## Acceptance-gate evidence
 
 | Axes | Status |
 |---|---|
-| Light / Dark | PASS for launch/render stability across all fixtures and three window sizes |
+| Light / Dark | PASS for launch/render stability; pixel-reviewed F02 overview, F04 detail, and F25 dense detail in both representative appearances |
 | Localization / RTL / long strings | PASS for launch/render stability via F11 and F19 variants |
 | Reduce Motion / Transparency flags | PASS for process-local launch stability; real settings remain unverified |
 | Clear / Tinted Liquid Glass | BLOCKED pending operator visual QA; no read API exists |
@@ -240,5 +258,11 @@ Light and Dark: 216 launches. F18-f02 and F18-f11 also passed at 920 × 620 in
 both appearances with reduction unset, Transparency, Motion, and Transparency
 + Motion: 16 launches.
 
-This evidence proves build and launch/render stability. It does not replace the
-operator-owned running-app acceptance rows above. No screenshots were taken.
+This evidence proves build and launch/render stability. Iterative pixel review
+also covered F02 overview in Light/Dark, F04 four-limit detail in Light/Dark,
+F25 dense multi-account detail at 1200 × 760, and F11 long copy at the minimum.
+Three independent design reviewers audited the source, rejected iteration 1,
+and reviewed subsequent refinements against the recorded visual-system
+acceptance bar. Visual-system, information-design, and brand/motion reviewers
+all granted final approval.
+This does not replace the operator-owned running-app acceptance rows above.

@@ -47,6 +47,7 @@ final class ProtoShell: NSObject, NSMenuDelegate {
         // accentColor for jackin chrome" — BrandColors).
         view
             .tint(.jackinPhosphor)
+            .accentColor(.jackinPhosphor)
             .environment(\.locale, store.chrome.locale)
             .environment(\.layoutDirection, store.chrome.layoutDirection)
             .transaction { transaction in
@@ -493,11 +494,11 @@ final class ProtoShell: NSObject, NSMenuDelegate {
 
     @objc func showSettings() {
         if settingsWindow == nil {
-            // Incumbent chrome: unified toolbar, visible title, miniaturizable,
-            // autosaved frame; SwiftUI content carries only a min size.
+            // Native resizable split settings window; sidebar material and
+            // unified titlebar remain system-owned Liquid Glass chrome.
             let window = NSWindow(
-                contentRect: NSRect(x: 0, y: 0, width: 480, height: 520),
-                styleMask: [.titled, .closable, .miniaturizable],
+                contentRect: NSRect(x: 0, y: 0, width: 680, height: 520),
+                styleMask: [.titled, .closable, .miniaturizable, .resizable],
                 backing: .buffered,
                 defer: false)
             window.title = "Settings"
@@ -507,7 +508,7 @@ final class ProtoShell: NSObject, NSMenuDelegate {
             window.titleVisibility = .visible
             window.contentViewController = NSHostingController(
                 rootView: wrap(SettingsView(store: store))
-                    .frame(minWidth: 440, minHeight: 400))
+                    .frame(minWidth: 620, minHeight: 440))
             window.center()
             window.setFrameAutosaveName("jackin.desktop.settings-window")
             settingsWindow = window

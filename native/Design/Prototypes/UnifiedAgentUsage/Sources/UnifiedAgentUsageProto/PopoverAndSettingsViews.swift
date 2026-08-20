@@ -18,7 +18,7 @@ struct PopoverView: View {
             Divider()
 
             content
-                .frame(width: 380, height: Self.contentSize.height - 94)
+                .frame(width: 380, height: Self.contentSize.height - 100)
                 .clipped()
 
             Divider()
@@ -44,8 +44,9 @@ struct PopoverView: View {
                 .font(.headline)
                 .accessibilityAddTraits(.isHeader)
         }
-        .frame(maxWidth: .infinity)
-        .frame(height: 44)
+        .padding(.horizontal, 12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(height: 50)
     }
 
     @ViewBuilder
@@ -72,11 +73,12 @@ struct PopoverView: View {
     }
 
     private func providerForm(_ provider: ProtoProvider) -> some View {
-        Form {
+        ScrollView {
             ProviderDetailSections(
-                store: store, provider: provider, identifierPrefix: "popover")
+                store: store, provider: provider, identifierPrefix: "popover", compact: true)
+                .padding(12)
         }
-        .formStyle(.grouped)
+        .background(JackinBrand.stage)
         .accessibilityLabel("\(provider.name) usage details")
         .accessibilityIdentifier("popover.provider.\(provider.key)")
     }
@@ -144,6 +146,24 @@ struct PopoverView: View {
 /// Settings mirrors the incumbent grouped Form over fixture-backed state.
 struct SettingsView: View {
     @Bindable var store: ProtoStore
+    @State private var selection = SettingsSection.menuBar
+
+    private enum SettingsSection: String, CaseIterable, Identifiable {
+        case menuBar = "Menu Bar"
+        case providers = "Providers"
+        case refresh = "Refresh"
+        case general = "General"
+
+        var id: Self { self }
+        var symbol: String {
+            switch self {
+            case .menuBar: "menubar.rectangle"
+            case .providers: "square.stack.3d.up"
+            case .refresh: "arrow.clockwise"
+            case .general: "gearshape"
+            }
+        }
+    }
 
     private var percentBinding: Binding<PercentStyle> {
         Binding(
@@ -158,8 +178,29 @@ struct SettingsView: View {
     }
 
     var body: some View {
-        Form {
-            Section("Menu bar") {
+        NavigationSplitView {
+            List(SettingsSection.allCases, selection: $selection) { section in
+                Label(section.rawValue, systemImage: section.symbol)
+                    .tag(section)
+            }
+            .listStyle(.sidebar)
+            .navigationSplitViewColumnWidth(min: 150, ideal: 170, max: 210)
+        } detail: {
+            Form {
+                settingsContent
+            }
+            .formStyle(.grouped)
+            .scrollContentBackground(.hidden)
+            .background(JackinBrand.stage)
+            .navigationTitle(selection.rawValue)
+        }
+    }
+
+    @ViewBuilder
+    private var settingsContent: some View {
+        switch selection {
+        case .menuBar:
+            Section("Presentation") {
                 Picker("Display", selection: $store.displayMode) {
                     Text("All providers (icon + remaining %)").tag(ProtoStore.DisplayMode.strip)
                     Text("Worst provider only").tag(ProtoStore.DisplayMode.focusPercent)
@@ -218,24 +259,39 @@ struct SettingsView: View {
                 )
                 .accessibilityLabel("Hide values while screen sharing")
             }
-            Section("Login") {
-                Toggle("Launch at login", isOn: $store.launchAtLogin)
-                    .accessibilityLabel("Launch at login")
-            }
-            Section("Surfaces") {
+        case .providers:
+            Section("Usage surfaces") {
                 ForEach(store.projection.providers) { provider in
                     Toggle(
-                        provider.name,
                         isOn: Binding(
                             get: { store.surfaceEnabled[provider.key] ?? true },
                             set: { store.surfaceEnabled[provider.key] = $0 }
                         )
-                    )
+                    ) {
+                        Label {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(provider.name)
+                                Text(
+                                    provider.state.label
+                                        ?? provider.accounts.first?.auth
+                                        ?? "Ready")
+                                    .font(.caption)
+                                    .foregroundStyle(JackinBrand.muted)
+                            }
+                        } icon: {
+                            if let mark = ProviderMarks.swiftUIImage(forIconKey: provider.iconKey) {
+                                mark
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(width: 16, height: 16)
+                            }
+                        }
+                    }
                     .accessibilityLabel("\(provider.name) enabled")
                 }
             }
-            Section("Refresh") {
-                // Policy floor lives in Rust (clamped ≥ 5m here); UI projects minutes.
+        case .refresh:
+            Section("Provider polling") {
                 Slider(
                     value: floorBinding,
                     in: 1...30,
@@ -262,7 +318,12 @@ struct SettingsView: View {
                     .accessibilityIdentifier("settings.floor-retry")
                 }
             }
-            Section("About") {
+        case .general:
+            Section("Startup") {
+                Toggle("Launch at login", isOn: $store.launchAtLogin)
+                    .accessibilityLabel("Launch at login")
+            }
+            Section("Privacy and architecture") {
                 Text("Account quotas from host credentials via jackin-usage (Rust).")
                     .font(.caption)
                 Text(
@@ -275,8 +336,5 @@ struct SettingsView: View {
                     .foregroundStyle(JackinBrand.muted)
             }
         }
-        .formStyle(.grouped)
-        .scrollContentBackground(.hidden)
-        .background(JackinBrand.stage)
     }
 }
