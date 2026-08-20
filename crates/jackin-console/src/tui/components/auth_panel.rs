@@ -2,6 +2,17 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //! Auth edit-form state and rendering.
+//!
+//! Field composition copy-adapted from the upstream `patterns/auth_entry.rs`
+//! recipe (composition reference, never a type dependency): labeled
+//! credential field with validation feedback, mode switch, and a
+//! submit/cancel action row — the form's focus cycle is one ordered field
+//! chain (`auth_form_focus_chain`) that Tab/BackTab and the arrow keys walk,
+//! mirroring the recipe's focus routing. The secret field stays on the
+//! console's existing masked-input rows (plan 010 recorded the
+//! `password_input` adoption as a behavior-preserving carve-out), and all
+//! jackin❯ auth domain branches (op-refs, literals, source folders,
+//! generated tokens) stay — the recipe covers field anatomy only.
 
 use std::marker::PhantomData;
 use std::path::PathBuf;
@@ -95,7 +106,7 @@ pub fn auth_panel_title(kind_label: &str) -> String {
 }
 
 #[must_use]
-pub const fn auth_form_key_plan(
+pub fn auth_form_key_plan(
     focus: AuthFormFocus,
     key: KeyCode,
     shows_credential_block: bool,
@@ -104,84 +115,104 @@ pub const fn auth_form_key_plan(
     auth_form_key_plan_with_source_folder(focus, key, false, shows_credential_block, can_save)
 }
 
+/// The auth form's focus fields in cycle order (the recipe's focus routing):
+/// mode switch, then the optional source-folder and credential rows, then the
+/// action row Save → Cancel → Reset. Fields hidden by the active auth mode
+/// drop out of the chain, so walking it never lands on an invisible row.
 #[must_use]
-pub const fn auth_form_key_plan_with_source_folder(
+pub fn auth_form_focus_chain(
+    shows_source_folder: bool,
+    shows_credential_block: bool,
+) -> Vec<AuthFormFocus> {
+    let mut chain = Vec::with_capacity(6);
+    chain.push(AuthFormFocus::Mode);
+    if shows_source_folder {
+        chain.push(AuthFormFocus::SourceFolder);
+    }
+    if shows_credential_block {
+        chain.push(AuthFormFocus::CredentialSource);
+    }
+    chain.extend([
+        AuthFormFocus::Save,
+        AuthFormFocus::Cancel,
+        AuthFormFocus::Reset,
+    ]);
+    chain
+}
+
+/// Step along the focus chain, wrapping at both ends.
+#[must_use]
+fn auth_form_focus_step(
+    chain: &[AuthFormFocus],
+    focus: AuthFormFocus,
+    delta: isize,
+) -> AuthFormFocus {
+    let index = chain.iter().position(|field| *field == focus).unwrap_or(0);
+    let len = isize::try_from(chain.len()).unwrap_or(isize::MAX);
+    let next = (isize::try_from(index).unwrap_or(0) + delta).rem_euclid(len);
+    chain[usize::try_from(next).unwrap_or(0)]
+}
+
+#[must_use]
+pub fn auth_form_key_plan_with_source_folder(
     focus: AuthFormFocus,
     key: KeyCode,
     shows_source_folder: bool,
     shows_credential_block: bool,
     can_save: bool,
 ) -> AuthFormKeyPlan {
+    let chain = auth_form_focus_chain(shows_source_folder, shows_credential_block);
     match focus {
         AuthFormFocus::Mode => match key {
             KeyCode::Char(' ') => AuthFormKeyPlan::CycleMode,
-            KeyCode::Down | KeyCode::Char('j') if shows_source_folder => {
-                AuthFormKeyPlan::Focus(AuthFormFocus::SourceFolder)
+            KeyCode::Down | KeyCode::Char('j') if shows_source_folder || shows_credential_block => {
+                AuthFormKeyPlan::Focus(auth_form_focus_step(&chain, focus, 1))
             }
-            KeyCode::Down | KeyCode::Char('j') if shows_credential_block => {
-                AuthFormKeyPlan::Focus(AuthFormFocus::CredentialSource)
-            }
-            KeyCode::Tab => {
-                if shows_source_folder {
-                    AuthFormKeyPlan::Focus(AuthFormFocus::SourceFolder)
-                } else if shows_credential_block {
-                    AuthFormKeyPlan::Focus(AuthFormFocus::CredentialSource)
-                } else {
-                    AuthFormKeyPlan::Focus(AuthFormFocus::Save)
-                }
-            }
-            KeyCode::BackTab => AuthFormKeyPlan::Focus(AuthFormFocus::Reset),
+            KeyCode::Tab => AuthFormKeyPlan::Focus(auth_form_focus_step(&chain, focus, 1)),
+            KeyCode::BackTab => AuthFormKeyPlan::Focus(auth_form_focus_step(&chain, focus, -1)),
             _ => AuthFormKeyPlan::Stay,
         },
         AuthFormFocus::SourceFolder => match key {
             KeyCode::Enter => AuthFormKeyPlan::OpenSourceFolderBrowser,
             KeyCode::Down | KeyCode::Char('j') | KeyCode::Tab => {
-                if shows_credential_block {
-                    AuthFormKeyPlan::Focus(AuthFormFocus::CredentialSource)
-                } else {
-                    AuthFormKeyPlan::Focus(AuthFormFocus::Save)
-                }
+                AuthFormKeyPlan::Focus(auth_form_focus_step(&chain, focus, 1))
             }
             KeyCode::Up | KeyCode::Char('k') | KeyCode::BackTab => {
-                AuthFormKeyPlan::Focus(AuthFormFocus::Mode)
+                AuthFormKeyPlan::Focus(auth_form_focus_step(&chain, focus, -1))
             }
             _ => AuthFormKeyPlan::Stay,
         },
         AuthFormFocus::CredentialSource => match key {
             KeyCode::Enter => AuthFormKeyPlan::OpenCredentialSource,
-            KeyCode::Tab => AuthFormKeyPlan::Focus(AuthFormFocus::Save),
+            KeyCode::Tab => AuthFormKeyPlan::Focus(auth_form_focus_step(&chain, focus, 1)),
             KeyCode::Up | KeyCode::Char('k') | KeyCode::BackTab => {
-                if shows_source_folder {
-                    AuthFormKeyPlan::Focus(AuthFormFocus::SourceFolder)
-                } else {
-                    AuthFormKeyPlan::Focus(AuthFormFocus::Mode)
-                }
+                AuthFormKeyPlan::Focus(auth_form_focus_step(&chain, focus, -1))
             }
             _ => AuthFormKeyPlan::Stay,
         },
         AuthFormFocus::Save => match key {
-            KeyCode::Right | KeyCode::Tab => AuthFormKeyPlan::Focus(AuthFormFocus::Cancel),
-            KeyCode::BackTab => {
-                if shows_credential_block {
-                    AuthFormKeyPlan::Focus(AuthFormFocus::CredentialSource)
-                } else if shows_source_folder {
-                    AuthFormKeyPlan::Focus(AuthFormFocus::SourceFolder)
-                } else {
-                    AuthFormKeyPlan::Focus(AuthFormFocus::Mode)
-                }
+            KeyCode::Right | KeyCode::Tab => {
+                AuthFormKeyPlan::Focus(auth_form_focus_step(&chain, focus, 1))
             }
+            KeyCode::BackTab => AuthFormKeyPlan::Focus(auth_form_focus_step(&chain, focus, -1)),
             KeyCode::Enter if can_save => AuthFormKeyPlan::Save,
             _ => AuthFormKeyPlan::Stay,
         },
         AuthFormFocus::Cancel => match key {
-            KeyCode::Left | KeyCode::BackTab => AuthFormKeyPlan::Focus(AuthFormFocus::Save),
-            KeyCode::Right | KeyCode::Tab => AuthFormKeyPlan::Focus(AuthFormFocus::Reset),
+            KeyCode::Left | KeyCode::BackTab => {
+                AuthFormKeyPlan::Focus(auth_form_focus_step(&chain, focus, -1))
+            }
+            KeyCode::Right | KeyCode::Tab => {
+                AuthFormKeyPlan::Focus(auth_form_focus_step(&chain, focus, 1))
+            }
             KeyCode::Enter => AuthFormKeyPlan::Cancel,
             _ => AuthFormKeyPlan::Stay,
         },
         AuthFormFocus::Reset => match key {
-            KeyCode::Left | KeyCode::BackTab => AuthFormKeyPlan::Focus(AuthFormFocus::Cancel),
-            KeyCode::Tab => AuthFormKeyPlan::Focus(AuthFormFocus::Mode),
+            KeyCode::Left | KeyCode::BackTab => {
+                AuthFormKeyPlan::Focus(auth_form_focus_step(&chain, focus, -1))
+            }
+            KeyCode::Tab => AuthFormKeyPlan::Focus(auth_form_focus_step(&chain, focus, 1)),
             KeyCode::Enter => AuthFormKeyPlan::Reset,
             _ => AuthFormKeyPlan::Stay,
         },
