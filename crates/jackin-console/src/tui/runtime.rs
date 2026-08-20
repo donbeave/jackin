@@ -10,6 +10,63 @@
 
 use std::future::Future;
 
+/// Console frame pacer: the upstream `Presenter` owns the draw decision
+/// (dirty coalescing + backpressure state) and a `FrameClock` samples
+/// monotonic time once per loop turn to feed it.
+///
+/// The zero min-interval keeps pre-adoption pacing byte-identical — a frame
+/// draws exactly when one is owed. The `TickLadder` rungs (12/30/60 fps)
+/// carry no 20 Hz rung, so the 50 ms animation interval in `terminal.rs`
+/// stays the product cadence driving `mark_dirty`.
+#[derive(Debug)]
+pub struct ConsoleFramePacer {
+    presenter: termrock::runtime::Presenter,
+    clock: termrock::runtime::FrameClock,
+}
+
+impl ConsoleFramePacer {
+    /// A pacer owing its first frame, with no throttle between draws.
+    #[must_use]
+    pub fn new() -> Self {
+        Self {
+            presenter: termrock::runtime::Presenter::new()
+                .min_draw_interval(std::time::Duration::ZERO),
+            clock: termrock::runtime::FrameClock::start(),
+        }
+    }
+
+    /// Sample the frame clock once at the top of a loop turn.
+    pub fn tick(&mut self) -> termrock::runtime::FrameTick {
+        self.clock.tick()
+    }
+
+    /// Content changed; a frame is owed.
+    pub const fn mark_dirty(&mut self) {
+        self.presenter.mark_dirty();
+    }
+
+    /// Whether a frame is owed at `now` (a [`Self::tick`] timestamp).
+    pub fn should_draw(&self, now: termrock::runtime::Instant) -> bool {
+        self.presenter.should_draw(now)
+    }
+
+    /// Take ownership of the frame: clears dirty, marks in-flight.
+    pub const fn begin_draw(&mut self, now: termrock::runtime::Instant) {
+        self.presenter.begin_draw(now);
+    }
+
+    /// Frame reached the wire; release backpressure.
+    pub const fn end_draw(&mut self, now: termrock::runtime::Instant) {
+        self.presenter.end_draw(now);
+    }
+}
+
+impl Default for ConsoleFramePacer {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 /// Console-owned blocking-subscription poll tri-state (re-homed from the
 /// retired facade contract).
 #[derive(Debug, Clone, PartialEq, Eq)]

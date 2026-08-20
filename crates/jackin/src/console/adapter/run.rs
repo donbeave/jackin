@@ -481,6 +481,35 @@ where
     Ok(())
 }
 
+/// Frame pacing lives in the console-owned pacer (upstream Presenter +
+/// FrameClock): sample the clock once per loop turn, mark dirty when the
+/// product flagged a redraw, and draw exactly when a frame is owed. The 50 ms
+/// animation interval stays the product cadence driving `needs_redraw`.
+fn present_owed_frame<B>(
+    pacer: &mut jackin_console::tui::runtime::ConsoleFramePacer,
+    needs_redraw: &mut bool,
+    terminal: &mut ratatui::Terminal<B>,
+    state: &mut ConsoleState,
+    context: DrawConsoleContext<'_>,
+) -> anyhow::Result<()>
+where
+    B: ratatui::backend::Backend,
+    B::Error: std::error::Error + Send + Sync + 'static,
+{
+    if *needs_redraw {
+        pacer.mark_dirty();
+    }
+    let tick = pacer.tick();
+    if !pacer.should_draw(tick.now()) {
+        return Ok(());
+    }
+    pacer.begin_draw(tick.now());
+    draw_console_frame(terminal, state, context)?;
+    pacer.end_draw(tick.now());
+    *needs_redraw = false;
+    Ok(())
+}
+
 async fn dispatch_launch_input<B, H, R>(
     terminal: &mut ratatui::Terminal<B>,
     state: &mut ConsoleState,
@@ -978,6 +1007,7 @@ pub async fn run_console<H: InstanceActionHandler<jackin_core::Agent>>(
     // the op-picker panel rain, and other animations stay live.
     let mut animation_tick = tokio::time::interval(Duration::from_millis(TICK_MS));
     animation_tick.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
+    let mut pacer = jackin_console::tui::runtime::ConsoleFramePacer::new();
     let mut pending_events = std::collections::VecDeque::new();
     let mut needs_redraw = true;
 
@@ -1037,21 +1067,20 @@ pub async fn run_console<H: InstanceActionHandler<jackin_core::Agent>>(
         // this frame instead of a stale Loading one.
         drain_background_messages(&mut state, &mut config, paths, cwd, &mut needs_redraw);
 
-        if needs_redraw {
-            draw_console_frame(
-                &mut terminal,
-                &mut state,
-                DrawConsoleContext {
-                    config: &config,
-                    cwd,
-                    mouse_state: &mut mouse_state,
-                    container_info_overlay_active: &mut container_info_overlay_active,
-                    action_parent: action_parent.as_ref(),
-                    jank_monitor: &mut jank_monitor,
-                },
-            )?;
-            needs_redraw = false;
-        }
+        present_owed_frame(
+            &mut pacer,
+            &mut needs_redraw,
+            &mut terminal,
+            &mut state,
+            DrawConsoleContext {
+                config: &config,
+                cwd,
+                mouse_state: &mut mouse_state,
+                container_info_overlay_active: &mut container_info_overlay_active,
+                action_parent: action_parent.as_ref(),
+                jank_monitor: &mut jank_monitor,
+            },
+        )?;
         drop(action_parent);
         if jackin_telemetry::ui::has_pending_actions() {
             continue;
