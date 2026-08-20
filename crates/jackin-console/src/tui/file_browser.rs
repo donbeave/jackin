@@ -175,10 +175,7 @@ fn apply_file_browser_open_result(
                     target: FileBrowserTarget::CreateFirstMountSrc,
                     state: *file_browser,
                 });
-                update_manager(
-                    state,
-                    ManagerMessage::EnterCreatePrelude(prelude),
-                );
+                update_manager(state, ManagerMessage::EnterCreatePrelude(prelude));
             }
             Err(error) => {
                 update_manager(

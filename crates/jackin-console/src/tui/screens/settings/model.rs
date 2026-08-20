@@ -42,7 +42,7 @@ use crate::tui::components::modal_rects::{
     ModalAuthFormState, ModalConfirmSavePrepareState, ModalConfirmSaveState, ModalConfirmState,
     ModalOpPickerState, ModalRectMode, ModalRolePickerState,
 };
-use jackin_tui::runtime::{SurfaceFocus, SurfaceFocusTarget};
+use crate::tui::focus::{ConsoleFocusTarget, TabFocus};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SettingsTab {
@@ -90,7 +90,7 @@ impl SettingsTab {
 pub struct SettingsState<Mounts, Env, Auth, Trust, ErrorPopup, PendingToken> {
     pub active_tab: SettingsTab,
     /// W3C ARIA Tabs: focus is either on the tab list or the active tab panel.
-    pub focus_owner: SurfaceFocus<SettingsTab>,
+    pub focus_owner: TabFocus<SettingsTab>,
     pub hover_target: Option<SettingsHoverTarget>,
     pub general: SettingsGeneralState,
     pub mounts: Mounts,
@@ -153,7 +153,7 @@ impl<Mounts, Env, Auth, Trust, ErrorPopup, PendingToken>
     }
 
     #[must_use]
-    pub fn focus_owner(&self) -> SurfaceFocusTarget<SettingsTab> {
+    pub fn focus_owner(&self) -> ConsoleFocusTarget<SettingsTab> {
         self.focus_owner.focused()
     }
 
@@ -162,10 +162,10 @@ impl<Mounts, Env, Auth, Trust, ErrorPopup, PendingToken>
         crate::tui::layout::tabbed_content_area(term_size, self.cached_footer_h)
     }
 
-    pub fn set_focus_owner(&mut self, owner: SurfaceFocusTarget<SettingsTab>) {
+    pub fn set_focus_owner(&mut self, owner: ConsoleFocusTarget<SettingsTab>) {
         match owner {
-            SurfaceFocusTarget::TabBar => self.focus_owner.focus_tab_bar(),
-            SurfaceFocusTarget::Content(tab) => self.focus_owner.focus_content(tab),
+            ConsoleFocusTarget::TabBar => self.focus_owner.focus_tab_bar(),
+            ConsoleFocusTarget::Content(tab) => self.focus_owner.focus_content(tab),
         }
     }
 
@@ -432,7 +432,7 @@ impl<MountModal, EnvModal, AuthModal, PendingOpCommit, ErrorPopup, PendingToken>
     pub fn from_config(config: &jackin_config::AppConfig) -> Self {
         Self {
             active_tab: SettingsTab::General,
-            focus_owner: SurfaceFocus::tab_bar(SettingsTab::General),
+            focus_owner: TabFocus::tab_bar(SettingsTab::General),
             hover_target: None,
             general: SettingsGeneralState::from_values(config.git.coauthor_trailer, config.git.dco),
             mounts: GlobalMountsState::from_rows(config.list_mount_rows()),

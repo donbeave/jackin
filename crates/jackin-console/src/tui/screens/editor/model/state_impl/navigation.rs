@@ -1,8 +1,8 @@
 use std::collections::BTreeSet;
 use std::marker::PhantomData;
 
+use crate::tui::focus::ConsoleFocusTarget;
 use jackin_config::WorkspaceConfig;
-use jackin_tui::runtime::SurfaceFocusTarget;
 
 use super::super::{
     EditorErrorPopupModal, EditorFocusTarget, EditorHoverTarget, EditorMode,
@@ -84,7 +84,7 @@ impl<
         Self {
             mode: EditorMode::Edit { name },
             active_tab: EditorTab::General,
-            focus_owner: jackin_tui::runtime::SurfaceFocus::tab_bar(EditorFocusTarget::TabContent),
+            focus_owner: crate::tui::focus::TabFocus::tab_bar(EditorFocusTarget::TabContent),
             hover_target: None,
             active_field: FieldFocus::Row(0),
             original: ws.clone(),
@@ -116,14 +116,14 @@ impl<
     }
 
     #[must_use]
-    pub fn focus_owner(&self) -> SurfaceFocusTarget<EditorFocusTarget> {
+    pub fn focus_owner(&self) -> ConsoleFocusTarget<EditorFocusTarget> {
         self.focus_owner.focused()
     }
 
-    pub fn set_focus_owner(&mut self, owner: SurfaceFocusTarget<EditorFocusTarget>) {
+    pub fn set_focus_owner(&mut self, owner: ConsoleFocusTarget<EditorFocusTarget>) {
         match owner {
-            SurfaceFocusTarget::TabBar => self.focus_owner.focus_tab_bar(),
-            SurfaceFocusTarget::Content(content) => self.focus_owner.focus_content(content),
+            ConsoleFocusTarget::TabBar => self.focus_owner.focus_tab_bar(),
+            ConsoleFocusTarget::Content(content) => self.focus_owner.focus_content(content),
         }
     }
 

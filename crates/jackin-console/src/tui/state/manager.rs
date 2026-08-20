@@ -156,9 +156,7 @@ impl ManagerState<'_> {
             list_role_global_mounts_scroll_y: 0,
             list_roles_scroll_x: 0,
             list_roles_scroll_y: 0,
-            list_focus_owner: jackin_tui::runtime::SurfaceFocus::tab_bar(
-                MountScrollFocus::Workspace,
-            ),
+            list_focus_owner: crate::tui::focus::TabFocus::tab_bar(MountScrollFocus::Workspace),
             list_names_scroll_x: 0,
             list_names_scroll_y: 0,
             list_split_pct: DEFAULT_SPLIT_PCT,

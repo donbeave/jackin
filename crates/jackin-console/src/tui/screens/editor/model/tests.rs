@@ -1843,18 +1843,18 @@ fn editor_toggle_default_role_at_cursor_only_sets_allowed_role() {
 
 #[test]
 fn trparity_editor_focus_owner_survives_modal_cancel() {
-    use jackin_tui::runtime::SurfaceFocusTarget;
+    use crate::tui::focus::ConsoleFocusTarget;
 
     let mut editor =
         TestEditorWithStatusModal::new_edit("alpha".into(), WorkspaceConfig::default());
-    editor.set_focus_owner(SurfaceFocusTarget::Content(
+    editor.set_focus_owner(ConsoleFocusTarget::Content(
         EditorFocusTarget::WorkspaceMounts,
     ));
     editor.open_sub_modal(TestStatusModal::Other);
 
     assert_eq!(
         editor.focus_owner(),
-        SurfaceFocusTarget::Content(EditorFocusTarget::WorkspaceMounts)
+        ConsoleFocusTarget::Content(EditorFocusTarget::WorkspaceMounts)
     );
 
     editor.dismiss_active_modal();
@@ -1862,17 +1862,17 @@ fn trparity_editor_focus_owner_survives_modal_cancel() {
     assert!(editor.modal.is_none());
     assert_eq!(
         editor.focus_owner(),
-        SurfaceFocusTarget::Content(EditorFocusTarget::WorkspaceMounts)
+        ConsoleFocusTarget::Content(EditorFocusTarget::WorkspaceMounts)
     );
 }
 
 #[test]
 fn trparity_editor_focus_owner_survives_modal_commit() {
-    use jackin_tui::runtime::SurfaceFocusTarget;
+    use crate::tui::focus::ConsoleFocusTarget;
 
     let mut editor =
         TestEditorWithStatusModal::new_edit("alpha".into(), WorkspaceConfig::default());
-    editor.set_focus_owner(SurfaceFocusTarget::Content(
+    editor.set_focus_owner(ConsoleFocusTarget::Content(
         EditorFocusTarget::WorkspaceMounts,
     ));
     editor.open_sub_modal(TestStatusModal::Status);
@@ -1884,7 +1884,7 @@ fn trparity_editor_focus_owner_survives_modal_commit() {
     assert!(!editor.has_modal_parent());
     assert_eq!(
         editor.focus_owner(),
-        SurfaceFocusTarget::Content(EditorFocusTarget::WorkspaceMounts)
+        ConsoleFocusTarget::Content(EditorFocusTarget::WorkspaceMounts)
     );
 
     // Pop path from a two-level chain restores the parent modal, focus unchanged.
@@ -1895,6 +1895,6 @@ fn trparity_editor_focus_owner_survives_modal_commit() {
     assert!(!editor.has_modal_parent());
     assert_eq!(
         editor.focus_owner(),
-        SurfaceFocusTarget::Content(EditorFocusTarget::WorkspaceMounts)
+        ConsoleFocusTarget::Content(EditorFocusTarget::WorkspaceMounts)
     );
 }

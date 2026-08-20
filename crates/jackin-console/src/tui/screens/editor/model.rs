@@ -10,8 +10,8 @@
 use std::collections::BTreeSet;
 use std::marker::PhantomData;
 
+use crate::tui::focus::TabFocus;
 use jackin_config::WorkspaceConfig;
-use jackin_tui::runtime::SurfaceFocus;
 
 mod state_impl;
 
@@ -262,7 +262,7 @@ pub struct EditorState<
     pub mode: EditorMode,
     pub active_tab: EditorTab,
     /// W3C ARIA Tabs: focus is either on the tab list or exactly one content block.
-    pub focus_owner: SurfaceFocus<EditorFocusTarget>,
+    pub focus_owner: TabFocus<EditorFocusTarget>,
     pub hover_target: Option<EditorHoverTarget>,
     pub active_field: FieldFocus,
     pub original: WorkspaceConfig,
