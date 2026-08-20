@@ -53,7 +53,7 @@ touch view code.
 Use tailrocks-swift-best-practices in refactor mode on native/Sources/:
 close the remediation inputs from
 native/Design/UnifiedAgentUsage/SwiftBestPracticesReview.md — strict
-concurrency and actor isolation, state ownership, typed UniFFI boundary,
+concurrency and actor isolation, state ownership, typed boltffi boundary,
 availability guards with removal conditions, accessibility — preserving
 observable behavior. Keep Swift display-only; Rust stays owner of usage data.
 ```

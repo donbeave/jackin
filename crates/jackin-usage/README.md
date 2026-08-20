@@ -32,7 +32,7 @@ inward dependencies: `jackin-core`, `jackin-config`, `jackin-protocol`, and
 No dependency on `jackin-capsule` (which would be circular), `jackin-tui`,
 `jackin-console`, `jackin-launch`, or any presentation crate.
 
-UniFFI lives in sibling crate `jackin-usage-ffi`.
+boltffi lives in sibling crate `jackin-usage-ffi`.
 
 ## Structure
 

@@ -53,12 +53,12 @@ regression.
 | Language and concurrency | Pass | Swift 6, complete strict concurrency, and warnings-as-errors are explicit at `native/project.yml:16,22-24`. |
 | Local signing | Pass | Ad hoc identity and disabled hardened runtime are explicit at `native/project.yml:88-91`; `cargo xtask desktop build` signs the copied app at `crates/jackin-xtask/src/desktop.rs:648-657`. |
 | Derived data | Pass | Build and UI-test paths stay under `native/DerivedData`, never a temporary directory: `crates/jackin-xtask/src/desktop.rs:596-609` and `native/Scripts/run-ui-tests.sh:8,79`. |
-| Format gate | Pass | The Xcode-bundled formatter runs with `--strict` at `mise.toml:128-130`; generated UniFFI source is excluded. |
+| Format gate | Pass | The Xcode-bundled formatter runs with `--strict` at `mise.toml:128-130`; generated boltffi source is excluded. |
 | Lint gate | Pass in configuration | SwiftLint is exactly pinned at `mise.toml:32` and invoked with `--strict` at `132-134`. It was unavailable on the audit host because this checkout's mise configuration is not trusted; the direct formatter remained available. |
 | Unit and UI targets | Pass | XcodeGen owns populated unit and UI targets at `native/project.yml:102-127`; SwiftPM owns the importable test target at `native/Package.swift:66-70`. |
 | UI zero-test defense | Pass | The driver enumerates nonzero test methods, uses exact XCTest selectors, reads each result bundle, and requires exactly one passed test per invocation at `native/Scripts/run-ui-tests.sh:10,53-65,73-80,104-140`. |
 | Accessibility audit wiring | Pass with code-review gaps | Running-host audits exist at `native/UITests/JackinDesktopUITests.swift:425-519`; exception quality is evaluated in `SwiftBestPracticesReview.md`. |
-| Pinned bridge | Pass | UniFFI crate and CLI are both exactly `0.32.0`: `crates/jackin-usage-ffi/Cargo.toml:27` and `mise.toml:20-21`. |
+| Pinned bridge | Pass | boltffi crate and CLI are both exactly `0.30.1`: `crates/jackin-usage-ffi/Cargo.toml` and `mise.toml`. |
 | Ordered Rust packaging | Pass | `cargo xtask desktop build` builds the XCFramework before XcodeGen and Xcode: `crates/jackin-xtask/src/desktop.rs:569-614`. |
 | Architecture decision | Pass as a recorded product decision | The app, XCFramework, verifier, artifact name, and README consistently specify Apple Silicon only: `native/project.yml:13`, `native/README.md:26,132,141-145`, and `crates/jackin-xtask/src/desktop.rs:636-643`. Universal packaging is intentionally outside the current product contract. |
 
@@ -83,10 +83,10 @@ ignored project output; regeneration produced no tracked binding diff.
 | `swift --version` | PASS — Apple Swift 6.3.3, arm64 macOS 26 target | Host toolchain only. |
 | `xcrun swift-format --version` | PASS — 6.3.0 | Formatter availability. |
 | `xcodegen --help` | PASS — XcodeGen 2.46.0 was installed and accepted the current CLI | Availability only. The build command below performed generation. |
-| `find Sources Tests UITests Tools Scripts -name '*.swift' ! -name 'jackin_usage_ffi.swift' -print0 \| xargs -0 xcrun swift-format lint --configuration .swift-format --strict --parallel` from `native/` | PASS — exit 0, no findings | Strict handwritten formatting; generated UniFFI excluded deliberately. |
+| `find Sources Tests UITests Tools Scripts -name '*.swift' ! -name 'jackin_usage_ffi.swift' -print0 \| xargs -0 xcrun swift-format lint --configuration .swift-format --strict --parallel` from `native/` | PASS — exit 0, no findings | Strict handwritten formatting; generated boltffi excluded deliberately. |
 | `rtk cargo xtask desktop test` | PASS | Rust/FFI nextest plus `StatusItemChipHarness`, `DesktopArchitectureLint`, and `DesktopParityMatrixHarness`. It confirms the audit defect: two other declared harness products were not run. |
 | `rtk swift test -c release` from `native/` | PASS — 65 XCTest plus 2 Swift Testing tests, zero failures | Current Swift package tests; runner does not machine-enforce the count. |
-| `rtk cargo xtask desktop build --version 0.6.0 --build 1` | PASS — XCFramework, UniFFI generation, XcodeGen, arm64 Release build, ad hoc sign, app assembly | Mutating build pipeline passed. It is not a nonmutating binding-drift gate. |
+| `rtk cargo xtask desktop build --version 0.6.0 --build 1` | PASS — XCFramework, boltffi generation, XcodeGen, arm64 Release build, ad hoc sign, app assembly | Mutating build pipeline passed. It is not a nonmutating binding-drift gate. |
 | `rtk git diff -- native/Generated native/Sources/JackinUsageBridge/jackin_usage_ffi.swift` after build | PASS — empty | Current regeneration matched tracked bindings. This manual observation does not replace CI drift enforcement. |
 | `rtk cargo xtask desktop verify native/dist/JackinDesktop.app` | PASS — ad hoc/PR verification | Local artifact shape only; no Developer ID/notary/public-download proof. |
 | `rtk mise run desktop-test-ui` | UNAVAILABLE — mise required trusting repository config; trust was declined because it writes host state | Canonical wrapper did not start. |
@@ -293,7 +293,7 @@ Implementation:
 1. Add a dedicated `desktop-release` Cargo profile inheriting release with thin
    LTO, one codegen unit, line-table debug information, and symbol stripping
    disabled. Do not weaken the CLI/capsule release profile.
-2. Use that profile for the desktop static library and UniFFI generation.
+2. Use that profile for the desktop static library and boltffi generation.
 3. Archive the Rust symbol artifact and Xcode dSYM in release CI; verify they
    correspond to the published app bytes.
 

@@ -17,8 +17,8 @@ cargo-binstall = "1.21.1"
 "cargo:cargo-mutants" = "27.1.0"
 "aqua:nextest-rs/nextest/cargo-nextest" = "0.9.140"
 "cargo:cargo-shear" = "1.13.4"
-# Provides `uniffi-bindgen`; pin matches jackin-usage-ffi UniFFI (needs cli feature).
-"cargo:uniffi" = { version = "0.32.0", default-features = true, features = "cli" }
+# Provides `boltffi`; pin matches the jackin-usage-ffi boltffi crate.
+"cargo:boltffi_cli" = "0.30.1"
 "cargo:cargo-zigbuild" = "0.23.0"
 "cargo:codebook-lsp" = { version = "0.3.42", default-features = false }
 "cargo:sccache" = "0.16.0"
@@ -110,11 +110,11 @@ run = "cargo fmt --check"
 #   mise run desktop                # build + verify + run (one shot)
 
 [tasks.desktop-bindings]
-description = "Generate UniFFI Swift bindings for jackin❯ desktop"
+description = "Generate boltffi Swift bindings for jackin❯ desktop"
 run = "cargo xtask desktop bindings"
 
 [tasks.desktop-bindings-check]
-description = "Fail when committed UniFFI bindings drift from regeneration"
+description = "Fail when committed boltffi bindings drift from regeneration"
 run = "cargo xtask desktop bindings-check"
 
 [tasks.desktop-xcframework]
@@ -127,11 +127,13 @@ run = "xcodegen generate --spec native/project.yml"
 
 [tasks.desktop-format]
 description = "Format handwritten jackin❯ desktop Swift sources"
-run = "cd native && find Sources Tests UITests Tools Scripts -name '*.swift' ! -name 'jackin_usage_ffi.swift' -print0 | xargs -0 xcrun swift-format format --configuration .swift-format --in-place --parallel"
+# Generated boltffi Swift carries swiftlint/swiftformat disable headers, but
+# Apple's swift-format honors no inline disables — exclude the bindings tree.
+run = "cd native && find Sources Tests UITests Tools Scripts -name '*.swift' ! -path '*/JackinUsageBindings/*' -print0 | xargs -0 xcrun swift-format format --configuration .swift-format --in-place --parallel"
 
 [tasks.desktop-format-check]
 description = "Fail on jackin❯ desktop Swift formatting violations"
-run = "cd native && find Sources Tests UITests Tools Scripts -name '*.swift' ! -name 'jackin_usage_ffi.swift' -print0 | xargs -0 xcrun swift-format lint --configuration .swift-format --strict --parallel"
+run = "cd native && find Sources Tests UITests Tools Scripts -name '*.swift' ! -path '*/JackinUsageBindings/*' -print0 | xargs -0 xcrun swift-format lint --configuration .swift-format --strict --parallel"
 
 [tasks.desktop-lint]
 description = "Fail on jackin❯ desktop SwiftLint violations"
@@ -145,7 +147,7 @@ run = "native/Scripts/run-ui-tests.sh"
 
 [tasks.desktop-deadcode]
 description = "Scan jackin❯ desktop for unused declarations"
-run = "cd native && periphery scan --project JackinDesktop.xcodeproj --schemes JackinDesktop --retain-public --retain-objc-accessible --retain-assign-only-properties --report-exclude '**/jackin_usage_ffi.swift' --strict --quiet"
+run = "cd native && periphery scan --project JackinDesktop.xcodeproj --schemes JackinDesktop --retain-public --retain-objc-accessible --retain-assign-only-properties --report-exclude '**/JackinUsageBindings/**' --strict --quiet"
 
 [tasks.desktop-build]
 description = "Build JackinDesktop.app (prints absolute path + how to run)"

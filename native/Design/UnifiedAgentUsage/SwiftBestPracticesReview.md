@@ -5,7 +5,9 @@ Status: REVIEWED — REMEDIATION REQUIRED
 Review date: 2026-08-20
 
 Mode: read-only review under `tailrocks-swift-best-practices`. Generated UniFFI
-source is evidence, not a handwritten remediation target.
+source is evidence, not a handwritten remediation target. (The FFI generator has
+since migrated to boltffi 0.30.1; UniFFI references below describe the reviewed
+snapshot.)
 
 ## Executive verdict
 
@@ -29,7 +31,7 @@ typed recovery, and focused invalidation impossible to prove locally.
 | Projection rows and navigation values | Sendable values | Nested rows and `UsageWindowModel` conform to `Sendable` | Pass; identities need one cleanup noted below. |
 | `RefreshScheduler` | Actor-isolated exclusive FFI facade | Serial queue + lock + `@unchecked Sendable` at `RefreshScheduler.swift:6-23` | Current isolation category is not encoded. Mutable invalidation/queue state requires an actor with a dedicated executor or equivalent proven owner; the raw generic closure also leaks FFI ownership. |
 | AppKit controllers | Main-actor interface ownership | `@MainActor` on status bar, app delegate, split, toolbar, menus, and windows | Pass. |
-| Generated UniFFI types | Generator-owned | Generated `@unchecked Sendable`, traps, and force operations | Exclude from handwritten lint; fix only by pin/upgrade/generator configuration and a drift gate. |
+| Generated FFI types | Generator-owned | Generated `@unchecked Sendable`, traps, and force operations | Exclude from handwritten lint; fix only by pin/upgrade/generator configuration and a drift gate. |
 
 ## P0 findings
 
@@ -485,7 +487,7 @@ change across projection/localization. The current primary views use Rust
 `overviewSelectionID` (`PresentationStore.swift:1139-1159`). Removing a selected
 row can leave the native table bound to a nonexistent ID.
 
-Implementation: carry a Rust-owned stable bucket/window ID through UniFFI and
+Implementation: carry a Rust-owned stable bucket/window ID through the FFI boundary and
 remove label identity. Clear an overview selection only when its canonical
 provider/account ID disappears; preserve it across reorder and refresh. Add
 duplicate-label, label-change, removal, and reorder tests proving state,
@@ -568,7 +570,7 @@ and has zero clipped or unreachable content across the required layout matrix.
 ## Generated-code policy
 
 Do not hand-edit `jackin_usage_ffi.swift`. Its force operations, generated traps,
-and `@unchecked Sendable` conformances are owned by pinned UniFFI 0.32.0. The
+and `@unchecked Sendable` conformances are owned by the pinned FFI generator. The
 implementation plan must:
 
 1. keep generated code in its own target;
@@ -576,8 +578,8 @@ implementation plan must:
 3. enforce drift in CI;
 4. audit generator release notes before upgrades;
 5. exercise cancellation/error behavior at the handwritten facade;
-6. replace UniFFI only in a dedicated migration if generator defects block the
-   required invariants.
+6. replace the FFI generator only in a dedicated migration if generator defects
+   block the required invariants.
 
 ## Verification gate
 

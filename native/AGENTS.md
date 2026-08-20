@@ -1,6 +1,6 @@
 # jackin❯ desktop (native)
 
-Display-only Swift shell over `jackin-usage-ffi` (UniFFI). Product: **jackin❯ desktop**
+Display-only Swift shell over `jackin-usage-ffi` (boltffi). Product: **jackin❯ desktop**
 (`JackinDesktop.app`). Rust owns probes, cache, severity, and every usage number.
 
 > **CLAUDE.md = symlink to AGENTS.md beside it** — recreate: `ln -s AGENTS.md CLAUDE.md`.
@@ -26,7 +26,7 @@ Display-only Swift shell over `jackin-usage-ffi` (UniFFI). Product: **jackin❯ 
 - **Display-only Swift.** No HTTP/OAuth/CLI scrapes, no second provider matrix, no
   config/workspace discovery, credential/path resolution, account deduplication, or
   inventing percentages. Numbers, identities, provenance, diagnostics, and limit
-  strings come from UniFFI / Rust only. Production passes no host paths to the bridge.
+  strings come from boltffi / Rust only. Production passes no host paths to the bridge.
 - **Broker client only.** Refresh sends intent once and renders Rust generation/phase.
   Swift never schedules provider work, owns a retry deadline, or treats task
   cancellation as single-flight authority. Active manual/background requests join;

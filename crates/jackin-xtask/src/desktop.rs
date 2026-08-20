@@ -27,11 +27,14 @@ const APP_EXECUTABLE: &str = "JackinDesktop";
 const BUNDLE_ID: &str = "com.jackin-project.desktop";
 const BUNDLE_NAME: &str = "jackin❯ desktop";
 const MIN_OS: &str = "26.0";
-const FRAMEWORK_NAME: &str = "JackinUsageFFI";
-const MODULE_NAME: &str = "jackin_usage_ffiFFI";
+/// XC framework artifact name; the boltffi FFI module is always `{name}FFI`.
+const FRAMEWORK_NAME: &str = "JackinUsage";
+const MODULE_NAME: &str = "JackinUsageFFI";
 const STATIC_LIB: &str = "libjackin_usage_ffi.a";
 const HOST_TARGET: &str = "aarch64-apple-darwin";
 const ARCH: &str = "arm64";
+/// Crate holding `boltffi.toml`; boltffi resolves the crate from its cwd.
+const FFI_CRATE_DIR: &str = "crates/jackin-usage-ffi";
 /// Symbol-rich release lane for the desktop static library (see workspace
 /// `[profile.desktop-release]`); release CI archives its unstripped bytes.
 const DESKTOP_PROFILE: &str = "desktop-release";
@@ -48,7 +51,7 @@ pub(super) fn progress(msg: impl AsRef<str>) {
 
 #[derive(Subcommand)]
 pub(crate) enum DesktopCommand {
-    /// Generate `UniFFI` Swift bindings into `native/Generated`.
+    /// Generate boltffi Swift bindings into `native/Sources/JackinUsageBindings`.
     Bindings(BindingsArgs),
     /// Nonmutating drift gate: regenerate into staging and byte-compare.
     BindingsCheck(BindingsArgs),
@@ -74,7 +77,7 @@ pub(crate) enum DesktopCommand {
 
 #[derive(Args)]
 pub(crate) struct BindingsArgs {
-    /// Cargo profile used to build the library for uniffi-bindgen.
+    /// Cargo profile passed to boltffi's cargo invocation.
     #[arg(long, default_value = "desktop-release")]
     profile: String,
 }
@@ -178,7 +181,7 @@ fn run_desktop_tests(root: &Path) -> Result<()> {
     cmd::run_streaming(&mut nextest)?;
 
     // Ensure XCFramework exists for SwiftPM binary target.
-    let xcf = root.join("target/xcframework/JackinUsageFFI.xcframework");
+    let xcf = root.join(format!("target/xcframework/{FRAMEWORK_NAME}.xcframework"));
     if !xcf.is_dir() {
         progress("==> XCFramework missing — building");
         build_xcframework(root)?;
@@ -541,9 +544,8 @@ pub(super) fn require_macos(action: &str) -> Result<()> {
 }
 
 fn generate_bindings(root: &Path, profile: &str) -> Result<()> {
-    let out_dir = root.join("native/Generated");
     let sources = root.join("native/Sources/JackinUsageBindings");
-    generate_bindings_into(root, profile, &out_dir, &sources)
+    generate_bindings_into(root, profile, &sources, None)
 }
 
 fn bindings_check(root: &Path, profile: &str) -> Result<()> {
@@ -551,26 +553,31 @@ fn bindings_check(root: &Path, profile: &str) -> Result<()> {
     if staging.exists() {
         fs::remove_dir_all(&staging).with_context(|| format!("clearing {}", staging.display()))?;
     }
-    let staging_generated = staging.join("Generated");
     let staging_sources = staging.join("Sources/JackinUsageBindings");
-    generate_bindings_into(root, profile, &staging_generated, &staging_sources)?;
-
-    let mut differences = tree_differences(
-        &root.join("native/Generated"),
-        &staging_generated,
-        "native/Generated",
+    // Redirect boltffi's Swift output into staging via an overlay config so the
+    // committed tree is never touched by the drift gate.
+    let overlay = staging.join("boltffi.overlay.toml");
+    fs::create_dir_all(&staging)?;
+    fs::write(
+        &overlay,
+        format!(
+            "[targets.apple.swift]\noutput = \"{}\"\n",
+            staging_sources.display()
+        ),
     )?;
-    differences.extend(tree_differences(
+    generate_bindings_into(root, profile, &staging_sources, Some(&overlay))?;
+
+    let differences = tree_differences(
         &root.join("native/Sources/JackinUsageBindings"),
         &staging_sources,
         "native/Sources/JackinUsageBindings",
-    )?);
+    )?;
     if differences.is_empty() {
         progress("==> bindings-check: committed bindings match regeneration");
         return Ok(());
     }
     let mut report = String::from(
-        "committed UniFFI bindings are stale; run `mise run desktop-bindings` and commit:",
+        "committed boltffi bindings are stale; run `mise run desktop-bindings` and commit:",
     );
     for difference in &differences {
         report.push_str("\n  ");
@@ -631,8 +638,8 @@ fn tree_differences(expected: &Path, actual: &Path, label: &str) -> Result<Vec<S
 fn generate_bindings_into(
     root: &Path,
     profile: &str,
-    out_dir: &Path,
     sources: &Path,
+    overlay: Option<&Path>,
 ) -> Result<()> {
     require_macos("desktop bindings")?;
     let profile = profile.trim();
@@ -640,62 +647,39 @@ fn generate_bindings_into(
         bail!("profile must be release, debug, or {DESKTOP_PROFILE} (got {profile})");
     }
 
-    progress(format!("==> building jackin-usage-ffi ({profile})"));
-    let mut cargo = cmd::command("cargo");
-    cargo
-        .current_dir(root)
-        .args(["build", "-p", "jackin-usage-ffi", "--profile", profile]);
-    cmd::run_streaming(&mut cargo)?;
-
-    let lib = root.join(format!("target/{profile}/libjackin_usage_ffi.dylib"));
-    if !lib.is_file() {
-        bail!("expected library at {}", lib.display());
-    }
-
-    let bindgen = which("uniffi-bindgen").context(
-        "uniffi-bindgen not on PATH; install via mise (`mise install`) — see mise.toml cargo:uniffi",
+    let boltffi = which("boltffi").context(
+        "boltffi not on PATH; install via mise (`mise install`) — see mise.toml cargo:boltffi_cli",
     )?;
 
-    fs::create_dir_all(out_dir)?;
     progress(format!(
         "==> generating Swift bindings into {}",
-        out_dir.display()
+        sources.display()
     ));
-    let mut bindgen_cmd = cmd::command(&bindgen);
-    bindgen_cmd.current_dir(root).args([
-        "generate",
-        "--library",
-        lib.to_str().context("lib path utf-8")?,
-        "--language",
-        "swift",
-        "--out-dir",
-        out_dir.to_str().context("out_dir utf-8")?,
-    ]);
-    cmd::run_streaming(&mut bindgen_cmd)?;
+    let mut generate = cmd::command(&boltffi);
+    generate
+        .current_dir(root.join(FFI_CRATE_DIR))
+        .env("MACOSX_DEPLOYMENT_TARGET", MIN_OS)
+        .arg("--cargo-arg=--profile")
+        .arg(format!("--cargo-arg={profile}"));
+    if let Some(overlay) = overlay {
+        generate.arg("--overlay").arg(overlay);
+    }
+    generate.args(["generate", "swift"]);
+    cmd::run_streaming(&mut generate)?;
 
-    fs::create_dir_all(sources)?;
-    let generated_swift = out_dir.join("jackin_usage_ffi.swift");
-    for generated in [
-        &generated_swift,
-        &out_dir.join("jackin_usage_ffiFFI.h"),
-        &out_dir.join("jackin_usage_ffiFFI.modulemap"),
-    ] {
-        normalize_generated_file(generated)?;
+    // `boltffi generate` also drops the C header beside the Swift; only the
+    // xcframework consumes headers, so the committed tree stays pure Swift.
+    let stray_header = sources.join("BoltFFI/boltffi.h");
+    if stray_header.is_file() {
+        fs::remove_file(&stray_header)?;
     }
-    if generated_swift.is_file() {
-        fs::copy(&generated_swift, sources.join("jackin_usage_ffi.swift"))?;
-    }
-    let modulemap = out_dir.join("module.modulemap");
-    if out_dir.join("jackin_usage_ffiFFI.modulemap").is_file() && !modulemap.is_file() {
-        fs::write(
-            &modulemap,
-            "module jackin_usage_ffiFFI {\n    header \"jackin_usage_ffiFFI.h\"\n    export *\n}\n",
-        )?;
+    for generated in find_files_with_ext(sources, "swift")? {
+        normalize_generated_file(&generated)?;
     }
 
     progress(format!(
         "==> generated bindings under {}",
-        out_dir.display()
+        sources.display()
     ));
     Ok(())
 }
@@ -730,52 +714,51 @@ fn build_xcframework(root: &Path) -> Result<()> {
     require_macos("desktop xcframework")?;
 
     progress(format!(
-        "==> building staticlib for {HOST_TARGET} (macOS {MIN_OS} floor)"
+        "==> packing staticlib for {HOST_TARGET} (macOS {MIN_OS} floor)"
     ));
     let mut rustup = cmd::command("rustup");
     rustup.args(["target", "add", HOST_TARGET]);
     // Already-installed target is fine; surface other rustup failures below if cargo fails.
     drop(cmd::run(&mut rustup));
 
-    let mut cargo = cmd::command("cargo");
-    cargo
-        .current_dir(root)
-        .env("MACOSX_DEPLOYMENT_TARGET", MIN_OS)
-        .args([
-            "build",
-            "-p",
-            "jackin-usage-ffi",
-            "--profile",
-            DESKTOP_PROFILE,
-            "--target",
-            HOST_TARGET,
-        ]);
-    cmd::run_streaming(&mut cargo)?;
-
-    let arm_lib = root.join(format!(
-        "target/{HOST_TARGET}/{DESKTOP_PROFILE}/{STATIC_LIB}"
-    ));
-    if !arm_lib.is_file() {
-        bail!("missing {}", arm_lib.display());
-    }
-
-    generate_bindings(root, DESKTOP_PROFILE)?;
-
-    let header = find_generated_header(root)?;
     let out_dir = root.join("target/xcframework");
     let xcframework = out_dir.join(format!("{FRAMEWORK_NAME}.xcframework"));
-    if out_dir.exists() {
-        fs::remove_dir_all(&out_dir)?;
+    // boltffi merges into an existing output directory; wipe for a clean slice set.
+    if xcframework.exists() {
+        fs::remove_dir_all(&xcframework)?;
     }
-    fs::create_dir_all(&xcframework)?;
+    let zip = out_dir.join(format!("{FRAMEWORK_NAME}.xcframework.zip"));
+    if zip.exists() {
+        fs::remove_file(&zip)?;
+    }
 
-    progress(format!(
-        "==> assembling static XCFramework ({MODULE_NAME}, arm64 only)"
-    ));
-    install_slice(&xcframework, ARCH, &arm_lib, &header)?;
+    // boltffi drives cargo itself; the deployment-target floor propagates
+    // through the inherited environment (slice advertises minos 26.0).
+    let boltffi = which("boltffi").context(
+        "boltffi not on PATH; install via mise (`mise install`) — see mise.toml cargo:boltffi_cli",
+    )?;
+    let mut pack = cmd::command(&boltffi);
+    pack.current_dir(root.join(FFI_CRATE_DIR))
+        .env("MACOSX_DEPLOYMENT_TARGET", MIN_OS)
+        .args([
+            "--cargo-arg=--profile".to_owned(),
+            format!("--cargo-arg={DESKTOP_PROFILE}"),
+        ])
+        .args(["pack", "apple"]);
+    cmd::run_streaming(&mut pack)?;
+
+    if !xcframework.is_dir() {
+        bail!("missing {}", xcframework.display());
+    }
+
+    let modulemap = xcframework.join(format!("macos-{ARCH}/Headers/module.modulemap"));
+    let modulemap_text = fs::read_to_string(&modulemap)
+        .with_context(|| format!("reading {}", modulemap.display()))?;
+    if !modulemap_text.contains(&format!("module {MODULE_NAME} ")) {
+        bail!("xcframework modulemap must declare `module {MODULE_NAME}`, got:\n{modulemap_text}");
+    }
 
     let info_plist = xcframework.join("Info.plist");
-    fs::write(&info_plist, XCFRAMEWORK_INFO_PLIST)?;
     if which("plutil").is_ok() {
         let mut plutil = cmd::command("plutil");
         plutil.args(["-lint", info_plist.to_str().context("plist utf-8")?]);
@@ -789,41 +772,14 @@ fn build_xcframework(root: &Path) -> Result<()> {
             libs.len()
         );
     }
+    let archs = lipo_archs(&libs[0])?;
+    progress(format!("  slice macos-{ARCH}: {archs}"));
+    if !archs.split_whitespace().any(|a| a == ARCH) {
+        bail!("xcframework library missing {ARCH} (got {archs})");
+    }
 
     progress(format!("==> XCFramework ready: {}", xcframework.display()));
     Ok(())
-}
-
-fn install_slice(xcframework: &Path, arch: &str, lib: &Path, header: &Path) -> Result<()> {
-    let id = format!("macos-{arch}");
-    let slice = xcframework.join(&id);
-    let headers = slice.join("Headers");
-    fs::create_dir_all(&headers)?;
-    fs::copy(lib, slice.join(STATIC_LIB))?;
-    fs::copy(header, headers.join("jackin_usage_ffiFFI.h"))?;
-    fs::write(
-        headers.join("module.modulemap"),
-        format!("module {MODULE_NAME} {{\n  header \"jackin_usage_ffiFFI.h\"\n  export *\n}}\n"),
-    )?;
-
-    let archs = lipo_archs(&slice.join(STATIC_LIB))?;
-    progress(format!("  slice {id}: {archs}"));
-    if !archs.split_whitespace().any(|a| a == arch) {
-        bail!("{id} library missing {arch} (got {archs})");
-    }
-    Ok(())
-}
-
-fn find_generated_header(root: &Path) -> Result<PathBuf> {
-    let preferred = root.join("native/Generated/jackin_usage_ffiFFI.h");
-    if preferred.is_file() {
-        return Ok(preferred);
-    }
-    let generated = root.join("native/Generated");
-    find_files_with_ext(&generated, "h")?
-        .into_iter()
-        .next()
-        .ok_or_else(|| anyhow::anyhow!("no generated header under native/Generated"))
 }
 
 fn build_app(root: &Path, version: &str, build: &str) -> Result<()> {
@@ -1196,35 +1152,6 @@ fn assert_no_absolute_ffi_link(bin: &Path) -> Result<()> {
     }
     Ok(())
 }
-
-const XCFRAMEWORK_INFO_PLIST: &str = r#"<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-  <key>AvailableLibraries</key>
-  <array>
-    <dict>
-      <key>LibraryIdentifier</key>
-      <string>macos-arm64</string>
-      <key>LibraryPath</key>
-      <string>libjackin_usage_ffi.a</string>
-      <key>HeadersPath</key>
-      <string>Headers</string>
-      <key>SupportedArchitectures</key>
-      <array>
-        <string>arm64</string>
-      </array>
-      <key>SupportedPlatform</key>
-      <string>macos</string>
-    </dict>
-  </array>
-  <key>CFBundlePackageType</key>
-  <string>XFWK</string>
-  <key>XCFrameworkFormatVersion</key>
-  <string>1.0</string>
-</dict>
-</plist>
-"#;
 
 pub(super) fn which(program: &str) -> Result<PathBuf> {
     let mut cmd = cmd::command("which");

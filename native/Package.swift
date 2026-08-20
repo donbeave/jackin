@@ -1,8 +1,8 @@
 // swift-tools-version: 6.2
 import PackageDescription
 
-// Static XCFramework produced by `cargo xtask desktop xcframework`.
-// Binary target name must match UniFFI's jackin_usage_ffiFFI module.
+// Static XCFramework produced by `cargo xtask desktop xcframework` (boltffi pack apple).
+// Binary target name must match the boltffi FFI module JackinUsageFFI.
 let package = Package(
     name: "JackinDesktop",
     platforms: [
@@ -19,14 +19,14 @@ let package = Package(
     ],
     targets: [
         .binaryTarget(
-            name: "jackin_usage_ffiFFI",
-            path: "../target/xcframework/JackinUsageFFI.xcframework"
+            name: "JackinUsageFFI",
+            path: "../target/xcframework/JackinUsage.xcframework"
         ),
-        // Generated UniFFI Swift only. Nothing handwritten lands here; only
+        // Generated boltffi Swift only. Nothing handwritten lands here; only
         // JackinUsageBridge may depend on this target.
         .target(
             name: "JackinUsageBindings",
-            dependencies: ["jackin_usage_ffiFFI"],
+            dependencies: ["JackinUsageFFI"],
             path: "Sources/JackinUsageBindings"
         ),
         .target(

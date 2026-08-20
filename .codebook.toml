@@ -55,7 +55,7 @@ words = [
   "LSUI",
   "LSUIElement",
   "notarytool",
-  "UniFFI",
+  "boltffi",
   "XCFramework",
   "MenuBarExtra",
   "codesign",

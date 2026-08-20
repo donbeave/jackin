@@ -95,7 +95,7 @@ Finalize one agent usage experience across jackin❯ desktop, `jackin console`, 
 
 - Rust owns the shared host provider/account projection consumed by both `jackin usage` and `jackin console`; their output adapters do not rediscover, rededuplicate, or refresh accounts independently.
 - The host projection covers all eight usage surfaces. A derived filtered jackin❯ desktop projection remains limited to its fixed seven-provider catalog by excluding OpenCode.
-- Rust owns desktop discovery, account identity, deduplication, broker coordination, quota shaping, and immutable projections; the UniFFI boundary exports sanitized display data, and Swift remains display-only.
+- Rust owns desktop discovery, account identity, deduplication, broker coordination, quota shaping, and immutable projections; the boltffi boundary exports sanitized display data, and Swift remains display-only.
 - Current read-only configuration discovery owns host inventory membership; history may enrich but never create membership.
 - Capsule inventory membership is a separate instance-scoped filter derived only
   from the current fully resolved launch configuration. A resolved usage

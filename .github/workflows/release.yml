@@ -445,7 +445,7 @@ jobs:
           version: "2026.7.12"
           cache_key_prefix: "mise-v2"
           cache_save: ${{ github.ref == 'refs/heads/main' }}
-          install_args: "cargo-binstall rust cosign syft aqua:nextest-rs/nextest/cargo-nextest cargo:uniffi"
+          install_args: "cargo-binstall rust cosign syft aqua:nextest-rs/nextest/cargo-nextest cargo:boltffi_cli"
           github_token: ${{ secrets.GH_READONLY_TOKEN }}
 
       - uses: ./.github/actions/cache-cargo-registry
@@ -457,8 +457,8 @@ jobs:
           key: cargo-target-GitHub-${{ runner.os }}-${{ github.job }}-${{ hashFiles('rust-toolchain.toml', '.cargo/config.toml', '**/Cargo.toml', '**/Cargo.lock') }}-${{ github.sha }}
           restore-keys: cargo-target-GitHub-${{ runner.os }}-${{ github.job }}-${{ hashFiles('rust-toolchain.toml', '.cargo/config.toml', '**/Cargo.toml', '**/Cargo.lock') }}-
 
-      - name: Verify mise-managed uniffi-bindgen
-        run: uniffi-bindgen --version
+      - name: Verify mise-managed boltffi
+        run: boltffi --version
 
       - name: Verify Xcode 26.6
         run: xcodebuild -version

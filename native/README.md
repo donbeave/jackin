@@ -1,6 +1,6 @@
 # jackin❯ desktop
 
-Native macOS limits display over `jackin-usage-ffi` (UniFFI). Product identity is **jackin❯ desktop** (`JackinDesktop.app`, bundle id `com.jackin-project.desktop`). Rust owns probes, provider ordering, accounts, quota semantics, refresh policy, severity, and every domain string. Swift owns AppKit/SwiftUI presentation and OS integration.
+Native macOS limits display over `jackin-usage-ffi` (boltffi). Product identity is **jackin❯ desktop** (`JackinDesktop.app`, bundle id `com.jackin-project.desktop`). Rust owns probes, provider ordering, accounts, quota semantics, refresh policy, severity, and every domain string. Swift owns AppKit/SwiftUI presentation and OS integration.
 
 Production Swift passes no config, home, or data paths. Rust derives canonical host
 paths, loads the global/workspace/role configuration read-only, resolves configured
@@ -83,9 +83,8 @@ Settings is a standard titled `NSWindow` containing a grouped `Form`. It owns me
 | Path | Role |
 |---|---|
 | `../crates/jackin-usage` | Host probes and `HostUsageRuntime` |
-| `../crates/jackin-usage-ffi` | Synchronous UniFFI facade |
-| `Generated/` | Generated UniFFI C header/module map |
-| `Sources/JackinUsageBindings` | Generated UniFFI Swift only (never handwritten) |
+| `../crates/jackin-usage-ffi` | Synchronous boltffi facade |
+| `Sources/JackinUsageBindings` | Generated boltffi Swift only (never handwritten) |
 | `Sources/JackinUsageBridge` | Handwritten sole FFI importer: typed facade, `PresentationStore`, pure projections |
 | `Sources/JackinDesktop` | AppKit hosts and SwiftUI native surfaces |
 | `Sources/JackinDesktop/VisualQAFixtures.swift` | Explicit synthetic F00–F14 visual-QA states |
@@ -145,10 +144,12 @@ The script rebuilds and verifies the canonical branch-head app, then drives dete
 One path builds local, PR, and release apps:
 
 1. `mise install` installs pinned tools.
-2. `cargo xtask desktop xcframework` creates the arm64 static `target/xcframework/JackinUsageFFI.xcframework`.
+2. `cargo xtask desktop xcframework` creates the arm64 static `target/xcframework/JackinUsage.xcframework` (FFI module `JackinUsageFFI`).
 3. `native/Package.swift` consumes it as a binary target.
 4. `mise run desktop-build -- <version> <build>` generates bindings/project, builds `JackinDesktop.app`, and ad-hoc signs local/validation output.
 5. `mise run desktop-verify` proves bundle architecture, metadata, dependency, and signature shape. Release verification additionally requires Developer ID, notarization, staple, and Gatekeeper acceptance.
+
+After an XCFramework rename or FFI module change, delete `native/DerivedData` before rebuilding — Xcode caches clang module resolution and otherwise fails with stale module errors.
 
 ## CI and release contract
 

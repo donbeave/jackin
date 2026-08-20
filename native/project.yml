@@ -46,7 +46,7 @@ targets:
         PRODUCT_MODULE_NAME: JackinUsageBindings
         SKIP_INSTALL: YES
     dependencies:
-      - framework: ../target/xcframework/JackinUsageFFI.xcframework
+      - framework: ../target/xcframework/JackinUsage.xcframework
         embed: false
 
   JackinUsageBridge:
@@ -122,7 +122,7 @@ targets:
       - target: JackinDesktopUI
       - target: JackinUsageBindings
       - target: JackinUsageBridge
-      - framework: ../target/xcframework/JackinUsageFFI.xcframework
+      - framework: ../target/xcframework/JackinUsage.xcframework
         embed: false
 
   JackinDesktopTests:
@@ -138,7 +138,7 @@ targets:
       - target: JackinDesktopUI
       - target: JackinUsageBindings
       - target: JackinUsageBridge
-      - framework: ../target/xcframework/JackinUsageFFI.xcframework
+      - framework: ../target/xcframework/JackinUsage.xcframework
         embed: false
 
   JackinDesktopUITests:

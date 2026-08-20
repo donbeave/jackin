@@ -392,8 +392,8 @@ final class ArchitectureTests: XCTestCase {
             "Package.swift must consume the static XCFramework via binaryTarget"
         )
         XCTAssertTrue(
-            text.contains("jackin_usage_ffiFFI"),
-            "binary target name must match UniFFI module jackin_usage_ffiFFI"
+            text.contains("JackinUsageFFI"),
+            "binary target name must match the boltffi FFI module JackinUsageFFI"
         )
         XCTAssertFalse(
             text.contains("target/release"),

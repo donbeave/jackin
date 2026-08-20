@@ -13,7 +13,7 @@ public enum StatusItemDisplayMode: String, CaseIterable, Sendable {
     case strip
 }
 
-/// Thin presentation store: polls Rust UniFFI snapshots; no provider probes.
+/// Thin presentation store: polls Rust boltffi snapshots; no provider probes.
 @MainActor
 public final class PresentationStore: ObservableObject {
     public struct IdentityRow: Sendable, Equatable {

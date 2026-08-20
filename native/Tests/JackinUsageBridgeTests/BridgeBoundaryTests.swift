@@ -33,13 +33,11 @@ final class BridgeBoundaryTests: XCTestCase {
         for relative in ["Sources", "Tools", "Tests", "UITests"] {
             for file in try swiftFiles(under: relative) {
                 let text = try String(contentsOf: file, encoding: .utf8)
-                let isGenerated =
-                    file.lastPathComponent == "jackin_usage_ffi.swift"
-                    && file.path.contains("Sources/JackinUsageBindings/")
+                let isGenerated = file.path.contains("Sources/JackinUsageBindings/")
                 if isGenerated { continue }
                 if file.lastPathComponent == "BridgeBoundaryTests.swift" { continue }
                 XCTAssertFalse(
-                    text.contains("import jackin_usage_ffiFFI"),
+                    text.contains("import JackinUsageFFI"),
                     "\(file.lastPathComponent) must not import the generated C module"
                 )
             }
@@ -51,7 +49,7 @@ final class BridgeBoundaryTests: XCTestCase {
             for file in try swiftFiles(under: relative) {
                 let allowed =
                     file.lastPathComponent == "RefreshScheduler.swift"
-                    || file.lastPathComponent == "jackin_usage_ffi.swift"
+                    || file.path.contains("Sources/JackinUsageBindings/")
                     || file.lastPathComponent == "BridgeBoundaryTests.swift"
                 if allowed { continue }
                 let text = try String(contentsOf: file, encoding: .utf8)
@@ -68,8 +66,8 @@ final class BridgeBoundaryTests: XCTestCase {
         let entries = try FileManager.default.contentsOfDirectory(atPath: bindingsDir.path)
         XCTAssertEqual(
             entries.sorted(),
-            ["jackin_usage_ffi.swift"],
-            "Sources/JackinUsageBindings holds generated UniFFI Swift only"
+            ["BoltFFI"],
+            "Sources/JackinUsageBindings holds generated boltffi Swift only"
         )
     }
 }

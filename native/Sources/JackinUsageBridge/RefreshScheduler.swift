@@ -6,7 +6,7 @@ import JackinUsageBindings
 
 /// Typed facade serializing every `UsageMenuBarBridge` access off the main actor.
 ///
-/// The UniFFI bridge is synchronous and shares one Rust runtime mutex, so a
+/// The boltffi bridge is synchronous and shares one Rust runtime mutex, so a
 /// Claude refresh that triggers a macOS Keychain consent sheet would block
 /// whatever thread called into Rust. If that thread were the main actor — or if
 /// any other bridge call (settings, account, poll, snapshot) ran on the main
@@ -32,7 +32,7 @@ public final class RefreshScheduler: @unchecked Sendable {
     }
 
     public convenience init() {
-        self.init(bridge: UsageMenuBarBridge.create())
+        self.init(bridge: UsageMenuBarBridge())
     }
 
     public enum SchedulerError: Error {

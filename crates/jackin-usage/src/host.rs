@@ -251,7 +251,7 @@ impl HostSurfaceId {
     }
 }
 
-/// Descriptor returned to `UniFFI` / CLI (no secrets).
+/// Descriptor returned to `boltffi` / CLI (no secrets).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct HostSurfaceDescriptor {
     /// Stable id (`claude`).
@@ -1246,7 +1246,7 @@ impl HostUsageRuntime {
     }
 
     /// Build the complete native Desktop model from one uninterrupted runtime
-    /// snapshot. The `UniFFI` bridge holds the runtime mutex for this whole call,
+    /// snapshot. The `boltffi` bridge holds the runtime mutex for this whole call,
     /// so no broker generation can interleave partial provider/account state.
     pub fn desktop_projection(
         &mut self,
