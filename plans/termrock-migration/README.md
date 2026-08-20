@@ -18,7 +18,7 @@ Package scope: plans 005–014 modernize the **console surface** (`crates/jackin
 | 006 | Console facade retirement: upstream contracts, traits re-homed | F6, N2, D22 | P1 | L | 005 | DONE |
 | 007 | Console BrandHeader rebuild + dedicated PNG crop proof | F8, B11 (console half), B16, N1, D21 | P1 | M | 005 | DONE |
 | 008 | Interaction core: ScrollArea + mouse machinery cutover | F5 (C1, C14), B14, D16, Q1 | P1 | L | 006 | BLOCKED (termrock API misfit — recommend upstream change: replace `#[derive(Default)]` on `HoverState<Id>` with a manual `impl<Id> Default` — the derive adds a spurious `Id: Default` bound, so `HoverState` is unconstructible for the non-Default consumer hover-target IDs step 5 must store on `ManagerState`; steps 1–4 landed green at 1ac9f40) |
-| 009 | Collections, selection wrapper, modal geometry | F5 (C2, C4, C5), B14, D16 | P1 | M | 006 | TODO |
+| 009 | Collections, selection wrapper, modal geometry | F5 (C2, C4, C5), B14, D16 | P1 | M | 006 | IN PROGRESS |
 | 010 | Dialog and form layer adoption | F5 (C6–C8, C10, C11, C19), B14, D16 | P1 | L | 009 | TODO |
 | 011 | Layout, chrome, runtime adoption | F5 (C3, C12, C13, C15–C17), B14, D16 | P1 | L | 008 | TODO |
 | 012 | Whole-screen recipes, create wizard, keyboard_help overlay | F5 (recipes, form_wizard), F9, S2, N4, D24 | P2 | M | 010, 011 | TODO |
