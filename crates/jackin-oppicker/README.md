@@ -8,7 +8,7 @@ Split out of the console so the picker's decision logic is unit-testable without
 
 - Picker state machine (`state`) and input handling (`input`).
 - Load/planning helpers (`load`) — what to fetch and how to present it, with no I/O.
-- Load subscriptions (`adapters`): the cached arm rides upstream `termrock::runtime::ReadySubscription`; the worker arm is a product-owned one-shot receiver over a named, join-tracked thread.
+- Load subscriptions (`adapters`): cache hits ride upstream `termrock::runtime::ReadySubscription`; misses ride a product one-shot worker receiver.
 
 ## Architecture tier and allowed dependencies
 

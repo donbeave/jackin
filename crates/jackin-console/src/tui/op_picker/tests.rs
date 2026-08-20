@@ -2240,14 +2240,13 @@ fn cached_load_resolves_on_first_poll_and_clears_slot() {
 #[test]
 fn worker_load_reports_pending_until_delivery_then_clears_slot() {
     let mut s = picker_ready();
+    // Gate the worker on a channel so the Pending poll is deterministic
+    // (no sleep): the worker blocks until the test releases it.
+    let (gate_tx, gate_rx) = std::sync::mpsc::channel::<()>();
     s.attach_load_receiver(jackin_oppicker::spawn_named_worker_subscription(
         "jackin-op-picker-load-test",
-        || {
-            #[expect(
-                clippy::disallowed_methods,
-                reason = "test worker simulates a slow `op` call"
-            )]
-            std::thread::sleep(std::time::Duration::from_millis(50));
+        move || {
+            gate_rx.recv().unwrap();
             LoadResult::Vaults(Ok(vec![vault("Work")]))
         },
     ));
@@ -2255,6 +2254,7 @@ fn worker_load_reports_pending_until_delivery_then_clears_slot() {
     assert!(!s.poll_load(), "worker still in flight reports Pending");
     assert!(s.rx.is_some(), "rx slot survives Pending");
 
+    gate_tx.send(()).unwrap();
     let deadline = std::time::Instant::now() + std::time::Duration::from_secs(2);
     while s.rx.is_some() && std::time::Instant::now() < deadline {
         wait_for_worker_poll();
