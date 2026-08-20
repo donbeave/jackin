@@ -284,9 +284,7 @@ pub fn dispatch_wheel(
                 ConsoleScrollBlock::SettingsMounts => &mut settings.mounts.scroll,
                 ConsoleScrollBlock::SettingsEnv if dy != 0 => &mut settings.env.scroll,
                 ConsoleScrollBlock::SettingsTrust => &mut settings.trust.scroll,
-                ConsoleScrollBlock::SettingsAuth if dy != 0 => {
-                    settings.auth.scroll_state_mut()
-                }
+                ConsoleScrollBlock::SettingsAuth if dy != 0 => settings.auth.scroll_state_mut(),
                 _ => return ScrollOutcome::Ignored,
             };
             scroll_block_by(

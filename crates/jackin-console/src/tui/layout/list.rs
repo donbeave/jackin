@@ -104,14 +104,8 @@ pub fn clamp_list_scroll_for_area(
         crate::tui::scroll_block::scroll_area_set_y(&mut state.list_global_mounts_scroll, 0);
     }
     if reset_plan.reset_role_global {
-        crate::tui::scroll_block::scroll_area_set_x(
-            &mut state.list_role_global_mounts_scroll,
-            0,
-        );
-        crate::tui::scroll_block::scroll_area_set_y(
-            &mut state.list_role_global_mounts_scroll,
-            0,
-        );
+        crate::tui::scroll_block::scroll_area_set_x(&mut state.list_role_global_mounts_scroll, 0);
+        crate::tui::scroll_block::scroll_area_set_y(&mut state.list_role_global_mounts_scroll, 0);
     }
     if reset_plan.reset_roles {
         crate::tui::scroll_block::scroll_area_set_x(&mut state.list_roles_scroll, 0);

@@ -107,10 +107,8 @@ fn list_blocks(
     config: Option<&jackin_config::AppConfig>,
 ) -> Vec<ScrollBlockRegion> {
     let mut blocks = Vec::new();
-    let (left_x, left_w, _, _) = crate::tui::layout::horizontal_split_pane_dims(
-        state.list_split_pct,
-        term_size.width,
-    );
+    let (left_x, left_w, _, _) =
+        crate::tui::layout::horizontal_split_pane_dims(state.list_split_pct, term_size.width);
     let names_area = Rect {
         x: left_x,
         y: super::LIST_HEADER_HEIGHT,

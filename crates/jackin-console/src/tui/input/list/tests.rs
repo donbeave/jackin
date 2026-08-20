@@ -1008,7 +1008,8 @@ fn down_key_with_focused_block_clamps_vertical_scroll_without_selection_move() {
         "selection must not change while block focused"
     );
     assert_eq!(
-        state.list_mounts_scroll.offset_y(), 0,
+        state.list_mounts_scroll.offset_y(),
+        0,
         "non-overflowing block stays clamped"
     );
 }

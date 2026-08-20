@@ -276,10 +276,7 @@ pub fn apply_horizontal_scroll(
     content_width: usize,
 ) -> bool {
     let before = scroll.offset_x();
-    scroll.set_content_size(
-        u16::try_from(content_width).unwrap_or(u16::MAX),
-        u16::MAX,
-    );
+    scroll.set_content_size(u16::try_from(content_width).unwrap_or(u16::MAX), u16::MAX);
     scroll.set_viewport(
         u16::try_from(scroll_viewport_width(area)).unwrap_or(u16::MAX),
         1,
@@ -296,10 +293,7 @@ pub fn apply_vertical_scroll(
     content_height: usize,
 ) -> bool {
     let before = scroll.offset_y();
-    scroll.set_content_size(
-        u16::MAX,
-        u16::try_from(content_height).unwrap_or(u16::MAX),
-    );
+    scroll.set_content_size(u16::MAX, u16::try_from(content_height).unwrap_or(u16::MAX));
     scroll.set_viewport(
         1,
         u16::try_from(scroll_viewport_height(area)).unwrap_or(u16::MAX),

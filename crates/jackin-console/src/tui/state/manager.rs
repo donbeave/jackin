@@ -24,8 +24,7 @@ use crate::tui::screens::workspaces::update::{
     initial_workspace_selected_index, preview_pane_selected_index, selected_index,
     workspace_last_selectable_index, workspace_list_current_directory_selected,
     workspace_list_new_workspace_selected, workspace_list_saved_workspace_index,
-    workspace_row_at_visual_index, workspace_selected_row,
-    workspace_visual_selected_index,
+    workspace_row_at_visual_index, workspace_selected_row, workspace_visual_selected_index,
 };
 use crate::tui::subscriptions::{
     InstanceRefreshThrottleState, forced_instance_refresh_generation,
@@ -61,8 +60,7 @@ impl ManagerState<'_> {
     pub fn reset_list_scroll(&mut self) {
         self.list_mounts_scroll = crate::tui::scroll_block::console_scroll_area_state();
         self.list_global_mounts_scroll = crate::tui::scroll_block::console_scroll_area_state();
-        self.list_role_global_mounts_scroll =
-            crate::tui::scroll_block::console_scroll_area_state();
+        self.list_role_global_mounts_scroll = crate::tui::scroll_block::console_scroll_area_state();
         self.list_roles_scroll = crate::tui::scroll_block::console_scroll_area_state();
         self.list_focus_owner.focus_tab_bar();
         self.list_names_scroll = crate::tui::scroll_block::console_scroll_area_state();

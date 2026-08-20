@@ -212,7 +212,10 @@ impl<
         &mut self,
         plan: crate::tui::screens::editor::update::EditorHorizontalScrollPlan,
     ) {
-        crate::tui::scroll_block::scroll_area_set_x(&mut self.workspace_mounts_scroll, plan.scroll_x);
+        crate::tui::scroll_block::scroll_area_set_x(
+            &mut self.workspace_mounts_scroll,
+            plan.scroll_x,
+        );
         self.set_workspace_mounts_scroll_focused(plan.workspace_mounts_scroll_focused);
         self.set_tab_content_scroll_focused(plan.tab_content_scroll_focused);
     }

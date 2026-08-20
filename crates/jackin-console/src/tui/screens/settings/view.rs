@@ -1064,10 +1064,7 @@ pub fn clamp_mounts_scroll_x_for_frame(
     // Y dims stay pinned so `clamp` can never touch the vertical offset.
     // The pinned viewport is 1, not 0 — upstream `max_offset(_, 0)` is 0,
     // which would clamp the vertical offset to zero.
-    scroll.set_content_size(
-        u16::try_from(content_width).unwrap_or(u16::MAX),
-        u16::MAX,
-    );
+    scroll.set_content_size(u16::try_from(content_width).unwrap_or(u16::MAX), u16::MAX);
     scroll.set_viewport(
         u16::try_from(termrock::scroll::viewport_width(areas.body)).unwrap_or(u16::MAX),
         1,

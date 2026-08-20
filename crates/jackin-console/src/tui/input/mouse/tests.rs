@@ -427,7 +427,11 @@ fn editor_workdir_picker_wheel_scrolls_modal_selection_not_background() {
     let ManagerStage::Editor(editor) = &state.stage else {
         panic!("editor stage expected");
     };
-    assert_eq!(editor.tab_scroll.offset_y(), 0, "background editor must not scroll");
+    assert_eq!(
+        editor.tab_scroll.offset_y(),
+        0,
+        "background editor must not scroll"
+    );
     let Some(Modal::WorkdirPick { state: picker }) = &editor.modal else {
         panic!("workdir picker modal expected");
     };
@@ -457,7 +461,8 @@ fn settings_role_picker_wheel_scrolls_modal_selection_not_background() {
         panic!("settings stage expected");
     };
     assert_eq!(
-        settings.mounts.scroll.offset_y(), 4,
+        settings.mounts.scroll.offset_y(),
+        4,
         "background settings must not scroll"
     );
     let Some(SettingsModal::MountRolePicker { state: picker }) = settings.mounts.modals.current()
@@ -1163,7 +1168,10 @@ fn click_current_directory_mount_block_focuses_and_scrolls_it() {
         Some(&config),
     );
 
-    assert_eq!(state.list_mounts_scroll.offset_x(), MOUSE_HORIZONTAL_SCROLL_STEP);
+    assert_eq!(
+        state.list_mounts_scroll.offset_x(),
+        MOUSE_HORIZONTAL_SCROLL_STEP
+    );
 }
 
 #[test]
@@ -1217,7 +1225,8 @@ fn vertical_mouse_wheel_does_not_scroll_horizontal_only_list_block() {
     );
 
     assert_eq!(
-        state.list_global_mounts_scroll.offset_x(), 0,
+        state.list_global_mounts_scroll.offset_x(),
+        0,
         "ScrollDown must not change horizontal scroll on a horizontal-only block"
     );
 
@@ -1351,7 +1360,8 @@ fn horizontal_mouse_wheel_reaches_rendered_workspace_width() {
     );
 
     assert_eq!(
-        state.list_mounts_scroll.offset_x(), expected_max,
+        state.list_mounts_scroll.offset_x(),
+        expected_max,
         "mouse/touch scroll must clamp at the same rendered width keyboard scrolling reaches"
     );
 }
@@ -1523,7 +1533,8 @@ fn editor_general_tab_vertical_wheel_uses_shared_scroll_path() {
         panic!("editor stage expected");
     };
     assert_eq!(
-        editor.tab_scroll.offset_y(), 1,
+        editor.tab_scroll.offset_y(),
+        1,
         "General must use the same vertical wheel path as every editor tab"
     );
 }
@@ -1600,7 +1611,11 @@ fn editor_file_browser_wheel_scrolls_modal_selection_not_background() {
     let ManagerStage::Editor(editor) = &state.stage else {
         panic!("editor stage expected");
     };
-    assert_eq!(editor.tab_scroll.offset_y(), 0, "background editor must not scroll");
+    assert_eq!(
+        editor.tab_scroll.offset_y(),
+        0,
+        "background editor must not scroll"
+    );
     let Some(Modal::FileBrowser { state: fb, .. }) = &editor.modal else {
         panic!("file browser modal expected");
     };
@@ -1658,7 +1673,11 @@ fn editor_file_browser_smoke_hints_pagedown_and_wheel_share_modal_context() {
     let ManagerStage::Editor(editor) = &state.stage else {
         panic!("editor stage expected");
     };
-    assert_eq!(editor.tab_scroll.offset_y(), 0, "background editor must not scroll");
+    assert_eq!(
+        editor.tab_scroll.offset_y(),
+        0,
+        "background editor must not scroll"
+    );
     let Some(Modal::FileBrowser { state: fb, .. }) = &editor.modal else {
         panic!("file browser modal expected");
     };
@@ -1722,7 +1741,8 @@ fn settings_mounts_file_browser_wheel_scrolls_modal_selection_not_background() {
         panic!("settings stage expected");
     };
     assert_eq!(
-        settings.mounts.scroll.offset_y(), 4,
+        settings.mounts.scroll.offset_y(),
+        4,
         "background settings must not scroll"
     );
     let Some(SettingsModal::MountFileBrowser { state: fb }) = settings.mounts.modals.current()
@@ -1786,7 +1806,8 @@ fn file_browser_wheel_at_edge_is_consumed_before_background_scroll() {
         panic!("editor stage expected");
     };
     assert_eq!(
-        editor.tab_scroll.offset_y(), 0,
+        editor.tab_scroll.offset_y(),
+        0,
         "saturated modal wheel must not leak"
     );
     let Some(Modal::FileBrowser { state: fb, .. }) = &editor.modal else {

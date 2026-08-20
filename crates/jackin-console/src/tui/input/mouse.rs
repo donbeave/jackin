@@ -65,8 +65,8 @@ pub use modal_scroll::{
     scroll_settings_env_modal_selection, try_scroll_file_browser_modal, try_scroll_picker_modal,
 };
 pub use scroll_bars::{try_drag_horizontal_scrollbar, try_drag_vertical_scrollbar};
-pub use scroll_registry::{ConsoleScrollBlock, ScrollBlockRegion, hit, scroll_block_registry};
 pub use scroll_pan::{dispatch_wheel, settings_modal_open, update_scroll_focus};
+pub use scroll_registry::{ConsoleScrollBlock, ScrollBlockRegion, hit, scroll_block_registry};
 pub use selection::{
     editor_auth_row_index_at, editor_mount_index_at, try_select_editor_auth_row,
     try_select_editor_mount_row, try_select_editor_tab, try_select_settings_tab,
