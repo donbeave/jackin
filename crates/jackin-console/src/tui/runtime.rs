@@ -1,38 +1,12 @@
 // SPDX-FileCopyrightText: 2026 Alexey Zhokhov
 // SPDX-License-Identifier: Apache-2.0
 
-//! Shared jackin❯ application-adapter wiring for the console TUI.
+//! Console-owned subscription wiring for the console TUI.
 //!
-//! The shared TEA `Component<Ev, Msg>` and `View<Model>` contracts live in
-//! `jackin_tui::runtime`. This module is the console's implementation of
-//! those traits over its model (`ConsoleState`) and the existing render
-//! function (`crate::tui::view::render`). The trait impls are thin
-//! delegations that satisfy the shared contract at the type level. The
-//! existing event loop in `crates/jackin/src/console/adapter/run.rs` owns
-//! scheduling and dispatches rendering through this adapter.
-
-#[derive(Debug)]
-pub struct ConsoleViewContext<'a> {
-    pub config: &'a jackin_config::AppConfig,
-    pub cwd: &'a std::path::Path,
-}
-
-#[derive(Debug)]
-pub struct ConsoleView<'a> {
-    pub context: ConsoleViewContext<'a>,
-}
-
-impl jackin_tui::runtime::View<crate::tui::console::ConsoleState> for ConsoleView<'_> {
-    fn render(
-        &self,
-        model: &crate::tui::console::ConsoleState,
-        frame: &mut ratatui::Frame<'_>,
-        area: ratatui::layout::Rect,
-    ) {
-        let crate::tui::console::ConsoleStage::Manager(ms) = &model.stage;
-        crate::tui::view::render(frame, area, ms, self.context.config, self.context.cwd);
-    }
-}
+//! The frame path renders through a direct `Terminal::draw` in
+//! `crates/jackin/src/console/adapter/run.rs` (the run loop stays
+//! surface-owned). This module keeps the console's blocking-subscription
+//! machinery.
 
 use std::future::Future;
 

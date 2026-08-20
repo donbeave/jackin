@@ -328,8 +328,8 @@ where
         split_debug_area(full_area, jackin_diagnostics::is_debug_mode());
     {
         // Scoped mutable borrow of `state.stage`: released before the
-        // `View<ConsoleState>` dispatch below needs an immutable borrow of
-        // the whole `state`.
+        // `Terminal::draw` below needs an immutable borrow of the whole
+        // `state`.
         let ConsoleStage::Manager(ms) = &mut state.stage;
         if *context.container_info_overlay_active
             && !matches!(
@@ -343,18 +343,10 @@ where
         crate::console::adapter::prepare_for_render(ms, context.config, context.cwd, main_area);
     }
 
-    // Route the primary render through the shared `View<ConsoleState>`
-    // dispatch instead of calling `crate::console::adapter::render`
-    // directly. The confirm-dialog/debug-bar overlay compositing that used to
-    // share the same `terminal.draw` closure is not part of the `View`
-    // contract — it stays an `overlay` closure that `drive_frame` runs
-    // against the same in-progress frame, unchanged from before.
-    let view = jackin_console::tui::runtime::ConsoleView {
-        context: jackin_console::tui::runtime::ConsoleViewContext {
-            config: context.config,
-            cwd: context.cwd,
-        },
-    };
+    // Primary render: a direct `Terminal::draw` with the confirm-dialog /
+    // debug-bar overlay composited into the same in-progress frame — exactly
+    // what the retired facade `drive_frame` wrapped. The run loop stays
+    // surface-owned (arch gate).
     let confirm_state = state.quit_confirm.as_ref();
     let screen = screen_of(state);
     let render_started = std::time::Instant::now();
@@ -367,92 +359,93 @@ where
             jackin_telemetry::operation(&jackin_telemetry::operation::UI_RENDER, &render_attrs).ok()
         })
     });
-    let render_result =
-        jackin_tui::runtime::drive_frame(terminal, &view, &*state, main_area, |frame| {
-            if let Some(confirm) = confirm_state {
-                let hint_row = ratatui::layout::Rect {
-                    x: main_area.x,
-                    y: main_area.bottom().saturating_sub(1),
-                    width: main_area.width,
-                    height: 1,
-                };
-                let body = ratatui::layout::Rect {
-                    height: main_area.height.saturating_sub(1),
-                    ..main_area
-                };
-                jackin_console::tui::view::render_modal_backdrop(frame, body);
-                let area = quit_confirm_area(body, confirm);
-                jackin_console::tui::components::render_confirm_dialog(frame, area, confirm);
-                termrock::widgets::render_hint_bar(
-                    frame,
-                    hint_row,
-                    &jackin_console::tui::components::confirm_hint_spans(),
-                    &termrock::style::DesignSystem::default(),
-                );
+    let render_result = terminal.draw(|frame| {
+        let ConsoleStage::Manager(ms) = &state.stage;
+        jackin_console::tui::view::render(frame, main_area, ms, context.config, context.cwd);
+        if let Some(confirm) = confirm_state {
+            let hint_row = ratatui::layout::Rect {
+                x: main_area.x,
+                y: main_area.bottom().saturating_sub(1),
+                width: main_area.width,
+                height: 1,
+            };
+            let body = ratatui::layout::Rect {
+                height: main_area.height.saturating_sub(1),
+                ..main_area
+            };
+            jackin_console::tui::view::render_modal_backdrop(frame, body);
+            let area = quit_confirm_area(body, confirm);
+            jackin_console::tui::components::render_confirm_dialog(frame, area, confirm);
+            termrock::widgets::render_hint_bar(
+                frame,
+                hint_row,
+                &jackin_console::tui::components::confirm_hint_spans(),
+                &termrock::style::DesignSystem::default(),
+            );
+        }
+        context.mouse_state.chrome_regions.clear();
+        if let Some(bar_area) = debug_bar_area {
+            let invocation_id = jackin_telemetry::identity::current_invocation()
+                .map(|invocation_id| invocation_id.to_string());
+            let invocation_id = debug_invocation_id_label(invocation_id.as_deref());
+            let chip_row = debug_chip_row(bar_area);
+            let content = format!(" {invocation_id} ");
+            let slots =
+                [
+                    termrock::widgets::StatusSlot::new(ConsoleChromeHover::DebugChip, &content)
+                        .priority(1)
+                        .min_width(0)
+                        .enabled(true)
+                        .style(
+                            ratatui::style::Style::default()
+                                .bg(termrock::style::DesignSystem::default()
+                                    .style(termrock::style::Role::Danger)
+                                    .fg
+                                    .unwrap_or_default())
+                                .fg(termrock::style::DesignSystem::default()
+                                    .style(termrock::style::Role::Text)
+                                    .fg
+                                    .unwrap_or_default())
+                                .add_modifier(ratatui::style::Modifier::BOLD),
+                        )
+                        .hover_style(
+                            ratatui::style::Style::default()
+                                .bg(termrock::style::DesignSystem::default()
+                                    .style(termrock::style::Role::Text)
+                                    .fg
+                                    .unwrap_or_default())
+                                .fg(termrock::style::DesignSystem::default()
+                                    .style(termrock::style::Role::Danger)
+                                    .fg
+                                    .unwrap_or_default())
+                                .add_modifier(ratatui::style::Modifier::BOLD),
+                        ),
+                ];
+            // Head made the state's region storage private; hovered
+            // stays public.
+            let mut status_state = termrock::widgets::StatusBarState::new();
+            status_state.hovered = (context.mouse_state.chrome_hover
+                == Some(ConsoleChromeHover::DebugChip))
+            .then_some(ConsoleChromeHover::DebugChip);
+            let theme = termrock::style::DesignSystem::default().with_role(
+                termrock::style::Role::StatusBar,
+                ratatui::style::Style::default()
+                    .bg(termrock::style::DesignSystem::default()
+                        .style(termrock::style::Role::Text)
+                        .fg
+                        .unwrap_or_default())
+                    .fg(jackin_tui::tokens::INK),
+            );
+            frame.render_stateful_widget(
+                &termrock::widgets::StatusBar::new(&[], &slots, &theme),
+                chip_row,
+                &mut status_state,
+            );
+            for region in status_state.regions {
+                context.mouse_state.chrome_regions.push(region);
             }
-            context.mouse_state.chrome_regions.clear();
-            if let Some(bar_area) = debug_bar_area {
-                let invocation_id = jackin_telemetry::identity::current_invocation()
-                    .map(|invocation_id| invocation_id.to_string());
-                let invocation_id = debug_invocation_id_label(invocation_id.as_deref());
-                let chip_row = debug_chip_row(bar_area);
-                let content = format!(" {invocation_id} ");
-                let slots =
-                    [
-                        termrock::widgets::StatusSlot::new(ConsoleChromeHover::DebugChip, &content)
-                            .priority(1)
-                            .min_width(0)
-                            .enabled(true)
-                            .style(
-                                ratatui::style::Style::default()
-                                    .bg(termrock::style::DesignSystem::default()
-                                        .style(termrock::style::Role::Danger)
-                                        .fg
-                                        .unwrap_or_default())
-                                    .fg(termrock::style::DesignSystem::default()
-                                        .style(termrock::style::Role::Text)
-                                        .fg
-                                        .unwrap_or_default())
-                                    .add_modifier(ratatui::style::Modifier::BOLD),
-                            )
-                            .hover_style(
-                                ratatui::style::Style::default()
-                                    .bg(termrock::style::DesignSystem::default()
-                                        .style(termrock::style::Role::Text)
-                                        .fg
-                                        .unwrap_or_default())
-                                    .fg(termrock::style::DesignSystem::default()
-                                        .style(termrock::style::Role::Danger)
-                                        .fg
-                                        .unwrap_or_default())
-                                    .add_modifier(ratatui::style::Modifier::BOLD),
-                            ),
-                    ];
-                // Head made the state's region storage private; hovered
-                // stays public.
-                let mut status_state = termrock::widgets::StatusBarState::new();
-                status_state.hovered = (context.mouse_state.chrome_hover
-                    == Some(ConsoleChromeHover::DebugChip))
-                .then_some(ConsoleChromeHover::DebugChip);
-                let theme = termrock::style::DesignSystem::default().with_role(
-                    termrock::style::Role::StatusBar,
-                    ratatui::style::Style::default()
-                        .bg(termrock::style::DesignSystem::default()
-                            .style(termrock::style::Role::Text)
-                            .fg
-                            .unwrap_or_default())
-                        .fg(jackin_tui::tokens::INK),
-                );
-                frame.render_stateful_widget(
-                    &termrock::widgets::StatusBar::new(&[], &slots, &theme),
-                    chip_row,
-                    &mut status_state,
-                );
-                for region in status_state.regions {
-                    context.mouse_state.chrome_regions.push(region);
-                }
-            }
-        });
+        }
+    });
     if let Some(operation) = render_operation {
         operation.complete(
             if render_result.is_ok() {
