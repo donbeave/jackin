@@ -399,13 +399,13 @@ fn membership_identity(
     view: &FocusedUsageView,
 ) -> Option<CanonicalAccountIdentity> {
     let membership = membership?;
-    let label = stable_account_label(&view.account.account_label)?;
+    // Existing snapshots retain their pre-V1 routing key during additive
+    // migration. Only discovery supplies canonical evidence; display-label
+    // comparison never promotes a snapshot into membership.
+    let routing_key = CanonicalAccountIdentity::from_view(surface, view)?.account_key();
     membership
         .iter()
-        .find(|account| {
-            account.surface_id == surface.id()
-                && account.account_label.trim().eq_ignore_ascii_case(label)
-        })
+        .find(|account| account.surface_id == surface.id() && account.account_key == routing_key)
         .map(|account| account.identity.clone())
 }
 

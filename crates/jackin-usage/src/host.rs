@@ -10,14 +10,16 @@ mod accounts;
 mod broker;
 mod credential_resolver;
 mod discovery;
+mod projection;
 
 use std::collections::{BTreeMap, HashMap, HashSet, VecDeque};
 use std::path::{Path, PathBuf};
-use std::time::{Duration, Instant};
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
-use jackin_core::Agent;
+use jackin_core::{Agent, account_key_hash};
 use jackin_protocol::control::{FocusedUsageView, UsageIdentityPresentation, UsageSeverity};
-use jackin_protocol::usage_broker::{UsageAccountCapability, UsageRefreshPhase};
+use jackin_protocol::usage_broker::{UsageAccountCapability, UsageProjectionV1, UsageRefreshPhase};
 
 use crate::usage::{
     UsageCache, UsageFormatPrefs, compact_duration_label, estimate_caption,
@@ -48,9 +50,23 @@ pub use discovery::{
     UsageSourceCandidateDescriptor, ValidatedUsageDiscovery, discover_usage_sources,
     host_credential_root_matrix, validate_usage_sources,
 };
+pub use projection::{NormalizedUsageDestination, UsageDestination, normalize_destination};
 
 /// Relative data-dir subtree for menu-bar durable state.
 pub const HOST_USAGE_STATE_REL: &str = "usage-menu-bar";
+
+static CANONICAL_INSTANCE_SEQUENCE: AtomicU64 = AtomicU64::new(0);
+
+fn canonical_instance_id() -> String {
+    let epoch_nanos = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_or(0, |duration| duration.as_nanos());
+    let sequence = CANONICAL_INSTANCE_SEQUENCE.fetch_add(1, Ordering::Relaxed);
+    account_key_hash(
+        "usage-broker-instance-v1",
+        &format!("{epoch_nanos}:{sequence}"),
+    )
+}
 
 /// Surfaces the host menu bar may show (excludes `Unsupported`).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -76,8 +92,8 @@ pub enum HostSurfaceId {
 impl HostSurfaceId {
     /// Every host surface in stable UI order.
     pub const ALL: &'static [Self] = &[
-        Self::Claude,
         Self::Codex,
+        Self::Claude,
         Self::Amp,
         Self::Grok,
         Self::Zai,
@@ -117,11 +133,11 @@ impl HostSurfaceId {
     #[must_use]
     pub const fn label(self) -> &'static str {
         match self {
-            Self::Claude => "Claude",
-            Self::Codex => "Codex",
+            Self::Claude => "Anthropic",
+            Self::Codex => "OpenAI",
             Self::Amp => "Amp",
-            Self::Grok => "Grok Build",
-            Self::Zai => "GLM / Z.AI",
+            Self::Grok => "xAI",
+            Self::Zai => "Z.AI",
             Self::Kimi => "Kimi",
             Self::Minimax => "MiniMax",
             Self::OpenCode => "OpenCode",
@@ -531,6 +547,9 @@ pub struct HostUsageRuntime {
     discovery_scope: Option<UsageDiscoveryScope>,
     /// Broker generation phase per canonical account.
     broker_phases: BTreeMap<UsageAccountCapability, UsageRefreshPhase>,
+    canonical_instance_id: String,
+    canonical_content_id: Option<String>,
+    canonical_projection_cache: Option<UsageProjectionV1>,
 }
 
 impl HostUsageRuntime {
@@ -555,6 +574,9 @@ impl HostUsageRuntime {
             discovered_provider_views: BTreeMap::new(),
             discovery_scope: None,
             broker_phases: BTreeMap::new(),
+            canonical_instance_id: canonical_instance_id(),
+            canonical_content_id: None,
+            canonical_projection_cache: None,
         }
     }
 
@@ -1457,6 +1479,8 @@ impl HostUsageRuntime {
         self.discovered_views.clear();
         self.discovered_provider_views.clear();
         self.broker_phases.clear();
+        self.canonical_content_id = None;
+        self.canonical_projection_cache = None;
     }
 
     fn materialize_account_catalog(&mut self) -> Result<accounts::AccountCatalog, String> {

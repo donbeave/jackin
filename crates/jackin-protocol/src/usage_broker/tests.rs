@@ -120,3 +120,28 @@ fn canonical_projection_v1_rejects_invalid_percent_and_cross_field_shape() {
     window.used_percent = window.remaining_percent;
     projection.validate().unwrap_err();
 }
+
+#[test]
+fn canonical_projection_v1_forty_account_fixture_stays_below_transport_margin() {
+    let mut projection: UsageProjectionV1 = serde_json::from_str(include_str!(
+        "../../../jackin-usage/tests/fixtures/contracts/usage-projection-v1-current.json"
+    ))
+    .unwrap();
+    let seed = projection.providers[0].accounts[0].clone();
+    projection.providers[0].accounts = (0..40)
+        .map(|rank| {
+            let mut account = seed.clone();
+            account.rank = rank;
+            account.canonical_account_id = format!("account-{rank:02}");
+            account.display_label = format!("account-{rank:02}@example.test");
+            account
+        })
+        .collect();
+    projection.validate().unwrap();
+    let encoded = serde_json::to_vec(&projection).unwrap();
+    assert!(
+        encoded.len() < USAGE_BROKER_MAX_FRAME_BYTES * 3 / 4,
+        "40-account fixture is {} bytes",
+        encoded.len()
+    );
+}

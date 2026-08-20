@@ -70,6 +70,113 @@ fn codex_fixture_view() -> FocusedUsageView {
     }
 }
 
+fn canonical_discovered_account(
+    surface: HostSurfaceId,
+    account_label: &str,
+) -> DiscoveredAccountDescriptor {
+    let identity = CanonicalAccountIdentity {
+        surface,
+        subject: CanonicalAccountSubject::ProviderStableHandle(account_label.to_owned()),
+    };
+    DiscoveredAccountDescriptor {
+        surface_id: surface.id().to_owned(),
+        account_key: identity.account_key(),
+        account_label: account_label.to_owned(),
+        provenance: vec!["workspace sample".to_owned()],
+        source_ids: vec!["source-0001".to_owned()],
+        identity,
+    }
+}
+
+#[test]
+fn canonical_projection_uses_current_membership_provider_names_and_rust_ranks() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let mut runtime = open_runtime(dir.path());
+    let mut zulu = codex_fixture_view();
+    zulu.account.account_label = "zulu@example.test".to_owned();
+    let mut alpha = codex_fixture_view();
+    alpha.account.account_label = "Alpha@example.test".to_owned();
+    alpha.buckets[0].severity = UsageSeverity::Danger;
+    let zulu_account = canonical_discovered_account(HostSurfaceId::Codex, "zulu@example.test");
+    let alpha_account = canonical_discovered_account(HostSurfaceId::Codex, "Alpha@example.test");
+    runtime.discovered_views.insert(
+        (HostSurfaceId::Codex, zulu_account.account_key.clone()),
+        zulu,
+    );
+    runtime.discovered_views.insert(
+        (HostSurfaceId::Codex, alpha_account.account_key.clone()),
+        alpha,
+    );
+    runtime.discovery = Some(ValidatedUsageDiscovery {
+        config_generation: Some("config-generation".to_owned()),
+        accounts: vec![zulu_account, alpha_account],
+        diagnostics: Vec::new(),
+        candidates: Vec::new(),
+        bindings: Vec::new(),
+    });
+
+    let projection = runtime.canonical_projection("en").expect("projection");
+    let repeated = runtime
+        .canonical_projection("en")
+        .expect("repeat projection");
+    assert_eq!(repeated, projection, "reads must not republish generations");
+    assert_eq!(projection.providers.len(), 1);
+    assert_eq!(projection.providers[0].display_name, "OpenAI");
+    assert_eq!(
+        projection.providers[0]
+            .accounts
+            .iter()
+            .map(|account| account.display_label.as_str())
+            .collect::<Vec<_>>(),
+        vec!["Alpha@example.test", "zulu@example.test"]
+    );
+    assert_eq!(projection.providers[0].accounts[0].rank, 0);
+    assert_eq!(projection.providers[0].accounts[1].rank, 1);
+    assert_eq!(projection.providers[0].accounts[0].windows[0].rank, 0);
+
+    let selected = UsageDestination::Account {
+        provider_id: "codex".to_owned(),
+        canonical_account_id: projection.providers[0].accounts[1]
+            .canonical_account_id
+            .clone(),
+    };
+    assert_eq!(
+        normalize_destination(&projection, &selected).destination,
+        selected
+    );
+    let removed = UsageDestination::Account {
+        provider_id: "codex".to_owned(),
+        canonical_account_id: "removed".to_owned(),
+    };
+    assert_eq!(
+        normalize_destination(&projection, &removed),
+        NormalizedUsageDestination {
+            destination: UsageDestination::Overview,
+            notice: Some("Selected account is no longer available.".to_owned()),
+        }
+    );
+}
+
+#[test]
+fn canonical_projection_provider_order_is_settled_and_not_agent_named() {
+    assert_eq!(
+        HostSurfaceId::ALL
+            .iter()
+            .map(|surface| surface.label())
+            .collect::<Vec<_>>(),
+        vec![
+            "OpenAI",
+            "Anthropic",
+            "Amp",
+            "xAI",
+            "Z.AI",
+            "Kimi",
+            "MiniMax",
+            "OpenCode"
+        ]
+    );
+}
+
 #[test]
 fn host_surfaces_cover_agent_all_plus_routed_providers() {
     let agent_ids: HashSet<_> = Agent::ALL
@@ -301,10 +408,10 @@ fn compact_status_bar_label_tie_keeps_all_order() {
     }
     inject_remaining(&mut runtime, "claude", 40);
     inject_remaining(&mut runtime, "codex", 40);
-    // Claude precedes Codex in HostSurfaceId::ALL; default Left = remaining.
+    // OpenAI precedes Anthropic in the settled host provider order.
     assert_eq!(
         runtime.compact_status_bar_label().expect("compact"),
-        "Cl 40%"
+        "Cx 40%"
     );
 }
 
@@ -776,9 +883,9 @@ fn compact_status_bar_strip_all_eight_host_surfaces() {
         3,
         "SB-3 hard-caps burn-first strip at 3: {strip}"
     );
-    // No reset epochs → highest remaining among ALL ranks first (Claude 90%).
+    // No reset epochs → highest remaining among ALL ranks first (OpenAI 90%).
     assert!(
-        parts[0].starts_with("Cl 90%"),
+        parts[0].starts_with("Cx 90%"),
         "SB-17 higher-remaining first when times tie, got {}",
         parts[0]
     );

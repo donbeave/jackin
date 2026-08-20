@@ -376,6 +376,18 @@ pub struct ValidatedUsageDiscovery {
     pub(super) bindings: Vec<ValidatedCredentialBinding>,
 }
 
+impl ValidatedUsageDiscovery {
+    pub(super) fn unresolved_capabilities(
+        &self,
+    ) -> impl Iterator<Item = &UsageSourceCandidateDescriptor> {
+        self.candidates.iter().filter(|candidate| {
+            self.bindings.iter().any(|binding| {
+                binding.capability_id == candidate.capability_id && binding.identity.is_none()
+            })
+        })
+    }
+}
+
 impl std::fmt::Debug for ValidatedUsageDiscovery {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         formatter

@@ -66,6 +66,8 @@ fs4 = "1.1.0"
 futures-util = "0.3"
 hyper-util = { version = "0.1", features = ["tokio"] }
 hex = "0.4"
+icu_collator = "2.2"
+icu_locale = "2.2"
 insta = "=1.48.0"
 jackin-build-meta = { version = "0.6.4", path = "crates/jackin-build-meta" }
 jackin-brand = { version = "0.6.4", path = "crates/jackin-brand" }

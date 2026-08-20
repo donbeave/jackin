@@ -11,7 +11,7 @@ use crate::control::FocusedUsageView;
 pub const USAGE_BROKER_PROTOCOL_VERSION: &str = "v1";
 
 /// Maximum newline-delimited request or response body.
-pub const USAGE_BROKER_MAX_FRAME_BYTES: usize = 64 * 1024;
+pub const USAGE_BROKER_MAX_FRAME_BYTES: usize = 1024 * 1024;
 
 /// Opaque authority for one canonical provider account.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -331,14 +331,13 @@ impl UsageLimitWindowV1 {
         if usize::try_from(self.rank).ok() != Some(expected_rank) {
             return Err(format!("window {} has noncanonical rank", self.window_id));
         }
-        if self.remaining_percent.is_some() == self.used_percent.is_some() {
-            Err(format!(
-                "usage window {} needs exactly one percent representation",
+        if self.remaining_percent.is_some() && self.used_percent.is_some() {
+            return Err(format!(
+                "usage window {} has conflicting percent representations",
                 self.window_id
-            ))
-        } else {
-            Ok(())
+            ));
         }
+        Ok(())
     }
 }
 
