@@ -8,8 +8,8 @@ use std::rc::Rc;
 use ratatui::layout::Rect;
 
 use crate::tui::runtime::BlockingSubscription;
+use crate::tui::runtime::SubscriptionPoll;
 use jackin_config::AppConfig;
-use jackin_tui::runtime::{Subscription, SubscriptionPoll};
 
 use crate::tui::message::{MountInfoRefreshSourceFacts, mount_info_refresh_source_plan};
 use crate::tui::model::{

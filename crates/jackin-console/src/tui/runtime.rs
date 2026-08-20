@@ -34,28 +34,54 @@ impl jackin_tui::runtime::View<crate::tui::console::ConsoleState> for ConsoleVie
     }
 }
 
-use jackin_tui::runtime::{Subscription, SubscriptionPoll};
 use std::future::Future;
 
+/// Console-owned blocking-subscription poll tri-state (re-homed from the
+/// retired facade contract).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum SubscriptionPoll<T> {
+    /// The worker finished and yielded its value.
+    Ready(T),
+    /// The worker is still running.
+    Pending,
+    /// The worker was dropped without yielding a value.
+    Closed,
+}
+
 #[derive(Debug)]
-pub struct BlockingSubscription<T>(tokio::sync::oneshot::Receiver<T>);
+enum BlockingSource<T> {
+    Receiver(tokio::sync::oneshot::Receiver<T>),
+    Ready(termrock::runtime::ReadySubscription<T>),
+}
 
-impl<T> Subscription for BlockingSubscription<T> {
-    type Output = T;
+/// A one-shot blocking worker's receiver: poll it until it yields or closes.
+#[derive(Debug)]
+pub struct BlockingSubscription<T>(BlockingSource<T>);
 
-    fn poll_next(&mut self) -> SubscriptionPoll<T> {
-        match self.0.try_recv() {
-            Ok(value) => SubscriptionPoll::Ready(value),
-            Err(tokio::sync::oneshot::error::TryRecvError::Empty) => SubscriptionPoll::Pending,
-            Err(tokio::sync::oneshot::error::TryRecvError::Closed) => SubscriptionPoll::Closed,
+impl<T> BlockingSubscription<T> {
+    pub fn poll_next(&mut self) -> SubscriptionPoll<T> {
+        match &mut self.0 {
+            BlockingSource::Receiver(rx) => match rx.try_recv() {
+                Ok(value) => SubscriptionPoll::Ready(value),
+                Err(tokio::sync::oneshot::error::TryRecvError::Empty) => SubscriptionPoll::Pending,
+                Err(tokio::sync::oneshot::error::TryRecvError::Closed) => SubscriptionPoll::Closed,
+            },
+            BlockingSource::Ready(ready) => match ready.poll_next() {
+                termrock::runtime::ReadySubscriptionPoll::Ready(value) => {
+                    SubscriptionPoll::Ready(value)
+                }
+                // `ReadySubscriptionPoll` is non-exhaustive; every non-Ready
+                // arm means the one-shot value is gone.
+                _ => SubscriptionPoll::Closed,
+            },
         }
     }
 }
 
-pub fn ready_blocking_subscription<T: Send + 'static>(value: T) -> BlockingSubscription<T> {
-    let (tx, rx) = tokio::sync::oneshot::channel();
-    drop(tx.send(value));
-    BlockingSubscription(rx)
+pub fn ready_blocking_subscription<T>(value: T) -> BlockingSubscription<T> {
+    BlockingSubscription(BlockingSource::Ready(
+        termrock::runtime::ready_subscription(value),
+    ))
 }
 
 pub fn spawn_blocking_subscription<T, F>(worker: F) -> BlockingSubscription<T>
@@ -82,7 +108,7 @@ where
     } else {
         drop(jackin_telemetry::spawn::thread_joined_named(name, run));
     }
-    BlockingSubscription(rx)
+    BlockingSubscription(BlockingSource::Receiver(rx))
 }
 
 pub fn spawn_named_async_subscription<T, F>(
@@ -111,5 +137,5 @@ where
             },
         ));
     }
-    BlockingSubscription(rx)
+    BlockingSubscription(BlockingSource::Receiver(rx))
 }
