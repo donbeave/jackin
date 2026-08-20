@@ -1291,7 +1291,7 @@ fn horizontal_mouse_wheel_clamps_stored_offset_at_block_end() {
     };
     let expected_max = super::max_scroll_offset(
         super::global_mounts_content_width(global_mounts.as_slice()),
-        super::scroll_viewport_width(global_area),
+        crate::tui::layout::scroll_viewport_width(global_area),
     );
     assert_eq!(state.list_global_mounts_scroll.offset_x(), expected_max);
 
@@ -1347,7 +1347,7 @@ fn horizontal_mouse_wheel_reaches_rendered_workspace_width() {
     };
     let expected_max = super::max_scroll_offset(
         super::workspace_mounts_content_width(workspace.mounts.as_slice()),
-        super::scroll_viewport_width(workspace_area),
+        crate::tui::layout::scroll_viewport_width(workspace_area),
     );
 
     assert_eq!(
@@ -1376,7 +1376,7 @@ fn horizontal_mouse_wheel_clamps_before_applying_left_delta() {
     };
     let expected_max = super::max_scroll_offset(
         super::global_mounts_content_width(global_mounts.as_slice()),
-        super::scroll_viewport_width(global_area),
+        crate::tui::layout::scroll_viewport_width(global_area),
     );
 
     handle_mouse_with_config(
@@ -1964,5 +1964,126 @@ fn clicking_editor_content_area_clears_tab_bar_focus() {
     assert!(
         editor.tab_content_scroll_focused(),
         "clicking content must set tab_content_scroll_focused"
+    );
+}
+
+#[test]
+fn wheel_shift_fallback_retries_vertical_at_horizontal_edge() {
+    let mut config = config_with_scrollable_workspace_and_global_mounts();
+    for idx in 0..6 {
+        config.add_mount(
+            &format!("global-extra-{idx}"),
+            MountConfig {
+                src: format!("/host/source/extra/{idx}"),
+                dst: format!("/container/destination/extra/{idx}"),
+                readonly: true,
+                isolation: jackin_config::MountIsolation::Shared,
+            },
+            None,
+        );
+    }
+    let mut state = selected_demo_state(&config);
+    let areas = list_scroll_areas(&state, term(100), Some(&config)).expect("list areas");
+    // Pre-set the horizontal offset at the block's real maximum so the
+    // Shift+wheel horizontal application is `Ignored` and the consumer retry
+    // must fire the vertical fallback on the SAME block (matrix row 3).
+    let global_mounts: Vec<MountConfig> = config
+        .list_mount_rows()
+        .into_iter()
+        .filter(|row| row.scope.is_none())
+        .map(|row| row.mount)
+        .collect();
+    let max_x = super::max_scroll_offset(
+        super::global_mounts_content_width(global_mounts.as_slice()),
+        crate::tui::layout::scroll_viewport_width(areas.global.area),
+    );
+    crate::tui::scroll_block::scroll_area_set_x(&mut state.list_global_mounts_scroll, max_x);
+
+    let shift_down = MouseEvent {
+        kind: MouseEventKind::ScrollDown,
+        column: areas.global.area.x + 1,
+        row: areas.global.area.y + 1,
+        modifiers: KeyModifiers::SHIFT,
+    };
+    handle_mouse_with_config(&mut state, shift_down, term(100), Some(&config));
+
+    assert_eq!(
+        state.list_global_mounts_scroll.offset_x(),
+        max_x,
+        "horizontal offset pinned at max must not move"
+    );
+    assert_eq!(
+        state.list_global_mounts_scroll.offset_y(),
+        1,
+        "Shift+wheel at the horizontal edge retries vertical on the same block"
+    );
+}
+
+#[test]
+fn scroll_block_registry_hit_test_prefers_later_registration() {
+    let area = Rect {
+        x: 10,
+        y: 5,
+        width: 20,
+        height: 6,
+    };
+    let blocks = [
+        super::ScrollBlockRegion {
+            id: super::ConsoleScrollBlock::EditorTabContent,
+            rect: area,
+            content_w: 40,
+            content_h: 20,
+        },
+        super::ScrollBlockRegion {
+            id: super::ConsoleScrollBlock::EditorWorkspaceMounts,
+            rect: area,
+            content_w: 30,
+            content_h: 20,
+        },
+    ];
+    assert_eq!(
+        super::hit(&blocks, 15, 6),
+        Some(super::ConsoleScrollBlock::EditorWorkspaceMounts),
+        "the later-registered (paint-topmost) block must win an overlap"
+    );
+    assert_eq!(super::hit(&blocks, 0, 0), None);
+}
+
+#[test]
+fn click_non_row_trust_block_area_deselects_via_sentinel() {
+    let mut state = list_state();
+    let mut settings = SettingsState::from_config(&jackin_config::AppConfig::default());
+    settings.active_tab = SettingsTab::Trust;
+    settings.trust.pending = vec![SettingsTrustRow {
+        role: "agent-smith".into(),
+        git: "/repo".into(),
+        trusted: true,
+    }];
+    settings.trust.selected = 0;
+    let content = settings.content_area(term(100));
+    state.stage = ManagerStage::Settings(settings);
+
+    handle_mouse(
+        &mut state,
+        mouse_kind_at(
+            MouseEventKind::Down(MouseButton::Left),
+            content.x + 1,
+            content.y + 3,
+        ),
+        term(100),
+    );
+
+    let ManagerStage::Settings(settings) = &state.stage else {
+        panic!("expected settings stage");
+    };
+    // The lane dispatches SelectSettingsTrustRow(usize::MAX), which the plan
+    // maps to `selected: None` (covered by
+    // settings_trust_row_select_plan_bounds_checks_and_focuses_content) —
+    // selection is left unchanged while the block takes content focus.
+    assert_eq!(settings.trust.selected, 0);
+    assert_eq!(
+        settings.focus_owner(),
+        crate::tui::focus::ConsoleFocusTarget::Content(SettingsTab::Trust),
+        "click on non-row Trust-block area must still route through the trust lane"
     );
 }

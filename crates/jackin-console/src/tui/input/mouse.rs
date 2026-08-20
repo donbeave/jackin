@@ -22,10 +22,9 @@ use crate::tui::components::file_browser::FileBrowserState;
 use crate::tui::components::modal_rects::{self, ModalRectMode};
 use crate::tui::layout::{
     LIST_FOOTER_HEIGHT, LIST_HEADER_HEIGHT, MIN_DRAGGABLE_WIDTH, MOUSE_VERTICAL_SCROLL_STEP,
-    SCREEN_HEADER_HEIGHT, ScrollbarAxis, TAB_STRIP_HEIGHT, apply_horizontal_scroll,
-    apply_scrollbar_drag, apply_vertical_scroll, horizontal_split_pane_dims,
-    is_horizontally_scrollable, point_in_rect, scroll_selection_at_position, scroll_viewport_width,
-    split_seam_column,
+    SCREEN_HEADER_HEIGHT, ScrollbarAxis, TAB_STRIP_HEIGHT, apply_scrollbar_drag,
+    horizontal_split_pane_dims, is_horizontally_scrollable, point_in_rect,
+    scroll_selection_at_position, split_seam_column,
 };
 use crate::tui::run::{ConsoleClickStageFacts, ConsoleClickabilityFacts, console_clickable_at};
 use crate::tui::screens::editor::update::{
@@ -67,9 +66,7 @@ pub use modal_scroll::{
 };
 pub use scroll_bars::{try_drag_horizontal_scrollbar, try_drag_vertical_scrollbar};
 pub use scroll_registry::{ConsoleScrollBlock, ScrollBlockRegion, hit, scroll_block_registry};
-pub use scroll_pan::{
-    scroll_active_panel, scroll_active_panel_vertical, settings_modal_open, update_scroll_focus,
-};
+pub use scroll_pan::{dispatch_wheel, settings_modal_open, update_scroll_focus};
 pub use selection::{
     editor_auth_row_index_at, editor_mount_index_at, try_select_editor_auth_row,
     try_select_editor_mount_row, try_select_editor_tab, try_select_settings_tab,
@@ -182,14 +179,17 @@ pub fn handle_mouse_with_config(
                     delta,
                     vertical_fallback,
                 } => {
-                    if !scroll_active_panel(state, mouse, term_size, config, delta)
+                    let outcome = dispatch_wheel(state, mouse, term_size, config, 0, delta);
+                    // Matrix row 3: upstream never retries vertical — the
+                    // Shift-fallback is the consumer retry on `Ignored`.
+                    if matches!(outcome, termrock::widgets::ScrollOutcome::Ignored)
                         && let Some(fallback) = vertical_fallback
                     {
-                        scroll_active_panel_vertical(state, mouse, term_size, config, fallback);
+                        let _ = dispatch_wheel(state, mouse, term_size, config, fallback, 0);
                     }
                 }
                 ConsoleMouseWheelPlan::Vertical(delta) => {
-                    scroll_active_panel_vertical(state, mouse, term_size, config, delta);
+                    let _ = dispatch_wheel(state, mouse, term_size, config, delta, 0);
                 }
                 ConsoleMouseWheelPlan::None => {}
             }
