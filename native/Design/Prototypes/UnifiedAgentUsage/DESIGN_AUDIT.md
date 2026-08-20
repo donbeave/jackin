@@ -179,6 +179,29 @@ WCAG contrast against the adaptive card ground:
 - Usage detail and popover now consume one `ProviderDetailSections`
   implementation, removing duplicated labels, ordering, state, and retry logic.
 
+## Provider detail coverage
+
+The prototype fixtures mirror the complete limits-only projection currently
+normalized by `crates/jackin-usage/src/usage/`. Detail pages render every bucket
+in source order; they do not collapse provider data into a generic weekly row.
+
+| Provider | Detailed output represented |
+|---|---|
+| OpenAI / Codex | Account, plan, auth origin, session and weekly limits, provider-named additional limits, limit-reset credits, credit balance |
+| Anthropic / Claude | Account, plan, auth origin, session, all-model weekly, every named model-scoped weekly limit, extra-usage cap, provider dollar-budget windows |
+| Amp | Account, inferred Amp Free plan, auth origin, daily allowance, individual credit balance, every named workspace balance |
+| xAI / Grok | Account, server plan tier, auth origin, billing-cycle limit, prepaid extra-usage credits, bounded on-demand usage cap |
+| Z.AI / GLM | Plan, auth origin, short token window, primary token window, MCP count limit |
+| Kimi | Auth origin, rate-limit window, weekly coding limit, provider counts and resets |
+| MiniMax | Plan, auth origin, general five-hour and weekly windows, every available model interval, provider counts and resets |
+
+The Rust detail contract additionally supports distinct username, freshness,
+last-good data plus error, meter severity, pace/run-out projection, exact reset,
+and unavailable/auth-required states. Fixtures exercise the user-visible forms.
+New provider-supplied named/model windows are already planned by the generic
+bucket projection: they append as clear items without a Swift provider matrix.
+No token price, cost history, or usage trend is represented or planned.
+
 ## Motion and transitions
 
 Navigation and scenario changes use a 200ms ease-in/out opacity handoff.

@@ -457,24 +457,20 @@ struct ProviderDetailSections: View {
             // Account switching lives in the sidebar or popover footer; a
             // second picker in content would duplicate the control.
             Section {
-                if let plan = account?.plan {
-                    LabeledContent {
-                        Text(plan).foregroundStyle(.primary)
-                    } label: {
-                        Text("Plan").foregroundStyle(.primary)
-                    }
-                    .accessibilityLabel("Plan, \(plan)")
+                if let username = account?.username {
+                    DetailFactItem(
+                        icon: "person.text.rectangle", label: "Username", value: username)
                 }
-                if let reset = account?.resetText ?? provider.summaryReset {
-                    LabeledContent {
-                        Text(reset).foregroundStyle(.primary)
-                    } label: {
-                        Text("Reset").foregroundStyle(.primary)
-                    }
-                    .accessibilityLabel("Reset, \(reset)")
+                if let plan = account?.plan {
+                    DetailFactItem(
+                        icon: "checkmark.seal", label: "Plan", value: plan)
+                }
+                if let auth = account?.auth {
+                    DetailFactItem(
+                        icon: "key", label: "Authentication", value: auth)
                 }
             } header: {
-                sectionHeader("Details")
+                sectionHeader("Account")
             }
 
             if let error = provider.errorText {
@@ -547,11 +543,15 @@ struct LimitRowView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: JackinSpace.xs) {
-            LabeledContent(window.label) {
-                Text(window.display)
-                    .monospacedDigit()
-                    .foregroundStyle(window.notStarted ? .secondary : .primary)
-            }
+            Text(window.label.uppercased())
+                .font(.caption2.weight(.semibold))
+                .tracking(0.7)
+                .foregroundStyle(JackinBrand.quiet)
+            Text(window.display)
+                .font(.callout.weight(.medium))
+                .monospacedDigit()
+                .foregroundStyle(window.notStarted ? .secondary : .primary)
+                .fixedSize(horizontal: false, vertical: true)
             if let meter = window.meter {
                 QuotaMeter(percent: meter, tint: meterTint(window.state))
                     .accessibilityHidden(true)
@@ -569,6 +569,34 @@ struct LimitRowView: View {
                 .accessibilityLabel("\(window.label), \(window.display)")
                 .accessibilityIdentifier("\(identifierPrefix).\(window.stableID)")
         }
+    }
+}
+
+/// A readable account fact, deliberately stacked instead of compressed into a
+/// small two-column table. Long provider values receive the full content width.
+private struct DetailFactItem: View {
+    let icon: String
+    let label: String
+    let value: String
+
+    var body: some View {
+        HStack(alignment: .top, spacing: JackinSpace.sm) {
+            Image(systemName: icon)
+                .foregroundStyle(Color.jackinPhosphor)
+                .frame(width: 18)
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: JackinSpace.xxs) {
+                Text(label.uppercased())
+                    .font(.caption2.weight(.semibold))
+                    .tracking(0.7)
+                    .foregroundStyle(JackinBrand.quiet)
+                Text(value)
+                    .foregroundStyle(.primary)
+                    .textSelection(.enabled)
+            }
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(label), \(value)")
     }
 }
 

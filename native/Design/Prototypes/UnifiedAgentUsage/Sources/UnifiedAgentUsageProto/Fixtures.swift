@@ -86,6 +86,8 @@ struct ProtoAccount: Identifiable, Sendable {
     let resetText: String?
     let state: ProtoState
     let windows: [ProtoQuotaWindow]
+    var username: String? = nil
+    var auth: String? = nil
     var id: String { key }
 }
 
@@ -323,7 +325,10 @@ enum ProtoFixtures {
                 stableID: "bucket:credits", label: "Credits",
                 display: "3 manual resets available · Next expires in 3d 4h",
                 meter: nil, state: .current),
-        ])
+            ProtoQuotaWindow(
+                stableID: "bucket:review", label: "Code review · Weekly",
+                display: "91% left · Resets in 3d", meter: 91, state: .current),
+        ], auth: "OAuth · configured profile")
 
     static let codexPlus = ProtoAccount(
         key: "codex-plus", label: "team@example.test", plan: "Plus",
@@ -359,9 +364,98 @@ enum ProtoFixtures {
                 display: "74% left", meter: 74, state: .current,
                 pace: "On pace"),
             ProtoQuotaWindow(
-                stableID: "bucket:weekly", label: "Weekly",
+                stableID: "bucket:weekly", label: "All models",
                 display: "12% left · Resets in 1h", meter: 12, state: .danger),
-        ])
+            ProtoQuotaWindow(
+                stableID: "bucket:fable", label: "Fable",
+                display: "65% left · Resets in 4d", meter: 65, state: .current,
+                pace: "On pace"),
+            ProtoQuotaWindow(
+                stableID: "bucket:extra-usage", label: "Extra usage",
+                display: "28% used · Monthly cap: $14 / $50", meter: 28,
+                state: .current),
+        ], auth: "OAuth · macOS Keychain")
+
+    static let ampDefault = ProtoAccount(
+        key: "amp-default", label: "developer@example.test", plan: "Amp Free",
+        remaining: 100, resetText: "Resets in 18h", state: .current,
+        windows: [
+            ProtoQuotaWindow(
+                stableID: "bucket:daily", label: "Amp Free",
+                display: "100% left · Resets daily", meter: 100, state: .current,
+                notStarted: true),
+            ProtoQuotaWindow(
+                stableID: "bucket:individual", label: "Individual credits",
+                display: "$18.40 remaining", meter: nil, state: .current),
+            ProtoQuotaWindow(
+                stableID: "bucket:workspace", label: "Workspace Platform",
+                display: "$126.75 remaining", meter: nil, state: .current),
+        ], auth: "API key · Amp settings")
+
+    static let grokDefault = ProtoAccount(
+        key: "grok-default", label: "developer@example.test", plan: "SuperGrok",
+        remaining: 72, resetText: "Resets Sep 1", state: .current,
+        windows: [
+            ProtoQuotaWindow(
+                stableID: "bucket:monthly", label: "Monthly",
+                display: "72% left · Resets Sep 1", meter: 72, state: .current,
+                pace: "On pace"),
+            ProtoQuotaWindow(
+                stableID: "bucket:prepaid", label: "Extra usage credits",
+                display: "$24.80 remaining", meter: nil, state: .current),
+            ProtoQuotaWindow(
+                stableID: "bucket:on-demand", label: "On-demand usage",
+                display: "Budget: $12 / $100", meter: 88, state: .current),
+        ], auth: "Grok CLI session")
+
+    static let zaiDefault = ProtoAccount(
+        key: "zai-default", label: "configured API key", plan: "Coding Pro",
+        remaining: 81, resetText: "Resets in 4d", state: .current,
+        windows: [
+            ProtoQuotaWindow(
+                stableID: "bucket:five-hour", label: "5-hour",
+                display: "94% left · Resets in 2h", meter: 94, state: .current),
+            ProtoQuotaWindow(
+                stableID: "bucket:tokens", label: "Tokens",
+                display: "81% left · Resets in 4d", meter: 81, state: .current,
+                pace: "On pace"),
+            ProtoQuotaWindow(
+                stableID: "bucket:mcp", label: "MCP",
+                display: "42 / 100 (58 remaining) · Resets in 4d", meter: 58,
+                state: .current),
+        ], auth: "API key · env ZAI_API_KEY")
+
+    static let kimiDefault = ProtoAccount(
+        key: "kimi-default", label: "local Kimi Code", plan: "Coding",
+        remaining: 45, resetText: "Resets in 5d", state: .current,
+        windows: [
+            ProtoQuotaWindow(
+                stableID: "bucket:rate", label: "Rate Limit",
+                display: "76% left · Resets in 38m", meter: 76, state: .current,
+                pace: "On pace"),
+            ProtoQuotaWindow(
+                stableID: "bucket:weekly", label: "Weekly",
+                display: "45% left · Resets in 5d", meter: 45, state: .current,
+                pace: "Runs out in 4d at current pace"),
+        ], auth: "Local token · Kimi Code credentials")
+
+    static let minimaxDefault = ProtoAccount(
+        key: "minimax-default", label: "configured API key", plan: "Coding Pro",
+        remaining: 33, resetText: "Resets in 2d", state: .warning,
+        windows: [
+            ProtoQuotaWindow(
+                stableID: "bucket:general-5h", label: "General · 5h",
+                display: "68% left · Usage: 320 / 1K · Resets in 3h", meter: 68,
+                state: .current),
+            ProtoQuotaWindow(
+                stableID: "bucket:general-weekly", label: "General · Weekly",
+                display: "33% left · Usage: 6.7K / 10K · Resets in 2d", meter: 33,
+                state: .warning),
+            ProtoQuotaWindow(
+                stableID: "bucket:lightning", label: "Lightning",
+                display: "84% left · Usage: 160 / 1K · Resets in 3h", meter: 84,
+                state: .current),
+        ], auth: "API token · env MINIMAX_API_KEY")
 
     static func catalogAccount(
         _ provider: String, remaining: Int, reset: String?
@@ -419,28 +513,18 @@ enum ProtoFixtures {
                 state: codexState, activity: codexActivity),
             claudeProvider(),
             provider("amp", "Amp", percent: 100, reset: "Resets in 18h",
-                     accounts: [
-                        ProtoAccount(
-                            key: "amp-default", label: "default", plan: "Amp Free",
-                            remaining: 100, resetText: "Resets in 18h", state: .current,
-                            windows: [
-                                ProtoQuotaWindow(
-                                    stableID: "bucket:daily", label: "Daily",
-                                    display: "Not started · Resets in 18h",
-                                    meter: 100, state: .current, notStarted: true)
-                            ])
-                     ]),
-            provider("grok", "xAI / Grok", percent: 72, reset: nil,
-                     accounts: [catalogAccount("grok", remaining: 72, reset: nil)]),
-            provider("zai", "Z.AI / GLM", percent: 81, reset: nil,
-                     accounts: [catalogAccount("zai", remaining: 81, reset: nil)]),
+                     accounts: [ampDefault]),
+            provider("grok", "xAI / Grok", percent: 72, reset: "Resets Sep 1",
+                     accounts: [grokDefault]),
+            provider("zai", "Z.AI / GLM", percent: 81, reset: "Resets in 4d",
+                     accounts: [zaiDefault]),
             kimiUnavailable
                 ? provider("kimi", "Kimi", percent: 45, reset: nil, accounts: [],
                            state: .unavailable, error: "usage provider probe timed out")
-                : provider("kimi", "Kimi", percent: 45, reset: nil,
-                           accounts: [catalogAccount("kimi", remaining: 45, reset: nil)]),
-            provider("minimax", "MiniMax", percent: 33, reset: nil,
-                     accounts: [catalogAccount("minimax", remaining: 33, reset: nil)]),
+                : provider("kimi", "Kimi", percent: 45, reset: "Resets in 5d",
+                           accounts: [kimiDefault]),
+            provider("minimax", "MiniMax", percent: 33, reset: "Resets in 2d",
+                     accounts: [minimaxDefault], state: .warning),
         ]
     }
 
@@ -541,8 +625,8 @@ enum ProtoFixtures {
             "F10",
             providers: [
                 provider(
-                    "kimi", "Kimi", percent: 45, reset: nil,
-                    accounts: [catalogAccount("kimi", remaining: 45, reset: nil)],
+                    "kimi", "Kimi", percent: 45, reset: "Resets in 5d",
+                    accounts: [kimiDefault],
                     state: .stale, updatedAgo: "Updated 1h ago",
                     error: "Kimi billing endpoint unavailable; local presence only")
             ],
