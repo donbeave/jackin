@@ -113,6 +113,10 @@ run = "cargo fmt --check"
 description = "Generate UniFFI Swift bindings for jackin❯ desktop"
 run = "cargo xtask desktop bindings"
 
+[tasks.desktop-bindings-check]
+description = "Fail when committed UniFFI bindings drift from regeneration"
+run = "cargo xtask desktop bindings-check"
+
 [tasks.desktop-xcframework]
 description = "Build the arm64 static JackinUsageFFI XCFramework"
 run = "cargo xtask desktop xcframework"

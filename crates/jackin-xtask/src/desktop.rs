@@ -47,6 +47,8 @@ pub(super) fn progress(msg: impl AsRef<str>) {
 pub(crate) enum DesktopCommand {
     /// Generate `UniFFI` Swift bindings into `native/Generated`.
     Bindings(BindingsArgs),
+    /// Nonmutating drift gate: regenerate into staging and byte-compare.
+    BindingsCheck(BindingsArgs),
     /// Build the static arm64 `XCFramework` for `jackin-usage-ffi`.
     Xcframework,
     /// Assemble arm64 static `JackinDesktop.app` under `native/dist/`.
@@ -113,6 +115,7 @@ pub(crate) struct RunArgs {
 pub(crate) fn run(command: DesktopCommand) -> Result<()> {
     match command {
         DesktopCommand::Bindings(args) => generate_bindings(&docs::repo_root()?, &args.profile),
+        DesktopCommand::BindingsCheck(args) => bindings_check(&docs::repo_root()?, &args.profile),
         DesktopCommand::Xcframework => build_xcframework(&docs::repo_root()?),
         DesktopCommand::Build(args) => {
             let (version, build) = resolve_version_build(args.version, args.build)?;
@@ -375,6 +378,97 @@ pub(super) fn require_macos(action: &str) -> Result<()> {
 }
 
 fn generate_bindings(root: &Path, profile: &str) -> Result<()> {
+    let out_dir = root.join("native/Generated");
+    let sources = root.join("native/Sources/JackinUsageBindings");
+    generate_bindings_into(root, profile, &out_dir, &sources)
+}
+
+fn bindings_check(root: &Path, profile: &str) -> Result<()> {
+    let staging = root.join("native/.build/bindings-check");
+    if staging.exists() {
+        fs::remove_dir_all(&staging)
+            .with_context(|| format!("clearing {}", staging.display()))?;
+    }
+    let staging_generated = staging.join("Generated");
+    let staging_sources = staging.join("Sources/JackinUsageBindings");
+    generate_bindings_into(root, profile, &staging_generated, &staging_sources)?;
+
+    let mut differences = tree_differences(
+        &root.join("native/Generated"),
+        &staging_generated,
+        "native/Generated",
+    )?;
+    differences.extend(tree_differences(
+        &root.join("native/Sources/JackinUsageBindings"),
+        &staging_sources,
+        "native/Sources/JackinUsageBindings",
+    )?);
+    if differences.is_empty() {
+        progress("==> bindings-check: committed bindings match regeneration");
+        return Ok(());
+    }
+    let mut report = String::from(
+        "committed UniFFI bindings are stale; run `mise run desktop-bindings` and commit:",
+    );
+    for difference in &differences {
+        report.push_str("\n  ");
+        report.push_str(difference);
+    }
+    bail!(report)
+}
+
+/// Byte-compare two directory trees; each entry names a missing, extra, or
+/// changed committed-relative path. `label` prefixes entries for reporting.
+fn tree_differences(expected: &Path, actual: &Path, label: &str) -> Result<Vec<String>> {
+    fn collect(root: &Path) -> Result<Vec<PathBuf>> {
+        let mut files = Vec::new();
+        let mut stack = vec![root.to_path_buf()];
+        while let Some(dir) = stack.pop() {
+            if !dir.is_dir() {
+                continue;
+            }
+            for entry in fs::read_dir(&dir).with_context(|| format!("reading {}", dir.display()))? {
+                let path = entry?.path();
+                if path.is_dir() {
+                    stack.push(path);
+                } else {
+                    files.push(path.strip_prefix(root)?.to_path_buf());
+                }
+            }
+        }
+        files.sort();
+        Ok(files)
+    }
+
+    let expected_files = collect(expected)?;
+    let actual_files = collect(actual)?;
+    let mut differences = Vec::new();
+    for relative in &expected_files {
+        if !actual_files.contains(relative) {
+            differences.push(format!("{label}/{}: missing after regeneration", relative.display()));
+        }
+    }
+    for relative in &actual_files {
+        if !expected_files.contains(relative) {
+            differences.push(format!("{label}/{}: not committed", relative.display()));
+        }
+    }
+    for relative in expected_files.iter().filter(|r| actual_files.contains(r)) {
+        let committed = fs::read(expected.join(relative))?;
+        let regenerated = fs::read(actual.join(relative))?;
+        if committed != regenerated {
+            differences.push(format!("{label}/{}: content drift", relative.display()));
+        }
+    }
+    Ok(differences)
+}
+
+fn generate_bindings_into(
+    root: &Path,
+    profile: &str,
+    out_dir: &Path,
+    sources: &Path,
+) -> Result<()> {
     require_macos("desktop bindings")?;
     let profile = profile.trim();
     if profile != "release" && profile != "debug" {
@@ -397,8 +491,7 @@ fn generate_bindings(root: &Path, profile: &str) -> Result<()> {
         "uniffi-bindgen not on PATH; install via mise (`mise install`) — see mise.toml cargo:uniffi",
     )?;
 
-    let out_dir = root.join("native/Generated");
-    fs::create_dir_all(&out_dir)?;
+    fs::create_dir_all(out_dir)?;
     progress(format!(
         "==> generating Swift bindings into {}",
         out_dir.display()
@@ -415,8 +508,7 @@ fn generate_bindings(root: &Path, profile: &str) -> Result<()> {
     ]);
     cmd::run_streaming(&mut bindgen_cmd)?;
 
-    let sources = root.join("native/Sources/JackinUsageBindings");
-    fs::create_dir_all(&sources)?;
+    fs::create_dir_all(sources)?;
     let generated_swift = out_dir.join("jackin_usage_ffi.swift");
     for generated in [
         &generated_swift,
