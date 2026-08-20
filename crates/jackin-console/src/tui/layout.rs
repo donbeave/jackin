@@ -164,9 +164,26 @@ pub fn apply_scrollbar_drag(
     else {
         return false;
     };
+    let len = u16::try_from(content_len).unwrap_or(u16::MAX);
     match axis {
-        ScrollbarAxis::Horizontal => crate::tui::scroll_block::scroll_area_set_x(scroll, offset),
-        ScrollbarAxis::Vertical => crate::tui::scroll_block::scroll_area_set_y(scroll, offset),
+        ScrollbarAxis::Horizontal => {
+            scroll.set_content_size(len, u16::MAX);
+            scroll.set_viewport(
+                u16::try_from(scroll_viewport_width(area)).unwrap_or(u16::MAX),
+                1,
+            );
+            scroll.set_offset_x(offset);
+        }
+        ScrollbarAxis::Vertical => {
+            scroll.set_content_size(u16::MAX, len);
+            scroll.set_viewport(
+                1,
+                u16::try_from(scroll_viewport_height(area)).unwrap_or(u16::MAX),
+            );
+            // User-driven position change: the pausing setter, not the
+            // cursor-reveal one.
+            scroll.set_offset_y(offset);
+        }
     }
     true
 }
