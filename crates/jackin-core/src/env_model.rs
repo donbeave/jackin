@@ -243,7 +243,7 @@ pub fn extract_interpolation_refs(s: &str) -> Vec<&str> {
 ///
 /// Env var dependency graph contains a cycle.
 // Hand-written Display/Error: item-level `#[error("...")]` attributes collide
-// with the boltffi source scanner walking jackin-usage-ffi's local dependency
+// with the boltffi source scanner walking the local FFI dependency
 // graph (variant-level thiserror stays fine).
 #[derive(Debug)]
 pub struct EnvCycleError;
