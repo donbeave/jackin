@@ -226,3 +226,19 @@ overlapping aesthetic skills.
 | Rendering and visual verification | `tailrocks-macos-visual-qa` |
 | Project mechanics (generation, pins, gates, lanes) | `tailrocks-swift-project-setup` |
 | Design tokens (brand color/type values) | this repository (`Sources/JackinDesktop/BrandColors.swift`) |
+
+### Apple agent skills export — recorded blocker
+
+`native/Vendor/AppleAgentSkills` is intentionally absent. Probed Xcode 26.6
+(build `17F113`, the shipping lane) on 2026-08-20: the bundle ships agent
+intelligence only as compiled frameworks
+(`Contents/PlugIns/IDEIntelligence*.framework`,
+`Contents/SharedFrameworks/*Intelligence*.framework`) — there are no
+exportable skill documents (`SKILL.md` or equivalent) anywhere in
+`Xcode.app`, so there is nothing reviewable to vendor, hash, or pin. The
+unsupported-export caveat is therefore the standing state: project-local
+agent knowledge comes exclusively from the pinned `tailrocks-*` skills above
+and this repository's own docs. Refresh rule: re-probe on every shipping
+Xcode change; if a future Xcode exposes a documented skills export, vendor it
+read-only with build, export date, and file hashes before use, and never
+execute unreviewed bundled scripts or network steps.
