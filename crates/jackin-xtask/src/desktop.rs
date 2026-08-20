@@ -32,6 +32,9 @@ const MODULE_NAME: &str = "jackin_usage_ffiFFI";
 const STATIC_LIB: &str = "libjackin_usage_ffi.a";
 const HOST_TARGET: &str = "aarch64-apple-darwin";
 const ARCH: &str = "arm64";
+/// Symbol-rich release lane for the desktop static library (see workspace
+/// `[profile.desktop-release]`); release CI archives its unstripped bytes.
+const DESKTOP_PROFILE: &str = "desktop-release";
 
 pub(super) fn progress(msg: impl AsRef<str>) {
     #[expect(
@@ -72,7 +75,7 @@ pub(crate) enum DesktopCommand {
 #[derive(Args)]
 pub(crate) struct BindingsArgs {
     /// Cargo profile used to build the library for uniffi-bindgen.
-    #[arg(long, default_value = "release")]
+    #[arg(long, default_value = "desktop-release")]
     profile: String,
 }
 
@@ -627,15 +630,15 @@ fn generate_bindings_into(
 ) -> Result<()> {
     require_macos("desktop bindings")?;
     let profile = profile.trim();
-    if profile != "release" && profile != "debug" {
-        bail!("profile must be release or debug (got {profile})");
+    if !["release", "debug", DESKTOP_PROFILE].contains(&profile) {
+        bail!("profile must be release, debug, or {DESKTOP_PROFILE} (got {profile})");
     }
 
     progress(format!("==> building jackin-usage-ffi ({profile})"));
     let mut cargo = cmd::command("cargo");
     cargo
         .current_dir(root)
-        .args(["build", "-p", "jackin-usage-ffi", &format!("--{profile}")]);
+        .args(["build", "-p", "jackin-usage-ffi", "--profile", profile]);
     cmd::run_streaming(&mut cargo)?;
 
     let lib = root.join(format!("target/{profile}/libjackin_usage_ffi.dylib"));
@@ -736,18 +739,19 @@ fn build_xcframework(root: &Path) -> Result<()> {
             "build",
             "-p",
             "jackin-usage-ffi",
-            "--release",
+            "--profile",
+            DESKTOP_PROFILE,
             "--target",
             HOST_TARGET,
         ]);
     cmd::run_streaming(&mut cargo)?;
 
-    let arm_lib = root.join(format!("target/{HOST_TARGET}/release/{STATIC_LIB}"));
+    let arm_lib = root.join(format!("target/{HOST_TARGET}/{DESKTOP_PROFILE}/{STATIC_LIB}"));
     if !arm_lib.is_file() {
         bail!("missing {}", arm_lib.display());
     }
 
-    generate_bindings(root, "release")?;
+    generate_bindings(root, DESKTOP_PROFILE)?;
 
     let header = find_generated_header(root)?;
     let out_dir = root.join("target/xcframework");
@@ -892,6 +896,28 @@ fn build_app(root: &Path, version: &str, build: &str) -> Result<()> {
 
     assert_no_embedded_libs(&dist)?;
     assert_no_absolute_ffi_link(&app_bin)?;
+
+    let built_dsym = derived_data.join("Build/Products/Release/JackinDesktop.app.dSYM");
+    if !built_dsym.is_dir() {
+        bail!("missing Xcode dSYM {}", built_dsym.display());
+    }
+    let dist_dsym = root.join("native/dist/JackinDesktop.app.dSYM");
+    if dist_dsym.exists() {
+        fs::remove_dir_all(&dist_dsym)?;
+    }
+    let mut ditto_dsym = cmd::command("ditto");
+    ditto_dsym.args([
+        built_dsym.to_str().context("built dSYM path utf-8")?,
+        dist_dsym.to_str().context("dist dSYM path utf-8")?,
+    ]);
+    cmd::run(&mut ditto_dsym)?;
+    let dwarf = dist_dsym.join(format!("Contents/Resources/DWARF/{APP_EXECUTABLE}"));
+    let app_uuid = dwarf_uuid(&app_bin)?;
+    let dsym_uuid = dwarf_uuid(&dwarf)?;
+    if app_uuid != dsym_uuid {
+        bail!("dSYM UUID {dsym_uuid} does not correspond to app UUID {app_uuid}");
+    }
+    progress(format!("==> dSYM archived beside app (UUID {app_uuid})"));
 
     progress("==> ad-hoc codesign (local/PR shape)");
     let mut codesign = cmd::command("codesign");
@@ -1066,6 +1092,27 @@ fn lipo_archs(path: &Path) -> Result<String> {
     let mut lipo = cmd::command("lipo");
     lipo.args(["-archs", path.to_str().context("path utf-8")?]);
     Ok(cmd::output_string(&mut lipo)?.trim().to_owned())
+}
+
+/// arm64 UUID of a Mach-O binary or dSYM DWARF file, via `dwarfdump --uuid`.
+fn dwarf_uuid(path: &Path) -> Result<String> {
+    let mut dwarfdump = cmd::command("xcrun");
+    dwarfdump.args(["dwarfdump", "--uuid", path.to_str().context("path utf-8")?]);
+    let output = cmd::output_string(&mut dwarfdump)?;
+    parse_dwarf_uuid(&output).with_context(|| format!("parsing dwarfdump UUID for {}", path.display()))
+}
+
+fn parse_dwarf_uuid(output: &str) -> Option<String> {
+    for line in output.lines() {
+        let Some(rest) = line.trim().strip_prefix("UUID: ") else {
+            continue;
+        };
+        let uuid = rest.split_whitespace().next()?;
+        if rest.contains("(arm64)") {
+            return Some(uuid.to_owned());
+        }
+    }
+    None
 }
 
 fn check_vtool_minos(bin: &Path) -> Result<()> {

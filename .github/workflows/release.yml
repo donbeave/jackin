@@ -610,6 +610,23 @@ jobs:
           path: dist-app/*
           if-no-files-found: error
 
+      - name: Stage release symbols
+        run: |
+          set -euo pipefail
+          mkdir -p dist-symbols
+          ditto native/dist/JackinDesktop.app.dSYM dist-symbols/JackinDesktop.app.dSYM
+          tar -czf dist-symbols/libjackin_usage_ffi.a.tar.gz \
+            -C target/aarch64-apple-darwin/desktop-release libjackin_usage_ffi.a
+          test -s dist-symbols/libjackin_usage_ffi.a.tar.gz
+
+      - name: Upload release symbols
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: symbols-usage-menu-bar
+          path: dist-symbols/**
+          if-no-files-found: error
+          retention-days: 90
+
       - name: Upload notary log (short retention)
         if: env.MODE == 'publish' && always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

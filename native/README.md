@@ -158,6 +158,7 @@ One path builds local, PR, and release apps:
 | Secret-free release validation | fixture version, ad-hoc rejection by release verifier, read-only reconciliation |
 | Publication | `main`/tag only, environment `release-macos`, GitHub-hosted macOS only |
 | Artifact | `jackin-desktop-<VERSION>-aarch64-apple-darwin.zip` plus SHA-256, Sigstore bundle, SBOM, attestation |
+| Symbols | `desktop-release` Cargo profile (thin LTO, one codegen unit, line-table debug, no strip); build UUID-checks and archives `native/dist/JackinDesktop.app.dSYM` beside the app, release CI uploads it with the compressed unstripped Rust static library (90-day retention) |
 | Homebrew | formula and `Casks/jackin-desktop.rb` in one independently reviewed tap PR |
 
 Required `release-macos` secret names:

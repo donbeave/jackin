@@ -1,6 +1,6 @@
 use super::{
-    MIN_OS, XunitTotals, minos_matches_target, normalize_generated_text, parse_xctest_summary,
-    parse_xunit_totals, tree_differences, validate_build, validate_version,
+    MIN_OS, XunitTotals, minos_matches_target, normalize_generated_text, parse_dwarf_uuid,
+    parse_xctest_summary, parse_xunit_totals, tree_differences, validate_build, validate_version,
 };
 
 #[test]
@@ -169,6 +169,18 @@ fn assert_subsequence(haystack: &str, needles: &[&str], label: &str) {
             .unwrap_or_else(|| panic!("{label}: `{needle}` missing or out of order"));
         cursor += found + needle.len();
     }
+}
+
+#[test]
+fn dwarf_uuid_reads_the_arm64_slice() {
+    let output = "UUID: 11111111-2222-3333-4444-555555555555 (x86_64) /tmp/app\n\
+                  UUID: AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE (arm64) /tmp/app\n";
+    assert_eq!(
+        parse_dwarf_uuid(output).as_deref(),
+        Some("AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE")
+    );
+    assert!(parse_dwarf_uuid("no uuid here").is_none());
+    assert!(parse_dwarf_uuid("UUID: 1111 (x86_64) /tmp/app\n").is_none());
 }
 
 #[test]

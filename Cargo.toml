@@ -298,6 +298,18 @@ inherits = "release"
 strip = false
 debug = "line-tables-only"
 
+# Desktop static library release lane: symbol-rich for archived triage
+# artifacts. Selected by `cargo xtask desktop` (XCFramework, bindings, app
+# build); release CI archives the unstripped Rust static library and the app
+# dSYM beside the published bytes. The CLI/capsule release profile is
+# deliberately not weakened.
+[profile.desktop-release]
+inherits = "release"
+lto = "thin"
+codegen-units = 1
+strip = false
+debug = "line-tables-only"
+
 [workspace.metadata.dylint]
 libraries = [
     { path = "crates/jackin-lints" },
