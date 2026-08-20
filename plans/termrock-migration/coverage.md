@@ -10,8 +10,8 @@ Re-run 2026-08-19 (console modernization package): item ingested at `f320b51` (c
 | ID | Screen | Item anchor | Spec | Plans | Status |
 |----|--------|-------------|------|-------|--------|
 | S1 | Screen-set preserving posture (no new screens; existing inventory research-cited) | §Screens | spec/migration-posture.md | 001–004 (constraint) | covered |
-| S2 | keyboard_help overlay — the item's single sanctioned new overlay (`?` trigger, all console stages) | §Decisions D18 amendment, D24 | spec/console-modernization.md | — | new (console package) |
-| S3 | Console full screen inventory as the PNG baseline set (6 stages + 19 modals; enumeration research ch04) | §Decisions D20 | spec/png-baselines.md | — | new (console package) |
+| S2 | keyboard_help overlay — the item's single sanctioned new overlay (`?` trigger, all console stages) | §Decisions D18 amendment, D24 | spec/console-modernization.md | 008, 009, 010, 011, 012, 013 | new (console package) |
+| S3 | Console full screen inventory as the PNG baseline set (6 stages + 19 modals; enumeration research ch04) | §Decisions D20 | spec/png-baselines.md | 005 | new (console package) |
 
 ## Capabilities
 | ID | Capability | Item anchor | Spec | Plans | Status |
@@ -20,17 +20,17 @@ Re-run 2026-08-19 (console modernization package): item ingested at `f320b51` (c
 | F2 | Every surface re-platformed where upstream equivalent exists | §Capabilities b2, D3/D12 | spec/console-modernization.md (console slice) | — | console slice active this package; capsule/launch/small deferred (own finalizations) |
 | F3 | Brand compositions re-implemented on new primitives, look unchanged | §Capabilities b3, D4/D8/D11/D13 | spec/brand-preservation.md (bump-PR compensation half); spec/console-brand-header.md (console rebuild) | 003 | covered (bump half); console BrandHeader rebuild active this package; launch/capsule rebuilds deferred (owning surfaces' phases; B11) |
 | F4 | Key screens gain zero-tolerance PNG baselines via termrock-raster | §Capabilities b4, D6 | spec/png-baselines.md (console set + CI lane) | — | console slice active this package; other surfaces deferred (their phases) |
-| F5 | Console re-platformed per the settled adoption map (C1–C19 + whole-screen recipes + form_wizard + op-picker UI and crate) | §Decisions D17/D18/D19/D25 | spec/console-modernization.md | — | new (console package) |
-| F6 | Console surface speaks upstream contracts; facade duplicate traits retired for console, no shim | §Decisions D22 | spec/facade-retirement.md | — | new (console package) |
-| F7 | termrock-raster PNG pipeline adopted: full console inventory baselined, CI lane wired | §Decisions D20, §Quality bar/modernization B10 | spec/png-baselines.md | — | new (console package) |
+| F5 | Console re-platformed per the settled adoption map (C1–C19 + whole-screen recipes + form_wizard + op-picker UI and crate) | §Decisions D17/D18/D19/D25 | spec/console-modernization.md | 008, 009, 010, 011, 012, 013 | new (console package) |
+| F6 | Console surface speaks upstream contracts; facade duplicate traits retired for console, no shim | §Decisions D22 | spec/facade-retirement.md | 006 | new (console package) |
+| F7 | termrock-raster PNG pipeline adopted: full console inventory baselined, CI lane wired | §Decisions D20, §Quality bar/modernization B10 | spec/png-baselines.md | 005 | new (console package) |
 | F8 | Console BrandHeader rebuilt on new primitives; look proven by dedicated PNG crop + 12 literal-RGB tests | §Decisions D21 | spec/console-brand-header.md | — | new (console package) |
-| F9 | keyboard_help adopted: `?` trigger, keymap_bridge-sourced content, footer-hint discoverability, PNG-baselined | §Decisions D18/D24 | spec/console-modernization.md | — | new (console package) |
+| F9 | keyboard_help adopted: `?` trigger, keymap_bridge-sourced content, footer-hint discoverability, PNG-baselined | §Decisions D18/D24 | spec/console-modernization.md | 008, 009, 010, 011, 012, 013 | new (console package) |
 
 ## Flows
 | ID | Flow | Screens touched | Spec | Plans | Status |
 |----|------|-----------------|------|-------|--------|
 | W1 | Flow-preserving posture: no journey changes; three flow-adjacent redesigns gated by parity tests | all existing | spec/forced-redesigns.md | 001, 002 | covered |
-| W2 | Console journeys unchanged through re-platforming; keyboard_help is additive, not a journey step | all console screens | spec/console-modernization.md | — | new (console package) |
+| W2 | Console journeys unchanged through re-platforming; keyboard_help is additive, not a journey step | all console screens | spec/console-modernization.md | 008, 009, 010, 011, 012, 013 | new (console package) |
 
 ## Must-not anchors
 | ID | Statement | Reason | Registry |
