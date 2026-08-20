@@ -44,9 +44,9 @@ PR may be created.
 | F15 | Desktop filtered projection through sanitized boltffi DTOs; Swift display-only | D14-D15; §Data & integrations | covered | 007 | DONE |
 | F16 | Desktop status modes, popover handoff, native Usage window, Settings retention | D17-D20; S7-S8 | covered | 007 | DONE |
 | F17 | Stable selection; removal returns to Overview with persistent inline notice | D20; D34 | covered | 007 | DONE |
-| F18 | Developer ID, notarization, immutable public artifact, Homebrew cask proof | D19; §Quality bar | pending | pending | pending |
-| F19 | Cross-surface fixture parity and no-direct-fetch architecture proof | §Quality bar | pending | pending | pending |
-| F20 | All implementation executes on current branch and PR | Invocation context | covered | all | IN PROGRESS |
+| F18 | Developer ID, notarization, immutable public artifact, Homebrew cask proof | D19; §Quality bar | blocked by explicit release authorization | 008 | REJECTED (external release authorization required) |
+| F19 | Cross-surface fixture parity and no-direct-fetch architecture proof | §Quality bar | covered | 008 | DONE |
+| F20 | All implementation executes on current branch and PR | Invocation context | covered | all | DONE |
 
 ## Flows
 
@@ -57,7 +57,7 @@ PR may be created.
 | W3 | Instance inspection through CLI | S10, S11-S13 | covered | 005 | DONE |
 | W4 | Capsule pre-session quota preview and initialization transition | S11-S13 | covered | 006 | DONE |
 | W5 | Desktop status glance to Usage detail | S7-S8 | covered | 007 | DONE |
-| W6 | Shared refresh, degradation, cancellation, owner exit, and recovery | S1-S13 | covered | 003, 005-008 | IN PROGRESS |
+| W6 | Shared refresh, degradation, cancellation, owner exit, and recovery | S1-S13 | covered | 003, 005-008 | DONE |
 
 ## Must-not anchors
 
@@ -83,13 +83,13 @@ PR may be created.
 | ID | Statement anchor | Spec scenario(s) | Status |
 |---|---|---|---|
 | B1 | Console TUI repository rules and major-state render conformance | covered | 005 | DONE |
-| B2 | Desktop native/Liquid Glass rubric and accessibility/runtime matrix | pending | pending |
-| B3 | Concurrent reads join one generation; every bypass removed | 003 process/coordinator proof; later consumer audit | IN PROGRESS |
-| B4 | Cross-surface Rust-owned value/label parity | pending | pending |
+| B2 | Desktop native/Liquid Glass rubric and accessibility/runtime matrix | covered | DONE |
+| B3 | Concurrent reads join one generation; every bypass removed | 003 process/coordinator proof; later consumer audit | DONE |
+| B4 | Cross-surface Rust-owned value/label parity | covered | DONE |
 | B5 | Console golden matrix including 80×24/focus/scroll/removal | covered | 005 | DONE |
 | B6 | CLI golden matrix including JSON, TTY/non-TTY, plaintext | covered | 005 | DONE |
 | B7 | Capsule golden matrix including lifecycle/account tabs/narrow/focus | covered | 006 | DONE |
-| B8 | Signing/notarization/public artifact/Homebrew proof | pending | pending |
+| B8 | Signing/notarization/public artifact/Homebrew proof | blocked by explicit release authorization | REJECTED (external release authorization required) |
 
 ## Decisions (constraints)
 

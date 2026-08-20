@@ -100,6 +100,39 @@ fn load_console_usage_state(
     Ok(jackin_console::tui::screens::usage::UsageScreenState::from_projection(&projection))
 }
 
+fn refresh_console_usage_on_key(
+    state: &mut ConsoleState,
+    key: crossterm::event::KeyEvent,
+    paths: &JackinPaths,
+) -> anyhow::Result<()> {
+    use crossterm::event::KeyCode;
+
+    if key.code != KeyCode::Char('r') {
+        return Ok(());
+    }
+    let ConsoleStage::Manager(manager) = &mut state.stage else {
+        return Ok(());
+    };
+    let Some(screen) = manager.usage_screen.as_mut() else {
+        return Ok(());
+    };
+
+    match load_console_usage_state(paths) {
+        Ok(usage) => {
+            manager.usage_accounts = usage.accounts.clone();
+            manager.usage_notice = usage.notice.clone();
+            screen.set_accounts(usage.accounts);
+            screen.notice = usage.notice;
+        }
+        Err(error) => {
+            let notice = format!("Usage unavailable: {error}");
+            manager.usage_notice = Some(notice.clone());
+            screen.notice = Some(notice);
+        }
+    }
+    Ok(())
+}
+
 impl std::fmt::Debug for ConsoleRunOptions<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("ConsoleRunOptions")
@@ -805,28 +838,7 @@ where
         let ConsoleStage::Manager(ms) = &mut state.stage;
         crate::console::adapter::handle_key(ms, inputs.config, inputs.paths, inputs.cwd, key)?
     };
-    if key.code == crossterm::event::KeyCode::Char('r')
-        && let ConsoleStage::Manager(ms) = &mut state.stage
-        && ms.usage_screen.is_some()
-    {
-        match load_console_usage_state(inputs.paths) {
-            Ok(usage) => {
-                ms.usage_accounts = usage.accounts.clone();
-                ms.usage_notice = usage.notice.clone();
-                if let Some(screen) = ms.usage_screen.as_mut() {
-                    screen.set_accounts(usage.accounts);
-                    screen.notice = usage.notice;
-                }
-            }
-            Err(error) => {
-                let notice = format!("Usage unavailable: {error}");
-                ms.usage_notice = Some(notice.clone());
-                if let Some(screen) = ms.usage_screen.as_mut() {
-                    screen.notice = Some(notice);
-                }
-            }
-        }
-    }
+    refresh_console_usage_on_key(state, key, inputs.paths)?;
     if startup_error_dismissed(state, inputs.startup_error_pending) {
         return Ok(ConsoleLoopFlow::Exit(None));
     }
@@ -1092,37 +1104,14 @@ pub async fn run_console<H: InstanceActionHandler<jackin_core::Agent>>(
         // then resume. Done at the top of the loop (no live `&mut state.stage`
         // borrow, `config`/`paths`/`terminal` all in scope) so a request set by
         // the previous iteration's input is handled before the next frame.
-        let pending = if let ConsoleStage::Manager(manager) = &mut state.stage {
-            manager.take_pending_token_generate()
-        } else {
-            None
-        };
-        if let Some(req) = pending {
-            let mint = if let Some(session) = owned_screen.as_ref().or(options.parent_session) {
-                session.suspend(|| {
-                    println!(
-                        "{}",
-                        token_generate_status_message(token_generate_scope_label_for_console(&req))
-                    );
-                    crate::console::effects::execute_token_generate(paths, &config, &req)
-                })?
-            } else {
-                println!(
-                    "{}",
-                    token_generate_status_message(token_generate_scope_label_for_console(&req))
-                );
-                crate::console::effects::execute_token_generate(paths, &config, &req)
-            };
-            // Force a full repaint next frame so leftover child output is
-            // overwritten. terminal.resize() resets Ratatui's internal diff
-            // buffer (marks every cell dirty) without emitting \x1b[2J — this
-            // avoids the blank-screen flash that terminal.clear() causes while
-            // still guaranteeing that every cell is redrawn next tick.
-            invalidate_terminal(&mut terminal);
+        if drain_pending_token_generate(
+            &mut state,
+            owned_screen.as_ref().or(options.parent_session),
+            paths,
+            &config,
+            &mut terminal,
+        )? {
             needs_redraw = true;
-            if let ConsoleStage::Manager(ms) = &mut state.stage {
-                crate::console::effects::apply_token_generate_result(ms, mint);
-            }
             continue;
         }
 
@@ -1227,6 +1216,48 @@ pub async fn run_console<H: InstanceActionHandler<jackin_core::Agent>>(
     // reload when nothing was written (and still sees in-session mutations
     // that already updated `config` on successful save).
     Ok((result?, config))
+}
+
+fn drain_pending_token_generate<B: ratatui::backend::Backend>(
+    state: &mut ConsoleState,
+    session: Option<&TerminalSession>,
+    paths: &JackinPaths,
+    config: &AppConfig,
+    terminal: &mut ratatui::Terminal<B>,
+) -> anyhow::Result<bool>
+where
+    B::Error: std::error::Error + Send + Sync + 'static,
+{
+    let pending = if let ConsoleStage::Manager(manager) = &mut state.stage {
+        manager.take_pending_token_generate()
+    } else {
+        None
+    };
+    let Some(req) = pending else {
+        return Ok(false);
+    };
+
+    let mint = if let Some(session) = session {
+        session.suspend(|| {
+            println!(
+                "{}",
+                token_generate_status_message(token_generate_scope_label_for_console(&req))
+            );
+            crate::console::effects::execute_token_generate(paths, config, &req)
+        })?
+    } else {
+        println!(
+            "{}",
+            token_generate_status_message(token_generate_scope_label_for_console(&req))
+        );
+        crate::console::effects::execute_token_generate(paths, config, &req)
+    };
+    // Force a full repaint so child output cannot remain in the next frame.
+    invalidate_terminal(terminal);
+    if let ConsoleStage::Manager(manager) = &mut state.stage {
+        crate::console::effects::apply_token_generate_result(manager, mint);
+    }
+    Ok(true)
 }
 
 fn invalidate_terminal<B: ratatui::backend::Backend>(terminal: &mut ratatui::Terminal<B>) {

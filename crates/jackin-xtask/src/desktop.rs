@@ -747,6 +747,14 @@ fn build_xcframework(root: &Path) -> Result<()> {
         .args(["pack", "apple"]);
     cmd::run_streaming(&mut pack)?;
 
+    // `boltffi pack` regenerates the Swift module beside the committed native
+    // sources. Keep its whitespace normalization identical to the binding
+    // command/check so a build cannot create drift that the next CI step sees.
+    let generated_sources = root.join("native/Sources/JackinUsageBindings");
+    for generated in find_files_with_ext(&generated_sources, "swift")? {
+        normalize_generated_file(&generated)?;
+    }
+
     if !xcframework.is_dir() {
         bail!("missing {}", xcframework.display());
     }

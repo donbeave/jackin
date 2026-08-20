@@ -1,7 +1,7 @@
 # Plan 008: Prove parity and deliver the signed desktop artifact
 
 ## Status
-TODO
+REJECTED (external release authorization required)
 
 ## Why this matters
 Completion means one truth survives concurrency and one public artifact survives the actual install chain.
@@ -65,3 +65,30 @@ Artifact digest changes mid-chain; signing/notary/cask credential absent; any di
 
 ## Maintenance notes
 Preserve release evidence without secrets; future schema/provider changes rerun parity and distribution gates.
+
+## Execution evidence
+
+- Cross-surface and authority proof passed through the unified Rust/FFI/native
+  harnesses: `rtk mise run desktop-test` completed 310 Rust tests plus the
+  native parity, architecture, provider-mark, and Swift unit harnesses.
+- Native production gates passed on this branch with
+  `rtk mise run desktop-ci`, `rtk mise run desktop-bindings-check`,
+  `rtk mise run desktop-format-check`, and `rtk mise run desktop-lint`. The
+  retired Capsule direct diagnostic was removed from the provider-call
+  allowlist; the inventory test now passes. `rtk mise run desktop-merge`
+  reached the real-app UI phase but failed before the first test because the
+  macOS XCTest runner could not enable automation mode (status 65). This is a
+  host permission/session prerequisite, not an assertion failure; the same
+  failure reproduced in an isolated direct `xcodebuild test` invocation.
+- Ad-hoc artifact proof passed with
+  `rtk mise run desktop-verify native/dist/JackinDesktop.app 0.6.0 1`.
+  Release-mode verification correctly failed closed because the artifact is
+  not Developer ID signed/notarized. Read-only release reconciliation reports
+  `release_exists=false`, `app_file_assets_complete=false`,
+  `formula_complete=false`, and `cask_complete=false`.
+- Plan 008 is explicitly rejected at the external boundary. The remaining
+  actions—Developer ID signing, notarization/stapling, stable publication,
+  merging PR #898, tag creation, Homebrew-tap PR mutation, and clean-machine
+  install/uninstall proof—were not executed because the operator explicitly
+  prohibited them. No credentials, tag, release, merge, or tap write was
+  performed.

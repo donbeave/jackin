@@ -18,9 +18,9 @@ same integration seams.
 | [005](005-ship-cli-and-console.md) | Simple CLI and native Console Usage | 003, 004 | DONE |
 | [006](006-ship-capsule-usage.md) | Resolved-agent Capsule Usage | 003, 004 | DONE |
 | [007](007-ship-desktop-usage.md) | FFI, popover, and native Usage window | 003, 004 | DONE |
-| [008](008-prove-parity-and-release.md) | Cross-surface proof and signed distribution | 005, 006, 007 | TODO |
+| [008](008-prove-parity-and-release.md) | Cross-surface proof and signed distribution | 005, 006, 007 | REJECTED (external release authorization required) |
 
-Frozen package fingerprint: `749072baaadafe956d07cee493525d66e44c4a24`.
+Frozen package fingerprint: `c132f74695354ad5f7703985a619c6c1330eaffd`.
 
 ## Execution rules
 

@@ -99,11 +99,9 @@ open and manual Refresh. Background polling reuses the catalog. Only current
 discovery creates membership; history only enriches it. Paths and secrets stay in
 Rust. OpenCode and GitHub are outside the seven-provider Desktop catalog.
 
-Capsule discovery is capability-only. It never scans host config or other host
-accounts. A per-Capsule relay exposes only launch-forwarded capabilities at
-`/jackin/run/usage.sock`; the global broker socket/state tree never enters a
-container. Credentials created only inside a Capsule are excluded pending a secure
-enrollment design.
+Capsule discovery is capability-only. The runtime relay exposes only
+launch-forwarded capabilities; host catalog/state and in-Capsule credentials do
+not cross that boundary.
 
 Each account owns its plan/status, remaining label and geometry, reset phrase
 and exact reset, severity, recency, and error. Native clients render all DTO fields
