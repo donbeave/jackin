@@ -12,7 +12,6 @@ use ratatui::{
     widgets::StatefulWidget,
 };
 
-use crate::ModalOutcome;
 use termrock::scroll::DialogScroll;
 use termrock::style::Role;
 use termrock::text::display_cols;
@@ -20,6 +19,16 @@ use termrock::widgets::{
     DetailCapability, DetailRow, DetailTable, DetailTableOutcome, DetailTableState, HintSpan,
     Panel, PanelChrome,
 };
+
+/// Key-handling result for the Debug-info dialog. The dialog only ever
+/// continues or dismisses — it has no commit path.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum OperatorInfoOutcome {
+    /// Key absorbed; dialog stays open.
+    Continue,
+    /// Esc/q pressed; dialog dismissed.
+    Cancel,
+}
 
 #[derive(Debug, Clone)]
 pub struct ContainerInfoRow {
@@ -200,7 +209,7 @@ impl ContainerInfoState {
         self.rows.push(row);
     }
 
-    pub fn handle_key(&mut self, key: KeyEvent) -> ModalOutcome<()> {
+    pub fn handle_key(&mut self, key: KeyEvent) -> OperatorInfoOutcome {
         if let Some(dialog_rect) = self.viewport {
             let content_height = self.content_height();
             let content_width = self.content_width();
@@ -238,9 +247,9 @@ impl ContainerInfoState {
         viewport_height: usize,
         viewport_width: usize,
         axes: termrock::scroll::ScrollAxes,
-    ) -> ModalOutcome<()> {
+    ) -> OperatorInfoOutcome {
         match key.code {
-            KeyCode::Esc | KeyCode::Char('q' | 'Q') => ModalOutcome::Cancel,
+            KeyCode::Esc | KeyCode::Char('q' | 'Q') => OperatorInfoOutcome::Cancel,
             // Scroll keys (Up/Down/Left/Right + vim h/j/k/l + PageUp/PageDown).
             KeyCode::Up
             | KeyCode::Down
@@ -259,9 +268,9 @@ impl ContainerInfoState {
                     viewport_width,
                     axes,
                 );
-                ModalOutcome::Continue
+                OperatorInfoOutcome::Continue
             }
-            _ => ModalOutcome::Continue,
+            _ => OperatorInfoOutcome::Continue,
         }
     }
 
