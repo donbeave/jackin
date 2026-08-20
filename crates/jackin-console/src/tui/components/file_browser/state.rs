@@ -127,6 +127,10 @@ impl FileBrowserState {
     /// Wheel gestures should instead saturate at the listing edges, matching
     /// normal scroll behavior and preventing an edge scroll from jumping from
     /// the top to the bottom.
+    ///
+    /// Ch06 row 9 decision (plan 009): modal/picker selection STAYS on
+    /// upstream `ListState` — `CollectionState`'s single `.wrap(bool)`
+    /// policy cannot express this wheel-saturates/keyboard-wraps split.
     pub fn scroll_selection(&mut self, delta: i16) -> bool {
         self.list_state
             .move_index(self.entries.len(), isize::from(delta))

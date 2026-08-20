@@ -2,6 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //! Pure workspace-list row sizing helpers.
+//!
+//! Spec carve-out (plan 009): the horizontal char-precise scroll half
+//! (`list_names_content_width`, `clamp_list_names_scroll`, the
+//! `*_scroll_axes` and row-width fns) has no upstream analogue —
+//! `VirtualListState` windows item rows, not character columns — so it
+//! stays hand-rolled here. The vertical window moved to
+//! `VirtualListState` in the workspaces view.
 
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
 
