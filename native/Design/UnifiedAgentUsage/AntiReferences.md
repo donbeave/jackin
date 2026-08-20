@@ -33,7 +33,7 @@ G, and H are appended below with the recorded human decision rationale.
 |---|---|---|---|---|
 | Card-grid usage dashboard | Rejected | Flattens provider/account/window hierarchy, adds equal visual weight, and encourages trend/spend decoration forbidden by the limits-only contract. | Native list/table hierarchy for inventory and native form/list detail for quota windows. | Monitoring work needs selection and comparison structure, not a wall of metric cards. |
 | Custom-painted glass, blur, pills, window chrome, or sidebar | Rejected | Duplicates system-owned macOS 26 material and forfeits automatic contrast, transparency, focus, metric, and future-platform behavior. | Standard AppKit/SwiftUI structure and controls; no custom material while native components satisfy the job. | Do not draw what the operating system owns. |
-| Fixed-canvas desktop layout | Rejected | Pretends the Mac window cannot resize and hides failures at the 760 × 500 minimum, long text, display scaling, and toolbar overflow. | Continuous native resizing across minimum, typical, and wide sizes with stable focus and selection. | A Mac design is a behavior envelope, not one screenshot size. |
+| Fixed-canvas desktop layout | Rejected | Pretends the Mac window cannot resize and hides failures at the 800 × 520 minimum, long text, display scaling, and toolbar overflow. | Continuous native resizing across minimum, typical, and wide sizes with stable focus and selection. | A Mac design is a behavior envelope, not one screenshot size. |
 
 ## Evidence
 

@@ -110,6 +110,26 @@ Finalize one agent usage experience across jackin❯ desktop, `jackin console`, 
 
 ## Native design preparation
 
+The runnable dark-only prototype is the authoritative visual and interaction
+reference. Adaptation rules live in
+[production mapping](../../native/Design/Prototypes/UnifiedAgentUsage/PRODUCTION_MAPPING.md);
+human approval remains tracked separately in
+[prototype signoff](../../native/Design/Prototypes/UnifiedAgentUsage/SIGNOFF.md).
+Fixture/store/harness code is never copied into production.
+
+### Desktop implementation phases
+
+| Phase | Authoritative source | Affected production owners | Required proof | Stop condition |
+|---|---|---|---|---|
+| A — reference stabilization | Prototype source, production mapping, design audit, signoff | `native/Design/UnifiedAgentUsage/`, prototype package and tests | Prototype build/tests; dark 800×520, 1000×680, 1200×760 and popover matrix; operator-only gaps remain pending | Contracts agree, mapping covers every region, tests pass; no visual-blessing claim before human signoff. |
+| B — data-contract changes | Rust canonical projection and explicit quota category/order contract | `crates/jackin-usage/`, `crates/jackin-usage-ffi/`, generated bindings, `JackinUsageBridge` | Rust model/serialization tests, FFI parity tests, Swift DTO tests for account destinations, sidebar summary state, stable semantic order | Swift receives stable IDs, finished strings, freshness/state, category and final order without label parsing. |
+| C — production shell | Prototype App boundary and production mapping | `UsageWindowController`, `UsageWindowSplitController`, `DesktopAppDelegate`, status/popover controllers | Swift tests plus active/collapsed/resized/title-centered and secondary-display runtime evidence | Shared metrics are 800×520 minimum and 1000×680 default; native Refresh, collapse, centered brand and display-local popover all pass. |
+| D — production Usage content | Prototype Usage feature and Rust DTO contract | `UsageWindowRoot`, Overview/detail views, presentation store/model | Unit tests for account-only navigation/state; dark minimum/default/wide captures; stale/unavailable fixtures | Multi-account providers expose account destinations only; single-account providers remain direct; meters and semantic states agree with Rust. |
+| E — atmosphere/accessibility | Prototype design system, Regions, Signoff | Swift background/design tokens and QA harness | Real Reduce Motion/Transparency/Increase Contrast; hover/focus/keyboard/VoiceOver; inactive/multi-display evidence | Rain remains subordinate and substituted correctly; every named accessibility/runtime state passes operator QA. |
+
+No later phase starts by copying prototype DTOs or harness code. Each phase may
+reuse visual behavior only through the ownership seam in production mapping.
+
 - [Experience brief](../../native/Design/UnifiedAgentUsage/ExperienceBrief.md) —
   archetype, jobs, hierarchy, actions, window model, accessibility, and release
   acceptance contract.
@@ -252,3 +272,7 @@ approval, READY transition, and plan remain unclaimed.
 - 2026-08-20 — tailrocks-macos-design — completed the preselection brief, component map, alternatives, and deterministic fixture contract; human selection remains mandatory.
 - 2026-08-20 — tailrocks-record-decision — recorded the human structural selection of Usage-window alternative A without H (Alexey Zhokhov); propagated the selection record, anti-reference rejections, brief approval, and prototype-handoff preconditions; status stays SHAPING pending prototype blessing.
 - 2026-08-20 — reference survey — surveyed the CodexBar and OpenUsage clones against the `jackin-usage` crate; recorded extraction gaps (Codex spend-control lane, OpenCode adapter, Z.AI subscription endpoint, Claude window keys, Grok REST source, MiniMax money cap), display candidates (adaptive refresh, pace exhaustion, "Not started"), the cookie-scraping boundary question, and the deferred out-of-scope catalog.
+- 2026-08-20 — prototype reference stabilization — made the dark-only prototype
+  the explicit interaction/visual reference, documented the production ownership
+  seam, added contract tests, and phased the future desktop adaptation without
+  claiming human visual blessing or implementation completion.

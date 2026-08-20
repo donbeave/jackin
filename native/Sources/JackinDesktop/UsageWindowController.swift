@@ -5,6 +5,11 @@ import AppKit
 import JackinUsageBridge
 import SwiftUI
 
+enum UsageWindowMetrics {
+    static let defaultContentSize = NSSize(width: 1000, height: 680)
+    static let minimumContentSize = NSSize(width: 800, height: 520)
+}
+
 /// Lazily creates and retains the AppKit Usage window and its native split controller.
 ///
 /// SwiftUI owns pane content. AppKit owns split geometry, the full-height sidebar,
@@ -109,7 +114,7 @@ public final class UsageWindowController: NSObject, NSWindowDelegate {
 
     private func makeWindow() -> NSWindow {
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 920, height: 620),
+            contentRect: NSRect(origin: .zero, size: UsageWindowMetrics.defaultContentSize),
             styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
             backing: .buffered,
             defer: false
@@ -131,7 +136,11 @@ public final class UsageWindowController: NSObject, NSWindowDelegate {
         } else {
             window.collectionBehavior.insert(.moveToActiveSpace)
         }
-        window.contentMinSize = NSSize(width: 760, height: 500)
+        window.contentMinSize = UsageWindowMetrics.minimumContentSize
+        window.minSize = NSWindow.frameRect(
+            forContentRect: NSRect(origin: .zero, size: UsageWindowMetrics.minimumContentSize),
+            styleMask: window.styleMask
+        ).size
         window.identifier = NSUserInterfaceItemIdentifier("usage-window")
         window.setAccessibilityIdentifier("usage-window")
         if !store.usesFixture {
@@ -157,14 +166,38 @@ public final class UsageWindowController: NSObject, NSWindowDelegate {
             return nil
         }
 
-        let toolbarController = UsageWindowToolbar(sidebarItem: split.splitViewItems[0])
+        let toolbarController = UsageWindowToolbar(
+            sidebarItem: split.splitViewItems[0],
+            onSidebarStateChange: { [weak self, weak window] in
+                guard let self, let window else { return }
+                self.installCenteredBrand(in: window)
+            })
         self.toolbarController = toolbarController
         let toolbar = toolbarController.makeToolbar()
         window.toolbar = toolbar
         toolbarController.installStandardItems(in: toolbar)
+        installCenteredBrand(in: window)
 
         window.center()
         return window
+    }
+
+    private func installCenteredBrand(in window: NSWindow) {
+        guard let titlebar = window.standardWindowButton(.closeButton)?.superview else { return }
+        titlebar.subviews
+            .filter { $0.identifier?.rawValue == "usage.brand-title" }
+            .forEach { $0.removeFromSuperview() }
+        let host = NSHostingView(rootView: JackinBrandSignature(width: 68, height: 18))
+        host.translatesAutoresizingMaskIntoConstraints = false
+        host.setAccessibilityLabel("jackin❯ desktop")
+        host.setAccessibilityIdentifier("usage.brand-title")
+        titlebar.addSubview(host)
+        NSLayoutConstraint.activate([
+            host.centerXAnchor.constraint(equalTo: titlebar.centerXAnchor),
+            host.centerYAnchor.constraint(equalTo: titlebar.centerYAnchor),
+            host.widthAnchor.constraint(equalToConstant: 68),
+            host.heightAnchor.constraint(equalToConstant: 18),
+        ])
     }
 
     public func windowWillClose(_ notification: Notification) {

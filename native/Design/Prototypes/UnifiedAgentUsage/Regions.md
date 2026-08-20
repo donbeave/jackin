@@ -1,39 +1,27 @@
 # Regions — Unified Agent Usage prototype
 
-Region contract for the post-signoff baseline that `tailrocks-macos-visual-qa`
-freezes from this package. Derived from
-[NativeComponentMap.md](../../UnifiedAgentUsage/NativeComponentMap.md): the
-selected design declares **zero CUSTOM regions**, so no region is pixel-gated.
-Rects are recorded at the typical 920 × 620 Usage geometry (popover at its
-fixed 380 × 520), from the top-left of the owning surface, in points; for
-structural regions the rect is informational, not a gate.
+Dark-only post-signoff region contract. Geometry is measured at the 1000×680
+default Usage window, the 800×520 minimum, the 1200×760 wide reference, and the
+fixed 380×520 popover. Structural bounds are informative; accessibility roles,
+labels, state, and ownership are the gate.
 
-| Region | Class | Rect (pt, from top-left) | Mode | Budget |
-|---|---|---|---|---|
-| Status items (per committed `statusBarGlanceRows`) | NATIVE | menu bar, trailing | structural | — |
-| Popover shell (`NSPopover`, transient) | NATIVE | 0,0 → 380,520, anchored to clicked item | structural | — |
-| Popover identity header (product row, provider, account, summary) | NATIVE-COMPOSED | 0,0 → 380,~110 | structural | — |
-| Popover quota-window list | NATIVE | 0,~110 → 380,~420 | structural | — |
-| Popover state band (stale/error + Retry, conditional) | NATIVE-COMPOSED | 0,~420 → 380,~478 | structural | — |
-| Popover footer (Refresh, Open Usage, account menu) | NATIVE-COMPOSED | 0,~478 → 380,520 | structural | — |
-| Status-item right-click menu (explicit `NSMenu`) | NATIVE | below clicked item | structural | — |
-| Usage window chrome + unified toolbar (`.toggleSidebar`) | NATIVE | 0,0 → 920,~52 | structural | — |
-| Detail top accessory (centered product identity, trailing Refresh) | NATIVE-COMPOSED | 190,52 → 920,92 | structural | — |
-| Sidebar (Overview + provider destinations, 190–280 pt) | NATIVE | 0,52 → 190,620 | structural | — |
-| Overview grouped Table (provider group rows, account children) | NATIVE | 190,92 → 920,620 | structural | — |
-| Provider detail Form (identity, State, Limits) | NATIVE | 190,92 → 920,620 | structural | — |
-| Empty / loading / global-error content region | NATIVE | 190,92 → 920,620 | structural | — |
-| Settings window Form | NATIVE | 0,0 → 440,260 own window | structural | — |
+| Region | Class | Ownership and gate |
+|---|---|---|
+| Status items and context menu | NATIVE | `NSStatusItem`/`NSMenu`; correct provider identity and display-local action anchor. |
+| Popover shell | NATIVE | `NSPopover`; fixed 380×520, transient dismissal, correct clicked-display placement. |
+| Popover identity and quota content | NATIVE-COMPOSED | Official centered wordmark; selected account, semantic state, ordered limits. |
+| Popover actions | NATIVE-COMPOSED | Refresh and Open Usage remain standard controls with keyboard labels. |
+| Window chrome and centered identity | NATIVE | AppKit unified titlebar; wordmark is absolute-centered expanded and collapsed. |
+| Sidebar | NATIVE-COMPOSED | Native sidebar plane; Overview, provider taxonomy, account-only multi-account destinations, meters, translucent wells. |
+| Overview | CONTENT | Opaque adaptive provider/account modules over authored stage; no fake glass. |
+| Provider detail | CONTENT | Identity, state strip, semantically ordered limits, account facts; opaque modules. |
+| Digital rain | CONTENT-BACKGROUND | Noninteractive, subordinate, absent under Reduce Transparency, static/disabled under Reduce Motion. |
+| Empty/loading/error/stale/unavailable | NATIVE-COMPOSED | Explicit text and symbol; unavailable never claims current quota. |
+| Refresh | NATIVE | Standard `NSToolbarItem`; no authored bezel or material. |
+| Settings | NATIVE-COMPOSED | Native Settings window and controls. |
 
-Notes:
+Custom content modules use changed-pixel comparison only under the same dark
+appearance, scale, backdrop, scenario, and accessibility state. Native chrome is
+validated structurally. The capture harness and backdrop are excluded.
 
-- Structural mode = component present, in the right region, correct role,
-  label, and state, checked through the accessibility tree.
-- No region is drawn by the design itself; there is nothing to budget.
-  If a CUSTOM region is ever introduced, it enters this table with a point
-  rect and an explicit changed-pixel budget in the same change.
-- The `--tr-backdrop` window is harness-owned and excluded from every region.
-- Window title text is chrome; any future pixel region excludes the title bar.
-- Hover/pressed states, motion, VoiceOver traversal, keyboard paths, and the
-  real accessibility-settings matrix are not provable by static captures;
-  SIGNOFF.md names where each landed.
+Pending operator-only evidence is listed in [SIGNOFF.md](SIGNOFF.md).

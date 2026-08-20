@@ -8,6 +8,10 @@ let package = Package(
         .executableTarget(
             name: "UnifiedAgentUsageProto",
             resources: [.process("Resources")]
-        )
+        ),
+        .testTarget(
+            name: "UnifiedAgentUsageProtoTests",
+            dependencies: ["UnifiedAgentUsageProto"]
+        ),
     ]
 )

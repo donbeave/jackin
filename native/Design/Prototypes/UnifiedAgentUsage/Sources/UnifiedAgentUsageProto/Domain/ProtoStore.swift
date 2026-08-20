@@ -42,8 +42,7 @@ final class ProtoStore {
 
     init(projection: ProtoProjection) {
         self.projection = projection
-        sidebar =
-            projection.selectedProviderKey.map { .provider($0) } ?? .overview
+        sidebar = Self.initialSidebarSelection(for: projection)
         accountSelection = Dictionary(
             uniqueKeysWithValues: projection.providers.compactMap { provider in
                 provider.selectedAccountKey.map { (provider.key, $0) }
@@ -62,30 +61,61 @@ final class ProtoStore {
     /// Scenario-menu drive: swap the whole fixture projection and reset the
     /// selection surface state the old projection owned.
     func loadScenario(_ name: String) {
+        let previousSidebar = resolvedSidebar
+        let previousAccounts = accountSelection
         let next = ProtoFixtures.load(name)
         projection = next
-        sidebar = next.selectedProviderKey.map { .provider($0) } ?? .overview
         accountSelection = Dictionary(
             uniqueKeysWithValues: next.providers.compactMap { provider in
-                provider.selectedAccountKey.map { (provider.key, $0) }
+                let preserved = previousAccounts[provider.key].flatMap { key in
+                    provider.accounts.contains(where: { $0.key == key }) ? key : nil
+                }
+                return (preserved ?? provider.selectedAccountKey).map { (provider.key, $0) }
             })
+        sidebar = previousSidebar
+        let normalized = resolvedSidebar
+        sidebar =
+            normalized == .overview && previousSidebar != .overview
+            ? Self.initialSidebarSelection(for: next) : normalized
         surfaceEnabled = Dictionary(
             uniqueKeysWithValues: next.providers.map { ($0.key, true) })
         floorError = nil
         refreshInProgress = false
     }
 
+    static func initialSidebarSelection(
+        for projection: ProtoProjection
+    ) -> SidebarSelection {
+        guard let providerKey = projection.selectedProviderKey else { return .overview }
+        guard
+            let provider = projection.providers.first(where: { $0.key == providerKey }),
+            provider.accounts.count > 1,
+            let accountKey = projection.selectedAccountKey
+        else { return .provider(providerKey) }
+        return .account(provider: providerKey, account: accountKey)
+    }
+
     /// A removed/disabled provider or account normalizes here, not in a view.
     var resolvedSidebar: SidebarSelection {
         switch sidebar {
         case .provider(let key):
-            return projection.providers.contains(where: { $0.key == key })
-                ? sidebar : .overview
+            guard let provider = projection.providers.first(where: { $0.key == key })
+            else { return .overview }
+            if provider.accounts.count > 1, let account = provider.accounts.first {
+                let selected = accountSelection[key] ?? provider.selectedAccountKey ?? account.key
+                return .account(provider: key, account: selected)
+            }
+            return sidebar
         case .account(let providerKey, let accountKey):
             guard let provider = projection.providers.first(where: { $0.key == providerKey })
             else { return .overview }
-            return provider.accounts.contains(where: { $0.key == accountKey })
-                ? sidebar : .provider(providerKey)
+            if provider.accounts.contains(where: { $0.key == accountKey }) {
+                return sidebar
+            }
+            if provider.accounts.count > 1, let firstAccount = provider.accounts.first {
+                return .account(provider: providerKey, account: firstAccount.key)
+            }
+            return .provider(providerKey)
         case .overview:
             return .overview
         }
@@ -109,9 +139,30 @@ final class ProtoStore {
     /// them so detail, popover, and status item follow one source of truth.
     func navigate(to selection: SidebarSelection) {
         sidebar = selection
-        if case .account(let providerKey, let accountKey) = selection {
+        sidebar = resolvedSidebar
+        if case .account(let providerKey, let accountKey) = sidebar {
             accountSelection[providerKey] = accountKey
         }
+    }
+
+    func moveSidebarSelection(_ direction: MoveCommandDirection) {
+        guard direction == .up || direction == .down else { return }
+        let destinations = sidebarDestinations
+        guard !destinations.isEmpty else { return }
+        let current = destinations.firstIndex(of: resolvedSidebar) ?? 0
+        let delta = direction == .down ? 1 : -1
+        navigate(to: destinations[max(0, min(destinations.count - 1, current + delta))])
+    }
+
+    var sidebarDestinations: [SidebarSelection] {
+        [SidebarSelection.overview]
+            + projection.providers.flatMap { provider in
+                provider.accounts.count > 1
+                    ? provider.accounts.map {
+                        SidebarSelection.account(provider: provider.key, account: $0.key)
+                    }
+                    : [SidebarSelection.provider(provider.key)]
+            }
     }
 
     func summaryRemaining(_ provider: ProtoProvider) -> String? {

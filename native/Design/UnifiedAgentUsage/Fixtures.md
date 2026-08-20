@@ -27,7 +27,12 @@ Frozen environment:
 - Base locale and layout direction: `en_US`, left-to-right. F19 overrides both.
 - Calendar: Gregorian
 - Time zone: `Asia/Ho_Chi_Minh`
-- Window sizes: 760 × 500 minimum, 920 × 620 typical, 1200 × 760 wide
+- Window sizes: 800 × 520 minimum, 1000 × 680 typical, 1200 × 760 wide
+- Appearance: dark only
+- Every quota window carries explicit semantic category metadata:
+  `longRange`, `model`, `general`, `session`, or `other`. The prototype sorts
+  by category and preserves fixture order within a category. Production Rust
+  emits final order; Swift never infers category from display labels.
 - Popover: 380 × 520
 
 ## Frozen desktop provider order
@@ -126,7 +131,7 @@ an inferred date.
 - Seven desktop providers in canonical order.
 - One account each.
 - All values from the normal catalog.
-- Purpose: typical light/dark, inactive-window, sidebar, popover, and overview
+- Purpose: typical dark, inactive-window, sidebar, popover, and overview
   evidence.
 
 ### F03 — Multi-account provider
@@ -207,7 +212,7 @@ an inferred date.
 - Reset: `Resets Tuesday, 18 August 2026 at 23:59 Indochina Time`.
 - Error: `Provider response could not be refreshed; showing the last successful quota snapshot`.
 - State: stale.
-- Purpose: 760 × 500 wrapping/truncation, complete accessibility text, and no
+- Purpose: 800 × 520 wrapping/truncation, complete accessibility text, and no
   overlapping columns.
 
 ### F12 — Layout envelope / large dataset
@@ -292,7 +297,7 @@ an inferred date.
   no `--tr-reduce` argument, `--tr-reduce transparency`, `--tr-reduce motion`,
   and `--tr-reduce transparency,motion`.
 - Post-signoff real-settings visual QA adds Increase Contrast, Differentiate
-  Without Color, Full Keyboard Access, light/dark, and key/inactive window while
+  Without Color, Full Keyboard Access, dark, and key/inactive window while
   preserving snapshot-and-restore evidence.
 - Expected: opacity adapts through system material; all rows remain separated;
   every state has non-color identity; focus remains visible; no spatial/blur
@@ -381,7 +386,7 @@ an inferred date.
 
 ### F24 — Continuous resize and overflow
 
-- Sweep the Usage window continuously from 1200 × 760 to 760 × 500 and back,
+- Sweep the Usage window continuously from 1200 × 760 to 800 × 520 and back,
   including 900 and 860-point candidate thresholds.
 - Live prototype subscenarios use F02, F11, and F12 with sidebar shown/hidden and
   toolbar items forced into overflow. Post-signoff visual QA repeats each under
@@ -484,9 +489,9 @@ No locale, data-base, or status-row choice comes from an undeclared argument.
 Preselection ASCII schematics use only exact core or named-fixture records;
 OpenAI multi-account examples use F03 tuples. After human structural selection,
 the user walks every executable scenario listed above, including the `default`
-alias. Every scenario that opens Usage runs at exactly 760 × 500, 920 × 620, and
-1200 × 760 in both light and dark; every scenario that opens the popover also
-runs at its fixed 380 × 520 in both appearances. F18 repeats that matrix for
+alias. Every scenario that opens Usage runs at exactly 800 × 520, 1000 × 680, and
+1200 × 760 in dark only; every scenario that opens the popover also
+runs at its fixed 380 × 520 in the dark appearance. F18 repeats that matrix for
 `F18-f02` and `F18-f11` with the four exact process-local reduction settings.
 F19 runs all four locale/direction subscenarios. F23 and every F24 subscenario
 complete their full live interaction sequences at each relevant size/display

@@ -48,6 +48,9 @@ final class ProtoShell: NSObject, NSMenuDelegate {
         view
             .tint(.jackinPhosphor)
             .accentColor(.jackinPhosphor)
+            .environment(\.jackinIncreaseContrast, config.increaseContrast)
+            .environment(\.jackinReduceTransparency, config.reduceTransparency)
+            .environment(\.jackinReduceMotion, config.reduceMotion)
             .environment(\.locale, store.chrome.locale)
             .environment(\.layoutDirection, store.chrome.layoutDirection)
             .transaction { transaction in
@@ -229,7 +232,7 @@ final class ProtoShell: NSObject, NSMenuDelegate {
         sidebarHost.sizingOptions = []
         let sidebarItem = NSSplitViewItem(sidebarWithViewController: sidebarHost)
         sidebarItem.allowsFullHeightLayout = true
-        sidebarItem.minimumThickness = 190
+        sidebarItem.minimumThickness = 220
         sidebarItem.maximumThickness = 280
         sidebarItem.collapseBehavior = .preferResizingSiblingsWithFixedSplitView
 
@@ -247,13 +250,13 @@ final class ProtoShell: NSObject, NSMenuDelegate {
         splitController = split
 
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 920, height: 620),
+            contentRect: NSRect(origin: .zero, size: ProtoUsageWindowMetrics.defaultContentSize),
             styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
             backing: .buffered,
             defer: false)
         window.title = "Usage"
         window.isReleasedWhenClosed = false
-        window.setContentSize(config.window ?? NSSize(width: 920, height: 620))
+        window.setContentSize(config.window ?? ProtoUsageWindowMetrics.defaultContentSize)
         window.contentViewController = split
 
         // Unified titlebar + standard AppKit split toolbar; no app-painted chrome.
@@ -261,7 +264,7 @@ final class ProtoShell: NSObject, NSMenuDelegate {
         // name as title, account as subtitle.
         window.toolbarStyle = .unified
         window.titlebarAppearsTransparent = true
-        window.titleVisibility = .visible
+        window.titleVisibility = .hidden
         window.titlebarSeparatorStyle = .automatic
 
         sidebarKeyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) {
@@ -273,30 +276,55 @@ final class ProtoShell: NSObject, NSMenuDelegate {
             return nil
         }
 
-        let refreshHost = NSHostingView(
-            rootView: AnyView(wrap(RefreshToolbarButton(store: store))))
         let toolbarController = UsageWindowToolbar(
-            sidebarItem: sidebarItem, refreshView: refreshHost,
-            refreshTitle: store.chrome.refreshTitle)
+            sidebarItem: sidebarItem, store: store,
+            refreshTitle: store.chrome.refreshTitle,
+            onSidebarStateChange: { [weak self, weak window] in
+                guard let self, let window else { return }
+                self.installCenteredBrand(in: window)
+            })
         self.toolbarController = toolbarController
         let toolbar = toolbarController.makeToolbar()
         window.toolbar = toolbar
         toolbarController.installStandardItems(in: toolbar)
+        installCenteredBrand(in: window)
 
         // Set after contentViewController/toolbar — assigning those resets
-        // the window's size limits. Sidebar min 190 + a usable detail list
+        // the window's size limits. Sidebar min 220 + a usable detail list
         // is the floor; below that the design does not hold. minSize in
         // frame units: contentMinSize alone is not honored once a split
         // view controller owns the content. (Limits constrain interactive
         // resize; programmatic setContentSize bypasses them by design.)
-        window.contentMinSize = NSSize(width: 760, height: 500)
+        window.contentMinSize = ProtoUsageWindowMetrics.minimumContentSize
         window.minSize =
             NSWindow.frameRect(
-                forContentRect: NSRect(x: 0, y: 0, width: 760, height: 500),
+                forContentRect: NSRect(
+                    origin: .zero, size: ProtoUsageWindowMetrics.minimumContentSize),
                 styleMask: window.styleMask
             ).size
+        // Prototype captures must not inherit AppKit's cross-display cascade
+        // position from a prior run. Production retains native restoration.
+        window.center()
         observeWindowTitles(window)
         return window
+    }
+
+    private func installCenteredBrand(in window: NSWindow) {
+        guard let titlebar = window.standardWindowButton(.closeButton)?.superview else { return }
+        titlebar.subviews
+            .filter { $0.identifier?.rawValue == "usage.brand-title" }
+            .forEach { $0.removeFromSuperview() }
+        let host = NSHostingView(rootView: JackinBrandSignature(width: 68, height: 18))
+        host.translatesAutoresizingMaskIntoConstraints = false
+        host.setAccessibilityLabel("jackin❯ desktop")
+        host.identifier = NSUserInterfaceItemIdentifier("usage.brand-title")
+        titlebar.addSubview(host)
+        NSLayoutConstraint.activate([
+            host.centerXAnchor.constraint(equalTo: titlebar.centerXAnchor),
+            host.centerYAnchor.constraint(equalTo: titlebar.centerYAnchor),
+            host.widthAnchor.constraint(equalToConstant: 68),
+            host.heightAnchor.constraint(equalToConstant: 18),
+        ])
     }
 
     /// Selection-driven window title/subtitle, re-registered after every
@@ -515,158 +543,5 @@ final class ProtoShell: NSObject, NSMenuDelegate {
         }
         settingsWindow?.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
-    }
-}
-
-/// AppKit rendering for one per-provider `NSStatusItem`. Dual stack: compact
-/// reset countdown (top, secondary) + glance % (bottom, state-tinted like the
-/// window meters: phosphor healthy, orange warning, red danger/depleted).
-/// All colors are dynamic — the menu bar's light/dark adaptation is preserved.
-/// Vertical fit is measured: two 9pt line fragments, baseline offsets
-/// −0.5 / −3.5 — raster-verified so the text ink center matches the icon ink
-/// center in the 22pt bar.
-enum StatusItemRendering {
-    static func title(
-        barLabel: String, compactResetLabel: String?,
-        percentTint: NSColor
-    ) -> NSAttributedString {
-        let paragraph = NSMutableParagraphStyle()
-        paragraph.alignment = .left
-        paragraph.maximumLineHeight = 9
-        paragraph.minimumLineHeight = 9
-        paragraph.lineSpacing = 0
-
-        let bottomFont = NSFont.monospacedDigitSystemFont(ofSize: 10.5, weight: .semibold)
-        let topFont = NSFont.monospacedDigitSystemFont(ofSize: 9.5, weight: .semibold)
-
-        guard let compactResetLabel, !compactResetLabel.isEmpty else {
-            return NSAttributedString(
-                string: barLabel,
-                attributes: [
-                    .font: bottomFont,
-                    .foregroundColor: percentTint,
-                    .paragraphStyle: paragraph,
-                ])
-        }
-
-        // Measured against the rendered button: the multi-line title block
-        // draws top-aligned, ~2.5pt above the icon's center. A −2.5pt global
-        // shift with a 3pt spread (top −0.5, bottom −3.5) lands the text ink
-        // mid exactly on the icon ink mid (raster-verified, both lines).
-        let result = NSMutableAttributedString()
-        result.append(
-            NSAttributedString(
-                string: compactResetLabel + "\n",
-                attributes: [
-                    .font: topFont,
-                    .foregroundColor: JackinBrand.mutedNSColor,
-                    .paragraphStyle: paragraph,
-                    .baselineOffset: -0.5,
-                ]))
-        result.append(
-            NSAttributedString(
-                string: barLabel,
-                attributes: [
-                    .font: bottomFont,
-                    .foregroundColor: percentTint,
-                    .paragraphStyle: paragraph,
-                    .baselineOffset: -3.5,
-                ]))
-        return result
-    }
-}
-
-/// Standard AppKit toolbar identifiers keep the system toggle in one stable
-/// leading slot; the label follows collapse state while the width stays put.
-@MainActor
-final class UsageWindowToolbar: NSObject, NSToolbarDelegate {
-    static let identifier = NSToolbar.Identifier("usage.window-toolbar")
-    static let refreshIdentifier = NSToolbarItem.Identifier("usage.refresh")
-    private weak var sidebarItem: NSSplitViewItem?
-    private weak var toolbar: NSToolbar?
-    private let refreshView: NSView
-    private let refreshTitle: String
-    private var sidebarObservation: NSKeyValueObservation?
-    private var sidebarToggleWidthConstraint: NSLayoutConstraint?
-
-    init(sidebarItem: NSSplitViewItem, refreshView: NSView, refreshTitle: String) {
-        self.sidebarItem = sidebarItem
-        self.refreshView = refreshView
-        self.refreshTitle = refreshTitle
-        super.init()
-        sidebarObservation = sidebarItem.observe(\.isCollapsed, options: [.initial, .new]) {
-            [weak self] _, _ in
-            Task { @MainActor [weak self] in
-                self?.updateSidebarItemLabel()
-            }
-        }
-    }
-
-    func makeToolbar() -> NSToolbar {
-        let toolbar = NSToolbar(identifier: Self.identifier)
-        toolbar.delegate = self
-        toolbar.displayMode = .iconOnly
-        toolbar.allowsUserCustomization = false
-        toolbar.autosavesConfiguration = false
-        return toolbar
-    }
-
-    func installStandardItems(in toolbar: NSToolbar) {
-        self.toolbar = toolbar
-        toolbar.itemIdentifiers = [
-            .toggleSidebar, .sidebarTrackingSeparator, .flexibleSpace, Self.refreshIdentifier,
-        ]
-        updateSidebarItemLabel()
-        lockSidebarToggleWidth()
-        DispatchQueue.main.async { [weak self] in
-            self?.updateSidebarItemLabel()
-            self?.lockSidebarToggleWidth()
-        }
-    }
-
-    func toolbar(
-        _ toolbar: NSToolbar, itemForItemIdentifier itemIdentifier: NSToolbarItem.Identifier,
-        willBeInsertedIntoToolbar flag: Bool
-    ) -> NSToolbarItem? {
-        guard itemIdentifier == Self.refreshIdentifier else { return nil }
-        let item = NSToolbarItem(itemIdentifier: itemIdentifier)
-        item.view = refreshView
-        item.label = refreshTitle
-        item.paletteLabel = refreshTitle
-        item.toolTip = refreshTitle
-        item.visibilityPriority = .high
-        return item
-    }
-
-    func toolbarAllowedItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
-        [.toggleSidebar, .sidebarTrackingSeparator, Self.refreshIdentifier]
-    }
-
-    func toolbarDefaultItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
-        [.toggleSidebar, .sidebarTrackingSeparator, .flexibleSpace, Self.refreshIdentifier]
-    }
-
-    private func updateSidebarItemLabel() {
-        guard let toolbar, let sidebarItem else { return }
-        let label = sidebarItem.isCollapsed ? "Show Sidebar" : "Hide Sidebar"
-        guard let item = toolbar.items.first(where: { $0.itemIdentifier == .toggleSidebar })
-        else { return }
-        item.label = label
-        item.paletteLabel = label
-        item.toolTip = label
-        item.view?.setAccessibilityLabel(label)
-        item.view?.setAccessibilityHelp(label)
-    }
-
-    private func lockSidebarToggleWidth() {
-        guard sidebarToggleWidthConstraint == nil,
-            let item = toolbar?.items.first(where: { $0.itemIdentifier == .toggleSidebar }),
-            let view = item.view
-        else { return }
-        view.layoutSubtreeIfNeeded()
-        let nativeWidth = view.frame.width > 0 ? view.frame.width : 44
-        let constraint = view.widthAnchor.constraint(equalToConstant: nativeWidth)
-        constraint.isActive = true
-        sidebarToggleWidthConstraint = constraint
     }
 }

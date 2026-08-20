@@ -1,129 +1,59 @@
-# Prototype Handoff — Unified Agent Usage
+# Prototype handoff — Unified Agent Usage
 
-Status: PRECONDITIONS MET — selection A without H recorded 2026-08-20; live
-blessing still required before any READY claim
+Status: dark-only reference implementation complete; human blessing pending.
 
-This is the exact gate from approved design to the committed runnable prototype.
-It does not replace live blessing or `SIGNOFF.md`.
+The selected direction remains alternative A without H. The runnable prototype
+is the authoritative visual and interaction reference for later jackin❯ desktop
+work, while [PRODUCTION_MAPPING.md](../Prototypes/UnifiedAgentUsage/PRODUCTION_MAPPING.md)
+defines what may be adapted. Prototype fixture/store/harness code is never lifted
+as production data ownership.
 
-## Preconditions
+## Fixed contract
 
-All must exist before prototype source is written:
+- macOS 26; dark appearance only;
+- 800×520 minimum, 1000×680 default, 1200×760 wide;
+- 380×520 popover;
+- flags: `--tr-scenario`, `--tr-appearance dark`, `--tr-window`,
+  `--tr-reduce`, `--tr-backdrop`, plus deterministic
+  `--tr-increase-contrast`;
+- unknown scenarios, malformed sizes, undersized windows, non-dark appearance,
+  and unknown reduction values fail closed;
+- defaults are cleared and fixture time/geometry remain deterministic before
+  `TR-READY`.
 
-1. `ExperienceBrief.md` records human approval with selector and date. ✅
-   Approved by Alexey Zhokhov, 2026-08-20.
-2. `Alternatives.md` records selected A, B, or G; optional H; selector and date;
-   chosen hierarchy, toolbar/accessory, minimum-width, and popover structure;
-   why the winner won; why every unselected eligible direction lost; and risks. ✅
-   A without H, Alexey Zhokhov, 2026-08-20.
-3. `AntiReferences.md` appends the newly rejected eligible directions with
-   reason, correction, and learned rule. ✅ B, G, and H appended 2026-08-20.
-4. The selected direction is compatible with `NativeComponentMap.md` and every
-   canonical record/subscenario in `Fixtures.md`. ✅ A maps to the
-   component-map sidebar/split/toolbar/accessory/popover regions and binds to
-   the canonical fixtures without a new tuple.
+## Ownership boundary
 
-Preconditions 1–4 are met as of 2026-08-20; the prototype invocation below is
-authorized. Live blessing and `SIGNOFF.md` remain mandatory after the package
-exists.
+The package contains immutable fixture projections and no credentials, provider
+networking, CLI invocation, persistence, broker, FFI, or production application
+state. Reference UI consumes small presentation records. Harness configuration
+does not enter feature views.
 
-## Exact invocation and package
+Rust/bridge production contracts own stable IDs, identity, visible strings,
+state/freshness, semantic quota category, and final order. Swift owns layout and
+native-platform composition only.
 
-After the preconditions, invoke
-`$tailrocks-skills:tailrocks-macos-prototype prototype unified-agent-usage`.
-Create and retain this package:
+## Package structure
 
 ```text
-native/Design/Prototypes/UnifiedAgentUsage/
-├── Package.swift
-├── Sources/UnifiedAgentUsageProto/
-│   ├── ProtoMain.swift
-│   ├── Fixtures.swift
-│   └── <production-liftable views>.swift
-├── Regions.md
-└── SIGNOFF.md
+Sources/UnifiedAgentUsageProto/
+├── App/             # executable lifecycle, windows, status items, toolbar
+├── Domain/          # immutable reference models and navigation state
+├── DesignSystem/    # dark tokens, identity, provider marks, digital rain
+├── Features/        # Usage, Popover, Settings reference views
+├── Harness/         # fixture scenarios only
+└── Resources/
+Tests/UnifiedAgentUsageProtoTests/
 ```
 
-The package follows the audited Swift project baseline. It contains fixture data
-only: no credentials, network, provider CLI, persistence, broker, or production
-application state.
+## Gates
 
-## Revision-bound inputs
+1. Build and unit tests pass.
+2. [DESIGN_AUDIT.md](../Prototypes/UnifiedAgentUsage/DESIGN_AUDIT.md) matches
+   current implementation.
+3. [Regions.md](../Prototypes/UnifiedAgentUsage/Regions.md) covers every surface.
+4. Human operator completes [SIGNOFF.md](../Prototypes/UnifiedAgentUsage/SIGNOFF.md).
+5. Only then may roadmap language say visually blessed or READY.
 
-At package creation, `SIGNOFF.md` names the exact Git commit and path for every
-consumed artifact:
-
-- `ExperienceBrief.md`
-- `NativeComponentMap.md`
-- `Alternatives.md`
-- `AntiReferences.md`
-- `Fixtures.md`
-- `BaselineVisualQA.md`
-- `SwiftProjectReadiness.md`
-- `SwiftBestPracticesReview.md`
-
-A later rendering change or input revision invalidates blessing until the live
-walk is repeated and the human records a new approval.
-
-## Fixed launch contract
-
-The executable accepts only `--tr-scenario`, `--tr-appearance`, `--tr-window`,
-`--tr-reduce`, and `--tr-backdrop` with the standard skill semantics. `default`
-is an exact F02 alias. Unknown scenarios and malformed sizes fail nonzero. The
-harness wipes its defaults domain, freezes fixture time, disables restoration
-under a window clamp, stabilizes backdrop/appearance/geometry, then prints
-`TR-READY <windowNumber>`.
-
-Every executable scenario and subscenario in `Fixtures.md` renders through that
-contract. No incumbent `--fixture` flag, production visual fixture, or custom
-capture loop enters the package.
-
-## Live blessing gate
-
-Before any screenshot baseline, the user walks the running prototype through:
-
-- every executable scenario and subscenario;
-- `default` alias equivalence;
-- both light and dark;
-- Usage at 760 × 500, 920 × 620, and 1200 × 760;
-- popover at 380 × 520;
-- every declared process-local reduction, task sequence, locale/direction, and
-  display/resize state that can be evaluated live.
-
-`SIGNOFF.md` enumerates every walked combination, pending post-signoff capture
-and real-settings work, and anything not proven live. Only the human writes the
-final `Blessed: YYYY-MM-DD by <name>` record. An empty Blessed field means draft.
-No agent or subagent may infer approval from a passing build, test, or capture.
-
-## `Regions.md` gate
-
-Before post-signoff visual QA, `Regions.md` contains one executable row for every
-visible region in the selected prototype. Each row records region, component-map
-class, top-left point rect, match mode, and budget. Inventory must cover at least:
-
-- provider status items and context menu;
-- focused popover host, title, provider content, account selector, and footer;
-- Usage window chrome, split, toolbar, top accessory, sidebar, Overview, detail,
-  empty/loading/global failure, and provider-local feedback;
-- Settings host/content, main command model, scrolling/focus presentation, and
-  app icon wherever the prototype renders them;
-- every selected-alternative-only region.
-
-Native and native-composed control internals use structural accessibility-tree
-matching. Custom or product-drawn content uses a point rect and explicit changed-
-pixel budget. Glass pixels are compared only under identical deterministic
-backdrops. No region may be omitted, use a whole-window zero-diff claim, or leave
-content/custom budget blank. Cross-binary metadata names binary/version, OS/SDK,
-scale, profile, appearance, size, backdrop, and scenario.
-
-## Post-signoff handoff
-
-Only after recorded human blessing does `tailrocks-macos-visual-qa` drive the
-prototype through the five standard flags. That lane freezes the complete
-baseline, executes real accessibility settings with restoration proof, performs
-the accessibility/interaction audit, and applies `Regions.md`. Prototype source
-never takes screenshots and no bespoke diff stack is added.
-
-After blessing, the roadmap Desktop screen gains a Design pointer to
-`native/Design/Prototypes/UnifiedAgentUsage/SIGNOFF.md`. Before blessing, no such
-pointer and no READY claim are valid.
+Post-signoff visual QA captures the dark fixture matrix, real accessibility
+settings with restoration proof, focus/hover, active/inactive windows,
+collapsed/expanded sidebar, resize, and multi-display popover behavior.

@@ -56,10 +56,6 @@ public struct UsageWindowSidebar: View {
             .accessibilityLabel("Usage providers sidebar")
             .accessibilityIdentifier("usage.sidebar")
 
-            JackinBrandSignature()
-                .padding(.horizontal, 16)
-                .padding(.vertical, 10)
-                .frame(maxWidth: .infinity, alignment: .leading)
         }
         .frame(minWidth: 190, idealWidth: 220, maxWidth: 280)
     }

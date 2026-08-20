@@ -1,5 +1,24 @@
 # Native Component Map — Unified Agent Usage
 
+## Accepted dark-only prototype composition
+
+This section supersedes earlier “no custom content region” language where it
+conflicts with the selected prototype. AppKit still owns window, split view,
+toolbar, status items, popover, menus, resize, and native chrome.
+
+| Composition | Why standard control alone is insufficient | System-owned behavior | Accessibility/substitution | Production boundary |
+|---|---|---|---|---|
+| Sidebar destination well and inline meter | The destination must show account/provider quota at glance and use jackin❯ selection independent of unrelated system accent. | Native sidebar plane, split behavior, scrolling, pointer delivery, keyboard focus chain. | Full row label/value; meter supplemental; explicit selected trait and focus outline. Reduce Transparency leaves opaque content; Increase Contrast strengthens outline. | Rust supplies destination, percentage, state. Swift draws only geometry. Multi-account headers are not destinations. |
+| Quota modules | Dense label/value/reset/meter scanning is materially clearer than generic form rows. | Scroll, text rendering, focus, links, toolbar commands. | Each module combines complete label/value/reset/state; color is redundant. Opaque under Reduce Transparency. | Rust supplies finished strings, category, state, final order. Swift never parses labels or reorders production DTOs. |
+| Digital-rain stage | No standard control expresses restrained jackin❯ atmosphere. | Window/chrome material and accessibility settings remain system-owned. | Noninteractive and accessibility-hidden; removed under Reduce Transparency; static/disabled under Reduce Motion. | Swift-only background, never behind native chrome or inside data modules. |
+| Centered wordmark | Native title text cannot preserve the official artwork at the absolute window center through sidebar collapse. | Titlebar, traffic lights, toolbar layout, resizing. | One labeled heading; no duplicate page title. | Small titlebar host only; AppKit lifecycle reinstalls after collapse/resize. |
+
+Selection state is model-owned and exposed semantically even where its well is
+authored. Keyboard destination order is Overview, each account under a
+multi-account provider, then each single-account provider in canonical Rust
+order. Quota category/order is explicit DTO metadata: `longRange`, `model`,
+`general`, `session`, `other`; display-label inspection is forbidden.
+
 Status: DRAFT. No custom visible component is proposed.
 
 Every visible region carries exactly one classification.
@@ -84,7 +103,7 @@ Material: system-provided; no custom appearance
 Keyboard: Command-W, Control-Command-S, native split/list focus traversal
 Menu command: Window > Usage; View > Show/Hide Sidebar
 Accessibility role: standard window with split group and labeled panes
-Resize behavior: 760 × 500 minimum, 920 × 620 typical, 1200 × 760 wide;
+Resize behavior: 800 × 520 minimum, 1000 × 680 typical, 1200 × 760 wide;
 continuous native divider tracking
 
 ### Usage toolbar and detail accessory

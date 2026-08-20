@@ -517,7 +517,7 @@ Implementation:
    units. Swift must not relocalize, split, join, or reinterpret those strings.
 3. Add pseudo-localized, German, CJK, and right-to-left tests/captures, including
    menu key equivalents, VoiceOver announcements, long Settings labels, and the
-   760 × 500 minimum Usage window.
+   800 × 520 minimum Usage window.
 4. Add a source gate that rejects new user-facing Swift literals outside the
    catalog or an explicitly reviewed fixture/test scope.
 

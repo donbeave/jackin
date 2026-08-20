@@ -1,6 +1,35 @@
 import AppKit
 import SwiftUI
 
+private struct JackinIncreaseContrastKey: EnvironmentKey {
+    static let defaultValue = false
+}
+
+private struct JackinReduceTransparencyKey: EnvironmentKey {
+    static let defaultValue = false
+}
+
+private struct JackinReduceMotionKey: EnvironmentKey {
+    static let defaultValue = false
+}
+
+extension EnvironmentValues {
+    var jackinIncreaseContrast: Bool {
+        get { self[JackinIncreaseContrastKey.self] }
+        set { self[JackinIncreaseContrastKey.self] = newValue }
+    }
+
+    var jackinReduceTransparency: Bool {
+        get { self[JackinReduceTransparencyKey.self] }
+        set { self[JackinReduceTransparencyKey.self] = newValue }
+    }
+
+    var jackinReduceMotion: Bool {
+        get { self[JackinReduceMotionKey.self] }
+        set { self[JackinReduceMotionKey.self] = newValue }
+    }
+}
+
 // Brand tokens, identity assets, and provider marks — lifted verbatim from
 // the incumbent implementation (Sources/JackinDesktop,
 // Sources/JackinUsageBridge/BrandColors.swift) so the prototype renders the
@@ -29,6 +58,7 @@ enum JackinBrand {
     static var meterTrack: Color { Color(nsColor: meterTrackNSColor) }
     static var muted: Color { Color(nsColor: mutedNSColor) }
     static var quiet: Color { Color(nsColor: quietNSColor) }
+    static var focusRing: Color { phosphor }
 
     static let phosphorNSColor = NSColor(
         name: "jackinPhosphor",
@@ -57,15 +87,15 @@ enum JackinBrand {
         dark: rgb(0x16372A))
     static let selectionWellNSColor = dynamicColor(
         name: "jackinSelectionWell",
-        light: rgb(0x155F46),
-        dark: rgb(0x173B2B))
+        light: rgb(0x0B774E, alpha: 0.20),
+        dark: rgb(0x5CF07A, alpha: 0.20))
     static let selectionTextNSColor = dynamicColor(
         name: "jackinSelectionText",
         light: rgb(0xFFFFFF),
         dark: rgb(0xE9F7ED))
     static let stageNSColor = dynamicColor(
         name: "jackinStage",
-        light: rgb(0xF3F4F1),
+        light: rgb(0xEDF2EC),
         dark: rgb(0x101618))
     static let cardNSColor = dynamicColor(
         name: "jackinCard",
@@ -73,12 +103,12 @@ enum JackinBrand {
         dark: rgb(0x162022))
     static let insetNSColor = dynamicColor(
         name: "jackinInset",
-        light: rgb(0xE9EBE7),
+        light: rgb(0xE2E9E1),
         dark: rgb(0x1C2728))
     static let hoverNSColor = dynamicColor(
         name: "jackinHover",
-        light: rgb(0xF0F2EE),
-        dark: rgb(0x202D2E))
+        light: rgb(0x0B774E, alpha: 0.10),
+        dark: rgb(0x5CF07A, alpha: 0.09))
     static let separatorNSColor = dynamicColor(
         name: "jackinSeparator",
         light: rgb(0xD4D7D2),
@@ -97,8 +127,8 @@ enum JackinBrand {
         dark: rgb(0xADB5B2))
     static let quietNSColor = dynamicColor(
         name: "jackinQuiet",
-        light: rgb(0x6A726E),
-        dark: rgb(0x858E8B))
+        light: rgb(0x58615C),
+        dark: rgb(0xAAB2AF))
     static let warningNSColor = dynamicColor(
         name: "jackinWarning",
         light: rgb(0x7A4B00),
@@ -242,6 +272,8 @@ enum JackinBrandIdentity {
 /// Quiet product signature inside the sidebar's system-owned structural plane.
 struct JackinBrandSignature: View {
     @Environment(\.colorScheme) private var colorScheme
+    var width: CGFloat = 76
+    var height: CGFloat = 20
 
     var body: some View {
         Group {
@@ -251,8 +283,102 @@ struct JackinBrandSignature: View {
                     .scaledToFit()
             }
         }
-        .frame(width: 104, height: 28, alignment: .leading)
+        .frame(width: width, height: height, alignment: .leading)
         .accessibilityHidden(true)
+    }
+}
+
+/// The native counterpart of the shared CLI/web rain engine. Columns move at
+/// independent rates and deposit mutating ASCII glyphs through the same
+/// white-to-phosphor age ramp. Opaque cards preserve reading contrast.
+struct JackinStageBackground: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+    @Environment(\.jackinReduceMotion) private var processReduceMotion
+    @Environment(\.jackinReduceTransparency) private var processReduceTransparency
+
+    private let glyphs = Array(
+        "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz@#$%&*<>{}[]|/\\~")
+
+    var body: some View {
+        TimelineView(
+            .animation(minimumInterval: 0.05, paused: reduceMotion || processReduceMotion)
+        ) { context in
+            let tick =
+                reduceMotion || processReduceMotion
+                ? 90 : Int(context.date.timeIntervalSinceReferenceDate / 0.05)
+            Canvas { canvas, size in
+                let columnSpacing: CGFloat = 16
+                let rowSpacing: CGFloat = 18
+                let columns = max(1, Int(size.width / columnSpacing))
+                let rows = max(1, Int(size.height / rowSpacing))
+
+                for column in 0..<columns {
+                    let speed = 1 + Int(hash(column, 3) % 4)
+                    let fade = 1 + Int(hash(column, 11) % 3)
+                    let cycle = rows + 16 + Int(hash(column, 17) % 18)
+                    let offset = Int(hash(column, 23) % UInt64(cycle))
+                    let head = ((tick / speed) + offset) % cycle - 8
+
+                    for distance in 0...24 {
+                        let row = head - distance
+                        guard row >= 0, row < rows else { continue }
+                        let age = distance * fade
+                        guard let tone = rainTone(age: age) else { continue }
+
+                        let mutation = tick / max(1, speed * (age < 3 ? 2 : 7))
+                        let glyphIndex = Int(hash(column, row, mutation) % UInt64(glyphs.count))
+                        let text = Text(String(glyphs[glyphIndex]))
+                            .font(
+                                .system(
+                                    size: 13, weight: age == 0 ? .semibold : .regular,
+                                    design: .monospaced)
+                            )
+                            .foregroundStyle(tone.color)
+                        var resolved = canvas.resolve(text)
+                        resolved.shading = .color(tone.color)
+                        canvas.opacity = tone.opacity
+                        canvas.draw(
+                            resolved,
+                            at: CGPoint(
+                                x: CGFloat(column) * columnSpacing + columnSpacing / 2,
+                                y: CGFloat(row) * rowSpacing + rowSpacing / 2),
+                            anchor: .center)
+                    }
+                }
+            }
+            .opacity(reduceTransparency || processReduceTransparency ? 0 : 1)
+            .mask {
+                LinearGradient(
+                    colors: [.clear, .white.opacity(0.8), .white, .clear],
+                    startPoint: .top, endPoint: .bottom)
+            }
+        }
+        .background(JackinBrand.stage)
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
+    }
+
+    private func rainTone(age: Int) -> (color: Color, opacity: Double)? {
+        switch age {
+        case 0: (Color.white, 0.26)
+        case 1...2: (Color(red: 180 / 255, green: 1, blue: 180 / 255), 0.22)
+        case 3...5: (Color(red: 0, green: 1, blue: 65 / 255), 0.18)
+        case 6...10: (Color(red: 0, green: 200 / 255, blue: 50 / 255), 0.14)
+        case 11...16: (Color(red: 0, green: 140 / 255, blue: 30 / 255), 0.11)
+        case 17...24: (Color(red: 0, green: 80 / 255, blue: 18 / 255), 0.09)
+        default: nil
+        }
+    }
+
+    private func hash(_ values: Int...) -> UInt64 {
+        values.reduce(0xDEAD_BEEF_CAFE_1337) { seed, value in
+            var result = seed ^ UInt64(bitPattern: Int64(value))
+            result ^= result << 13
+            result ^= result >> 7
+            result ^= result << 17
+            return result
+        }
     }
 }
 

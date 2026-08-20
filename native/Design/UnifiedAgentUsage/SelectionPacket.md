@@ -81,7 +81,7 @@ met and `tailrocks-macos-prototype` may be invoked.
   [Fixtures.md](Fixtures.md) (F02 normal, F03 multi-account, F05 depleted, F06
   stale, F10 offline, F11 long-identity, F08/F14 error states); a direction
   that works only for the normal fixture is ineligible at prototype review.
-- Minimum-width behavior (760 × 500) is declared per alternative in
+- Minimum-width behavior (800 × 520) is declared per alternative in
   [Alternatives.md](Alternatives.md); verify the chosen direction's declared
   behavior, not just its typical-size wireframe.
 - Usage surfaces show subscription/quota limits only — no token prices,

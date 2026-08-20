@@ -1,204 +1,17 @@
+import Foundation
 import SwiftUI
-
-// Canonical fixture records from native/Design/UnifiedAgentUsage/Fixtures.md
-// (revision recorded in SIGNOFF.md). Strings here stand in for immutable
-// Rust-owned display input; the prototype changes layout only.
-
-enum ProtoState: String, Sendable {
-    case current, warning, danger, depleted, stale, refreshing, unavailable
-    case needsLogin, needsSecret, unsupported, rateLimited
-
-    var label: String? {
-        switch self {
-        case .current: nil
-        case .warning: "Low"
-        case .danger: "Very low"
-        case .depleted: "Depleted"
-        case .stale: "Stale"
-        case .refreshing: "Updating…"
-        case .unavailable: "Unavailable"
-        case .needsLogin: "Sign in required"
-        case .needsSecret: "API key required"
-        case .unsupported: "Not supported"
-        case .rateLimited: "Rate limited"
-        }
-    }
-
-    var symbol: String {
-        switch self {
-        case .current: "checkmark.circle"
-        case .warning, .danger: "exclamationmark.triangle.fill"
-        case .depleted: "exclamationmark.circle.fill"
-        case .stale: "clock.arrow.circlepath"
-        case .refreshing: "arrow.triangle.2.circlepath"
-        case .unavailable: "exclamationmark.icloud.fill"
-        case .needsLogin: "person.crop.circle.badge.exclamationmark"
-        case .needsSecret: "key.fill"
-        case .unsupported: "minus.circle"
-        case .rateLimited: "clock.badge.exclamationmark"
-        }
-    }
-}
-
-struct ProtoQuotaWindow: Identifiable, Sendable {
-    let stableID: String
-    let label: String
-    let display: String
-    let primaryValue: String
-    var secondaryValue: String? = nil
-    var resetLabel: String? = nil
-    var supplementalValue: String? = nil
-    let meter: Int?
-    let state: ProtoState
-    /// Rust-owned pace phrase (QuotaBucketDto.pace_label): even-burn delta or
-    /// exhaustion projection, limits-only — never cost data.
-    var pace: String? = nil
-    /// Untouched window ("Not started" in OpenUsage terms): full quota, zero
-    /// consumption — distinct from merely healthy.
-    var notStarted = false
-    var id: String { stableID }
-
-    /// Compact period tag for the status-item bottom line ("57% w").
-    /// Layout-only projection; Rust owns the source label in the real app.
-    var periodTag: String {
-        switch label {
-        case "Weekly": "w"
-        case "Daily": "d"
-        case "Monthly": "mo"
-        case "Five-hour": "5h"
-        case "Session": "sess"
-        default: label.lowercased()
-        }
-    }
-
-    /// The status bar surfaces long-range windows only — the quota that
-    /// expires wholesale, so the user can spend it before it lapses.
-    /// Hour-range windows (five-hour, session) stay in window surfaces.
-    var isLongRange: Bool {
-        switch label {
-        case "Weekly", "Daily", "Monthly": true
-        default: false
-        }
-    }
-
-    var accessibilitySummary: String {
-        var parts = [label, primaryValue]
-        parts.append(contentsOf: [secondaryValue, resetLabel, supplementalValue, pace].compactMap {
-            $0
-        })
-        if notStarted { parts.append("Not started") }
-        if let stateLabel = state.label { parts.append(stateLabel) }
-        return parts.joined(separator: ", ")
-    }
-}
-
-struct ProtoAccount: Identifiable, Sendable {
-    let key: String
-    let label: String
-    let plan: String
-    let remaining: Int?
-    let resetText: String?
-    let state: ProtoState
-    let windows: [ProtoQuotaWindow]
-    var username: String? = nil
-    var auth: String? = nil
-    var id: String { key }
-}
-
-struct ProtoProvider: Identifiable, Sendable {
-    let key: String
-    let name: String
-    let state: ProtoState
-    let summaryPercent: Int?
-    let summaryReset: String?
-    let accounts: [ProtoAccount]
-    let selectedAccountKey: String?
-    let updatedAgo: String?
-    let activityText: String?
-    let errorText: String?
-    var id: String { key }
-
-    var summaryRemainingLeft: String? { summaryPercent.map { "\($0)% left" } }
-    var summaryRemainingUsed: String? { summaryPercent.map { "\(100 - $0)% used" } }
-
-    /// Icon key matches the bundled official provider mark names.
-    var iconKey: String { key }
-    var fallbackGlyph: String { String(name.prefix(1)) }
-    var isRefreshing: Bool { state == .refreshing }
-
-    /// One Rust-owned activity phrase for identity rows.
-    var activityLabel: String {
-        if let activityText { return activityText }
-        return [summaryRemainingLeft, summaryReset].compactMap { $0 }.joined(separator: " · ")
-    }
-
-    /// Compact reset countdown for the dual-stack status-item title.
-    var compactResetLabel: String? {
-        guard let summaryReset else { return nil }
-        guard summaryReset.hasPrefix("Resets in ") else { return nil }
-        return String(summaryReset.dropFirst("Resets in ".count))
-    }
-
-    /// Window driving the status summary: the long-range window whose meter
-    /// matches the summary percent, else the first long-range window.
-    /// Hour-range windows never drive the status bar.
-    var summaryWindow: ProtoQuotaWindow? {
-        let longRange = accounts.flatMap(\.windows).filter(\.isLongRange)
-        if let percent = summaryPercent,
-            let match = longRange.first(where: { $0.meter == percent })
-        {
-            return match
-        }
-        return longRange.first
-    }
-}
-
-struct ProtoChrome: Sendable {
-    var refreshTitle = "Refresh"
-    var openUsageTitle = "Open Usage"
-    var retryTitle = "Retry"
-    var locale = Locale(identifier: "en_US")
-    var layoutDirection: LayoutDirection = .leftToRight
-}
-
-enum ProtoMutationScript: Sendable {
-    case standard
-    case acceptPercentStyle
-    case rejectLowFloor
-    case reorderedFloor
-}
-
-struct ProtoProjection: Sendable {
-    let scenario: String
-    let providers: [ProtoProvider]
-    let statusRows: [String]
-    let isLoading: Bool
-    let globalError: String?
-    let chrome: ProtoChrome
-    let mutationScript: ProtoMutationScript
-    let selectedProviderKey: String?
-    let selectedAccountKey: String?
-}
-
-enum ProtoSymbols {
-    static func provider(_ key: String) -> String {
-        switch key {
-        case "codex": "chevron.left.forwardslash.chevron.right"
-        case "claude": "sparkle"
-        case "amp": "bolt.fill"
-        case "grok": "x.circle"
-        case "zai": "z.circle"
-        case "kimi": "k.circle"
-        case "minimax": "m.circle"
-        default: "circle"
-        }
-    }
-}
 
 enum ProtoFixtures {
     static let resetUnavailable = "Reset unavailable"
 
     static func load(_ name: String) -> ProtoProjection {
+        guard let projection = projection(named: name) else {
+            fatalError("unknown --tr-scenario \(name)")
+        }
+        return projection
+    }
+
+    static func projection(named name: String) -> ProtoProjection? {
         switch name {
         case "default", "F02": f02()
         case "F00": f00()
@@ -215,40 +28,51 @@ enum ProtoFixtures {
         case "F12": f12()
         case "F13": f13()
         case "F14": f14()
-        case "F15": f02(scenario: "F15", script: .acceptPercentStyle,
-                        statusRows: ["claude", "amp", "codex"])
-        case "F16": f02(scenario: "F16", script: .rejectLowFloor,
-                        statusRows: ["claude", "amp", "codex"])
-        case "F17": f02(scenario: "F17", script: .reorderedFloor,
-                        statusRows: ["claude", "amp", "codex"])
+        case "F15":
+            f02(
+                scenario: "F15", script: .acceptPercentStyle,
+                statusRows: ["claude", "amp", "codex"])
+        case "F16":
+            f02(
+                scenario: "F16", script: .rejectLowFloor,
+                statusRows: ["claude", "amp", "codex"])
+        case "F17":
+            f02(
+                scenario: "F17", script: .reorderedFloor,
+                statusRows: ["claude", "amp", "codex"])
         case "F18-f02": f02(scenario: "F18-f02")
         case "F18-f11": f11(scenario: "F18-f11")
-        case "F19-en-US": f19(
-            scenario: "F19-en-US", localeID: "en_US", direction: .leftToRight,
-            provider: "OpenAI Organization Production Sandbox — Southeast Asia",
-            account: "organization-production-sandbox@example.test",
-            plan: "Enterprise workspace with centrally managed weekly limits",
-            reset: "Resets Tuesday, 18 August 2026 at 23:59 Indochina Time",
-            error: "Provider response could not be refreshed; showing the last successful quota snapshot",
-            refresh: "Refresh Refresh", openUsage: "Open Usage Open Usage")
-        case "F19-ar-SA": f19(
-            scenario: "F19-ar-SA", localeID: "ar_SA", direction: .rightToLeft,
-            provider: "أوبن إيه آي", account: "team-01@example.test", plan: "فريق",
-            reset: "تتم إعادة الضبط خلال ٣ أيام",
-            error: "تعذّر تحديث الاستخدام؛ تظهر آخر لقطة ناجحة",
-            refresh: "تحديث", openUsage: "فتح الاستخدام")
-        case "F19-ja-JP": f19(
-            scenario: "F19-ja-JP", localeID: "ja_JP", direction: .leftToRight,
-            provider: "OpenAI", account: "研究チーム@example.test", plan: "エンタープライズ",
-            reset: "8月18日火曜日 23:59にリセット",
-            error: "使用量を更新できないため、最後に成功した値を表示しています",
-            refresh: "更新", openUsage: "使用状況を開く")
-        case "F19-de-DE": f19(
-            scenario: "F19-de-DE", localeID: "de_DE", direction: .leftToRight,
-            provider: "OpenAI", account: "forschung@example.test", plan: "Unternehmen",
-            reset: "Zurücksetzung am Dienstag, 18. August 2026 um 23:59 Uhr",
-            error: "Schlüsselbundzugriff verweigert",
-            refresh: "Aktualisieren", openUsage: "Nutzung öffnen")
+        case "F19-en-US":
+            f19(
+                scenario: "F19-en-US", localeID: "en_US", direction: .leftToRight,
+                provider: "OpenAI Organization Production Sandbox — Southeast Asia",
+                account: "organization-production-sandbox@example.test",
+                plan: "Enterprise workspace with centrally managed weekly limits",
+                reset: "Resets Tuesday, 18 August 2026 at 23:59 Indochina Time",
+                error:
+                    "Provider response could not be refreshed; showing the last successful quota snapshot",
+                refresh: "Refresh Refresh", openUsage: "Open Usage Open Usage")
+        case "F19-ar-SA":
+            f19(
+                scenario: "F19-ar-SA", localeID: "ar_SA", direction: .rightToLeft,
+                provider: "أوبن إيه آي", account: "team-01@example.test", plan: "فريق",
+                reset: "تتم إعادة الضبط خلال ٣ أيام",
+                error: "تعذّر تحديث الاستخدام؛ تظهر آخر لقطة ناجحة",
+                refresh: "تحديث", openUsage: "فتح الاستخدام")
+        case "F19-ja-JP":
+            f19(
+                scenario: "F19-ja-JP", localeID: "ja_JP", direction: .leftToRight,
+                provider: "OpenAI", account: "研究チーム@example.test", plan: "エンタープライズ",
+                reset: "8月18日火曜日 23:59にリセット",
+                error: "使用量を更新できないため、最後に成功した値を表示しています",
+                refresh: "更新", openUsage: "使用状況を開く")
+        case "F19-de-DE":
+            f19(
+                scenario: "F19-de-DE", localeID: "de_DE", direction: .leftToRight,
+                provider: "OpenAI", account: "forschung@example.test", plan: "Unternehmen",
+                reset: "Zurücksetzung am Dienstag, 18. August 2026 um 23:59 Uhr",
+                error: "Schlüsselbundzugriff verweigert",
+                refresh: "Aktualisieren", openUsage: "Nutzung öffnen")
         case "F20": f02(scenario: "F20")
         case "F21": f03(scenario: "F21", selected: "codex-personal", statusRows: ["codex"])
         case "F22": f22()
@@ -261,7 +85,7 @@ enum ProtoFixtures {
         case "F27": f27()
         case "F28": f28()
         case "F29": f29()
-        default: fatalError("unknown --tr-scenario \(name)")
+        default: nil
         }
     }
 
@@ -276,7 +100,10 @@ enum ProtoFixtures {
         ("Global states", ["F00", "F13", "F14"]),
         ("Localization", ["F19-en-US", "F19-de-DE", "F19-ja-JP", "F19-ar-SA"]),
         ("Mutations", ["F15", "F16", "F17"]),
-        ("Contract pins", ["F18-f02", "F18-f11", "F20", "F21", "F23", "F24-f02", "F24-f11", "F24-f12"]),
+        (
+            "Contract pins",
+            ["F18-f02", "F18-f11", "F20", "F21", "F23", "F24-f02", "F24-f11", "F24-f12"]
+        ),
     ]
 
     /// One-line human description per scenario — surfaced as the Scenario
@@ -328,12 +155,16 @@ enum ProtoFixtures {
         remaining: 57, resetText: "Resets in 3d", state: .current,
         windows: [
             ProtoQuotaWindow(
-                stableID: "bucket:weekly", label: "Weekly",
+                stableID: "bucket:weekly", label: "Weekly", category: .longRange, periodTag: "w",
                 display: "57% left · Resets in 3d", primaryValue: "57% left",
                 resetLabel: "Resets in 3d", meter: 57, state: .warning,
                 pace: "Runs out in 2d at current pace"),
             ProtoQuotaWindow(
-                stableID: "bucket:five-hour", label: "Five-hour",
+                stableID: "bucket:review", label: "Code review · Weekly", category: .model,
+                display: "91% left · Resets in 3d", primaryValue: "91% left",
+                resetLabel: "Resets in 3d", meter: 91, state: .current),
+            ProtoQuotaWindow(
+                stableID: "bucket:five-hour", label: "Five-hour", category: .session,
                 display: "63% left · Resets in 2h", primaryValue: "63% left",
                 resetLabel: "Resets in 2h", meter: 63, state: .current,
                 pace: "On pace"),
@@ -342,10 +173,6 @@ enum ProtoFixtures {
                 display: "3 manual resets available · Next expires in 3d 4h",
                 primaryValue: "3 available", resetLabel: "Next expires in 3d 4h",
                 supplementalValue: "Manual limit resets", meter: nil, state: .current),
-            ProtoQuotaWindow(
-                stableID: "bucket:review", label: "Code review · Weekly",
-                display: "91% left · Resets in 3d", primaryValue: "91% left",
-                resetLabel: "Resets in 3d", meter: 91, state: .current),
         ], auth: "OAuth · configured profile")
 
     static let codexPlus = ProtoAccount(
@@ -353,7 +180,7 @@ enum ProtoFixtures {
         remaining: 0, resetText: "Resets in 3d", state: .depleted,
         windows: [
             ProtoQuotaWindow(
-                stableID: "bucket:weekly", label: "Weekly",
+                stableID: "bucket:weekly", label: "Weekly", category: .longRange, periodTag: "w",
                 display: "0% left · Resets in 3d", primaryValue: "0% left",
                 resetLabel: "Resets in 3d", meter: 0, state: .depleted)
         ])
@@ -363,7 +190,7 @@ enum ProtoFixtures {
         plan: "Enterprise", remaining: 88, resetText: "Resets in 3d", state: .current,
         windows: [
             ProtoQuotaWindow(
-                stableID: "bucket:weekly", label: "Weekly",
+                stableID: "bucket:weekly", label: "Weekly", category: .longRange, periodTag: "w",
                 display: "88% left · Resets in 3d", primaryValue: "88% left",
                 resetLabel: "Resets in 3d", meter: 88, state: .current,
                 pace: "On pace"),
@@ -371,6 +198,7 @@ enum ProtoFixtures {
             // (individual_limit) — a quota-bound money cap, not spend tracking.
             ProtoQuotaWindow(
                 stableID: "bucket:monthly-credit-pool", label: "Monthly credit pool",
+                category: .longRange, periodTag: "mo",
                 display: "$312 used of $500 cap · Resets Sep 1",
                 primaryValue: "38% left", resetLabel: "Resets Sep 1",
                 supplementalValue: "Monthly cap · $312 / $500", meter: 38,
@@ -382,18 +210,18 @@ enum ProtoFixtures {
         remaining: 12, resetText: "Resets in 1h", state: .danger,
         windows: [
             ProtoQuotaWindow(
-                stableID: "bucket:session", label: "Session",
-                display: "74% left", primaryValue: "74% left",
-                meter: 74, state: .current,
-                pace: "On pace"),
-            ProtoQuotaWindow(
-                stableID: "bucket:weekly", label: "All models",
+                stableID: "bucket:weekly", label: "All models", category: .general,
                 display: "12% left · Resets in 1h", primaryValue: "12% left",
                 resetLabel: "Resets in 1h", meter: 12, state: .danger),
             ProtoQuotaWindow(
-                stableID: "bucket:fable", label: "Fable",
+                stableID: "bucket:fable", label: "Fable", category: .model,
                 display: "65% left · Resets in 4d", primaryValue: "65% left",
                 resetLabel: "Resets in 4d", meter: 65, state: .current,
+                pace: "On pace"),
+            ProtoQuotaWindow(
+                stableID: "bucket:session", label: "Session", category: .session,
+                display: "74% left", primaryValue: "74% left",
+                meter: 74, state: .current,
                 pace: "On pace"),
             ProtoQuotaWindow(
                 stableID: "bucket:extra-usage", label: "Extra usage",
@@ -426,7 +254,7 @@ enum ProtoFixtures {
         remaining: 72, resetText: "Resets Sep 1", state: .current,
         windows: [
             ProtoQuotaWindow(
-                stableID: "bucket:monthly", label: "Monthly",
+                stableID: "bucket:monthly", label: "Monthly", category: .longRange, periodTag: "mo",
                 display: "72% left · Resets Sep 1", primaryValue: "72% left",
                 resetLabel: "Resets Sep 1", meter: 72, state: .current,
                 pace: "On pace"),
@@ -445,20 +273,20 @@ enum ProtoFixtures {
         remaining: 81, resetText: "Resets in 4d", state: .current,
         windows: [
             ProtoQuotaWindow(
-                stableID: "bucket:five-hour", label: "5-hour",
-                display: "94% left · Resets in 2h", primaryValue: "94% left",
-                resetLabel: "Resets in 2h", meter: 94, state: .current),
-            ProtoQuotaWindow(
-                stableID: "bucket:tokens", label: "Tokens",
+                stableID: "bucket:tokens", label: "Tokens", category: .model,
                 display: "81% left · Resets in 4d", primaryValue: "81% left",
                 resetLabel: "Resets in 4d", meter: 81, state: .current,
                 pace: "On pace"),
             ProtoQuotaWindow(
-                stableID: "bucket:mcp", label: "MCP",
+                stableID: "bucket:mcp", label: "MCP", category: .model,
                 display: "42 / 100 (58 remaining) · Resets in 4d",
                 primaryValue: "58 remaining", secondaryValue: "42 / 100 used",
                 resetLabel: "Resets in 4d", meter: 58,
                 state: .current),
+            ProtoQuotaWindow(
+                stableID: "bucket:five-hour", label: "5-hour", category: .session,
+                display: "94% left · Resets in 2h", primaryValue: "94% left",
+                resetLabel: "Resets in 2h", meter: 94, state: .current),
         ], auth: "API key · env ZAI_API_KEY")
 
     static let kimiDefault = ProtoAccount(
@@ -466,15 +294,15 @@ enum ProtoFixtures {
         remaining: 45, resetText: "Resets in 5d", state: .current,
         windows: [
             ProtoQuotaWindow(
-                stableID: "bucket:rate", label: "Rate Limit",
-                display: "76% left · Resets in 38m", primaryValue: "76% left",
-                resetLabel: "Resets in 38m", meter: 76, state: .current,
-                pace: "On pace"),
-            ProtoQuotaWindow(
-                stableID: "bucket:weekly", label: "Weekly",
+                stableID: "bucket:weekly", label: "Weekly", category: .longRange, periodTag: "w",
                 display: "45% left · Resets in 5d", primaryValue: "45% left",
                 resetLabel: "Resets in 5d", meter: 45, state: .current,
                 pace: "Runs out in 4d at current pace"),
+            ProtoQuotaWindow(
+                stableID: "bucket:rate", label: "Rate Limit", category: .session,
+                display: "76% left · Resets in 38m", primaryValue: "76% left",
+                resetLabel: "Resets in 38m", meter: 76, state: .current,
+                pace: "On pace"),
         ], auth: "Local token · Kimi Code credentials")
 
     static let minimaxDefault = ProtoAccount(
@@ -482,22 +310,23 @@ enum ProtoFixtures {
         remaining: 33, resetText: "Resets in 2d", state: .warning,
         windows: [
             ProtoQuotaWindow(
-                stableID: "bucket:general-5h", label: "General · 5h",
-                display: "68% left · Usage: 320 / 1K · Resets in 3h",
-                primaryValue: "68% left", secondaryValue: "320 / 1K used",
-                resetLabel: "Resets in 3h", meter: 68,
-                state: .current),
-            ProtoQuotaWindow(
-                stableID: "bucket:general-weekly", label: "General · Weekly",
+                stableID: "bucket:general-weekly", label: "General · Weekly", category: .longRange,
+                periodTag: "w",
                 display: "33% left · Usage: 6.7K / 10K · Resets in 2d",
                 primaryValue: "33% left", secondaryValue: "6.7K / 10K used",
                 resetLabel: "Resets in 2d", meter: 33,
                 state: .warning),
             ProtoQuotaWindow(
-                stableID: "bucket:lightning", label: "Lightning",
+                stableID: "bucket:lightning", label: "Lightning", category: .model,
                 display: "84% left · Usage: 160 / 1K · Resets in 3h",
                 primaryValue: "84% left", secondaryValue: "160 / 1K used",
                 resetLabel: "Resets in 3h", meter: 84,
+                state: .current),
+            ProtoQuotaWindow(
+                stableID: "bucket:general-5h", label: "General · 5h", category: .session,
+                display: "68% left · Usage: 320 / 1K · Resets in 3h",
+                primaryValue: "68% left", secondaryValue: "320 / 1K used",
+                resetLabel: "Resets in 3h", meter: 68,
                 state: .current),
         ], auth: "API token · env MINIMAX_API_KEY")
 
@@ -509,7 +338,8 @@ enum ProtoFixtures {
             remaining: remaining, resetText: reset, state: .current,
             windows: [
                 ProtoQuotaWindow(
-                    stableID: "bucket:weekly", label: "Weekly",
+                    stableID: "bucket:weekly", label: "Weekly", category: .longRange,
+                    periodTag: "w",
                     display: "\(remaining)% left · \(reset ?? resetUnavailable)",
                     primaryValue: "\(remaining)% left",
                     resetLabel: reset ?? resetUnavailable,
@@ -551,26 +381,34 @@ enum ProtoFixtures {
 
     /// Seven desktop providers in frozen canonical order; Codex carries two
     /// accounts so the default scenario previews multi-account presentation.
-    static func catalog(codexState: ProtoState = .current, codexActivity: String? = nil,
-                        kimiUnavailable: Bool = false) -> [ProtoProvider] {
+    static func catalog(
+        codexState: ProtoState = .current, codexActivity: String? = nil,
+        kimiUnavailable: Bool = false
+    ) -> [ProtoProvider] {
         [
             codexProvider(
                 accounts: [codexPersonal, codexPlus],
                 state: codexState, activity: codexActivity),
             claudeProvider(),
-            provider("amp", "Amp", percent: 100, reset: "Resets in 18h",
-                     accounts: [ampDefault]),
-            provider("grok", "xAI / Grok", percent: 72, reset: "Resets Sep 1",
-                     accounts: [grokDefault]),
-            provider("zai", "Z.AI / GLM", percent: 81, reset: "Resets in 4d",
-                     accounts: [zaiDefault]),
+            provider(
+                "amp", "Amp", percent: 100, reset: "Resets in 18h",
+                accounts: [ampDefault]),
+            provider(
+                "grok", "xAI / Grok", percent: 72, reset: "Resets Sep 1",
+                accounts: [grokDefault]),
+            provider(
+                "zai", "Z.AI / GLM", percent: 81, reset: "Resets in 4d",
+                accounts: [zaiDefault]),
             kimiUnavailable
-                ? provider("kimi", "Kimi", percent: 45, reset: nil, accounts: [],
-                           state: .unavailable, error: "usage provider probe timed out")
-                : provider("kimi", "Kimi", percent: 45, reset: "Resets in 5d",
-                           accounts: [kimiDefault]),
-            provider("minimax", "MiniMax", percent: 33, reset: "Resets in 2d",
-                     accounts: [minimaxDefault], state: .warning),
+                ? provider(
+                    "kimi", "Kimi", percent: 45, reset: nil, accounts: [],
+                    state: .unavailable, error: "usage provider probe timed out")
+                : provider(
+                    "kimi", "Kimi", percent: 45, reset: "Resets in 5d",
+                    accounts: [kimiDefault]),
+            provider(
+                "minimax", "MiniMax", percent: 33, reset: "Resets in 2d",
+                accounts: [minimaxDefault], state: .warning),
         ]
     }
 
@@ -593,8 +431,9 @@ enum ProtoFixtures {
     }
 
     static func f01() -> ProtoProjection {
-        projection("F01", providers: [codexProvider()], statusRows: ["codex"],
-                   selectedProvider: "codex", selectedAccount: "codex-personal")
+        projection(
+            "F01", providers: [codexProvider()], statusRows: ["codex"],
+            selectedProvider: "codex", selectedAccount: "codex-personal")
     }
 
     static func f02(
@@ -620,8 +459,9 @@ enum ProtoFixtures {
     }
 
     static func f04() -> ProtoProjection {
-        projection("F04", providers: [claudeProvider()], statusRows: ["claude"],
-                   selectedProvider: "claude", selectedAccount: "claude-personal")
+        projection(
+            "F04", providers: [claudeProvider()], statusRows: ["claude"],
+            selectedProvider: "claude", selectedAccount: "claude-personal")
     }
 
     static func f05() -> ProtoProjection {
@@ -651,8 +491,9 @@ enum ProtoFixtures {
     }
 
     static func f08() -> ProtoProjection {
-        projection("F08", providers: catalog(kimiUnavailable: true),
-                   statusRows: ["claude", "amp", "codex"])
+        projection(
+            "F08", providers: catalog(kimiUnavailable: true),
+            statusRows: ["claude", "amp", "codex"])
     }
 
     static func f09() -> ProtoProjection {
@@ -702,6 +543,7 @@ enum ProtoFixtures {
                                 ProtoQuotaWindow(
                                     stableID: "bucket:weekly",
                                     label: "Organization-wide weekly accelerated-model allocation",
+                                    category: .longRange, periodTag: "w",
                                     display:
                                         "57% left · Resets Tuesday, 18 August 2026 at 23:59 Indochina Time",
                                     primaryValue: "57% left",
@@ -825,7 +667,8 @@ enum ProtoFixtures {
                     resetText: reset, state: .current,
                     windows: [
                         ProtoQuotaWindow(
-                            stableID: "bucket:weekly", label: "Weekly",
+                            stableID: "bucket:weekly", label: "Weekly", category: .longRange,
+                            periodTag: "w",
                             display: "57% left · \(reset)", primaryValue: "57% left",
                             resetLabel: reset, meter: 57,
                             state: .current)
@@ -851,7 +694,8 @@ enum ProtoFixtures {
                             windows: [
                                 ProtoQuotaWindow(
                                     stableID: "bucket:monthly-credit-cap",
-                                    label: "Monthly credit allowance",
+                                    label: "Monthly credit allowance", category: .longRange,
+                                    periodTag: "mo",
                                     display: "$6 available of $20 cap · Resets Sep 1",
                                     primaryValue: "$6 available", resetLabel: "Resets Sep 1",
                                     supplementalValue: "Monthly cap · $6 / $20",
@@ -882,12 +726,14 @@ enum ProtoFixtures {
                             windows: [
                                 ProtoQuotaWindow(
                                     stableID: "bucket:weekly", label: "Weekly",
+                                    category: .longRange, periodTag: "w",
                                     display: "91% left · Resets in 4d",
                                     primaryValue: "91% left", resetLabel: "Resets in 4d",
                                     meter: 91,
                                     state: .current, pace: "On pace"),
                                 ProtoQuotaWindow(
                                     stableID: "bucket:session", label: "Session",
+                                    category: .session,
                                     display: "Not started · Resets in 5h",
                                     primaryValue: "100% left", resetLabel: "Resets in 5h",
                                     meter: 100, state: .current, notStarted: true),

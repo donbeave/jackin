@@ -242,10 +242,11 @@ ditto "$package/.build/debug/UnifiedAgentUsageProto_UnifiedAgentUsageProto.bundl
 description = "Launch the Unified Agent Usage native design prototype"
 usage = '''
 arg "<scenario>" help="Fixture name (F00–F29 and named variants)" default="F02"
-arg "<window>" help="Window size in WIDTHxHEIGHT form" default="920x620"
-arg "<appearance>" help="Appearance: light or dark" default="light"
+arg "<window>" help="Window size in WIDTHxHEIGHT form" default="1000x680"
+arg "<appearance>" help="Appearance (dark-only application)" default="dark"
 arg "[reduce]" help="Optional reduction mode: transparency, motion, or transparency,motion"
 arg "[backdrop]" help="Optional harness backdrop hex color"
+flag "--increase-contrast" help="Render the process-local Increased Contrast variant"
 '''
 run = '''
 set -euo pipefail
@@ -257,6 +258,7 @@ args=(
 )
 if [ -n "${usage_reduce:-}" ]; then args+=(--tr-reduce "$usage_reduce"); fi
 if [ -n "${usage_backdrop:-}" ]; then args+=(--tr-backdrop "$usage_backdrop"); fi
+if [ "${usage_increase_contrast:-false}" = "true" ]; then args+=(--tr-increase-contrast); fi
 pkill -f "$PWD/$app/Contents/MacOS/UnifiedAgentUsageProto" 2>/dev/null || true
 launchctl remove com.jackin.prototype.unified-agent-usage 2>/dev/null || true
 open -n "$app" --args "${args[@]}"
@@ -266,10 +268,11 @@ open -n "$app" --args "${args[@]}"
 description = "Build + launch the Unified Agent Usage native design prototype"
 usage = '''
 arg "<scenario>" help="Fixture name (F00–F29 and named variants)" default="F02"
-arg "<window>" help="Window size in WIDTHxHEIGHT form" default="920x620"
-arg "<appearance>" help="Appearance: light or dark" default="light"
+arg "<window>" help="Window size in WIDTHxHEIGHT form" default="1000x680"
+arg "<appearance>" help="Appearance (dark-only application)" default="dark"
 arg "[reduce]" help="Optional reduction mode: transparency, motion, or transparency,motion"
 arg "[backdrop]" help="Optional harness backdrop hex color"
+flag "--increase-contrast" help="Render the process-local Increased Contrast variant"
 '''
 run = '''
 set -euo pipefail
@@ -277,6 +280,7 @@ mise run desktop-prototype-build
 args=("$usage_scenario" "$usage_window" "$usage_appearance")
 if [ -n "${usage_reduce:-}" ]; then args+=("$usage_reduce"); fi
 if [ -n "${usage_backdrop:-}" ]; then args+=("$usage_backdrop"); fi
+if [ "${usage_increase_contrast:-false}" = "true" ]; then args+=(--increase-contrast); fi
 mise run desktop-prototype-run -- "${args[@]}"
 '''
 

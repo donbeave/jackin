@@ -7,22 +7,21 @@
 
 ## Current position
 
-Already completed and logged on the item: `tailrocks-idea`, `tailrocks-brainstorm`,
-`tailrocks-research`, `tailrocks-swift-project-setup` (read-only audit),
-`tailrocks-swift-best-practices` (read-only review), `tailrocks-macos-visual-qa`
-(failed incumbent baseline), `tailrocks-macos-design` (preselection brief,
-component map, alternatives, fixture matrix). **Human structural selection of an
-eligible alternative (A / B / G, optional H) is the next gate and is human-only —
-no skill performs it.**
+Completed: research/readiness reviews, incumbent baseline, native design corpus,
+human selection of A without H, and the runnable dark-only prototype reference.
+The current gate is human visual signoff from the dark matrix in `SIGNOFF.md`.
+Production adaptation follows `PRODUCTION_MAPPING.md`; prototype fixture, store,
+and harness code is never lifted.
 
 The sequence below resumes from that gate through design proof, Liquid Glass
 craft, TUI design, finalization, planning, and the pull-request lifecycle.
 
-## Phase 0 — Gate (human, no skill)
+## Phase 0 — Gate (human, no skill; selection complete)
 
-Pick the structural alternative per
-[`PrototypeHandoff.md`](../../native/Design/UnifiedAgentUsage/PrototypeHandoff.md)
-selection preconditions. Record via `tailrocks-record-decision`:
+Alternative A without H is recorded. Do not repeat selection. Complete the
+dark-only operator matrix in
+[`SIGNOFF.md`](../../native/Design/Prototypes/UnifiedAgentUsage/SIGNOFF.md)
+without inferring approval from automated evidence.
 
 ```text
 Use tailrocks-record-decision on roadmap item unified-agent-usage:
@@ -68,8 +67,9 @@ build the runnable Liquid Glass prototype for the human-selected alternative
 from native/Design/UnifiedAgentUsage/ — brief, component map, fixture matrix
 F00–F24, status-item projections — with the standard launch contract
 (--tr-scenario/--tr-appearance/--tr-window/--tr-reduce/--tr-backdrop).
-View layer written to lift verbatim into the real app. Drive every scenario
-live in front of me, both appearances and Reduce settings, and record my
+Treat views as interaction/visual reference through `PRODUCTION_MAPPING.md`,
+not verbatim liftable production code. Drive every scenario live in front of
+me, the dark appearance and Reduce settings, and record my
 sign-off in SIGNOFF.md with the design artifacts' revision. Gaps found go
 back to the design as findings; never resolved ad hoc.
 ```
@@ -106,7 +106,7 @@ accessibility-tree driving) wired to the prototype's launch contract.
 ```text
 Use tailrocks-macos-visual-qa in verify mode on the signed-off
 unified-agent-usage prototype: capture the full state matrix — every fixture
-scenario, light and dark, Increase Contrast, Reduce Transparency, Reduce
+scenario, dark only, Increase Contrast, Reduce Transparency, Reduce
 Motion, declared window sizes — freeze the approved baseline, and confirm
 each state answers where am I / what can I do / where can I go. Then
 regress mode for every subsequent change against that baseline.

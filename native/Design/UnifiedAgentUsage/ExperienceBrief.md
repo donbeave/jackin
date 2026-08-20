@@ -128,6 +128,11 @@ One menu-bar application with:
 - One lazily created, retained, unique, resizable Usage `NSWindow`.
 - One system Settings scene/window.
 
+The application is dark-only. The titlebar always shows the official absolute-
+centered jackin❯ wordmark, including when the sidebar is hidden. Refresh is a
+standard AppKit toolbar item. A restrained digital-rain layer may appear only
+behind authored content and never replaces native chrome.
+
 Opening Usage promotes normal app menus. Closing its titled window returns the
 application to accessory menu-bar behavior without terminating the process.
 
@@ -139,7 +144,10 @@ rows, disclosures, pop-up buttons, and scrollbars. No hover-only action.
 Keyboard workflow:
 
 1. Open Usage through the Window menu or its shortcut.
-2. Move through Overview/providers in the sidebar with native list navigation.
+2. Move through Overview and destinations in the sidebar. A provider with
+   multiple accounts is a nonselectable group header and exposes account
+   destinations; a single-account provider is directly selectable. Every
+   selectable destination includes a supplemental remaining-quota meter.
 3. Move through provider/account rows and disclosures with native table/list
    navigation.
 4. Activate account selection or Retry with Return/Space.
@@ -228,12 +236,12 @@ not a miniature all-provider workspace.
 
 ## Window sizes
 
-Minimum usable: 760 × 500 points. The selected destination, account, complete
+Minimum usable: 800 × 520 points. The selected destination, account, complete
 quota labels, state text, Refresh, sidebar toggle, keyboard focus, and scrollbar
 must remain functional. No columns may collapse into concatenated text under
 Increase Contrast.
 
-Typical: 920 × 620 points.
+Typical: 1000 × 680 points.
 
 Wide: 1200 × 760 points.
 

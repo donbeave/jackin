@@ -6,15 +6,24 @@
 import AppKit
 import SwiftUI
 
+enum ProtoUsageWindowMetrics {
+    static let defaultContentSize = CGSize(width: 1000, height: 680)
+    static let minimumContentSize = CGSize(width: 800, height: 520)
+}
+
 struct ProtoConfig {
     var scenario = "default"
-    var appearance: NSAppearance.Name?
     var window: CGSize?
     var reduceTransparency = false
     var reduceMotion = false
+    var increaseContrast = false
     var backdrop: NSColor?
 
     static func parse(_ args: [String]) -> ProtoConfig {
+        do { return try validated(args) } catch { fatalError(String(describing: error)) }
+    }
+
+    static func validated(_ args: [String]) throws -> ProtoConfig {
         var config = ProtoConfig()
         func value(after flag: String) -> String? {
             guard let index = args.firstIndex(of: flag), args.indices.contains(index + 1)
@@ -22,15 +31,17 @@ struct ProtoConfig {
             return args[index + 1]
         }
         if let name = value(after: "--tr-scenario") { config.scenario = name }
-        switch value(after: "--tr-appearance") {
-        case "light": config.appearance = .aqua
-        case "dark": config.appearance = .darkAqua
-        case .some(let other): fatalError("unknown --tr-appearance \(other)")
-        case nil: break
+        if let appearance = value(after: "--tr-appearance"), appearance != "dark" {
+            throw ProtoConfigError.unsupportedAppearance(appearance)
         }
         if let size = value(after: "--tr-window") {
             let parts = size.split(separator: "x").compactMap { Double($0) }
-            guard parts.count == 2 else { fatalError("--tr-window expects WxH, got \(size)") }
+            guard parts.count == 2 else { throw ProtoConfigError.malformedWindow(size) }
+            guard parts[0] >= ProtoUsageWindowMetrics.minimumContentSize.width,
+                parts[1] >= ProtoUsageWindowMetrics.minimumContentSize.height
+            else {
+                throw ProtoConfigError.undersizedWindow(size)
+            }
             config.window = CGSize(width: parts[0], height: parts[1])
         }
         if let list = value(after: "--tr-reduce") {
@@ -38,19 +49,29 @@ struct ProtoConfig {
                 switch item {
                 case "transparency": config.reduceTransparency = true
                 case "motion": config.reduceMotion = true
-                default: fatalError("unknown --tr-reduce item \(item)")
+                default: throw ProtoConfigError.unknownReduction(String(item))
                 }
             }
         }
+        if args.contains("--tr-increase-contrast") { config.increaseContrast = true }
         switch value(after: "--tr-backdrop") {
         case "standard":
             config.backdrop = NSColor(srgbRed: 0.42, green: 0.45, blue: 0.50, alpha: 1)
         case .some(let hex):
-            config.backdrop = NSColor(hex: hex) ?? { fatalError("bad --tr-backdrop \(hex)") }()
+            guard let color = NSColor(hex: hex) else { throw ProtoConfigError.badBackdrop(hex) }
+            config.backdrop = color
         case nil: break
         }
         return config
     }
+}
+
+enum ProtoConfigError: Error, Equatable {
+    case unsupportedAppearance(String)
+    case malformedWindow(String)
+    case undersizedWindow(String)
+    case unknownReduction(String)
+    case badBackdrop(String)
 }
 
 @MainActor
@@ -72,7 +93,7 @@ final class ProtoDelegate: NSObject, NSApplicationDelegate {
         if let bundleID = Bundle.main.bundleIdentifier {
             UserDefaults.standard.removePersistentDomain(forName: bundleID)
         }
-        if let name = config.appearance { NSApp.appearance = NSAppearance(named: name) }
+        NSApp.appearance = NSAppearance(named: .darkAqua)
         Task { @MainActor in
             while !self.announced {
                 try? await Task.sleep(for: .milliseconds(400))
@@ -125,8 +146,9 @@ final class ProtoDelegate: NSObject, NSApplicationDelegate {
 extension NSColor {
     convenience init?(hex: String) {
         var value: UInt64 = 0
-        guard Scanner(string: hex.replacingOccurrences(of: "#", with: ""))
-            .scanHexInt64(&value)
+        guard
+            Scanner(string: hex.replacingOccurrences(of: "#", with: ""))
+                .scanHexInt64(&value)
         else { return nil }
         self.init(
             srgbRed: CGFloat((value >> 16) & 0xFF) / 255,
