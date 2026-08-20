@@ -464,6 +464,10 @@ authenticated and failure fixtures before shipping; these are not product questi
   canonical projection. Console uses the shipped `jackin❯ · usage` frame,
   grouped provider/account navigation, account detail, and full-width
   Capsule-style meters. Focused tests, clippy, formatting, and lint pass.
+- 2026-08-21 — Plan 006 — kept Capsule usage broker/relay-backed, made the
+  resolved launch membership boundary explicit and deduplicated, added truthful
+  zero-agent copy without Retry, and removed the direct Claude diagnostic
+  bypass. Focused Capsule/runtime tests, clippy, and formatting pass.
   moved to PLANNED. All implementation remains on the current branch and PR #898.
 - 2026-08-21 — Plan 001 — froze secret-free V1 contract fixtures, the surface-state
   matrix, classified provider-call inventory with injection detection, reserved test

@@ -137,6 +137,29 @@ pub struct UsageRelayLaunch<'a> {
     pub socket_dir: PathBuf,
 }
 
+/// Resolved Capsule launch membership used by usage presentation.
+///
+/// This is derived only from the host-validated Capsule configuration. It is
+/// intentionally a closed, deduplicated agent list: usage discovery may enrich
+/// an agent with a forwarded canonical account, but global host discovery or a
+/// capability alone cannot create a Capsule row.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ResolvedLaunchUsageInventory {
+    /// Agent slugs in deterministic launch-config order.
+    pub agents: Vec<String>,
+}
+
+/// Project the resolved launch configuration into the Capsule usage boundary.
+#[must_use]
+pub fn resolved_launch_usage_inventory(
+    config: &jackin_protocol::CapsuleConfig,
+) -> ResolvedLaunchUsageInventory {
+    let mut agents = config.agents.clone();
+    agents.sort();
+    agents.dedup();
+    ResolvedLaunchUsageInventory { agents }
+}
+
 /// Session-lifetime relay ownership. Drop revokes the socket task.
 pub struct UsageRelayGuard {
     task: Option<tokio::task::JoinHandle<()>>,

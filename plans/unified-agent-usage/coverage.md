@@ -19,9 +19,9 @@ PR may be created.
 | S8 | Desktop provider-focused status popover | §Screens/Desktop status popover | pending | pending | pending |
 | S9 | Bare CLI compact human output | §Screens/CLI usage output schematic | covered | 005 | DONE |
 | S10 | CLI stale, partial, empty, total failure, JSON | §Screens/CLI usage output states | covered | 005 | DONE |
-| S11 | Capsule Usage Overview | §Screens/Capsule usage Overview | pending | pending | pending |
-| S12 | Capsule multi-account agent detail | §Screens/Capsule usage multi-account agent | pending | pending | pending |
-| S13 | Capsule zero-agent empty and lifecycle/failure states | §Screens/Capsule usage states | pending | pending | pending |
+| S11 | Capsule Usage Overview | §Screens/Capsule usage Overview | covered | 006 | DONE |
+| S12 | Capsule multi-account agent detail | §Screens/Capsule usage multi-account agent | covered | 006 | DONE |
+| S13 | Capsule zero-agent empty and lifecycle/failure states | §Screens/Capsule usage states | covered | 006 | DONE |
 
 ## Capabilities
 
@@ -40,7 +40,7 @@ PR may be created.
 | F11 | Bare host CLI human/JSON projection and settled exit behavior | D1; D4; D9; D16; D27 | covered | 005 | DONE |
 | F12 | Instance accounts/verify retained without cache/refresh bypass authority | D10; W3 | covered | 005 | DONE |
 | F13 | Top-level Console Usage route using confirmed native Console grammar | D7; D8; D26 | covered | 005 | DONE |
-| F14 | Capsule launch-config membership, lifecycle, previews, account tabs, and launch neutrality | D2; D11-D13; D28; D31-D32 | pending | pending | pending |
+| F14 | Capsule launch-config membership, lifecycle, previews, account tabs, and launch neutrality | D2; D11-D13; D28; D31-D32 | covered | 006 | DONE |
 | F15 | Desktop filtered projection through sanitized boltffi DTOs; Swift display-only | D14-D15; §Data & integrations | pending | pending | pending |
 | F16 | Desktop status modes, popover handoff, native Usage window, Settings retention | D17-D20; S7-S8 | pending | pending | pending |
 | F17 | Stable selection; removal returns to Overview with persistent inline notice | D20; D34 | pending | pending | pending |
@@ -55,7 +55,7 @@ PR may be created.
 | W1 | Host Overview through Console | S1-S6 | covered | 005 | DONE |
 | W2 | Host read through bare CLI | S9-S10 | covered | 005 | DONE |
 | W3 | Instance inspection through CLI | S10, S11-S13 | covered | 005 | DONE |
-| W4 | Capsule pre-session quota preview and initialization transition | S11-S13 | pending | pending | pending |
+| W4 | Capsule pre-session quota preview and initialization transition | S11-S13 | covered | 006 | DONE |
 | W5 | Desktop status glance to Usage detail | S7-S8 | pending | pending | pending |
 | W6 | Shared refresh, degradation, cancellation, owner exit, and recovery | S1-S13 | covered | 003, 005-008 | IN PROGRESS |
 
@@ -67,9 +67,9 @@ PR may be created.
 | N2 | No token pricing, session cost, spend history/trends, charts, or rankings | Limits-only product boundary | pending |
 | N3 | No consumer/diagnostic direct provider calls, queued duplicate refresh, or secondary authority | One broker owns freshness | pending |
 | N4 | No unstable source ordinal as durable account identity | Prevent fragmentation/aliasing | pending |
-| N5 | No quota state authorizes or blocks Capsule launch/session actions | Observation is not policy | pending |
-| N6 | No `agent_uninitialized` downgrade or conflation with provider failure | Lifecycle and freshness are independent | pending |
-| N7 | No Capsule rows from global catalog/discovery, unresolved config, or capability alone | Resolved launch config owns membership | pending |
+| N5 | No quota state authorizes or blocks Capsule launch/session actions | Observation is not policy | covered |
+| N6 | No `agent_uninitialized` downgrade or conflation with provider failure | Lifecycle and freshness are independent | covered |
+| N7 | No Capsule rows from global catalog/discovery, unresolved config, or capability alone | Resolved launch config owns membership | covered |
 | N8 | No agent/runtime names in visible provider labels | Provider-only naming decision | pending |
 | N9 | No unlike-window aggregation or severity/freshness/discovery-driven account reorder | Stable traceable summaries/navigation | pending |
 | N10 | No silent account substitution after removal | Preserve operator intent | pending |
@@ -88,7 +88,7 @@ PR may be created.
 | B4 | Cross-surface Rust-owned value/label parity | pending | pending |
 | B5 | Console golden matrix including 80×24/focus/scroll/removal | covered | 005 | DONE |
 | B6 | CLI golden matrix including JSON, TTY/non-TTY, plaintext | covered | 005 | DONE |
-| B7 | Capsule golden matrix including lifecycle/account tabs/narrow/focus | pending | pending |
+| B7 | Capsule golden matrix including lifecycle/account tabs/narrow/focus | covered | 006 | DONE |
 | B8 | Signing/notarization/public artifact/Homebrew proof | pending | pending |
 
 ## Decisions (constraints)
@@ -201,3 +201,4 @@ item authorizes another branch or PR.
 | 003 | F5-F7 broker authority, policy, projection operations, atomic envelope, N3 process activation seam | `broker_service_lifecycle` 1; coordinator 14; broker 8; policy 2; state 6; protocol 9; usage clippy; dependent checks |
 | 004 | F3, F8-F10, F9 provider parity, Q1-Q3 adapter contracts and typed failures | 4 focused fixtures; usage 146; host 59; usage clippy |
 | 005 | S1-S2, S9-S10, F11-F13, W1-W3, B1, B5-B6, N13 | jackin-console 1286; jackin CLI tests; console/jackin clippy; fmt; mise lint |
+| 006 | S11-S13, F14, W4, B7, N5-N7 | relay inventory 1; capsule projection 1; capsule/runtime clippy; fmt |

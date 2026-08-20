@@ -1,7 +1,7 @@
 # Plan 006: Ship resolved-agent Capsule Usage
 
 ## Status
-TODO
+DONE
 
 ## Why this matters
 Capsule preview must represent launch reality before a session without becoming launch policy.
@@ -54,9 +54,24 @@ Relay allowlist/membership; agent/account dedup; uninitialized→initialized; qu
 ## Done criteria
 Named targets pass; all resolved accounts appear once per required agent context; no bypass; launch behavior unchanged by quota.
 
+## Execution evidence — 2026-08-21
+
+- Capsule empty inventory now renders the exact Rust-owned
+  `No agents configured for this Capsule.` message and removes the refresh
+  action from the footer; quota never gates launch.
+- Relay membership has an explicit deduplicating
+  `resolved_launch_usage_inventory` projection and regression test. It derives
+  only from resolved `CapsuleConfig.agents`; global discovery/capabilities do
+  not create Capsule rows.
+- The direct `jackin-capsule usage claude-cli` diagnostic bypass was removed;
+  Capsule usage remains broker/relay-backed through `accounts` and `verify`.
+- Focused proof: `cargo test -p jackin-runtime resolved_launch_inventory
+  --offline -- --test-threads=1` (1 passed), `cargo test -p jackin-capsule
+  usage_projection --offline -- --test-threads=1` (1 passed), capsule/runtime
+  clippy with `-D warnings`, and formatting.
+
 ## STOP conditions
 Resolved launch config is unavailable at projection boundary; quota begins influencing launch; lifecycle state is collapsed.
 
 ## Maintenance notes
 Any future Capsule membership source change requires explicit roadmap decision and fixtures.
-
