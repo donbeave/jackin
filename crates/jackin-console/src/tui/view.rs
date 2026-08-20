@@ -777,6 +777,7 @@ fn has_modal_overlay(state: &crate::tui::state::ManagerState<'_>) -> bool {
     ))
 }
 
+mod brand_header_crop;
 mod png_baselines;
 #[cfg(test)]
 mod tests;

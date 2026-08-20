@@ -31,11 +31,11 @@ use termrock::style::RolePalette;
 
 /// One baselined screen: stable kebab-case id plus a headless constructor for
 /// its canonical state.
-struct BaselineCase {
-    id: &'static str,
-    width: u16,
-    height: u16,
-    build: fn() -> (ManagerState<'static>, AppConfig, PathBuf),
+pub(super) struct BaselineCase {
+    pub(super) id: &'static str,
+    pub(super) width: u16,
+    pub(super) height: u16,
+    pub(super) build: fn() -> (ManagerState<'static>, AppConfig, PathBuf),
 }
 
 fn test_cwd() -> PathBuf {
@@ -49,7 +49,7 @@ fn render_case(case: &BaselineCase) -> Vec<u8> {
         .expect("baselined screen must rasterize")
 }
 
-fn render_manager_buffer(
+pub(super) fn render_manager_buffer(
     state: &mut ManagerState<'_>,
     config: &AppConfig,
     cwd: &Path,
@@ -445,7 +445,7 @@ const LIST: (u16, u16) = (80, 24);
 const SCREEN: (u16, u16) = (90, 20);
 const MODAL: (u16, u16) = (90, 24);
 
-fn inventory() -> Vec<BaselineCase> {
+pub(super) fn inventory() -> Vec<BaselineCase> {
     let mut cases = Vec::new();
     let mut push = |id: &'static str,
                     size: (u16, u16),
@@ -534,7 +534,7 @@ fn inventory() -> Vec<BaselineCase> {
 /// variants = 38. A new screen/variant added without a baseline trips this.
 const MIN_INVENTORY: usize = 38;
 
-fn baselines_dir() -> PathBuf {
+pub(super) fn baselines_dir() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("src/tui/view/baselines/png")
 }
 
