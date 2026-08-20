@@ -24,14 +24,14 @@ struct PopoverView: View {
             Divider()
 
             controls
-                .padding(.horizontal, 12)
+                .padding(.horizontal, JackinSpace.sm)
                 .frame(height: 48)
         }
         .frame(width: Self.contentSize.width, height: Self.contentSize.height)
     }
 
     private var popoverBrandHeader: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: JackinSpace.xs) {
             if let monogram = JackinBrandIdentity.templateMonogram() {
                 Image(nsImage: monogram)
                     .resizable()
@@ -134,7 +134,7 @@ struct PopoverView: View {
     }
 
     private func providerIdentity(_ provider: ProtoProvider, account: ProtoAccount?) -> some View {
-        HStack(spacing: 10) {
+        HStack(spacing: JackinSpace.xs) {
             if let mark = ProviderMarks.swiftUIImage(forIconKey: provider.iconKey) {
                 mark
                     .resizable()
@@ -142,7 +142,7 @@ struct PopoverView: View {
                     .frame(width: 28, height: 28)
                     .accessibilityHidden(true)
             }
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: JackinSpace.xxs) {
                 Text(provider.name)
                     .font(.headline)
                 if let account {
@@ -183,8 +183,8 @@ struct PopoverView: View {
     // row's primary. Known macOS 26 defect: .glass buttons show no hover
     // state outside a toolbar (fixed in 27); verified live.
     private var controls: some View {
-        HStack(spacing: 12) {
-            HStack(spacing: 8) {
+        HStack(spacing: JackinSpace.sm) {
+            HStack(spacing: JackinSpace.xs) {
                 Button {
                     store.refresh()
                 } label: {
@@ -343,7 +343,7 @@ struct SettingsView: View {
                 if let error = store.floorError {
                     Label(error, systemImage: "exclamationmark.triangle")
                         .font(.caption)
-                        .foregroundStyle(.orange)
+                        .foregroundStyle(JackinBrand.warning)
                         .fixedSize(horizontal: false, vertical: true)
                     Button(store.chrome.retryTitle) {
                         store.retryRefreshFloor()

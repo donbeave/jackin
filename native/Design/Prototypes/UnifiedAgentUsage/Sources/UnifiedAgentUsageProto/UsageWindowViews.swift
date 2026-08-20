@@ -43,7 +43,8 @@ struct SidebarView: View {
                                     accountRow(account, provider: provider)
                                         .tag(
                                             SidebarSelection.account(
-                                                provider: provider.key, account: account.key))
+                                                provider: provider.key, account: account.key)
+                                        )
                                         .accessibilityIdentifier(
                                             "usage.sidebar.account.\(provider.key).\(account.key)")
                                 }
@@ -71,8 +72,8 @@ struct SidebarView: View {
             .onChange(of: store.projection.scenario) { expandAllMultiAccountProviders() }
 
             JackinBrandSignature()
-                .padding(.horizontal, 16)
-                .padding(.vertical, 10)
+                .padding(.horizontal, JackinSpace.md)
+                .padding(.vertical, JackinSpace.xs)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
         .frame(minWidth: 190, idealWidth: 220, maxWidth: 280)
@@ -103,7 +104,7 @@ struct SidebarView: View {
     }
 
     private func accountRow(_ account: ProtoAccount, provider: ProtoProvider) -> some View {
-        HStack(spacing: 8) {
+        HStack(spacing: JackinSpace.xs) {
             Circle()
                 .fill(meterTint(account.state))
                 .frame(width: 6, height: 6)
@@ -168,25 +169,27 @@ struct OverviewContentView: View {
         } else {
             ScrollView {
                 LazyVGrid(
-                    columns: [GridItem(.adaptive(minimum: 300), spacing: 20)],
-                    spacing: 20
+                    columns: [GridItem(.adaptive(minimum: 300), spacing: JackinSpace.lg)],
+                    spacing: JackinSpace.lg
                 ) {
                     ForEach(store.projection.providers) { provider in
                         ProviderCardView(store: store, provider: provider)
                     }
                 }
-                .padding(24)
+                .padding(JackinSpace.xl)
             }
             // Grouped-content stage: the gray under-page ground is what the
             // card white contrasts against, in both appearances.
-            .background(Color(nsColor: .underPageBackgroundColor))
+            .background(JackinBrand.stage)
             .accessibilityLabel("Usage overview")
             .accessibilityIdentifier("usage.overview.grid")
         }
     }
 }
 
-/// One provider card in the Overview grid. Content layer: standard material,
+/// One provider card in the Overview grid.
+///
+/// Content layer: standard material,
 /// no glass. Every canonical account renders as its own block — the overview
 /// never collapses multi-account providers to one row. A tap focuses the
 /// account in the sidebar detail.
@@ -200,8 +203,8 @@ struct ProviderCardView: View {
     let provider: ProtoProvider
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack(spacing: 10) {
+        VStack(alignment: .leading, spacing: JackinSpace.sm) {
+            HStack(spacing: JackinSpace.xs) {
                 BrandMarkChip(iconKey: provider.iconKey, fallbackGlyph: provider.fallbackGlyph)
                 Text(provider.name)
                     .font(.headline)
@@ -230,13 +233,13 @@ struct ProviderCardView: View {
             }
 
             if let error = provider.errorText {
-                VStack(alignment: .leading, spacing: 6) {
+                VStack(alignment: .leading, spacing: JackinSpace.xs) {
                     Label(error, systemImage: "exclamationmark.triangle")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .lineLimit(3)
                         .fixedSize(horizontal: false, vertical: true)
-                    HStack(spacing: 8) {
+                    HStack(spacing: JackinSpace.xs) {
                         if let ago = provider.updatedAgo {
                             Text(ago)
                                 .font(.caption)
@@ -253,16 +256,15 @@ struct ProviderCardView: View {
                 .accessibilityIdentifier("usage.overview.error.\(provider.key)")
             }
         }
-        .padding(16)
+        .padding(JackinSpace.md)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(Color(nsColor: .controlBackgroundColor))
-                .shadow(color: .black.opacity(0.06), radius: 1.5, y: 1)
+                .fill(JackinBrand.card)
         )
         .overlay(
             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .strokeBorder(Color(nsColor: .separatorColor), lineWidth: 0.5)
+                .strokeBorder(JackinBrand.separator, lineWidth: 0.5)
         )
         // Grid rows size to the tallest card; short cards pin to the top of
         // their cell instead of floating centered.
@@ -286,7 +288,7 @@ struct ProviderCardView: View {
         Button {
             store.navigate(to: .account(provider: provider.key, account: account.key))
         } label: {
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: JackinSpace.xs) {
                 HStack(alignment: .firstTextBaseline) {
                     if provider.accounts.count > 1 {
                         Text(account.label)
@@ -302,10 +304,10 @@ struct ProviderCardView: View {
                     if let remaining = account.remaining {
                         HStack(alignment: .firstTextBaseline, spacing: 3) {
                             Text("\(remaining)")
-                                .font(.system(size: 26, weight: .semibold, design: .rounded))
+                                .font(JackinType.heroMetric)
                                 .monospacedDigit()
                             Text("% left")
-                                .font(.caption)
+                                .font(JackinType.metadata)
                                 .foregroundStyle(.secondary)
                         }
                         .foregroundStyle(meterTint(account.state))
@@ -321,7 +323,7 @@ struct ProviderCardView: View {
                         .accessibilityHidden(true)
                 }
 
-                HStack(spacing: 6) {
+                HStack(spacing: JackinSpace.xs) {
                     if provider.accounts.count > 1 {
                         Text(account.plan)
                     }
@@ -335,7 +337,8 @@ struct ProviderCardView: View {
                         Text(reset)
                     }
                 }
-                .font(.caption)
+                .font(JackinType.metadata)
+                .monospacedDigit()
                 .foregroundStyle(.secondary)
             }
             .contentShape(Rectangle())
@@ -349,9 +352,9 @@ struct ProviderCardView: View {
 
     private func badgeTint(_ state: ProtoState) -> Color {
         switch state {
-        case .warning: .orange
-        case .danger, .depleted: .red
-        case .stale, .rateLimited: .orange
+        case .warning: JackinBrand.warning
+        case .danger, .depleted: JackinBrand.danger
+        case .stale, .rateLimited: JackinBrand.warning
         case .needsLogin, .needsSecret, .unsupported, .unavailable: .secondary
         default: .secondary
         }
@@ -359,6 +362,7 @@ struct ProviderCardView: View {
 }
 
 /// Hairline quota meter: 4pt capsule, visible track, state-tinted fill.
+///
 /// Content-layer drawing, not chrome — a plain deterministic bar.
 struct QuotaMeter: View {
     let percent: Int
@@ -368,7 +372,7 @@ struct QuotaMeter: View {
         GeometryReader { proxy in
             ZStack(alignment: .leading) {
                 Capsule()
-                    .fill(Color(nsColor: .separatorColor).opacity(0.5))
+                    .fill(JackinBrand.meterTrack)
                 Capsule()
                     .fill(tint)
                     .frame(
@@ -389,11 +393,11 @@ struct ProviderDetailView: View {
         let account = store.account(for: provider)
         List {
             Section {
-                HStack(spacing: 12) {
+                HStack(spacing: JackinSpace.sm) {
                     BrandMarkChip(
                         iconKey: provider.iconKey, fallbackGlyph: provider.fallbackGlyph,
                         markSize: 26, chipSize: 40)
-                    VStack(alignment: .leading, spacing: 2) {
+                    VStack(alignment: .leading, spacing: JackinSpace.xxs) {
                         Text(provider.name)
                             .font(.title2)
                         if let account {
@@ -408,7 +412,9 @@ struct ProviderDetailView: View {
                     }
                 }
                 .accessibilityElement(children: .ignore)
-                .accessibilityLabel("\(provider.name), \(account?.label ?? ""), \(provider.activityLabel)")
+                .accessibilityLabel(
+                    "\(provider.name), \(account?.label ?? ""), \(provider.activityLabel)"
+                )
                 .accessibilityIdentifier("usage.provider-identity")
             }
 
@@ -488,7 +494,7 @@ struct LimitRowView: View {
     var identifierPrefix = "usage.limit"
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: JackinSpace.xs) {
             LabeledContent(window.label) {
                 Text(window.display)
                     .monospacedDigit()
@@ -539,7 +545,9 @@ struct DetailRootView: View {
 }
 
 /// Trailing Refresh in the window toolbar: spinner swaps in while the
-/// broker round-trip runs. The toolbar owns the material; `.glass` inside a
+/// broker round-trip runs.
+///
+/// The toolbar owns the material; `.glass` inside a
 /// toolbar gets the correct hover treatment (the macOS 26 hover defect only
 /// affects glass outside toolbars).
 struct RefreshToolbarButton: View {

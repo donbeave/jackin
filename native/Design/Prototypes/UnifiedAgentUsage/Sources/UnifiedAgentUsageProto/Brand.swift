@@ -7,6 +7,7 @@ import SwiftUI
 // same identity. Assets are bundled under Resources/.
 
 /// jackin❯ design tokens — phosphor accent system.
+///
 /// Dark `#5CF07A` · light `#0B774E` (AA-friendly). Never system
 /// `Color.accentColor` for healthy metrics, brand mark, or selection wells.
 enum JackinBrand {
@@ -14,6 +15,13 @@ enum JackinBrand {
     static let phosphorLightSRGB = (r: 0x0B / 255.0, g: 0x77 / 255.0, b: 0x4E / 255.0)
 
     static var phosphor: Color { Color(nsColor: phosphorNSColor) }
+    static var phosphorWash: Color { Color(nsColor: phosphorWashNSColor) }
+    static var warning: Color { Color(nsColor: warningNSColor) }
+    static var danger: Color { Color(nsColor: dangerNSColor) }
+    static var stage: Color { Color(nsColor: .underPageBackgroundColor) }
+    static var card: Color { Color(nsColor: .controlBackgroundColor) }
+    static var separator: Color { Color(nsColor: .separatorColor) }
+    static var meterTrack: Color { Color(nsColor: meterTrackNSColor) }
 
     static let phosphorNSColor = NSColor(
         name: "jackinPhosphor",
@@ -28,6 +36,66 @@ enum JackinBrand {
                 srgbRed: phosphorLightSRGB.r, green: phosphorLightSRGB.g,
                 blue: phosphorLightSRGB.b, alpha: 1)
         })
+
+    /// Adaptive color table.
+    ///
+    /// Explicit semantic endpoints keep small status
+    /// text above WCAG AA against the native content grounds in both appearances.
+    /// Light: warning #7A4B00, danger #B42318. Dark: warning #FFC15A,
+    /// danger #FF7B72. Wash/track alpha also adapts here, never in a view.
+    static let phosphorWashNSColor = dynamicColor(
+        name: "jackinPhosphorWash",
+        light: (phosphorLightSRGB.r, phosphorLightSRGB.g, phosphorLightSRGB.b, 0.12),
+        dark: (phosphorDarkSRGB.r, phosphorDarkSRGB.g, phosphorDarkSRGB.b, 0.10))
+    static let warningNSColor = dynamicColor(
+        name: "jackinWarning",
+        light: (0x7A / 255, 0x4B / 255, 0x00 / 255, 1),
+        dark: (0xFF / 255, 0xC1 / 255, 0x5A / 255, 1))
+    static let dangerNSColor = dynamicColor(
+        name: "jackinDanger",
+        light: (0xB4 / 255, 0x23 / 255, 0x18 / 255, 1),
+        dark: (0xFF / 255, 0x7B / 255, 0x72 / 255, 1))
+    static let meterTrackNSColor = NSColor(
+        name: "jackinMeterTrack",
+        dynamicProvider: { appearance in
+            let dark = appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+            return NSColor.separatorColor.withAlphaComponent(dark ? 0.62 : 0.52)
+        })
+
+    private static func dynamicColor(
+        name: String,
+        light: (CGFloat, CGFloat, CGFloat, CGFloat),
+        dark: (CGFloat, CGFloat, CGFloat, CGFloat)
+    ) -> NSColor {
+        NSColor(
+            name: NSColor.Name(name),
+            dynamicProvider: { appearance in
+                let value =
+                    appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+                    ? dark : light
+                return NSColor(
+                    srgbRed: value.0, green: value.1, blue: value.2, alpha: value.3)
+            })
+    }
+}
+
+/// Four-point spatial scale.
+///
+/// Native controls retain system-owned internal metrics.
+enum JackinSpace {
+    static let xxs: CGFloat = 4
+    static let xs: CGFloat = 8
+    static let sm: CGFloat = 12
+    static let md: CGFloat = 16
+    static let lg: CGFloat = 20
+    static let xl: CGFloat = 24
+}
+
+/// Compact type ramp for authored content; system controls keep native fonts.
+enum JackinType {
+    static let heroMetric = Font.system(size: 28, weight: .semibold, design: .rounded)
+    static let metadata = Font.caption
+    static let tertiary = Font.caption2
 }
 
 extension Color {
@@ -38,14 +106,16 @@ extension Color {
 /// Meter tint from row state: danger red, warning orange, otherwise phosphor.
 func meterTint(_ state: ProtoState) -> Color {
     switch state {
-    case .danger, .depleted: .red
-    case .warning: .orange
+    case .danger, .depleted: JackinBrand.danger
+    case .warning: JackinBrand.warning
     default: .jackinPhosphor
     }
 }
 
 /// Brand well behind a provider mark: phosphor at whisper alpha on a
-/// continuous squircle. The one place chrome-adjacent content wears the
+/// continuous squircle.
+///
+/// The one place chrome-adjacent content wears the
 /// brand color as a fill — quiet enough to stay content, loud enough to
 /// read jackin❯ at a glance.
 struct BrandMarkChip: View {
@@ -71,7 +141,7 @@ struct BrandMarkChip: View {
         .frame(width: chipSize, height: chipSize)
         .background(
             RoundedRectangle(cornerRadius: chipSize * 0.28, style: .continuous)
-                .fill(Color.jackinPhosphor.opacity(0.14))
+                .fill(JackinBrand.phosphorWash)
         )
         .accessibilityHidden(true)
     }
@@ -123,7 +193,9 @@ struct JackinBrandSignature: View {
 }
 
 /// Official provider logomarks (template) for status bar, popover, and Usage
-/// chrome. Status bar stays template monochrome. Marks are provenance-audited
+/// chrome.
+///
+/// Status bar stays template monochrome. Marks are provenance-audited
 /// against vendor brand assets — see Resources/ProviderMarks/PROVENANCE.md.
 /// Load order: vector **PDF preferred** (rsvg-rendered from official SVGs with
 /// transparent paper — resolution-independent), 512² PNG fallback. Diverges
