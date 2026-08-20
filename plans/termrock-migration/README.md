@@ -14,7 +14,7 @@ Package scope: plans 005–014 modernize the **console surface** (`crates/jackin
 | 002 | Bump to head e1d61f4d, workspace green | F1, B1, B2, B7, B8, D1, D9, D14, D15, W1, S1 | P1 | L | 001 | DONE |
 | 003 | Brand compensation, background pick, snapshot re-baseline | F3 (bump half), B3, B6, B9, D8, D10, D11, D13 | P1 | M | 002 | DONE |
 | 004 | Docs alignment, drift checks, merge-readiness | B4, B7 (drift check) | P2 | S | 003 | DONE |
-| 005 | PNG pipeline foundation: full console inventory baselines + CI lane | F7, S3, B10, B16, Q4, A6, A7 | P1 | M | — | TODO |
+| 005 | PNG pipeline foundation: full console inventory baselines + CI lane | F7, S3, B10, B16, Q4, A6, A7 | P1 | M | — | IN PROGRESS |
 | 006 | Console facade retirement: upstream contracts, traits re-homed | F6, N2, D22 | P1 | L | 005 | TODO |
 | 007 | Console BrandHeader rebuild + dedicated PNG crop proof | F8, B11 (console half), B16, N1, D21 | P1 | M | 005 | TODO |
 | 008 | Interaction core: ScrollArea + mouse machinery cutover | F5 (C1, C14), B14, D16, Q1 | P1 | L | 006 | TODO |
