@@ -42,20 +42,18 @@ pub const fn near_seam(column: u16, seam_x: u16) -> bool {
 /// percentage layout arithmetic.
 #[must_use]
 pub fn horizontal_split_pane_dims(pct: u16, total_width: u16) -> (u16, u16, u16, u16) {
-    let right_pct = 100u16.saturating_sub(pct);
-    let cols = ratatui::layout::Layout::default()
-        .direction(ratatui::layout::Direction::Horizontal)
-        .constraints([
-            ratatui::layout::Constraint::Percentage(pct),
-            ratatui::layout::Constraint::Percentage(right_pct),
-        ])
-        .split(ratatui::layout::Rect {
+    // Same upstream layout carrier as the render path (`split_list_columns`).
+    let layout = crate::tui::split::split_panel_group_layout(
+        ratatui::layout::Rect {
             x: 0,
             y: 0,
             width: total_width,
             height: 1,
-        });
-    (cols[0].x, cols[0].width, cols[1].x, cols[1].width)
+        },
+        pct,
+    );
+    let (left, right) = (layout.panels[0].area, layout.panels[1].area);
+    (left.x, left.width, right.x, right.width)
 }
 
 #[must_use]

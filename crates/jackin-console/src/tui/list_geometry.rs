@@ -10,7 +10,7 @@
 //! stays hand-rolled here. The vertical window moved to
 //! `VirtualListState` in the workspaces view.
 
-use ratatui::layout::{Constraint, Direction, Layout, Rect};
+use ratatui::layout::Rect;
 
 use termrock::scroll::ScrollAxes;
 
@@ -28,17 +28,12 @@ pub struct ListColumns {
 
 #[must_use]
 pub fn split_list_columns(area: Rect, left_pct: u16) -> ListColumns {
-    let right_pct = 100u16.saturating_sub(left_pct);
-    let columns = Layout::default()
-        .direction(Direction::Horizontal)
-        .constraints([
-            Constraint::Percentage(left_pct),
-            Constraint::Percentage(right_pct),
-        ])
-        .split(area);
+    // Rects come from the upstream resizable-panel-group layout carrier
+    // (seamless mode); see `tui::split::split_panel_group_layout`.
+    let layout = crate::tui::split::split_panel_group_layout(area, left_pct);
     ListColumns {
-        names: columns[0],
-        preview: columns[1],
+        names: layout.panels[0].area,
+        preview: layout.panels[1].area,
     }
 }
 
