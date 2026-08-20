@@ -173,6 +173,9 @@ struct OverviewContentView: View {
                 }
                 .padding(24)
             }
+            // Grouped-content stage: the gray under-page ground is what the
+            // card white contrasts against, in both appearances.
+            .background(Color(nsColor: .underPageBackgroundColor))
             .accessibilityLabel("Usage overview")
             .accessibilityIdentifier("usage.overview.grid")
         }
@@ -263,6 +266,9 @@ struct ProviderCardView: View {
             RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .strokeBorder(Color(nsColor: .separatorColor), lineWidth: 0.5)
         )
+        // Grid rows size to the tallest card; short cards pin to the top of
+        // their cell instead of floating centered.
+        .frame(maxHeight: .infinity, alignment: .top)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("usage.overview.provider.\(provider.key)")
     }
