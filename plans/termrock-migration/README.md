@@ -20,7 +20,7 @@ Package scope: plans 005–014 modernize the **console surface** (`crates/jackin
 | 008 | Interaction core: ScrollArea + mouse machinery cutover | F5 (C1, C14), B14, D16, Q1 | P1 | L | 006 | DONE |
 | 009 | Collections, selection wrapper, modal geometry | F5 (C2, C4, C5), B14, D16 | P1 | M | 006 | DONE |
 | 010 | Dialog and form layer adoption | F5 (C6–C8, C10, C11, C19), B14, D16 | P1 | L | 009 | DONE |
-| 011 | Layout, chrome, runtime adoption | F5 (C3, C12, C13, C15–C17), B14, D16 | P1 | L | 008 | TODO |
+| 011 | Layout, chrome, runtime adoption | F5 (C3, C12, C13, C15–C17), B14, D16 | P1 | L | 008 | IN PROGRESS |
 | 012 | Whole-screen recipes, create wizard, keyboard_help overlay | F5 (recipes, form_wizard), F9, S2, N4, D24 | P2 | M | 010, 011 | TODO |
 | 013 | Op-picker drill-down re-base + jackin-oppicker modernization | F5 (op-picker), D25 | P2 | M | 006 | DONE |
 | 014 | Console docs alignment + merge-readiness | B14, B16 (final proof), N4, docs same-PR law | P2 | S | 005–013 | TODO |
