@@ -157,22 +157,53 @@ run = 'cargo xtask desktop build --version "$usage_version" --build "$usage_buil
 description = "Fail-closed verify of JackinDesktop.app (prints path + run hint)"
 usage = '''
 arg "<app>" help="Path to JackinDesktop.app" default="native/dist/JackinDesktop.app"
+arg "[version]" help="Expected CFBundleShortVersionString"
+arg "[build]" help="Expected CFBundleVersion numeric build"
+flag "--release" help="Require Developer ID + notarization (Gatekeeper + stapler)"
 '''
-run = 'cargo xtask desktop verify "$usage_app"'
+run = '''
+set -euo pipefail
+args=("$usage_app")
+if [ -n "${usage_version:-}" ]; then args+=(--version "$usage_version"); fi
+if [ -n "${usage_build:-}" ]; then args+=(--build "$usage_build"); fi
+if [ "${usage_release:-false}" = "true" ]; then args+=(--release); fi
+cargo xtask desktop verify "${args[@]}"
+'''
 
 [tasks.desktop-test]
 description = "Host + pure Swift OpenUsage/CodexBar limits-only parity harnesses for Desktop"
 run = "cargo xtask desktop test"
 
+# Canonical cadence graph — one definition per command, CI and release invoke
+# these exact task names (see native/Design/UnifiedAgentUsage/SwiftProjectReadiness.md).
 [tasks.desktop-ci]
-description = "Run the required jackin❯ desktop macOS CI contract"
+description = "PR cadence: full nonmutating jackin❯ desktop gate graph"
 run = '''
 set -euo pipefail
-mise run desktop-bindings
+mise run desktop-bindings-check
+mise run desktop-generate
 mise run desktop-format-check
 mise run desktop-lint
 mise run desktop-test
+mise run desktop-build
 cargo xtask desktop test-swift
+mise run desktop-verify
+'''
+
+[tasks.desktop-merge]
+description = "Merge cadence: PR graph plus UI tests against the real app host"
+run = '''
+set -euo pipefail
+mise run desktop-ci
+mise run desktop-test-ui
+'''
+
+[tasks.desktop-scheduled]
+description = "Scheduled cadence: merge graph plus dead-code scan"
+run = '''
+set -euo pipefail
+mise run desktop-merge
+mise run desktop-deadcode
 '''
 
 [tasks.desktop-run]
@@ -207,13 +238,16 @@ description = "Developer ID sign + notarize + staple JackinDesktop.app (requires
 usage = '''
 arg "[app]" help="Path to JackinDesktop.app" default="native/dist/JackinDesktop.app"
 arg "[out_zip]" help="Final post-staple ZIP path"
+arg "[version]" help="Expected CFBundleShortVersionString"
+arg "[build]" help="Expected CFBundleVersion numeric build"
 '''
 run = '''
-if [ -n "${usage_out_zip:-}" ]; then
-  cargo xtask desktop sign-notarize "$usage_app" "$usage_out_zip"
-else
-  cargo xtask desktop sign-notarize "$usage_app"
-fi
+set -euo pipefail
+args=("$usage_app")
+if [ -n "${usage_out_zip:-}" ]; then args+=("$usage_out_zip"); fi
+if [ -n "${usage_version:-}" ]; then args+=(--version "$usage_version"); fi
+if [ -n "${usage_build:-}" ]; then args+=(--build "$usage_build"); fi
+cargo xtask desktop sign-notarize "${args[@]}"
 '''
 
 [tasks.desktop-release-state]

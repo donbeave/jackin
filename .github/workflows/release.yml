@@ -160,7 +160,7 @@ jobs:
           fi
 
           # Independent states: formula alone is not enough when menu-bar assets exist.
-          state="$(cargo xtask desktop release-state "$VERSION" --repo "$GITHUB_REPOSITORY" || true)"
+          state="$(mise run desktop-release-state "$VERSION" --repo "$GITHUB_REPOSITORY" || true)"
           echo "$state"
           cask_complete=$(printf '%s\n' "$state" | sed -n 's/^cask_complete=//p')
           app_complete=$(printf '%s\n' "$state" | sed -n 's/^app_file_assets_complete=//p')
@@ -470,13 +470,13 @@ jobs:
         env:
           JACKIN_APP_VERSION: ${{ env.VERSION }}
           JACKIN_APP_BUILD: ${{ env.APP_BUILD }}
-        run: cargo xtask desktop build --version "${JACKIN_APP_VERSION}" --build "${JACKIN_APP_BUILD}"
+        run: mise run desktop-build "${JACKIN_APP_VERSION}" "${JACKIN_APP_BUILD}"
 
       - name: Verify ad-hoc app
         env:
           JACKIN_APP_VERSION: ${{ env.VERSION }}
           JACKIN_APP_BUILD: ${{ env.APP_BUILD }}
-        run: cargo xtask desktop verify native/dist/JackinDesktop.app --version "${JACKIN_APP_VERSION}" --build "${JACKIN_APP_BUILD}"
+        run: mise run desktop-verify native/dist/JackinDesktop.app "${JACKIN_APP_VERSION}" "${JACKIN_APP_BUILD}"
 
       - name: Ad-hoc must fail release-mode verifier
         if: env.MODE == 'validate'
@@ -485,7 +485,7 @@ jobs:
           JACKIN_APP_BUILD: ${{ env.APP_BUILD }}
         run: |
           set -euo pipefail
-          if cargo xtask desktop verify native/dist/JackinDesktop.app --version "${JACKIN_APP_VERSION}" --build "${JACKIN_APP_BUILD}" --release; then
+          if mise run desktop-verify native/dist/JackinDesktop.app "${JACKIN_APP_VERSION}" "${JACKIN_APP_BUILD}" --release; then
             echo "::error::ad-hoc app must not pass --release"
             exit 1
           fi
@@ -499,9 +499,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          cargo xtask desktop release-state "$VERSION" --repo "$GITHUB_REPOSITORY" | tee state.env
+          mise run desktop-release-state "$VERSION" --repo "$GITHUB_REPOSITORY" | tee state.env
           # Second run is identical (no writes).
-          cargo xtask desktop release-state "$VERSION" --repo "$GITHUB_REPOSITORY" | tee state2.env
+          mise run desktop-release-state "$VERSION" --repo "$GITHUB_REPOSITORY" | tee state2.env
           diff -u state.env state2.env
 
       - name: Import Developer ID + notarize (publish only)
@@ -552,8 +552,8 @@ jobs:
           export APP_STORE_CONNECT_KEY_ID="$ASC_KEY_ID"
           export APP_STORE_CONNECT_ISSUER_ID="$ASC_ISSUER_ID"
           OUT_ZIP="${RUNNER_TEMP}/jackin-desktop-${VERSION}-aarch64-apple-darwin.zip"
-          cargo xtask desktop sign-notarize native/dist/JackinDesktop.app "$OUT_ZIP" \
-            --version "${JACKIN_APP_VERSION}" --build "${JACKIN_APP_BUILD}"
+          mise run desktop-sign-notarize native/dist/JackinDesktop.app "$OUT_ZIP" \
+            "${JACKIN_APP_VERSION}" "${JACKIN_APP_BUILD}"
           mkdir -p dist-app
           cp "$OUT_ZIP" "dist-app/jackin-desktop-${VERSION}-aarch64-apple-darwin.zip"
           # Credentials must be gone before supply-chain tooling.

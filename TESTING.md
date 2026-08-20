@@ -164,7 +164,7 @@ latest-target pointer; it does not duplicate the target archive.
 | One CI partition | `cargo xtask ci --only <lint\|policy\|tests\|snapshots\|docs\|powerset>` | inner loop mirroring a CI lane |
 | Scoped feature powerset | `cargo hack check -p jackin -p jackin-diagnostics -p jackin-capsule -p jackin-agent-status -p jackin-term -p jackin-runtime --feature-powerset --all-targets --locked` | optional-feature crates (PR gate) |
 | Container/runtime behavior | `cargo xtask ci --e2e` (Docker running) | capsule/runtime PRs |
-| Desktop / native Swift | `mise run desktop-ci`; `mise run desktop-test-ui` on a logged-in macOS host | Desktop UI, bridge, or usage projection changes; PR gate: `native-usage-menu-bar` |
+| Desktop / native Swift | `mise run desktop-ci` (PR cadence); `mise run desktop-merge` adds `desktop-test-ui` on a logged-in macOS host; `mise run desktop-scheduled` adds `desktop-deadcode` | Desktop UI, bridge, or usage projection changes; PR gate: `native-usage-menu-bar` |
 | Docs/roadmap | `cargo xtask roadmap audit && cargo xtask docs repo-links && cargo xtask research check` | any docs edit |
 | File-size gate | `cargo xtask lint files` (`--format json\|github`) | structure / split PRs |
 | README freshness (advisory) | `cargo xtask lint readme-freshness --base origin/main` | structural `crates/*/src` A/D/R without README touch |

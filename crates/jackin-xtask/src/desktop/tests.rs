@@ -142,3 +142,99 @@ fn xctest_summary_rejects_missing_or_truncated_block() {
     );
     parse_xctest_summary(log).unwrap_err();
 }
+
+fn repo_text(relative: &str) -> String {
+    let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../..")
+        .join(relative);
+    std::fs::read_to_string(&path)
+        .unwrap_or_else(|error| panic!("reading {}: {error}", path.display()))
+}
+
+fn task_block<'a>(mise: &'a str, name: &str) -> &'a str {
+    let marker = format!("[tasks.{name}]\n");
+    let start = mise
+        .find(&marker)
+        .unwrap_or_else(|| panic!("mise.toml missing {marker}"));
+    let rest = &mise[start + marker.len()..];
+    let end = rest.find("\n[").map_or(rest.len(), |index| index + 1);
+    &rest[..end]
+}
+
+fn assert_subsequence(haystack: &str, needles: &[&str], label: &str) {
+    let mut cursor = 0;
+    for needle in needles {
+        let found = haystack[cursor..]
+            .find(needle)
+            .unwrap_or_else(|| panic!("{label}: `{needle}` missing or out of order"));
+        cursor += found + needle.len();
+    }
+}
+
+#[test]
+fn cadence_tasks_define_the_canonical_graph() {
+    let mise = repo_text("mise.toml");
+    assert_subsequence(
+        task_block(&mise, "desktop-ci"),
+        &[
+            "desktop-bindings-check",
+            "desktop-generate",
+            "desktop-format-check",
+            "desktop-lint",
+            "desktop-test\n",
+            "desktop-build",
+            "desktop test-swift",
+            "desktop-verify",
+        ],
+        "desktop-ci",
+    );
+    assert_subsequence(
+        task_block(&mise, "desktop-merge"),
+        &["desktop-ci", "desktop-test-ui"],
+        "desktop-merge",
+    );
+    assert_subsequence(
+        task_block(&mise, "desktop-scheduled"),
+        &["desktop-merge", "desktop-deadcode"],
+        "desktop-scheduled",
+    );
+}
+
+#[test]
+fn release_workflow_invokes_canonical_mise_tasks() {
+    let release = repo_text(".github/workflows/release.yml");
+    for task in [
+        "mise run desktop-build",
+        "mise run desktop-verify",
+        "mise run desktop-sign-notarize",
+        "mise run desktop-release-state",
+    ] {
+        assert!(release.contains(task), "release.yml must invoke `{task}`");
+    }
+    for restated in [
+        "cargo xtask desktop build",
+        "cargo xtask desktop verify",
+        "cargo xtask desktop sign-notarize",
+        "cargo xtask desktop release-state",
+    ] {
+        assert!(
+            !release.contains(restated),
+            "release.yml must not restate `{restated}` beside the mise task"
+        );
+    }
+}
+
+#[test]
+fn generated_ci_delegates_the_native_lane() {
+    let ci = repo_text(".github/workflows/ci.yml");
+    assert!(
+        ci.contains("ci-native.yml"),
+        "generated ci.yml must delegate the native lane to the reusable workflow"
+    );
+    for hand_restated in ["swift test", "cargo xtask desktop", "xcodebuild"] {
+        assert!(
+            !ci.contains(hand_restated),
+            "generated ci.yml must not hand-restate native step `{hand_restated}`"
+        );
+    }
+}
