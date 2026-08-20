@@ -778,4 +778,6 @@ fn has_modal_overlay(state: &crate::tui::state::ManagerState<'_>) -> bool {
 }
 
 #[cfg(test)]
+mod png_baselines;
+#[cfg(test)]
 mod tests;
