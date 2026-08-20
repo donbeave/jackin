@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import Foundation
+import JackinUsageBindings
 
 /// Exact provider/account destination carried across popover/window handoff.
 public struct UsageNavigationContext: Equatable, Sendable {

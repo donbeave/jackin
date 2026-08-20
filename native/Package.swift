@@ -22,15 +22,22 @@ let package = Package(
             name: "jackin_usage_ffiFFI",
             path: "../target/xcframework/JackinUsageFFI.xcframework"
         ),
+        // Generated UniFFI Swift only. Nothing handwritten lands here; only
+        // JackinUsageBridge may depend on this target.
+        .target(
+            name: "JackinUsageBindings",
+            dependencies: ["jackin_usage_ffiFFI"],
+            path: "Sources/JackinUsageBindings"
+        ),
         .target(
             name: "JackinUsageBridge",
-            dependencies: ["jackin_usage_ffiFFI"],
+            dependencies: ["JackinUsageBindings"],
             path: "Sources/JackinUsageBridge"
         ),
         // Hostable UI library (status/popover/Usage) for app + deterministic fixtures.
         .target(
             name: "JackinDesktopUI",
-            dependencies: ["JackinUsageBridge"],
+            dependencies: ["JackinUsageBindings", "JackinUsageBridge"],
             path: "Sources/JackinDesktop",
             resources: [
                 .copy("Resources/Brand"),
@@ -40,7 +47,7 @@ let package = Package(
         ),
         .executableTarget(
             name: "StatusItemChipHarness",
-            dependencies: ["JackinUsageBridge"],
+            dependencies: ["JackinUsageBindings", "JackinUsageBridge"],
             path: "Tools/StatusItemChipHarness"
         ),
         .executableTarget(
@@ -50,7 +57,7 @@ let package = Package(
         ),
         .executableTarget(
             name: "DesktopParityMatrixHarness",
-            dependencies: ["JackinUsageBridge"],
+            dependencies: ["JackinUsageBindings", "JackinUsageBridge"],
             path: "Tools/DesktopParityMatrixHarness"
         ),
         .executableTarget(
@@ -65,7 +72,7 @@ let package = Package(
         ),
         .testTarget(
             name: "JackinUsageBridgeTests",
-            dependencies: ["JackinDesktopUI", "JackinUsageBridge"],
+            dependencies: ["JackinDesktopUI", "JackinUsageBindings", "JackinUsageBridge"],
             path: "Tests/JackinUsageBridgeTests"
         ),
     ]

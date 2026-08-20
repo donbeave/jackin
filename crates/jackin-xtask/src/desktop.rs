@@ -415,7 +415,7 @@ fn generate_bindings(root: &Path, profile: &str) -> Result<()> {
     ]);
     cmd::run_streaming(&mut bindgen_cmd)?;
 
-    let sources = root.join("native/Sources/JackinUsageBridge");
+    let sources = root.join("native/Sources/JackinUsageBindings");
     fs::create_dir_all(&sources)?;
     let generated_swift = out_dir.join("jackin_usage_ffi.swift");
     for generated in [

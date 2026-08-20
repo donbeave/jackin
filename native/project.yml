@@ -33,6 +33,22 @@ settings:
     SWIFT_VERSION: "6"
 
 targets:
+  JackinUsageBindings:
+    type: library.static
+    platform: macOS
+    sources:
+      - path: Sources/JackinUsageBindings
+        type: syncedFolder
+    settings:
+      base:
+        DEFINES_MODULE: YES
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_MODULE_NAME: JackinUsageBindings
+        SKIP_INSTALL: YES
+    dependencies:
+      - framework: ../target/xcframework/JackinUsageFFI.xcframework
+        embed: false
+
   JackinUsageBridge:
     type: library.static
     platform: macOS
@@ -46,8 +62,7 @@ targets:
         PRODUCT_MODULE_NAME: JackinUsageBridge
         SKIP_INSTALL: YES
     dependencies:
-      - framework: ../target/xcframework/JackinUsageFFI.xcframework
-        embed: false
+      - target: JackinUsageBindings
 
   JackinDesktopUI:
     type: library.static
@@ -64,6 +79,7 @@ targets:
         PRODUCT_MODULE_NAME: JackinDesktopUI
         SKIP_INSTALL: YES
     dependencies:
+      - target: JackinUsageBindings
       - target: JackinUsageBridge
 
   JackinDesktop:
@@ -104,6 +120,7 @@ targets:
         PRODUCT_NAME: JackinDesktop
     dependencies:
       - target: JackinDesktopUI
+      - target: JackinUsageBindings
       - target: JackinUsageBridge
       - framework: ../target/xcframework/JackinUsageFFI.xcframework
         embed: false
@@ -119,6 +136,7 @@ targets:
         GENERATE_INFOPLIST_FILE: YES
     dependencies:
       - target: JackinDesktopUI
+      - target: JackinUsageBindings
       - target: JackinUsageBridge
       - framework: ../target/xcframework/JackinUsageFFI.xcframework
         embed: false

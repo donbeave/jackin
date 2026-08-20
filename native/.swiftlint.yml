@@ -8,7 +8,7 @@ excluded:
   - .build
   - DerivedData
   - Generated
-  - Sources/JackinUsageBridge/jackin_usage_ffi.swift
+  - Sources/JackinUsageBindings/jackin_usage_ffi.swift
 
 analyzer_rules:
   - unused_declaration

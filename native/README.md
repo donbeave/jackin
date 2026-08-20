@@ -85,7 +85,8 @@ Settings is a standard titled `NSWindow` containing a grouped `Form`. It owns me
 | `../crates/jackin-usage` | Host probes and `HostUsageRuntime` |
 | `../crates/jackin-usage-ffi` | Synchronous UniFFI facade |
 | `Generated/` | Generated UniFFI C header/module map |
-| `Sources/JackinUsageBridge` | Generated Swift, `PresentationStore`, pure projections |
+| `Sources/JackinUsageBindings` | Generated UniFFI Swift only (never handwritten) |
+| `Sources/JackinUsageBridge` | Handwritten sole FFI importer: typed facade, `PresentationStore`, pure projections |
 | `Sources/JackinDesktop` | AppKit hosts and SwiftUI native surfaces |
 | `Sources/JackinDesktop/VisualQAFixtures.swift` | Explicit synthetic F00–F14 visual-QA states |
 | `UITests/JackinDesktopUITests.swift` | Real-host interaction and accessibility audits |
