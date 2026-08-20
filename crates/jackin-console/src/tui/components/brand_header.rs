@@ -1,10 +1,11 @@
 //! jackin❯ brand header composition.
 
 use ratatui::buffer::Buffer;
-use ratatui::layout::{Alignment, Rect};
+use ratatui::layout::Rect;
 use ratatui::style::{Modifier, Style};
 use ratatui::text::{Line, Span};
-use ratatui::widgets::{Paragraph, Widget};
+use ratatui::widgets::Widget;
+use termrock::text::LinePlacement;
 
 #[derive(Debug, Clone, Copy)]
 struct BrandHeader<'a> {
@@ -13,9 +14,15 @@ struct BrandHeader<'a> {
 
 impl Widget for BrandHeader<'_> {
     fn render(self, area: Rect, buffer: &mut Buffer) {
-        Paragraph::new(brand_header_line(self.label))
-            .alignment(Alignment::Left)
-            .render(area, buffer);
+        let mut scratch = String::new();
+        termrock::text::paint_line_overflow(
+            buffer,
+            area,
+            &brand_header_line(self.label),
+            Style::default(),
+            LinePlacement::clipped("…"),
+            &mut scratch,
+        );
     }
 }
 
