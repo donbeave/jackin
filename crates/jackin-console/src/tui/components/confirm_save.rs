@@ -202,7 +202,10 @@ impl<M: Clone> ConfirmSaveState<M> {
     }
 
     pub fn handle_key(&mut self, key: KeyEvent) -> ModalOutcome<SaveChoice> {
-        match CONFIRM_SAVE_KEYMAP.dispatch(KeyChord::from(termrock::input::KeyEvent::from(key))) {
+        match crate::tui::keymap::bridged_keymap_action(
+            &CONFIRM_SAVE_KEYMAP,
+            termrock::input::KeyEvent::from(key),
+        ) {
             Some(ConfirmSaveAction::Save) => ModalOutcome::Commit(SaveChoice::Save),
             Some(ConfirmSaveAction::Cancel) => ModalOutcome::Cancel,
             Some(ConfirmSaveAction::ScrollUp) => {

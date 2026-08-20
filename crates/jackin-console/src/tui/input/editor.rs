@@ -51,19 +51,18 @@ use crate::tui::update::{
 };
 use jackin_config::AppConfig;
 use jackin_core::JackinPaths;
-use termrock::keymap::KeyChord;
 
 use crate::tui::keymap::{
     EDITOR_CONTENT_KEYMAP, EDITOR_GLOBAL_KEYMAP, EDITOR_TAB_BAR_KEYMAP, EditorContentAction,
-    EditorGlobalAction, EditorTabBarAction,
+    EditorGlobalAction, EditorTabBarAction, bridged_keymap_action,
 };
 
 fn dispatch_editor_top_level(key: KeyEvent, tab_bar_focused: bool) -> EditorTopLevelKeyPlan {
     use crossterm::event::KeyCode;
 
-    let chord = KeyChord::from(termrock::input::KeyEvent::from(key));
+    let event = termrock::input::KeyEvent::from(key);
 
-    if let Some(action) = EDITOR_GLOBAL_KEYMAP.dispatch(chord) {
+    if let Some(action) = bridged_keymap_action(&EDITOR_GLOBAL_KEYMAP, event) {
         return match action {
             EditorGlobalAction::Save => EditorTopLevelKeyPlan::Save,
             EditorGlobalAction::Escape => EditorTopLevelKeyPlan::Escape,
@@ -74,7 +73,7 @@ fn dispatch_editor_top_level(key: KeyEvent, tab_bar_focused: bool) -> EditorTopL
     // the tab bar has focus. Other keys (Enter, h/H/l/L, Up/k/K, etc.) fall through to
     // the content keymap even when the tab bar is focused — matching the original
     // `editor_top_level_key_plan` behavior where these guards were not exhaustive.
-    if tab_bar_focused && let Some(action) = EDITOR_TAB_BAR_KEYMAP.dispatch(chord) {
+    if tab_bar_focused && let Some(action) = bridged_keymap_action(&EDITOR_TAB_BAR_KEYMAP, event) {
         return match action {
             EditorTabBarAction::PrevTab => {
                 EditorTopLevelKeyPlan::Navigation(EditorNavigationKeyPlan::MoveTab {
@@ -95,7 +94,7 @@ fn dispatch_editor_top_level(key: KeyEvent, tab_bar_focused: bool) -> EditorTopL
     }
 
     // Content-mode (and tab-bar fall-through): Char(_) wildcard falls through.
-    match EDITOR_CONTENT_KEYMAP.dispatch(chord) {
+    match bridged_keymap_action(&EDITOR_CONTENT_KEYMAP, event) {
         Some(EditorContentAction::MoveUp) => EditorTopLevelKeyPlan::MoveField { delta: -1 },
         Some(EditorContentAction::MoveDown) => EditorTopLevelKeyPlan::MoveField { delta: 1 },
         Some(EditorContentAction::ScrollLeft) => {

@@ -585,10 +585,11 @@ pub fn inline_provider_followup_plan<C, A, P>(
 
 #[must_use]
 pub fn inline_picker_shell_plan(key: KeyEvent, _exit_on_q: bool) -> InlinePickerShellPlan {
-    use crate::tui::keymap::{INLINE_PICKER_SHELL_KEYMAP, InlinePickerShellAction};
-    use termrock::keymap::KeyChord;
-    let chord = KeyChord::from(termrock::input::KeyEvent::from(key));
-    match INLINE_PICKER_SHELL_KEYMAP.dispatch(chord) {
+    use crate::tui::keymap::{
+        INLINE_PICKER_SHELL_KEYMAP, InlinePickerShellAction, bridged_keymap_action,
+    };
+    let event = termrock::input::KeyEvent::from(key);
+    match bridged_keymap_action(&INLINE_PICKER_SHELL_KEYMAP, event) {
         Some(InlinePickerShellAction::ScrollLeft) => InlinePickerShellPlan::ScrollHorizontal(-8),
         Some(InlinePickerShellAction::ScrollRight) => InlinePickerShellPlan::ScrollHorizontal(8),
         None => InlinePickerShellPlan::Delegate,

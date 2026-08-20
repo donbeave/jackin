@@ -13,7 +13,6 @@
 //! save commit path (`console/tui/input/save.rs`).
 
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
-use termrock::keymap::KeyChord;
 
 use crate::tui::components::auth_panel::{
     AuthFormKeyPlan, auth_credential_input_state, auth_form_key_plan_with_source_folder,
@@ -25,6 +24,7 @@ use crate::tui::keymap::{
     SETTINGS_GLOBAL_MOUNTS_TAB_KEYMAP, SETTINGS_TAB_BAR_KEYMAP, SETTINGS_TRUST_TAB_KEYMAP,
     SettingsContentShellAction, SettingsEnvTabAction, SettingsGeneralTabAction,
     SettingsGlobalMountsTabAction, SettingsTabBarAction, SettingsTrustTabAction,
+    bridged_keymap_action,
 };
 use crate::tui::mount_display::settings_global_config_mounts_content_width_with_cache;
 use crate::tui::screens::settings::update as settings_update;
@@ -77,14 +77,14 @@ pub fn handle_settings_key_with_effects(state: &mut ManagerState<'_>, key: KeyEv
         return;
     };
 
-    let chord = KeyChord::from(termrock::input::KeyEvent::from(key));
+    let event = termrock::input::KeyEvent::from(key);
     let tab_bar_focused = settings.tab_bar_focused();
     let auth_kind_selected = settings.auth.has_selected_kind();
     let active_tab = settings.active_tab;
 
     // Shell: tab-bar navigation takes priority over per-tab dispatch.
     if tab_bar_focused {
-        match SETTINGS_TAB_BAR_KEYMAP.dispatch(chord) {
+        match bridged_keymap_action(&SETTINGS_TAB_BAR_KEYMAP, event) {
             Some(SettingsTabBarAction::PrevTab) => {
                 dispatch_manager(
                     state,
@@ -113,7 +113,7 @@ pub fn handle_settings_key_with_effects(state: &mut ManagerState<'_>, key: KeyEv
         }
     } else {
         // Content mode: shell intercepts Tab, BackTab, Esc before per-tab.
-        match SETTINGS_CONTENT_SHELL_KEYMAP.dispatch(chord) {
+        match bridged_keymap_action(&SETTINGS_CONTENT_SHELL_KEYMAP, event) {
             Some(SettingsContentShellAction::NextTab) => {
                 dispatch_manager(
                     state,
@@ -190,8 +190,8 @@ fn handle_global_mounts_key(state: &mut ManagerState<'_>, key: KeyEvent) {
         &settings.mounts.mount_info_cache,
     );
     let footer_h = settings.cached_footer_h;
-    let chord = KeyChord::from(termrock::input::KeyEvent::from(key));
-    match SETTINGS_GLOBAL_MOUNTS_TAB_KEYMAP.dispatch(chord) {
+    let event = termrock::input::KeyEvent::from(key);
+    match bridged_keymap_action(&SETTINGS_GLOBAL_MOUNTS_TAB_KEYMAP, event) {
         Some(SettingsGlobalMountsTabAction::Save) => {
             let ManagerStage::Settings(settings) = &mut state.stage else {
                 return;
@@ -343,8 +343,8 @@ fn handle_env_key(state: &mut ManagerState<'_>, key: KeyEvent) {
         &settings.env.expanded,
         settings.env.selected,
     );
-    let chord = KeyChord::from(termrock::input::KeyEvent::from(key));
-    match SETTINGS_ENV_TAB_KEYMAP.dispatch(chord) {
+    let event = termrock::input::KeyEvent::from(key);
+    match bridged_keymap_action(&SETTINGS_ENV_TAB_KEYMAP, event) {
         Some(SettingsEnvTabAction::MoveUp) => {
             dispatch_manager(
                 state,
@@ -441,8 +441,8 @@ fn handle_general_key(state: &mut ManagerState<'_>, key: KeyEvent) {
         return;
     };
     let is_dirty = settings.is_dirty();
-    let chord = KeyChord::from(termrock::input::KeyEvent::from(key));
-    match SETTINGS_GENERAL_TAB_KEYMAP.dispatch(chord) {
+    let event = termrock::input::KeyEvent::from(key);
+    match bridged_keymap_action(&SETTINGS_GENERAL_TAB_KEYMAP, event) {
         Some(SettingsGeneralTabAction::MoveUp) => {
             dispatch_manager(
                 state,
@@ -490,8 +490,8 @@ fn handle_trust_key(state: &mut ManagerState<'_>, key: KeyEvent) {
     let footer_h = settings.cached_footer_h;
     let is_dirty = settings.is_dirty();
     let content_width = settings_update::trust_content_width(&settings.trust);
-    let chord = KeyChord::from(termrock::input::KeyEvent::from(key));
-    match SETTINGS_TRUST_TAB_KEYMAP.dispatch(chord) {
+    let event = termrock::input::KeyEvent::from(key);
+    match bridged_keymap_action(&SETTINGS_TRUST_TAB_KEYMAP, event) {
         Some(SettingsTrustTabAction::MoveUp) => {
             dispatch_manager(
                 state,

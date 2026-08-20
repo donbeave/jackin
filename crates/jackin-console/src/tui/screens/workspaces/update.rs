@@ -319,12 +319,17 @@ pub const fn workspace_list_enter_plan(row: ManagerListRow) -> WorkspaceListEnte
 
 #[must_use]
 pub fn workspace_list_key_plan(key: KeyCode, list_scroll_focused: bool) -> WorkspaceListKeyPlan {
-    use crate::tui::keymap::{WORKSPACE_LIST_KEYMAP, WorkspaceListAction as A};
-    use termrock::keymap::KeyChord;
+    use crate::tui::keymap::{
+        WORKSPACE_LIST_KEYMAP, WorkspaceListAction as A, bridged_keymap_action,
+    };
 
-    let Some(action) =
-        WORKSPACE_LIST_KEYMAP.dispatch(KeyChord::from(termrock::input::KeyCode::from(key)))
-    else {
+    let Some(action) = bridged_keymap_action(
+        &WORKSPACE_LIST_KEYMAP,
+        termrock::input::KeyEvent::new(
+            termrock::input::KeyCode::from(key),
+            termrock::input::KeyModifiers::NONE,
+        ),
+    ) else {
         return WorkspaceListKeyPlan::Continue;
     };
     match action {
@@ -1270,13 +1275,18 @@ pub const fn exit_preview_focus_plan() -> PreviewFocusPlan {
 /// move inside the snapshot, and Enter reconnects to the selected pane.
 #[must_use]
 pub fn preview_pane_key_plan(key: KeyCode, pane_count: usize) -> PreviewPaneKeyPlan {
-    use crate::tui::keymap::{PREVIEW_PANE_KEYMAP, PreviewPaneAction as A};
-    use termrock::keymap::KeyChord;
+    use crate::tui::keymap::{PREVIEW_PANE_KEYMAP, PreviewPaneAction as A, bridged_keymap_action};
 
     if pane_count == 0 {
         return PreviewPaneKeyPlan::ExitPreview;
     }
-    match PREVIEW_PANE_KEYMAP.dispatch(KeyChord::from(termrock::input::KeyCode::from(key))) {
+    match bridged_keymap_action(
+        &PREVIEW_PANE_KEYMAP,
+        termrock::input::KeyEvent::new(
+            termrock::input::KeyCode::from(key),
+            termrock::input::KeyModifiers::NONE,
+        ),
+    ) {
         Some(A::Back) => PreviewPaneKeyPlan::ExitPreview,
         Some(A::NavigateUp) => PreviewPaneKeyPlan::Move { delta: -1 },
         Some(A::NavigateDown) => PreviewPaneKeyPlan::Move { delta: 1 },
