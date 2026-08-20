@@ -6,6 +6,18 @@ Launch contract: `--tr-scenario`, `--tr-appearance`, `--tr-window`,
 Unknown scenario names (including the F18/F19/F24 matrix headings) and
 malformed sizes fail at launch with a nonzero exit.
 
+Operator entry points from the repository root:
+
+```sh
+mise run desktop-prototype-build
+mise run desktop-prototype-run -- F02 920x620 light
+mise run desktop-prototype -- F02 920x620 dark
+```
+
+The combined `desktop-prototype` task builds then launches. Optional fourth and
+fifth positional arguments map to the existing reduction and backdrop flags;
+the executable launch contract remains unchanged.
+
 ## Design inputs (consumed revisions)
 
 | Artifact | Path | Commit | Date |

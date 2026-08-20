@@ -224,6 +224,50 @@ else
 fi
 '''
 
+[tasks.desktop-prototype-build]
+description = "Build the Unified Agent Usage native design prototype"
+run = "swift build --package-path native/Design/Prototypes/UnifiedAgentUsage"
+
+[tasks.desktop-prototype-run]
+description = "Launch the Unified Agent Usage native design prototype"
+usage = '''
+arg "<scenario>" help="Fixture name (F00–F29 and named variants)" default="F02"
+arg "<window>" help="Window size in WIDTHxHEIGHT form" default="920x620"
+arg "<appearance>" help="Appearance: light or dark" default="light"
+arg "[reduce]" help="Optional reduction mode: transparency, motion, or transparency,motion"
+arg "[backdrop]" help="Optional harness backdrop hex color"
+'''
+run = '''
+set -euo pipefail
+binary="native/Design/Prototypes/UnifiedAgentUsage/.build/debug/UnifiedAgentUsageProto"
+args=(
+  --tr-scenario "$usage_scenario"
+  --tr-window "$usage_window"
+  --tr-appearance "$usage_appearance"
+)
+if [ -n "${usage_reduce:-}" ]; then args+=(--tr-reduce "$usage_reduce"); fi
+if [ -n "${usage_backdrop:-}" ]; then args+=(--tr-backdrop "$usage_backdrop"); fi
+open -n "$binary" --args "${args[@]}"
+'''
+
+[tasks.desktop-prototype]
+description = "Build + launch the Unified Agent Usage native design prototype"
+usage = '''
+arg "<scenario>" help="Fixture name (F00–F29 and named variants)" default="F02"
+arg "<window>" help="Window size in WIDTHxHEIGHT form" default="920x620"
+arg "<appearance>" help="Appearance: light or dark" default="light"
+arg "[reduce]" help="Optional reduction mode: transparency, motion, or transparency,motion"
+arg "[backdrop]" help="Optional harness backdrop hex color"
+'''
+run = '''
+set -euo pipefail
+mise run desktop-prototype-build
+args=("$usage_scenario" "$usage_window" "$usage_appearance")
+if [ -n "${usage_reduce:-}" ]; then args+=("$usage_reduce"); fi
+if [ -n "${usage_backdrop:-}" ]; then args+=("$usage_backdrop"); fi
+mise run desktop-prototype-run -- "${args[@]}"
+'''
+
 [tasks.desktop]
 description = "Build + verify + launch jackin❯ desktop (local smoke)"
 usage = '''
