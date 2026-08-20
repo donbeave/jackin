@@ -1,6 +1,6 @@
 # Unified agent usage specification
 
-These contracts turn the READY roadmap into implementation requirements. Rust owns
+These contracts turn the PLANNED roadmap into implementation requirements. Rust owns
 identity, freshness, quota semantics, ordering, and display strings. Consumers own
 layout only. Every implementation change executes on
 `chore/roadmap-unified-agent-usage` in PR #898.
@@ -43,4 +43,3 @@ layout only. Every implementation change executes on
 - X2 provider incident badges belong to operational health.
 - X3 credit-expiry timelines/notifications wait for reliable expiry data and policy.
 - X4 Codex code-review quota waits for a supported non-browser source.
-

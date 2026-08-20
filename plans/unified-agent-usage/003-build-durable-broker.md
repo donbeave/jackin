@@ -41,9 +41,14 @@ Clients activate/connect only; independent service loads state, binds authentica
 ### Step 3: Implement projection operations
 CurrentProjection, RequestRefresh, and JoinPublication with catalog/generation IDs and relay allowlists.
 ### Step 4: Centralize policy
-Implement fake-clock 2/5/15/30 cadence, provider deadlines/backoff, force constraints, cancellation isolation, no follow-up queue.
+Implement fake-clock 2/5/15/30 cadence; 10-minute idle exit; 30-second activation
+lease renewed every 10 seconds; 30-second provider timeout; and 30-second-to-15-minute
+exponential backoff with deterministic full jitter. Later provider rate-limit/retry
+deadlines win. Implement force constraints, cancellation isolation, no follow-up queue.
 ### Step 5: Harden persistence/recovery
-Atomic publication, alias/catalog transaction, corrupt-state quarantine, owner-lost recovery, immutable last-good.
+Use one atomic V1 envelope for projection, aliases, catalog revision, deadlines, and
+incarnation. Add corrupt-state quarantine, owner-lost recovery, immutable last-good,
+and a 1 MiB length-delimited frame; F25/40 accounts must stay below 75%.
 
 ## Test plan
 Adversarial multi-process suite plus legacy coordinator/broker tests, transport permissions, crash fault injection, zero direct executor construction by clients.
@@ -56,4 +61,3 @@ In-process fallback needed; endpoint permits another user; crash can publish mix
 
 ## Maintenance notes
 Broker protocol/persistence versions and policy constants live in one module with fake-clock tests.
-

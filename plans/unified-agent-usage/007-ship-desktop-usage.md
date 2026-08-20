@@ -25,7 +25,7 @@ Canonical V1 projection/client, boltffi generator, production native seams/asset
 Production desktop exists; prototype proves target visuals/interactions but its store/scenarios are nonproduction.
 
 ## Commands you will need
-`rtk cargo test -p jackin-usage-ffi canonical_projection -- --test-threads=1`; `rtk mise run desktop-bindings-check`; `desktop-ci`; `desktop-merge`; prototype/signoff evidence commands.
+`rtk cargo test -p jackin-usage-ffi canonical_projection -- --test-threads=1`; `rtk mise run desktop-bindings-check`; `rtk mise run desktop-ci`; `rtk mise run desktop-merge`; prototype/signoff evidence commands.
 
 ## Suggested executor toolkit
 boltffi, AppKit system status item/toolbar/split/popover, SwiftUI typed views, XCTest/UI tests.
@@ -59,4 +59,3 @@ Custom imitation replaces working native chrome; prototype harness enters produc
 
 ## Maintenance notes
 System-owned visuals follow current OS; authored tokens/assets retain signoff and accessibility evidence.
-

@@ -37,8 +37,10 @@ Stay on current branch/PR. Commit `test(usage): freeze unified baseline`, sign o
 ## Steps
 ### Step 1: Record baseline and schema fixtures
 Add canonical valid/invalid V1 envelopes and provider/account/window/state fixture matrix without secrets.
-### Step 2: Create nonzero test targets
-Create named test modules from research 05 so every later filtered command executes at least one failing/pending contract assertion.
+### Step 2: Create compile-safe contract harnesses
+Create passing fixture/schema/bypass harnesses and reserve later target names in the
+command manifest. Do not commit known-failing tests. Each behavior plan adds its
+nonzero behavioral target atomically with the implementation it proves.
 ### Step 3: Automate bypass inventory
 Turn the static provider-call/freshness-owner search into a governed test or xtask allowlist with every current bypass classified.
 ### Step 4: Freeze surface golden matrices
@@ -55,4 +57,3 @@ Schema contradicts specs; a secret-derived value enters fixtures; test target re
 
 ## Maintenance notes
 Update fixture schema and bypass allowlist only with the owning contract change.
-

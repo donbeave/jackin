@@ -40,7 +40,8 @@ recorded in plans, logs, fixtures, or repository files.
 
 ### Requirement: single delivery branch
 
-All implementation, documentation, proof, commits, and PR updates SHALL remain on
-`chore/roadmap-unified-agent-usage` and PR #898. No plan may create or direct creation
-of another branch or PR.
-
+All jackin❯ implementation, documentation, proof, commits, and PR updates SHALL remain
+on `chore/roadmap-unified-agent-usage` and PR #898. Stable tag publication occurs only
+after that PR merges. A release workflow's required external Homebrew-tap PR is a
+distribution operation, not another jackin❯ implementation PR, and requires explicit
+operator approval and recorded evidence.

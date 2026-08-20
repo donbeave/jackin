@@ -36,7 +36,10 @@ typed provisional identity. Source ordinals MUST NOT be durable IDs.
 Current read-only configuration discovery SHALL own host membership. Durable history
 MUST NOT resurrect absent members. Providers SHALL use the settled provider-only names
 and order: OpenAI, Anthropic, Amp, xAI, Z.AI, Kimi, MiniMax, OpenCode. Accounts SHALL
-sort by locale-aware, case-insensitive full display label and stable ID tie-break.
+sort in Rust with a pinned ICU4X collator using runtime locale and deterministic `und`
+fallback, case-insensitive full display label, then stable ID. The locked ICU/data
+version plus `und`, English, Turkish, and Vietnamese goldens SHALL freeze ranks;
+adapters SHALL consume serialized ranks and never sort.
 
 #### Scenario: refresh does not reorder accounts
 
@@ -70,4 +73,3 @@ then other. It MUST NOT invent provider aggregates or reorder account navigation
 - GIVEN an OpenAI account resolved through a runtime agent
 - THEN rich and simple surfaces display `OpenAI`
 - AND do not display the runtime or agent name as provider identity.
-

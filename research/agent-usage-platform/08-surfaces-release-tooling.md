@@ -1,6 +1,6 @@
 # 08 — Surface seams and release tooling
 
-Vetted: pending independent citation review
+Vetted: 2026-08-21
 Questions: Where must each planned usage surface attach, what existing owners must remain authoritative, and which repository commands prove implementation, rendering, signing, and publication?
 Informs: unified-agent-usage
 Method: direct source inspection, task-definition inspection, release-workflow inspection, and active branch/PR verification on 2026-08-21

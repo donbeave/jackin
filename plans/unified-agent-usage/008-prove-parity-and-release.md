@@ -22,7 +22,7 @@ All golden fixtures/tests, bypass audit, desktop release scripts, Apple/Homebrew
 Every surface implemented on current branch; public distribution proof remains.
 
 ## Commands you will need
-All named focused tests; `rtk mise run ci`; `desktop-ci`; `desktop-merge`; `desktop-sign-notarize`; `desktop-release-state`; Homebrew cask audit/install/uninstall commands documented by research 08.
+All named focused tests; `rtk mise run ci`; `rtk mise run desktop-ci`; `rtk mise run desktop-merge`; `rtk mise run desktop-sign-notarize`; `rtk mise run desktop-release-state`; exact tag/release/cask commands from research 08 after revalidation against current workflow help.
 
 ## Suggested executor toolkit
 Cross-process harness, fixture diff tool, macOS quarantine/Gatekeeper tooling, immutable artifact digest ledger.
@@ -43,7 +43,12 @@ CLI, Console, Capsule, FFI/desktop, accessibility, runtime/display and documenta
 ### Step 4: Produce and attest one artifact
 Build once; record digest; Developer ID sign, notarize, staple, quarantine-aware Gatekeeper launch against that digest.
 ### Step 5: Publish and install same digest
-Publish immutable artifact, update cask, audit, clean install/launch/uninstall, prove digest continuity.
+After every premerge gate passes, merge PR #898, tag that exact merge result through the
+existing stable release workflow, and prove immutable publication, cask audit, clean
+install/launch/uninstall, and digest continuity. This creates no additional jackin❯
+implementation branch or PR. If the separate Homebrew tap requires its normal automated
+release PR, treat it as an external distribution operation, not implementation work;
+record its URL and require operator approval rather than silently bypassing it.
 ### Step 6: Close roadmap and PR evidence
 Update user/contributor docs, roadmap status/log/index, PR checklist and exact command/results. Keep PR #898 as sole delivery PR.
 
@@ -51,11 +56,12 @@ Update user/contributor docs, roadmap status/log/index, PR checklist and exact c
 Every command from research 05/08 plus full repo gates. Credential-absent state is BLOCKED, never falsely passed; noncredentialed gates remain runnable.
 
 ## Done criteria
-All B1–B8 pass; must-not registry has executable enforcement; exact public digest completes full chain; roadmap/docs current; PR #898 ready.
+All B1–B8 pass; must-not registry has executable enforcement; PR #898 is the only
+jackin❯ implementation PR and is merged before tag publication; the exact public digest
+completes the release/cask chain; roadmap/docs are current.
 
 ## STOP conditions
 Artifact digest changes mid-chain; signing/notary/cask credential absent; any direct provider bypass; any surface semantic mismatch; branch/PR differs.
 
 ## Maintenance notes
 Preserve release evidence without secrets; future schema/provider changes rerun parity and distribution gates.
-

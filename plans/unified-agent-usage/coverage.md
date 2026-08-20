@@ -160,9 +160,9 @@ PR may be created.
 
 | ID | Question | Research topic | Status |
 |---|---|---|---|
-| Q1 | Codex/Z.AI semantic window classifier | agent-usage-platform/07 | pending |
-| Q2 | Supported Grok quota source | agent-usage-platform/07 | pending |
-| Q3 | OpenCode authentication and usage contract | agent-usage-platform/07 | pending |
+| Q1 | Codex/Z.AI semantic window classifier | agent-usage-platform/07 | direction closed; captured fixtures Plan 004 |
+| Q2 | Supported Grok quota source | agent-usage-platform/07 | direction closed; authenticated/failure proof Plan 004 |
+| Q3 | OpenCode authentication and usage contract | agent-usage-platform/07 | closed; unresolved identity is explicit |
 
 ## Deferred
 
