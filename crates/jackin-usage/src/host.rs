@@ -129,6 +129,21 @@ impl HostSurfaceId {
         }
     }
 
+    /// Canonical provider identity, separate from legacy agent routing ids.
+    #[must_use]
+    pub const fn provider_id(self) -> &'static str {
+        match self {
+            Self::Claude => "anthropic",
+            Self::Codex => "openai",
+            Self::Amp => "amp",
+            Self::Grok => "xai",
+            Self::Zai => "zai",
+            Self::Kimi => "kimi",
+            Self::Minimax => "minimax",
+            Self::OpenCode => "opencode",
+        }
+    }
+
     /// Human label matching Capsule usage tabs.
     #[must_use]
     pub const fn label(self) -> &'static str {
@@ -550,6 +565,7 @@ pub struct HostUsageRuntime {
     canonical_instance_id: String,
     canonical_content_id: Option<String>,
     canonical_projection_cache: Option<UsageProjectionV1>,
+    canonical_identity_graph: accounts::CanonicalIdentityGraph,
 }
 
 impl HostUsageRuntime {
@@ -577,6 +593,7 @@ impl HostUsageRuntime {
             canonical_instance_id: canonical_instance_id(),
             canonical_content_id: None,
             canonical_projection_cache: None,
+            canonical_identity_graph: accounts::CanonicalIdentityGraph::default(),
         }
     }
 

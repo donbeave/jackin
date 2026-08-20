@@ -34,6 +34,45 @@ pub struct CanonicalAccountIdentity {
     pub subject: CanonicalAccountSubject,
 }
 
+/// Proven capability aliases and their complete typed canonical evidence.
+#[derive(Debug, Default, Clone)]
+pub(super) struct CanonicalIdentityGraph {
+    evidence_by_id: BTreeMap<String, CanonicalAccountIdentity>,
+    aliases: BTreeMap<String, String>,
+}
+
+impl CanonicalIdentityGraph {
+    pub(super) fn resolve_alias(
+        &mut self,
+        capability_id: &str,
+        identity: &CanonicalAccountIdentity,
+    ) -> Result<String, String> {
+        let canonical_id = identity.canonical_id_v1();
+        if self
+            .evidence_by_id
+            .get(&canonical_id)
+            .is_some_and(|existing| existing != identity)
+        {
+            return Err("canonical account identity collision".to_owned());
+        }
+        if self
+            .aliases
+            .get(capability_id)
+            .is_some_and(|existing| existing != &canonical_id)
+        {
+            return Err("canonical account alias collision".to_owned());
+        }
+
+        // Commit both sides only after every invariant succeeds. Replays are
+        // idempotent and cannot expose a half-written alias transition.
+        self.evidence_by_id
+            .insert(canonical_id.clone(), identity.clone());
+        self.aliases
+            .insert(capability_id.to_owned(), canonical_id.clone());
+        Ok(canonical_id)
+    }
+}
+
 impl CanonicalAccountIdentity {
     pub(super) fn from_view(surface: HostSurfaceId, view: &FocusedUsageView) -> Option<Self> {
         if surface_for_view(view) != Some(surface)
@@ -66,7 +105,7 @@ impl CanonicalAccountIdentity {
                 normalize_stable_handle(handle)
             ),
         };
-        account_key_hash(self.surface.id(), &evidence)
+        account_key_hash(self.surface.provider_id(), &evidence)
     }
 }
 

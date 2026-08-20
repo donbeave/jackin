@@ -232,6 +232,20 @@ pub enum UsageQuotaStateV1 {
     Error,
 }
 
+/// Semantic quota-window category used for Rust-owned summary priority.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum UsageWindowCategoryV1 {
+    /// Daily, weekly, or monthly provider allowance.
+    LongRange,
+    /// Provider-supplied model-specific allowance.
+    Model,
+    /// Short session or rolling interaction allowance.
+    Session,
+    /// Provider-defined quota without a more specific category.
+    Other,
+}
+
 /// Scope of one sanitized canonical issue.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
@@ -300,6 +314,8 @@ pub struct UsageLimitWindowV1 {
     pub window_id: String,
     /// Zero-based Rust-owned display rank.
     pub rank: u32,
+    /// Rust-owned semantic category; consumers never parse `label`.
+    pub category: UsageWindowCategoryV1,
     /// Rust-owned provider window label.
     pub label: String,
     /// Rust-owned primary value label.

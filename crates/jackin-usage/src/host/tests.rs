@@ -135,7 +135,7 @@ fn canonical_projection_uses_current_membership_provider_names_and_rust_ranks() 
     assert_eq!(projection.providers[0].accounts[0].windows[0].rank, 0);
 
     let selected = UsageDestination::Account {
-        provider_id: "codex".to_owned(),
+        provider_id: "openai".to_owned(),
         canonical_account_id: projection.providers[0].accounts[1]
             .canonical_account_id
             .clone(),
@@ -145,7 +145,7 @@ fn canonical_projection_uses_current_membership_provider_names_and_rust_ranks() 
         selected
     );
     let removed = UsageDestination::Account {
-        provider_id: "codex".to_owned(),
+        provider_id: "openai".to_owned(),
         canonical_account_id: "removed".to_owned(),
     };
     assert_eq!(
@@ -174,6 +174,40 @@ fn canonical_projection_provider_order_is_settled_and_not_agent_named() {
             "MiniMax",
             "OpenCode"
         ]
+    );
+}
+
+#[test]
+fn canonical_projection_alias_transition_is_atomic_idempotent_and_fail_closed() {
+    let mut graph = accounts::CanonicalIdentityGraph::default();
+    let first = CanonicalAccountIdentity {
+        surface: HostSurfaceId::Codex,
+        subject: CanonicalAccountSubject::ProviderId("organization-a".to_owned()),
+    };
+    let conflicting = CanonicalAccountIdentity {
+        surface: HostSurfaceId::Codex,
+        subject: CanonicalAccountSubject::ProviderId("organization-b".to_owned()),
+    };
+    let canonical_id = graph
+        .resolve_alias("capability-a", &first)
+        .expect("first alias");
+    assert_eq!(
+        graph
+            .resolve_alias("capability-a", &first)
+            .expect("alias replay"),
+        canonical_id
+    );
+    assert_eq!(
+        graph
+            .resolve_alias("capability-a", &conflicting)
+            .expect_err("conflicting alias"),
+        "canonical account alias collision"
+    );
+    assert_eq!(
+        graph
+            .resolve_alias("capability-a", &first)
+            .expect("failed transaction preserves alias"),
+        canonical_id
     );
 }
 

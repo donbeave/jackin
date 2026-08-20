@@ -28,6 +28,7 @@
             {
               "window_id": "weekly",
               "rank": 0,
+              "category": "long_range",
               "label": "Weekly",
               "value_label": "57% left",
               "reset_label": "Resets in 3d",

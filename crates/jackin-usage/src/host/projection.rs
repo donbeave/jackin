@@ -15,7 +15,7 @@ use jackin_protocol::usage_broker::{
     UsageAccountV1, UsageFreshnessPhaseV1, UsageFreshnessV1, UsageIdentityKindV1, UsageLifecycleV1,
     UsageLimitWindowV1, UsageMembershipStateV1, UsagePercent, UsageProjectionRefreshStateV1,
     UsageProjectionSchemaV1, UsageProjectionV1, UsageProviderV1, UsageQuotaStateV1,
-    UsageUnresolvedV1,
+    UsageUnresolvedV1, UsageWindowCategoryV1,
 };
 
 use super::accounts::{AccountCatalog, AccountCatalogEntry, CanonicalAccountSubject};
@@ -92,6 +92,18 @@ impl HostUsageRuntime {
     /// Build the immutable surface-neutral V1 publication from current discovery.
     pub fn canonical_projection(&mut self, locale: &str) -> Result<UsageProjectionV1, String> {
         self.require_open()?;
+        let aliases = self
+            .discovery
+            .as_ref()
+            .ok_or_else(|| "usage discovery has not completed".to_owned())?
+            .canonical_aliases()
+            .map(|(capability_id, identity)| (capability_id.to_owned(), identity.clone()))
+            .collect::<Vec<_>>();
+        for (capability_id, identity) in aliases {
+            let _canonical_id = self
+                .canonical_identity_graph
+                .resolve_alias(&capability_id, &identity)?;
+        }
         let catalog = self.materialize_account_catalog()?;
         let discovery = self
             .discovery
@@ -209,7 +221,7 @@ pub(super) fn build_canonical_projection(
         }
         let freshness = provider_freshness(&accounts, metadata.broker_generation);
         providers.push(UsageProviderV1 {
-            provider_id: surface.id().to_owned(),
+            provider_id: surface.provider_id().to_owned(),
             display_name: surface.label().to_owned(),
             rank: u32::try_from(providers.len()).map_err(|_| "provider rank overflow")?,
             membership_state: UsageMembershipStateV1::Current,
@@ -222,7 +234,10 @@ pub(super) fn build_canonical_projection(
     let mut unresolved = discovery
         .unresolved_capabilities()
         .map(|candidate| UsageUnresolvedV1 {
-            provider_id: candidate.surface_id.clone(),
+            provider_id: HostSurfaceId::from_id(&candidate.surface_id).map_or_else(
+                || candidate.surface_id.clone(),
+                |surface| surface.provider_id().to_owned(),
+            ),
             capability_id: candidate.capability_id.clone(),
             configuration_count: u32::try_from(candidate.provenance.len()).unwrap_or(u32::MAX),
             state: UsageLifecycleV1::NeedsLogin,
@@ -260,7 +275,7 @@ pub(super) fn build_canonical_projection(
 fn provider_rank(provider_id: &str) -> usize {
     HostSurfaceId::ALL
         .iter()
-        .position(|surface| surface.id() == provider_id)
+        .position(|surface| surface.provider_id() == provider_id)
         .unwrap_or(usize::MAX)
 }
 
@@ -323,6 +338,16 @@ fn project_window(
     Ok(UsageLimitWindowV1 {
         window_id: account_key_hash(canonical_account_id, &format!("canonical-window-v1:{rank}")),
         rank: u32::try_from(rank).map_err(|_| "window rank overflow")?,
+        category: match bucket.status_slot {
+            Some(
+                jackin_protocol::control::StatusSlot::Daily
+                | jackin_protocol::control::StatusSlot::Weekly,
+            ) => UsageWindowCategoryV1::LongRange,
+            Some(jackin_protocol::control::StatusSlot::Session) => UsageWindowCategoryV1::Session,
+            Some(jackin_protocol::control::StatusSlot::Spend) | None => {
+                UsageWindowCategoryV1::Other
+            }
+        },
         label: bucket.label.clone(),
         value_label,
         reset_label: bucket.reset_label.clone().unwrap_or_default(),
@@ -438,3 +463,6 @@ const fn status_label(status: UsageSnapshotStatus) -> &'static str {
         UsageSnapshotStatus::Error => "Error",
     }
 }
+
+#[cfg(test)]
+mod tests;

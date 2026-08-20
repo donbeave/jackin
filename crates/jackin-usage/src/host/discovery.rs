@@ -386,6 +386,17 @@ impl ValidatedUsageDiscovery {
             })
         })
     }
+
+    pub(super) fn canonical_aliases(
+        &self,
+    ) -> impl Iterator<Item = (&str, &CanonicalAccountIdentity)> {
+        self.bindings.iter().filter_map(|binding| {
+            binding
+                .identity
+                .as_ref()
+                .map(|identity| (binding.capability_id.as_str(), identity))
+        })
+    }
 }
 
 impl std::fmt::Debug for ValidatedUsageDiscovery {
