@@ -468,6 +468,10 @@ authenticated and failure fixtures before shipping; these are not product questi
   resolved launch membership boundary explicit and deduplicated, added truthful
   zero-agent copy without Retry, and removed the direct Claude diagnostic
   bypass. Focused Capsule/runtime tests, clippy, and formatting pass.
+- 2026-08-21 — Plan 007 — completed the production desktop usage surface on the
+  shared sanitized projection: native status modes/popover, dark-only Usage
+  window matrix, account-aware selection/recovery, centered brand, minimum-size
+  envelope, accessibility variants, and native format/lint/test/CI gates pass.
   moved to PLANNED. All implementation remains on the current branch and PR #898.
 - 2026-08-21 — Plan 001 — froze secret-free V1 contract fixtures, the surface-state
   matrix, classified provider-call inventory with injection detection, reserved test

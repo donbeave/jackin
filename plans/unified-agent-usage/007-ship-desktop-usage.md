@@ -1,7 +1,7 @@
 # Plan 007: Ship the native desktop usage experience
 
 ## Status
-TODO
+DONE
 
 ## Why this matters
 The blessed prototype must become production-native behavior over shared Rust truth, not parallel Swift logic.
@@ -59,3 +59,22 @@ Custom imitation replaces working native chrome; prototype harness enters produc
 
 ## Maintenance notes
 System-owned visuals follow current OS; authored tokens/assets retain signoff and accessibility evidence.
+
+## Execution evidence
+
+- Production FFI/bridge, status-item popover, Usage window, selection recovery,
+  native toolbar refresh, centered `jackin❯` identity, minimum-size constants,
+  accessibility settings, and account-aware detail behavior were verified by
+  `rtk mise run desktop-bindings-check`, `rtk mise run desktop-ci`, and
+  `rtk mise run desktop-merge` on this branch.
+- Native strict lint and format pass with `rtk mise run desktop-lint` and
+  `rtk mise run desktop-format-check`.
+- Rust bridge and projection tests pass through
+  `rtk cargo test -p jackin-usage-ffi canonical_projection --offline --
+  --test-threads=1` and the desktop test matrix.
+- `native/Scripts/VisualQA/capture-final-matrix.sh` now records the blessed
+  dark-only F00–F14 window/popover matrix at minimum, default, and expanded
+  sizes; `bash -n` passes. Light-mode captures are intentionally excluded by
+  the settled dark-only desktop decision.
+- The production architecture remains native-owned: prototype fixtures and
+  stores are not imported into `native/Sources`.

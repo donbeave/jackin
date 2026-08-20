@@ -55,7 +55,6 @@ public struct UsageWindowSidebar: View {
             .listStyle(.sidebar)
             .accessibilityLabel("Usage providers sidebar")
             .accessibilityIdentifier("usage.sidebar")
-
         }
         .frame(minWidth: 190, idealWidth: 220, maxWidth: 280)
     }

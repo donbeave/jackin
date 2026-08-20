@@ -17,10 +17,10 @@ same integration seams.
 | [004](004-complete-provider-adapters.md) | Eight-provider quota parity | 002, 003 | DONE |
 | [005](005-ship-cli-and-console.md) | Simple CLI and native Console Usage | 003, 004 | DONE |
 | [006](006-ship-capsule-usage.md) | Resolved-agent Capsule Usage | 003, 004 | DONE |
-| [007](007-ship-desktop-usage.md) | FFI, popover, and native Usage window | 003, 004 | TODO |
+| [007](007-ship-desktop-usage.md) | FFI, popover, and native Usage window | 003, 004 | DONE |
 | [008](008-prove-parity-and-release.md) | Cross-surface proof and signed distribution | 005, 006, 007 | TODO |
 
-Frozen package fingerprint: `3f51e0537558046c92ee36736f0e0b9629675784`.
+Frozen package fingerprint: `749072baaadafe956d07cee493525d66e44c4a24`.
 
 ## Execution rules
 

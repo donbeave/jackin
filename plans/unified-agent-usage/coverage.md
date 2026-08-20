@@ -15,8 +15,8 @@ PR may be created.
 | S4 | Console successful empty inventory | §Screens/Console usage Empty inventory | pending | pending | pending |
 | S5 | Console stale and partial-provider failure | §Screens/Console usage Stale and partial failure | pending | pending | pending |
 | S6 | Console global failure | §Screens/Console usage Global failure | pending | pending | pending |
-| S7 | Desktop Usage window and runtime/accessibility matrix | §Screens/Desktop usage | pending | pending | pending |
-| S8 | Desktop provider-focused status popover | §Screens/Desktop status popover | pending | pending | pending |
+| S7 | Desktop Usage window and runtime/accessibility matrix | §Screens/Desktop usage | covered | 007 | DONE |
+| S8 | Desktop provider-focused status popover | §Screens/Desktop status popover | covered | 007 | DONE |
 | S9 | Bare CLI compact human output | §Screens/CLI usage output schematic | covered | 005 | DONE |
 | S10 | CLI stale, partial, empty, total failure, JSON | §Screens/CLI usage output states | covered | 005 | DONE |
 | S11 | Capsule Usage Overview | §Screens/Capsule usage Overview | covered | 006 | DONE |
@@ -41,9 +41,9 @@ PR may be created.
 | F12 | Instance accounts/verify retained without cache/refresh bypass authority | D10; W3 | covered | 005 | DONE |
 | F13 | Top-level Console Usage route using confirmed native Console grammar | D7; D8; D26 | covered | 005 | DONE |
 | F14 | Capsule launch-config membership, lifecycle, previews, account tabs, and launch neutrality | D2; D11-D13; D28; D31-D32 | covered | 006 | DONE |
-| F15 | Desktop filtered projection through sanitized boltffi DTOs; Swift display-only | D14-D15; §Data & integrations | pending | pending | pending |
-| F16 | Desktop status modes, popover handoff, native Usage window, Settings retention | D17-D20; S7-S8 | pending | pending | pending |
-| F17 | Stable selection; removal returns to Overview with persistent inline notice | D20; D34 | pending | pending | pending |
+| F15 | Desktop filtered projection through sanitized boltffi DTOs; Swift display-only | D14-D15; §Data & integrations | covered | 007 | DONE |
+| F16 | Desktop status modes, popover handoff, native Usage window, Settings retention | D17-D20; S7-S8 | covered | 007 | DONE |
+| F17 | Stable selection; removal returns to Overview with persistent inline notice | D20; D34 | covered | 007 | DONE |
 | F18 | Developer ID, notarization, immutable public artifact, Homebrew cask proof | D19; §Quality bar | pending | pending | pending |
 | F19 | Cross-surface fixture parity and no-direct-fetch architecture proof | §Quality bar | pending | pending | pending |
 | F20 | All implementation executes on current branch and PR | Invocation context | covered | all | IN PROGRESS |
@@ -56,7 +56,7 @@ PR may be created.
 | W2 | Host read through bare CLI | S9-S10 | covered | 005 | DONE |
 | W3 | Instance inspection through CLI | S10, S11-S13 | covered | 005 | DONE |
 | W4 | Capsule pre-session quota preview and initialization transition | S11-S13 | covered | 006 | DONE |
-| W5 | Desktop status glance to Usage detail | S7-S8 | pending | pending | pending |
+| W5 | Desktop status glance to Usage detail | S7-S8 | covered | 007 | DONE |
 | W6 | Shared refresh, degradation, cancellation, owner exit, and recovery | S1-S13 | covered | 003, 005-008 | IN PROGRESS |
 
 ## Must-not anchors

@@ -137,10 +137,13 @@ public final class UsageWindowController: NSObject, NSWindowDelegate {
             window.collectionBehavior.insert(.moveToActiveSpace)
         }
         window.contentMinSize = UsageWindowMetrics.minimumContentSize
-        window.minSize = NSWindow.frameRect(
-            forContentRect: NSRect(origin: .zero, size: UsageWindowMetrics.minimumContentSize),
-            styleMask: window.styleMask
-        ).size
+
+        window.minSize =
+            NSWindow.frameRect(
+                forContentRect: NSRect(
+                    origin: .zero, size: UsageWindowMetrics.minimumContentSize),
+                styleMask: window.styleMask
+            ).size
         window.identifier = NSUserInterfaceItemIdentifier("usage-window")
         window.setAccessibilityIdentifier("usage-window")
         if !store.usesFixture {
@@ -184,9 +187,9 @@ public final class UsageWindowController: NSObject, NSWindowDelegate {
 
     private func installCenteredBrand(in window: NSWindow) {
         guard let titlebar = window.standardWindowButton(.closeButton)?.superview else { return }
-        titlebar.subviews
-            .filter { $0.identifier?.rawValue == "usage.brand-title" }
-            .forEach { $0.removeFromSuperview() }
+        for subview in titlebar.subviews where subview.identifier?.rawValue == "usage.brand-title" {
+            subview.removeFromSuperview()
+        }
         let host = NSHostingView(rootView: JackinBrandSignature(width: 68, height: 18))
         host.translatesAutoresizingMaskIntoConstraints = false
         host.setAccessibilityLabel("jackin❯ desktop")

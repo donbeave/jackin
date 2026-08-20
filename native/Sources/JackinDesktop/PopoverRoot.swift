@@ -93,17 +93,17 @@ public struct PopoverRoot: View {
             .accessibilityHidden(false)
             .accessibilityLabel("jackin❯ desktop")
             .accessibilityAddTraits(.isHeader)
-        .frame(maxWidth: .infinity)
-        .frame(height: 44)
-        .overlay(alignment: .trailing) {
-            if store.usesFixture {
-                Text("Fixture")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.primary)
-                    .padding(.trailing, 12)
-                    .accessibilityIdentifier("popover.fixture-badge")
+            .frame(maxWidth: .infinity)
+            .frame(height: 44)
+            .overlay(alignment: .trailing) {
+                if store.usesFixture {
+                    Text("Fixture")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.primary)
+                        .padding(.trailing, 12)
+                        .accessibilityIdentifier("popover.fixture-badge")
+                }
             }
-        }
     }
 
     @ViewBuilder

@@ -27,7 +27,6 @@
     { "path": "crates/jackin-usage/src/usage/codex.rs", "symbol": "fetch_codex_oauth_usage_refreshing", "classification": "adapter_internal" },
     { "path": "crates/jackin-usage/src/usage/codex.rs", "symbol": "fetch_codex_oauth_reset_credits", "classification": "adapter_internal" },
     { "path": "crates/jackin-usage/src/usage/codex.rs", "symbol": "fetch_codex_oauth_usage", "classification": "adapter_internal" },
-    { "path": "crates/jackin-usage/src/usage/codex.rs", "symbol": "refresh_codex_access_token", "classification": "adapter_internal" },
-    { "path": "crates/jackin-capsule/src/client.rs", "symbol": "run_claude_usage_diagnostic", "classification": "legacy_bypass" }
+    { "path": "crates/jackin-usage/src/usage/codex.rs", "symbol": "refresh_codex_access_token", "classification": "adapter_internal" }
   ]
 }
