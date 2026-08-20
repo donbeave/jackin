@@ -83,3 +83,40 @@ fn stdio_tunnel_envelope_round_trips_without_account_metadata() {
         request
     );
 }
+
+#[test]
+fn canonical_projection_v1_round_trips_frozen_fixture() {
+    let fixture = include_str!(
+        "../../../jackin-usage/tests/fixtures/contracts/usage-projection-v1-current.json"
+    );
+    let projection: UsageProjectionV1 = serde_json::from_str(fixture).unwrap();
+    projection.validate().unwrap();
+    let encoded = serde_json::to_value(&projection).unwrap();
+    let original: serde_json::Value = serde_json::from_str(fixture).unwrap();
+    assert_eq!(encoded, original);
+}
+
+#[test]
+fn canonical_projection_v1_rejects_unknown_major() {
+    let error = serde_json::from_str::<UsageProjectionV1>(
+        r#"{"schema_version":2,"projection_id":"p","generated_at_epoch":0,"discovery_revision":"d","broker_instance_id":"b","broker_generation":0,"refresh_state":"idle","providers":[],"unresolved":[],"issues":[]}"#,
+    )
+    .unwrap_err();
+    assert!(
+        error
+            .to_string()
+            .contains("unsupported usage projection schema")
+    );
+}
+
+#[test]
+fn canonical_projection_v1_rejects_invalid_percent_and_cross_field_shape() {
+    serde_json::from_str::<UsagePercent>("101").unwrap_err();
+    let mut projection: UsageProjectionV1 = serde_json::from_str(include_str!(
+        "../../../jackin-usage/tests/fixtures/contracts/usage-projection-v1-current.json"
+    ))
+    .unwrap();
+    let window = &mut projection.providers[0].accounts[0].windows[0];
+    window.used_percent = window.remaining_percent;
+    projection.validate().unwrap_err();
+}
