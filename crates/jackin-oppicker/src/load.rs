@@ -15,7 +15,7 @@ use crate::{
     sort_fields_by_concealed_first, vaults_loaded_plan,
 };
 
-use crate::state::{LoadResult, OpPickerState, list_state_for_count};
+use crate::state::{LoadResult, OpPickerState, collection_state_for_count};
 
 impl Default for OpPickerState {
     fn default() -> Self {
@@ -58,17 +58,17 @@ impl OpPickerState {
             stage: OpPickerStage::Account,
             filter_buf: String::new(),
             accounts: Vec::new(),
-            account_list_state: list_state_for_count(0),
+            account_list_state: collection_state_for_count(0),
             selected_account: None,
             vaults: Vec::new(),
-            vault_list_state: list_state_for_count(0),
+            vault_list_state: collection_state_for_count(0),
             selected_vault: None,
             items: Vec::new(),
-            item_list_state: list_state_for_count(0),
+            item_list_state: collection_state_for_count(0),
             selected_item: None,
             fields: Vec::new(),
-            field_list_state: list_state_for_count(0),
-            section_list_state: list_state_for_count(0),
+            field_list_state: collection_state_for_count(0),
+            section_list_state: collection_state_for_count(0),
             selected_section: None,
             collapsed_sections: std::collections::HashSet::new(),
             load_state: OpLoadState::Loading { spinner_tick: 0 },
@@ -121,7 +121,7 @@ impl OpPickerState {
             }
             AccountsLoadedPlan::ShowAccountPane => {
                 self.accounts = accounts;
-                self.account_list_state = list_state_for_count(self.accounts.len());
+                self.account_list_state = collection_state_for_count(self.accounts.len());
                 self.stage = OpPickerStage::Account;
                 self.load_state = OpLoadState::Ready;
             }
@@ -249,7 +249,7 @@ impl OpPickerState {
                     .put_vaults(self.selected_account_id_ref(), vaults.clone());
                 self.vaults = vaults;
                 if let VaultsLoadedPlan::ShowVaultPane { selected } = plan {
-                    self.vault_list_state.select(selected);
+                    self.vault_list_state.set_active(selected);
                 }
                 self.load_state = OpLoadState::Ready;
                 true
@@ -269,7 +269,7 @@ impl OpPickerState {
                 );
                 let plan = items_loaded_plan(items.len());
                 self.items = items;
-                self.item_list_state.select(plan.selected);
+                self.item_list_state.set_active(plan.selected);
                 self.load_state = OpLoadState::Ready;
                 true
             }
@@ -306,7 +306,7 @@ impl OpPickerState {
                         if clear_refresh_in_place {
                             self.field_refresh_in_place = false;
                         }
-                        self.field_list_state.select(field_selected);
+                        self.field_list_state.set_active(field_selected);
                     }
                     FieldsLoadedPlan::ShowSectionPane {
                         stage,
@@ -317,7 +317,7 @@ impl OpPickerState {
                             self.selected_section = None;
                         }
                         self.stage = stage;
-                        self.section_list_state.select(section_selected);
+                        self.section_list_state.set_active(section_selected);
                     }
                     FieldsLoadedPlan::ShowFieldPane {
                         field_selected,
@@ -326,7 +326,7 @@ impl OpPickerState {
                         if clear_selected_section {
                             self.selected_section = None;
                         }
-                        self.field_list_state.select(field_selected);
+                        self.field_list_state.set_active(field_selected);
                     }
                 }
                 self.load_state = OpLoadState::Ready;

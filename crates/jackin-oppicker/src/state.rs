@@ -11,7 +11,7 @@ use std::collections::HashSet;
 use std::rc::Rc;
 
 use crate::{LoadSubscription, TextInputState};
-use termrock::widgets::ListState;
+use termrock::interaction::{CollectionItem, CollectionState};
 
 use crate::{
     FieldDisplayRow, FieldLabelOrigin, OpLoadState, OpPickerAccount, OpPickerCache, OpPickerField,
@@ -32,20 +32,20 @@ pub struct OpPickerState {
     pub filter_buf: String,
 
     pub accounts: Vec<OpPickerAccount>,
-    pub account_list_state: ListState<usize>,
+    pub account_list_state: CollectionState<usize>,
     pub selected_account: Option<OpPickerAccount>,
 
     pub vaults: Vec<OpPickerVault>,
-    pub vault_list_state: ListState<usize>,
+    pub vault_list_state: CollectionState<usize>,
     pub selected_vault: Option<OpPickerVault>,
 
     pub items: Vec<OpPickerItem>,
-    pub item_list_state: ListState<usize>,
+    pub item_list_state: CollectionState<usize>,
     pub selected_item: Option<OpPickerItem>,
 
     pub fields: Vec<OpPickerField>,
-    pub field_list_state: ListState<usize>,
-    pub section_list_state: ListState<usize>,
+    pub field_list_state: CollectionState<usize>,
+    pub section_list_state: CollectionState<usize>,
     /// The section chosen on the Section stage (Create mode), scoping the
     /// Field stage. `None` = the unsectioned `(root)` choice. Reset to
     /// `None` whenever a fresh item's fields load.
@@ -261,11 +261,43 @@ impl OpPickerState {
     }
 }
 
+/// `wrap` stays at its default `true` (the keyboard cycle path). No
+/// selection when empty, else the first row — the retired `for_count`
+/// constructor's exact semantics.
 #[must_use]
-pub(crate) fn list_state_for_count(count: usize) -> ListState<usize> {
-    ListState::for_count(count)
+pub(crate) fn collection_state_for_count(count: usize) -> CollectionState<usize> {
+    let mut state = CollectionState::new();
+    state.set_active(crate::first_selection(count));
+    state
 }
 
-fn scroll_select(list_state: &mut ListState<usize>, count: usize, delta: i16) -> bool {
-    list_state.move_index(count, isize::from(delta))
+/// Index-keyed projection for `move_by`. Labels are empty on purpose: the
+/// label only feeds upstream typeahead, which this picker never drives.
+#[must_use]
+pub(crate) fn index_collection_items(count: usize) -> Vec<CollectionItem<usize>> {
+    (0..count)
+        .map(|index| CollectionItem::new(index, String::new()))
+        .collect()
+}
+
+/// Wheel moves the selection WITHOUT wrapping. Carve-out (ch06 row 9):
+/// `CollectionState`'s `wrap` flag is state-level and already serves the
+/// keyboard cycle, so the clamp half stays a product helper replicating
+/// the retired list wrapper's clamping-move arithmetic — never per-event
+/// flag flips.
+fn scroll_select(list_state: &mut CollectionState<usize>, count: usize, delta: i16) -> bool {
+    if count == 0 {
+        let changed = list_state.active().is_some();
+        list_state.set_active(None);
+        return changed;
+    }
+    let current = list_state.active().copied().unwrap_or(0).min(count - 1);
+    let delta = isize::from(delta);
+    let next = if delta.is_negative() {
+        current.saturating_sub(delta.unsigned_abs())
+    } else {
+        current.saturating_add(delta.unsigned_abs()).min(count - 1)
+    };
+    list_state.set_active(Some(next));
+    next != current
 }

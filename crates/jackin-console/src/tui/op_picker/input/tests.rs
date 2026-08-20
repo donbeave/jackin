@@ -42,14 +42,14 @@ fn account_filter_shrinking_below_selection_resets_to_first_match() {
     ];
     state
         .account_list_state
-        .select((!state.accounts.is_empty()).then_some(0));
-    state.account_list_state.select(Some(2));
+        .set_active((!state.accounts.is_empty()).then_some(0));
+    state.account_list_state.set_active(Some(2));
 
     state.handle_key(key(KeyCode::Char('b')));
 
     assert_eq!(state.filtered_accounts().len(), 1);
     assert_eq!(state.filtered_accounts()[0].email, "briar@example.com");
-    assert_eq!(state.account_list_state.selected().copied(), Some(0));
+    assert_eq!(state.account_list_state.active().copied(), Some(0));
 }
 
 #[test]
@@ -64,11 +64,11 @@ fn item_filter_without_matches_clears_selection() {
     ];
     state
         .item_list_state
-        .select((!state.items.is_empty()).then_some(0));
-    state.item_list_state.select(Some(2));
+        .set_active((!state.items.is_empty()).then_some(0));
+    state.item_list_state.set_active(Some(2));
 
     state.handle_key(key(KeyCode::Char('z')));
 
     assert!(state.filtered_item_choices().is_empty());
-    assert_eq!(state.item_list_state.selected().copied(), None);
+    assert_eq!(state.item_list_state.active().copied(), None);
 }
