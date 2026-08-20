@@ -23,8 +23,8 @@ use crate::tui::screens::workspaces::update::{
     collapsed_current_dir_selected_index, collapsed_workspace_selected_index,
     initial_workspace_selected_index, preview_pane_selected_index, selected_index,
     workspace_last_selectable_index, workspace_list_current_directory_selected,
-    workspace_list_new_workspace_selected, workspace_list_saved_workspace_index, workspace_row_at,
-    workspace_row_at_visual_index, workspace_row_index, workspace_selected_row,
+    workspace_list_new_workspace_selected, workspace_list_saved_workspace_index,
+    workspace_row_at_visual_index, workspace_selected_row,
     workspace_visual_selected_index,
 };
 use crate::tui::subscriptions::{
@@ -327,7 +327,7 @@ impl ManagerState<'_> {
     /// Instance rows appear immediately after their parent workspace row.
     fn selectable_rows_vec(&self) -> Vec<ManagerListRow> {
         let workspace_instance_counts = self.workspace_instance_counts();
-        crate::tui::screens::workspaces::update::selectable_rows(
+        crate::tui::screens::workspaces::selection::WorkspaceSelection::projection(
             crate::tui::screens::workspaces::update::WorkspaceRowLayout {
                 current_dir_expanded: self.current_dir_expanded,
                 current_dir_instance_count: self.current_dir_visible_instances().len(),
@@ -367,7 +367,10 @@ impl ManagerState<'_> {
     /// Returns the position of `row` in `selectable_rows_vec`, or `None`.
     #[must_use]
     pub fn index_of_row(&self, row: ManagerListRow) -> Option<usize> {
-        workspace_row_index(&self.selectable_rows_vec(), row)
+        crate::tui::screens::workspaces::selection::WorkspaceSelection::index_of(
+            &self.selectable_rows_vec(),
+            row,
+        )
     }
 
     // ── Core navigation ───────────────────────────────────────────
@@ -387,7 +390,10 @@ impl ManagerState<'_> {
     /// Decode a selectable-list index into a [`ManagerListRow`].
     #[must_use]
     pub fn row_at(&self, idx: usize) -> Option<ManagerListRow> {
-        workspace_row_at(&self.selectable_rows_vec(), idx)
+        crate::tui::screens::workspaces::selection::WorkspaceSelection::row_at(
+            &self.selectable_rows_vec(),
+            idx,
+        )
     }
 
     /// Decode a visual-list index (may include the non-selectable spacer)

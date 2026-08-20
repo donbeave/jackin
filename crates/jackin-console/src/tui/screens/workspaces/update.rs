@@ -1057,7 +1057,7 @@ pub fn workspace_list_move_selection_plan(
     row_count: usize,
     delta: isize,
 ) -> WorkspaceListSelectionPlan {
-    let next = crate::tui::focus::collection_move_index(selected, row_count, delta);
+    let next = super::selection::WorkspaceSelection::move_index(selected, row_count, delta);
     WorkspaceListSelectionPlan {
         selected: next,
         changed: next != selected,
@@ -1075,7 +1075,7 @@ pub fn workspace_list_select_row_plan(
     selected: usize,
     row_count: usize,
 ) -> WorkspaceListSelectionPlan {
-    let next = crate::tui::focus::selected_index(selected, row_count);
+    let next = super::selection::WorkspaceSelection::move_to(selected, row_count);
     let changed = next != current_selected;
     WorkspaceListSelectionPlan {
         selected: next,
