@@ -166,7 +166,7 @@ Upstream: `widgets/select.rs` — `SelectRecipe` (:53), `SelectPresentation` (:7
 
 | Purpose | Command | Expected on success |
 |---------|---------|---------------------|
-| Console suite (component tests + 6 text snapshots; any insta diff = parity break = STOP, never re-bless) | `cargo nextest run -p jackin-console` | all pass, exit 0 |
+| Console suite (component tests + 6 text snapshots; any insta diff = parity break = STOP, never re-bless) | `cargo nextest run -p jackin-console --locked` | all pass, exit 0 |
 | One module's tests | `cargo nextest run -p jackin-console -E 'test(/file_browser/)'` (adjust module per step) | all pass |
 | Cross-crate snapshot lane (binds step 6; runs both crates' suites) | `cargo xtask ci --only snapshots` | exit 0 |
 | PNG baselines (per step, after the suite) | the baseline-comparison command recorded in plan 005's Done criteria | exit 0 / all baselines match |

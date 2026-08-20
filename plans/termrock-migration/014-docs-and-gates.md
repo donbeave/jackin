@@ -29,7 +29,7 @@ Run from the repository root. Any failed precondition is a STOP.
 - Hub rows 005–013 all DONE: `rg -n '^\| 01[0-3] |^\| 00[5-9] ' plans/termrock-migration/README.md` → nine rows, every Status column reads `DONE`. Any other value (TODO, IN PROGRESS, BLOCKED, STALE) → STOP per the hub protocol; never build on a non-DONE row.
 - Roadmap-branch ancestry (needed by step 14's flip sync): `git fetch origin roadmap/termrock-migration && git merge-base --is-ancestor origin/roadmap/termrock-migration HEAD` → exit 0. Non-zero means the artifact home moved independently of the execution branch → STOP and report; the sync route needs operator input.
 - Cheapest re-verification per dependency (current-session output; cite it in the DONE flip):
-  - **005 + 007** (PNG pipeline, baselines, CI lane; BrandHeader crop): discover the lane — `mise tasks ls | rg -i png` → at least one PNG baseline task present (expected name per the upstream pattern recorded in research ch05: `png-baselines`; accept the name plan 005 actually registered). Run it → exit 0. No PNG task at all → STOP (plan 005's harness is missing). Then `git ls-files '*.png' | rg -ci 'brand|header'` → count ≥ 1 (plan 007's dedicated crop baseline is tracked).
+  - **005 + 007** (PNG pipeline, baselines, CI lane; BrandHeader crop): the lane is plan 005's harness, not a mise task — run the compare form `cargo nextest run -p jackin-console --locked -E 'test(/png_baselines/)'` → exit 0. No `png_baselines` tests matched (nextest reports zero tests run) → STOP (plan 005's harness is missing). Then `git ls-files '*.png' | rg -ci 'brand|header'` → count ≥ 1 (plan 007's dedicated crop baseline is tracked).
   - **006** (facade retirement): `rg -n "ModalFlow|SurfaceFocus" crates/jackin-console/src crates/jackin/src/console` → no output; `rg -n "ModalFlow|ModalOutcome" crates/jackin-tui/src` → no output (console-exclusive facade items deleted; `SurfaceFocus` may survive in `jackin-tui` only for capsule/launch — the first grep must still be empty on console/adapter paths).
   - **008** (interaction core): `rg -n "ScrollArea" crates/jackin-console/src` → hits; `rg -n "wheel_steps" crates/jackin-console/src` → hits (the `.wheel_steps(1, 1)` compensation).
   - **009** (collections + modal geometry): `rg -n "CollectionState|RovingFocusGroup|VirtualList|DismissPolicy" crates/jackin-console/src` → hits.
@@ -156,7 +156,7 @@ All excerpts re-read at planning time (commit `f320b51f`, branch `roadmap/termro
 | Arch gate (011 re-verification) | `cargo xtask lint arch --strict` | exit 0 |
 | Behavioral parity tests | `cargo nextest run --workspace --all-features --locked -E 'test(trparity_)'` | all pass; stamp fresh count |
 | Literal-RGB brand tests | `cargo nextest run --workspace --all-features --locked -E 'test(/keeps_pre_bump/) + test(row0_tabs_follow_the_upstream_theme_without_compensation)'` | 12 pass (fresh count from the nextest summary) |
-| PNG baseline lane | discovered via `mise tasks ls \| rg -i png` (plan 005's deliverable; expected name `png-baselines` per the upstream pattern) | exit 0 |
+| PNG baseline lane | `cargo nextest run -p jackin-console --locked -E 'test(/png_baselines/)'` (plan 005's harness; no mise task is installed) | exit 0 |
 | Docs-site gate (run from `docs/`, only because pages under `docs/content/` changed) | see block below | exit 0 |
 
 Docs-site block (PULL_REQUESTS.md:204 superset of the PR-template block — includes `cargo xtask research check`):
@@ -337,7 +337,7 @@ rg -n -i "re-bless|look change" plans/termrock-migration/README.md
 
 Decide, and act on exactly one branch:
 
-- **A recorded, operator-reviewed look change awaits re-bless**: run the bless path plan 005 installed (discover it — `mise tasks ls | rg -i bless`, expected `bless-pngs` per the upstream pattern's env-var bless; never bless by hand-editing or by deleting baselines). Inspect the rendered difference before committing — the changed PNG set must correspond to the recorded look change and nothing else. Commit per the git workflow (commit 2); the re-blessed PNGs are visible in the diff for review.
+- **A recorded, operator-reviewed look change awaits re-bless**: run the bless path plan 005 installed — `JACKIN_BLESS_PNGS=1 cargo nextest run -p jackin-console --locked -E 'test(/png_baselines/)' --no-capture` (env-var bless; never bless by hand-editing or by deleting baselines). Inspect the rendered difference before committing — the changed PNG set must correspond to the recorded look change and nothing else. Commit per the git workflow (commit 2); the re-blessed PNGs are visible in the diff for review.
 - **No recorded look change**: do **not** re-bless. Record the search output in the report. Any PNG baseline failure observed anywhere in this plan is then an unintended paint change (spec scenario: Unintended paint change fails) → STOP and report the differing screen; never bless to make it pass.
 
 **Verify**: on the re-bless branch, `git show --stat HEAD` lists only baseline PNGs (and bless-path metadata); on the no-re-bless branch, `git status --porcelain` is empty and the report carries the search output.
