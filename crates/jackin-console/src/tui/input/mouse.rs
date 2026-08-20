@@ -263,7 +263,7 @@ pub fn handle_mouse_with_config(
 }
 
 fn dispatch_manager(state: &mut ManagerState<'_>, message: ManagerMessage) {
-    let _dirty = update_manager(state, message);
+    update_manager(state, message);
 }
 
 /// Whether a left-click at the pointer would act on a clickable element.

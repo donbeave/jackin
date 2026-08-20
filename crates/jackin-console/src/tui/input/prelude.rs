@@ -36,7 +36,7 @@ pub fn handle_prelude_key(
 ) -> InputOutcome {
     match create_prelude_key_plan(key.code) {
         CreatePreludeKeyPlan::ReturnToList => {
-            let _unused = update_manager(
+            update_manager(
                 state,
                 ManagerMessage::ReloadFromConfig {
                     config: Box::new(config.clone()),

@@ -644,7 +644,7 @@ fn no_modal_open_returns_false_while_list_modal_open() {
     );
 
     let mut manager_with_modal = ManagerState::from_config(&config, cwd);
-    let _unused = update_manager(
+    update_manager(
         &mut manager_with_modal,
         ManagerMessage::OpenListErrorPopup {
             title: "Error".into(),

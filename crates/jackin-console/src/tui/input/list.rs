@@ -262,7 +262,7 @@ fn clamp_list_scroll_after_key(
 }
 
 fn dispatch_manager(state: &mut ManagerState<'_>, message: ManagerMessage) {
-    let _dirty = update_manager(state, message);
+    update_manager(state, message);
 }
 
 fn instance_action_outcome(

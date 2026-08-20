@@ -80,8 +80,6 @@ pub type ManagerBackgroundEvent = crate::tui::message::BackgroundEvent<
     ManagerConfigSaveResult,
 >;
 
-pub type ManagerUpdate = crate::tui::update::ConsoleUpdate<ManagerEffect>;
-
 // ── Reducer ───────────────────────────────────────────────────────────────
 
 #[expect(
@@ -90,7 +88,7 @@ pub type ManagerUpdate = crate::tui::update::ConsoleUpdate<ManagerEffect>;
               per-message-arm state mutation + per-stage emit + per-Update \
               branch. Inline shape preserves the per-message-arm state machine."
 )]
-pub fn update_manager(state: &mut ManagerState<'_>, message: ManagerMessage) -> ManagerUpdate {
+pub fn update_manager(state: &mut ManagerState<'_>, message: ManagerMessage) {
     let action = action_of(&message);
     let action_guard = action.and_then(|name| start_manager_action(state, name));
     let action_span = action_guard.as_ref().map(|guard| guard.span().enter());
@@ -304,7 +302,6 @@ pub fn update_manager(state: &mut ManagerState<'_>, message: ManagerMessage) -> 
     if let Some(guard) = action_guard {
         jackin_telemetry::ui::remember_action_parent(guard);
     }
-    ManagerUpdate::redraw()
 }
 
 fn request_poll_effect(state: &mut ManagerState<'_>, message: ManagerMessage) {
@@ -969,7 +966,7 @@ fn report_token_generate_error(state: &mut ManagerState<'_>, error: anyhow::Erro
             });
         }
         ManagerStage::Settings(_) => {
-            let _unused = update_manager(
+            update_manager(
                 state,
                 ManagerMessage::OpenSettingsErrorPopup {
                     title: error_popup::token_generation_failed_error_title().into(),
@@ -1002,7 +999,7 @@ pub fn report_open_url_error(state: &mut ManagerState<'_>, error: anyhow::Error)
             });
         }
         ManagerStage::Settings(_) => {
-            let _unused = update_manager(
+            update_manager(
                 state,
                 ManagerMessage::OpenSettingsErrorPopup {
                     title: error_popup::failed_to_open_url_error_title().into(),
@@ -1011,7 +1008,7 @@ pub fn report_open_url_error(state: &mut ManagerState<'_>, error: anyhow::Error)
             );
         }
         _ => {
-            let _unused = update_manager(
+            update_manager(
                 state,
                 ManagerMessage::OpenListErrorPopup {
                     title: error_popup::failed_to_open_url_error_title().into(),

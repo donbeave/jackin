@@ -284,7 +284,7 @@ fn dispatch_editor_escape(
             }
         }
         EditorEscapeKeyPlan::ReloadFromConfig => {
-            let _unused = update_manager(
+            update_manager(
                 state,
                 ManagerMessage::ReloadFromConfig {
                     config: Box::new(config.clone()),
@@ -418,7 +418,7 @@ fn dispatch_editor_role_action(
 }
 
 fn dispatch_manager(state: &mut ManagerState<'_>, message: ManagerMessage) {
-    let _dirty = update_manager(state, message);
+    update_manager(state, message);
 }
 
 fn dispatch_editor_horizontal_scroll(

@@ -175,13 +175,13 @@ fn apply_file_browser_open_result(
                     target: FileBrowserTarget::CreateFirstMountSrc,
                     state: *file_browser,
                 });
-                drop(update_manager(
+                update_manager(
                     state,
                     ManagerMessage::EnterCreatePrelude(prelude),
-                ));
+                );
             }
             Err(error) => {
-                let _unused = update_manager(
+                update_manager(
                     state,
                     ManagerMessage::OpenListErrorPopup {
                         title: error_popup::file_browser_failed_error_title().into(),

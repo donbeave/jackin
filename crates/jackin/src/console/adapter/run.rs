@@ -553,7 +553,7 @@ where
         let action_fact = action.workspace_action_fact();
         let busy_title = instance_action_busy_title(action_fact);
         let busy_body = instance_action_busy_message(action_fact, container);
-        let _unused = crate::console::adapter::update_manager(
+        crate::console::adapter::update_manager(
             ms,
             crate::console::adapter::ManagerMessage::OpenStatusPopup {
                 title: busy_title.into(),
@@ -569,13 +569,13 @@ where
     }
     let result = inputs.action_handler.run_in_place(container, action).await;
     let ConsoleStage::Manager(ms) = &mut state.stage;
-    let _unused = crate::console::adapter::update_manager(
+    crate::console::adapter::update_manager(
         ms,
         crate::console::adapter::ManagerMessage::DismissStatusPopup,
     );
     if let Err(error) = result {
         let err_title = instance_action_failed_error_title(action.workspace_action_fact());
-        let _unused = crate::console::adapter::update_manager(
+        crate::console::adapter::update_manager(
             ms,
             crate::console::adapter::ManagerMessage::OpenListErrorPopup {
                 title: err_title.into(),
@@ -862,7 +862,7 @@ fn handle_mouse_event<H, R>(
     }
     if modal_plan.dismiss_list_modal {
         let ConsoleStage::Manager(ms) = &mut state.stage;
-        let _unused = crate::console::adapter::update_manager(
+        crate::console::adapter::update_manager(
             ms,
             crate::console::adapter::ManagerMessage::DismissListModal,
         );
@@ -886,7 +886,7 @@ fn handle_mouse_event<H, R>(
         active_run.is_some(),
     ) && let Some(run) = active_run
     {
-        let _unused = crate::console::adapter::update_manager(
+        crate::console::adapter::update_manager(
             ms,
             crate::console::adapter::ManagerMessage::OpenListContainerInfo {
                 state: jackin_console::tui::components::container_info::debug_run_info_state(

@@ -90,14 +90,14 @@ fn handle_key(
                 instance_purge_key_plan(confirm_state.handle_key(key.into()), container.clone());
             match plan {
                 InstancePurgeKeyPlan::Purge { container } => {
-                    drop(update_manager(state, ManagerMessage::ReturnToList));
+                    update_manager(state, ManagerMessage::ReturnToList);
                     return Ok(InputOutcome::InstanceAction {
                         container,
                         action: ConsoleInstanceAction::Purge,
                     });
                 }
                 InstancePurgeKeyPlan::ReturnToList => {
-                    drop(update_manager(state, ManagerMessage::ReturnToList));
+                    update_manager(state, ManagerMessage::ReturnToList);
                     return Ok(InputOutcome::Continue);
                 }
                 InstancePurgeKeyPlan::Continue => return Ok(InputOutcome::Continue),

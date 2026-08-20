@@ -172,7 +172,7 @@ pub fn handle_settings_key_with_effects(state: &mut ManagerState<'_>, key: KeyEv
 }
 
 fn dispatch_manager(state: &mut ManagerState<'_>, message: ManagerMessage) {
-    let _dirty = update_manager(state, message);
+    update_manager(state, message);
 }
 
 fn handle_global_mounts_key(state: &mut ManagerState<'_>, key: KeyEvent) {
