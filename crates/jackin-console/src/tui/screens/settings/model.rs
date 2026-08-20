@@ -1102,7 +1102,7 @@ pub struct GlobalMountsState<Row, Modal> {
     pub pending: Vec<Row>,
     pub original: Vec<Row>,
     pub mount_info_cache: crate::mount_info_cache::MountInfoCache,
-    pub modals: jackin_tui::runtime::ModalFlow<Modal>,
+    pub modals: crate::tui::modal_chain::ModalChain<Modal>,
     pub add_draft: Option<GlobalMountDraft>,
     pub error: Option<String>,
     pub scroll_x: u16,
@@ -1128,7 +1128,7 @@ impl<Row, Modal> GlobalMountsState<Row, Modal> {
             pending: rows.clone(),
             original: rows,
             mount_info_cache: crate::mount_info_cache::MountInfoCache::default(),
-            modals: jackin_tui::runtime::ModalFlow::new(),
+            modals: crate::tui::modal_chain::ModalChain::new(),
             add_draft: None,
             error: None,
             scroll_x: 0,
@@ -1347,7 +1347,7 @@ pub struct SettingsAuthState<EnvValue, Modal, PendingOpCommit> {
     pub github_env: BTreeMap<String, EnvValue>,
     pub original_github_env: BTreeMap<String, EnvValue>,
     /// Atomic modal chain and matching `TermRock` focus scopes.
-    pub modals: jackin_tui::runtime::ModalFlow<Modal>,
+    pub modals: crate::tui::modal_chain::ModalChain<Modal>,
     /// Set while the `g`/`G` generate action's Create-mode `OpPicker` is open.
     pub generating_token: bool,
     pub error: Option<String>,

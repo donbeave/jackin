@@ -38,7 +38,7 @@ impl<EnvValue, Modal, PendingOpCommit> SettingsAuthState<EnvValue, Modal, Pendin
             pending,
             github_env: github_env.clone(),
             original_github_env: github_env,
-            modals: jackin_tui::runtime::ModalFlow::new(),
+            modals: crate::tui::modal_chain::ModalChain::new(),
             generating_token: false,
             error: None,
             pending_op_commit: None,

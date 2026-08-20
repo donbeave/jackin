@@ -18,6 +18,7 @@ pub mod launch;
 pub mod layout;
 pub mod list_geometry;
 pub mod message;
+pub mod modal_chain;
 pub mod model;
 pub mod mount_display;
 pub mod op_breadcrumb;
