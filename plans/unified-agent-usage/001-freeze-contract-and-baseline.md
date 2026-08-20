@@ -1,7 +1,7 @@
 # Plan 001: Freeze the executable usage contract and baseline
 
 ## Status
-TODO
+DONE — 2026-08-21 (`test(usage): freeze unified baseline`)
 
 ## Why this matters
 Later migrations need one measured baseline and one test vocabulary, not prose-only gates.
@@ -50,10 +50,21 @@ Name Console, CLI, Capsule, FFI, and desktop cases, dimensions, focus, accessibi
 Run research check, all new fixture parsers, bypass audit, format/lint, and the focused legacy baseline commands; record exact results.
 
 ## Done criteria
-Every later required target exists and runs; schema fixtures parse; bypass audit detects an injected forbidden caller; docs name exact commands.
+Baseline fixture/audit targets pass; later target names and owners are explicit;
+schema fixtures parse; bypass audit detects an injected forbidden caller; docs name
+exact commands.
 
 ## STOP conditions
 Schema contradicts specs; a secret-derived value enters fixtures; test target reports zero tests; branch/PR differs.
 
 ## Maintenance notes
 Update fixture schema and bypass allowlist only with the owning contract change.
+
+## Completion evidence
+
+- `contract_baseline`: 5 passed, zero failed.
+- coordinator: 14; broker: 7; runtime relay: 8; Capsule usage: 48; CLI usage: 9;
+  FFI bridge: 8 — all passed.
+- `rtk mise run fmt`, `rtk mise run lint`, and `rtk mise run test`: PASS.
+- research and roadmap audits: PASS.
+- No production provider, broker, projection, CLI, TUI, FFI, or Swift behavior changed.

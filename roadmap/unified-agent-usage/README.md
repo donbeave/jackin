@@ -454,3 +454,6 @@ authenticated and failure fixtures before shipping; these are not product questi
 - 2026-08-21 — tailrocks-plan --deep — froze coverage, specifications,
   broker/provider/surface research, eight sequential plans, and the goal gate;
   moved to PLANNED. All implementation remains on the current branch and PR #898.
+- 2026-08-21 — Plan 001 — froze secret-free V1 contract fixtures, the surface-state
+  matrix, classified provider-call inventory with injection detection, reserved test
+  ownership, and passing repository format/lint/test baselines. PR #898 remains open.

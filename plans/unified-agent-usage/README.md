@@ -11,7 +11,7 @@ same integration seams.
 
 | Plan | Outcome | Depends on | Status |
 |---|---|---|---|
-| [001](001-freeze-contract-and-baseline.md) | Executable contract/baseline gates | — | TODO |
+| [001](001-freeze-contract-and-baseline.md) | Executable contract/baseline gates | — | DONE |
 | [002](002-build-canonical-projection.md) | Canonical identity and V1 projection | 001 | TODO |
 | [003](003-build-durable-broker.md) | Process-independent broker authority | 002 | TODO |
 | [004](004-complete-provider-adapters.md) | Eight-provider quota parity | 002, 003 | TODO |
@@ -20,7 +20,7 @@ same integration seams.
 | [007](007-ship-desktop-usage.md) | FFI, popover, and native Usage window | 003, 004 | TODO |
 | [008](008-prove-parity-and-release.md) | Cross-surface proof and signed distribution | 005, 006, 007 | TODO |
 
-Frozen package fingerprint: `5b4ff10767ffd31627220860e3298b94092a3b5a`.
+Frozen package fingerprint: `ad9d31cf249323fd5ed04674957aa9bbdb9d404b`.
 
 ## Execution rules
 

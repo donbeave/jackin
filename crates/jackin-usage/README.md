@@ -4,6 +4,19 @@ Usage, telemetry, and token monitors for the `jackin-capsule` daemon.
 Also owns the **Capsule-free host runtime** consumed by the macOS usage menu bar
 and `jackin usage host snapshot`.
 
+## Unified usage contract baseline
+
+Secret-free V1 shape, surface-state, and provider-call inventory fixtures live under
+`tests/fixtures/contracts/`. Run their validator with:
+
+```sh
+rtk cargo test -p jackin-usage contract_baseline -- --test-threads=1
+```
+
+The provider-call inventory is fail-closed: every production caller must be classified
+as broker executor, adapter-internal work, or an explicitly named legacy bypass owned
+by a later migration plan. Never add a consumer fetch route by extending the allowlist.
+
 **Product surfaces (Capsule usage UI, jackin❯ desktop):** **usage limits only** —
 remaining/used %, resets, plan/status. **Never** token unit prices or historical
 usage/spend trends as product features.
