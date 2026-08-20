@@ -4,6 +4,7 @@
 import XCTest
 
 /// Vendored Apple agent knowledge must never appear without provenance.
+///
 /// Xcode 26.6 (17F113) ships no exportable skill documents, so the standing
 /// state is: vendor tree absent, blocker recorded in native/README.md. If a
 /// future shipping Xcode exposes a documented export, the tree must arrive
