@@ -266,42 +266,6 @@ pub fn bordered_content_hit_at_position<T>(
     hit(visual_row)
 }
 
-/// Apply a horizontal scroll delta, returning whether the offset actually
-/// moved (i.e. the content could scroll in that direction). Callers use the
-/// result to decide whether a wheel gesture had any effect on this panel.
-pub fn apply_horizontal_scroll(
-    scroll: &mut termrock::widgets::ScrollAreaState,
-    delta: i16,
-    area: ratatui::layout::Rect,
-    content_width: usize,
-) -> bool {
-    let before = scroll.offset_x();
-    scroll.set_content_size(u16::try_from(content_width).unwrap_or(u16::MAX), u16::MAX);
-    scroll.set_viewport(
-        u16::try_from(scroll_viewport_width(area)).unwrap_or(u16::MAX),
-        1,
-    );
-    let _outcome = scroll.scroll_by(0, isize::from(delta));
-    scroll.offset_x() != before
-}
-
-/// Apply a vertical scroll delta, returning whether the offset actually moved.
-pub fn apply_vertical_scroll(
-    scroll: &mut termrock::widgets::ScrollAreaState,
-    delta: i16,
-    area: ratatui::layout::Rect,
-    content_height: usize,
-) -> bool {
-    let before = scroll.offset_y();
-    scroll.set_content_size(u16::MAX, u16::try_from(content_height).unwrap_or(u16::MAX));
-    scroll.set_viewport(
-        1,
-        u16::try_from(scroll_viewport_height(area)).unwrap_or(u16::MAX),
-    );
-    let _outcome = scroll.scroll_by(isize::from(delta), 0);
-    scroll.offset_y() != before
-}
-
 #[must_use]
 pub const fn scroll_viewport_width(area: ratatui::layout::Rect) -> usize {
     termrock::scroll::viewport_width(area)

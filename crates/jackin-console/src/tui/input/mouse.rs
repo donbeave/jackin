@@ -95,6 +95,14 @@ fn handle_mouse(
     handle_mouse_with_config(state, mouse, term_size, None)
 }
 
+/// Dispatch a mouse event into the workspace manager.
+///
+/// Mouse parity matrix row 7 carve-out: the routing precedence chain
+/// (container-info copy → container scroll → picker modal → file-browser
+/// modal → tab select → click focus → scrollbar drags → wheel → row
+/// select → URL open → seam/list) stays consumer code in exactly this
+/// order; upstream supplies the z-ordered hit + overlay routing
+/// primitives, no single carrier.
 pub fn handle_mouse_with_config(
     state: &mut ManagerState<'_>,
     mouse: MouseEvent,

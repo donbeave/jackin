@@ -63,6 +63,9 @@ pub fn try_select_settings_trust_row(
     ) {
         dispatch_manager(state, ManagerMessage::SelectSettingsTrustRow(row));
     } else {
+        // Mouse parity matrix row 18 carve-out: click on a non-row in the
+        // Trust block deselects via the `usize::MAX` sentinel — upstream
+        // scene outside-click carries layer dismiss policy only.
         dispatch_manager(state, ManagerMessage::SelectSettingsTrustRow(usize::MAX));
     }
     true

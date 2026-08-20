@@ -3,6 +3,12 @@
 
 //! Console adapter around `TermRock` [`Viewport`] for bordered scrollable panels.
 //!
+//! Render-path carve-out (C1): the upstream `ScrollArea` *paint* widget is
+//! deliberately NOT adopted — it cannot produce byte-identical pixels
+//! against the current Viewport + fade + explicit-scrollbar paint, which
+//! the parity gate forbids. The adoption is `ScrollAreaState` (the scroll
+//! model) driving this existing render path.
+//!
 //! Migration 0018 removed free-function `render_scrollable_block*` helpers in
 //! favor of the canonical stateful widget. This thin adapter preserves the
 //! call shape used across workspace/settings/editor tabs.

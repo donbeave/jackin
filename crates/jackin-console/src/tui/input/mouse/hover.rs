@@ -178,11 +178,9 @@ fn hover_regions(state: &ManagerState<'_>, term_size: Rect) -> Vec<HitRegion<Con
     match &state.stage {
         ManagerStage::Editor(editor) => {
             if editor.modal.is_none() {
-                push_tab_regions(
-                    &mut regions,
-                    &EditorTab::ALL.map(|tab| tab.label()),
-                    |idx| ConsoleHoverTarget::Editor(EditorHoverTarget::Tab(idx)),
-                );
+                push_tab_regions(&mut regions, &EditorTab::ALL.map(EditorTab::label), |idx| {
+                    ConsoleHoverTarget::Editor(EditorHoverTarget::Tab(idx))
+                });
                 let area = editor_scroll_area(editor, term_size).area;
                 let content_x = area.x.saturating_add(1);
                 let content_width = area.width.saturating_sub(2);
@@ -210,7 +208,7 @@ fn hover_regions(state: &ManagerState<'_>, term_size: Rect) -> Vec<HitRegion<Con
             if !settings.mounts.modals.is_open() && !settings.env.modals.is_open() {
                 push_tab_regions(
                     &mut regions,
-                    &SettingsTab::ALL.map(|tab| tab.label()),
+                    &SettingsTab::ALL.map(SettingsTab::label),
                     |idx| ConsoleHoverTarget::Settings(SettingsHoverTarget::Tab(idx)),
                 );
             }
@@ -233,29 +231,27 @@ fn hover_regions(state: &ManagerState<'_>, term_size: Rect) -> Vec<HitRegion<Con
                 }
             }
         }
-        ManagerStage::List => {
-            if state.list_modal.is_none() {
-                let seam_x = split_seam_column(state.list_split_pct, term_size.width);
-                let content_top = LIST_HEADER_HEIGHT.saturating_add(1);
-                let content_bottom = term_size
-                    .height
-                    .saturating_sub(LIST_FOOTER_HEIGHT)
-                    .saturating_sub(1);
-                let visual_rows = state.visual_rows_vec();
-                for y in content_top..content_bottom {
-                    if let Some(row) = workspace_list_hover_row_at_position(
-                        visual_rows.as_slice(),
-                        1,
-                        y,
-                        term_size,
-                        seam_x,
-                        |row| state.index_of_row(row).is_some(),
-                    ) {
-                        regions.push(HitRegion {
-                            id: ConsoleHoverTarget::Workspace(ManagerHoverTarget::ListRow(row)),
-                            area: Rect::new(1, y, seam_x.saturating_sub(1), 1),
-                        });
-                    }
+        ManagerStage::List if state.list_modal.is_none() => {
+            let seam_x = split_seam_column(state.list_split_pct, term_size.width);
+            let content_top = LIST_HEADER_HEIGHT.saturating_add(1);
+            let content_bottom = term_size
+                .height
+                .saturating_sub(LIST_FOOTER_HEIGHT)
+                .saturating_sub(1);
+            let visual_rows = state.visual_rows_vec();
+            for y in content_top..content_bottom {
+                if let Some(row) = workspace_list_hover_row_at_position(
+                    visual_rows.as_slice(),
+                    1,
+                    y,
+                    term_size,
+                    seam_x,
+                    |row| state.index_of_row(row).is_some(),
+                ) {
+                    regions.push(HitRegion {
+                        id: ConsoleHoverTarget::Workspace(ManagerHoverTarget::ListRow(row)),
+                        area: Rect::new(1, y, seam_x.saturating_sub(1), 1),
+                    });
                 }
             }
         }
@@ -273,7 +269,10 @@ fn push_tab_regions(
     target: impl Fn(usize) -> ConsoleHoverTarget,
 ) {
     let cells: Vec<(&str, bool)> = labels.iter().map(|label| (*label, false)).collect();
-    for (idx, cell) in termrock::widgets::lay_out_tabs(&cells, 0).iter().enumerate() {
+    for (idx, cell) in termrock::widgets::lay_out_tabs(&cells, 0)
+        .iter()
+        .enumerate()
+    {
         regions.push(HitRegion {
             id: target(idx),
             area: Rect::new(
