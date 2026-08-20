@@ -12,6 +12,7 @@ mod hover;
 mod modal_scroll;
 mod scroll_bars;
 mod scroll_pan;
+mod scroll_registry;
 mod selection;
 
 use crossterm::event::{MouseButton, MouseEvent, MouseEventKind};
@@ -65,6 +66,7 @@ pub use modal_scroll::{
     scroll_settings_env_modal_selection, try_scroll_file_browser_modal, try_scroll_picker_modal,
 };
 pub use scroll_bars::{try_drag_horizontal_scrollbar, try_drag_vertical_scrollbar};
+pub use scroll_registry::{ConsoleScrollBlock, ScrollBlockRegion, hit, scroll_block_registry};
 pub use scroll_pan::{
     scroll_active_panel, scroll_active_panel_vertical, settings_modal_open, update_scroll_focus,
 };
@@ -338,8 +340,8 @@ fn try_open_file_browser_git_url(
 
 #[derive(Clone, Copy, Debug)]
 pub struct ScrollArea {
-    area: Rect,
-    content_width: usize,
+    pub area: Rect,
+    pub content_width: usize,
 }
 
 #[must_use]
