@@ -1776,7 +1776,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "39cab71617ae0d63f51a36d69f866391735b51691dbda63cf6f96d042b63efeb"
 dependencies = [
  "libc",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -2843,7 +2843,7 @@ checksum = "3640c1c38b8e4e43584d8df18be5fc6b0aa314ce6ebf51b53313d4306cca8e46"
 dependencies = [
  "hermit-abi",
  "libc",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -5202,7 +5202,7 @@ dependencies = [
  "once_cell",
  "socket2",
  "tracing",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -5731,7 +5731,7 @@ dependencies = [
  "errno",
  "libc",
  "linux-raw-sys 0.12.1",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -5790,7 +5790,7 @@ dependencies = [
  "security-framework",
  "security-framework-sys",
  "webpki-root-certs",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -6730,10 +6730,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "32497e9a4c7b38532efcdebeef879707aa9f794296a4f0244f6f69e9bc8574bd"
 dependencies = [
  "fastrand",
- "getrandom 0.3.4",
+ "getrandom 0.4.3",
  "once_cell",
  "rustix 1.1.4",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -6773,7 +6773,7 @@ dependencies = [
 [[package]]
 name = "termrock"
 version = "0.11.0"
-source = "git+https://github.com/tailrocks/termrock.git?rev=29a16b5bff84ea8609854711b774e87acbc456cc#29a16b5bff84ea8609854711b774e87acbc456cc"
+source = "git+https://github.com/tailrocks/termrock.git?rev=9b1ef3cb0f0d39973e4f72d13ab6f426ec396bc0#9b1ef3cb0f0d39973e4f72d13ab6f426ec396bc0"
 dependencies = [
  "anstyle-parse",
  "base64 0.23.1",
@@ -6791,7 +6791,7 @@ dependencies = [
 [[package]]
 name = "termrock-raster"
 version = "0.11.0"
-source = "git+https://github.com/tailrocks/termrock.git?rev=29a16b5bff84ea8609854711b774e87acbc456cc#29a16b5bff84ea8609854711b774e87acbc456cc"
+source = "git+https://github.com/tailrocks/termrock.git?rev=9b1ef3cb0f0d39973e4f72d13ab6f426ec396bc0#9b1ef3cb0f0d39973e4f72d13ab6f426ec396bc0"
 dependencies = [
  "ratatui",
  "swash",
@@ -8101,7 +8101,7 @@ version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2a7b1c03c876122aa43f3020e6c3c3ee5c05081c9a00739faf7503aeba10d22"
 dependencies = [
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
