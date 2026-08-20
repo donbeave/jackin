@@ -22,10 +22,22 @@ Product scope is limits only: remaining/used percentages, resets, plan/status, m
 ## Shipping baseline
 
 - Deployment target and release floor: **macOS 26.0**.
-- Release toolchain: **Xcode 26.6** on GitHub's `macos-26` image.
+- Shipping lane: **Xcode 26.6, macOS 26.5 SDK, Swift 6.3** on GitHub's `macos-26` image, Swift 6 language mode with complete strict concurrency and warnings as errors.
+- Forward-validation lane: **Xcode 27 beta / macOS 27 SDK**, nonblocking and scheduled; never the shipping lane.
 - Architecture: Apple Silicon (`arm64`) static XCFramework assembly.
-- Swift language mode: Swift 6 strict concurrency.
 - No compatibility branch, custom material, explicit `glassEffect`, or `GlassEffectContainer` exists in production UI.
+
+**Forward-lane exception (dated):** the scheduled nonblocking Xcode 27/macOS 27
+build lane does not exist yet. Owner: Release Engineering. Recorded 2026-08-20.
+Shipping remains Xcode 26.6 and forward failures do not gate release. The
+exception exits when an Xcode 27 runner image is available and the lane is added
+at the owning `velnor-actions` native-workflow source (`ci.yml` is generated —
+never hand-edited), then regenerated here.
+
+**Post-26.0 API discipline:** every post-26.0 symbol is guarded with
+`if #available(macOS 27, *)`, ships a decided native fallback, and names the
+minimum-target bump that removes the guard. `UIDesignRequiresCompatibility` is
+never a strategy; an architecture test rejects it.
 
 Liquid Glass is owned by the system hosts and standard functional chrome: `NSPopover`, unified `NSToolbar`, `NSSplitViewController`, sidebar/list/table, menus, pickers, buttons, and window titlebars. Quota content uses ordinary `Form`, `List`, `Section`, `LabeledContent`, `Table`, and `ProgressView` surfaces. The status bar remains template monochrome. jackin❯ phosphor appears only as adaptive identity/healthy-state emphasis; warning and danger retain textual state plus system semantic color.
 
@@ -170,3 +182,42 @@ mise run desktop-sign-notarize
 ```
 
 See the [public macOS guide](<../docs/content/(public)/guides/macos-usage-menu-bar.mdx>) and [ADR-011](../docs/content/reference/adrs/adr-011-native-macos-usage-menu-bar.mdx) for operator behavior, architecture, component ownership, and verification boundaries.
+
+## Xcode agent bridge
+
+Manual host-only integration; never part of CI. Setup on the shipping Xcode:
+
+1. In Xcode 26.6, open Settings → Intelligence and enable external agent access.
+2. Run `mise run desktop-generate`, then open `native/JackinDesktop.xcodeproj`
+   in the running Xcode instance.
+3. From the external agent, enumerate the bridge's actually exposed tools
+   before depending on any command name.
+
+Boundary: the Xcode bridge supplies project-context, build, test, and preview
+operations only. It captures **no** running-app screenshots and drives **no**
+interface automation; `native/Scripts/VisualQA` and XCUITest own those
+capabilities. A preview or bridge result is never running-app visual evidence.
+A headless worker without a running Xcode and open project reports the bridge
+as unavailable — never as passed.
+
+Verification checklist (no secrets; re-probe whenever the shipping Xcode pin
+changes):
+
+- expected project: `native/JackinDesktop.xcodeproj` (generated, never committed)
+- expected scheme: `JackinDesktop`
+- expected Xcode build: 26.6 (`17F113`)
+- observed tool list: enumerate and record in the session log before use
+
+## Agent responsibility ownership
+
+Exactly one owner per responsibility; explicit invocation remains required for
+overlapping aesthetic skills.
+
+| Responsibility | Owner |
+|---|---|
+| Framework correctness (Swift/AppKit/SwiftUI API use) | `tailrocks-swift-best-practices` |
+| Material policy (Liquid Glass ownership rules) | `tailrocks-macos-design` |
+| Visual direction (hierarchy, alternatives, anti-references) | `tailrocks-macos-design` |
+| Rendering and visual verification | `tailrocks-macos-visual-qa` |
+| Project mechanics (generation, pins, gates, lanes) | `tailrocks-swift-project-setup` |
+| Design tokens (brand color/type values) | this repository (`Sources/JackinDesktop/BrandColors.swift`) |

@@ -5,6 +5,22 @@ Display-only Swift shell over `jackin-usage-ffi` (UniFFI). Product: **jackin❯ 
 
 > **CLAUDE.md = symlink to AGENTS.md beside it** — recreate: `ln -s AGENTS.md CLAUDE.md`.
 
+## Platform lanes
+
+- **Minimum deployment target: macOS 26.0.** No compatibility branch, no
+  pre-26 availability lane.
+- **Shipping lane: Xcode 26.6, macOS 26.5 SDK, Swift 6 mode with complete
+  strict concurrency and warnings as errors.** This is the only lane that
+  produces release artifacts.
+- **Forward-validation lane: Xcode 27 beta / macOS 27 SDK — nonblocking and
+  scheduled, never the shipping lane.** The runner lane is not yet available;
+  the dated exception is recorded in `README.md` (owner: Release Engineering).
+- **Post-26.0 API discipline:** guard every post-26.0 symbol with
+  `if #available(macOS 27, *)`, ship a decided native fallback beside it, and
+  name the minimum-target bump that removes the guard.
+  `UIDesignRequiresCompatibility` is never a strategy — an architecture test
+  rejects it.
+
 ## Hard rules
 
 - **Display-only Swift.** No HTTP/OAuth/CLI scrapes, no second provider matrix, no

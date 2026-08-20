@@ -1,5 +1,14 @@
 name: JackinDesktop
 
+# Platform lanes (recorded contract — see native/AGENTS.md "Platform lanes"):
+#   minimum deployment target: macOS 26.0 (no compatibility branch)
+#   shipping lane: Xcode 26.6, macOS 26.5 SDK, Swift 6 + complete strict concurrency
+#   forward-validation lane: Xcode 27 beta / macOS 27 SDK — nonblocking, scheduled;
+#     dated exception in native/README.md until the runner image exists
+#   post-26.0 API: #available(macOS 27, *) guard + decided native fallback +
+#     recorded minimum-target bump that removes the guard;
+#     UIDesignRequiresCompatibility is never a strategy
+
 options:
   minimumXcodeGenVersion: 2.46.0
   deploymentTarget:
