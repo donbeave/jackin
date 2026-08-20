@@ -47,6 +47,59 @@ pub struct ConsoleRunOptions<'a> {
     pub parent_session: Option<&'a TerminalSession>,
 }
 
+/// Read the broker's last published host projection for the Console route.
+///
+/// This is deliberately current-only: Console startup never performs provider
+/// work. Refresh remains broker-owned and is requested by the route later.
+fn load_console_usage_state(
+    paths: &JackinPaths,
+) -> anyhow::Result<jackin_console::tui::state::UsageScreenState> {
+    use jackin_usage::host::{
+        HostProbePolicy, HostRuntimeConfig, HostUsageRuntime, UsageBrokerConfig,
+        UsageDiscoveryScope, ensure_usage_broker_process, usage_broker_capabilities,
+    };
+
+    let discovery_scope = UsageDiscoveryScope::HostDesktop {
+        config_root: paths.config_dir.clone(),
+        operator_home: paths.home_dir.clone(),
+    };
+    let mut runtime = HostUsageRuntime::new();
+    runtime
+        .open_with_discovery(
+            HostRuntimeConfig {
+                data_dir: paths.data_dir.clone(),
+                refresh_floor_secs: 300,
+                enabled_surface_ids: Vec::new(),
+                probe_policy: HostProbePolicy::Live,
+                discovery_scope: discovery_scope.clone(),
+            },
+            &jackin_usage::host::CachedProviderCredentialResolver::new(
+                crate::cli::usage::CliUsageSecretSource,
+            ),
+        )
+        .map_err(anyhow::Error::msg)?;
+    let discovery = runtime
+        .validated_discovery()
+        .ok_or_else(|| anyhow::anyhow!("host usage discovery unavailable"))?;
+    let client = ensure_usage_broker_process(
+        UsageBrokerConfig::for_data_dir(paths.data_dir.clone()),
+        &discovery_scope,
+    )
+    .map_err(|error| anyhow::anyhow!(error.message))?;
+    for capability in usage_broker_capabilities(&discovery) {
+        let state = client
+            .current(capability)
+            .map_err(|error| anyhow::anyhow!(error.message))?;
+        runtime
+            .apply_broker_generation(state)
+            .map_err(anyhow::Error::msg)?;
+    }
+    let projection = runtime
+        .canonical_projection("und")
+        .map_err(anyhow::Error::msg)?;
+    Ok(jackin_console::tui::screens::usage::UsageScreenState::from_projection(&projection))
+}
+
 impl std::fmt::Debug for ConsoleRunOptions<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("ConsoleRunOptions")
@@ -752,6 +805,28 @@ where
         let ConsoleStage::Manager(ms) = &mut state.stage;
         crate::console::adapter::handle_key(ms, inputs.config, inputs.paths, inputs.cwd, key)?
     };
+    if key.code == crossterm::event::KeyCode::Char('r')
+        && let ConsoleStage::Manager(ms) = &mut state.stage
+        && ms.usage_screen.is_some()
+    {
+        match load_console_usage_state(inputs.paths) {
+            Ok(usage) => {
+                ms.usage_accounts = usage.accounts.clone();
+                ms.usage_notice = usage.notice.clone();
+                if let Some(screen) = ms.usage_screen.as_mut() {
+                    screen.set_accounts(usage.accounts);
+                    screen.notice = usage.notice;
+                }
+            }
+            Err(error) => {
+                let notice = format!("Usage unavailable: {error}");
+                ms.usage_notice = Some(notice.clone());
+                if let Some(screen) = ms.usage_screen.as_mut() {
+                    screen.notice = Some(notice);
+                }
+            }
+        }
+    }
     if startup_error_dismissed(state, inputs.startup_error_pending) {
         return Ok(ConsoleLoopFlow::Exit(None));
     }
@@ -966,6 +1041,17 @@ pub async fn run_console<H: InstanceActionHandler<jackin_core::Agent>>(
         options.op_available,
         options.startup_error,
     )?;
+    if let ConsoleStage::Manager(manager) = &mut state.stage {
+        match load_console_usage_state(paths) {
+            Ok(usage) => {
+                manager.usage_accounts = usage.accounts;
+                manager.usage_notice = usage.notice;
+            }
+            Err(error) => {
+                manager.usage_notice = Some(format!("Usage unavailable: {error}"));
+            }
+        }
+    }
     // When the launch flow in `app` already owns the host screen, draw into it
     // and leave teardown to that guard; otherwise own the screen here for the
     // lifetime of the console (standalone `jackin console` with no launch).

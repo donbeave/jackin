@@ -6,7 +6,10 @@ Canonical host-console product surface. Owns reusable console state, update/inpu
 
 - Console state + planning for workspaces, mounts, and services (`workspace`, `services`, `github_mounts`).
 - Mount diff/info and the mount-info cache (`mount_diff`, `mount_info`, `mount_info_cache`).
-- Console view composition + input (`tui`).
+- Console view composition + input (`tui`), including the Usage route. Usage
+  adapts the Rust-owned `jackin-protocol` projection into grouped canonical
+  account rows and Capsule-style meters; it does not discover accounts or
+  refresh providers.
 
 ## Architecture tier and allowed dependencies
 
@@ -26,6 +29,7 @@ Canonical host-console product surface. Owns reusable console state, update/inpu
 | [`tui.rs`](src/tui.rs) · [`tui/`](src/tui) | chrome/input using TermRock and shared operator-info UI | [`input/`](src/tui/input) |
 | [`tui/state.rs`](src/tui/state.rs) · [`tui/state/`](src/tui/state) | console manager state + bindings | [`tests.rs`](src/tui/state/tests.rs) |
 | [`tui/state/manager.rs`](src/tui/state/manager.rs) · [`tui/state/manager/`](src/tui/state/manager) | concrete manager stage state | [`tests.rs`](src/tui/state/manager/tests.rs) |
+| [`tui/screens/usage.rs`](src/tui/screens/usage.rs) · [`tui/screens/usage/`](src/tui/screens/usage) | Usage Overview/Account Detail layout, account navigation, and meter adaptation | [`tests.rs`](src/tui/screens/usage/tests.rs) |
 | [`tui/screens/form_model.rs`](src/tui/screens/form_model.rs) | shared form `FieldRow` / `FormSection` view models | — |
 
 ## Public API

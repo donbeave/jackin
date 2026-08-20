@@ -459,6 +459,11 @@ authenticated and failure fixtures before shipping; these are not product questi
 - 2026-08-21 — Plan 004 — completed provider parity: duration-first Codex and
   Z.AI classifiers, Codex individual cap, Grok CLI-proxy REST, OpenCode Go limits
   with provisional identity, provider-only labels, and sanitized fixtures.
+- 2026-08-21 — Plan 005 — shipped the simple broker-backed host CLI and the
+  native Console Usage route. Human output stays compact; JSON exposes the
+  canonical projection. Console uses the shipped `jackin❯ · usage` frame,
+  grouped provider/account navigation, account detail, and full-width
+  Capsule-style meters. Focused tests, clippy, formatting, and lint pass.
   moved to PLANNED. All implementation remains on the current branch and PR #898.
 - 2026-08-21 — Plan 001 — froze secret-free V1 contract fixtures, the surface-state
   matrix, classified provider-call inventory with injection detection, reserved test

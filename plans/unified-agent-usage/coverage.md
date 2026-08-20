@@ -9,16 +9,16 @@ PR may be created.
 
 | ID | Screen/state | Item anchor | Spec | Plans | Status |
 |---|---|---|---|---|---|
-| S1 | Console Overview | §Screens/Console usage Overview | pending | pending | pending |
-| S2 | Console Account Detail | §Screens/Console usage Account detail | pending | pending | pending |
+| S1 | Console Overview | §Screens/Console usage Overview | covered | 005 | DONE |
+| S2 | Console Account Detail | §Screens/Console usage Account detail | covered | 005 | DONE |
 | S3 | Console loading and refreshing-with-last-good | §Screens/Console usage Loading and refreshing | pending | pending | pending |
 | S4 | Console successful empty inventory | §Screens/Console usage Empty inventory | pending | pending | pending |
 | S5 | Console stale and partial-provider failure | §Screens/Console usage Stale and partial failure | pending | pending | pending |
 | S6 | Console global failure | §Screens/Console usage Global failure | pending | pending | pending |
 | S7 | Desktop Usage window and runtime/accessibility matrix | §Screens/Desktop usage | pending | pending | pending |
 | S8 | Desktop provider-focused status popover | §Screens/Desktop status popover | pending | pending | pending |
-| S9 | Bare CLI compact human output | §Screens/CLI usage output schematic | pending | pending | pending |
-| S10 | CLI stale, partial, empty, total failure, JSON | §Screens/CLI usage output states | pending | pending | pending |
+| S9 | Bare CLI compact human output | §Screens/CLI usage output schematic | covered | 005 | DONE |
+| S10 | CLI stale, partial, empty, total failure, JSON | §Screens/CLI usage output states | covered | 005 | DONE |
 | S11 | Capsule Usage Overview | §Screens/Capsule usage Overview | pending | pending | pending |
 | S12 | Capsule multi-account agent detail | §Screens/Capsule usage multi-account agent | pending | pending | pending |
 | S13 | Capsule zero-agent empty and lifecycle/failure states | §Screens/Capsule usage states | pending | pending | pending |
@@ -37,24 +37,24 @@ PR may be created.
 | F8 | Rust-owned quota semantics, formatting, category/order, summary selection, severity | D14; D30; §Data & integrations | covered | 002, 004 | DONE |
 | F9 | Provider quota parity including Codex money cap, supported extra windows, OpenCode | D21; Q1-Q3; §Research | covered | 004 | DONE |
 | F10 | Provider-backed Not started and confidence-gated rich-surface run-out estimate | D23; D24 | covered | 004 | DONE |
-| F11 | Bare host CLI human/JSON projection and settled exit behavior | D1; D4; D9; D16; D27 | pending | pending | pending |
-| F12 | Instance accounts/verify retained without cache/refresh bypass authority | D10; W3 | pending | pending | pending |
-| F13 | Top-level Console Usage route using confirmed native Console grammar | D7; D8; D26 | pending | pending | pending |
+| F11 | Bare host CLI human/JSON projection and settled exit behavior | D1; D4; D9; D16; D27 | covered | 005 | DONE |
+| F12 | Instance accounts/verify retained without cache/refresh bypass authority | D10; W3 | covered | 005 | DONE |
+| F13 | Top-level Console Usage route using confirmed native Console grammar | D7; D8; D26 | covered | 005 | DONE |
 | F14 | Capsule launch-config membership, lifecycle, previews, account tabs, and launch neutrality | D2; D11-D13; D28; D31-D32 | pending | pending | pending |
 | F15 | Desktop filtered projection through sanitized boltffi DTOs; Swift display-only | D14-D15; §Data & integrations | pending | pending | pending |
 | F16 | Desktop status modes, popover handoff, native Usage window, Settings retention | D17-D20; S7-S8 | pending | pending | pending |
 | F17 | Stable selection; removal returns to Overview with persistent inline notice | D20; D34 | pending | pending | pending |
 | F18 | Developer ID, notarization, immutable public artifact, Homebrew cask proof | D19; §Quality bar | pending | pending | pending |
 | F19 | Cross-surface fixture parity and no-direct-fetch architecture proof | §Quality bar | pending | pending | pending |
-| F20 | All implementation executes on current branch and PR | Invocation context | pending | all | pending |
+| F20 | All implementation executes on current branch and PR | Invocation context | covered | all | IN PROGRESS |
 
 ## Flows
 
 | ID | Flow | Screens touched | Spec | Plans | Status |
 |---|---|---|---|---|---|
-| W1 | Host Overview through Console | S1-S6 | pending | pending | pending |
-| W2 | Host read through bare CLI | S9-S10 | pending | pending | pending |
-| W3 | Instance inspection through CLI | S10, S11-S13 | pending | pending | pending |
+| W1 | Host Overview through Console | S1-S6 | covered | 005 | DONE |
+| W2 | Host read through bare CLI | S9-S10 | covered | 005 | DONE |
+| W3 | Instance inspection through CLI | S10, S11-S13 | covered | 005 | DONE |
 | W4 | Capsule pre-session quota preview and initialization transition | S11-S13 | pending | pending | pending |
 | W5 | Desktop status glance to Usage detail | S7-S8 | pending | pending | pending |
 | W6 | Shared refresh, degradation, cancellation, owner exit, and recovery | S1-S13 | covered | 003, 005-008 | IN PROGRESS |
@@ -75,19 +75,19 @@ PR may be created.
 | N10 | No silent account substitution after removal | Preserve operator intent | pending |
 | N11 | No browser-cookie import/decryption, authenticated WebView, or scraping | Credential trust boundary | pending |
 | N12 | No inferred Not started or weak/stale/CLI run-out estimate | Semantic truth and simple CLI | pending |
-| N13 | No bars/cards/animation/pace/raw mode/interactive chrome in human CLI | CLI is a simple readout | pending |
+| N13 | No bars/cards/animation/pace/raw mode/interactive chrome in human CLI | CLI is a simple readout | covered |
 | N14 | No prototype fixture/store/scenario/harness code copied into production | Reference behavior, not production architecture | pending |
 
 ## Quality bar
 
 | ID | Statement anchor | Spec scenario(s) | Status |
 |---|---|---|---|
-| B1 | Console TUI repository rules and major-state render conformance | pending | pending |
+| B1 | Console TUI repository rules and major-state render conformance | covered | 005 | DONE |
 | B2 | Desktop native/Liquid Glass rubric and accessibility/runtime matrix | pending | pending |
 | B3 | Concurrent reads join one generation; every bypass removed | 003 process/coordinator proof; later consumer audit | IN PROGRESS |
 | B4 | Cross-surface Rust-owned value/label parity | pending | pending |
-| B5 | Console golden matrix including 80×24/focus/scroll/removal | pending | pending |
-| B6 | CLI golden matrix including JSON, TTY/non-TTY, plaintext | pending | pending |
+| B5 | Console golden matrix including 80×24/focus/scroll/removal | covered | 005 | DONE |
+| B6 | CLI golden matrix including JSON, TTY/non-TTY, plaintext | covered | 005 | DONE |
 | B7 | Capsule golden matrix including lifecycle/account tabs/narrow/focus | pending | pending |
 | B8 | Signing/notarization/public artifact/Homebrew proof | pending | pending |
 
@@ -200,3 +200,4 @@ item authorizes another branch or PR.
 | 002 | F1-F4 canonical V1 foundation; F8 typed category/order seam; F17 destination normalization; N1, N4, N8-N10, N14 | canonical 5; protocol 8; crate nextest 290; full workspace and E2E gates |
 | 003 | F5-F7 broker authority, policy, projection operations, atomic envelope, N3 process activation seam | `broker_service_lifecycle` 1; coordinator 14; broker 8; policy 2; state 6; protocol 9; usage clippy; dependent checks |
 | 004 | F3, F8-F10, F9 provider parity, Q1-Q3 adapter contracts and typed failures | 4 focused fixtures; usage 146; host 59; usage clippy |
+| 005 | S1-S2, S9-S10, F11-F13, W1-W3, B1, B5-B6, N13 | jackin-console 1286; jackin CLI tests; console/jackin clippy; fmt; mise lint |

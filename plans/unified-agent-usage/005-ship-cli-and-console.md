@@ -1,7 +1,7 @@
 # Plan 005: Ship the simple CLI and native Console Usage route
 
 ## Status
-TODO
+DONE
 
 ## Why this matters
 Headless automation needs stable plain output; operators need a Console view that belongs to existing jackin❯ grammar.
@@ -54,9 +54,24 @@ CLI golden JSON/human across TTY/plaintext/width/state/exit; Console render matr
 ## Done criteria
 Both named test targets pass nonzero tests; semantic fixtures match; CLI remains simple; Console matches repository snapshots/style.
 
+## Execution evidence — 2026-08-21
+
+- Bare `jackin usage` reads the broker-owned canonical V1 projection and
+  renders compact provider/account/window output or exact projection JSON.
+- Existing instance `accounts`/`verify` parsing remains intact; no new direct
+  provider or cache authority was added.
+- `jackin console` now opens Usage with `u` from the workspace list, uses the
+  shipped `jackin❯ · usage` frame, canonical account rows, account detail, and
+  full-width Capsule-style meters. Multi-account providers are grouped without
+  duplicate provider destinations.
+- Focused proof: `cargo test -p jackin-console --offline -- --test-threads=1`
+  (1286 passed), `cargo test -p jackin cli::tests --offline -- --test-threads=1`,
+  `cargo clippy -p jackin-console --all-targets --offline -- -D warnings`,
+  `cargo clippy -p jackin --all-targets --offline -- -D warnings`,
+  `cargo fmt --check`, and `mise run lint`.
+
 ## STOP conditions
 Console requires invented global navigation; CLI needs direct fetch/cache authority; shared meter extraction changes Capsule behavior without proof.
 
 ## Maintenance notes
 Update TUI docs for cross-cutting focus/navigation/compact behavior in this PR.
-
