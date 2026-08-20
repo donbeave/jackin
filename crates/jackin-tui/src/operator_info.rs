@@ -2,6 +2,17 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //! Product-owned jackin❯ operator-information vocabulary and `TermRock` projection.
+//!
+//! Plan 010 step 6 (C19) reviewed the named `key_value_table` + `link`
+//! pairing at rev `29a16b5b` and recorded a behavior-preserving
+//! non-adoption (commit-message carve-out): the pairing's substance already
+//! lands through the current substrate — upstream `DetailTable` (the
+//! KVT-class detail table with `Link`/`CopyAndLink` capabilities and
+//! `Role::Link` styling), `hyperlink_regions`, and OSC 8 bytes emitted via
+//! `termrock::osc::encode_hyperlink_open`. A literal `KeyValueTable` swap is
+//! not byte-viable: its field-row paint is an editable form-grid anatomy
+//! (row-chrome fills, two-column leading pad, separator rules, auto key
+//! width) that would shift every rendered row.
 
 use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::{
