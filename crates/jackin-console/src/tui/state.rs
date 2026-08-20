@@ -269,6 +269,9 @@ pub struct ManagerState<'a> {
     pub list_split_pct: u16,
     pub drag_state: Option<DragState>,
     pub hover_target: Option<ManagerHoverTarget>,
+    /// Consumer hover cache over per-event `HitRegion`s (mouse matrix
+    /// row 15) — the source the Moved arm resolves stage hovers from.
+    pub hover: termrock::interaction::HoverState<crate::tui::input::mouse::ConsoleHoverTarget>,
     pub mount_info_cache: MountInfoCache,
     /// Process-lifetime cache of `op` structural metadata, threaded
     /// into the picker on open. Carries no credentials — see

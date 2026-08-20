@@ -145,6 +145,7 @@ impl ManagerState<'_> {
             list_split_pct: DEFAULT_SPLIT_PCT,
             drag_state: None,
             hover_target: None,
+            hover: termrock::interaction::HoverState::default(),
             mount_info_cache: MountInfoCache::default(),
             op_cache,
             op_available,

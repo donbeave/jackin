@@ -2108,3 +2108,38 @@ fn click_non_row_trust_block_area_deselects_via_sentinel() {
         "click on non-row Trust-block area must still route through the trust lane"
     );
 }
+
+#[test]
+fn hover_regions_topmost_first_matches_hit_test() {
+    // Row-15 convention lock: hover regions are built topmost-FIRST
+    // (reverse of paint order) because `HoverState::update` keeps the
+    // FIRST hit in the slice while scene `hit_test` keeps the LAST
+    // registered — topmost-first makes both pick the same target.
+    use termrock::interaction::{HitRegion, HoverState};
+
+    let top = HitRegion {
+        id: super::ConsoleHoverTarget::Workspace(ManagerHoverTarget::ListRow(
+            ManagerListRow::NewWorkspace,
+        )),
+        area: Rect::new(0, 0, 10, 2),
+    };
+    let under = HitRegion {
+        id: super::ConsoleHoverTarget::Editor(EditorHoverTarget::Tab(0)),
+        area: Rect::new(0, 1, 10, 2),
+    };
+    let regions = [top.clone(), under];
+    let mut hover = HoverState::default();
+
+    // Overlap row: the first (topmost) region wins.
+    assert_eq!(
+        hover.update(ratatui::layout::Position::new(5, 1), &regions),
+        Some(&top.id)
+    );
+    assert_eq!(hover.hovered(), Some(&top.id));
+    // Off every region: the cache clears.
+    assert_eq!(
+        hover.update(ratatui::layout::Position::new(50, 50), &regions),
+        None
+    );
+    assert_eq!(hover.hovered(), None);
+}
