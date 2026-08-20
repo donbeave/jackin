@@ -1,10 +1,10 @@
 # Skill Application Sequence — Unified Agent Usage
 
-- **Roadmap item**: [README.md](README.md) (status: READY)
+- **Roadmap item**: [README.md](README.md) (status: PLANNED)
 - **Open PR**: #898 on `chore/roadmap-unified-agent-usage`
-- **Delivery constraint**: Finalization and planning remain on this branch and
-  PR. Production implementation receives its own later delivery branches/PRs
-  according to repository policy.
+- **Delivery constraint**: Finalization, planning, and every implementation plan
+  remain on `chore/roadmap-unified-agent-usage` and PR #898. No additional branch
+  or PR may be created.
 
 ## Completed evidence
 
@@ -24,18 +24,13 @@
 2026-08-21. A fresh-context planning dry run reported no guesses or user
 questions, so the roadmap is READY.
 
-## Next gate
+## Completed planning gate
 
-`tailrocks-plan unified-agent-usage` runs immediately after READY on the same
-branch and PR. It owns gap research, technical-contract closure, coverage
-ledger, executable work-item plans, and `plans/unified-agent-usage/GOAL.md`.
-It must consume the roadmap's settled decisions, open research questions,
-planning-owned technical closure, blessed native reference, and confirmed TUI
-schematics without reopening product choices.
+`tailrocks-plan unified-agent-usage --deep` produced gap research, the coverage
+ledger, OpenSpec contracts, eight sequential plans, and the goal handoff.
 
 ## After planning
 
-Refresh PR #898 so its body reflects READY and the plan package, then run the
-repository's review and merge gates. Implementation branch/PR topology comes
-from the approved plan and repository contribution rules, not this shaping
+Execute plans 001–008 sequentially on the current branch and PR, refreshing PR
+#898 after each pushed checkpoint. Then run repository review and merge gates.
 artifact.

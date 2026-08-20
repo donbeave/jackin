@@ -1,9 +1,9 @@
 # Unified Agent Usage Experience
 
-- **Status**: READY
+- **Status**: PLANNED
 - **Slug**: unified-agent-usage
 - **Created**: 2026-08-20 · **Updated**: 2026-08-21
-- **Plan**: — (plans/unified-agent-usage/ once planned)
+- **Plan**: [plans/unified-agent-usage/](../../plans/unified-agent-usage/)
 
 ## Intent
 
@@ -411,11 +411,14 @@ The separate delivery plan remains unclaimed.
 
 ## Open questions
 
-## Open research questions
+## Researched directions awaiting implementation fixtures
 
 - Across captured Codex and Z.AI payload fixtures, which classifier—provider slot name, provider-supplied duration, or an explicit combination—preserves correct semantic window identity under slot renames and malformed or missing durations?
 - Across authenticated fixtures and failure-path probes, which supported Grok source—the `cli-chat-proxy.grok.com` REST billing endpoints, ACP stdio RPC, or grpc-web API—provides the most complete and stable quota contract without widening the credential boundary?
 - Which supported OpenCode authentication and `zen/go/v1/usage` response contract supplies stable account identity, rolling/weekly/monthly limits, resets, and failure semantics required by the settled eight-surface host inventory?
+
+Research chapter 07 closes the source and classifier directions. Plan 004 owns
+authenticated and failure fixtures before shipping; these are not product questions.
 
 ## Deferred
 
@@ -448,3 +451,6 @@ The separate delivery plan remains unclaimed.
   account ordering/recovery, adaptive refresh, quota additions, credential
   boundaries, and deferrals; fresh-context planning dry run reported no
   inventions or user questions; moved to READY.
+- 2026-08-21 — tailrocks-plan --deep — froze coverage, specifications,
+  broker/provider/surface research, eight sequential plans, and the goal gate;
+  moved to PLANNED. All implementation remains on the current branch and PR #898.

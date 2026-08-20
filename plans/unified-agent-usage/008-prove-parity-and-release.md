@@ -1,0 +1,61 @@
+# Plan 008: Prove parity and deliver the signed desktop artifact
+
+## Status
+TODO
+
+## Why this matters
+Completion means one truth survives concurrency and one public artifact survives the actual install chain.
+
+## Preconditions — run before anything else
+Plans 001–007 DONE; no unresolved must-not or zero-test gates; external credentials available only for credentialed release steps.
+
+## Spec contract
+Parity/release: one fixture truth, architecture proof, surface conformance, immutable release chain, single branch.
+
+## Must NOT
+N1-N14.
+
+## Inputs to provide
+All golden fixtures/tests, bypass audit, desktop release scripts, Apple/Homebrew credential locations/types without values.
+
+## Starting state
+Every surface implemented on current branch; public distribution proof remains.
+
+## Commands you will need
+All named focused tests; `rtk mise run ci`; `desktop-ci`; `desktop-merge`; `desktop-sign-notarize`; `desktop-release-state`; Homebrew cask audit/install/uninstall commands documented by research 08.
+
+## Suggested executor toolkit
+Cross-process harness, fixture diff tool, macOS quarantine/Gatekeeper tooling, immutable artifact digest ledger.
+
+## Scope
+Final parity, architecture, docs/roadmap, release build/sign/notarize/staple/publish/cask/install proof. No new features.
+
+## Git workflow
+Remain on `chore/roadmap-unified-agent-usage` and PR #898. Signed commits and immediate normal pushes only. Never open another PR or force-push.
+
+## Steps
+### Step 1: Run cross-surface fixture parity
+Assert identical IDs/order/values/labels/states/failures across Rust adapters; layout-only differences explicitly allowlisted.
+### Step 2: Run adversarial authority proof
+Concurrent consumers, owner exit, cancellation, crash/restart, catalog replacement, direct-call/bypass audit.
+### Step 3: Run complete surface matrices
+CLI, Console, Capsule, FFI/desktop, accessibility, runtime/display and documentation gates; zero filtered tests fail.
+### Step 4: Produce and attest one artifact
+Build once; record digest; Developer ID sign, notarize, staple, quarantine-aware Gatekeeper launch against that digest.
+### Step 5: Publish and install same digest
+Publish immutable artifact, update cask, audit, clean install/launch/uninstall, prove digest continuity.
+### Step 6: Close roadmap and PR evidence
+Update user/contributor docs, roadmap status/log/index, PR checklist and exact command/results. Keep PR #898 as sole delivery PR.
+
+## Test plan
+Every command from research 05/08 plus full repo gates. Credential-absent state is BLOCKED, never falsely passed; noncredentialed gates remain runnable.
+
+## Done criteria
+All B1–B8 pass; must-not registry has executable enforcement; exact public digest completes full chain; roadmap/docs current; PR #898 ready.
+
+## STOP conditions
+Artifact digest changes mid-chain; signing/notary/cask credential absent; any direct provider bypass; any surface semantic mismatch; branch/PR differs.
+
+## Maintenance notes
+Preserve release evidence without secrets; future schema/provider changes rerun parity and distribution gates.
+

@@ -12,6 +12,10 @@ This topic establishes the architectural, native macOS, reference-implementation
 - [Apple-native design and distribution evidence](02-apple-native-design.md)
 - [Reference implementations and delivery directions](03-reference-implementations.md)
 - [Contract and proof matrix](04-contract-and-proof-matrix.md)
+- [Verification ledger](05-verification-ledger.md)
+- [Broker and canonical projection planning freeze](06-broker-projection-planning.md)
+- [Provider contracts for planning](07-provider-contracts-planning.md)
+- [Surface and release tooling map](08-surfaces-release-tooling.md)
 
 ## Conclusions
 
