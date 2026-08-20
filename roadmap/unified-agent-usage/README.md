@@ -1,6 +1,6 @@
 # Unified Agent Usage Experience
 
-- **Status**: BLOCKED — external Plan 008 release authorization required
+- **Status**: BLOCKED — Plan 008 release authorization and host XCTest automation required
 - **Slug**: unified-agent-usage
 - **Created**: 2026-08-20 · **Updated**: 2026-08-21
 - **Plan**: [plans/unified-agent-usage/](../../plans/unified-agent-usage/)
@@ -475,7 +475,9 @@ authenticated and failure fixtures before shipping; these are not product questi
 - 2026-08-21 — Plan 008 — completed noncredentialed parity, authority, native,
   and ad-hoc artifact proof. Rejected only the external release segment because
   the operator prohibited merge/tag/publication, signing/notarization, and
-  Homebrew-tap mutation; PR #898 remains open and unmerged.
+  Homebrew-tap mutation; PR #898 remains open and unmerged. The final goal gate
+  also requires a GUI-capable XCTest session; this host currently times out
+  while enabling automation before assertions.
   moved to PLANNED. All implementation remains on the current branch and PR #898.
 - 2026-08-21 — Plan 001 — froze secret-free V1 contract fixtures, the surface-state
   matrix, classified provider-call inventory with injection detection, reserved test
