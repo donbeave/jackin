@@ -61,7 +61,11 @@ fn tree_differences_clean_when_identical() {
     drop(std::fs::remove_dir_all(&temp));
     write_tree(&expected, &[("a.bin", b"one"), ("nested/b.bin", b"two")]);
     write_tree(&actual, &[("a.bin", b"one"), ("nested/b.bin", b"two")]);
-    assert!(tree_differences(&expected, &actual, "label").unwrap().is_empty());
+    assert!(
+        tree_differences(&expected, &actual, "label")
+            .unwrap()
+            .is_empty()
+    );
     std::fs::remove_dir_all(&temp).unwrap();
 }
 
@@ -71,7 +75,10 @@ fn tree_differences_flags_stale_missing_and_extra() {
     let expected = temp.join("expected");
     let actual = temp.join("actual");
     drop(std::fs::remove_dir_all(&temp));
-    write_tree(&expected, &[("stale.bin", b"old"), ("missing.bin", b"gone")]);
+    write_tree(
+        &expected,
+        &[("stale.bin", b"old"), ("missing.bin", b"gone")],
+    );
     write_tree(&actual, &[("stale.bin", b"new"), ("extra.bin", b"added")]);
     let differences = tree_differences(&expected, &actual, "label").unwrap();
     assert_eq!(
@@ -109,7 +116,8 @@ fn xunit_totals_reject_corrupt_reports() {
     parse_xunit_totals("").unwrap_err();
     parse_xunit_totals("<testsuites></testsuites>").unwrap_err();
     parse_xunit_totals("<testsuite name=\"a\" tests=\"1\">").unwrap_err();
-    parse_xunit_totals("<testsuite name=\"a\" tests=\"1\" failures=\"0\" errors=\"0\"").unwrap_err();
+    parse_xunit_totals("<testsuite name=\"a\" tests=\"1\" failures=\"0\" errors=\"0\"")
+        .unwrap_err();
 }
 
 #[test]

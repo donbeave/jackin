@@ -46,7 +46,7 @@ Finalize one agent usage experience across jackin❯ desktop, `jackin console`, 
 - Provide agent usage CLI output through `jackin usage`.
 - Preserve explicit Capsule-instance account inspection and verification while eliminating host-side cache and refresh bypasses.
 - Make agent usage available inside `jackin console`.
-- Show subscription and quota usage limits only, including remaining or used percentage, reset countdowns, plan and status, and provider-supplied limit windows such as money caps when they are quota bounds, as required by [`AGENTS.md`](../../AGENTS.md).
+- Show subscription and quota usage limits only, including remaining or used percentage, reset countdowns, plan and status, and provider-supplied limit windows such as money caps when they are quota bounds, as required by the repository's root agent rules.
 - Ship jackin❯ desktop with Developer ID signing, notarization, a public artifact, and verified Homebrew cask installation.
 
 ## Screens
@@ -167,7 +167,7 @@ approval, READY transition, and plan remain unclaimed.
 ## Must not
 
 - MUST NOT display duplicated accounts in the console usage interface — each account should appear once across available agent configurations.
-- MUST NOT show token unit prices, session cost estimates, spend-over-time history, usage trends, aggregate-spend charts, or cost rankings — [`AGENTS.md`](../../AGENTS.md) restricts usage surfaces to subscription and quota limits.
+- MUST NOT show token unit prices, session cost estimates, spend-over-time history, usage trends, aggregate-spend charts, or cost rankings — the repository's root agent rules restrict usage surfaces to subscription and quota limits.
 - MUST NOT let a CLI, console, desktop, Capsule, diagnostic, or presentation-cache path call a provider directly, queue a refresh behind active canonical-account work, or become an independent freshness/retry authority — one broker owns provider work.
 - MUST NOT use unstable source ordinals as durable canonical account identity when they can fragment one account or alias persisted broker state.
 - MUST NOT disable or block Capsule launch or session actions based on exhausted, unknown, stale, or failed quota observations.

@@ -251,7 +251,11 @@ fn run_swift_unit_tests(root: &Path) -> Result<()> {
         bail!("XCTest executed zero tests — refusing the false-green selection trap");
     }
     if xctest.failures > 0 {
-        bail!("XCTest reported {} failures across {} tests", xctest.failures, xctest.tests);
+        bail!(
+            "XCTest reported {} failures across {} tests",
+            xctest.failures,
+            xctest.tests
+        );
     }
 
     let swift_testing_text = fs::read_to_string(&swift_testing_report).with_context(|| {
@@ -545,8 +549,7 @@ fn generate_bindings(root: &Path, profile: &str) -> Result<()> {
 fn bindings_check(root: &Path, profile: &str) -> Result<()> {
     let staging = root.join("native/.build/bindings-check");
     if staging.exists() {
-        fs::remove_dir_all(&staging)
-            .with_context(|| format!("clearing {}", staging.display()))?;
+        fs::remove_dir_all(&staging).with_context(|| format!("clearing {}", staging.display()))?;
     }
     let staging_generated = staging.join("Generated");
     let staging_sources = staging.join("Sources/JackinUsageBindings");
@@ -586,8 +589,8 @@ fn tree_differences(expected: &Path, actual: &Path, label: &str) -> Result<Vec<S
             if !dir.is_dir() {
                 continue;
             }
-            for entry in fs::read_dir(&dir).with_context(|| format!("reading {}", dir.display()))? {
-                let path = entry?.path();
+            for entry in crate::fs_util::read_dir_sorted(&dir)? {
+                let path = entry.path();
                 if path.is_dir() {
                     stack.push(path);
                 } else {
@@ -604,7 +607,10 @@ fn tree_differences(expected: &Path, actual: &Path, label: &str) -> Result<Vec<S
     let mut differences = Vec::new();
     for relative in &expected_files {
         if !actual_files.contains(relative) {
-            differences.push(format!("{label}/{}: missing after regeneration", relative.display()));
+            differences.push(format!(
+                "{label}/{}: missing after regeneration",
+                relative.display()
+            ));
         }
     }
     for relative in &actual_files {
@@ -746,7 +752,9 @@ fn build_xcframework(root: &Path) -> Result<()> {
         ]);
     cmd::run_streaming(&mut cargo)?;
 
-    let arm_lib = root.join(format!("target/{HOST_TARGET}/{DESKTOP_PROFILE}/{STATIC_LIB}"));
+    let arm_lib = root.join(format!(
+        "target/{HOST_TARGET}/{DESKTOP_PROFILE}/{STATIC_LIB}"
+    ));
     if !arm_lib.is_file() {
         bail!("missing {}", arm_lib.display());
     }
@@ -1099,7 +1107,8 @@ fn dwarf_uuid(path: &Path) -> Result<String> {
     let mut dwarfdump = cmd::command("xcrun");
     dwarfdump.args(["dwarfdump", "--uuid", path.to_str().context("path utf-8")?]);
     let output = cmd::output_string(&mut dwarfdump)?;
-    parse_dwarf_uuid(&output).with_context(|| format!("parsing dwarfdump UUID for {}", path.display()))
+    parse_dwarf_uuid(&output)
+        .with_context(|| format!("parsing dwarfdump UUID for {}", path.display()))
 }
 
 fn parse_dwarf_uuid(output: &str) -> Option<String> {

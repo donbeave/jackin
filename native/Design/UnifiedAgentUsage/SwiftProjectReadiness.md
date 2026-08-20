@@ -1,11 +1,47 @@
 # Swift Project Readiness — Unified Agent Usage
 
-Status: AUDITED — REMEDIATION REQUIRED
+Status: REMEDIATED — 2026-08-20 (two standing exceptions below)
 
 Audit date: 2026-08-20
 
-Mode: read-only audit under `tailrocks-swift-project-setup`. This document records
-implementation work; it does not change project configuration.
+Mode: the original audit below is preserved as the historical record. The
+remediation ledger records the never-broken slices that closed every approved
+gap under `tailrocks-swift-project-setup` remediate mode.
+
+## Remediation ledger
+
+Remediation ran 2026-08-20 on branch `chore/roadmap-unified-agent-usage`
+(PR #898), in the doc's own remediation order. Every slice kept format, lint,
+Rust, and Swift gates green before commit.
+
+| Gap | Closed by | Evidence |
+|---|---|---|
+| Two-lane toolchain contract (P0) | `e7f66979` | All four values in `native/AGENTS.md` + `native/project.yml` comments; `PlatformLaneTests` reject `UIDesignRequiresCompatibility` and unguarded post-26.0 symbols. |
+| Xcode agent bridge setup/boundary (P0) | `e7f66979` | `native/README.md` "Xcode agent bridge": setup, no-screenshot/no-automation boundary, unavailable-never-pass rule, no-secret verification checklist. |
+| Agent responsibility ownership (P1) | `e7f66979` | One-owner table in `native/README.md` "Agent responsibility ownership". |
+| One-way bridge package boundary (P0) | `3ea08dc2` | `JackinUsageBindings` (generated only) → `JackinUsageBridge` (sole handwritten importer, typed facade — `RefreshScheduler.run` is private) → UI targets; `BridgeBoundaryTests` enforce the import/handle rules. |
+| Generated-binding drift gate (P0) | `09934ad7` | `cargo xtask desktop bindings-check` / `mise run desktop-bindings-check`: staging regeneration, byte-compare of both trees, stale/missing/extra fixtures unit-tested. |
+| Swift unit-test count proof + all five harnesses (P0) | `508fe9b4` | `cargo xtask desktop test-swift`: dual proof — XCTest `All tests` summary (SwiftPM 6.3 writes xUnit for Swift Testing only) plus `-swift-testing.xml`; zero/missing/corrupt results fail. All five declared harness products run. |
+| Local/CI/release parity (P0) | `c449025f` | Cadence graph `desktop-ci` (PR) → `desktop-merge` (+UI) → `desktop-scheduled` (+dead-code); release.yml invokes the exact `mise run desktop-*` names; xtask contract tests prove the graph, the release wiring, and that generated `ci.yml` only delegates the native lane; TESTING.md contradiction reconciled. |
+| Release symbols (P1) | `dc32dc3f` | `[profile.desktop-release]` (thin LTO, 1 codegen unit, line tables, no strip) drives the static library/bindings/XCFramework; build archives the dSYM beside the app and proves correspondence via matching arm64 UUIDs; release CI uploads dSYM + compressed unstripped `.a` (90-day retention). dSYM verified to carry Rust function names and source lines. |
+| SwiftLint debt + unit-test policy (P1) | `fd04d8c4` | Root disables only the four verified swift-format conflicts; six size rules re-enabled at defaults with legacy overages in nested per-directory configs (SwiftLint has no per-rule path exclusion; `--config` would silently disable nested discovery, so `desktop-lint` drops it) carrying owner + deletion condition; `native/Tests/.swiftlint.yml` added; `LintPolicyTests` prove force rules stay error outside test trees. |
+| Apple agent knowledge governance (P1) | `f8324d6` + `105b73a` | Standing blocker: Xcode 26.6 (17F113) ships no exportable skill documents — nothing reviewable to vendor. Recorded with probe date, refresh rule, and non-execution policy in `native/README.md`; `VendorProvenanceTests` require PROVENANCE.md if a vendor tree ever appears. |
+
+Standing exceptions (both dated, both nonblocking):
+
+1. **Forward-validation lane absent.** No Xcode 27 runner image exists; the
+   exception is owned by Release Engineering in `native/README.md` and exits
+   when the runner image is available. Shipping lane unchanged.
+2. **Apple agent skills export unsupported.** Recorded blocker above; re-probe
+   on every shipping Xcode change.
+
+Scheduled-cadence note: the readiness implementation listed an accessibility
+audit and a visual-state matrix under merge/scheduled cadences. The
+accessibility audit runs inside `desktop-test-ui` (merge cadence); no separate
+visual-state-matrix task exists yet — adding one is a follow-up, not a
+regression.
+
+## Original audit (2026-08-20, preserved)
 
 ## Proven baseline
 
