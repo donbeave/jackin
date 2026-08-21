@@ -32,6 +32,7 @@ pub fn tab_bar_footer_items(
         ]);
     }
     append_save_and_escape(&mut items, save_label, dirty_change_count);
+    append_keyboard_help_hint(&mut items);
     items
 }
 
@@ -59,7 +60,22 @@ pub fn content_footer_items(
         HintSpan::GroupSep,
     ]);
     append_save_and_escape(&mut items, save_label, dirty_change_count);
+    append_keyboard_help_hint(&mut items);
     items
+}
+
+/// `? help` — appended by every *stage* footer builder. Modal/picker footers
+/// must not call this: an open modal owns `?` as typed input, so the help
+/// overlay is unreachable there (input dispatch precedence).
+pub(super) fn append_keyboard_help_hint(items: &mut Vec<HintSpan<'static>>) {
+    items.extend([
+        HintSpan::Sep,
+        super::key_span(
+            crate::tui::keymap::CONSOLE_GLOBAL_KEYMAP
+                .glyph_for(crate::tui::keymap::ConsoleGlobalAction::OpenKeyboardHelp),
+        ),
+        HintSpan::Text("help"),
+    ]);
 }
 
 pub(super) fn append_open_in_github(items: &mut Vec<HintSpan<'static>>, has_github_url: bool) {

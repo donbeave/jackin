@@ -25,6 +25,9 @@ mod modals;
 mod settings;
 mod workspace;
 
+#[cfg(test)]
+mod tests;
+
 // Workspace-list footer types + builders.
 pub use self::workspace::{
     WorkspaceFooterScrollFacts, WorkspaceInlinePickerContentFacts, WorkspaceListFooterFacts,

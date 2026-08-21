@@ -19,7 +19,7 @@ expression: rendered
 │    MiniMax                                                                             │
 │                                                                                        │
 │                                                                                        │
-│                                                                                        │
 └────────────────────────────────────────────────────────────────────────────────────────┘
                                                                                           
-    ↑↓ navigate   ↵ manage auth   ⇤ tab bar   S save workspace   Esc back · Ctrl-Q quit
+    ↑↓ navigate   ↵ manage auth   ⇤ tab bar   S save workspace   Esc back · Ctrl-Q quit   
+                                          ? help
