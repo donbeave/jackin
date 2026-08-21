@@ -153,3 +153,144 @@ semantics; no direct provider call from any consumer.
 
 Names above are required plan-owned test targets, not claims that current Cargo
 filters already exist. A zero-test result fails the later goal gate.
+
+## Post-implementation execution — 2026-08-21
+
+Executed at revision `8400e14d` (`chore/roadmap-unified-agent-usage`, PR #898) on
+macOS with the operator's real `~/.config/jackin` configuration. This section
+records what the required proof commands above actually do at this revision, and
+what running the shipped surfaces produces. It is executed evidence, not a
+prescriptive matrix.
+
+### Required proof commands — executed
+
+| Command filter | Tests run | Result |
+|---|---|---|
+| `-p jackin-usage canonical_projection` | 5 | pass |
+| `-p jackin-usage broker_service_lifecycle` | 0 | zero-test — the suite exists in `jackin-runtime`, not `jackin-usage`; this ledger names the wrong package |
+| `-p jackin-runtime broker_service_lifecycle` | 1 | pass |
+| `-p jackin-runtime usage_relay::resolved_launch_inventory` | 0 | zero-test |
+| `-p jackin-capsule usage_projection` | 1 | pass |
+| `-p jackin cli::usage::canonical_overview` | 0 | zero-test |
+| `-p jackin-console usage` | 3 | pass |
+| `-p jackin-usage-ffi canonical_projection` | 0 | zero-test |
+
+Four of the seven required commands return zero tests. Per the goal gate stated
+above, a zero-test result fails that gate.
+
+The `jackin-usage-ffi canonical_projection` zero-test result is structural rather
+than an omission: `jackin-usage-ffi` contains no reference to
+`UsageProjectionV1`, `canonical_account_id`, or `UsageLifecycleV1`, so no such
+test can exist while the FFI consumes `list_accounts`/`desktop_inventory`.
+
+### Executed surface behaviour
+
+```sh
+./target/debug/jackin usage
+./target/debug/jackin usage --format json
+./target/debug/jackin console
+```
+
+All three abort with `Cannot start a runtime from within a runtime`
+(`crates/jackin-usage/src/usage_snapshot_store.rs:113`), exit code 101. The
+synchronous store call reaches the async runtime through
+`canonical_projection` from `crates/jackin/src/cli/usage.rs:241` and
+`crates/jackin/src/console/adapter/run.rs:98`. The panic is gated on
+`store_path.exists()` (`crates/jackin-usage/src/host/accounts.rs:362`), which is
+`~/.jackin/data/usage-menu-bar/snapshots.db` — present for any operator who has
+run the menu bar. `main` contains no usage call in the console adapter, so the
+console regression is introduced by this branch.
+
+The module documents the invariant it violates at
+`crates/jackin-usage/src/usage_snapshot_store.rs:97` ("never call the store
+functions from inside the async runtime"). No build-time or test gate enforces
+it.
+
+### Canonical membership under a clean data directory
+
+With `JACKIN_HOME_DIR` pointed at an empty directory the panic does not trigger
+and the broker completes six provider fetches. Four are then absent from the
+projection:
+
+| Surface | Broker phase | Account label | Projection |
+|---|---|---|---|
+| `claude` | completed / fresh, 3 buckets | empty | dropped, reported `needs_login` |
+| `claude` | completed / fresh, 3 buckets | empty | dropped, reported `needs_login` |
+| `kimi` | completed / fresh, 2 buckets | empty | dropped, reported `needs_login` |
+| `zai` | completed / fresh, 3 buckets | empty | dropped, reported `needs_login` |
+| `codex` | completed / fresh, 3 buckets | `alexey@…` | rendered |
+| `grok` | completed / fresh, 1 bucket | `alexey@…` | rendered |
+
+`CanonicalAccountIdentity::from_view`
+(`crates/jackin-usage/src/host/accounts.rs:77`) derives identity solely from
+`view.account.account_label`; `stable_account_label` rejects an empty label, so a
+provider that authenticates without exposing an address cannot become a canonical
+account. `CanonicalAccountSubject::ProviderId` is never constructed from a view,
+and the discovery `capability_id` is unused as a fallback.
+`crates/jackin-usage/src/host/projection.rs:243` then assigns
+`UsageLifecycleV1::NeedsLogin` unconditionally to every unresolved capability, so
+rate-limited, unavailable, and successful-but-anonymous sources all report the
+same cause. `issues` is hard-coded empty at both the unresolved and projection
+level.
+
+### Projection ownership — executed source audit
+
+```sh
+rg -n --glob '*.rs' 'canonical_projection\(|desktop_inventory\(|provider_glance_rows\(|list_accounts\(' crates
+rg -c 'UsageProjectionV1|canonical_account_id|UsageLifecycleV1' crates/jackin-usage-ffi/src
+```
+
+Four independent builders each call `materialize_account_catalog()` directly and
+apply their own inclusion rule, selection reconciliation, and formatting:
+`canonical_projection` (CLI, console), `desktop_inventory`
+(`crates/jackin-usage/src/host.rs:1196`, desktop Overview), `provider_glance_rows`
+(`:1348`, desktop sidebar and status items), and `list_accounts` (`:837`, the FFI
+bridge at `crates/jackin-usage-ffi/src/bridge.rs:243`). The second command
+returns zero matches.
+
+Observable consequence in the running application: the Usage window sidebar and
+its Overview table are produced by two different builders whose predicates
+disagree, so at the same generation the sidebar lists one provider while the
+table lists three. `crates/jackin-usage/src/host.rs:1268-1271` and `:1777-1788`
+place literal `—` filler in `account_column_label`, `remaining_label`,
+`reset_display_label`, and `provider_column_label`, which locates a table layout
+decision in the Rust layer.
+
+`materialize_account_catalog` (`crates/jackin-usage/src/host.rs:1496`) re-reads
+the snapshot store on every call and caches nothing; one `desktop_projection`
+call reaches it once through `desktop_inventory`, once through
+`provider_glance_rows`, and once per provider through `snapshot`.
+
+### Retained bypasses
+
+`jackin usage cache accounts` reads `~/.jackin/data/daemon/accounts.db` directly
+(`crates/jackin/src/cli/usage.rs:417`). `--sync-host-cache` still writes that
+store and `--no-refresh` remains on `jackin usage host snapshot`. Three usage
+stores are live at this revision: `usage-menu-bar/snapshots.db`,
+`usage-broker/accounts/*.json`, and `daemon/accounts.db`.
+
+### Broker diagnosability
+
+`ensure_usage_broker_process` (`crates/jackin-usage/src/host/broker.rs:718`)
+spawns the service with `.stderr(Stdio::null())`, and the service returns one
+message for structurally different faults. A data directory long enough to push
+the socket past the 104-byte `sun_path` limit exits with
+`usage broker unavailable: "usage broker is unavailable"` and no further detail.
+`crates/jackin-runtime/src/bin/usage-broker.rs` emits no telemetry.
+
+### Broker publication
+
+`dispatch` (`crates/jackin-usage/src/host/broker.rs:964`) answers
+`CurrentProjection`, `RequestRefresh`, and `JoinPublication` by returning the
+stored projection unchanged; nothing assigns to it. The persisted
+`~/.jackin/data/usage-broker/projection.json` remains at `<build>:empty` with an
+empty `providers` array after live refreshes. The lifecycle suite asserts only
+that concurrent clients observe an equal `projection_id`, which the empty value
+satisfies.
+
+### Gates that do pass
+
+`cargo clippy --workspace --all-targets --all-features --locked -- -D warnings`,
+`cargo fmt --check`, and `mise run desktop-lint` all pass at this revision, and
+every changed `ratchet.toml` bound moved down rather than up. The mechanical
+gates are healthy; none of them observes the behaviour recorded above.
