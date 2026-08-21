@@ -27,6 +27,7 @@ public final class UsageWindowController: NSObject, NSWindowDelegate {
     private var window: NSWindow?
     private var splitController: UsageWindowSplitController?
     private var toolbarController: UsageWindowToolbar?
+    private var centeredBrandContainer: NSView?
     private var sidebarKeyMonitor: Any?
     private var fixtureVisibilityTask: Task<Void, Never>?
     private var visibilityDesired = false
@@ -77,6 +78,13 @@ public final class UsageWindowController: NSObject, NSWindowDelegate {
             centerFixtureWindowOnPrimaryScreen(window)
         }
         if elevatesFixtureWindow {
+            // UI-test fixtures are launched as a regular application, but the runner can
+            // leave the newly-created process inactive before the first accessibility query.
+            // Activate the owner once at presentation; the visibility lease below only keeps
+            // the window ordered front and does not steal focus during gestures.
+            NSApp.unhide(nil)
+            NSApp.activate()
+            NSApp.activate(ignoringOtherApps: true)
             window.makeKeyAndOrderFront(nil)
             window.orderFrontRegardless()
             renewFixtureVisibilityLease(for: window)
@@ -187,20 +195,47 @@ public final class UsageWindowController: NSObject, NSWindowDelegate {
 
     private func installCenteredBrand(in window: NSWindow) {
         guard let titlebar = window.standardWindowButton(.closeButton)?.superview else { return }
-        for subview in titlebar.subviews where subview.identifier?.rawValue == "usage.brand-title" {
-            subview.removeFromSuperview()
+        centeredBrandContainer?.removeFromSuperview()
+        centeredBrandContainer = nil
+        // AppKit may replace the titlebar container while the unified toolbar is
+        // installed or the sidebar collapses. Remove the old host anywhere in
+        // the frame hierarchy before adding the replacement, otherwise stale
+        // hosts remain in the accessibility tree and duplicate the brand.
+        if let frameView = window.contentView?.superview {
+            removeCenteredBrandHosts(from: frameView)
         }
+        let container = NSView()
+        container.translatesAutoresizingMaskIntoConstraints = false
+        container.setAccessibilityElement(true)
+        container.setAccessibilityRole(.group)
+        container.setAccessibilityLabel("jackin❯ desktop")
+        container.setAccessibilityIdentifier("usage.brand-title")
         let host = NSHostingView(rootView: JackinBrandSignature(width: 68, height: 18))
         host.translatesAutoresizingMaskIntoConstraints = false
-        host.setAccessibilityLabel("jackin❯ desktop")
-        host.setAccessibilityIdentifier("usage.brand-title")
-        titlebar.addSubview(host)
+        host.setAccessibilityElement(false)
+        container.addSubview(host)
+        titlebar.addSubview(container)
         NSLayoutConstraint.activate([
-            host.centerXAnchor.constraint(equalTo: titlebar.centerXAnchor),
-            host.centerYAnchor.constraint(equalTo: titlebar.centerYAnchor),
-            host.widthAnchor.constraint(equalToConstant: 68),
-            host.heightAnchor.constraint(equalToConstant: 18),
+            container.centerXAnchor.constraint(equalTo: titlebar.centerXAnchor),
+            container.centerYAnchor.constraint(equalTo: titlebar.centerYAnchor),
+            container.widthAnchor.constraint(equalToConstant: 68),
+            container.heightAnchor.constraint(equalToConstant: 18),
+            host.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+            host.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+            host.topAnchor.constraint(equalTo: container.topAnchor),
+            host.bottomAnchor.constraint(equalTo: container.bottomAnchor),
         ])
+        centeredBrandContainer = container
+    }
+
+    private func removeCenteredBrandHosts(from view: NSView) {
+        for subview in view.subviews {
+            if subview.identifier?.rawValue == "usage.brand-title" {
+                subview.removeFromSuperview()
+            } else {
+                removeCenteredBrandHosts(from: subview)
+            }
+        }
     }
 
     public func windowWillClose(_ notification: Notification) {
@@ -227,6 +262,7 @@ public final class UsageWindowController: NSObject, NSWindowDelegate {
         window?.orderOut(nil)
         window?.contentViewController = nil
         window?.toolbar = nil
+        centeredBrandContainer = nil
         splitController = nil
         toolbarController = nil
         window = nil

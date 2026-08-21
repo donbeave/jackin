@@ -171,22 +171,15 @@ struct UsageWindowDetailAccessory: View {
     @ObservedObject var store: PresentationStore
 
     var body: some View {
-        ZStack {
-            Text("jackin❯ desktop")
-                .font(.headline)
-                .accessibilityAddTraits(.isHeader)
-                .accessibilityIdentifier("usage.brand-title")
-
-            HStack {
-                if store.usesFixture {
-                    Text("Fixture")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.primary)
-                        .accessibilityIdentifier("usage.fixture-badge")
-                }
-                Spacer()
-                refreshButton
+        HStack {
+            if store.usesFixture {
+                Text("Fixture")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.primary)
+                    .accessibilityIdentifier("usage.fixture-badge")
             }
+            Spacer()
+            refreshButton
         }
         .frame(minHeight: 40)
     }

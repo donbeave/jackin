@@ -20,7 +20,7 @@ same integration seams.
 | [007](007-ship-desktop-usage.md) | FFI, popover, and native Usage window | 003, 004 | DONE |
 | [008](008-prove-parity-and-release.md) | Cross-surface proof and signed distribution | 005, 006, 007 | REJECTED (external release authorization required) |
 
-Frozen package fingerprint: `c132f74695354ad5f7703985a619c6c1330eaffd`.
+Frozen package fingerprint: `820bb764b86d288b2cee69d50a2f08014c509866`.
 
 ## Execution rules
 

@@ -118,6 +118,7 @@ struct DesktopArchitectureLint {
                 && splitController.contains("sidebarItem.allowsFullHeightLayout = true")
                 && splitController.contains("[.toggleSidebar, .sidebarTrackingSeparator]")
                 && usageController.contains("usage.brand-title")
+                && !usage.contains("Text(\"jackin❯ desktop\")")
                 && !usage.contains(".toolbar(removing: .sidebarToggle)")
                 && !usage.contains("usage.sidebar-toggle")
                 && !usage.contains("UsageWindowNavigationState"),

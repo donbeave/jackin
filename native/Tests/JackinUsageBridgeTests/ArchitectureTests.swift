@@ -561,7 +561,7 @@ final class ArchitectureTests: XCTestCase {
         XCTAssertTrue(splitController.contains("sidebarItem.allowsFullHeightLayout = true"))
         XCTAssertTrue(splitController.contains("[.toggleSidebar, .sidebarTrackingSeparator]"))
         XCTAssertTrue(usageController.contains("usage.brand-title"))
-        XCTAssertTrue(usageRoot.contains("Text(\"jackin❯ desktop\")"))
+        XCTAssertFalse(usageRoot.contains("Text(\"jackin❯ desktop\")"))
         XCTAssertFalse(usageRoot.contains(".toolbar(removing: .sidebarToggle)"))
         XCTAssertFalse(usageRoot.contains("usage.sidebar-toggle"))
         XCTAssertFalse(usageRoot.contains("UsageWindowNavigationState"))

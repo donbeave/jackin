@@ -75,11 +75,10 @@ Preserve release evidence without secrets; future schema/provider changes rerun 
   `rtk mise run desktop-ci`, `rtk mise run desktop-bindings-check`,
   `rtk mise run desktop-format-check`, and `rtk mise run desktop-lint`. The
   retired Capsule direct diagnostic was removed from the provider-call
-  allowlist; the inventory test now passes. `rtk mise run desktop-merge`
-  reached the real-app UI phase but failed before the first test because the
-  macOS XCTest runner could not enable automation mode (status 65). This is a
-  host permission/session prerequisite, not an assertion failure; the same
-  failure reproduced in an isolated direct `xcodebuild test` invocation.
+  allowlist; the inventory test now passes. The real-app UI matrix now passes
+  all 19 tests through `rtk mise run desktop-test-ui`; the same matrix also
+  passed inside `rtk mise run desktop-merge`, including retained-window,
+  accessibility, minimum-size, popover, and command-state cases.
 - Ad-hoc artifact proof passed with
   `rtk mise run desktop-verify native/dist/JackinDesktop.app 0.6.0 1`.
   Release-mode verification correctly failed closed because the artifact is
