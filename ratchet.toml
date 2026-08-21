@@ -181,7 +181,7 @@ key = "clippy::filter_map_next@jackin"
 bound = 1
 [[family.entry]]
 key = "clippy::fn_params_excessive_bools@jackin-console"
-bound = 8
+bound = 7
 [[family.entry]]
 key = "clippy::fn_params_excessive_bools@jackin-host"
 bound = 1
@@ -524,7 +524,7 @@ key = "crates/jackin-oppicker/README.md"
 bound = 1575
 [[family.entry]]
 key = "crates/jackin-console/README.md"
-bound = 2553
+bound = 2827
 [[family.entry]]
 key = "crates/jackin-core/README.md"
 bound = 5618
