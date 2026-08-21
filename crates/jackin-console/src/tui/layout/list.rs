@@ -69,29 +69,22 @@ pub fn clamp_list_scroll_for_area(
     if let Some(areas) = sidebar_areas.as_ref() {
         crate::tui::sidebar_layout::clamp_scroll_area(
             areas.workspace,
-            &mut state.list_mounts_scroll_x,
-            &mut state.list_mounts_scroll_y,
+            &mut state.list_mounts_scroll,
         );
         crate::tui::sidebar_layout::clamp_scroll_area(
             areas.global,
-            &mut state.list_global_mounts_scroll_x,
-            &mut state.list_global_mounts_scroll_y,
+            &mut state.list_global_mounts_scroll,
         );
 
         if let Some(role_global) = areas.role_global {
             crate::tui::sidebar_layout::clamp_scroll_area(
                 role_global,
-                &mut state.list_role_global_mounts_scroll_x,
-                &mut state.list_role_global_mounts_scroll_y,
+                &mut state.list_role_global_mounts_scroll,
             );
         }
 
         if let Some(roles) = areas.roles {
-            crate::tui::sidebar_layout::clamp_scroll_area(
-                roles,
-                &mut state.list_roles_scroll_x,
-                &mut state.list_roles_scroll_y,
-            );
+            crate::tui::sidebar_layout::clamp_scroll_area(roles, &mut state.list_roles_scroll);
         }
     }
 
@@ -103,20 +96,20 @@ pub fn clamp_list_scroll_for_area(
     ));
     let reset_plan = pre_render_plan.scroll_reset;
     if reset_plan.reset_workspace {
-        state.list_mounts_scroll_x = 0;
-        state.list_mounts_scroll_y = 0;
+        crate::tui::scroll_block::scroll_area_set_x(&mut state.list_mounts_scroll, 0);
+        crate::tui::scroll_block::scroll_area_set_y(&mut state.list_mounts_scroll, 0);
     }
     if reset_plan.reset_global {
-        state.list_global_mounts_scroll_x = 0;
-        state.list_global_mounts_scroll_y = 0;
+        crate::tui::scroll_block::scroll_area_set_x(&mut state.list_global_mounts_scroll, 0);
+        crate::tui::scroll_block::scroll_area_set_y(&mut state.list_global_mounts_scroll, 0);
     }
     if reset_plan.reset_role_global {
-        state.list_role_global_mounts_scroll_x = 0;
-        state.list_role_global_mounts_scroll_y = 0;
+        crate::tui::scroll_block::scroll_area_set_x(&mut state.list_role_global_mounts_scroll, 0);
+        crate::tui::scroll_block::scroll_area_set_y(&mut state.list_role_global_mounts_scroll, 0);
     }
     if reset_plan.reset_roles {
-        state.list_roles_scroll_x = 0;
-        state.list_roles_scroll_y = 0;
+        crate::tui::scroll_block::scroll_area_set_x(&mut state.list_roles_scroll, 0);
+        crate::tui::scroll_block::scroll_area_set_y(&mut state.list_roles_scroll, 0);
     }
 
     let focus_plan = pre_render_plan.focus;
@@ -128,7 +121,7 @@ pub fn clamp_list_scroll_for_area(
     crate::tui::list_geometry::clamp_list_names_scroll(
         columns.names,
         name_content_w,
-        &mut state.list_names_scroll_x,
+        &mut state.list_names_scroll,
     );
 }
 

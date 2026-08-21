@@ -247,7 +247,7 @@ fn apply_remove_workspace_result(
     match result {
         Ok(saved) => {
             *config = saved;
-            let _unused = update_manager(
+            update_manager(
                 state,
                 ManagerMessage::ReloadFromConfig {
                     config: Box::new(config.clone()),
@@ -256,7 +256,7 @@ fn apply_remove_workspace_result(
             );
         }
         Err(error) => {
-            let _unused = update_manager(
+            update_manager(
                 state,
                 ManagerMessage::OpenListErrorPopup {
                     title: error_popup::delete_failed_error_title().into(),
@@ -672,7 +672,7 @@ fn apply_workspace_save_write_result(
                     })
                 )
             {
-                let _unused = update_manager(
+                update_manager(
                     state,
                     ManagerMessage::ReloadFromConfig {
                         config: Box::new(config.clone()),
@@ -830,11 +830,13 @@ pub fn apply_background_event(
 ) -> bool {
     match event {
         ManagerBackgroundEvent::Message(message) => {
-            let mut dirty = update_manager(state, message).is_dirty();
+            // update_manager always requested a redraw under the retired facade
+            // contract, so the message path stays unconditionally dirty.
+            update_manager(state, message);
             for effect in state.drain_effects() {
-                dirty |= execute_manager_effect(state, config, paths, effect);
+                let _redraw = execute_manager_effect(state, config, paths, effect);
             }
-            dirty
+            true
         }
         ManagerBackgroundEvent::RoleLoadFinished { load, result } => {
             apply_role_load_completion(state, config, paths, load, result);

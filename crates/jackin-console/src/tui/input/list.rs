@@ -262,7 +262,7 @@ fn clamp_list_scroll_after_key(
 }
 
 fn dispatch_manager(state: &mut ManagerState<'_>, message: ManagerMessage) {
-    let _dirty = update_manager(state, message);
+    update_manager(state, message);
 }
 
 fn instance_action_outcome(
@@ -581,12 +581,12 @@ pub fn handle_list_modal(state: &mut ManagerState<'_>, key: KeyEvent) -> InputOu
             if let Some(rect) = container_info_rect {
                 info.clamp_scroll(rect);
             }
-            match dismissible_modal_plan(outcome) {
-                DismissibleModalPlan::Dismiss => {
+            match outcome {
+                jackin_tui::operator_info::OperatorInfoOutcome::Cancel => {
                     dispatch_manager(state, ManagerMessage::DismissListModal);
                     InputOutcome::Continue
                 }
-                DismissibleModalPlan::Continue => InputOutcome::Continue,
+                jackin_tui::operator_info::OperatorInfoOutcome::Continue => InputOutcome::Continue,
             }
         }
         (ListModalKeyTarget::Dismiss, _) => {

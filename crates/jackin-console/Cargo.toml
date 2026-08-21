@@ -35,6 +35,7 @@ jackin-diagnostics = { workspace = true, features = ["test-support"] }
 jackin-otlp-testbed = { workspace = true }
 opentelemetry-proto = { workspace = true }
 tempfile = { workspace = true }
+termrock-raster = { workspace = true }
 toml = { workspace = true }
 tracing.workspace = true
 

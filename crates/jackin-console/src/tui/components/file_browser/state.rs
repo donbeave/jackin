@@ -5,6 +5,16 @@
 //!
 //! Houses `FileBrowserState` (the modal's working state). Directory scanning,
 //! sandbox policy, and git-origin inspection live in `services::file_browser`.
+//!
+//! Plan 010 step 2 reviewed the named upstream pairings at rev `29a16b5b` and
+//! recorded behavior-preserving non-adoptions (commit-message carve-outs):
+//! `FilePicker::paint` unconditionally renders a breadcrumb row, a path-input
+//! row, and a count-bearing title spec (builder exposes only
+//! `title`/`ascii`/`show_preview`), so the console's cwd-title + flush-list
+//! chrome cannot be reproduced byte-identically; `file_tree` does not map a
+//! flat listing; `path_input` has no call site (the browser never takes typed
+//! paths). Domain rules ($HOME clamp, selection rejection, hidden toggle, git
+//! prompt) stay product logic either way.
 
 use std::path::{Path, PathBuf};
 
@@ -127,6 +137,10 @@ impl FileBrowserState {
     /// Wheel gestures should instead saturate at the listing edges, matching
     /// normal scroll behavior and preventing an edge scroll from jumping from
     /// the top to the bottom.
+    ///
+    /// Ch06 row 9 decision (plan 009): modal/picker selection STAYS on
+    /// upstream `ListState` — `CollectionState`'s single `.wrap(bool)`
+    /// policy cannot express this wheel-saturates/keyboard-wraps split.
     pub fn scroll_selection(&mut self, delta: i16) -> bool {
         self.list_state
             .move_index(self.entries.len(), isize::from(delta))

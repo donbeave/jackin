@@ -168,19 +168,19 @@ fn quit_intercept_ignores_letter_input_and_allows_ctrl_q_everywhere() {
 #[test]
 fn quit_confirm_plan_routes_confirm_outcomes() {
     assert_eq!(
-        quit_confirm_plan(jackin_tui::ModalOutcome::Commit(true)),
+        quit_confirm_plan(jackin_oppicker::ModalOutcome::Commit(true)),
         QuitConfirmPlan::Exit
     );
     assert_eq!(
-        quit_confirm_plan(jackin_tui::ModalOutcome::Commit(false)),
+        quit_confirm_plan(jackin_oppicker::ModalOutcome::Commit(false)),
         QuitConfirmPlan::Dismiss
     );
     assert_eq!(
-        quit_confirm_plan(jackin_tui::ModalOutcome::Cancel),
+        quit_confirm_plan(jackin_oppicker::ModalOutcome::Cancel),
         QuitConfirmPlan::Dismiss
     );
     assert_eq!(
-        quit_confirm_plan(jackin_tui::ModalOutcome::Continue),
+        quit_confirm_plan(jackin_oppicker::ModalOutcome::Continue),
         QuitConfirmPlan::Continue
     );
 }
@@ -644,7 +644,7 @@ fn no_modal_open_returns_false_while_list_modal_open() {
     );
 
     let mut manager_with_modal = ManagerState::from_config(&config, cwd);
-    let _unused = update_manager(
+    update_manager(
         &mut manager_with_modal,
         ManagerMessage::OpenListErrorPopup {
             title: "Error".into(),
@@ -701,4 +701,24 @@ fn startup_error_exit_gate_fires_after_dialog_dismissal() {
 
     assert!(startup_error_dismissed(&state, true));
     assert!(!startup_error_dismissed(&state, false));
+}
+
+#[test]
+fn keyboard_help_opens_on_question_mark_with_or_without_shift() {
+    assert!(should_open_keyboard_help(key(
+        KeyCode::Char('?'),
+        KeyModifiers::NONE
+    )));
+    assert!(should_open_keyboard_help(key(
+        KeyCode::Char('?'),
+        KeyModifiers::SHIFT
+    )));
+    assert!(!should_open_keyboard_help(key(
+        KeyCode::Char('?'),
+        KeyModifiers::CONTROL
+    )));
+    assert!(!should_open_keyboard_help(key(
+        KeyCode::Char('q'),
+        KeyModifiers::NONE
+    )));
 }

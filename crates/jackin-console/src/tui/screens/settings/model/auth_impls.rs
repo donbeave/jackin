@@ -38,11 +38,11 @@ impl<EnvValue, Modal, PendingOpCommit> SettingsAuthState<EnvValue, Modal, Pendin
             pending,
             github_env: github_env.clone(),
             original_github_env: github_env,
-            modals: jackin_tui::runtime::ModalFlow::new(),
+            modals: crate::tui::modal_chain::ModalChain::new(),
             generating_token: false,
             error: None,
             pending_op_commit: None,
-            scroll_y: 0,
+            scroll: crate::tui::scroll_block::console_scroll_area_state(),
         }
     }
 
@@ -89,8 +89,8 @@ impl<EnvValue, Modal, PendingOpCommit> SettingsAuthState<EnvValue, Modal, Pendin
         self.selected_kind.is_some()
     }
 
-    pub const fn scroll_y_mut(&mut self) -> &mut u16 {
-        &mut self.scroll_y
+    pub fn scroll_state_mut(&mut self) -> &mut termrock::widgets::ScrollAreaState {
+        &mut self.scroll
     }
 
     #[must_use]
@@ -263,7 +263,7 @@ impl<EnvValue, Modal, OpRef> crate::tui::model::ConsolePendingOpCommit
     type OpRef = OpRef;
 
     fn poll_pending_op_commit(&mut self) -> Option<(Self::OpRef, anyhow::Result<()>)> {
-        use jackin_tui::runtime::{Subscription, SubscriptionPoll};
+        use crate::tui::runtime::SubscriptionPoll;
 
         let pending = self.pending_op_commit.as_mut()?;
         let result = match pending.rx.poll_next() {

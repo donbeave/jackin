@@ -2,8 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //! Pure workspace-list row sizing helpers.
+//!
+//! Spec carve-out (plan 009): the horizontal char-precise scroll half
+//! (`list_names_content_width`, `clamp_list_names_scroll`, the
+//! `*_scroll_axes` and row-width fns) has no upstream analogue —
+//! `VirtualListState` windows item rows, not character columns — so it
+//! stays hand-rolled here. The vertical window moved to
+//! `VirtualListState` in the workspaces view.
 
-use ratatui::layout::{Constraint, Direction, Layout, Rect};
+use ratatui::layout::Rect;
 
 use termrock::scroll::ScrollAxes;
 
@@ -21,17 +28,12 @@ pub struct ListColumns {
 
 #[must_use]
 pub fn split_list_columns(area: Rect, left_pct: u16) -> ListColumns {
-    let right_pct = 100u16.saturating_sub(left_pct);
-    let columns = Layout::default()
-        .direction(Direction::Horizontal)
-        .constraints([
-            Constraint::Percentage(left_pct),
-            Constraint::Percentage(right_pct),
-        ])
-        .split(area);
+    // Rects come from the upstream resizable-panel-group layout carrier
+    // (seamless mode); see `tui::split::split_panel_group_layout`.
+    let layout = crate::tui::split::split_panel_group_layout(area, left_pct);
     ListColumns {
-        names: columns[0],
-        preview: columns[1],
+        names: layout.panels[0].area,
+        preview: layout.panels[1].area,
     }
 }
 
@@ -115,9 +117,17 @@ pub fn manager_list_names_content_width(
     )
 }
 
-pub fn clamp_list_names_scroll(list_area: Rect, content_width: usize, scroll_x: &mut u16) {
-    let viewport = termrock::scroll::viewport_width(list_area);
-    termrock::scroll::clamp_scroll_offset(content_width, viewport, scroll_x);
+pub fn clamp_list_names_scroll(
+    list_area: Rect,
+    content_width: usize,
+    scroll: &mut termrock::widgets::ScrollAreaState,
+) {
+    scroll.set_content_size(u16::try_from(content_width).unwrap_or(u16::MAX), u16::MAX);
+    scroll.set_viewport(
+        u16::try_from(termrock::scroll::viewport_width(list_area)).unwrap_or(u16::MAX),
+        1,
+    );
+    scroll.clamp();
 }
 
 #[must_use]

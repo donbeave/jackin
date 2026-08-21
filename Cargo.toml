@@ -115,7 +115,8 @@ ratatui-core = "=0.1.2"
 # Enable the full public feature matrix TermRock ships: Crossterm session/input
 # adapters plus serde for persistable widget state (DialogScroll, ListState, …).
 # Pin latest reviewed TermRock main; follow migrations sequentially (currently through 0331).
-termrock = { version = "=0.11.0", git = "https://github.com/tailrocks/termrock.git", rev = "29a16b5bff84ea8609854711b774e87acbc456cc", features = ["crossterm", "serde"] }
+termrock = { version = "=0.11.0", git = "https://github.com/tailrocks/termrock.git", rev = "1ac0d0793b8cfd9edc61ced241e2b2ecb89162b4", features = ["crossterm", "serde"] }
+termrock-raster = { version = "=0.11.0", git = "https://github.com/tailrocks/termrock.git", rev = "1ac0d0793b8cfd9edc61ced241e2b2ecb89162b4" }
 regex = "1"
 reqwest = { version = "0.13", default-features = false }
 rustls = { version = "0.23", default-features = false }
@@ -302,3 +303,13 @@ debug = "line-tables-only"
 libraries = [
     { path = "crates/jackin-lints" },
 ]
+
+# arrayref 0.3.10 on crates.io is a malicious publish (pulls the proc-macro1
+# typosquat whose build.rs downloads and executes a remote payload); 0.3.9
+# was yanked. Pin the ecosystem to a vendored copy of the known-good 0.3.9
+# (checksum-verified against the pre-attack lockfile:
+# 76a2e8124351fda1ef8aaaa3bbd7ebbcb486bbcd4225aca0aa0d84bb2db8fecb).
+# Transitive via tiny-skia <- termrock-raster. Remove once a trustworthy
+# upstream resolution exists.
+[patch.crates-io]
+arrayref = { path = "vendor/arrayref" }

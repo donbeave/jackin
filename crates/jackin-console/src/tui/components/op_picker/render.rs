@@ -10,7 +10,7 @@ use ratatui::{
     widgets::Paragraph,
 };
 
-use crate::tui::components::spinner::SPINNER_FRAMES;
+use crate::tui::components::spinner::console_spinner_frame;
 use termrock::widgets::{List, ListRow, ListState, TextInput, TextInputState, Validation};
 
 use super::{
@@ -144,7 +144,7 @@ fn render_loading(frame: &mut Frame<'_>, area: Rect, state: &impl OpPickerRender
         &termrock::style::DesignSystem::default(),
     );
 
-    let glyph = SPINNER_FRAMES[(tick as usize) % SPINNER_FRAMES.len()];
+    let glyph = console_spinner_frame(tick);
     let descriptor = loading_descriptor(
         state.stage(),
         multi_account,

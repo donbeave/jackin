@@ -741,3 +741,137 @@ fn settings_trust_toggle_hint() {
         .join(" ");
     assert!(text.contains("trust"), "trust toggle keymap: {text}");
 }
+
+// ── Bridged dispatch (keymap_bridge cutover) ───────────────────────────────
+//
+// Step 4 of plan 011 routes every production dispatch site through
+// `dispatch_keymap_action`. These tests pin the equivalence the cutover must
+// preserve: bridged dispatch resolves the same action as direct
+// `Keymap::dispatch` for every bound chord (and the same miss for unbound
+// ones), and `Visibility` keeps driving hint advertisement exactly as before.
+
+use super::bridged_keymap_action;
+use termrock::input::{KeyEvent, KeyModifiers};
+use termrock::keymap::Keymap as TermrockKeymap;
+
+fn assert_bridged_matches_direct<A>(name: &str, map: &TermrockKeymap<A>, extra_chords: &[KeyChord])
+where
+    A: Clone + Copy + PartialEq + std::fmt::Debug + 'static,
+{
+    let chords: Vec<KeyChord> = map
+        .bindings()
+        .iter()
+        .flat_map(|binding| binding.chords().iter().copied())
+        .chain(extra_chords.iter().copied())
+        .collect();
+    for chord in chords {
+        let event = KeyEvent::new(chord.key, chord.mods);
+        assert_eq!(
+            bridged_keymap_action(map, event),
+            map.dispatch(chord),
+            "{name}: bridged dispatch must match direct dispatch for {chord:?}"
+        );
+    }
+}
+
+#[test]
+fn bridged_dispatch_matches_direct_editor_keymaps() {
+    let misses = [
+        KeyChord::plain(KeyCode::Up),
+        KeyChord::ctrl(KeyCode::Char('s')),
+        KeyChord::plain(KeyCode::Char('z')),
+    ];
+    assert_bridged_matches_direct("editor global", &EDITOR_GLOBAL_KEYMAP, &misses);
+    assert_bridged_matches_direct("editor tab bar", &EDITOR_TAB_BAR_KEYMAP, &misses);
+    assert_bridged_matches_direct("editor content", &EDITOR_CONTENT_KEYMAP, &misses);
+}
+
+#[test]
+fn bridged_dispatch_matches_direct_settings_keymaps() {
+    let misses = [
+        KeyChord::plain(KeyCode::Home),
+        KeyChord::ctrl(KeyCode::Char('d')),
+    ];
+    assert_bridged_matches_direct("settings tab bar", &SETTINGS_TAB_BAR_KEYMAP, &misses);
+    assert_bridged_matches_direct(
+        "settings content shell",
+        &SETTINGS_CONTENT_SHELL_KEYMAP,
+        &misses,
+    );
+    assert_bridged_matches_direct("settings general", &SETTINGS_GENERAL_TAB_KEYMAP, &misses);
+    assert_bridged_matches_direct("settings env", &SETTINGS_ENV_TAB_KEYMAP, &misses);
+    assert_bridged_matches_direct("settings trust", &SETTINGS_TRUST_TAB_KEYMAP, &misses);
+    assert_bridged_matches_direct(
+        "settings global mounts",
+        &SETTINGS_GLOBAL_MOUNTS_TAB_KEYMAP,
+        &misses,
+    );
+}
+
+#[test]
+fn bridged_dispatch_matches_direct_list_keymaps() {
+    // Ctrl-Q is bound (Quit); a bare modified arrow is not.
+    let extras = [
+        KeyChord::ctrl(KeyCode::Char('q')),
+        KeyChord::ctrl(KeyCode::Up),
+        KeyChord::plain(KeyCode::PageDown),
+    ];
+    assert_bridged_matches_direct("workspace list", &WORKSPACE_LIST_KEYMAP, &extras);
+    assert_bridged_matches_direct("preview pane", &PREVIEW_PANE_KEYMAP, &extras);
+    assert_bridged_matches_direct("inline picker", &INLINE_PICKER_SHELL_KEYMAP, &extras);
+}
+
+#[test]
+fn bridged_dispatch_ignores_release_events() {
+    let mut release = KeyEvent::new(KeyCode::Char('s'), KeyModifiers::NONE);
+    release.kind = termrock::input::KeyEventKind::Release;
+    assert_eq!(bridged_keymap_action(&EDITOR_GLOBAL_KEYMAP, release), None);
+}
+
+fn hint_keys(spans: Vec<termrock::widgets::HintSpan<'static>>) -> Vec<String> {
+    spans
+        .iter()
+        .filter_map(|span| match span {
+            termrock::widgets::HintSpan::Key(key) => Some((*key).to_owned()),
+            termrock::widgets::HintSpan::DynKey(key) => Some(key.clone()),
+            _ => None,
+        })
+        .collect()
+}
+
+#[test]
+fn visibility_shown_bindings_advertise_hidden_aliases_do_not() {
+    let keys = hint_keys(WORKSPACE_LIST_KEYMAP.hint_spans());
+    // Shown bindings advertise their glyph…
+    for glyph in ["↑↓", "↵", "E", "D", "O", "S", "⇥", "←", "→"] {
+        assert!(
+            keys.iter().any(|key| key == glyph),
+            "shown glyph {glyph}: {keys:?}"
+        );
+    }
+    // …HiddenAlias bindings carry dispatch-only chords: never advertised.
+    for glyph in ["W", "R", "A", "X", "I", "T", "P"] {
+        assert!(
+            !keys.iter().any(|key| key == glyph),
+            "hidden-alias glyph {glyph} must stay out of hints: {keys:?}"
+        );
+    }
+    // Visibility::Internal (Ctrl-Q quit) is derived contextually via
+    // `glyph_for`, never through the uncontextual hint list.
+    assert!(
+        !keys.iter().any(|key| key == "Ctrl-Q"),
+        "internal binding must not self-advertise: {keys:?}"
+    );
+    assert_eq!(
+        WORKSPACE_LIST_KEYMAP.glyph_for(WorkspaceListAction::Quit),
+        "Ctrl-Q"
+    );
+}
+
+#[test]
+fn visibility_editor_tab_bar_alias_stays_hidden() {
+    let keys = hint_keys(EDITOR_TAB_BAR_KEYMAP.hint_spans());
+    assert!(keys.iter().any(|key| key == "⇥/↓"), "{keys:?}");
+    // j/J FocusContent alias is HiddenAlias: no standalone glyph appears.
+    assert!(!keys.iter().any(|key| key == "J"), "{keys:?}");
+}

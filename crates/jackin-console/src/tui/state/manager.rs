@@ -8,8 +8,8 @@ use std::rc::Rc;
 use ratatui::layout::Rect;
 
 use crate::tui::runtime::BlockingSubscription;
+use crate::tui::runtime::SubscriptionPoll;
 use jackin_config::AppConfig;
-use jackin_tui::runtime::{Subscription, SubscriptionPoll};
 
 use crate::tui::message::{MountInfoRefreshSourceFacts, mount_info_refresh_source_plan};
 use crate::tui::model::{
@@ -23,9 +23,8 @@ use crate::tui::screens::workspaces::update::{
     collapsed_current_dir_selected_index, collapsed_workspace_selected_index,
     initial_workspace_selected_index, preview_pane_selected_index, selected_index,
     workspace_last_selectable_index, workspace_list_current_directory_selected,
-    workspace_list_new_workspace_selected, workspace_list_saved_workspace_index, workspace_row_at,
-    workspace_row_at_visual_index, workspace_row_index, workspace_selected_row,
-    workspace_visual_selected_index,
+    workspace_list_new_workspace_selected, workspace_list_saved_workspace_index,
+    workspace_row_at_visual_index, workspace_selected_row, workspace_visual_selected_index,
 };
 use crate::tui::subscriptions::{
     InstanceRefreshThrottleState, forced_instance_refresh_generation,
@@ -46,36 +45,25 @@ use super::{
 };
 
 impl ManagerState<'_> {
-    pub const fn list_scroll_x_mut(&mut self, focus: MountScrollFocus) -> &mut u16 {
+    pub fn list_scroll_state_mut(
+        &mut self,
+        focus: MountScrollFocus,
+    ) -> &mut termrock::widgets::ScrollAreaState {
         match focus {
-            MountScrollFocus::Workspace => &mut self.list_mounts_scroll_x,
-            MountScrollFocus::Global => &mut self.list_global_mounts_scroll_x,
-            MountScrollFocus::RoleGlobal => &mut self.list_role_global_mounts_scroll_x,
-            MountScrollFocus::Roles => &mut self.list_roles_scroll_x,
-        }
-    }
-
-    pub const fn list_scroll_y_mut(&mut self, focus: MountScrollFocus) -> &mut u16 {
-        match focus {
-            MountScrollFocus::Workspace => &mut self.list_mounts_scroll_y,
-            MountScrollFocus::Global => &mut self.list_global_mounts_scroll_y,
-            MountScrollFocus::RoleGlobal => &mut self.list_role_global_mounts_scroll_y,
-            MountScrollFocus::Roles => &mut self.list_roles_scroll_y,
+            MountScrollFocus::Workspace => &mut self.list_mounts_scroll,
+            MountScrollFocus::Global => &mut self.list_global_mounts_scroll,
+            MountScrollFocus::RoleGlobal => &mut self.list_role_global_mounts_scroll,
+            MountScrollFocus::Roles => &mut self.list_roles_scroll,
         }
     }
 
     pub fn reset_list_scroll(&mut self) {
-        self.list_mounts_scroll_x = 0;
-        self.list_mounts_scroll_y = 0;
-        self.list_global_mounts_scroll_x = 0;
-        self.list_global_mounts_scroll_y = 0;
-        self.list_role_global_mounts_scroll_x = 0;
-        self.list_role_global_mounts_scroll_y = 0;
-        self.list_roles_scroll_x = 0;
-        self.list_roles_scroll_y = 0;
+        self.list_mounts_scroll = crate::tui::scroll_block::console_scroll_area_state();
+        self.list_global_mounts_scroll = crate::tui::scroll_block::console_scroll_area_state();
+        self.list_role_global_mounts_scroll = crate::tui::scroll_block::console_scroll_area_state();
+        self.list_roles_scroll = crate::tui::scroll_block::console_scroll_area_state();
         self.list_focus_owner.focus_tab_bar();
-        self.list_names_scroll_x = 0;
-        self.list_names_scroll_y = 0;
+        self.list_names_scroll = crate::tui::scroll_block::console_scroll_area_state();
     }
 
     pub fn list_names_focused(&self) -> bool {
@@ -143,27 +131,22 @@ impl ManagerState<'_> {
             selected,
             list_modal: None,
             status_overlay: None,
+            keyboard_help: None,
             inline_role_picker: None,
             inline_agent_picker: None,
             inline_new_session_picker: None,
             inline_provider_picker: None,
             launch_provider_picker: None,
-            list_mounts_scroll_x: 0,
-            list_mounts_scroll_y: 0,
-            list_global_mounts_scroll_x: 0,
-            list_global_mounts_scroll_y: 0,
-            list_role_global_mounts_scroll_x: 0,
-            list_role_global_mounts_scroll_y: 0,
-            list_roles_scroll_x: 0,
-            list_roles_scroll_y: 0,
-            list_focus_owner: jackin_tui::runtime::SurfaceFocus::tab_bar(
-                MountScrollFocus::Workspace,
-            ),
-            list_names_scroll_x: 0,
-            list_names_scroll_y: 0,
+            list_mounts_scroll: crate::tui::scroll_block::console_scroll_area_state(),
+            list_global_mounts_scroll: crate::tui::scroll_block::console_scroll_area_state(),
+            list_role_global_mounts_scroll: crate::tui::scroll_block::console_scroll_area_state(),
+            list_roles_scroll: crate::tui::scroll_block::console_scroll_area_state(),
+            list_focus_owner: crate::tui::focus::TabFocus::tab_bar(MountScrollFocus::Workspace),
+            list_names_scroll: crate::tui::scroll_block::console_scroll_area_state(),
             list_split_pct: DEFAULT_SPLIT_PCT,
             drag_state: None,
             hover_target: None,
+            hover: termrock::interaction::HoverState::default(),
             mount_info_cache: MountInfoCache::default(),
             op_cache,
             op_available,
@@ -344,7 +327,7 @@ impl ManagerState<'_> {
     /// Instance rows appear immediately after their parent workspace row.
     fn selectable_rows_vec(&self) -> Vec<ManagerListRow> {
         let workspace_instance_counts = self.workspace_instance_counts();
-        crate::tui::screens::workspaces::update::selectable_rows(
+        crate::tui::screens::workspaces::selection::WorkspaceSelection::projection(
             crate::tui::screens::workspaces::update::WorkspaceRowLayout {
                 current_dir_expanded: self.current_dir_expanded,
                 current_dir_instance_count: self.current_dir_visible_instances().len(),
@@ -384,7 +367,10 @@ impl ManagerState<'_> {
     /// Returns the position of `row` in `selectable_rows_vec`, or `None`.
     #[must_use]
     pub fn index_of_row(&self, row: ManagerListRow) -> Option<usize> {
-        workspace_row_index(&self.selectable_rows_vec(), row)
+        crate::tui::screens::workspaces::selection::WorkspaceSelection::index_of(
+            &self.selectable_rows_vec(),
+            row,
+        )
     }
 
     // ── Core navigation ───────────────────────────────────────────
@@ -404,7 +390,10 @@ impl ManagerState<'_> {
     /// Decode a selectable-list index into a [`ManagerListRow`].
     #[must_use]
     pub fn row_at(&self, idx: usize) -> Option<ManagerListRow> {
-        workspace_row_at(&self.selectable_rows_vec(), idx)
+        crate::tui::screens::workspaces::selection::WorkspaceSelection::row_at(
+            &self.selectable_rows_vec(),
+            idx,
+        )
     }
 
     /// Decode a visual-list index (may include the non-selectable spacer)
@@ -1117,37 +1106,37 @@ impl PreviewPaneCursorState for ManagerState<'_> {
 
 impl crate::tui::screens::workspaces::update::WorkspaceListScrollState for ManagerState<'_> {
     fn list_names_scroll_x(&self) -> u16 {
-        self.list_names_scroll_x
+        self.list_names_scroll.offset_x()
     }
 
     fn set_list_names_scroll_x(&mut self, value: u16) {
-        self.list_names_scroll_x = value;
+        crate::tui::scroll_block::scroll_area_set_x(&mut self.list_names_scroll, value);
     }
 
     fn block_scroll_x(&self, focus: MountScrollFocus) -> u16 {
         match focus {
-            MountScrollFocus::Workspace => self.list_mounts_scroll_x,
-            MountScrollFocus::Global => self.list_global_mounts_scroll_x,
-            MountScrollFocus::RoleGlobal => self.list_role_global_mounts_scroll_x,
-            MountScrollFocus::Roles => self.list_roles_scroll_x,
+            MountScrollFocus::Workspace => self.list_mounts_scroll.offset_x(),
+            MountScrollFocus::Global => self.list_global_mounts_scroll.offset_x(),
+            MountScrollFocus::RoleGlobal => self.list_role_global_mounts_scroll.offset_x(),
+            MountScrollFocus::Roles => self.list_roles_scroll.offset_x(),
         }
     }
 
     fn set_block_scroll_x(&mut self, focus: MountScrollFocus, value: u16) {
-        *self.list_scroll_x_mut(focus) = value;
+        crate::tui::scroll_block::scroll_area_set_x(self.list_scroll_state_mut(focus), value);
     }
 
     fn block_scroll_y(&self, focus: MountScrollFocus) -> u16 {
         match focus {
-            MountScrollFocus::Workspace => self.list_mounts_scroll_y,
-            MountScrollFocus::Global => self.list_global_mounts_scroll_y,
-            MountScrollFocus::RoleGlobal => self.list_role_global_mounts_scroll_y,
-            MountScrollFocus::Roles => self.list_roles_scroll_y,
+            MountScrollFocus::Workspace => self.list_mounts_scroll.offset_y(),
+            MountScrollFocus::Global => self.list_global_mounts_scroll.offset_y(),
+            MountScrollFocus::RoleGlobal => self.list_role_global_mounts_scroll.offset_y(),
+            MountScrollFocus::Roles => self.list_roles_scroll.offset_y(),
         }
     }
 
     fn set_block_scroll_y(&mut self, focus: MountScrollFocus, value: u16) {
-        *self.list_scroll_y_mut(focus) = value;
+        crate::tui::scroll_block::scroll_area_set_y(self.list_scroll_state_mut(focus), value);
     }
 }
 

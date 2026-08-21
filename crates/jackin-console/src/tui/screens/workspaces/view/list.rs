@@ -271,7 +271,7 @@ fn render_list_names_sidebar(
         area,
         selected_index: state.visual_selected(),
         row_count: visual_rows.len(),
-        scroll_y: state.list_names_scroll_y,
+        scroll_y: state.list_names_scroll.offset_y(),
     });
     let (list_lines, content_width) =
         list_name_lines(state, plan.viewport_width, sidebar_owns_focus);
@@ -281,7 +281,7 @@ fn render_list_names_sidebar(
         list_lines,
         content_width,
         sidebar_owns_focus,
-        state.list_names_scroll_x,
+        state.list_names_scroll.offset_x(),
         plan.follow_scroll_y,
     );
 }
@@ -380,8 +380,8 @@ pub fn render_sidebar_body(
         layout.mounts,
         inputs.mounts,
         &inputs.mount_info_cache,
-        state.list_mounts_scroll_x,
-        state.list_mounts_scroll_y,
+        state.list_mounts_scroll.offset_x(),
+        state.list_mounts_scroll.offset_y(),
         ws_focused,
     );
     if layout.global.is_some() || layout.role_global.is_some() {
@@ -395,8 +395,8 @@ pub fn render_sidebar_body(
                 global_mounts_title(),
                 &global_rows,
                 &inputs.mount_info_cache,
-                state.list_global_mounts_scroll_x,
-                state.list_global_mounts_scroll_y,
+                state.list_global_mounts_scroll.offset_x(),
+                state.list_global_mounts_scroll.offset_y(),
                 global_focused == Some(MountScrollFocus::Global),
             );
         }
@@ -408,8 +408,8 @@ pub fn render_sidebar_body(
                 &title,
                 &role_global_rows,
                 &inputs.mount_info_cache,
-                state.list_role_global_mounts_scroll_x,
-                state.list_role_global_mounts_scroll_y,
+                state.list_role_global_mounts_scroll.offset_x(),
+                state.list_role_global_mounts_scroll.offset_y(),
                 global_focused == Some(MountScrollFocus::RoleGlobal),
             );
         }
@@ -424,8 +424,8 @@ pub fn render_sidebar_body(
             area,
             inputs.ws_config,
             config,
-            state.list_roles_scroll_x,
-            state.list_roles_scroll_y,
+            state.list_roles_scroll.offset_x(),
+            state.list_roles_scroll.offset_y(),
             roles_focused,
         );
     }

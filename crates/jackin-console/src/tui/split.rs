@@ -27,3 +27,40 @@ pub const fn clamp_split(pct: u16) -> u16 {
         pct
     }
 }
+
+/// Two-pane split rects carried by the upstream `ResizablePanelGroup` in
+/// seamless mode (`handle_cells(0)`): the console renders adjacent panes with
+/// its own seam affordance, so no handle column is reserved. The
+/// percentage-to-cells math stays consumer-side (the ratatui `Percentage`
+/// solver seeded via `set_sizes_cells`), keeping the geometry byte-identical
+/// to the pre-adoption hand-rolled split. The seam-drag lane (hit slack,
+/// anchor-relative delta, pct clamp, width gate) stays consumer code — see
+/// `layout` and `input::mouse`.
+#[must_use]
+pub fn split_panel_group_layout(
+    area: ratatui::layout::Rect,
+    left_pct: u16,
+) -> termrock::widgets::ResizablePanelGroupLayout {
+    use ratatui::layout::{Constraint, Direction, Layout};
+    use termrock::widgets::{
+        PanelId, ResizablePanelGroup, ResizablePanelGroupState, ResizablePanelSpec,
+    };
+
+    let right_pct = 100u16.saturating_sub(left_pct);
+    let columns = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([
+            Constraint::Percentage(left_pct),
+            Constraint::Percentage(right_pct),
+        ])
+        .split(area);
+    let specs = [
+        ResizablePanelSpec::main(PanelId::from_static("list"), left_pct.max(1)).min(0),
+        ResizablePanelSpec::main(PanelId::from_static("preview"), right_pct.max(1)).min(0),
+    ];
+    let system = termrock::style::DesignSystem::default();
+    let group = ResizablePanelGroup::new(&specs, &system).handle_cells(0);
+    let mut state = ResizablePanelGroupState::new();
+    state.set_sizes_cells(&[columns[0].width, columns[1].width]);
+    group.layout(area, &mut state)
+}

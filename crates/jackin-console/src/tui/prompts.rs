@@ -58,7 +58,7 @@ pub fn show_role_resolution_error(
     error: &anyhow::Error,
 ) {
     let ConsoleStage::Manager(ms) = &mut state.stage;
-    let _unused = update_manager(
+    update_manager(
         ms,
         ManagerMessage::OpenListErrorPopup {
             title: role_resolution_error_title().into(),

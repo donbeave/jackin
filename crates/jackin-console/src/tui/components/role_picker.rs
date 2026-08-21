@@ -4,7 +4,7 @@
 //! Modal picker for role disambiguation.
 
 use crossterm::event::{KeyCode, KeyEvent};
-use jackin_tui::ModalOutcome;
+use jackin_oppicker::ModalOutcome;
 use termrock::widgets::ListState;
 
 pub trait RoleChoice: Clone {
@@ -120,6 +120,17 @@ use ratatui::{
 use termrock::layout::render_dialog_shell;
 use termrock::widgets::PanelChrome;
 use termrock::widgets::{List, ListRow, TextInput, TextInputState, Validation};
+
+// Plan 010 step 3 (C8) reviewed the picker family's named upstream pairings
+// at rev `29a16b5b` and recorded a behavior-preserving non-adoption
+// (commit-message carve-out): `Select::paint`/`ComboboxState` are
+// trigger-centric dropdowns — an unconditional field-chrome trigger row
+// (fill, prompt glyph, value label, chevron) ahead of the option list —
+// while every console picker body is a dialog shell carrying a Filter row +
+// List or an ActionBar, with no trigger row. That holds for the modal
+// pickers and for the inline sidebar pickers (`SelectPresentation::Popover`
+// carries the same trigger), so consumer configuration is exhausted.
+// Product outcome/choice enums stay product regardless.
 
 pub fn render<R: RoleChoice>(frame: &mut Frame<'_>, area: Rect, state: &RolePickerState<R>) {
     let inner = render_dialog_shell(

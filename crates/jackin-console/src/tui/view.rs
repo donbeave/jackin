@@ -395,13 +395,15 @@ pub fn render_modal_backdrop(frame: &mut Frame<'_>, area: Rect) {
 
 #[must_use]
 pub fn delete_confirm_area(area: Rect) -> Rect {
-    // Structural exception: legacy console confirm helpers wrap shared centering until all view modals are routed through `modal_rects`.
+    // Stage-level confirm (not a `ConsoleModal`): wraps shared centering
+    // directly, as it did beside the retired rect registry.
     crate::tui::layout::centered_rect_fixed(area, 60, 7)
 }
 
 #[must_use]
 pub fn purge_confirm_area(area: Rect) -> Rect {
-    // Structural exception: legacy console confirm helpers wrap shared centering until all view modals are routed through `modal_rects`.
+    // Stage-level confirm (not a `ConsoleModal`): wraps shared centering
+    // directly, as it did beside the retired rect registry.
     crate::tui::layout::centered_rect_fixed(area, 70, 9)
 }
 
@@ -720,6 +722,24 @@ pub fn render(
         let overlay_area = status_overlay_area(area);
         crate::tui::components::render_status_popup(frame, overlay_area, overlay);
     }
+
+    if let Some(help) = &state.keyboard_help {
+        // The help overlay never coexists with another modal (input dispatch
+        // precedence), so it draws its own backdrop here rather than widening
+        // `has_modal_overlay`.
+        let footer_h = reserved_footer_height(state, config, area);
+        render_modal_backdrop(frame, modal_backdrop_area(area, footer_h));
+        let system = termrock::style::DesignSystem::default();
+        let entries = crate::tui::components::keyboard_help::console_help_entries(state, &system);
+        let rect = termrock::widgets::place_keyboard_help(
+            modal_backdrop_area(area, footer_h),
+            termrock::widgets::KeyboardHelpSize::default(),
+        );
+        let mut paint = help.clone();
+        termrock::widgets::KeyboardHelp::new(&entries, &system)
+            .title("Keyboard shortcuts")
+            .paint(rect, frame.buffer_mut(), &mut paint);
+    }
 }
 
 /// Rows the current screen reserves for its footer — excluded from the modal
@@ -777,5 +797,7 @@ fn has_modal_overlay(state: &crate::tui::state::ManagerState<'_>) -> bool {
     ))
 }
 
+mod brand_header_crop;
+mod png_baselines;
 #[cfg(test)]
 mod tests;

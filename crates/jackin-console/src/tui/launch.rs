@@ -31,7 +31,7 @@ pub fn dispatch_launch_for_workspace(
     match resolution {
         LaunchDispatchResolution::NoEligibleRoles { name } => {
             let ConsoleStage::Manager(ms) = &mut state.stage;
-            let _unused = update_manager(
+            update_manager(
                 ms,
                 ManagerMessage::OpenListErrorPopup {
                     title: no_eligible_roles_error_title().into(),

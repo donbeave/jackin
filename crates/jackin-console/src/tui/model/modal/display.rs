@@ -1,24 +1,26 @@
 // SPDX-FileCopyrightText: 2026 Alexey Zhokhov
 // SPDX-License-Identifier: Apache-2.0
 
-//! Display-side impls on `ConsoleModal`: `rect_mode` / `rect` /
-//! `container_info_rect` / `prepare_for_render` / `footer_items` /
-//! `footer_items_for_area`, plus the `footer_items_for_mode` helper.
+//! Display-side impls on `ConsoleModal`: `overlay_kind` / `dismiss_policy`
+//! / `overlay_size` / `rect` / `container_info_rect` /
+//! `prepare_for_render` / `footer_items` / `footer_items_for_area`, plus
+//! the `footer_items_for_mode` helper.
 //!
 //! Moved out of `model/modal.rs` during the Ledger 2B decomposition so
 //! the modal enum stays a thin coordinator and the per-trait dispatch
 //! lives next to the trait it implements.
 
 use ratatui::layout::Rect;
+use termrock::interaction::{DismissAction, DismissPolicy, OverlayKind, OverlaySize};
 
 use crate::tui::components::footer_hints::{
     ModalAuthFormFooterState, ModalConfirmSaveFooterState, ModalContainerInfoFooterState,
     ModalFileBrowserFooterState, ModalFooterMode, ModalOpPickerFooterState,
 };
-use crate::tui::components::modal_rects::{
+use crate::tui::components::modal_overlay::{
     ModalAuthFormState, ModalConfirmSavePrepareState, ModalConfirmSaveState, ModalConfirmState,
     ModalContainerInfoState, ModalErrorPopupState, ModalGithubPickerState, ModalOpPickerState,
-    ModalRectMode, ModalRolePickerState,
+    ModalRolePickerState,
 };
 
 use super::ConsoleModal;
@@ -71,8 +73,34 @@ impl<
         SecretsScopeTag,
     >
 {
+    /// Overlay kind carried on the stack entry: the confirm-class blockers
+    /// are alert dialogs; everything else is a plain dialog. Behavior comes
+    /// from the explicit policy, not the kind's preset.
     #[must_use]
-    pub fn rect_mode(&self, outer: Rect) -> ModalRectMode
+    pub const fn overlay_kind(&self) -> OverlayKind {
+        match self {
+            Self::Confirm { .. } | Self::SaveDiscardCancel { .. } => OverlayKind::AlertDialog,
+            _ => OverlayKind::Dialog,
+        }
+    }
+
+    /// Per-variant dismiss policy from CURRENT behavior (plan 009 step 4
+    /// mapping): Esc cancels every variant outright except the file browser
+    /// and op-picker, whose components spend Esc on internal
+    /// back-navigation first; outside clicks are inert for all variants.
+    #[must_use]
+    pub const fn dismiss_policy(&self) -> DismissPolicy {
+        let escape = match self {
+            Self::FileBrowser { .. } | Self::OpPicker { .. } => DismissAction::Bubble,
+            _ => DismissAction::Dismiss,
+        };
+        crate::tui::components::modal_overlay::console_modal_dismiss_policy(escape)
+    }
+
+    /// Preferred overlay size: the retired `ModalRectMode` → spec → rect-fn
+    /// chain's numbers, kept byte-identical per variant.
+    #[must_use]
+    pub fn overlay_size(&self, outer: Rect) -> OverlaySize
     where
         ConfirmState: ModalConfirmState,
         GithubPickerState: ModalGithubPickerState,
@@ -83,49 +111,45 @@ impl<
         RolePickerState: ModalRolePickerState,
         AuthForm: ModalAuthFormState,
     {
+        use crate::tui::components::modal_overlay::{exact_dialog_size, fixed_dialog_size};
         match self {
-            Self::TextInput { .. } => ModalRectMode::TextInput,
-            Self::Confirm { state, .. } => ModalRectMode::Confirm {
-                width_pct: state.width_pct(),
-                height: state.required_height(),
-            },
-            Self::SaveDiscardCancel { .. } => ModalRectMode::SaveDiscardCancel,
-            Self::FileBrowser { .. } => ModalRectMode::FileBrowser,
-            Self::WorkdirPick { .. } => ModalRectMode::WorkdirPick,
-            Self::MountDstChoice { .. } => ModalRectMode::MountChoice,
-            Self::GithubPicker { state } => ModalRectMode::GithubPicker {
-                choice_len: state.choice_len(),
-            },
-            Self::ConfirmSave { state } => ModalRectMode::ConfirmSave {
-                required_height: state.required_height(),
-            },
+            Self::TextInput { .. } => fixed_dialog_size(outer, 60, 5),
+            Self::Confirm { state, .. } => {
+                fixed_dialog_size(outer, state.width_pct(), state.required_height())
+            }
+            Self::SaveDiscardCancel { .. } => fixed_dialog_size(outer, 70, 7),
+            Self::FileBrowser { .. } => fixed_dialog_size(outer, 70, 22),
+            Self::WorkdirPick { .. } => fixed_dialog_size(outer, 60, 12),
+            Self::MountDstChoice { .. } => exact_dialog_size(outer, 80, 8),
+            Self::GithubPicker { state } => {
+                let rows = (state.choice_len() as u16).saturating_add(5).min(15);
+                fixed_dialog_size(outer, 60, rows)
+            }
+            Self::ConfirmSave { state } => {
+                fixed_dialog_size(outer, 80, state.required_height().min(outer.height))
+            }
             Self::ErrorPopup { state } => {
                 let inner_width = (outer.width * 60 / 100).saturating_sub(4);
                 let max_rows = outer.height.saturating_sub(2);
-                ModalRectMode::ErrorPopup {
-                    required_height: state.required_height(inner_width, max_rows),
-                }
+                fixed_dialog_size(outer, 60, state.required_height(inner_width, max_rows))
             }
-            Self::ContainerInfo { state } => ModalRectMode::ContainerInfo {
-                required_height: state.required_height(),
-            },
-            Self::StatusPopup { .. } => ModalRectMode::StatusPopup,
+            Self::ContainerInfo { state } => fixed_dialog_size(outer, 60, state.required_height()),
+            Self::StatusPopup { .. } => fixed_dialog_size(outer, 50, 7),
             Self::OpPicker { state, .. } if state.has_naming_stage_input() => {
-                ModalRectMode::TextInput
+                fixed_dialog_size(outer, 60, 5)
             }
-            Self::OpPicker { .. } => ModalRectMode::OpPicker,
+            Self::OpPicker { .. } => fixed_dialog_size(outer, 80, 22),
             Self::RolePicker { state }
             | Self::RoleOverridePicker { state }
-            | Self::AuthRolePicker { state } => ModalRectMode::RolePicker {
-                filtered_len: state.filtered_len(),
-            },
-            Self::SourcePicker { .. } | Self::AuthSourcePicker { .. } => {
-                ModalRectMode::SourcePicker
+            | Self::AuthRolePicker { state } => {
+                let rows = (state.filtered_len() as u16).saturating_add(6).min(15);
+                fixed_dialog_size(outer, 50, rows)
             }
-            Self::ScopePicker { .. } => ModalRectMode::ScopePicker,
-            Self::AuthForm { state, .. } => ModalRectMode::AuthForm {
-                required_height: state.required_height(),
-            },
+            Self::SourcePicker { .. } | Self::AuthSourcePicker { .. } => {
+                fixed_dialog_size(outer, 50, 5)
+            }
+            Self::ScopePicker { .. } => fixed_dialog_size(outer, 50, 5),
+            Self::AuthForm { state, .. } => fixed_dialog_size(outer, 80, state.required_height()),
         }
     }
 
@@ -141,7 +165,12 @@ impl<
         RolePickerState: ModalRolePickerState,
         AuthForm: ModalAuthFormState,
     {
-        crate::tui::components::modal_rects::modal_rect_for_mode(outer, self.rect_mode(outer))
+        crate::tui::components::modal_overlay::modal_overlay_rect(
+            outer,
+            self.overlay_kind(),
+            self.overlay_size(outer),
+            self.dismiss_policy().escape,
+        )
     }
 
     #[must_use]

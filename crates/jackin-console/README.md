@@ -27,6 +27,7 @@ Canonical host-console product surface. Owns reusable console state, update/inpu
 | [`tui/state.rs`](src/tui/state.rs) · [`tui/state/`](src/tui/state) | console manager state + bindings | [`tests.rs`](src/tui/state/tests.rs) |
 | [`tui/state/manager.rs`](src/tui/state/manager.rs) · [`tui/state/manager/`](src/tui/state/manager) | concrete manager stage state | [`tests.rs`](src/tui/state/manager/tests.rs) |
 | [`tui/screens/form_model.rs`](src/tui/screens/form_model.rs) | shared form `FieldRow` / `FormSection` view models | — |
+| [`tui/components/keyboard_help.rs`](src/tui/components/keyboard_help.rs) · [`tui/components/keyboard_help/`](src/tui/components/keyboard_help) | `?` keyboard-help overlay entry builder over live console keymaps | [`tests.rs`](src/tui/components/keyboard_help/tests.rs) |
 
 ## Public API
 

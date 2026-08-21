@@ -292,13 +292,14 @@ fn clamps_both_sidebar_scroll_axes() {
         content_width: 30,
         content_height: 20,
     };
-    let mut scroll_x = u16::MAX;
-    let mut scroll_y = u16::MAX;
+    let mut scroll = crate::tui::scroll_block::console_scroll_area_state();
+    crate::tui::scroll_block::scroll_area_set_x(&mut scroll, u16::MAX);
+    crate::tui::scroll_block::scroll_area_set_y(&mut scroll, u16::MAX);
 
-    clamp_scroll_area(area, &mut scroll_x, &mut scroll_y);
+    clamp_scroll_area(area, &mut scroll);
 
-    assert_eq!(scroll_x, 22);
-    assert_eq!(scroll_y, 17);
+    assert_eq!(scroll.offset_x(), 22);
+    assert_eq!(scroll.offset_y(), 17);
 }
 
 #[test]

@@ -13,8 +13,8 @@
 
 use std::path::PathBuf;
 
+use crate::tui::runtime::SubscriptionPoll;
 use crossterm::event::{KeyCode, KeyEvent};
-use jackin_tui::runtime::{Subscription, SubscriptionPoll};
 use ratatui::{
     Frame,
     layout::Rect,

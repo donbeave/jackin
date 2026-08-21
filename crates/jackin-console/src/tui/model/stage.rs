@@ -45,6 +45,7 @@ pub fn apply_manager_stage<Stage>(state: &mut impl ConsoleManagerStageState<Stag
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ConsoleInputDispatchPlan {
+    KeyboardHelp,
     ListModal,
     InlineNewSessionPicker,
     InlineProviderPicker,
@@ -62,14 +63,16 @@ pub enum ConsoleInputDispatchPlan {
 
 #[expect(
     clippy::struct_excessive_bools,
-    reason = "Twelve orthogonal console-modal-open flags (list_modal, inline \
-              pickers, editor_modal, settings pickers, create_prelude_modal) — \
-              each is an independent picker-open signal the input dispatch \
-              planner reads individually to pick the right dispatch arm. \
-              Named-field reads match the per-modal dispatch routing idiom."
+    reason = "Thirteen orthogonal console-modal-open flags (keyboard_help, \
+              list_modal, inline pickers, editor_modal, settings pickers, \
+              create_prelude_modal) — each is an independent picker-open \
+              signal the input dispatch planner reads individually to pick \
+              the right dispatch arm. Named-field reads match the per-modal \
+              dispatch routing idiom."
 )]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ConsoleInputDispatchFacts {
+    pub keyboard_help_open: bool,
     pub list_modal_open: bool,
     pub inline_new_session_picker_open: bool,
     pub inline_provider_picker_open: bool,
@@ -197,6 +200,9 @@ pub trait ConsoleManagerModalBlockPresence {
 pub const fn console_input_dispatch_plan(
     facts: ConsoleInputDispatchFacts,
 ) -> ConsoleInputDispatchPlan {
+    if facts.keyboard_help_open {
+        return ConsoleInputDispatchPlan::KeyboardHelp;
+    }
     if facts.list_modal_open {
         return ConsoleInputDispatchPlan::ListModal;
     }

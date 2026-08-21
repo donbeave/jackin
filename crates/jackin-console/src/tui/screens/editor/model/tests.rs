@@ -105,8 +105,8 @@ type TestEditorWithMountCache = EditorState<
 fn editor_apply_auth_kind_plan_updates_selection_and_scroll() {
     let mut editor = TestEditor::new_edit("alpha".into(), WorkspaceConfig::default());
     editor.active_field = FieldFocus::Row(9);
-    editor.tab_scroll_x = 12;
-    editor.tab_scroll_y = 4;
+    crate::tui::scroll_block::scroll_area_set_x(&mut editor.tab_scroll, 12);
+    crate::tui::scroll_block::scroll_area_set_y(&mut editor.tab_scroll, 4);
 
     editor.apply_auth_kind_plan(
         crate::tui::screens::editor::update::enter_editor_auth_kind_plan(
@@ -119,8 +119,8 @@ fn editor_apply_auth_kind_plan_updates_selection_and_scroll() {
         Some(crate::tui::auth::AuthKind::Claude)
     );
     assert_eq!(editor.active_field, FieldFocus::Row(0));
-    assert_eq!(editor.tab_scroll_x, 0);
-    assert_eq!(editor.tab_scroll_y, 0);
+    assert_eq!(editor.tab_scroll.offset_x(), 0);
+    assert_eq!(editor.tab_scroll.offset_y(), 0);
 
     editor.apply_auth_kind_plan(crate::tui::screens::editor::update::clear_editor_auth_kind_plan());
     assert_eq!(editor.auth_selected_kind, None);
@@ -180,7 +180,7 @@ fn editor_apply_selection_and_scroll_plans_update_focus() {
     editor.apply_tab_horizontal_scroll_plan(
         crate::tui::screens::editor::update::editor_tab_horizontal_scroll_plan(0, 8, 20, 80),
     );
-    assert_eq!(editor.tab_scroll_x, 8);
+    assert_eq!(editor.tab_scroll.offset_x(), 8);
     assert!(editor.tab_content_scroll_focused());
 }
 
@@ -1843,18 +1843,18 @@ fn editor_toggle_default_role_at_cursor_only_sets_allowed_role() {
 
 #[test]
 fn trparity_editor_focus_owner_survives_modal_cancel() {
-    use jackin_tui::runtime::SurfaceFocusTarget;
+    use crate::tui::focus::ConsoleFocusTarget;
 
     let mut editor =
         TestEditorWithStatusModal::new_edit("alpha".into(), WorkspaceConfig::default());
-    editor.set_focus_owner(SurfaceFocusTarget::Content(
+    editor.set_focus_owner(ConsoleFocusTarget::Content(
         EditorFocusTarget::WorkspaceMounts,
     ));
     editor.open_sub_modal(TestStatusModal::Other);
 
     assert_eq!(
         editor.focus_owner(),
-        SurfaceFocusTarget::Content(EditorFocusTarget::WorkspaceMounts)
+        ConsoleFocusTarget::Content(EditorFocusTarget::WorkspaceMounts)
     );
 
     editor.dismiss_active_modal();
@@ -1862,17 +1862,17 @@ fn trparity_editor_focus_owner_survives_modal_cancel() {
     assert!(editor.modal.is_none());
     assert_eq!(
         editor.focus_owner(),
-        SurfaceFocusTarget::Content(EditorFocusTarget::WorkspaceMounts)
+        ConsoleFocusTarget::Content(EditorFocusTarget::WorkspaceMounts)
     );
 }
 
 #[test]
 fn trparity_editor_focus_owner_survives_modal_commit() {
-    use jackin_tui::runtime::SurfaceFocusTarget;
+    use crate::tui::focus::ConsoleFocusTarget;
 
     let mut editor =
         TestEditorWithStatusModal::new_edit("alpha".into(), WorkspaceConfig::default());
-    editor.set_focus_owner(SurfaceFocusTarget::Content(
+    editor.set_focus_owner(ConsoleFocusTarget::Content(
         EditorFocusTarget::WorkspaceMounts,
     ));
     editor.open_sub_modal(TestStatusModal::Status);
@@ -1884,7 +1884,7 @@ fn trparity_editor_focus_owner_survives_modal_commit() {
     assert!(!editor.has_modal_parent());
     assert_eq!(
         editor.focus_owner(),
-        SurfaceFocusTarget::Content(EditorFocusTarget::WorkspaceMounts)
+        ConsoleFocusTarget::Content(EditorFocusTarget::WorkspaceMounts)
     );
 
     // Pop path from a two-level chain restores the parent modal, focus unchanged.
@@ -1895,6 +1895,6 @@ fn trparity_editor_focus_owner_survives_modal_commit() {
     assert!(!editor.has_modal_parent());
     assert_eq!(
         editor.focus_owner(),
-        SurfaceFocusTarget::Content(EditorFocusTarget::WorkspaceMounts)
+        ConsoleFocusTarget::Content(EditorFocusTarget::WorkspaceMounts)
     );
 }

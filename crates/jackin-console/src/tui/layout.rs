@@ -42,20 +42,18 @@ pub const fn near_seam(column: u16, seam_x: u16) -> bool {
 /// percentage layout arithmetic.
 #[must_use]
 pub fn horizontal_split_pane_dims(pct: u16, total_width: u16) -> (u16, u16, u16, u16) {
-    let right_pct = 100u16.saturating_sub(pct);
-    let cols = ratatui::layout::Layout::default()
-        .direction(ratatui::layout::Direction::Horizontal)
-        .constraints([
-            ratatui::layout::Constraint::Percentage(pct),
-            ratatui::layout::Constraint::Percentage(right_pct),
-        ])
-        .split(ratatui::layout::Rect {
+    // Same upstream layout carrier as the render path (`split_list_columns`).
+    let layout = crate::tui::split::split_panel_group_layout(
+        ratatui::layout::Rect {
             x: 0,
             y: 0,
             width: total_width,
             height: 1,
-        });
-    (cols[0].x, cols[0].width, cols[1].x, cols[1].width)
+        },
+        pct,
+    );
+    let (left, right) = (layout.panels[0].area, layout.panels[1].area);
+    (left.x, left.width, right.x, right.width)
 }
 
 #[must_use]
@@ -154,7 +152,7 @@ pub fn scrollbar_drag_offset(
 
 pub fn apply_scrollbar_drag(
     axis: ScrollbarAxis,
-    value: &mut u16,
+    scroll: &mut termrock::widgets::ScrollAreaState,
     area: ratatui::layout::Rect,
     content_len: usize,
     pointer_col: u16,
@@ -164,7 +162,27 @@ pub fn apply_scrollbar_drag(
     else {
         return false;
     };
-    *value = offset;
+    let len = u16::try_from(content_len).unwrap_or(u16::MAX);
+    match axis {
+        ScrollbarAxis::Horizontal => {
+            scroll.set_content_size(len, u16::MAX);
+            scroll.set_viewport(
+                u16::try_from(scroll_viewport_width(area)).unwrap_or(u16::MAX),
+                1,
+            );
+            scroll.set_offset_x(offset);
+        }
+        ScrollbarAxis::Vertical => {
+            scroll.set_content_size(u16::MAX, len);
+            scroll.set_viewport(
+                1,
+                u16::try_from(scroll_viewport_height(area)).unwrap_or(u16::MAX),
+            );
+            // User-driven position change: the pausing setter, not the
+            // cursor-reveal one.
+            scroll.set_offset_y(offset);
+        }
+    }
     true
 }
 
@@ -244,36 +262,6 @@ pub fn bordered_content_hit_at_position<T>(
     }
     let visual_row = usize::from(row.saturating_sub(content_y)) + usize::from(scroll_y);
     hit(visual_row)
-}
-
-/// Apply a horizontal scroll delta, returning whether `value` actually moved
-/// (i.e. the content could scroll in that direction). Callers use the result to
-/// decide whether a wheel gesture had any effect on this panel.
-pub fn apply_horizontal_scroll(
-    value: &mut u16,
-    delta: i16,
-    area: ratatui::layout::Rect,
-    content_width: usize,
-) -> bool {
-    use termrock::scroll::apply_scroll_delta;
-
-    let before = *value;
-    apply_scroll_delta(value, delta, scroll_viewport_width(area), content_width);
-    *value != before
-}
-
-/// Apply a vertical scroll delta, returning whether `value` actually moved.
-pub fn apply_vertical_scroll(
-    value: &mut u16,
-    delta: i16,
-    area: ratatui::layout::Rect,
-    content_height: usize,
-) -> bool {
-    use termrock::scroll::apply_scroll_delta;
-
-    let before = *value;
-    apply_scroll_delta(value, delta, scroll_viewport_height(area), content_height);
-    *value != before
 }
 
 #[must_use]

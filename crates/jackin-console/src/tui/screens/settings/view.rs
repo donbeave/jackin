@@ -2,6 +2,23 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //! Settings screen view helpers.
+//!
+//! Composition copy-adapted from the upstream `patterns/settings_screen.rs`
+//! recipe (composition reference, never a type dependency — no
+//! `termrock::patterns` import):
+//!
+//! - tab bar (General, Mounts, Environments, Auth, Trust) = the recipe's
+//!   category navigation (`SettingsRegion::Nav`),
+//! - tab bodies = the recipe's form sections (`SettingsRegion::Body`),
+//! - dirty cue = the recipe's modified-field cue (pre-existing; not
+//!   restyled),
+//! - footer hint bar = chrome-only (like the recipe's Footer region, which
+//!   the key cycle never enters).
+//!
+//! The focus cycle follows the recipe's `focus_order()` pattern: one ordered
+//! region chain (`settings_focus_order` in `update.rs`) that the shell key
+//! plan walks. The recipe's Search region and its `KeybindingRecorder` /
+//! `ThemePicker` integrations are deliberately not copy-adapted (N4).
 
 use super::model::GlobalMountConfirm;
 use super::model::GlobalMountTextTarget;
@@ -248,8 +265,8 @@ pub fn render_mounts_tab<
         frame,
         area,
         lines,
-        state.mounts.scroll_x,
-        state.mounts.scroll_y,
+        state.mounts.scroll.offset_x(),
+        state.mounts.scroll.offset_y(),
         focused,
         None,
     );
@@ -281,7 +298,7 @@ pub fn render_env_tab<
         area,
         lines,
         0,
-        state.env.scroll_y,
+        state.env.scroll.offset_y(),
         focused,
         None,
     );
@@ -317,7 +334,7 @@ pub fn render_auth_tab<
         area,
         lines,
         0,
-        state.auth.scroll_y,
+        state.auth.scroll.offset_y(),
         focused,
         title.as_deref(),
     );
@@ -348,8 +365,8 @@ pub fn render_trust_tab<
         frame,
         area,
         lines,
-        state.trust.scroll_x,
-        state.trust.scroll_y,
+        state.trust.scroll.offset_x(),
+        state.trust.scroll.offset_y(),
         focused,
         None,
     );
@@ -539,8 +556,7 @@ fn settings_env_value_is_op_ref<
 }
 
 pub fn render_global_mount_modal(frame: &mut Frame<'_>, modal: &SettingsModal<'_>) {
-    let area =
-        crate::tui::components::modal_rects::modal_rect_for_mode(frame.area(), modal.rect_mode());
+    let area = modal.rect(frame.area());
     match modal {
         SettingsModal::MountText { state, .. } => {
             crate::tui::components::render_text_input(frame, area, state);
@@ -568,8 +584,7 @@ pub fn render_global_mount_modal(frame: &mut Frame<'_>, modal: &SettingsModal<'_
 }
 
 pub fn render_settings_env_modal(frame: &mut Frame<'_>, modal: &SettingsModal<'_>) {
-    let area =
-        crate::tui::components::modal_rects::modal_rect_for_mode(frame.area(), modal.rect_mode());
+    let area = modal.rect(frame.area());
     match modal {
         SettingsModal::EnvText { state, .. } => {
             crate::tui::components::render_text_input(frame, area, state);
@@ -594,8 +609,7 @@ pub fn render_settings_env_modal(frame: &mut Frame<'_>, modal: &SettingsModal<'_
 }
 
 pub fn render_settings_auth_modal(frame: &mut Frame<'_>, modal: &SettingsModal<'_>) {
-    let area =
-        crate::tui::components::modal_rects::modal_rect_for_mode(frame.area(), modal.rect_mode());
+    let area = modal.rect(frame.area());
     match modal {
         SettingsModal::AuthForm { state, focus, .. } => {
             crate::tui::components::auth_panel::render_form(frame, area, state, *focus);
@@ -1054,13 +1068,22 @@ fn truncate(value: &str, width: usize) -> String {
     out
 }
 
-pub fn clamp_mounts_scroll_x_for_frame(area: Rect, content_width: usize, scroll_x: &mut u16) {
+pub fn clamp_mounts_scroll_x_for_frame(
+    area: Rect,
+    content_width: usize,
+    scroll: &mut termrock::widgets::ScrollAreaState,
+) {
     let areas = settings_frame_areas(area, 2);
-    termrock::scroll::clamp_scroll_offset(
-        content_width,
-        termrock::scroll::viewport_width(areas.body),
-        scroll_x,
+    // Clamp the X axis only, exactly as the retired raw-offset helper did:
+    // Y dims stay pinned so `clamp` can never touch the vertical offset.
+    // The pinned viewport is 1, not 0 — upstream `max_offset(_, 0)` is 0,
+    // which would clamp the vertical offset to zero.
+    scroll.set_content_size(u16::try_from(content_width).unwrap_or(u16::MAX), u16::MAX);
+    scroll.set_viewport(
+        u16::try_from(termrock::scroll::viewport_width(areas.body)).unwrap_or(u16::MAX),
+        1,
     );
+    scroll.clamp();
 }
 
 #[must_use]

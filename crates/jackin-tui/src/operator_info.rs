@@ -2,6 +2,17 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //! Product-owned jackin❯ operator-information vocabulary and `TermRock` projection.
+//!
+//! Plan 010 step 6 (C19) reviewed the named `key_value_table` + `link`
+//! pairing at rev `29a16b5b` and recorded a behavior-preserving
+//! non-adoption (commit-message carve-out): the pairing's substance already
+//! lands through the current substrate — upstream `DetailTable` (the
+//! KVT-class detail table with `Link`/`CopyAndLink` capabilities and
+//! `Role::Link` styling), `hyperlink_regions`, and OSC 8 bytes emitted via
+//! `termrock::osc::encode_hyperlink_open`. A literal `KeyValueTable` swap is
+//! not byte-viable: its field-row paint is an editable form-grid anatomy
+//! (row-chrome fills, two-column leading pad, separator rules, auto key
+//! width) that would shift every rendered row.
 
 use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::{
@@ -12,7 +23,6 @@ use ratatui::{
     widgets::StatefulWidget,
 };
 
-use crate::ModalOutcome;
 use termrock::scroll::DialogScroll;
 use termrock::style::Role;
 use termrock::text::display_cols;
@@ -20,6 +30,16 @@ use termrock::widgets::{
     DetailCapability, DetailRow, DetailTable, DetailTableOutcome, DetailTableState, HintSpan,
     Panel, PanelChrome,
 };
+
+/// Key-handling result for the Debug-info dialog. The dialog only ever
+/// continues or dismisses — it has no commit path.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum OperatorInfoOutcome {
+    /// Key absorbed; dialog stays open.
+    Continue,
+    /// Esc/q pressed; dialog dismissed.
+    Cancel,
+}
 
 #[derive(Debug, Clone)]
 pub struct ContainerInfoRow {
@@ -200,7 +220,7 @@ impl ContainerInfoState {
         self.rows.push(row);
     }
 
-    pub fn handle_key(&mut self, key: KeyEvent) -> ModalOutcome<()> {
+    pub fn handle_key(&mut self, key: KeyEvent) -> OperatorInfoOutcome {
         if let Some(dialog_rect) = self.viewport {
             let content_height = self.content_height();
             let content_width = self.content_width();
@@ -238,9 +258,9 @@ impl ContainerInfoState {
         viewport_height: usize,
         viewport_width: usize,
         axes: termrock::scroll::ScrollAxes,
-    ) -> ModalOutcome<()> {
+    ) -> OperatorInfoOutcome {
         match key.code {
-            KeyCode::Esc | KeyCode::Char('q' | 'Q') => ModalOutcome::Cancel,
+            KeyCode::Esc | KeyCode::Char('q' | 'Q') => OperatorInfoOutcome::Cancel,
             // Scroll keys (Up/Down/Left/Right + vim h/j/k/l + PageUp/PageDown).
             KeyCode::Up
             | KeyCode::Down
@@ -259,9 +279,9 @@ impl ContainerInfoState {
                     viewport_width,
                     axes,
                 );
-                ModalOutcome::Continue
+                OperatorInfoOutcome::Continue
             }
-            _ => ModalOutcome::Continue,
+            _ => OperatorInfoOutcome::Continue,
         }
     }
 

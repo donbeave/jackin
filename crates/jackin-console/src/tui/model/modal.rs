@@ -3,6 +3,10 @@
 
 //! `ConsoleModal` enum and its core impl methods.
 //!
+//! Spec carve-out (plan 009): the flow enum and its open/close/result flow
+//! stay product-owned — upstream `OverlayStack`/`DismissPolicy` carry
+//! geometry, stacking, and dismiss policy only (see `display.rs`).
+//!
 //! Coordinator — declares the sibling modules `auth_impls` (auth-related
 //! trait impls) and `display` (`rect/footer_items` impls). All public
 //! types stay reachable from `crate::tui::model::modal::*` — sibling
@@ -14,11 +18,6 @@
 )]
 mod auth_impls;
 mod display;
-
-use super::create_prelude::{
-    CreatePreludeFileBrowserTarget, CreatePreludeModalStep, CreatePreludeTextInputTarget,
-    create_prelude_modal_step,
-};
 
 #[derive(Debug)]
 pub enum ConsoleModal<
@@ -227,33 +226,6 @@ impl<
             Self::OpPicker { .. } => SharedModalScrollTarget::OpPicker,
             _ => SharedModalScrollTarget::None,
         }
-    }
-
-    #[must_use]
-    pub fn create_prelude_step(&self) -> CreatePreludeModalStep
-    where
-        TextInputTarget: CreatePreludeTextInputTarget,
-        FileBrowserTarget: CreatePreludeFileBrowserTarget,
-    {
-        create_prelude_modal_step(
-            matches!(
-                self,
-                Self::FileBrowser { target, .. } if target.is_create_first_mount_src()
-            ),
-            matches!(
-                self,
-                Self::MountDstChoice { target, .. } if target.is_create_first_mount_src()
-            ),
-            matches!(
-                self,
-                Self::TextInput { target, .. } if target.is_create_mount_dst()
-            ),
-            matches!(self, Self::WorkdirPick { .. }),
-            matches!(
-                self,
-                Self::TextInput { target, .. } if target.is_create_workspace_name()
-            ),
-        )
     }
 
     #[must_use]

@@ -1,32 +1,27 @@
 // SPDX-FileCopyrightText: 2026 Alexey Zhokhov
 // SPDX-License-Identifier: Apache-2.0
 
-//! Atomic product modal and overlay-stack lifecycle.
+//! Product-owned modal chain bookkeeping for the console.
+//!
+//! The retired facade modal-flow type paired this bookkeeping with a
+//! fake-depth `OverlayStack` (id `modal-{depth}`, zero rect) that carried no
+//! geometry. That pattern is deliberately not carried forward: depth
+//! bookkeeping stands alone here, and real overlay geometry arrives with the
+//! plan-009 modal cutover.
 
-use ratatui::layout::Rect;
-use termrock::interaction::{OverlaySize, OverlaySpec, OverlayStack};
-
-/// Modal chain coordinated with a `TermRock` overlay stack.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ModalFlow<Modal> {
+/// A chain of product modals: one active modal plus its suspended parents.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct ModalChain<Modal> {
     current: Option<Modal>,
     parents: Vec<Modal>,
-    stack: OverlayStack,
 }
 
-impl<Modal> Default for ModalFlow<Modal> {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl<Modal> ModalFlow<Modal> {
-    /// Create an empty modal flow.
+impl<Modal> ModalChain<Modal> {
+    /// Create an empty modal chain.
     pub fn new() -> Self {
         Self {
             current: None,
             parents: Vec::new(),
-            stack: OverlayStack::new(),
         }
     }
 
@@ -55,22 +50,14 @@ impl<Modal> ModalFlow<Modal> {
         self.current.is_some()
     }
 
-    /// Whether a parent modal can be restored.
-    pub fn has_parent(&self) -> bool {
-        !self.parents.is_empty()
-    }
-
-    /// Open a root modal and matching overlay entry atomically.
+    /// Open a root modal, discarding any existing chain.
     pub fn open(&mut self, modal: Modal) {
-        self.stack.clear();
-        self.open_entry();
         self.current = Some(modal);
         self.parents.clear();
     }
 
-    /// Open a child modal and matching overlay entry atomically.
+    /// Open a child modal, suspending the current one as its parent.
     pub fn open_sub(&mut self, modal: Modal) {
-        self.open_entry();
         if let Some(parent) = self.current.take() {
             self.parents.push(parent);
         }
@@ -79,15 +66,11 @@ impl<Modal> ModalFlow<Modal> {
 
     /// Close one modal level and restore its parent.
     pub fn pop(&mut self) {
-        if let Some(top) = self.stack.entries().last().map(|entry| entry.id.clone()) {
-            drop(self.stack.dismiss(&top));
-        }
         self.current = self.parents.pop();
     }
 
-    /// Clear the modal chain and the overlay stack.
+    /// Clear the modal chain.
     pub fn clear(&mut self) {
-        self.stack.clear();
         self.current = None;
         self.parents.clear();
     }
@@ -97,23 +80,17 @@ impl<Modal> ModalFlow<Modal> {
         self.current.take()
     }
 
-    /// Restore or replace the current product modal without changing the stack.
+    /// Restore or replace the current product modal.
     pub fn set_current(&mut self, modal: Modal) {
         self.current = Some(modal);
     }
 
-    /// Push a parent product modal and open a child entry.
+    /// Push a parent product modal and open a child on top of it.
     pub fn open_pair(&mut self, parent: Modal, child: Modal) {
         self.open(parent);
         self.open_sub(child);
     }
-
-    /// The stack tracks depth only — jackin❯ owns no overlay geometry here.
-    fn open_entry(&mut self) {
-        let depth = self.stack.entries().len();
-        drop(self.stack.open(
-            Rect::new(0, 0, 0, 0),
-            OverlaySpec::dialog(format!("modal-{depth}"), OverlaySize::dialog(0, 0), None),
-        ));
-    }
 }
+
+#[cfg(test)]
+mod tests;

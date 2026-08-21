@@ -3,13 +3,13 @@
 
 use crate::tui::auth::AuthKind;
 use crate::tui::components::ErrorPopupState;
+use crate::tui::focus::ConsoleFocusTarget;
 use crate::tui::state::update::{ManagerMessage, action_of, update_manager};
 use crate::tui::state::{
     AuthForm, AuthFormFocus, AuthFormTarget, CreatePreludeState, DragState, EditorState, EditorTab,
     FieldFocus, ManagerStage, ManagerState, MountScrollFocus, SettingsModal, SettingsState,
     SettingsTab,
 };
-use jackin_tui::runtime::SurfaceFocusTarget;
 use ratatui::layout::Rect;
 
 fn state_with_saved_count(count: usize) -> ManagerState<'static> {
@@ -48,7 +48,7 @@ fn move_list_selection_clamps() {
     let mut state = state_with_saved_count(2);
     state.selected = 1;
 
-    assert!(update_manager(&mut state, ManagerMessage::MoveListSelection(99)).is_dirty());
+    update_manager(&mut state, ManagerMessage::MoveListSelection(99));
 
     assert_eq!(state.selected, state.row_count() - 1);
 }
@@ -57,22 +57,22 @@ fn move_list_selection_clamps() {
 fn select_list_row_resets_selection_local_state() {
     let mut state = state_with_saved_count(2);
     state.selected = 0;
-    state.list_mounts_scroll_x = 4;
+    crate::tui::scroll_block::scroll_area_set_x(&mut state.list_mounts_scroll, 4);
 
-    assert!(update_manager(&mut state, ManagerMessage::SelectListRow(1)).is_dirty());
+    update_manager(&mut state, ManagerMessage::SelectListRow(1));
 
     assert_eq!(state.selected, 1);
-    assert_eq!(state.list_mounts_scroll_x, 0);
+    assert_eq!(state.list_mounts_scroll.offset_x(), 0);
 }
 
 #[test]
 fn preview_focus_messages_toggle_preview_focus() {
     let mut state = state_with_saved_count(1);
 
-    assert!(update_manager(&mut state, ManagerMessage::EnterPreview).is_dirty());
+    update_manager(&mut state, ManagerMessage::EnterPreview);
     assert!(state.preview_focused);
 
-    assert!(update_manager(&mut state, ManagerMessage::ExitPreview).is_dirty());
+    update_manager(&mut state, ManagerMessage::ExitPreview);
     assert!(!state.preview_focused);
 }
 
@@ -84,13 +84,13 @@ fn tab_bar_focus_messages_update_editor_and_settings_focus() {
         jackin_config::WorkspaceConfig::default(),
     ));
 
-    assert!(update_manager(&mut state, ManagerMessage::FocusEditorTabBar).is_dirty());
+    update_manager(&mut state, ManagerMessage::FocusEditorTabBar);
     let ManagerStage::Editor(editor) = &state.stage else {
         panic!("expected editor");
     };
     assert!(editor.tab_bar_focused());
 
-    assert!(update_manager(&mut state, ManagerMessage::FocusEditorContent).is_dirty());
+    update_manager(&mut state, ManagerMessage::FocusEditorContent);
     let ManagerStage::Editor(editor) = &state.stage else {
         panic!("expected editor");
     };
@@ -99,13 +99,13 @@ fn tab_bar_focus_messages_update_editor_and_settings_focus() {
     state.stage = ManagerStage::Settings(SettingsState::from_config(
         &jackin_config::AppConfig::default(),
     ));
-    assert!(update_manager(&mut state, ManagerMessage::FocusSettingsTabBar).is_dirty());
+    update_manager(&mut state, ManagerMessage::FocusSettingsTabBar);
     let ManagerStage::Settings(settings) = &state.stage else {
         panic!("expected settings");
     };
     assert!(settings.tab_bar_focused());
 
-    assert!(update_manager(&mut state, ManagerMessage::FocusSettingsContent).is_dirty());
+    update_manager(&mut state, ManagerMessage::FocusSettingsContent);
     let ManagerStage::Settings(settings) = &state.stage else {
         panic!("expected settings");
     };
@@ -122,7 +122,7 @@ fn focus_editor_content_on_mounts_focuses_mount_rows() {
     editor.active_tab = EditorTab::Mounts;
     state.stage = ManagerStage::Editor(editor);
 
-    assert!(update_manager(&mut state, ManagerMessage::FocusEditorContent).is_dirty());
+    update_manager(&mut state, ManagerMessage::FocusEditorContent);
 
     let ManagerStage::Editor(editor) = &state.stage else {
         panic!("expected editor");
@@ -147,14 +147,11 @@ fn mouse_selection_messages_update_tabs_and_rows() {
     ));
     state.stage = ManagerStage::Editor(editor);
 
-    assert!(
-        update_manager(
-            &mut state,
-            ManagerMessage::SelectEditorTab(EditorTab::Mounts)
-        )
-        .is_dirty()
+    update_manager(
+        &mut state,
+        ManagerMessage::SelectEditorTab(EditorTab::Mounts),
     );
-    assert!(update_manager(&mut state, ManagerMessage::SelectEditorMountRow(2)).is_dirty());
+    update_manager(&mut state, ManagerMessage::SelectEditorMountRow(2));
 
     let ManagerStage::Editor(editor) = &state.stage else {
         panic!("expected editor stage");
@@ -168,14 +165,11 @@ fn mouse_selection_messages_update_tabs_and_rows() {
     state.stage = ManagerStage::Settings(SettingsState::from_config(
         &jackin_config::AppConfig::default(),
     ));
-    assert!(
-        update_manager(
-            &mut state,
-            ManagerMessage::SelectSettingsTab(SettingsTab::Trust)
-        )
-        .is_dirty()
+    update_manager(
+        &mut state,
+        ManagerMessage::SelectSettingsTab(SettingsTab::Trust),
     );
-    assert!(update_manager(&mut state, ManagerMessage::SelectSettingsTrustRow(0)).is_dirty());
+    update_manager(&mut state, ManagerMessage::SelectSettingsTrustRow(0));
 
     let ManagerStage::Settings(settings) = state.stage else {
         panic!("expected settings stage");
@@ -189,26 +183,23 @@ fn scroll_focused_list_block_updates_selected_axis() {
     let mut state = state_with_saved_count(1);
     state.set_list_scroll_focus(Some(MountScrollFocus::Workspace));
 
-    assert!(
-        update_manager(
-            &mut state,
-            ManagerMessage::ScrollFocusedListBlockVertical(3),
-        )
-        .is_dirty()
+    update_manager(
+        &mut state,
+        ManagerMessage::ScrollFocusedListBlockVertical(3),
     );
 
-    assert_eq!(state.list_mounts_scroll_y, 3);
+    assert_eq!(state.list_mounts_scroll.offset_y(), 3);
 }
 
 #[test]
 fn current_dir_tree_messages_respect_instance_gate() {
     let mut state = state_with_saved_count(1);
 
-    assert!(update_manager(&mut state, ManagerMessage::ExpandSelectedTree).is_dirty());
+    update_manager(&mut state, ManagerMessage::ExpandSelectedTree);
     assert!(!state.current_dir_expanded);
 
     state.current_dir_expanded = true;
-    assert!(update_manager(&mut state, ManagerMessage::CollapseSelectedTree).is_dirty());
+    update_manager(&mut state, ManagerMessage::CollapseSelectedTree);
     assert!(!state.current_dir_expanded);
 }
 
@@ -222,20 +213,17 @@ fn move_editor_tab_resets_tab_local_view_state() {
     editor.active_tab = EditorTab::Secrets;
     editor.set_tab_bar_focused(false);
     editor.active_field = FieldFocus::Row(7);
-    editor.tab_scroll_x = 4;
-    editor.tab_scroll_y = 5;
+    crate::tui::scroll_block::scroll_area_set_x(&mut editor.tab_scroll, 4);
+    crate::tui::scroll_block::scroll_area_set_y(&mut editor.tab_scroll, 5);
     editor.secrets_expanded.insert("role".into());
     state.stage = ManagerStage::Editor(editor);
 
-    assert!(
-        update_manager(
-            &mut state,
-            ManagerMessage::MoveEditorTab {
-                delta: 1,
-                focus_tab_bar: true,
-            },
-        )
-        .is_dirty()
+    update_manager(
+        &mut state,
+        ManagerMessage::MoveEditorTab {
+            delta: 1,
+            focus_tab_bar: true,
+        },
     );
 
     let ManagerStage::Editor(editor) = state.stage else {
@@ -244,8 +232,8 @@ fn move_editor_tab_resets_tab_local_view_state() {
     assert_eq!(editor.active_tab, EditorTab::Auth);
     assert!(editor.tab_bar_focused());
     assert_eq!(editor.active_field, FieldFocus::Row(0));
-    assert_eq!(editor.tab_scroll_x, 0);
-    assert_eq!(editor.tab_scroll_y, 0);
+    assert_eq!(editor.tab_scroll.offset_x(), 0);
+    assert_eq!(editor.tab_scroll.offset_y(), 0);
     assert!(editor.secrets_expanded.is_empty());
 }
 
@@ -257,18 +245,15 @@ fn editor_auth_kind_messages_reset_local_view_state() {
         jackin_config::WorkspaceConfig::default(),
     );
     editor.active_field = FieldFocus::Row(5);
-    editor.tab_scroll_x = 9;
-    editor.tab_scroll_y = 7;
+    crate::tui::scroll_block::scroll_area_set_x(&mut editor.tab_scroll, 9);
+    crate::tui::scroll_block::scroll_area_set_y(&mut editor.tab_scroll, 7);
     state.stage = ManagerStage::Editor(editor);
 
-    assert!(
-        update_manager(
-            &mut state,
-            ManagerMessage::EnterEditorAuthKind {
-                kind: AuthKind::Claude,
-            },
-        )
-        .is_dirty()
+    update_manager(
+        &mut state,
+        ManagerMessage::EnterEditorAuthKind {
+            kind: AuthKind::Claude,
+        },
     );
 
     let ManagerStage::Editor(editor) = &state.stage else {
@@ -276,10 +261,10 @@ fn editor_auth_kind_messages_reset_local_view_state() {
     };
     assert_eq!(editor.auth_selected_kind, Some(AuthKind::Claude));
     assert_eq!(editor.active_field, FieldFocus::Row(0));
-    assert_eq!(editor.tab_scroll_x, 0);
-    assert_eq!(editor.tab_scroll_y, 0);
+    assert_eq!(editor.tab_scroll.offset_x(), 0);
+    assert_eq!(editor.tab_scroll.offset_y(), 0);
 
-    assert!(update_manager(&mut state, ManagerMessage::ClearEditorAuthKind).is_dirty());
+    update_manager(&mut state, ManagerMessage::ClearEditorAuthKind);
 
     let ManagerStage::Editor(editor) = state.stage else {
         panic!("expected editor stage");
@@ -296,25 +281,19 @@ fn editor_role_header_messages_set_expansion() {
         jackin_config::WorkspaceConfig::default(),
     ));
 
-    assert!(
-        update_manager(
-            &mut state,
-            ManagerMessage::SetEditorSecretsRoleExpanded {
-                role: "smith".into(),
-                expanded: true,
-            },
-        )
-        .is_dirty()
+    update_manager(
+        &mut state,
+        ManagerMessage::SetEditorSecretsRoleExpanded {
+            role: "smith".into(),
+            expanded: true,
+        },
     );
-    assert!(
-        update_manager(
-            &mut state,
-            ManagerMessage::SetEditorAuthRoleExpanded {
-                role: "smith".into(),
-                expanded: true,
-            },
-        )
-        .is_dirty()
+    update_manager(
+        &mut state,
+        ManagerMessage::SetEditorAuthRoleExpanded {
+            role: "smith".into(),
+            expanded: true,
+        },
     );
 
     let ManagerStage::Editor(editor) = state.stage else {
@@ -334,18 +313,15 @@ fn move_editor_field_selection_skips_rows_and_scrolls() {
     editor.active_field = FieldFocus::Row(1);
     state.stage = ManagerStage::Editor(editor);
 
-    assert!(
-        update_manager(
-            &mut state,
-            ManagerMessage::MoveEditorFieldSelection {
-                delta: 1,
-                max_row: 4,
-                skipped_rows: vec![2],
-                term: Rect::new(0, 0, 80, 24),
-                footer_h: 1,
-            },
-        )
-        .is_dirty()
+    update_manager(
+        &mut state,
+        ManagerMessage::MoveEditorFieldSelection {
+            delta: 1,
+            max_row: 4,
+            skipped_rows: vec![2],
+            term: Rect::new(0, 0, 80, 24),
+            footer_h: 1,
+        },
     );
 
     let ManagerStage::Editor(editor) = state.stage else {
@@ -371,7 +347,7 @@ fn editor_toggle_messages_update_selected_content() {
     });
     state.stage = ManagerStage::Editor(editor);
 
-    assert!(update_manager(&mut state, ManagerMessage::ToggleEditorGeneralSelected).is_dirty());
+    update_manager(&mut state, ManagerMessage::ToggleEditorGeneralSelected);
 
     let ManagerStage::Editor(editor) = &mut state.stage else {
         panic!("expected editor stage");
@@ -379,22 +355,16 @@ fn editor_toggle_messages_update_selected_content() {
     assert!(editor.pending.keep_awake.enabled);
     editor.active_field = FieldFocus::Row(0);
 
-    assert!(
-        update_manager(
-            &mut state,
-            ManagerMessage::ToggleEditorMountReadonlySelected
-        )
-        .is_dirty()
+    update_manager(
+        &mut state,
+        ManagerMessage::ToggleEditorMountReadonlySelected,
     );
-    assert!(
-        update_manager(
-            &mut state,
-            ManagerMessage::ToggleEditorSecretMask {
-                scope: crate::tui::state::SecretsScopeTag::Workspace,
-                key: "TOKEN".into(),
-            },
-        )
-        .is_dirty()
+    update_manager(
+        &mut state,
+        ManagerMessage::ToggleEditorSecretMask {
+            scope: crate::tui::state::SecretsScopeTag::Workspace,
+            key: "TOKEN".into(),
+        },
     );
 
     let ManagerStage::Editor(editor) = state.stage else {
@@ -415,15 +385,12 @@ fn move_settings_tab_cycles_and_sets_focus() {
     settings.set_tab_bar_focused(false);
     state.stage = ManagerStage::Settings(settings);
 
-    assert!(
-        update_manager(
-            &mut state,
-            ManagerMessage::MoveSettingsTab {
-                delta: 1,
-                focus_tab_bar: true,
-            },
-        )
-        .is_dirty()
+    update_manager(
+        &mut state,
+        ManagerMessage::MoveSettingsTab {
+            delta: 1,
+            focus_tab_bar: true,
+        },
     );
 
     let ManagerStage::Settings(settings) = state.stage else {
@@ -440,14 +407,11 @@ fn settings_general_selection_and_toggle_update_state() {
     settings.general.pending_dco = false;
     state.stage = ManagerStage::Settings(settings);
 
-    assert!(
-        update_manager(
-            &mut state,
-            ManagerMessage::MoveSettingsGeneralSelection { delta: 1 },
-        )
-        .is_dirty()
+    update_manager(
+        &mut state,
+        ManagerMessage::MoveSettingsGeneralSelection { delta: 1 },
     );
-    assert!(update_manager(&mut state, ManagerMessage::ToggleSettingsGeneralSelected).is_dirty());
+    update_manager(&mut state, ManagerMessage::ToggleSettingsGeneralSelected);
 
     let ManagerStage::Settings(settings) = state.stage else {
         panic!("expected settings stage");
@@ -463,14 +427,11 @@ fn settings_auth_selection_and_kind_entry_update_state() {
         &jackin_config::AppConfig::default(),
     ));
 
-    assert!(
-        update_manager(
-            &mut state,
-            ManagerMessage::MoveSettingsAuthSelection { delta: 99 },
-        )
-        .is_dirty()
+    update_manager(
+        &mut state,
+        ManagerMessage::MoveSettingsAuthSelection { delta: 99 },
     );
-    assert!(update_manager(&mut state, ManagerMessage::EnterSettingsAuthKind).is_dirty());
+    update_manager(&mut state, ManagerMessage::EnterSettingsAuthKind);
 
     let ManagerStage::Settings(settings) = &state.stage else {
         panic!("expected settings stage");
@@ -478,7 +439,7 @@ fn settings_auth_selection_and_kind_entry_update_state() {
     assert_eq!(settings.auth.selected, 0);
     assert!(settings.auth.selected_kind.is_some());
 
-    assert!(update_manager(&mut state, ManagerMessage::ClearSettingsAuthKind).is_dirty());
+    update_manager(&mut state, ManagerMessage::ClearSettingsAuthKind);
 
     let ManagerStage::Settings(settings) = state.stage else {
         panic!("expected settings stage");
@@ -506,7 +467,7 @@ fn dismiss_settings_error_popup_restores_pending_auth_form() {
         });
     state.stage = ManagerStage::Settings(settings);
 
-    assert!(update_manager(&mut state, ManagerMessage::DismissSettingsErrorPopup).is_dirty());
+    update_manager(&mut state, ManagerMessage::DismissSettingsErrorPopup);
 
     let ManagerStage::Settings(settings) = state.stage else {
         panic!("expected settings stage");
@@ -540,7 +501,7 @@ fn return_to_list_closes_confirm_stages() {
         state: crate::tui::components::ConfirmState::new("delete?"),
     };
 
-    assert!(update_manager(&mut state, ManagerMessage::ReturnToList).is_dirty());
+    update_manager(&mut state, ManagerMessage::ReturnToList);
 
     assert!(matches!(state.stage, ManagerStage::List));
 }
@@ -564,15 +525,12 @@ fn reload_from_config_preserves_session_cache_and_rebuilds_rows() {
         },
     );
 
-    assert!(
-        update_manager(
-            &mut state,
-            ManagerMessage::ReloadFromConfig {
-                config: Box::new(config),
-                cwd: cwd.to_path_buf(),
-            },
-        )
-        .is_dirty()
+    update_manager(
+        &mut state,
+        ManagerMessage::ReloadFromConfig {
+            config: Box::new(config),
+            cwd: cwd.to_path_buf(),
+        },
     );
 
     assert!(std::rc::Rc::ptr_eq(&state.op_cache, &cache));
@@ -586,73 +544,55 @@ fn reload_from_config_preserves_session_cache_and_rebuilds_rows() {
 fn stage_entry_messages_open_requested_stage() {
     let mut state = state_with_saved_count(0);
 
-    assert!(
-        update_manager(
-            &mut state,
-            ManagerMessage::EnterSettings(SettingsState::from_config(
-                &jackin_config::AppConfig::default(),
-            )),
-        )
-        .is_dirty()
+    update_manager(
+        &mut state,
+        ManagerMessage::EnterSettings(SettingsState::from_config(
+            &jackin_config::AppConfig::default(),
+        )),
     );
     assert!(matches!(state.stage, ManagerStage::Settings(_)));
 
-    assert!(
-        update_manager(
-            &mut state,
-            ManagerMessage::EnterEditor(EditorState::new_edit(
-                "workspace".into(),
-                jackin_config::WorkspaceConfig::default(),
-            )),
-        )
-        .is_dirty()
+    update_manager(
+        &mut state,
+        ManagerMessage::EnterEditor(EditorState::new_edit(
+            "workspace".into(),
+            jackin_config::WorkspaceConfig::default(),
+        )),
     );
     assert!(matches!(state.stage, ManagerStage::Editor(_)));
 
-    assert!(
-        update_manager(
-            &mut state,
-            ManagerMessage::EnterCreateEditor {
-                name: "new-workspace".into(),
-                workspace: jackin_config::WorkspaceConfig::default(),
-            },
-        )
-        .is_dirty()
+    update_manager(
+        &mut state,
+        ManagerMessage::EnterCreateEditor {
+            name: "new-workspace".into(),
+            workspace: jackin_config::WorkspaceConfig::default(),
+        },
     );
     let ManagerStage::Editor(editor) = &state.stage else {
         panic!("expected editor stage");
     };
     assert_eq!(editor.pending_name.as_deref(), Some("new-workspace"));
 
-    assert!(
-        update_manager(
-            &mut state,
-            ManagerMessage::EnterCreatePrelude(CreatePreludeState::new()),
-        )
-        .is_dirty()
+    update_manager(
+        &mut state,
+        ManagerMessage::EnterCreatePrelude(CreatePreludeState::new()),
     );
     assert!(matches!(state.stage, ManagerStage::CreatePrelude(_)));
 
-    assert!(
-        update_manager(
-            &mut state,
-            ManagerMessage::EnterConfirmDelete {
-                name: "workspace".into(),
-            },
-        )
-        .is_dirty()
+    update_manager(
+        &mut state,
+        ManagerMessage::EnterConfirmDelete {
+            name: "workspace".into(),
+        },
     );
     assert!(matches!(state.stage, ManagerStage::ConfirmDelete { .. }));
 
-    assert!(
-        update_manager(
-            &mut state,
-            ManagerMessage::EnterConfirmInstancePurge {
-                container: "jk-test".into(),
-                label: "jk-test (rust)".into(),
-            },
-        )
-        .is_dirty()
+    update_manager(
+        &mut state,
+        ManagerMessage::EnterConfirmInstancePurge {
+            container: "jk-test".into(),
+            label: "jk-test (rust)".into(),
+        },
     );
     assert!(matches!(
         state.stage,
@@ -668,23 +608,20 @@ fn scroll_editor_tab_marks_panel_focus_and_updates_offset() {
         jackin_config::WorkspaceConfig::default(),
     ));
 
-    assert!(
-        update_manager(
-            &mut state,
-            ManagerMessage::ScrollEditorTabHorizontal {
-                delta: 8,
-                term_width: 10,
-                content_width: 40,
-            },
-        )
-        .is_dirty()
+    update_manager(
+        &mut state,
+        ManagerMessage::ScrollEditorTabHorizontal {
+            delta: 8,
+            term_width: 10,
+            content_width: 40,
+        },
     );
 
     let ManagerStage::Editor(editor) = state.stage else {
         panic!("expected editor stage");
     };
     assert!(editor.tab_content_scroll_focused());
-    assert_eq!(editor.tab_scroll_x, 8);
+    assert_eq!(editor.tab_scroll.offset_x(), 8);
 }
 
 #[test]
@@ -695,23 +632,20 @@ fn scroll_editor_workspace_mounts_marks_mounts_focus_and_updates_offset() {
         jackin_config::WorkspaceConfig::default(),
     ));
 
-    assert!(
-        update_manager(
-            &mut state,
-            ManagerMessage::ScrollEditorWorkspaceMountsHorizontal {
-                delta: 8,
-                term_width: 10,
-                content_width: 40,
-            },
-        )
-        .is_dirty()
+    update_manager(
+        &mut state,
+        ManagerMessage::ScrollEditorWorkspaceMountsHorizontal {
+            delta: 8,
+            term_width: 10,
+            content_width: 40,
+        },
     );
 
     let ManagerStage::Editor(editor) = state.stage else {
         panic!("expected editor stage");
     };
     assert!(editor.workspace_mounts_scroll_focused());
-    assert_eq!(editor.workspace_mounts_scroll_x, 8);
+    assert_eq!(editor.workspace_mounts_scroll.offset_x(), 8);
 }
 
 #[test]
@@ -721,22 +655,19 @@ fn scroll_settings_global_mounts_updates_offset() {
         &jackin_config::AppConfig::default(),
     ));
 
-    assert!(
-        update_manager(
-            &mut state,
-            ManagerMessage::ScrollSettingsGlobalMountsHorizontal {
-                delta: 8,
-                term_width: 10,
-                content_width: 40,
-            },
-        )
-        .is_dirty()
+    update_manager(
+        &mut state,
+        ManagerMessage::ScrollSettingsGlobalMountsHorizontal {
+            delta: 8,
+            term_width: 10,
+            content_width: 40,
+        },
     );
 
     let ManagerStage::Settings(settings) = state.stage else {
         panic!("expected settings stage");
     };
-    assert_eq!(settings.mounts.scroll_x, 8);
+    assert_eq!(settings.mounts.scroll.offset_x(), 8);
 }
 
 #[test]
@@ -755,16 +686,13 @@ fn move_settings_global_mounts_selection_clamps_to_add_row() {
     });
     state.stage = ManagerStage::Settings(settings);
 
-    assert!(
-        update_manager(
-            &mut state,
-            ManagerMessage::MoveSettingsGlobalMountsSelection {
-                delta: 99,
-                term: Rect::new(0, 0, 80, 24),
-                footer_h: 1,
-            },
-        )
-        .is_dirty()
+    update_manager(
+        &mut state,
+        ManagerMessage::MoveSettingsGlobalMountsSelection {
+            delta: 99,
+            term: Rect::new(0, 0, 80, 24),
+            footer_h: 1,
+        },
     );
 
     let ManagerStage::Settings(settings) = state.stage else {
@@ -790,16 +718,13 @@ fn move_settings_env_selection_skips_section_spacers() {
     settings.env.selected = 1;
     state.stage = ManagerStage::Settings(settings);
 
-    assert!(
-        update_manager(
-            &mut state,
-            ManagerMessage::MoveSettingsEnvSelection {
-                delta: 1,
-                term: Rect::new(0, 0, 80, 24),
-                footer_h: 1,
-            },
-        )
-        .is_dirty()
+    update_manager(
+        &mut state,
+        ManagerMessage::MoveSettingsEnvSelection {
+            delta: 1,
+            term: Rect::new(0, 0, 80, 24),
+            footer_h: 1,
+        },
     );
 
     let ManagerStage::Settings(settings) = state.stage else {
@@ -815,15 +740,12 @@ fn settings_env_role_header_message_sets_expansion() {
         &jackin_config::AppConfig::default(),
     ));
 
-    assert!(
-        update_manager(
-            &mut state,
-            ManagerMessage::SetSettingsEnvRoleExpanded {
-                role: "smith".into(),
-                expanded: true,
-            },
-        )
-        .is_dirty()
+    update_manager(
+        &mut state,
+        ManagerMessage::SetSettingsEnvRoleExpanded {
+            role: "smith".into(),
+            expanded: true,
+        },
     );
 
     let ManagerStage::Settings(settings) = state.stage else {
@@ -857,14 +779,11 @@ fn settings_mount_and_trust_toggle_messages_update_selected_rows() {
     });
     state.stage = ManagerStage::Settings(settings);
 
-    assert!(
-        update_manager(
-            &mut state,
-            ManagerMessage::ToggleSettingsGlobalMountReadonly
-        )
-        .is_dirty()
+    update_manager(
+        &mut state,
+        ManagerMessage::ToggleSettingsGlobalMountReadonly,
     );
-    assert!(update_manager(&mut state, ManagerMessage::ToggleSettingsTrustSelected).is_dirty());
+    update_manager(&mut state, ManagerMessage::ToggleSettingsTrustSelected);
 
     let ManagerStage::Settings(settings) = state.stage else {
         panic!("expected settings stage");
@@ -887,22 +806,19 @@ fn scroll_settings_trust_updates_offset() {
     );
     state.stage = ManagerStage::Settings(SettingsState::from_config(&config));
 
-    assert!(
-        update_manager(
-            &mut state,
-            ManagerMessage::ScrollSettingsTrustHorizontal {
-                delta: 8,
-                term_width: 10,
-                content_width: 40,
-            },
-        )
-        .is_dirty()
+    update_manager(
+        &mut state,
+        ManagerMessage::ScrollSettingsTrustHorizontal {
+            delta: 8,
+            term_width: 10,
+            content_width: 40,
+        },
     );
 
     let ManagerStage::Settings(settings) = state.stage else {
         panic!("expected settings stage");
     };
-    assert_eq!(settings.trust.scroll_x, 8);
+    assert_eq!(settings.trust.scroll.offset_x(), 8);
 }
 
 #[test]
@@ -927,16 +843,13 @@ fn move_settings_trust_selection_clamps_to_role_rows() {
     );
     state.stage = ManagerStage::Settings(SettingsState::from_config(&config));
 
-    assert!(
-        update_manager(
-            &mut state,
-            ManagerMessage::MoveSettingsTrustSelection {
-                delta: 99,
-                term: Rect::new(0, 0, 80, 24),
-                footer_h: 1,
-            },
-        )
-        .is_dirty()
+    update_manager(
+        &mut state,
+        ManagerMessage::MoveSettingsTrustSelection {
+            delta: 99,
+            term: Rect::new(0, 0, 80, 24),
+            footer_h: 1,
+        },
     );
 
     let ManagerStage::Settings(settings) = state.stage else {
@@ -952,22 +865,19 @@ fn set_list_scroll_focus_stores_focus() {
     let mut state = ManagerState::from_config(&config, cwd);
     assert!(state.list_scroll_focus().is_none());
 
-    assert!(
-        update_manager(
-            &mut state,
-            ManagerMessage::SetListScrollFocus(Some(MountScrollFocus::Workspace))
-        )
-        .is_dirty()
+    update_manager(
+        &mut state,
+        ManagerMessage::SetListScrollFocus(Some(MountScrollFocus::Workspace)),
     );
     assert_eq!(state.list_scroll_focus(), Some(MountScrollFocus::Workspace));
     assert_eq!(
         state.list_focus_owner.focused(),
-        SurfaceFocusTarget::Content(MountScrollFocus::Workspace)
+        ConsoleFocusTarget::Content(MountScrollFocus::Workspace)
     );
 
-    assert!(update_manager(&mut state, ManagerMessage::SetListScrollFocus(None)).is_dirty());
+    update_manager(&mut state, ManagerMessage::SetListScrollFocus(None));
     assert!(state.list_scroll_focus().is_none());
-    assert_eq!(state.list_focus_owner.focused(), SurfaceFocusTarget::TabBar);
+    assert_eq!(state.list_focus_owner.focused(), ConsoleFocusTarget::TabBar);
 }
 
 #[test]
@@ -976,14 +886,14 @@ fn set_list_names_focused_stores_flag() {
     let config = jackin_config::AppConfig::default();
     let mut state = ManagerState::from_config(&config, cwd);
 
-    assert!(update_manager(&mut state, ManagerMessage::SetListNamesFocused(true)).is_dirty());
+    update_manager(&mut state, ManagerMessage::SetListNamesFocused(true));
     assert!(state.list_names_focused());
-    assert_eq!(state.list_focus_owner.focused(), SurfaceFocusTarget::TabBar);
-    assert!(update_manager(&mut state, ManagerMessage::SetListNamesFocused(false)).is_dirty());
+    assert_eq!(state.list_focus_owner.focused(), ConsoleFocusTarget::TabBar);
+    update_manager(&mut state, ManagerMessage::SetListNamesFocused(false));
     assert!(!state.list_names_focused());
     assert_eq!(
         state.list_focus_owner.focused(),
-        SurfaceFocusTarget::Content(MountScrollFocus::Workspace)
+        ConsoleFocusTarget::Content(MountScrollFocus::Workspace)
     );
 }
 
@@ -998,9 +908,9 @@ fn set_drag_state_stores_and_clears() {
         anchor_pct: 50,
         anchor_x: 40,
     };
-    assert!(update_manager(&mut state, ManagerMessage::SetDragState(Some(drag))).is_dirty());
+    update_manager(&mut state, ManagerMessage::SetDragState(Some(drag)));
     assert!(state.drag_state.is_some());
-    assert!(update_manager(&mut state, ManagerMessage::SetDragState(None)).is_dirty());
+    update_manager(&mut state, ManagerMessage::SetDragState(None));
     assert!(state.drag_state.is_none());
 }
 
@@ -1011,7 +921,7 @@ fn set_list_split_pct_stores_value() {
     let mut state = ManagerState::from_config(&config, cwd);
     let original = state.list_split_pct;
 
-    assert!(update_manager(&mut state, ManagerMessage::SetListSplitPct(75)).is_dirty());
+    update_manager(&mut state, ManagerMessage::SetListSplitPct(75));
     assert_eq!(state.list_split_pct, 75);
     assert_ne!(state.list_split_pct, original);
 }
@@ -1023,15 +933,12 @@ fn open_list_error_popup_sets_error_modal() {
     let mut state = ManagerState::from_config(&config, cwd);
     assert!(state.list_modal.is_none());
 
-    assert!(
-        update_manager(
-            &mut state,
-            ManagerMessage::OpenListErrorPopup {
-                title: "Test error".into(),
-                message: "Something went wrong.".into(),
-            }
-        )
-        .is_dirty()
+    update_manager(
+        &mut state,
+        ManagerMessage::OpenListErrorPopup {
+            title: "Test error".into(),
+            message: "Something went wrong.".into(),
+        },
     );
     assert!(matches!(
         state.list_modal,
@@ -1046,19 +953,16 @@ fn status_popup_messages_open_and_dismiss_overlay() {
     let mut state = ManagerState::from_config(&config, cwd);
     assert!(state.status_overlay.is_none());
 
-    assert!(
-        update_manager(
-            &mut state,
-            ManagerMessage::OpenStatusPopup {
-                title: "Stopping".into(),
-                message: "Stopping capsule-a...".into(),
-            }
-        )
-        .is_dirty()
+    update_manager(
+        &mut state,
+        ManagerMessage::OpenStatusPopup {
+            title: "Stopping".into(),
+            message: "Stopping capsule-a...".into(),
+        },
     );
     assert!(state.status_overlay.is_some());
 
-    assert!(update_manager(&mut state, ManagerMessage::DismissStatusPopup).is_dirty());
+    update_manager(&mut state, ManagerMessage::DismissStatusPopup);
     assert!(state.status_overlay.is_none());
 }
 
@@ -1067,7 +971,7 @@ fn dismiss_list_modal_clears_modal() {
     let cwd = std::path::Path::new("/");
     let config = jackin_config::AppConfig::default();
     let mut state = ManagerState::from_config(&config, cwd);
-    let _unused = update_manager(
+    update_manager(
         &mut state,
         ManagerMessage::OpenListErrorPopup {
             title: "x".into(),
@@ -1076,6 +980,6 @@ fn dismiss_list_modal_clears_modal() {
     );
     assert!(state.list_modal.is_some());
 
-    assert!(update_manager(&mut state, ManagerMessage::DismissListModal).is_dirty());
+    update_manager(&mut state, ManagerMessage::DismissListModal);
     assert!(state.list_modal.is_none());
 }

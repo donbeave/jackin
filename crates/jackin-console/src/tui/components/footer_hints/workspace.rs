@@ -232,18 +232,22 @@ pub fn workspace_screen_footer_items(facts: WorkspaceScreenFooterFacts) -> Vec<H
 
 #[must_use]
 pub fn destructive_confirm_footer_items() -> Vec<HintSpan<'static>> {
-    crate::tui::components::confirm_hint_spans()
+    let mut items = crate::tui::components::confirm_hint_spans();
+    super::common::append_keyboard_help_hint(&mut items);
+    items
 }
 
 #[must_use]
 pub fn create_prelude_footer_items() -> Vec<HintSpan<'static>> {
-    vec![
+    let mut items = vec![
         HintSpan::Dyn("Create workspace — follow the prompts".to_owned()),
         HintSpan::GroupSep,
         // UNREGISTERABLE(create-prelude-no-keymap): Esc handled inline; no dedicated create-prelude keymap.
         super::key_span("Esc"),
         HintSpan::Text("cancel"),
-    ]
+    ];
+    super::common::append_keyboard_help_hint(&mut items);
+    items
 }
 
 #[must_use]
@@ -321,7 +325,7 @@ pub fn workspace_list_footer_items(mode: WorkspaceListFooterMode) -> Vec<HintSpa
             // from handled keys. BackTab (HiddenAlias) and the upstream Ctrl-Q
             // are intentionally not advertised.
             let g = |a| PREVIEW_PANE_KEYMAP.glyph_for(a);
-            vec![
+            let mut items = vec![
                 super::key_span(g(PreviewPaneAction::NavigateUp)),
                 HintSpan::Text("navigate panes"),
                 HintSpan::Sep,
@@ -330,70 +334,14 @@ pub fn workspace_list_footer_items(mode: WorkspaceListFooterMode) -> Vec<HintSpa
                 HintSpan::GroupSep,
                 super::key_span(g(PreviewPaneAction::Back)),
                 HintSpan::Text("back"),
-            ]
+            ];
+            super::common::append_keyboard_help_hint(&mut items);
+            items
         }
         WorkspaceListFooterMode::InstanceRow {
             has_snapshot,
             is_live,
-        } => {
-            // Glyphs derive from WORKSPACE_LIST_KEYMAP (the dispatch table);
-            // labels are instance-row-specific and supplied here.
-            let g = |a| WORKSPACE_LIST_KEYMAP.glyph_for(a);
-            // A failed/stopped instance has no live daemon: new-session, shell,
-            // and stop are meaningless. `Enter` enters the restore ladder
-            // (docker start + reconnect, or recreate from image) — that is the
-            // "restart" verb — so it is labelled accordingly (D15).
-            let mut items = if is_live {
-                vec![
-                    super::key_span(g(WorkspaceListAction::NavigateUp)),
-                    HintSpan::Sep,
-                    super::key_span(g(WorkspaceListAction::Enter)),
-                    HintSpan::Text("reconnect"),
-                    HintSpan::Sep,
-                    super::key_span(g(WorkspaceListAction::NewSession)),
-                    HintSpan::Text("new session"),
-                    HintSpan::Sep,
-                    super::key_span(g(WorkspaceListAction::InstanceShell)),
-                    HintSpan::Text("shell"),
-                    HintSpan::Sep,
-                    super::key_span(g(WorkspaceListAction::InstanceStop)),
-                    HintSpan::Text("stop"),
-                    HintSpan::Sep,
-                    super::key_span(g(WorkspaceListAction::ConfirmPurge)),
-                    HintSpan::Text("purge"),
-                    HintSpan::Sep,
-                    super::key_span(g(WorkspaceListAction::InstanceInspect)),
-                    HintSpan::Text("info"),
-                ]
-            } else {
-                vec![
-                    super::key_span(g(WorkspaceListAction::NavigateUp)),
-                    HintSpan::Sep,
-                    super::key_span(g(WorkspaceListAction::Enter)),
-                    HintSpan::Text("restart"),
-                    HintSpan::Sep,
-                    super::key_span(g(WorkspaceListAction::ConfirmPurge)),
-                    HintSpan::Text("delete"),
-                    HintSpan::Sep,
-                    super::key_span(g(WorkspaceListAction::InstanceInspect)),
-                    HintSpan::Text("info"),
-                ]
-            };
-            if has_snapshot {
-                items.push(HintSpan::Sep);
-                items.push(super::key_span(g(WorkspaceListAction::EnterPreview)));
-                items.push(HintSpan::Text("into preview"));
-            }
-            items.extend([
-                HintSpan::GroupSep,
-                super::key_span(g(WorkspaceListAction::TreeLeft)),
-                HintSpan::Text("back"),
-                HintSpan::GroupSep,
-                super::key_span(g(WorkspaceListAction::Quit)),
-                HintSpan::Text("quit"),
-            ]);
-            items
-        }
+        } => instance_row_footer_items(has_snapshot, is_live),
         WorkspaceListFooterMode::WorkspaceRow {
             scroll_axes,
             enter_label,
@@ -467,9 +415,71 @@ pub fn workspace_list_footer_items(mode: WorkspaceListFooterMode) -> Vec<HintSpa
             items.push(HintSpan::GroupSep);
             items.push(super::key_span(g(WorkspaceListAction::Quit)));
             items.push(HintSpan::Text("quit"));
+            super::common::append_keyboard_help_hint(&mut items);
             items
         }
     }
+}
+
+fn instance_row_footer_items(has_snapshot: bool, is_live: bool) -> Vec<HintSpan<'static>> {
+    // Glyphs derive from WORKSPACE_LIST_KEYMAP (the dispatch table);
+    // labels are instance-row-specific and supplied here.
+    let g = |a| WORKSPACE_LIST_KEYMAP.glyph_for(a);
+    // A failed/stopped instance has no live daemon: new-session, shell,
+    // and stop are meaningless. `Enter` enters the restore ladder
+    // (docker start + reconnect, or recreate from image) — that is the
+    // "restart" verb — so it is labelled accordingly (D15).
+    let mut items = if is_live {
+        vec![
+            super::key_span(g(WorkspaceListAction::NavigateUp)),
+            HintSpan::Sep,
+            super::key_span(g(WorkspaceListAction::Enter)),
+            HintSpan::Text("reconnect"),
+            HintSpan::Sep,
+            super::key_span(g(WorkspaceListAction::NewSession)),
+            HintSpan::Text("new session"),
+            HintSpan::Sep,
+            super::key_span(g(WorkspaceListAction::InstanceShell)),
+            HintSpan::Text("shell"),
+            HintSpan::Sep,
+            super::key_span(g(WorkspaceListAction::InstanceStop)),
+            HintSpan::Text("stop"),
+            HintSpan::Sep,
+            super::key_span(g(WorkspaceListAction::ConfirmPurge)),
+            HintSpan::Text("purge"),
+            HintSpan::Sep,
+            super::key_span(g(WorkspaceListAction::InstanceInspect)),
+            HintSpan::Text("info"),
+        ]
+    } else {
+        vec![
+            super::key_span(g(WorkspaceListAction::NavigateUp)),
+            HintSpan::Sep,
+            super::key_span(g(WorkspaceListAction::Enter)),
+            HintSpan::Text("restart"),
+            HintSpan::Sep,
+            super::key_span(g(WorkspaceListAction::ConfirmPurge)),
+            HintSpan::Text("delete"),
+            HintSpan::Sep,
+            super::key_span(g(WorkspaceListAction::InstanceInspect)),
+            HintSpan::Text("info"),
+        ]
+    };
+    if has_snapshot {
+        items.push(HintSpan::Sep);
+        items.push(super::key_span(g(WorkspaceListAction::EnterPreview)));
+        items.push(HintSpan::Text("into preview"));
+    }
+    items.extend([
+        HintSpan::GroupSep,
+        super::key_span(g(WorkspaceListAction::TreeLeft)),
+        HintSpan::Text("back"),
+        HintSpan::GroupSep,
+        super::key_span(g(WorkspaceListAction::Quit)),
+        HintSpan::Text("quit"),
+    ]);
+    super::common::append_keyboard_help_hint(&mut items);
+    items
 }
 
 #[must_use]

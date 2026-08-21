@@ -18,7 +18,7 @@ use ratatui::{
 };
 
 use jackin_core::shorten_home;
-use jackin_tui::ModalOutcome;
+use jackin_oppicker::ModalOutcome;
 use termrock::layout::render_dialog_shell;
 use termrock::widgets::PanelChrome;
 use termrock::widgets::{Action, ActionBar, ActionBarState};

@@ -222,6 +222,17 @@ pub fn quit_confirm_state() -> crate::tui::components::ConfirmState {
     crate::tui::components::ConfirmState::new("Exit jackin❯?").with_focus_yes()
 }
 
+/// `?` opens the keyboard-help overlay. Consulted only inside the input
+/// dispatcher's `Stage` arm, so no modal/picker owns input when this fires
+/// (a text input must keep `?` as a typed character). Shift-tolerant: `?`
+/// arrives with SHIFT on many layouts.
+#[must_use]
+pub fn should_open_keyboard_help(key: crossterm::event::KeyEvent) -> bool {
+    use crossterm::event::{KeyCode, KeyModifiers};
+
+    matches!(key.code, KeyCode::Char('?')) && (key.modifiers - KeyModifiers::SHIFT).is_empty()
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum QuitConfirmPlan {
     Exit,
@@ -230,13 +241,13 @@ pub enum QuitConfirmPlan {
 }
 
 #[must_use]
-pub const fn quit_confirm_plan(outcome: jackin_tui::ModalOutcome<bool>) -> QuitConfirmPlan {
+pub const fn quit_confirm_plan(outcome: jackin_oppicker::ModalOutcome<bool>) -> QuitConfirmPlan {
     match outcome {
-        jackin_tui::ModalOutcome::Commit(true) => QuitConfirmPlan::Exit,
-        jackin_tui::ModalOutcome::Commit(false) | jackin_tui::ModalOutcome::Cancel => {
+        jackin_oppicker::ModalOutcome::Commit(true) => QuitConfirmPlan::Exit,
+        jackin_oppicker::ModalOutcome::Commit(false) | jackin_oppicker::ModalOutcome::Cancel => {
             QuitConfirmPlan::Dismiss
         }
-        jackin_tui::ModalOutcome::Continue => QuitConfirmPlan::Continue,
+        jackin_oppicker::ModalOutcome::Continue => QuitConfirmPlan::Continue,
     }
 }
 
@@ -297,6 +308,10 @@ pub struct ConsoleClickabilityFacts {
     pub stage: ConsoleClickStageFacts,
 }
 
+// Mouse parity matrix row 16 carve-out: the pointer-shape cue stays
+// consumer code — upstream hit regions carry geometry only, no
+// clickability classification. Facts derive from the same hit geometry
+// the dispatch path uses.
 #[must_use]
 pub const fn console_clickable_at(facts: ConsoleClickabilityFacts) -> bool {
     if !facts.pointer_supported {

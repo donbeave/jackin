@@ -171,7 +171,7 @@ Concrete obligations:
 - **Commit / terminal action** (agent picked, role selected, destructive action confirmed, copy fired, env key + value both committed): clear the entire chain so the operator lands on the underlying screen in one step. A terminal action means "the chain achieved its goal" — walking back through every intermediate step would be noise.
 - **Sub-dialog titles** read as a step inside the parent's flow — `Split: ← Left` for the agent picker opened from a `SplitDirectionPicker`, not `Agent picker` again. The title is what surfaces the breadcrumb to the operator.
 
-The shared mechanism for this contract is TermRock's `OverlayStack` + `FocusGraph` lifecycle, projected into product state by `jackin_tui::runtime::ModalFlow`. `open_sub` preserves the visible product modal while opening its matching focus scope, `pop` restores both parent and scope for Esc/cancel, and `clear` closes the whole chain after a terminal commit. Product code tests its modal transitions through `ModalFlow`; TermRock owns the primitive focus/stack conformance tests.
+The shared mechanism for this contract is the product-owned `ModalChain` (<RepoFile path="crates/jackin-console/src/tui/modal_chain.rs">crates/jackin-console/src/tui/modal_chain.rs</RepoFile>) over TermRock's `OverlayStack` + `FocusGraph` lifecycle, with overlay geometry and dismiss behavior carried by TermRock `DismissPolicy` (<RepoFile path="crates/jackin-console/src/tui/model/modal/display.rs">crates/jackin-console/src/tui/model/modal/display.rs</RepoFile>). `open_sub` preserves the visible product modal while opening its matching focus scope, `pop` restores both parent and scope for Esc/cancel, and `clear` closes the whole chain after a terminal commit. Product code tests its modal transitions through `ModalChain`; TermRock owns the primitive focus/stack conformance tests.
 
 Settings uses one `SettingsModal` union for global mounts, environment, and auth dialogs. Tab-specific render and input helpers accept that same modal type and treat a wrong-tab variant as a routing bug, so shared modal behavior has one container shape instead of three parallel enum families.
 
@@ -179,7 +179,7 @@ The capsule's product dialog stack in <RepoFile path="crates/jackin-capsule/src/
 
 Modal-to-modal flows carry return context in the modal variant or the shared stack frame, not in a side slot. Environment pickers carry their scope/key/value context on modal variants, and auth-form source/picker flows return through the modal parent stack. A bare `Option<Modal>` slot is not a valid shape for any flow that can open a child modal, because it cannot represent the parent under the child.
 
-Compliance is covered by focused tests for the container palette stack, editor environment-source and mount-destination chains, settings environment chains, settings global-mount add chains, and the jackin❯ `ModalFlow` projection. Treat new Esc-back regressions on any surface as bugs; fix the product flow through the shared lifecycle rather than adding a new stash.
+Compliance is covered by focused tests for the container palette stack, editor environment-source and mount-destination chains, settings environment chains, settings global-mount add chains, and the product `ModalChain` transitions. Treat new Esc-back regressions on any surface as bugs; fix the product flow through the shared lifecycle rather than adding a new stash.
 
 ---
 

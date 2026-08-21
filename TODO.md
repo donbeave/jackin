@@ -39,6 +39,13 @@ Markers without TODO.md entry OK for transient in-flight work, but anything outl
 
 ### Internal cleanups
 
+#### `keyboard-help-mouse` — wire pointer input into the console keyboard-help overlay
+
+- **What:** the `?` keyboard-help overlay ([`crates/jackin-console/src/tui/components/keyboard_help.rs`](crates/jackin-console/src/tui/components/keyboard_help.rs)) handles keyboard only. TermRock `KeyboardHelpState::handle_mouse` supports click-select/scroll; the console mouse dispatch ([`crates/jackin-console/src/tui/input/mouse.rs`](crates/jackin-console/src/tui/input/mouse.rs)) has no arm for the open overlay.
+- **Why:** plan 012 step 6 scoped the overlay to keyboard parity; mouse inside the help modal was deferred rather than shipped half-wired (hit regions exist upstream but the console's modal mouse-layer plan routes only quit-confirm and list modals).
+- **Last verified:** 2026-08-21 — keyboard-only at `roadmap/termrock-migration`.
+- **Done when:** a mouse event over the open help overlay scrolls/selects entries via `KeyboardHelpState::handle_mouse`, covered by a `tui::input::mouse` test; remove this entry.
+
 #### `lychee-no-files-warn` — investigate "No files found for this input source" in deploy link check
 
 - **What:** deploy job's `Check deployed docs links` step in [`.github/workflows/docs.yml`](.github/workflows/docs.yml) emits one-line `[WARN] [Full Github Actions output]: No files found for this input source` from lychee binary, then continues and reports `Total 4703 / Successful 4703 / Errors 0`. Identify which of 46 sitemap input URLs triggers warn; fix cause or filter warn so signal clean.

@@ -41,6 +41,25 @@ fn settings_tab_bar_focus_plan_returns_requested_focus() {
 }
 
 #[test]
+fn settings_focus_chain_walks_tab_bar_then_content_and_wraps() {
+    assert_eq!(
+        settings_focus_order(),
+        [SettingsFocusRegion::TabBar, SettingsFocusRegion::Content]
+    );
+    assert_eq!(settings_focus_head(), SettingsFocusRegion::TabBar);
+    assert_eq!(
+        settings_focus_next(SettingsFocusRegion::TabBar),
+        SettingsFocusRegion::Content
+    );
+    assert_eq!(
+        settings_focus_next(SettingsFocusRegion::Content),
+        SettingsFocusRegion::TabBar
+    );
+    assert_eq!(settings_focus_region(true), SettingsFocusRegion::TabBar);
+    assert_eq!(settings_focus_region(false), SettingsFocusRegion::Content);
+}
+
+#[test]
 fn settings_shell_key_plan_routes_tab_shell_keys_from_facts() {
     assert_eq!(
         settings_shell_key_plan(KeyCode::Left, true, false),
