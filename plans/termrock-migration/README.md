@@ -23,7 +23,7 @@ Package scope: plans 005–014 modernize the **console surface** (`crates/jackin
 | 011 | Layout, chrome, runtime adoption | F5 (C3, C12, C13, C15–C17), B14, D16 | P1 | L | 008 | DONE |
 | 012 | Whole-screen recipes, create wizard, keyboard_help overlay | F5 (recipes, form_wizard), F9, S2, N4, D24 | P2 | M | 010, 011 | DONE |
 | 013 | Op-picker drill-down re-base + jackin-oppicker modernization | F5 (op-picker), D25 | P2 | M | 006 | DONE |
-| 014 | Console docs alignment + merge-readiness | B14, B16 (final proof), N4, docs same-PR law | P2 | S | 005–013 | TODO |
+| 014 | Console docs alignment + merge-readiness | B14, B16 (final proof), N4, docs same-PR law | P2 | S | 005–013 | IN PROGRESS |
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED (one-line reason) | REJECTED (one-line rationale) | STALE (decision reopened it; re-plan pending)
 
