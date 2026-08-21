@@ -50,6 +50,8 @@ exclude = [
   "https://git\\.joshthomas\\.dev/mirrors/claude-code-sandbox/src/commit/b44cf1a84e0bab3f5f2ded8a871cbdc43ce50249/docs/lift-and-shift-credentials\\.md",
   "https://winbuzzer\\.com/2026/02/24/openai-chatgpt-pro-lite-100-dollar-plan-found-checkout-code-xcxwbn/",
   "https://pranoti\\.thesciencetalk\\.com/perspectives/claude-5-hour-session-limit-how-it-works/",
+  # xygeni.io returns 403 to automated clients for this browser-visible page.
+  "https://xygeni\\.io/blog/dockerfile-secrets-why-layers-keep-your-sensitive-data-forever/",
   # InfoQ returns 405/captcha to automated clients for this browser-visible page.
   "https://www\\.infoq\\.com/news/2025/11/toon-reduce-llm-cost-tokens/",
   # handler.dev is a browser-visible research reference, but CI lychee
