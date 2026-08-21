@@ -4,13 +4,51 @@
 //! `ConsoleCreatePreludeState` and the `CreatePrelude*` plan types and free functions.
 use super::stage::ConsoleCreatePreludeModalPresence;
 use crate::tui::debug::{ConsoleCreatePreludeDebugFacts, ConsoleModalDebugKind, ConsoleStageDebug};
-use crate::tui::state::CreateStep;
 
 use std::path::PathBuf;
+use termrock::widgets::{FormWizardState, WizardStep};
+
+/// Wizard step indices — the sequencing authority is the upstream
+/// `FormWizardState`; these name the five steps in order.
+pub const CREATE_PRELUDE_STEP_MOUNT_SRC: usize = 0;
+pub const CREATE_PRELUDE_STEP_MOUNT_DST_CHOICE: usize = 1;
+pub const CREATE_PRELUDE_STEP_MOUNT_DST_EDIT: usize = 2;
+pub const CREATE_PRELUDE_STEP_WORKDIR: usize = 3;
+pub const CREATE_PRELUDE_STEP_NAME: usize = 4;
+
+/// Create-prelude wizard: `mount-src` → `mount-dst-choice` →
+/// `mount-dst-edit` (optional, skipped by the same-path fast path) →
+/// `workdir` → `name`. No review phase; linear; optional steps skippable.
+pub fn create_prelude_wizard_state() -> FormWizardState {
+    FormWizardState::with_steps([
+        WizardStep::new("mount-src", "Mount source"),
+        WizardStep::new("mount-dst-choice", "Mount destination"),
+        WizardStep::new("mount-dst-edit", "Edit destination").optional(true),
+        WizardStep::new("workdir", "Working directory"),
+        WizardStep::new("name", "Workspace name"),
+    ])
+    .with_review(false)
+    .with_allow_skip(true)
+    .with_linear(true)
+}
+
+/// Maps the wizard step index back to the legacy create-step debug
+/// strings so `--debug` output stays byte-identical across the re-host.
+#[must_use]
+pub fn create_prelude_step_debug_name(step: usize) -> &'static str {
+    match step {
+        CREATE_PRELUDE_STEP_MOUNT_SRC => "PickFirstMountSrc",
+        CREATE_PRELUDE_STEP_MOUNT_DST_CHOICE | CREATE_PRELUDE_STEP_MOUNT_DST_EDIT => {
+            "PickFirstMountDst"
+        }
+        CREATE_PRELUDE_STEP_WORKDIR => "PickWorkdir",
+        _ => "NameWorkspace",
+    }
+}
 
 #[derive(Debug)]
 pub struct ConsoleCreatePreludeState<Modal> {
-    pub step: CreateStep,
+    pub wizard: FormWizardState,
     pub pending_mount_src: Option<PathBuf>,
     pub pending_mount_dst: Option<String>,
     pub pending_readonly: bool,
@@ -37,7 +75,7 @@ where
 {
     fn create_prelude_stage_debug(&self) -> ConsoleStageDebug {
         ConsoleStageDebug::CreatePrelude {
-            step: format!("{:?}", self.step),
+            step: create_prelude_step_debug_name(self.wizard.step()).to_owned(),
             modal: self
                 .modal
                 .as_ref()
@@ -57,72 +95,6 @@ pub enum CreatePreludeCompletionStatus {
 pub enum CreatePreludeKeyPlan {
     Continue,
     ReturnToList,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum CreatePreludeModalStep {
-    FileBrowserSrc,
-    MountDstChoice,
-    TextInputDst,
-    WorkdirPick,
-    TextInputName,
-    Other,
-}
-
-pub trait CreatePreludeFileBrowserTarget {
-    fn is_create_first_mount_src(&self) -> bool;
-}
-
-pub trait CreatePreludeTextInputTarget {
-    fn is_create_mount_dst(&self) -> bool;
-    fn is_create_workspace_name(&self) -> bool;
-}
-
-impl CreatePreludeFileBrowserTarget for crate::tui::screens::editor::model::FileBrowserTarget {
-    fn is_create_first_mount_src(&self) -> bool {
-        matches!(self, Self::CreateFirstMountSrc)
-    }
-}
-
-impl CreatePreludeTextInputTarget for crate::tui::screens::editor::model::TextInputTarget {
-    fn is_create_mount_dst(&self) -> bool {
-        matches!(self, Self::MountDst)
-    }
-
-    fn is_create_workspace_name(&self) -> bool {
-        matches!(self, Self::Name)
-    }
-}
-
-#[expect(
-    clippy::fn_params_excessive_bools,
-    reason = "Five orthogonal modal-input availability booleans (file_browser_src, \
-              mount_dst_choice, text_input_dst, workdir_pick, text_input_name) — \
-              each is an independent input-mode signal the step resolver reads in \
-              priority order. Named-arg reads match the per-mode priority-routing \
-              idiom this resolver walks."
-)]
-#[must_use]
-pub const fn create_prelude_modal_step(
-    file_browser_src: bool,
-    mount_dst_choice: bool,
-    text_input_dst: bool,
-    workdir_pick: bool,
-    text_input_name: bool,
-) -> CreatePreludeModalStep {
-    if file_browser_src {
-        CreatePreludeModalStep::FileBrowserSrc
-    } else if mount_dst_choice {
-        CreatePreludeModalStep::MountDstChoice
-    } else if text_input_dst {
-        CreatePreludeModalStep::TextInputDst
-    } else if workdir_pick {
-        CreatePreludeModalStep::WorkdirPick
-    } else if text_input_name {
-        CreatePreludeModalStep::TextInputName
-    } else {
-        CreatePreludeModalStep::Other
-    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -304,9 +276,9 @@ impl<Modal> Default for ConsoleCreatePreludeState<Modal> {
 
 impl<Modal> ConsoleCreatePreludeState<Modal> {
     #[must_use]
-    pub const fn new() -> Self {
+    pub fn new() -> Self {
         Self {
-            step: CreateStep::PickFirstMountSrc,
+            wizard: create_prelude_wizard_state(),
             pending_mount_src: None,
             pending_mount_dst: None,
             pending_readonly: false,
@@ -320,7 +292,6 @@ impl<Modal> ConsoleCreatePreludeState<Modal> {
 
     pub fn accept_mount_src(&mut self, src: PathBuf) {
         self.pending_mount_src = Some(src);
-        self.step = CreateStep::PickFirstMountDst;
     }
 
     /// Default mount dst = same absolute path as host src. Operator can
@@ -339,12 +310,10 @@ impl<Modal> ConsoleCreatePreludeState<Modal> {
     pub fn accept_mount_dst(&mut self, dst: String, readonly: bool) {
         self.pending_mount_dst = Some(dst);
         self.pending_readonly = readonly;
-        self.step = CreateStep::PickWorkdir;
     }
 
     pub fn accept_workdir(&mut self, workdir: String) {
         self.pending_workdir = Some(workdir);
-        self.step = CreateStep::NameWorkspace;
     }
 
     /// Default name = mount dst basename.

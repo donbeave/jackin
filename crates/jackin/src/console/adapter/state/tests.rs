@@ -573,7 +573,7 @@ fn is_dirty_from_env_mutation() {
 #[test]
 fn create_prelude_starts_at_first_step() {
     let p = CreatePreludeState::new();
-    assert!(matches!(p.step, CreateStep::PickFirstMountSrc));
+    assert_eq!(p.wizard.step(), 0);
 }
 
 // ── completed() helper — keeps name+ws invariants in lockstep ──

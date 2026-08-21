@@ -18,23 +18,21 @@ use crate::tui::debug::{
     ConsoleEditorDebugFacts, ConsoleModalDebugKind, ConsoleSettingsDebugFacts, ConsoleStageDebug,
     ModalDebugKind,
 };
-use crate::tui::screens::editor::model::CreateStep;
 
 use super::{
     ConsoleAnimationTick, ConsoleApp, ConsoleAppStage, ConsoleCreatePreludeState,
     ConsoleInputDispatchFacts, ConsoleInputDispatchPlan, ConsoleManagerStage,
     ConsoleManagerStageRoute, ConsoleManagerStageState, ConsoleModal, ConsoleStageModalFacts,
     CreatePreludeCompletionStatus, CreatePreludeFileBrowserPlan, CreatePreludeKeyPlan,
-    CreatePreludeModalStep, CreatePreludeMountDstChoicePlan, CreatePreludeTextInputDstPlan,
-    CreatePreludeTextInputNamePlan, CreatePreludeWorkdirCancelPlan, CreatePreludeWorkdirPickPlan,
-    apply_manager_stage, clear_pending_launch_plan, clear_pending_launch_role_plan,
-    console_input_dispatch_plan, create_prelude_completion_status,
-    create_prelude_file_browser_plan, create_prelude_key_plan, create_prelude_modal_step,
+    CreatePreludeMountDstChoicePlan, CreatePreludeTextInputDstPlan, CreatePreludeTextInputNamePlan,
+    CreatePreludeWorkdirCancelPlan, CreatePreludeWorkdirPickPlan, apply_manager_stage,
+    clear_pending_launch_plan, clear_pending_launch_role_plan, console_input_dispatch_plan,
+    create_prelude_completion_status, create_prelude_file_browser_plan, create_prelude_key_plan,
     create_prelude_mount_dst_choice_plan, create_prelude_text_input_dst_plan,
-    create_prelude_text_input_name_plan, create_prelude_workdir_cancel_plan,
-    create_prelude_workdir_pick_plan, open_launch_agent_prompt_plan,
-    open_launch_provider_picker_plan, open_launch_role_prompt_plan, store_pending_launch_plan,
-    take_pending_launch_and_role_plan, take_pending_launch_plan,
+    create_prelude_text_input_name_plan, create_prelude_wizard_state,
+    create_prelude_workdir_cancel_plan, create_prelude_workdir_pick_plan,
+    open_launch_agent_prompt_plan, open_launch_provider_picker_plan, open_launch_role_prompt_plan,
+    store_pending_launch_plan, take_pending_launch_and_role_plan, take_pending_launch_plan,
 };
 
 struct TestConfirm;
@@ -564,7 +562,7 @@ fn console_manager_stage_reports_modal_facts() {
 
     assert_eq!(
         Stage::CreatePrelude(ConsoleCreatePreludeState {
-            step: CreateStep::PickFirstMountSrc,
+            wizard: create_prelude_wizard_state(),
             pending_mount_src: None,
             pending_mount_dst: None,
             pending_readonly: false,
@@ -857,7 +855,7 @@ fn console_manager_stage_reports_debug_stage() {
     );
     assert_eq!(
         Stage::CreatePrelude(ConsoleCreatePreludeState {
-            step: CreateStep::PickFirstMountSrc,
+            wizard: create_prelude_wizard_state(),
             pending_mount_src: None,
             pending_mount_dst: None,
             pending_readonly: false,
@@ -1051,34 +1049,6 @@ fn create_prelude_key_plan_routes_escape_to_list() {
     assert_eq!(
         create_prelude_key_plan(crossterm::event::KeyCode::Enter),
         CreatePreludeKeyPlan::Continue
-    );
-}
-
-#[test]
-fn create_prelude_modal_step_routes_modal_facts_by_precedence() {
-    assert_eq!(
-        create_prelude_modal_step(true, true, true, true, true),
-        CreatePreludeModalStep::FileBrowserSrc
-    );
-    assert_eq!(
-        create_prelude_modal_step(false, true, true, true, true),
-        CreatePreludeModalStep::MountDstChoice
-    );
-    assert_eq!(
-        create_prelude_modal_step(false, false, true, true, true),
-        CreatePreludeModalStep::TextInputDst
-    );
-    assert_eq!(
-        create_prelude_modal_step(false, false, false, true, true),
-        CreatePreludeModalStep::WorkdirPick
-    );
-    assert_eq!(
-        create_prelude_modal_step(false, false, false, false, true),
-        CreatePreludeModalStep::TextInputName
-    );
-    assert_eq!(
-        create_prelude_modal_step(false, false, false, false, false),
-        CreatePreludeModalStep::Other
     );
 }
 
@@ -1342,81 +1312,6 @@ type RectTestModal = ConsoleModal<
     (),
     (),
 >;
-
-type PreludeStepTestModal = ConsoleModal<
-    crate::tui::screens::editor::model::TextInputTarget,
-    (),
-    crate::tui::screens::editor::model::FileBrowserTarget,
-    TestFileBrowser,
-    (),
-    (),
-    (),
-    TestConfirm,
-    (),
-    TestGithubPicker,
-    TestConfirmSave,
-    TestError,
-    TestContainerInfo,
-    (),
-    TestOpPicker,
-    TestRolePicker,
-    (),
-    (),
-    (),
-    TestAuthForm,
-    (),
-    (),
->;
-
-#[test]
-fn console_modal_create_prelude_step_maps_create_modal_targets() {
-    use crate::tui::screens::editor::model::{FileBrowserTarget, TextInputTarget};
-
-    assert_eq!(
-        PreludeStepTestModal::FileBrowser {
-            target: FileBrowserTarget::CreateFirstMountSrc,
-            state: TestFileBrowser,
-        }
-        .create_prelude_step(),
-        CreatePreludeModalStep::FileBrowserSrc
-    );
-    assert_eq!(
-        PreludeStepTestModal::MountDstChoice {
-            target: FileBrowserTarget::CreateFirstMountSrc,
-            state: (),
-        }
-        .create_prelude_step(),
-        CreatePreludeModalStep::MountDstChoice
-    );
-    assert_eq!(
-        PreludeStepTestModal::TextInput {
-            target: TextInputTarget::MountDst,
-            state: (),
-        }
-        .create_prelude_step(),
-        CreatePreludeModalStep::TextInputDst
-    );
-    assert_eq!(
-        PreludeStepTestModal::WorkdirPick { state: () }.create_prelude_step(),
-        CreatePreludeModalStep::WorkdirPick
-    );
-    assert_eq!(
-        PreludeStepTestModal::TextInput {
-            target: TextInputTarget::Name,
-            state: (),
-        }
-        .create_prelude_step(),
-        CreatePreludeModalStep::TextInputName
-    );
-    assert_eq!(
-        PreludeStepTestModal::FileBrowser {
-            target: FileBrowserTarget::EditAddMountSrc,
-            state: TestFileBrowser,
-        }
-        .create_prelude_step(),
-        CreatePreludeModalStep::Other
-    );
-}
 
 #[test]
 fn console_modal_letter_input_kind_maps_text_filters_and_other_modals() {

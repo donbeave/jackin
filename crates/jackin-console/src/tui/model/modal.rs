@@ -19,11 +19,6 @@
 mod auth_impls;
 mod display;
 
-use super::create_prelude::{
-    CreatePreludeFileBrowserTarget, CreatePreludeModalStep, CreatePreludeTextInputTarget,
-    create_prelude_modal_step,
-};
-
 #[derive(Debug)]
 pub enum ConsoleModal<
     TextInputTarget,
@@ -231,33 +226,6 @@ impl<
             Self::OpPicker { .. } => SharedModalScrollTarget::OpPicker,
             _ => SharedModalScrollTarget::None,
         }
-    }
-
-    #[must_use]
-    pub fn create_prelude_step(&self) -> CreatePreludeModalStep
-    where
-        TextInputTarget: CreatePreludeTextInputTarget,
-        FileBrowserTarget: CreatePreludeFileBrowserTarget,
-    {
-        create_prelude_modal_step(
-            matches!(
-                self,
-                Self::FileBrowser { target, .. } if target.is_create_first_mount_src()
-            ),
-            matches!(
-                self,
-                Self::MountDstChoice { target, .. } if target.is_create_first_mount_src()
-            ),
-            matches!(
-                self,
-                Self::TextInput { target, .. } if target.is_create_mount_dst()
-            ),
-            matches!(self, Self::WorkdirPick { .. }),
-            matches!(
-                self,
-                Self::TextInput { target, .. } if target.is_create_workspace_name()
-            ),
-        )
     }
 
     #[must_use]

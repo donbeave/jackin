@@ -38,8 +38,8 @@ pub use crate::mount_info_cache::MountInfoCache;
 pub use crate::tui::focus::MountScrollFocus;
 pub use crate::tui::model::SecretsPickerTarget;
 pub use crate::tui::screens::editor::model::{
-    AuthRow as GenericAuthRow, CreateStep, EditorHoverTarget, EditorMode, EditorTab, ExitIntent,
-    FieldFocus, FileBrowserTarget, SecretsEnterPlan, SecretsRow, SecretsScopeTag, TextInputTarget,
+    AuthRow as GenericAuthRow, EditorHoverTarget, EditorMode, EditorTab, ExitIntent, FieldFocus,
+    FileBrowserTarget, SecretsEnterPlan, SecretsRow, SecretsScopeTag, TextInputTarget,
 };
 pub use crate::tui::screens::settings::model::{
     AuthFormFocus, GlobalMountConfirm, GlobalMountDraft, GlobalMountTextTarget, SettingsEnvConfirm,

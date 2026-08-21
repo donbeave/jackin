@@ -509,11 +509,3 @@ pub enum ExitIntent {
     Save,
     Discard,
 }
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum CreateStep {
-    PickFirstMountSrc,
-    PickFirstMountDst,
-    PickWorkdir,
-    NameWorkspace,
-}
