@@ -702,3 +702,23 @@ fn startup_error_exit_gate_fires_after_dialog_dismissal() {
     assert!(startup_error_dismissed(&state, true));
     assert!(!startup_error_dismissed(&state, false));
 }
+
+#[test]
+fn keyboard_help_opens_on_question_mark_with_or_without_shift() {
+    assert!(should_open_keyboard_help(key(
+        KeyCode::Char('?'),
+        KeyModifiers::NONE
+    )));
+    assert!(should_open_keyboard_help(key(
+        KeyCode::Char('?'),
+        KeyModifiers::SHIFT
+    )));
+    assert!(!should_open_keyboard_help(key(
+        KeyCode::Char('?'),
+        KeyModifiers::CONTROL
+    )));
+    assert!(!should_open_keyboard_help(key(
+        KeyCode::Char('q'),
+        KeyModifiers::NONE
+    )));
+}

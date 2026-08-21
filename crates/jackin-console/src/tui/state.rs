@@ -240,6 +240,10 @@ pub struct ManagerState<'a> {
     /// a single frame while a blocking async operation runs (currently
     /// the console role-resolution path). Input handlers do not see it.
     pub status_overlay: Option<crate::tui::components::StatusPopupState>,
+    /// Keyboard-help overlay opened by `?` from any console stage. Owns all
+    /// input while `Some` (dispatch's top arm); focus restore is automatic —
+    /// the stage state underneath is untouched.
+    pub keyboard_help: Option<termrock::widgets::KeyboardHelpState>,
     pub inline_role_picker: Option<RolePickerState>,
     pub inline_agent_picker: Option<(jackin_core::RoleSelector, AgentChoiceState)>,
     /// Agent picker opened when the operator presses `N` on an instance row

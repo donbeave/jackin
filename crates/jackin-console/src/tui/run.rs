@@ -222,6 +222,17 @@ pub fn quit_confirm_state() -> crate::tui::components::ConfirmState {
     crate::tui::components::ConfirmState::new("Exit jackin❯?").with_focus_yes()
 }
 
+/// `?` opens the keyboard-help overlay. Consulted only inside the input
+/// dispatcher's `Stage` arm, so no modal/picker owns input when this fires
+/// (a text input must keep `?` as a typed character). Shift-tolerant: `?`
+/// arrives with SHIFT on many layouts.
+#[must_use]
+pub fn should_open_keyboard_help(key: crossterm::event::KeyEvent) -> bool {
+    use crossterm::event::{KeyCode, KeyModifiers};
+
+    matches!(key.code, KeyCode::Char('?')) && (key.modifiers - KeyModifiers::SHIFT).is_empty()
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum QuitConfirmPlan {
     Exit,

@@ -131,6 +131,7 @@ impl ManagerState<'_> {
             selected,
             list_modal: None,
             status_overlay: None,
+            keyboard_help: None,
             inline_role_picker: None,
             inline_agent_picker: None,
             inline_new_session_picker: None,

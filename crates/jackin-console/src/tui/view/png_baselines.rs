@@ -5,7 +5,8 @@
 //! `png-baselines.md`): 6 stage-derived view groups (list empty + populated,
 //! editor's 5 tabs, settings' 5 tabs, create-prelude + its 4 wizard modal
 //! steps, confirm-delete, confirm-instance-purge) and all 19 `ConsoleModal`
-//! variants — 38 baselines total at this writing (re-derive from the enums;
+//! variants — plus the plan-012 `keyboard-help` overlay, 39 baselines total
+//! at this writing (re-derive from the enums;
 //! the rot guard below pins the floor).
 //!
 //! Compare mode (default) is zero-tolerance on decoded pixels and NEVER
@@ -204,6 +205,12 @@ fn confirm_instance_purge() -> (ManagerState<'static>, AppConfig, PathBuf) {
             "Purge instance?\nThis removes the container and its state.",
         ),
     };
+    (state, config, cwd)
+}
+
+fn keyboard_help() -> (ManagerState<'static>, AppConfig, PathBuf) {
+    let (mut state, config, cwd) = populated_then();
+    state.keyboard_help = Some(termrock::widgets::KeyboardHelpState::modal());
     (state, config, cwd)
 }
 
@@ -474,6 +481,7 @@ pub(super) fn inventory() -> Vec<BaselineCase> {
     push("create-prelude", MODAL, create_prelude);
     push("confirm-delete", MODAL, confirm_delete);
     push("confirm-instance-purge", MODAL, confirm_instance_purge);
+    push("keyboard-help", LIST, keyboard_help);
 
     // Create-prelude wizard modal steps.
     push(
@@ -531,8 +539,9 @@ pub(super) fn inventory() -> Vec<BaselineCase> {
 
 /// Rot guard floor, freshly derived at plan-005 execution (2026-08-20):
 /// 15 stage-derived views + 4 create-prelude wizard steps + 19 `ConsoleModal`
-/// variants = 38. A new screen/variant added without a baseline trips this.
-const MIN_INVENTORY: usize = 38;
+/// variants = 38. Plan 012 step 6 added the `keyboard-help` overlay (39).
+/// A new screen/variant added without a baseline trips this.
+const MIN_INVENTORY: usize = 39;
 
 pub(super) fn baselines_dir() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("src/tui/view/baselines/png")

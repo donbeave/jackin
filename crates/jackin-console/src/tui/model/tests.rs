@@ -888,6 +888,7 @@ fn console_manager_stage_reports_debug_stage() {
 #[test]
 fn console_input_dispatch_plan_routes_modal_precedence_before_stage() {
     let base = ConsoleInputDispatchFacts {
+        keyboard_help_open: false,
         list_modal_open: false,
         inline_new_session_picker_open: false,
         inline_provider_picker_open: false,
@@ -906,6 +907,16 @@ fn console_input_dispatch_plan_routes_modal_precedence_before_stage() {
     assert_eq!(
         console_input_dispatch_plan(base),
         ConsoleInputDispatchPlan::Stage(ConsoleManagerStageRoute::Settings)
+    );
+    // The help overlay outranks every modal/picker arm.
+    assert_eq!(
+        console_input_dispatch_plan(ConsoleInputDispatchFacts {
+            keyboard_help_open: true,
+            list_modal_open: true,
+            editor_modal_open: true,
+            ..base
+        }),
+        ConsoleInputDispatchPlan::KeyboardHelp
     );
     assert_eq!(
         console_input_dispatch_plan(ConsoleInputDispatchFacts {
@@ -960,6 +971,7 @@ fn console_input_dispatch_plan_routes_modal_precedence_before_stage() {
 #[test]
 fn console_input_dispatch_plan_routes_stage_modal_precedence() {
     let base = ConsoleInputDispatchFacts {
+        keyboard_help_open: false,
         list_modal_open: false,
         inline_new_session_picker_open: false,
         inline_provider_picker_open: false,

@@ -41,6 +41,7 @@ fn handle_key(
 
     let stage_modal_facts = state.stage.modal_facts();
     let dispatch_plan = console_input_dispatch_plan(ConsoleInputDispatchFacts {
+        keyboard_help_open: state.keyboard_help.is_some(),
         list_modal_open: state.list_modal.is_some(),
         inline_new_session_picker_open: state.inline_new_session_picker.is_some(),
         inline_provider_picker_open: state.inline_provider_picker.is_some(),

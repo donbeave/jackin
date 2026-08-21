@@ -1334,5 +1334,29 @@ pub(crate) static PREVIEW_PANE_KEYMAP_BINDINGS: &[KeyBinding<PreviewPaneAction>]
 pub(crate) static PREVIEW_PANE_KEYMAP: Keymap<PreviewPaneAction> =
     Keymap::from_static(PREVIEW_PANE_KEYMAP_BINDINGS);
 
+// ── Console-global (intercepted centrally before per-screen planners) ────────
+
+/// Console-global actions. `?` is intercepted by `should_open_keyboard_help`
+/// inside the dispatch `Stage` arm — per-screen planners never see the key
+/// (same central-interception pattern as Ctrl+Q, but modal-safe: the consult
+/// point guarantees no modal owns input). The binding exists so the
+/// keyboard-help overlay and the footer hints derive the `?` glyph from live
+/// keymap data.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum ConsoleGlobalAction {
+    OpenKeyboardHelp,
+}
+
+pub(crate) static CONSOLE_GLOBAL_KEYMAP_BINDINGS: &[KeyBinding<ConsoleGlobalAction>] =
+    &[KeyBinding::borrowed(
+        &[KeyChord::plain(KeyCode::Char('?'))],
+        ConsoleGlobalAction::OpenKeyboardHelp,
+        Some("help"),
+        Visibility::Shown,
+        Some("?"),
+    )];
+pub(crate) static CONSOLE_GLOBAL_KEYMAP: Keymap<ConsoleGlobalAction> =
+    Keymap::from_static(CONSOLE_GLOBAL_KEYMAP_BINDINGS);
+
 #[cfg(test)]
 mod tests;
