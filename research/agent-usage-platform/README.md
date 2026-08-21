@@ -16,6 +16,7 @@ This topic establishes the architectural, native macOS, reference-implementation
 - [Broker and canonical projection planning freeze](06-broker-projection-planning.md)
 - [Provider contracts for planning](07-provider-contracts-planning.md)
 - [Surface and release tooling map](08-surfaces-release-tooling.md)
+- [Shipped surface review](09-shipped-surface-review.md)
 
 ## Conclusions
 
@@ -27,6 +28,14 @@ This topic establishes the architectural, native macOS, reference-implementation
 6. **The existing native architecture is the evidence-backed baseline.** System status items, the native popover, retained split Usage window, and Settings already provide the correct macOS structure. Standard AppKit and SwiftUI components should own Liquid Glass, focus, keyboard, accessibility, contrast, transparency, and localization behavior; custom-painted glass or structural replacement requires a demonstrated defect. — [Apple-native evidence](02-apple-native-design.md), [native reference findings](03-reference-implementations.md)
 7. **Repository dependencies impose a verifiable implementation order.** Identity and protocol records precede broker and projection work; consumer migrations then proceed through CLI/diagnostics, console/Capsule, FFI/Swift, native QA, and signed distribution. Each migrated consumer needs a regression gate proving it cannot fetch providers independently. — [Codebase dependency findings](01-codebase-architecture.md), [Apple distribution evidence](02-apple-native-design.md)
 8. **Capsule membership and initialization are separate from host discovery and quota freshness.** The current fully resolved instance launch configuration exclusively owns agent rows. Before the first session, an eligible agent carries typed `agent_uninitialized`; a resolved usage capability may add quota preview rows without clearing that lifecycle error. Fixed/global tabs and capability-only rows are excluded, and no usage state gates launch. — [Contract and proof matrix](04-contract-and-proof-matrix.md#capsule-membership-and-lifecycle-contract), [current Capsule findings](01-codebase-architecture.md)
+
+## Shipped surface review
+
+[09 — Shipped surface review](09-shipped-surface-review.md) is the reviewed
+reading of what the implemented surfaces do when executed at revision
+`8400e14d`, with severity and a recommended order. Its raw evidence lives in the
+verification ledger; the desktop composition gap is captured visually in
+[`native/Design/UnifiedAgentUsage/ShippedComparison.html`](../../native/Design/UnifiedAgentUsage/ShippedComparison.html).
 
 ## Reproducible verification
 

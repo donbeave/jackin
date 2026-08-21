@@ -156,6 +156,9 @@ filters already exist. A zero-test result fails the later goal gate.
 
 ## Post-implementation execution — 2026-08-21
 
+Reviewed reading of this evidence, with severity and a recommended order:
+[09 — Shipped surface review](09-shipped-surface-review.md).
+
 Executed at revision `8400e14d` (`chore/roadmap-unified-agent-usage`, PR #898) on
 macOS with the operator's real `~/.config/jackin` configuration. This section
 records what the required proof commands above actually do at this revision, and
