@@ -1,10 +1,25 @@
 //! jackin❯ brand header composition.
+//!
+//! Brand-proof template (the mechanism every later brand composition —
+//! launch rain/warp/rail, the capsule pill — copies at its owning phase):
+//!
+//! - The look gate is a zero-tolerance PNG crop of row 0 per non-modal
+//!   console stage view, baselined in the dedicated brand-crop directory
+//!   (`tui/view/baselines/png/brand/`) and blessed only through
+//!   `JACKIN_BLESS_BRAND_PNGS=1` — never by a surrounding screen's re-bless.
+//! - The 12 literal-RGB span tests (3 here, plus the launch header/rail and
+//!   capsule chrome duplicates) are the standing value-level gate and are
+//!   never edited to match new output.
+//! - A brand-crop diff outside an intended brand change is a parity break:
+//!   STOP for operator review, never re-bless silently; re-bless only as a
+//!   deliberate, reviewed act like any baseline.
 
 use ratatui::buffer::Buffer;
-use ratatui::layout::{Alignment, Rect};
+use ratatui::layout::Rect;
 use ratatui::style::{Modifier, Style};
 use ratatui::text::{Line, Span};
-use ratatui::widgets::{Paragraph, Widget};
+use ratatui::widgets::Widget;
+use termrock::text::LinePlacement;
 
 #[derive(Debug, Clone, Copy)]
 struct BrandHeader<'a> {
@@ -13,9 +28,15 @@ struct BrandHeader<'a> {
 
 impl Widget for BrandHeader<'_> {
     fn render(self, area: Rect, buffer: &mut Buffer) {
-        Paragraph::new(brand_header_line(self.label))
-            .alignment(Alignment::Left)
-            .render(area, buffer);
+        let mut scratch = String::new();
+        termrock::text::paint_line_overflow(
+            buffer,
+            area,
+            &brand_header_line(self.label),
+            Style::default(),
+            LinePlacement::clipped("…"),
+            &mut scratch,
+        );
     }
 }
 

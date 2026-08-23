@@ -9,7 +9,7 @@
 
 use std::path::PathBuf;
 
-use crate::tui::components::modal_rects::{
+use crate::tui::components::modal_overlay::{
     ModalAuthFormState, ModalConfirmSavePrepareState, ModalConfirmSaveState, ModalConfirmState,
     ModalContainerInfoState, ModalErrorPopupState, ModalGithubPickerState, ModalOpPickerState,
     ModalRolePickerState,

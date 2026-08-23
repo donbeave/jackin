@@ -187,7 +187,7 @@ fn item_filter_matches_subtitle() {
         item_with_subtitle("Google", "alexey@zhokhov.com"),
         item_with_subtitle("Google", "azhokhov@example.com"),
     ];
-    s.item_list_state.select(Some(0));
+    s.item_list_state.set_active(Some(0));
     s.filter_buf = "AzhokhoV".to_owned();
 
     let visible = s.filtered_items();
@@ -199,7 +199,7 @@ fn item_filter_matches_subtitle() {
 fn filter_vaults_narrows_by_name() {
     let mut s = picker_ready();
     s.vaults = vec![vault("Personal"), vault("Private"), vault("Work")];
-    s.vault_list_state.select(Some(0));
+    s.vault_list_state.set_active(Some(0));
     s.filter_buf = "per".to_owned();
 
     let visible = s.filtered_vaults();
@@ -211,7 +211,7 @@ fn filter_vaults_narrows_by_name() {
 fn filter_clears_on_pane_advance() {
     let mut s = picker_ready();
     s.vaults = vec![vault("Personal"), vault("Private"), vault("Work")];
-    s.vault_list_state.select(Some(0));
+    s.vault_list_state.set_active(Some(0));
     s.filter_buf = "per".to_owned();
     assert_eq!(s.filtered_vaults().len(), 1);
 
@@ -229,7 +229,7 @@ fn filter_clears_on_pane_advance() {
     s.rx = None;
     s.pending_load = None;
     s.items = vec![item("API Keys")];
-    s.item_list_state.select(Some(0));
+    s.item_list_state.set_active(Some(0));
     s.stage = OpPickerStage::Item;
     s.filter_buf.clear();
     s.load_state = OpLoadState::Ready;
@@ -245,7 +245,7 @@ fn filter_clears_on_pane_advance() {
 fn esc_from_vault_returns_cancel() {
     let mut s = picker_ready();
     s.vaults = vec![vault("Personal")];
-    s.vault_list_state.select(Some(0));
+    s.vault_list_state.set_active(Some(0));
 
     let outcome = s.handle_key(key(KeyCode::Esc));
     assert!(matches!(outcome, ModalOutcome::Cancel));
@@ -255,10 +255,10 @@ fn esc_from_vault_returns_cancel() {
 fn esc_from_item_goes_to_vault() {
     let mut s = picker_ready();
     s.vaults = vec![vault("Personal"), vault("Work")];
-    s.vault_list_state.select(Some(1));
+    s.vault_list_state.set_active(Some(1));
     s.selected_vault = Some(vault("Work"));
     s.items = vec![item("API Keys")];
-    s.item_list_state.select(Some(0));
+    s.item_list_state.set_active(Some(0));
     s.stage = OpPickerStage::Item;
     s.filter_buf = "ap".to_owned();
 
@@ -267,7 +267,7 @@ fn esc_from_item_goes_to_vault() {
     assert_eq!(s.stage, OpPickerStage::Vault);
     assert!(s.filter_buf.is_empty(), "filter must clear on back-nav");
     // Vault selection preserved.
-    assert_eq!(s.vault_list_state.selected().copied(), Some(1));
+    assert_eq!(s.vault_list_state.active().copied(), Some(1));
     assert_eq!(s.vaults.len(), 2);
 }
 
@@ -277,9 +277,9 @@ fn esc_from_field_goes_to_item() {
     s.selected_vault = Some(vault("Personal"));
     s.selected_item = Some(item("API Keys"));
     s.items = vec![item("API Keys")];
-    s.item_list_state.select(Some(0));
+    s.item_list_state.set_active(Some(0));
     s.fields = vec![field("password", "concealed", true)];
-    s.field_list_state.select(Some(0));
+    s.field_list_state.set_active(Some(0));
     s.stage = OpPickerStage::Field;
     s.filter_buf = "pw".to_owned();
 
@@ -288,7 +288,7 @@ fn esc_from_field_goes_to_item() {
     assert_eq!(s.stage, OpPickerStage::Item);
     assert!(s.filter_buf.is_empty());
     // Item selection preserved.
-    assert_eq!(s.item_list_state.selected().copied(), Some(0));
+    assert_eq!(s.item_list_state.active().copied(), Some(0));
     assert_eq!(s.items.len(), 1);
 }
 
@@ -313,7 +313,7 @@ fn field_sort_concealed_first() {
     // assert filtered_fields() preserves it.
     let mut s = picker_ready();
     s.fields = input;
-    s.field_list_state.select(Some(0));
+    s.field_list_state.set_active(Some(0));
     s.stage = OpPickerStage::Field;
     let visible = s.filtered_fields();
     assert_eq!(visible.len(), 3);
@@ -340,7 +340,7 @@ fn enter_on_field_commits_op_path() {
         field("password", "concealed", true),
         field("username", "text", false),
     ];
-    s.field_list_state.select(Some(0));
+    s.field_list_state.set_active(Some(0));
     s.stage = OpPickerStage::Field;
 
     let outcome = s.handle_key(key(KeyCode::Enter));
@@ -373,7 +373,7 @@ fn picker_commit_uses_op_provided_reference_not_synthesized() {
     // Field is inside section "auth", so display rows are:
     //   0: SectionHeader "auth"
     //   1: Field { field_idx: 0 }
-    s.field_list_state.select(Some(1));
+    s.field_list_state.set_active(Some(1));
     s.stage = OpPickerStage::Field;
 
     let outcome = s.handle_key(key(KeyCode::Enter));
@@ -447,7 +447,7 @@ fn create_mode_new_item_flow_commits_new_item() {
     s.items = vec![item("Existing")];
     s.stage = OpPickerStage::Item;
     // choices: [Some(Existing), None]; select the sentinel at index 1.
-    s.item_list_state.select(Some(1));
+    s.item_list_state.set_active(Some(1));
     assert!(matches!(
         s.handle_key(key(KeyCode::Enter)),
         ModalOutcome::Continue
@@ -487,7 +487,7 @@ fn create_at_section(fields: Vec<OpField>) -> OpPickerState {
     s.fields = fields;
     s.selected_section = None;
     s.stage = OpPickerStage::Section;
-    s.section_list_state.select(Some(0));
+    s.section_list_state.set_active(Some(0));
     s
 }
 
@@ -547,7 +547,7 @@ fn create_mode_field_refresh_stays_on_field_and_keeps_section() {
     s.fields.clear();
     s.field_refresh_in_place = true;
     // Publish the reloaded fields through the same arm the worker uses.
-    s.rx = Some(jackin_oppicker::ready_blocking_subscription(
+    s.rx = Some(jackin_oppicker::ready_load_subscription(
         LoadResult::Fields(Ok(vec![
             field_with_reference("user", "op://Personal/login/user"),
             field_with_reference("api", "op://Personal/login/auth/api"),
@@ -602,7 +602,7 @@ fn create_mode_existing_field_commits_edit_item_field() {
     assert_eq!(s.stage, OpPickerStage::Field);
     assert_eq!(s.selected_section, None);
     // Root field "token" → display rows: [Field{0}, NewFieldSentinel].
-    s.field_list_state.select(Some(0));
+    s.field_list_state.set_active(Some(0));
     match s.handle_key(key(KeyCode::Enter)) {
         ModalOutcome::Commit(OpPickerSelection::EditItemField {
             item,
@@ -634,7 +634,7 @@ fn create_mode_selecting_section_scopes_field_stage() {
         field_with_reference("key", "op://Personal/login/auth/key"),
     ]);
     // section_choices: [None, Some("auth")]; select "auth" (index 1).
-    s.section_list_state.select(Some(1));
+    s.section_list_state.set_active(Some(1));
     assert!(matches!(
         s.handle_key(key(KeyCode::Enter)),
         ModalOutcome::Continue
@@ -646,7 +646,7 @@ fn create_mode_selecting_section_scopes_field_stage() {
     assert_eq!(rows.len(), 3, "two auth fields + new-field sentinel");
     assert!(matches!(rows[2], FieldDisplayRow::NewFieldSentinel));
     // Selecting the first scoped field commits with section Some("auth").
-    s.field_list_state.select(Some(0));
+    s.field_list_state.set_active(Some(0));
     match s.handle_key(key(KeyCode::Enter)) {
         ModalOutcome::Commit(OpPickerSelection::EditItemField { section, field, .. }) => {
             assert_eq!(section, Some("auth".to_owned()));
@@ -669,7 +669,7 @@ fn create_mode_new_field_in_root_commits_section_none() {
     ));
     assert_eq!(s.stage, OpPickerStage::Field);
     // Rows: [Field{0}, NewFieldSentinel] → select the sentinel.
-    s.field_list_state.select(Some(1));
+    s.field_list_state.set_active(Some(1));
     assert!(matches!(
         s.handle_key(key(KeyCode::Enter)),
         ModalOutcome::Continue
@@ -688,7 +688,7 @@ fn create_mode_new_field_in_root_commits_section_none() {
 fn create_mode_new_section_flow_threads_section_into_commit() {
     let mut s = create_at_section(vec![]);
     // section_choices: [None]; sentinel `+ New section` at index 1.
-    s.section_list_state.select(Some(1));
+    s.section_list_state.set_active(Some(1));
     assert!(matches!(
         s.handle_key(key(KeyCode::Enter)),
         ModalOutcome::Continue
@@ -718,7 +718,7 @@ fn field_label_cancel_clears_pending_section() {
     // field-label stage must discard it so it cannot leak into a later
     // commit on a different path.
     let mut s = create_at_section(vec![]);
-    s.section_list_state.select(Some(1)); // `+ New section` sentinel
+    s.section_list_state.set_active(Some(1)); // `+ New section` sentinel
     drop(s.handle_key(key(KeyCode::Enter)));
     assert_eq!(s.stage, OpPickerStage::NewSectionName);
     for c in "foo".chars() {
@@ -756,7 +756,7 @@ fn field_label_commit_trims_whitespace() {
 #[test]
 fn new_section_name_commit_trims_whitespace() {
     let mut s = create_at_section(vec![]);
-    s.section_list_state.select(Some(1));
+    s.section_list_state.set_active(Some(1));
     drop(s.handle_key(key(KeyCode::Enter)));
     s.section_name_input = section_name_input_state("  creds  ");
     drop(s.handle_key(key(KeyCode::Enter)));
@@ -781,14 +781,14 @@ fn left_collapse_via_header_keeps_selection_in_range() {
     s.stage = OpPickerStage::Field;
     // Rows: [SectionHeader(auth), Field, Field]. Park on the last field.
     let last = s.build_field_display_rows().len() - 1;
-    s.field_list_state.select(Some(last));
+    s.field_list_state.set_active(Some(last));
     // Move up onto the header row, then collapse with Left.
     let header_idx = s
         .build_field_display_rows()
         .iter()
         .position(|r| matches!(r, FieldDisplayRow::SectionHeader { .. }))
         .expect("a section header row");
-    s.field_list_state.select(Some(header_idx));
+    s.field_list_state.set_active(Some(header_idx));
     drop(s.handle_key(key(KeyCode::Left)));
     assert!(
         s.collapsed_sections.contains("auth"),
@@ -797,7 +797,7 @@ fn left_collapse_via_header_keeps_selection_in_range() {
     let new_len = s.build_field_display_rows().len();
     let sel = s
         .field_list_state
-        .selected()
+        .active()
         .copied()
         .expect("selection retained");
     assert!(
@@ -813,7 +813,7 @@ fn create_mode_esc_chain_field_to_section_to_item() {
         "op://Personal/login/auth/api",
     )]);
     // Drill into "auth", then Esc back to Section, then Esc back to Item.
-    s.section_list_state.select(Some(1));
+    s.section_list_state.set_active(Some(1));
     drop(s.handle_key(key(KeyCode::Enter)));
     assert_eq!(s.stage, OpPickerStage::Field);
 
@@ -870,7 +870,7 @@ fn picker_starts_at_account_when_multiple_accounts() {
         "two accounts must route to the Account pane"
     );
     assert_eq!(s.accounts.len(), 2);
-    assert_eq!(s.account_list_state.selected().copied(), Some(0));
+    assert_eq!(s.account_list_state.active().copied(), Some(0));
     assert!(
         s.selected_account.is_none(),
         "selected_account must remain None until the operator picks one"
@@ -943,7 +943,7 @@ fn enter_on_account_advances_to_vault_with_account_scope() {
     s.rx = None;
     s.pending_load = None;
     s.load_state = OpLoadState::Ready;
-    s.account_list_state.select(Some(1));
+    s.account_list_state.set_active(Some(1));
 
     let outcome = s.handle_key(key(KeyCode::Enter));
     assert!(matches!(outcome, ModalOutcome::Continue));
@@ -986,7 +986,7 @@ fn esc_from_vault_with_multi_account_returns_to_account() {
     s.stage = OpPickerStage::Vault;
     s.selected_account = Some(account("acct1", "a@example.com", "alpha.1password.com"));
     s.vaults = vec![vault("Personal"), vault("Work")];
-    s.vault_list_state.select(Some(1));
+    s.vault_list_state.set_active(Some(1));
     s.filter_buf = "wo".to_owned();
 
     let outcome = s.handle_key(key(KeyCode::Esc));
@@ -1011,7 +1011,7 @@ fn esc_from_vault_with_multi_account_returns_to_account() {
 fn esc_from_vault_with_single_account_cancels_picker() {
     let mut s = picker_ready();
     s.vaults = vec![vault("Personal")];
-    s.vault_list_state.select(Some(0));
+    s.vault_list_state.set_active(Some(0));
     assert!(s.accounts.is_empty());
 
     let outcome = s.handle_key(key(KeyCode::Esc));
@@ -1562,7 +1562,7 @@ fn test_state_picked(
     s.items = items_in_vault;
     s.selected_item = Some(selected_item);
     s.fields = vec![field];
-    s.field_list_state.select(Some(0));
+    s.field_list_state.set_active(Some(0));
     s.stage = OpPickerStage::Field;
     s.load_state = OpLoadState::Ready;
     s
@@ -2076,5 +2076,211 @@ fn invalidate_cache_for_ref_ignores_unparseable_ref() {
             account: None,
             on_demand: false,
         },
+    );
+}
+
+// --- Plan 013: drill-down behavior preserved (breadcrumb content matrix,
+// wrap-vs-clamp, filter reset, subscription paths) ---
+
+/// Render the picker modal and return the painted buffer text, rows
+/// joined by newlines.
+fn render_picker_text(s: &OpPickerState, w: u16, h: u16) -> String {
+    use ratatui::{Terminal, backend::TestBackend, layout::Rect};
+    let backend = TestBackend::new(w, h);
+    let mut term = Terminal::new(backend).unwrap();
+    term.draw(|f| {
+        crate::tui::components::op_picker::render_picker(f, Rect::new(0, 0, w, h), s);
+    })
+    .unwrap();
+    let buf = term.backend().buffer();
+    (0..buf.area.height)
+        .map(|y| {
+            (0..buf.area.width)
+                .map(|x| buf[(x, y)].symbol())
+                .collect::<String>()
+        })
+        .collect::<Vec<_>>()
+        .join("\n")
+}
+
+/// Seed the ancestor trail the breadcrumb reads, then assert the modal
+/// title row paints the hand-written expected literal.
+fn assert_modal_title(s: &OpPickerState, expected: &str) {
+    let text = render_picker_text(s, 120, 30);
+    assert!(
+        text.contains(expected),
+        "modal title must paint {expected:?}; buffer:\n{text}"
+    );
+}
+
+#[test]
+fn breadcrumb_title_content_matrix_single_account() {
+    let mut s = picker_ready();
+    s.selected_account = Some(account(
+        "acct1",
+        "single@example.com",
+        "single.1password.com",
+    ));
+    s.selected_vault = Some(vault("Personal"));
+    s.selected_item = Some(item("Login"));
+
+    s.stage = OpPickerStage::Account;
+    assert_modal_title(&s, "1Password");
+    s.stage = OpPickerStage::Vault;
+    assert_modal_title(&s, "1Password");
+    s.stage = OpPickerStage::Item;
+    assert_modal_title(&s, "Personal");
+    s.stage = OpPickerStage::Section;
+    assert_modal_title(&s, "Personal \u{2192} Login");
+    s.stage = OpPickerStage::Field;
+    assert_modal_title(&s, "Personal \u{2192} Login");
+}
+
+#[test]
+fn breadcrumb_title_content_matrix_multi_account() {
+    let mut s = picker_ready();
+    s.accounts = vec![
+        account("acct1", "alice@example.com", "alice.1password.com"),
+        account("acct2", "bob@example.com", "bob.1password.com"),
+    ];
+    s.selected_account = Some(account("acct1", "alice@example.com", "alice.1password.com"));
+    s.selected_vault = Some(vault("Work"));
+    s.selected_item = Some(item("Login"));
+
+    s.stage = OpPickerStage::Account;
+    assert_modal_title(&s, "1Password");
+    s.stage = OpPickerStage::Vault;
+    assert_modal_title(&s, "alice@example.com");
+    s.stage = OpPickerStage::Item;
+    assert_modal_title(&s, "alice@example.com \u{2192} Work");
+    s.stage = OpPickerStage::Section;
+    assert_modal_title(&s, "alice@example.com \u{2192} Work \u{2192} Login");
+    s.stage = OpPickerStage::Field;
+    assert_modal_title(&s, "alice@example.com \u{2192} Work \u{2192} Login");
+}
+
+#[test]
+fn keyboard_selection_wraps_at_both_ends() {
+    let mut s = picker_ready();
+    s.vaults = vec![vault("A"), vault("B"), vault("C")];
+    s.vault_list_state.set_active(Some(0));
+
+    // Up from the first row wraps to the last.
+    let outcome = s.handle_key(key(KeyCode::Up));
+    assert!(matches!(outcome, ModalOutcome::Continue));
+    assert_eq!(s.vault_list_state.active().copied(), Some(2));
+    // Down past the last row wraps to the first.
+    let outcome = s.handle_key(key(KeyCode::Down));
+    assert!(matches!(outcome, ModalOutcome::Continue));
+    assert_eq!(s.vault_list_state.active().copied(), Some(0));
+}
+
+#[test]
+fn wheel_selection_clamps_at_both_ends() {
+    let mut s = picker_ready();
+    s.vaults = vec![vault("A"), vault("B"), vault("C")];
+    s.vault_list_state.set_active(Some(2));
+
+    // Wheel past the last row stays on the last.
+    assert!(!s.scroll_selection(1));
+    assert_eq!(s.vault_list_state.active().copied(), Some(2));
+    s.vault_list_state.set_active(Some(0));
+    // Wheel above the first row stays on the first.
+    assert!(!s.scroll_selection(-1));
+    assert_eq!(s.vault_list_state.active().copied(), Some(0));
+    assert!(s.scroll_selection(1));
+    assert_eq!(s.vault_list_state.active().copied(), Some(1));
+}
+
+#[test]
+fn empty_stage_leaves_no_selection_for_keyboard_and_wheel() {
+    let mut s = picker_ready();
+    s.vaults = Vec::new();
+    s.vault_list_state.set_active(None);
+
+    let outcome = s.handle_key(key(KeyCode::Down));
+    assert!(matches!(outcome, ModalOutcome::Continue));
+    assert_eq!(s.vault_list_state.active().copied(), None);
+    assert!(!s.scroll_selection(1));
+    assert_eq!(s.vault_list_state.active().copied(), None);
+}
+
+#[test]
+fn filter_edit_resets_selection_to_first_filtered_row() {
+    let mut s = picker_ready();
+    s.vaults = vec![vault("Work"), vault("Personal"), vault("Travel")];
+    s.vault_list_state.set_active(Some(1));
+
+    // Narrowing to a one-row projection selects that row.
+    let outcome = s.handle_key(key(KeyCode::Char('W')));
+    assert!(matches!(outcome, ModalOutcome::Continue));
+    assert_eq!(s.filter_buf, "W");
+    assert_eq!(s.vault_list_state.active().copied(), Some(0));
+
+    // Clearing the filter restores the full list with first-row selection.
+    let outcome = s.handle_key(key(KeyCode::Backspace));
+    assert!(matches!(outcome, ModalOutcome::Continue));
+    assert!(s.filter_buf.is_empty());
+    assert_eq!(s.vault_list_state.active().copied(), Some(0));
+}
+
+#[test]
+fn cached_load_resolves_on_first_poll_and_clears_slot() {
+    let mut s = picker_ready();
+    s.attach_load_receiver(jackin_oppicker::ready_load_subscription(
+        LoadResult::Vaults(Ok(vec![vault("Personal")])),
+    ));
+
+    assert!(s.poll_load(), "cached load must be Ready on the first poll");
+    assert!(s.rx.is_none(), "rx slot clears after Ready");
+    assert_eq!(s.vaults.len(), 1);
+    assert!(matches!(s.load_state, OpLoadState::Ready));
+}
+
+#[test]
+fn worker_load_reports_pending_until_delivery_then_clears_slot() {
+    let mut s = picker_ready();
+    // Gate the worker on a channel so the Pending poll is deterministic
+    // (no sleep): the worker blocks until the test releases it.
+    let (gate_tx, gate_rx) = std::sync::mpsc::channel::<()>();
+    s.attach_load_receiver(jackin_oppicker::spawn_named_worker_subscription(
+        "jackin-op-picker-load-test",
+        move || {
+            gate_rx.recv().unwrap();
+            LoadResult::Vaults(Ok(vec![vault("Work")]))
+        },
+    ));
+
+    assert!(!s.poll_load(), "worker still in flight reports Pending");
+    assert!(s.rx.is_some(), "rx slot survives Pending");
+
+    gate_tx.send(()).unwrap();
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(2);
+    while s.rx.is_some() && std::time::Instant::now() < deadline {
+        wait_for_worker_poll();
+        let _ = s.poll_load();
+    }
+    assert!(s.rx.is_none(), "rx slot clears after Ready");
+    assert_eq!(s.vaults.len(), 1);
+    assert_eq!(s.vaults[0].name, "Work");
+}
+
+#[test]
+fn dropped_worker_reports_closed_and_clears_slot() {
+    let mut s = picker_ready();
+    s.attach_load_receiver(jackin_oppicker::spawn_named_worker_subscription(
+        "jackin-op-picker-load-test",
+        || -> LoadResult { panic!("simulated worker disconnect") },
+    ));
+
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(2);
+    while s.rx.is_some() && std::time::Instant::now() < deadline {
+        wait_for_worker_poll();
+        let _ = s.poll_load();
+    }
+    assert!(s.rx.is_none(), "rx slot clears after Closed");
+    assert!(
+        matches!(s.load_state, OpLoadState::Error(_)),
+        "dropped worker surfaces the disconnected-worker error"
     );
 }

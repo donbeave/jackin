@@ -635,15 +635,15 @@ fn inline_picker_shell_plan_routes_scroll_and_delegate() {
 #[test]
 fn inline_picker_plan_routes_modal_outcomes() {
     assert_eq!(
-        inline_picker_plan(jackin_tui::ModalOutcome::Commit("agent-smith")),
+        inline_picker_plan(jackin_oppicker::ModalOutcome::Commit("agent-smith")),
         InlinePickerPlan::Commit("agent-smith")
     );
     assert_eq!(
-        inline_picker_plan::<&str>(jackin_tui::ModalOutcome::Cancel),
+        inline_picker_plan::<&str>(jackin_oppicker::ModalOutcome::Cancel),
         InlinePickerPlan::Dismiss
     );
     assert_eq!(
-        inline_picker_plan::<&str>(jackin_tui::ModalOutcome::Continue),
+        inline_picker_plan::<&str>(jackin_oppicker::ModalOutcome::Continue),
         InlinePickerPlan::Continue
     );
 }
@@ -718,19 +718,21 @@ fn mount_dst_choice_plan_routes_choice_outcomes() {
     use crate::tui::components::mount_dst_choice::MountDstChoice;
 
     assert_eq!(
-        mount_dst_choice_plan(jackin_tui::ModalOutcome::Commit(MountDstChoice::SamePath)),
+        mount_dst_choice_plan(jackin_oppicker::ModalOutcome::Commit(
+            MountDstChoice::SamePath
+        )),
         MountDstChoicePlan::CommitSamePath
     );
     assert_eq!(
-        mount_dst_choice_plan(jackin_tui::ModalOutcome::Commit(MountDstChoice::Edit)),
+        mount_dst_choice_plan(jackin_oppicker::ModalOutcome::Commit(MountDstChoice::Edit)),
         MountDstChoicePlan::OpenEditInput
     );
     assert_eq!(
-        mount_dst_choice_plan(jackin_tui::ModalOutcome::Cancel),
+        mount_dst_choice_plan(jackin_oppicker::ModalOutcome::Cancel),
         MountDstChoicePlan::Dismiss
     );
     assert_eq!(
-        mount_dst_choice_plan(jackin_tui::ModalOutcome::Continue),
+        mount_dst_choice_plan(jackin_oppicker::ModalOutcome::Continue),
         MountDstChoicePlan::Continue
     );
 }
@@ -740,19 +742,23 @@ fn save_discard_modal_plan_routes_save_discard_outcomes() {
     use crate::tui::components::SaveDiscardChoice;
 
     assert_eq!(
-        save_discard_modal_plan(jackin_tui::ModalOutcome::Commit(SaveDiscardChoice::Save)),
+        save_discard_modal_plan(jackin_oppicker::ModalOutcome::Commit(
+            SaveDiscardChoice::Save
+        )),
         SaveDiscardModalPlan::Save
     );
     assert_eq!(
-        save_discard_modal_plan(jackin_tui::ModalOutcome::Commit(SaveDiscardChoice::Discard)),
+        save_discard_modal_plan(jackin_oppicker::ModalOutcome::Commit(
+            SaveDiscardChoice::Discard
+        )),
         SaveDiscardModalPlan::Discard
     );
     assert_eq!(
-        save_discard_modal_plan(jackin_tui::ModalOutcome::Cancel),
+        save_discard_modal_plan(jackin_oppicker::ModalOutcome::Cancel),
         SaveDiscardModalPlan::Dismiss
     );
     assert_eq!(
-        save_discard_modal_plan(jackin_tui::ModalOutcome::Continue),
+        save_discard_modal_plan(jackin_oppicker::ModalOutcome::Continue),
         SaveDiscardModalPlan::Continue
     );
 }
@@ -762,15 +768,15 @@ fn confirm_save_modal_plan_routes_confirm_outcomes() {
     use crate::tui::components::confirm_save::SaveChoice;
 
     assert_eq!(
-        confirm_save_modal_plan(jackin_tui::ModalOutcome::Commit(SaveChoice::Save)),
+        confirm_save_modal_plan(jackin_oppicker::ModalOutcome::Commit(SaveChoice::Save)),
         ConfirmSaveModalPlan::Commit
     );
     assert_eq!(
-        confirm_save_modal_plan(jackin_tui::ModalOutcome::Cancel),
+        confirm_save_modal_plan(jackin_oppicker::ModalOutcome::Cancel),
         ConfirmSaveModalPlan::Dismiss
     );
     assert_eq!(
-        confirm_save_modal_plan(jackin_tui::ModalOutcome::Continue),
+        confirm_save_modal_plan(jackin_oppicker::ModalOutcome::Continue),
         ConfirmSaveModalPlan::Continue
     );
 }
@@ -778,19 +784,19 @@ fn confirm_save_modal_plan_routes_confirm_outcomes() {
 #[test]
 fn bool_confirm_modal_plan_routes_confirm_outcomes() {
     assert_eq!(
-        bool_confirm_modal_plan(jackin_tui::ModalOutcome::Commit(true)),
+        bool_confirm_modal_plan(jackin_oppicker::ModalOutcome::Commit(true)),
         BoolConfirmModalPlan::Confirm
     );
     assert_eq!(
-        bool_confirm_modal_plan(jackin_tui::ModalOutcome::Commit(false)),
+        bool_confirm_modal_plan(jackin_oppicker::ModalOutcome::Commit(false)),
         BoolConfirmModalPlan::Dismiss
     );
     assert_eq!(
-        bool_confirm_modal_plan(jackin_tui::ModalOutcome::Cancel),
+        bool_confirm_modal_plan(jackin_oppicker::ModalOutcome::Cancel),
         BoolConfirmModalPlan::Dismiss
     );
     assert_eq!(
-        bool_confirm_modal_plan(jackin_tui::ModalOutcome::Continue),
+        bool_confirm_modal_plan(jackin_oppicker::ModalOutcome::Continue),
         BoolConfirmModalPlan::Continue
     );
 }
@@ -854,19 +860,23 @@ fn scope_picker_plan_routes_scope_outcomes() {
     use crate::tui::components::scope_picker::ScopeChoice;
 
     assert_eq!(
-        scope_picker_plan(jackin_tui::ModalOutcome::Commit(ScopeChoice::AllAgents)),
+        scope_picker_plan(jackin_oppicker::ModalOutcome::Commit(
+            ScopeChoice::AllAgents
+        )),
         ScopePickerPlan::AllAgents
     );
     assert_eq!(
-        scope_picker_plan(jackin_tui::ModalOutcome::Commit(ScopeChoice::SpecificAgent)),
+        scope_picker_plan(jackin_oppicker::ModalOutcome::Commit(
+            ScopeChoice::SpecificAgent
+        )),
         ScopePickerPlan::SpecificAgent
     );
     assert_eq!(
-        scope_picker_plan(jackin_tui::ModalOutcome::Cancel),
+        scope_picker_plan(jackin_oppicker::ModalOutcome::Cancel),
         ScopePickerPlan::Dismiss
     );
     assert_eq!(
-        scope_picker_plan(jackin_tui::ModalOutcome::Continue),
+        scope_picker_plan(jackin_oppicker::ModalOutcome::Continue),
         ScopePickerPlan::Continue
     );
 }
@@ -876,19 +886,19 @@ fn source_picker_plan_routes_source_outcomes() {
     use crate::tui::components::source_picker::SourceChoice;
 
     assert_eq!(
-        source_picker_plan(jackin_tui::ModalOutcome::Commit(SourceChoice::Plain)),
+        source_picker_plan(jackin_oppicker::ModalOutcome::Commit(SourceChoice::Plain)),
         SourcePickerPlan::Plain
     );
     assert_eq!(
-        source_picker_plan(jackin_tui::ModalOutcome::Commit(SourceChoice::Op)),
+        source_picker_plan(jackin_oppicker::ModalOutcome::Commit(SourceChoice::Op)),
         SourcePickerPlan::Op
     );
     assert_eq!(
-        source_picker_plan(jackin_tui::ModalOutcome::Cancel),
+        source_picker_plan(jackin_oppicker::ModalOutcome::Cancel),
         SourcePickerPlan::Dismiss
     );
     assert_eq!(
-        source_picker_plan(jackin_tui::ModalOutcome::Continue),
+        source_picker_plan(jackin_oppicker::ModalOutcome::Continue),
         SourcePickerPlan::Continue
     );
 }
@@ -896,17 +906,17 @@ fn source_picker_plan_routes_source_outcomes() {
 #[test]
 fn list_github_picker_plan_routes_picker_outcomes() {
     assert_eq!(
-        list_github_picker_plan(jackin_tui::ModalOutcome::Commit(
+        list_github_picker_plan(jackin_oppicker::ModalOutcome::Commit(
             "https://github.com/jackin-project/jackin".to_owned()
         )),
         ListGithubPickerPlan::OpenUrl("https://github.com/jackin-project/jackin".to_owned())
     );
     assert_eq!(
-        list_github_picker_plan(jackin_tui::ModalOutcome::Cancel),
+        list_github_picker_plan(jackin_oppicker::ModalOutcome::Cancel),
         ListGithubPickerPlan::Dismiss
     );
     assert_eq!(
-        list_github_picker_plan(jackin_tui::ModalOutcome::Continue),
+        list_github_picker_plan(jackin_oppicker::ModalOutcome::Continue),
         ListGithubPickerPlan::Continue
     );
 }
@@ -914,15 +924,15 @@ fn list_github_picker_plan_routes_picker_outcomes() {
 #[test]
 fn list_role_picker_plan_routes_picker_outcomes() {
     assert_eq!(
-        list_role_picker_plan(jackin_tui::ModalOutcome::Commit("agent-smith")),
+        list_role_picker_plan(jackin_oppicker::ModalOutcome::Commit("agent-smith")),
         ListRolePickerPlan::Launch("agent-smith")
     );
     assert_eq!(
-        list_role_picker_plan::<&str>(jackin_tui::ModalOutcome::Cancel),
+        list_role_picker_plan::<&str>(jackin_oppicker::ModalOutcome::Cancel),
         ListRolePickerPlan::Dismiss
     );
     assert_eq!(
-        list_role_picker_plan::<&str>(jackin_tui::ModalOutcome::Continue),
+        list_role_picker_plan::<&str>(jackin_oppicker::ModalOutcome::Continue),
         ListRolePickerPlan::Continue
     );
 }
@@ -930,15 +940,15 @@ fn list_role_picker_plan_routes_picker_outcomes() {
 #[test]
 fn dismissible_modal_plan_dismisses_commit_and_cancel() {
     assert_eq!(
-        dismissible_modal_plan(jackin_tui::ModalOutcome::Commit(())),
+        dismissible_modal_plan(jackin_oppicker::ModalOutcome::Commit(())),
         DismissibleModalPlan::Dismiss
     );
     assert_eq!(
-        dismissible_modal_plan::<()>(jackin_tui::ModalOutcome::Cancel),
+        dismissible_modal_plan::<()>(jackin_oppicker::ModalOutcome::Cancel),
         DismissibleModalPlan::Dismiss
     );
     assert_eq!(
-        dismissible_modal_plan::<()>(jackin_tui::ModalOutcome::Continue),
+        dismissible_modal_plan::<()>(jackin_oppicker::ModalOutcome::Continue),
         DismissibleModalPlan::Continue
     );
 }

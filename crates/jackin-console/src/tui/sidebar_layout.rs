@@ -3,7 +3,8 @@
 
 //! Pure sidebar rectangle allocation for the workspace list preview pane.
 
-use ratatui::layout::{Constraint, Direction, Layout, Rect};
+use ratatui::layout::Rect;
+use termrock::layout::{PanelStackBlock, ShrinkPolicy, panel_stack_with_policy};
 use termrock::scroll::ScrollAxes;
 
 use crate::mount_info_cache::MountInfoCache;
@@ -272,43 +273,42 @@ pub fn focused_scroll_area_axes(
 
 #[must_use]
 pub fn compute_sidebar_layout(area: Rect, metrics: SidebarLayoutMetrics) -> SidebarLayout {
-    let mut constraints = Vec::new();
-    if metrics.instance_count > 0 {
-        constraints.push(Constraint::Length(COMPACT_INSTANCES_HEIGHT));
-    }
-    constraints.push(Constraint::Length(3));
-    constraints.push(Constraint::Length(metrics.workspace_mount_height));
-    if let Some(height) = metrics.global_mount_height {
-        constraints.push(Constraint::Length(height));
-    }
-    if let Some(height) = metrics.role_global_mount_height {
-        constraints.push(Constraint::Length(height));
-    }
-    if let Some(height) = metrics.env_height {
-        constraints.push(Constraint::Length(height));
-    }
-    if metrics.show_roles {
-        constraints.push(Constraint::Length(agents_block_height(metrics.agent_count)));
-    }
-
-    let rows = Layout::default()
-        .direction(Direction::Vertical)
-        .constraints(constraints)
-        .split(area);
+    // ShrinkPolicy::Equal keeps the previous ratatui `Constraint::Length`
+    // solver semantics byte-identical under overflow (equal-strength
+    // relaxation), unlike panel_stack's default tail-first shrink.
+    let block = |height: u16, visible: bool| PanelStackBlock {
+        content_rows: height,
+        chrome_rows: 0,
+        min: 0,
+        max: height,
+        visible,
+    };
+    let blocks = [
+        block(COMPACT_INSTANCES_HEIGHT, metrics.instance_count > 0),
+        block(3, true),
+        block(metrics.workspace_mount_height, true),
+        metrics
+            .global_mount_height
+            .map_or_else(|| block(0, false), |height| block(height, true)),
+        metrics
+            .role_global_mount_height
+            .map_or_else(|| block(0, false), |height| block(height, true)),
+        metrics
+            .env_height
+            .map_or_else(|| block(0, false), |height| block(height, true)),
+        block(agents_block_height(metrics.agent_count), metrics.show_roles),
+    ];
+    let rows = panel_stack_with_policy(area, &blocks, 0, ShrinkPolicy::Equal);
     let mut iter = rows.iter().copied();
-    let mut next_row = || iter.next().unwrap_or(Rect::default());
 
     SidebarLayout {
-        instances: (metrics.instance_count > 0).then(&mut next_row),
-        general: next_row(),
-        mounts: next_row(),
-        global: metrics.global_mount_height.is_some().then(&mut next_row),
-        role_global: metrics
-            .role_global_mount_height
-            .is_some()
-            .then(&mut next_row),
-        env: metrics.env_height.is_some().then(&mut next_row),
-        roles: metrics.show_roles.then(&mut next_row),
+        instances: iter.next().unwrap_or(None),
+        general: iter.next().unwrap_or(None).unwrap_or_default(),
+        mounts: iter.next().unwrap_or(None).unwrap_or_default(),
+        global: iter.next().unwrap_or(None),
+        role_global: iter.next().unwrap_or(None),
+        env: iter.next().unwrap_or(None),
+        roles: iter.next().unwrap_or(None),
     }
 }
 
@@ -488,21 +488,16 @@ fn global_mounts_content_height_from_rows(rows: &[&jackin_config::GlobalMountRow
     global_mounts_content_height(rows.iter().map(|row| row.mount.src == row.mount.dst))
 }
 
-pub fn clamp_scroll_area_x(area: SidebarScrollArea, value: &mut u16) {
-    clamp_scroll_x(area.content_width, scroll_viewport_width(area.area), value);
-}
-
-pub fn clamp_scroll_area_y(area: SidebarScrollArea, value: &mut u16) {
-    clamp_scroll_x(
-        area.content_height,
-        scroll_viewport_height(area.area),
-        value,
+pub fn clamp_scroll_area(area: SidebarScrollArea, scroll: &mut termrock::widgets::ScrollAreaState) {
+    scroll.set_content_size(
+        u16::try_from(area.content_width).unwrap_or(u16::MAX),
+        u16::try_from(area.content_height).unwrap_or(u16::MAX),
     );
-}
-
-pub fn clamp_scroll_area(area: SidebarScrollArea, scroll_x: &mut u16, scroll_y: &mut u16) {
-    clamp_scroll_area_x(area, scroll_x);
-    clamp_scroll_area_y(area, scroll_y);
+    scroll.set_viewport(
+        u16::try_from(scroll_viewport_width(area.area)).unwrap_or(u16::MAX),
+        u16::try_from(scroll_viewport_height(area.area)).unwrap_or(u16::MAX),
+    );
+    scroll.clamp();
 }
 
 #[must_use]
@@ -526,10 +521,6 @@ fn mount_data_row_count(same_path_rows: impl IntoIterator<Item = bool>) -> Optio
         lines += if same_path { 1 } else { 2 };
     }
     saw_row.then_some(lines)
-}
-
-fn clamp_scroll_x(content: usize, viewport: usize, value: &mut u16) {
-    termrock::scroll::clamp_scroll_offset(content, viewport, value);
 }
 
 fn scroll_viewport_width(area: Rect) -> usize {

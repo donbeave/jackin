@@ -10,8 +10,8 @@
 use std::collections::BTreeSet;
 use std::marker::PhantomData;
 
+use crate::tui::focus::TabFocus;
 use jackin_config::WorkspaceConfig;
-use jackin_tui::runtime::SurfaceFocus;
 
 mod state_impl;
 
@@ -262,7 +262,7 @@ pub struct EditorState<
     pub mode: EditorMode,
     pub active_tab: EditorTab,
     /// W3C ARIA Tabs: focus is either on the tab list or exactly one content block.
-    pub focus_owner: SurfaceFocus<EditorFocusTarget>,
+    pub focus_owner: TabFocus<EditorFocusTarget>,
     pub hover_target: Option<EditorHoverTarget>,
     pub active_field: FieldFocus,
     pub original: WorkspaceConfig,
@@ -281,9 +281,8 @@ pub struct EditorState<
     pub auth_expanded: BTreeSet<String>,
     pub auth_selected_kind: Option<crate::tui::auth::AuthKind>,
     pub _env_value: PhantomData<fn() -> EnvValue>,
-    pub workspace_mounts_scroll_x: u16,
-    pub tab_scroll_x: u16,
-    pub tab_scroll_y: u16,
+    pub workspace_mounts_scroll: termrock::widgets::ScrollAreaState,
+    pub tab_scroll: termrock::widgets::ScrollAreaState,
     pub tab_content_width: usize,
     pub tab_content_height: usize,
     pub generating_token_target: Option<AuthFormTarget>,
@@ -509,12 +508,4 @@ pub enum FileBrowserTarget {
 pub enum ExitIntent {
     Save,
     Discard,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum CreateStep {
-    PickFirstMountSrc,
-    PickFirstMountDst,
-    PickWorkdir,
-    NameWorkspace,
 }

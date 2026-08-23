@@ -175,13 +175,10 @@ fn apply_file_browser_open_result(
                     target: FileBrowserTarget::CreateFirstMountSrc,
                     state: *file_browser,
                 });
-                drop(update_manager(
-                    state,
-                    ManagerMessage::EnterCreatePrelude(prelude),
-                ));
+                update_manager(state, ManagerMessage::EnterCreatePrelude(prelude));
             }
             Err(error) => {
-                let _unused = update_manager(
+                update_manager(
                     state,
                     ManagerMessage::OpenListErrorPopup {
                         title: error_popup::file_browser_failed_error_title().into(),
@@ -461,6 +458,8 @@ fn apply_file_browser_commit(
             prelude.modal = None;
             prelude.last_browser_cwd = browser_cwd;
             prelude.accept_mount_src(path);
+            // FileBrowser commit advances the wizard to `mount-dst-choice`.
+            prelude.wizard.next();
             let src = prelude
                 .pending_mount_src
                 .as_ref()
@@ -603,6 +602,8 @@ fn execute_prelude_file_browser_outcome(
             prelude.modal = None;
             prelude.last_browser_cwd = browser_cwd;
             prelude.accept_mount_src(path);
+            // FileBrowser commit advances the wizard to `mount-dst-choice`.
+            prelude.wizard.next();
             let src = prelude
                 .pending_mount_src
                 .as_ref()
@@ -614,6 +615,7 @@ fn execute_prelude_file_browser_outcome(
             });
         }
         FileBrowserOutcome::Cancel => {
+            prelude.wizard.cancel();
             prelude.modal = None;
         }
         FileBrowserOutcome::Continue

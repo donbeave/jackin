@@ -610,7 +610,7 @@ fn roles_tab_clamps_horizontal_scroll_with_shared_state() {
     editor.active_tab = EditorTab::Roles;
     editor.active_field = FieldFocus::Row(0);
     editor.set_tab_content_scroll_focused(true);
-    editor.tab_scroll_x = u16::MAX;
+    crate::tui::scroll_block::scroll_area_set_x(&mut editor.tab_scroll, u16::MAX);
     let area = Rect::new(0, 0, 42, 8);
     prepare_editor_tab_for_area(area, &mut editor, &cfg);
     let backend = TestBackend::new(42, 8);
@@ -623,10 +623,10 @@ fn roles_tab_clamps_horizontal_scroll_with_shared_state() {
 
     let viewport = scroll_viewport_width(area);
     assert_eq!(
-        editor.tab_scroll_x,
+        editor.tab_scroll.offset_x(),
         termrock::scroll::max_offset_u16(editor.tab_content_width, viewport)
     );
-    assert!(editor.tab_scroll_x > 0);
+    assert!(editor.tab_scroll.offset_x() > 0);
 }
 
 /// The default-role row carries the `★` marker; non-default rows
@@ -873,7 +873,7 @@ fn general_tab_clamps_horizontal_scroll_with_shared_scrollable_block() {
     let mut editor = EditorState::new_edit("ws".into(), ws);
     editor.active_field = FieldFocus::Row(1);
     editor.set_tab_content_scroll_focused(true);
-    editor.tab_scroll_x = u16::MAX;
+    crate::tui::scroll_block::scroll_area_set_x(&mut editor.tab_scroll, u16::MAX);
     let area = Rect::new(0, 0, 42, 8);
     prepare_editor_tab_for_area(area, &mut editor, &AppConfig::default());
 
@@ -886,10 +886,10 @@ fn general_tab_clamps_horizontal_scroll_with_shared_scrollable_block() {
 
     let viewport = scroll_viewport_width(area);
     assert_eq!(
-        editor.tab_scroll_x,
+        editor.tab_scroll.offset_x(),
         termrock::scroll::max_offset_u16(editor.tab_content_width, viewport)
     );
-    assert!(editor.tab_scroll_x > 0);
+    assert!(editor.tab_scroll.offset_x() > 0);
 }
 
 // Tests for `editor` mounts tab render rendering.

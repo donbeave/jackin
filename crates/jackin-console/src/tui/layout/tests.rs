@@ -4,12 +4,12 @@
 //! Tests for `layout`.
 use super::{
     MIN_DRAGGABLE_WIDTH, MOUSE_HORIZONTAL_SCROLL_STEP, MOUSE_VERTICAL_SCROLL_STEP,
-    SCREEN_HEADER_HEIGHT, SEAM_HIT_SLACK, ScrollbarAxis, TAB_STRIP_HEIGHT, apply_horizontal_scroll,
-    apply_scrollbar_drag, apply_vertical_scroll, bordered_content_hit_at_position,
-    horizontal_split_pane_dims, is_horizontally_scrollable, list_body_area,
-    list_content_visual_index_at, near_seam, point_in_rect, scroll_selection_at_position,
-    scroll_viewport_height, scroll_viewport_width, scrollbar_drag_offset, split_pct_from_drag,
-    split_seam_column, tab_cell_at_position, tabbed_content_area,
+    SCREEN_HEADER_HEIGHT, SEAM_HIT_SLACK, ScrollbarAxis, TAB_STRIP_HEIGHT, apply_scrollbar_drag,
+    bordered_content_hit_at_position, horizontal_split_pane_dims, is_horizontally_scrollable,
+    list_body_area, list_content_visual_index_at, near_seam, point_in_rect,
+    scroll_selection_at_position, scroll_viewport_height, scroll_viewport_width,
+    scrollbar_drag_offset, split_pct_from_drag, split_seam_column, tab_cell_at_position,
+    tabbed_content_area,
 };
 use ratatui::layout::Rect;
 
@@ -110,7 +110,7 @@ fn apply_scrollbar_drag_updates_offset_when_pointer_hits_track() {
         width: 20,
         height: 5,
     };
-    let mut value = 0;
+    let mut value = crate::tui::scroll_block::console_scroll_area_state();
 
     assert!(apply_scrollbar_drag(
         ScrollbarAxis::Horizontal,
@@ -120,7 +120,7 @@ fn apply_scrollbar_drag_updates_offset_when_pointer_hits_track() {
         10,
         4
     ));
-    assert_eq!(value, 44);
+    assert_eq!(value.offset_x(), 44);
     assert!(!apply_scrollbar_drag(
         ScrollbarAxis::Horizontal,
         &mut value,
@@ -129,7 +129,7 @@ fn apply_scrollbar_drag_updates_offset_when_pointer_hits_track() {
         10,
         4
     ));
-    assert_eq!(value, 44);
+    assert_eq!(value.offset_x(), 44);
 }
 
 #[test]
@@ -201,25 +201,13 @@ fn bordered_content_hit_at_position_excludes_border_and_applies_scroll() {
 }
 
 #[test]
-fn scroll_apply_helpers_use_scrollable_panel_viewports() {
+fn scroll_viewport_helpers_use_scrollable_panel_viewports() {
     let area = Rect {
         x: 0,
         y: 0,
         width: 10,
         height: 6,
     };
-
-    let mut horizontal = 0;
-    apply_horizontal_scroll(&mut horizontal, 20, area, 40);
-    assert_eq!(horizontal, 20);
-    apply_horizontal_scroll(&mut horizontal, 20, area, 40);
-    assert_eq!(horizontal, 32);
-
-    let mut vertical = 0;
-    apply_vertical_scroll(&mut vertical, 20, area, 40);
-    assert_eq!(vertical, 20);
-    apply_vertical_scroll(&mut vertical, 20, area, 40);
-    assert_eq!(vertical, 36);
 
     assert_eq!(scroll_viewport_width(area), 8);
     assert_eq!(scroll_viewport_height(area), 4);

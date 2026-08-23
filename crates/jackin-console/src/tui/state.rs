@@ -16,11 +16,11 @@ use std::rc::Rc;
 use ratatui::layout::Rect;
 
 use crate::tui::components::{ConfirmState, ErrorPopupState, TextInputState};
+use crate::tui::focus::TabFocus;
 use crate::tui::runtime::BlockingSubscription;
 use jackin_config::{AppConfig, MountConfig, WorkspaceConfig};
 use jackin_core::EnvValue;
 use jackin_env::OpCache;
-use jackin_tui::runtime::SurfaceFocus;
 
 use crate::tui::auth::AuthKind;
 use crate::tui::components::confirm_save::ConfirmSaveState;
@@ -38,8 +38,8 @@ pub use crate::mount_info_cache::MountInfoCache;
 pub use crate::tui::focus::MountScrollFocus;
 pub use crate::tui::model::SecretsPickerTarget;
 pub use crate::tui::screens::editor::model::{
-    AuthRow as GenericAuthRow, CreateStep, EditorHoverTarget, EditorMode, EditorTab, ExitIntent,
-    FieldFocus, FileBrowserTarget, SecretsEnterPlan, SecretsRow, SecretsScopeTag, TextInputTarget,
+    AuthRow as GenericAuthRow, EditorHoverTarget, EditorMode, EditorTab, ExitIntent, FieldFocus,
+    FileBrowserTarget, SecretsEnterPlan, SecretsRow, SecretsScopeTag, TextInputTarget,
 };
 pub use crate::tui::screens::settings::model::{
     AuthFormFocus, GlobalMountConfirm, GlobalMountDraft, GlobalMountTextTarget, SettingsEnvConfirm,
@@ -241,6 +241,10 @@ pub struct ManagerState<'a> {
     /// a single frame while a blocking async operation runs (currently
     /// the console role-resolution path). Input handlers do not see it.
     pub status_overlay: Option<crate::tui::components::StatusPopupState>,
+    /// Keyboard-help overlay opened by `?` from any console stage. Owns all
+    /// input while `Some` (dispatch's top arm); focus restore is automatic —
+    /// the stage state underneath is untouched.
+    pub keyboard_help: Option<termrock::widgets::KeyboardHelpState>,
     pub inline_role_picker: Option<RolePickerState>,
     pub inline_agent_picker: Option<(jackin_core::RoleSelector, AgentChoiceState)>,
     /// Agent picker opened when the operator presses `N` on an instance row
@@ -261,20 +265,18 @@ pub struct ManagerState<'a> {
     /// exists). Shown after the operator commits an agent choice and
     /// `ZAI_API_KEY` is configured. Context is the `RoleSelector`.
     pub launch_provider_picker: Option<ProviderPickerState<jackin_core::RoleSelector>>,
-    pub list_mounts_scroll_x: u16,
-    pub list_mounts_scroll_y: u16,
-    pub list_global_mounts_scroll_x: u16,
-    pub list_global_mounts_scroll_y: u16,
-    pub list_role_global_mounts_scroll_x: u16,
-    pub list_role_global_mounts_scroll_y: u16,
-    pub list_roles_scroll_x: u16,
-    pub list_roles_scroll_y: u16,
-    pub list_focus_owner: SurfaceFocus<MountScrollFocus>,
-    pub list_names_scroll_x: u16,
-    pub list_names_scroll_y: u16,
+    pub list_mounts_scroll: termrock::widgets::ScrollAreaState,
+    pub list_global_mounts_scroll: termrock::widgets::ScrollAreaState,
+    pub list_role_global_mounts_scroll: termrock::widgets::ScrollAreaState,
+    pub list_roles_scroll: termrock::widgets::ScrollAreaState,
+    pub list_focus_owner: TabFocus<MountScrollFocus>,
+    pub list_names_scroll: termrock::widgets::ScrollAreaState,
     pub list_split_pct: u16,
     pub drag_state: Option<DragState>,
     pub hover_target: Option<ManagerHoverTarget>,
+    /// Consumer hover cache over per-event `HitRegion`s (mouse matrix
+    /// row 15) — the source the Moved arm resolves stage hovers from.
+    pub hover: termrock::interaction::HoverState<crate::tui::input::mouse::ConsoleHoverTarget>,
     pub mount_info_cache: MountInfoCache,
     /// Process-lifetime cache of `op` structural metadata, threaded
     /// into the picker on open. Carries no credentials — see

@@ -181,7 +181,7 @@ key = "clippy::filter_map_next@jackin"
 bound = 1
 [[family.entry]]
 key = "clippy::fn_params_excessive_bools@jackin-console"
-bound = 8
+bound = 7
 [[family.entry]]
 key = "clippy::fn_params_excessive_bools@jackin-host"
 bound = 1

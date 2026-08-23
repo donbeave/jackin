@@ -58,6 +58,7 @@ pub fn handle_key(
     }
     let stage_modal_facts = state.stage.modal_facts();
     let dispatch_plan = console_input_dispatch_plan(ConsoleInputDispatchFacts {
+        keyboard_help_open: state.keyboard_help.is_some(),
         list_modal_open: state.list_modal.is_some(),
         inline_new_session_picker_open: state.inline_new_session_picker.is_some(),
         inline_provider_picker_open: state.inline_provider_picker.is_some(),
@@ -74,6 +75,7 @@ pub fn handle_key(
     });
 
     match dispatch_plan {
+        ConsoleInputDispatchPlan::KeyboardHelp => return Ok(handle_keyboard_help(state, key)),
         ConsoleInputDispatchPlan::ListModal => return Ok(handle_list_modal(state, key)),
         ConsoleInputDispatchPlan::InlineNewSessionPicker => {
             return Ok(handle_new_session_picker(state, key));
@@ -97,6 +99,13 @@ pub fn handle_key(
         ConsoleInputDispatchPlan::SettingsAuthDialog => {}
         ConsoleInputDispatchPlan::CreatePreludeModal => {}
         ConsoleInputDispatchPlan::Stage(route) => {
+            // `?` opens the keyboard-help overlay from every stage. Only the
+            // Stage arm consults it: any open modal/picker owns `?` as typed
+            // input (dispatch precedence above routes those keys first).
+            if crate::tui::run::should_open_keyboard_help(key) {
+                state.keyboard_help = Some(termrock::widgets::KeyboardHelpState::modal());
+                return Ok(InputOutcome::Continue);
+            }
             let outcome = match route {
                 ConsoleManagerStageRoute::List => handle_list_key(state, config, paths, cwd, key),
                 ConsoleManagerStageRoute::Editor => {
@@ -203,7 +212,7 @@ pub fn handle_key(
                     begin_editor_save(state, config, true)?;
                 }
                 ExitIntent::Discard => {
-                    let _unused = update_manager(
+                    update_manager(
                         state,
                         ManagerMessage::ReloadFromConfig {
                             config: Box::new(config.clone()),
@@ -227,10 +236,7 @@ pub fn handle_key(
             )
         });
         if dismiss {
-            drop(update_manager(
-                state,
-                ManagerMessage::DismissSettingsErrorPopup,
-            ));
+            update_manager(state, ManagerMessage::DismissSettingsErrorPopup);
         }
         return Ok(InputOutcome::Continue);
     }
@@ -366,7 +372,7 @@ pub fn handle_key(
                     return Ok(InputOutcome::Continue);
                 };
                 let (name, ws) = *payload;
-                let _unused = update_manager(
+                update_manager(
                     state,
                     ManagerMessage::EnterCreateEditor {
                         name,
@@ -375,7 +381,7 @@ pub fn handle_key(
                 );
             }
             CreatePreludeCompletionStatus::Cancelled => {
-                let _unused = update_manager(
+                update_manager(
                     state,
                     ManagerMessage::ReloadFromConfig {
                         config: Box::new(config.clone()),
@@ -403,7 +409,7 @@ fn handle_confirm_instance_purge_key(state: &mut ManagerState<'_>, key: KeyEvent
     let plan = instance_purge_key_plan(confirm_state.handle_key(key.into()), container.clone());
     match plan {
         InstancePurgeKeyPlan::Purge { container } => {
-            drop(update_manager(state, ManagerMessage::ReturnToList));
+            update_manager(state, ManagerMessage::ReturnToList);
             crate::tui::state::update::record_manager_action(
                 state,
                 jackin_telemetry::schema::enums::UiActionName::InstancePurge,
@@ -414,7 +420,7 @@ fn handle_confirm_instance_purge_key(state: &mut ManagerState<'_>, key: KeyEvent
             }
         }
         InstancePurgeKeyPlan::ReturnToList => {
-            drop(update_manager(state, ManagerMessage::ReturnToList));
+            update_manager(state, ManagerMessage::ReturnToList);
             InputOutcome::Continue
         }
         InstancePurgeKeyPlan::Continue => InputOutcome::Continue,
@@ -436,7 +442,7 @@ fn handle_confirm_delete_key(
     let plan = workspace_delete_key_plan(confirm_state.handle_key(key.into()), name.clone());
     match plan {
         WorkspaceDeleteKeyPlan::RemoveWorkspace { name } => {
-            drop(update_manager(state, ManagerMessage::ReturnToList));
+            update_manager(state, ManagerMessage::ReturnToList);
             crate::tui::state::update::record_manager_action(
                 state,
                 jackin_telemetry::schema::enums::UiActionName::WorkspaceDelete,
@@ -448,9 +454,35 @@ fn handle_confirm_delete_key(
             InputOutcome::Continue
         }
         WorkspaceDeleteKeyPlan::ReturnToList => {
-            drop(update_manager(state, ManagerMessage::ReturnToList));
+            update_manager(state, ManagerMessage::ReturnToList);
             InputOutcome::Continue
         }
         WorkspaceDeleteKeyPlan::Continue => InputOutcome::Continue,
     }
 }
+
+/// Route a key to the open keyboard-help overlay. Closing (Esc, per the
+/// upstream modal state) clears the overlay slot so the next key falls
+/// through to the stage underneath — focus restore is automatic.
+fn handle_keyboard_help(state: &mut ManagerState<'_>, key: KeyEvent) -> InputOutcome {
+    if state.keyboard_help.is_none() {
+        return InputOutcome::Continue;
+    }
+    let entries = crate::tui::components::keyboard_help::console_help_entries(
+        state,
+        &termrock::style::DesignSystem::default(),
+    );
+    let Some(help) = state.keyboard_help.as_mut() else {
+        return InputOutcome::Continue;
+    };
+    if matches!(
+        help.handle_key(key.into(), &entries),
+        termrock::widgets::KeyboardHelpOutcome::Closed
+    ) {
+        state.keyboard_help = None;
+    }
+    InputOutcome::Continue
+}
+
+#[cfg(test)]
+mod tests;

@@ -1,61 +1,118 @@
 // SPDX-FileCopyrightText: 2026 Alexey Zhokhov
 // SPDX-License-Identifier: Apache-2.0
 
-//! Shared jackin❯ application-adapter wiring for the console TUI.
+//! Console-owned subscription wiring for the console TUI.
 //!
-//! The shared TEA `Component<Ev, Msg>` and `View<Model>` contracts live in
-//! `jackin_tui::runtime`. This module is the console's implementation of
-//! those traits over its model (`ConsoleState`) and the existing render
-//! function (`crate::tui::view::render`). The trait impls are thin
-//! delegations that satisfy the shared contract at the type level. The
-//! existing event loop in `crates/jackin/src/console/adapter/run.rs` owns
-//! scheduling and dispatches rendering through this adapter.
+//! The frame path renders through a direct `Terminal::draw` in
+//! `crates/jackin/src/console/adapter/run.rs` (the run loop stays
+//! surface-owned). This module keeps the console's blocking-subscription
+//! machinery.
 
+use std::future::Future;
+
+/// Console frame pacer: the upstream `Presenter` owns the draw decision
+/// (dirty coalescing + backpressure state) and a `FrameClock` samples
+/// monotonic time once per loop turn to feed it.
+///
+/// The zero min-interval keeps pre-adoption pacing byte-identical — a frame
+/// draws exactly when one is owed. The `TickLadder` rungs (12/30/60 fps)
+/// carry no 20 Hz rung, so the 50 ms animation interval in `terminal.rs`
+/// stays the product cadence driving `mark_dirty`.
 #[derive(Debug)]
-pub struct ConsoleViewContext<'a> {
-    pub config: &'a jackin_config::AppConfig,
-    pub cwd: &'a std::path::Path,
+pub struct ConsoleFramePacer {
+    presenter: termrock::runtime::Presenter,
+    clock: termrock::runtime::FrameClock,
 }
 
-#[derive(Debug)]
-pub struct ConsoleView<'a> {
-    pub context: ConsoleViewContext<'a>,
-}
+impl ConsoleFramePacer {
+    /// A pacer owing its first frame, with no throttle between draws.
+    #[must_use]
+    pub fn new() -> Self {
+        Self {
+            presenter: termrock::runtime::Presenter::new()
+                .min_draw_interval(std::time::Duration::ZERO),
+            clock: termrock::runtime::FrameClock::start(),
+        }
+    }
 
-impl jackin_tui::runtime::View<crate::tui::console::ConsoleState> for ConsoleView<'_> {
-    fn render(
-        &self,
-        model: &crate::tui::console::ConsoleState,
-        frame: &mut ratatui::Frame<'_>,
-        area: ratatui::layout::Rect,
-    ) {
-        let crate::tui::console::ConsoleStage::Manager(ms) = &model.stage;
-        crate::tui::view::render(frame, area, ms, self.context.config, self.context.cwd);
+    /// Sample the frame clock once at the top of a loop turn.
+    pub fn tick(&mut self) -> termrock::runtime::FrameTick {
+        self.clock.tick()
+    }
+
+    /// Content changed; a frame is owed.
+    pub const fn mark_dirty(&mut self) {
+        self.presenter.mark_dirty();
+    }
+
+    /// Whether a frame is owed at `now` (a [`Self::tick`] timestamp).
+    pub fn should_draw(&self, now: termrock::runtime::Instant) -> bool {
+        self.presenter.should_draw(now)
+    }
+
+    /// Take ownership of the frame: clears dirty, marks in-flight.
+    pub const fn begin_draw(&mut self, now: termrock::runtime::Instant) {
+        self.presenter.begin_draw(now);
+    }
+
+    /// Frame reached the wire; release backpressure.
+    pub const fn end_draw(&mut self, now: termrock::runtime::Instant) {
+        self.presenter.end_draw(now);
     }
 }
 
-use jackin_tui::runtime::{Subscription, SubscriptionPoll};
-use std::future::Future;
+impl Default for ConsoleFramePacer {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+/// Console-owned blocking-subscription poll tri-state (re-homed from the
+/// retired facade contract).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum SubscriptionPoll<T> {
+    /// The worker finished and yielded its value.
+    Ready(T),
+    /// The worker is still running.
+    Pending,
+    /// The worker was dropped without yielding a value.
+    Closed,
+}
 
 #[derive(Debug)]
-pub struct BlockingSubscription<T>(tokio::sync::oneshot::Receiver<T>);
+enum BlockingSource<T> {
+    Receiver(tokio::sync::oneshot::Receiver<T>),
+    Ready(termrock::runtime::ReadySubscription<T>),
+}
 
-impl<T> Subscription for BlockingSubscription<T> {
-    type Output = T;
+/// A one-shot blocking worker's receiver: poll it until it yields or closes.
+#[derive(Debug)]
+pub struct BlockingSubscription<T>(BlockingSource<T>);
 
-    fn poll_next(&mut self) -> SubscriptionPoll<T> {
-        match self.0.try_recv() {
-            Ok(value) => SubscriptionPoll::Ready(value),
-            Err(tokio::sync::oneshot::error::TryRecvError::Empty) => SubscriptionPoll::Pending,
-            Err(tokio::sync::oneshot::error::TryRecvError::Closed) => SubscriptionPoll::Closed,
+impl<T> BlockingSubscription<T> {
+    pub fn poll_next(&mut self) -> SubscriptionPoll<T> {
+        match &mut self.0 {
+            BlockingSource::Receiver(rx) => match rx.try_recv() {
+                Ok(value) => SubscriptionPoll::Ready(value),
+                Err(tokio::sync::oneshot::error::TryRecvError::Empty) => SubscriptionPoll::Pending,
+                Err(tokio::sync::oneshot::error::TryRecvError::Closed) => SubscriptionPoll::Closed,
+            },
+            BlockingSource::Ready(ready) => match ready.poll_next() {
+                termrock::runtime::ReadySubscriptionPoll::Ready(value) => {
+                    SubscriptionPoll::Ready(value)
+                }
+                // `ReadySubscriptionPoll` is non-exhaustive; every non-Ready
+                // arm means the one-shot value is gone.
+                _ => SubscriptionPoll::Closed,
+            },
         }
     }
 }
 
-pub fn ready_blocking_subscription<T: Send + 'static>(value: T) -> BlockingSubscription<T> {
-    let (tx, rx) = tokio::sync::oneshot::channel();
-    drop(tx.send(value));
-    BlockingSubscription(rx)
+pub fn ready_blocking_subscription<T>(value: T) -> BlockingSubscription<T> {
+    BlockingSubscription(BlockingSource::Ready(
+        termrock::runtime::ready_subscription(value),
+    ))
 }
 
 pub fn spawn_blocking_subscription<T, F>(worker: F) -> BlockingSubscription<T>
@@ -82,7 +139,7 @@ where
     } else {
         drop(jackin_telemetry::spawn::thread_joined_named(name, run));
     }
-    BlockingSubscription(rx)
+    BlockingSubscription(BlockingSource::Receiver(rx))
 }
 
 pub fn spawn_named_async_subscription<T, F>(
@@ -111,5 +168,5 @@ where
             },
         ));
     }
-    BlockingSubscription(rx)
+    BlockingSubscription(BlockingSource::Receiver(rx))
 }

@@ -25,11 +25,11 @@ pub struct SettingsEnvState<EnvValue, Modal> {
     pub selected: usize,
     pub pending: SettingsEnvConfig<EnvValue>,
     pub original: SettingsEnvConfig<EnvValue>,
-    pub modals: jackin_tui::runtime::ModalFlow<Modal>,
+    pub modals: crate::tui::modal_chain::ModalChain<Modal>,
     pub unmasked_rows: std::collections::BTreeSet<(SettingsEnvScope, String)>,
     pub expanded: std::collections::BTreeSet<String>,
     pub error: Option<String>,
-    pub scroll_y: u16,
+    pub scroll: termrock::widgets::ScrollAreaState,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -57,11 +57,11 @@ impl<EnvValue, Modal> SettingsEnvState<EnvValue, Modal> {
             selected: 0,
             original: pending.clone(),
             pending,
-            modals: jackin_tui::runtime::ModalFlow::new(),
+            modals: crate::tui::modal_chain::ModalChain::new(),
             unmasked_rows: std::collections::BTreeSet::default(),
             expanded: std::collections::BTreeSet::default(),
             error: None,
-            scroll_y: 0,
+            scroll: crate::tui::scroll_block::console_scroll_area_state(),
         }
     }
 
@@ -129,7 +129,7 @@ impl<EnvValue, Modal> SettingsEnvState<EnvValue, Modal> {
         plan: crate::tui::screens::settings::update::SettingsSelectionScrollPlan,
     ) {
         self.selected = plan.selected;
-        self.scroll_y = plan.scroll_y;
+        crate::tui::scroll_block::scroll_area_set_y(&mut self.scroll, plan.scroll_y);
     }
 
     pub fn set_role_expanded(&mut self, role: String, expanded: bool) {

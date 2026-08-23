@@ -3,7 +3,7 @@
 
 use ratatui::{Terminal, backend::TestBackend, widgets::Paragraph};
 
-use super::{ModalFlow, SurfaceFocus, SurfaceFocusTarget, UpdateResult, drive_render};
+use super::{SurfaceFocus, SurfaceFocusTarget, UpdateResult, drive_render};
 
 #[test]
 fn update_result_merges_redraw_and_product_effects() {
@@ -46,73 +46,6 @@ fn surface_focus_switches_between_tabs_and_product_content() {
 }
 
 #[test]
-fn modal_flow_keeps_product_chain_and_termrock_scope_in_sync() {
-    let mut flow = ModalFlow::new();
-    flow.open("root");
-    flow.open_sub("child");
-    assert_eq!(flow.current(), Some(&"child"));
-    assert_eq!(flow.parents(), &["root"]);
-
-    flow.pop();
-    assert_eq!(flow.current(), Some(&"root"));
-    assert!(flow.parents().is_empty());
-
-    let root = flow.take_current().expect("active product modal");
-    assert!(!flow.is_open());
-    flow.set_current(root);
-    flow.clear();
-    assert!(!flow.is_open());
-    assert!(flow.parents().is_empty());
-}
-
-#[test]
-fn trparity_modal_flow_open_sub_preserves_parent() {
-    let mut flow = ModalFlow::new();
-    flow.open("root");
-    flow.open_sub("child");
-    assert_eq!(flow.current(), Some(&"child"));
-    assert_eq!(flow.parents(), &["root"]);
-    assert!(flow.is_open());
-    assert!(flow.has_parent());
-}
-
-#[test]
-fn trparity_modal_flow_pop_restores_parent_and_clears_chain() {
-    let mut flow = ModalFlow::new();
-    flow.open("root");
-    flow.open_sub("child");
-
-    flow.pop();
-    assert_eq!(flow.current(), Some(&"root"));
-    assert!(flow.parents().is_empty());
-    assert!(!flow.has_parent());
-
-    flow.pop();
-    assert!(flow.current().is_none());
-    assert!(!flow.is_open());
-}
-
-#[test]
-fn trparity_modal_flow_clear_closes_whole_chain() {
-    let mut flow = ModalFlow::new();
-    flow.open("root");
-    flow.open_sub("child");
-    flow.open_sub("grandchild");
-
-    flow.clear();
-    assert!(!flow.is_open());
-    assert!(flow.parents().is_empty());
-
-    let mut pair = ModalFlow::new();
-    pair.open_pair("parent", "child");
-    assert_eq!(pair.current(), Some(&"child"));
-    assert_eq!(pair.parents(), &["parent"]);
-    pair.pop();
-    assert_eq!(pair.current(), Some(&"parent"));
-    assert!(pair.parents().is_empty());
-}
-
-#[test]
 fn trparity_surface_focus_moves_between_tab_bar_and_content() {
     let mut focus = SurfaceFocus::tab_bar("editor");
     assert!(focus.is_tab_bar());
@@ -129,27 +62,4 @@ fn trparity_surface_focus_moves_between_tab_bar_and_content() {
     focus.focus_tab_bar();
     assert!(focus.is_tab_bar());
     assert!(!focus.show_cursor_for(&"settings"));
-}
-
-#[test]
-fn trparity_surface_focus_survives_modal_open_and_close() {
-    let mut focus = SurfaceFocus::tab_bar("editor");
-    focus.focus_content("settings");
-    let mut flow = ModalFlow::new();
-
-    assert_eq!(focus.focused(), SurfaceFocusTarget::Content("settings"));
-    flow.open("root");
-    assert_eq!(focus.focused(), SurfaceFocusTarget::Content("settings"));
-    flow.open_sub("child");
-    assert_eq!(focus.focused(), SurfaceFocusTarget::Content("settings"));
-
-    // Cancel path: pop restores the parent modal; focus owner unchanged.
-    flow.pop();
-    assert_eq!(flow.current(), Some(&"root"));
-    assert_eq!(focus.focused(), SurfaceFocusTarget::Content("settings"));
-
-    // Commit path: clear closes the chain; focus owner unchanged.
-    flow.clear();
-    assert!(!flow.is_open());
-    assert_eq!(focus.focused(), SurfaceFocusTarget::Content("settings"));
 }

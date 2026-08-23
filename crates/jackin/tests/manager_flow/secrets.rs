@@ -554,7 +554,7 @@ fn op_picker_commit_writes_value_directly_to_pending() -> Result<()> {
                     concealed: true,
                     reference: String::new(),
                 }];
-                picker.field_list_state.select(Some(0));
+                picker.field_list_state.set_active(Some(0));
                 picker.stage = OpPickerStage::Field;
                 picker.load_state = OpLoadState::Ready;
                 // Drop any in-flight probe result so handle_key's
@@ -657,7 +657,7 @@ fn op_picker_sentinel_p_flow() -> Result<()> {
                     concealed: true,
                     reference: String::new(),
                 }];
-                picker.field_list_state.select(Some(0));
+                picker.field_list_state.set_active(Some(0));
                 picker.stage = OpPickerStage::Field;
                 picker.load_state = OpLoadState::Ready;
                 // Drop any in-flight probe result so handle_key's
@@ -1042,7 +1042,7 @@ fn op_picker_multi_account_flow() -> Result<()> {
                         url: "beta.1password.com".into(),
                     },
                 ];
-                picker.account_list_state.select(Some(1)); // Bob
+                picker.account_list_state.set_active(Some(1)); // Bob
                 picker.selected_account = None;
                 picker.stage = OpPickerStage::Account;
                 picker.load_state = OpLoadState::Ready;
@@ -1100,7 +1100,7 @@ fn op_picker_multi_account_flow() -> Result<()> {
                     concealed: true,
                     reference: String::new(),
                 }];
-                picker.field_list_state.select(Some(0));
+                picker.field_list_state.set_active(Some(0));
                 picker.stage = OpPickerStage::Field;
                 picker.load_state = OpLoadState::Ready;
                 // Drop any in-flight probe result so handle_key's

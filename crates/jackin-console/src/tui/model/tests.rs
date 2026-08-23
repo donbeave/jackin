@@ -10,32 +10,29 @@ use crate::tui::components::footer_hints::{
     ModalAuthFormFooterState, ModalConfirmSaveFooterState, ModalContainerInfoFooterState,
     ModalFileBrowserFooterState, ModalFooterMode, ModalOpPickerFooterState,
 };
-use crate::tui::components::modal_rects::{
+use crate::tui::components::modal_overlay::{
     ModalAuthFormState, ModalConfirmSaveState, ModalConfirmState, ModalContainerInfoState,
-    ModalErrorPopupState, ModalGithubPickerState, ModalOpPickerState, ModalRectMode,
-    ModalRolePickerState,
+    ModalErrorPopupState, ModalGithubPickerState, ModalOpPickerState, ModalRolePickerState,
 };
 use crate::tui::debug::{
     ConsoleEditorDebugFacts, ConsoleModalDebugKind, ConsoleSettingsDebugFacts, ConsoleStageDebug,
     ModalDebugKind,
 };
-use crate::tui::screens::editor::model::CreateStep;
 
 use super::{
     ConsoleAnimationTick, ConsoleApp, ConsoleAppStage, ConsoleCreatePreludeState,
     ConsoleInputDispatchFacts, ConsoleInputDispatchPlan, ConsoleManagerStage,
     ConsoleManagerStageRoute, ConsoleManagerStageState, ConsoleModal, ConsoleStageModalFacts,
     CreatePreludeCompletionStatus, CreatePreludeFileBrowserPlan, CreatePreludeKeyPlan,
-    CreatePreludeModalStep, CreatePreludeMountDstChoicePlan, CreatePreludeTextInputDstPlan,
-    CreatePreludeTextInputNamePlan, CreatePreludeWorkdirCancelPlan, CreatePreludeWorkdirPickPlan,
-    apply_manager_stage, clear_pending_launch_plan, clear_pending_launch_role_plan,
-    console_input_dispatch_plan, create_prelude_completion_status,
-    create_prelude_file_browser_plan, create_prelude_key_plan, create_prelude_modal_step,
+    CreatePreludeMountDstChoicePlan, CreatePreludeTextInputDstPlan, CreatePreludeTextInputNamePlan,
+    CreatePreludeWorkdirCancelPlan, CreatePreludeWorkdirPickPlan, apply_manager_stage,
+    clear_pending_launch_plan, clear_pending_launch_role_plan, console_input_dispatch_plan,
+    create_prelude_completion_status, create_prelude_file_browser_plan, create_prelude_key_plan,
     create_prelude_mount_dst_choice_plan, create_prelude_text_input_dst_plan,
-    create_prelude_text_input_name_plan, create_prelude_workdir_cancel_plan,
-    create_prelude_workdir_pick_plan, open_launch_agent_prompt_plan,
-    open_launch_provider_picker_plan, open_launch_role_prompt_plan, store_pending_launch_plan,
-    take_pending_launch_and_role_plan, take_pending_launch_plan,
+    create_prelude_text_input_name_plan, create_prelude_wizard_state,
+    create_prelude_workdir_cancel_plan, create_prelude_workdir_pick_plan,
+    open_launch_agent_prompt_plan, open_launch_provider_picker_plan, open_launch_role_prompt_plan,
+    store_pending_launch_plan, take_pending_launch_and_role_plan, take_pending_launch_plan,
 };
 
 struct TestConfirm;
@@ -565,7 +562,7 @@ fn console_manager_stage_reports_modal_facts() {
 
     assert_eq!(
         Stage::CreatePrelude(ConsoleCreatePreludeState {
-            step: CreateStep::PickFirstMountSrc,
+            wizard: create_prelude_wizard_state(),
             pending_mount_src: None,
             pending_mount_dst: None,
             pending_readonly: false,
@@ -858,7 +855,7 @@ fn console_manager_stage_reports_debug_stage() {
     );
     assert_eq!(
         Stage::CreatePrelude(ConsoleCreatePreludeState {
-            step: CreateStep::PickFirstMountSrc,
+            wizard: create_prelude_wizard_state(),
             pending_mount_src: None,
             pending_mount_dst: None,
             pending_readonly: false,
@@ -891,6 +888,7 @@ fn console_manager_stage_reports_debug_stage() {
 #[test]
 fn console_input_dispatch_plan_routes_modal_precedence_before_stage() {
     let base = ConsoleInputDispatchFacts {
+        keyboard_help_open: false,
         list_modal_open: false,
         inline_new_session_picker_open: false,
         inline_provider_picker_open: false,
@@ -909,6 +907,16 @@ fn console_input_dispatch_plan_routes_modal_precedence_before_stage() {
     assert_eq!(
         console_input_dispatch_plan(base),
         ConsoleInputDispatchPlan::Stage(ConsoleManagerStageRoute::Settings)
+    );
+    // The help overlay outranks every modal/picker arm.
+    assert_eq!(
+        console_input_dispatch_plan(ConsoleInputDispatchFacts {
+            keyboard_help_open: true,
+            list_modal_open: true,
+            editor_modal_open: true,
+            ..base
+        }),
+        ConsoleInputDispatchPlan::KeyboardHelp
     );
     assert_eq!(
         console_input_dispatch_plan(ConsoleInputDispatchFacts {
@@ -963,6 +971,7 @@ fn console_input_dispatch_plan_routes_modal_precedence_before_stage() {
 #[test]
 fn console_input_dispatch_plan_routes_stage_modal_precedence() {
     let base = ConsoleInputDispatchFacts {
+        keyboard_help_open: false,
         list_modal_open: false,
         inline_new_session_picker_open: false,
         inline_provider_picker_open: false,
@@ -1056,34 +1065,6 @@ fn create_prelude_key_plan_routes_escape_to_list() {
 }
 
 #[test]
-fn create_prelude_modal_step_routes_modal_facts_by_precedence() {
-    assert_eq!(
-        create_prelude_modal_step(true, true, true, true, true),
-        CreatePreludeModalStep::FileBrowserSrc
-    );
-    assert_eq!(
-        create_prelude_modal_step(false, true, true, true, true),
-        CreatePreludeModalStep::MountDstChoice
-    );
-    assert_eq!(
-        create_prelude_modal_step(false, false, true, true, true),
-        CreatePreludeModalStep::TextInputDst
-    );
-    assert_eq!(
-        create_prelude_modal_step(false, false, false, true, true),
-        CreatePreludeModalStep::WorkdirPick
-    );
-    assert_eq!(
-        create_prelude_modal_step(false, false, false, false, true),
-        CreatePreludeModalStep::TextInputName
-    );
-    assert_eq!(
-        create_prelude_modal_step(false, false, false, false, false),
-        CreatePreludeModalStep::Other
-    );
-}
-
-#[test]
 fn create_prelude_workdir_cancel_plan_reopens_prior_dst_step() {
     assert_eq!(
         create_prelude_workdir_cancel_plan(true),
@@ -1131,23 +1112,23 @@ fn create_prelude_mount_dst_choice_plan_routes_choice_outcomes() {
     use crate::tui::components::mount_dst_choice::MountDstChoice;
 
     assert_eq!(
-        create_prelude_mount_dst_choice_plan(jackin_tui::ModalOutcome::Commit(
+        create_prelude_mount_dst_choice_plan(jackin_oppicker::ModalOutcome::Commit(
             MountDstChoice::SamePath
         )),
         CreatePreludeMountDstChoicePlan::CommitSamePath
     );
     assert_eq!(
-        create_prelude_mount_dst_choice_plan(jackin_tui::ModalOutcome::Commit(
+        create_prelude_mount_dst_choice_plan(jackin_oppicker::ModalOutcome::Commit(
             MountDstChoice::Edit
         )),
         CreatePreludeMountDstChoicePlan::OpenEditInput
     );
     assert_eq!(
-        create_prelude_mount_dst_choice_plan(jackin_tui::ModalOutcome::Cancel),
+        create_prelude_mount_dst_choice_plan(jackin_oppicker::ModalOutcome::Cancel),
         CreatePreludeMountDstChoicePlan::ReopenFileBrowserAtLastCwd
     );
     assert_eq!(
-        create_prelude_mount_dst_choice_plan(jackin_tui::ModalOutcome::Continue),
+        create_prelude_mount_dst_choice_plan(jackin_oppicker::ModalOutcome::Continue),
         CreatePreludeMountDstChoicePlan::Continue
     );
 }
@@ -1155,17 +1136,17 @@ fn create_prelude_mount_dst_choice_plan_routes_choice_outcomes() {
 #[test]
 fn create_prelude_text_input_dst_plan_routes_input_outcomes() {
     assert_eq!(
-        create_prelude_text_input_dst_plan(jackin_tui::ModalOutcome::Commit(
+        create_prelude_text_input_dst_plan(jackin_oppicker::ModalOutcome::Commit(
             "/workspace".to_owned()
         )),
         CreatePreludeTextInputDstPlan::Commit("/workspace".to_owned())
     );
     assert_eq!(
-        create_prelude_text_input_dst_plan::<String>(jackin_tui::ModalOutcome::Cancel),
+        create_prelude_text_input_dst_plan::<String>(jackin_oppicker::ModalOutcome::Cancel),
         CreatePreludeTextInputDstPlan::ReopenMountDstChoice
     );
     assert_eq!(
-        create_prelude_text_input_dst_plan::<String>(jackin_tui::ModalOutcome::Continue),
+        create_prelude_text_input_dst_plan::<String>(jackin_oppicker::ModalOutcome::Continue),
         CreatePreludeTextInputDstPlan::Continue
     );
 }
@@ -1173,17 +1154,17 @@ fn create_prelude_text_input_dst_plan_routes_input_outcomes() {
 #[test]
 fn create_prelude_text_input_name_plan_routes_input_outcomes() {
     assert_eq!(
-        create_prelude_text_input_name_plan(jackin_tui::ModalOutcome::Commit(
+        create_prelude_text_input_name_plan(jackin_oppicker::ModalOutcome::Commit(
             "workspace".to_owned()
         )),
         CreatePreludeTextInputNamePlan::Commit("workspace".to_owned())
     );
     assert_eq!(
-        create_prelude_text_input_name_plan::<String>(jackin_tui::ModalOutcome::Cancel),
+        create_prelude_text_input_name_plan::<String>(jackin_oppicker::ModalOutcome::Cancel),
         CreatePreludeTextInputNamePlan::ReopenWorkdirPick
     );
     assert_eq!(
-        create_prelude_text_input_name_plan::<String>(jackin_tui::ModalOutcome::Continue),
+        create_prelude_text_input_name_plan::<String>(jackin_oppicker::ModalOutcome::Continue),
         CreatePreludeTextInputNamePlan::Continue
     );
 }
@@ -1191,19 +1172,22 @@ fn create_prelude_text_input_name_plan_routes_input_outcomes() {
 #[test]
 fn create_prelude_workdir_pick_plan_routes_input_outcomes() {
     assert_eq!(
-        create_prelude_workdir_pick_plan(jackin_tui::ModalOutcome::Commit("src".to_owned()), true),
+        create_prelude_workdir_pick_plan(
+            jackin_oppicker::ModalOutcome::Commit("src".to_owned()),
+            true
+        ),
         CreatePreludeWorkdirPickPlan::Commit("src".to_owned())
     );
     assert_eq!(
-        create_prelude_workdir_pick_plan::<String>(jackin_tui::ModalOutcome::Cancel, true),
+        create_prelude_workdir_pick_plan::<String>(jackin_oppicker::ModalOutcome::Cancel, true),
         CreatePreludeWorkdirPickPlan::ReopenTextInputDst
     );
     assert_eq!(
-        create_prelude_workdir_pick_plan::<String>(jackin_tui::ModalOutcome::Cancel, false),
+        create_prelude_workdir_pick_plan::<String>(jackin_oppicker::ModalOutcome::Cancel, false),
         CreatePreludeWorkdirPickPlan::ReopenMountDstChoice
     );
     assert_eq!(
-        create_prelude_workdir_pick_plan::<String>(jackin_tui::ModalOutcome::Continue, true),
+        create_prelude_workdir_pick_plan::<String>(jackin_oppicker::ModalOutcome::Continue, true),
         CreatePreludeWorkdirPickPlan::Continue
     );
 }
@@ -1340,81 +1324,6 @@ type RectTestModal = ConsoleModal<
     (),
     (),
 >;
-
-type PreludeStepTestModal = ConsoleModal<
-    crate::tui::screens::editor::model::TextInputTarget,
-    (),
-    crate::tui::screens::editor::model::FileBrowserTarget,
-    TestFileBrowser,
-    (),
-    (),
-    (),
-    TestConfirm,
-    (),
-    TestGithubPicker,
-    TestConfirmSave,
-    TestError,
-    TestContainerInfo,
-    (),
-    TestOpPicker,
-    TestRolePicker,
-    (),
-    (),
-    (),
-    TestAuthForm,
-    (),
-    (),
->;
-
-#[test]
-fn console_modal_create_prelude_step_maps_create_modal_targets() {
-    use crate::tui::screens::editor::model::{FileBrowserTarget, TextInputTarget};
-
-    assert_eq!(
-        PreludeStepTestModal::FileBrowser {
-            target: FileBrowserTarget::CreateFirstMountSrc,
-            state: TestFileBrowser,
-        }
-        .create_prelude_step(),
-        CreatePreludeModalStep::FileBrowserSrc
-    );
-    assert_eq!(
-        PreludeStepTestModal::MountDstChoice {
-            target: FileBrowserTarget::CreateFirstMountSrc,
-            state: (),
-        }
-        .create_prelude_step(),
-        CreatePreludeModalStep::MountDstChoice
-    );
-    assert_eq!(
-        PreludeStepTestModal::TextInput {
-            target: TextInputTarget::MountDst,
-            state: (),
-        }
-        .create_prelude_step(),
-        CreatePreludeModalStep::TextInputDst
-    );
-    assert_eq!(
-        PreludeStepTestModal::WorkdirPick { state: () }.create_prelude_step(),
-        CreatePreludeModalStep::WorkdirPick
-    );
-    assert_eq!(
-        PreludeStepTestModal::TextInput {
-            target: TextInputTarget::Name,
-            state: (),
-        }
-        .create_prelude_step(),
-        CreatePreludeModalStep::TextInputName
-    );
-    assert_eq!(
-        PreludeStepTestModal::FileBrowser {
-            target: FileBrowserTarget::EditAddMountSrc,
-            state: TestFileBrowser,
-        }
-        .create_prelude_step(),
-        CreatePreludeModalStep::Other
-    );
-}
 
 #[test]
 fn console_modal_letter_input_kind_maps_text_filters_and_other_modals() {
@@ -2231,27 +2140,156 @@ fn console_modal_applies_auth_op_ref() {
 }
 
 #[test]
-fn console_modal_reports_rect_mode() {
+fn console_modal_role_picker_overlay_size_uses_filtered_rows() {
     let modal = RectTestModal::RolePicker {
         state: TestRolePicker(5),
     };
 
-    assert_eq!(
-        modal.rect_mode(Rect::new(0, 0, 100, 40)),
-        ModalRectMode::RolePicker { filtered_len: 5 }
-    );
+    let size = modal.overlay_size(Rect::new(0, 0, 100, 40));
+    // 50% of the 160-column reference, 5 filtered rows + 6 chrome rows.
+    assert_eq!(size.width, 80);
+    assert_eq!(size.height, 11);
 }
 
 #[test]
-fn console_modal_error_rect_mode_uses_required_height() {
+fn console_modal_error_overlay_size_uses_required_height() {
     let modal = RectTestModal::ErrorPopup { state: TestError };
 
-    assert_eq!(
-        modal.rect_mode(Rect::new(0, 0, 100, 40)),
-        ModalRectMode::ErrorPopup {
-            required_height: 14
-        }
-    );
+    let size = modal.overlay_size(Rect::new(0, 0, 100, 40));
+    assert_eq!(size.width, 96);
+    assert_eq!(size.height, 14);
+}
+
+/// Plan 009 step 4 mapping gate: each variant's `DismissPolicy`
+/// escape/outside actions equal the pre-cutover behavior — Esc cancels
+/// outright everywhere except the file browser and op-picker (whose
+/// components spend Esc on internal back-navigation first), and outside
+/// clicks are inert for every variant (ch06 row 13: background-inert, no
+/// click-outside dismissal exists).
+#[test]
+fn console_modal_dismiss_policy_matches_pre_cutover_behavior() {
+    use termrock::interaction::DismissAction;
+    let cases: [(RectTestModal, DismissAction); 19] = [
+        (
+            RectTestModal::TextInput {
+                target: (),
+                state: (),
+            },
+            DismissAction::Dismiss,
+        ),
+        (
+            RectTestModal::FileBrowser {
+                target: (),
+                state: TestFileBrowser,
+            },
+            DismissAction::Bubble,
+        ),
+        (
+            RectTestModal::MountDstChoice {
+                target: (),
+                state: (),
+            },
+            DismissAction::Dismiss,
+        ),
+        (
+            RectTestModal::WorkdirPick { state: () },
+            DismissAction::Dismiss,
+        ),
+        (
+            RectTestModal::Confirm {
+                target: (),
+                state: TestConfirm,
+            },
+            DismissAction::Dismiss,
+        ),
+        (
+            RectTestModal::SaveDiscardCancel { state: () },
+            DismissAction::Dismiss,
+        ),
+        (
+            RectTestModal::GithubPicker {
+                state: TestGithubPicker(3),
+            },
+            DismissAction::Dismiss,
+        ),
+        (
+            RectTestModal::ConfirmSave {
+                state: TestConfirmSave,
+            },
+            DismissAction::Dismiss,
+        ),
+        (
+            RectTestModal::ErrorPopup { state: TestError },
+            DismissAction::Dismiss,
+        ),
+        (
+            RectTestModal::ContainerInfo {
+                state: TestContainerInfo,
+            },
+            DismissAction::Dismiss,
+        ),
+        (
+            RectTestModal::StatusPopup { state: () },
+            DismissAction::Dismiss,
+        ),
+        (
+            RectTestModal::OpPicker {
+                secrets_target: None,
+                state: Box::new(TestOpPicker(false)),
+            },
+            DismissAction::Bubble,
+        ),
+        (
+            RectTestModal::RolePicker {
+                state: TestRolePicker(2),
+            },
+            DismissAction::Dismiss,
+        ),
+        (
+            RectTestModal::RoleOverridePicker {
+                state: TestRolePicker(2),
+            },
+            DismissAction::Dismiss,
+        ),
+        (
+            RectTestModal::AuthRolePicker {
+                state: TestRolePicker(2),
+            },
+            DismissAction::Dismiss,
+        ),
+        (
+            RectTestModal::SourcePicker {
+                state: (),
+                env_key: None,
+            },
+            DismissAction::Dismiss,
+        ),
+        (
+            RectTestModal::AuthSourcePicker { state: () },
+            DismissAction::Dismiss,
+        ),
+        (
+            RectTestModal::ScopePicker { state: () },
+            DismissAction::Dismiss,
+        ),
+        (
+            RectTestModal::AuthForm {
+                target: (),
+                state: Box::new(TestAuthForm),
+                focus: (),
+                literal_buffer: String::new(),
+            },
+            DismissAction::Dismiss,
+        ),
+    ];
+    assert_eq!(cases.len(), 19);
+    for (modal, escape) in &cases {
+        let policy = modal.dismiss_policy();
+        assert_eq!(policy.escape, *escape);
+        assert_eq!(policy.outside, DismissAction::Trap);
+        assert_eq!(policy.parent_closed, DismissAction::Dismiss);
+        assert_eq!(policy.explicit, DismissAction::Dismiss);
+    }
 }
 
 #[test]

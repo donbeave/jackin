@@ -90,7 +90,7 @@ fn conformance_wire_console_reducer_preserves_ui_causality() -> anyhow::Result<(
     };
 
     let ConsoleStage::Manager(manager) = &mut state.stage;
-    let _update = update_manager(
+    update_manager(
         manager,
         ManagerMessage::EnterEditor(EditorState::new_edit(
             "private-workspace-label".into(),
@@ -100,7 +100,7 @@ fn conformance_wire_console_reducer_preserves_ui_causality() -> anyhow::Result<(
     frame.render_action(&mut state)?;
 
     let ConsoleStage::Manager(manager) = &mut state.stage;
-    let _update = update_manager(manager, ManagerMessage::SelectEditorTab(EditorTab::Mounts));
+    update_manager(manager, ManagerMessage::SelectEditorTab(EditorTab::Mounts));
     frame.render_action(&mut state)?;
     frame
         .widgets

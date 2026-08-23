@@ -607,6 +607,8 @@ fn workspace_list_key_plan_routes_navigation_and_actions() {
         workspace_list_key_plan(KeyCode::Char('p'), false),
         WorkspaceListKeyPlan::ConfirmPurge
     );
+    // `?` is intercepted by the dispatcher before this planner runs (proof:
+    // tui::input::dispatch::tests); the planner itself maps it to Continue.
     assert_eq!(
         workspace_list_key_plan(KeyCode::Char('?'), false),
         WorkspaceListKeyPlan::Continue
@@ -1316,6 +1318,30 @@ fn preview_focus_plans_set_focus_state() {
     assert_eq!(
         exit_preview_focus_plan(),
         PreviewFocusPlan { focused: false }
+    );
+}
+
+#[test]
+fn focus_chain_walks_list_then_preview_and_wraps() {
+    let order = workspace_list_focus_order();
+    assert_eq!(
+        order,
+        [
+            WorkspaceListFocusOwner::ListNames,
+            WorkspaceListFocusOwner::Preview
+        ]
+    );
+    assert_eq!(
+        workspace_list_focus_head(),
+        WorkspaceListFocusOwner::ListNames
+    );
+    assert_eq!(
+        workspace_list_focus_next(WorkspaceListFocusOwner::ListNames),
+        WorkspaceListFocusOwner::Preview
+    );
+    assert_eq!(
+        workspace_list_focus_next(WorkspaceListFocusOwner::Preview),
+        WorkspaceListFocusOwner::ListNames
     );
 }
 

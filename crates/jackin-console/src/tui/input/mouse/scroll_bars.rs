@@ -3,6 +3,13 @@
 
 //! Scroll-bar drag handlers: drag the horizontal scrollbar of the
 //! long-content body and the vertical scrollbar of the focused panel.
+//!
+//! Mouse parity matrix rows 10-11 carve-out: the drag lane stays
+//! consumer code — upstream `ScrollAreaState::handle_mouse` drops
+//! Down/Drag (no drag carrier), and the drag also sets scroll focus
+//! (row 11), which upstream has no analogue for. The computed absolute
+//! offset is written through `apply_scrollbar_drag`'s dims-plumb +
+//! `set_offset_*`.
 
 use super::{
     EditorTab, LIST_FOOTER_HEIGHT, ManagerStage, ManagerState, MountScrollFocus, MouseEvent, Rect,
@@ -27,7 +34,7 @@ pub fn try_drag_horizontal_scrollbar(
             };
             if apply_scrollbar_drag(
                 ScrollbarAxis::Horizontal,
-                &mut state.list_mounts_scroll_x,
+                &mut state.list_mounts_scroll,
                 areas.workspace.area,
                 areas.workspace.content_width,
                 mouse.column,
@@ -41,7 +48,7 @@ pub fn try_drag_horizontal_scrollbar(
             }
             if apply_scrollbar_drag(
                 ScrollbarAxis::Horizontal,
-                &mut state.list_global_mounts_scroll_x,
+                &mut state.list_global_mounts_scroll,
                 areas.global.area,
                 areas.global.content_width,
                 mouse.column,
@@ -56,7 +63,7 @@ pub fn try_drag_horizontal_scrollbar(
             if let Some(role) = areas.role_global
                 && apply_scrollbar_drag(
                     ScrollbarAxis::Horizontal,
-                    &mut state.list_role_global_mounts_scroll_x,
+                    &mut state.list_role_global_mounts_scroll,
                     role.area,
                     role.content_width,
                     mouse.column,
@@ -79,7 +86,7 @@ pub fn try_drag_horizontal_scrollbar(
                 let workspace = editor_scroll_area(editor, term_size);
                 apply_scrollbar_drag(
                     ScrollbarAxis::Horizontal,
-                    &mut editor.workspace_mounts_scroll_x,
+                    &mut editor.workspace_mounts_scroll,
                     workspace.area,
                     workspace.content_width,
                     mouse.column,
@@ -89,7 +96,7 @@ pub fn try_drag_horizontal_scrollbar(
                 let content_area = editor.content_area(term_size);
                 apply_scrollbar_drag(
                     ScrollbarAxis::Horizontal,
-                    &mut editor.tab_scroll_x,
+                    &mut editor.tab_scroll,
                     content_area,
                     editor.tab_content_width,
                     mouse.column,
@@ -117,7 +124,7 @@ pub fn try_drag_horizontal_scrollbar(
             let content_width = settings.mounts.content_width();
             apply_scrollbar_drag(
                 ScrollbarAxis::Horizontal,
-                &mut settings.mounts.scroll_x,
+                &mut settings.mounts.scroll,
                 Rect {
                     x: 0,
                     y: SCREEN_HEADER_HEIGHT + TAB_STRIP_HEIGHT,
@@ -157,7 +164,7 @@ pub fn try_drag_vertical_scrollbar(
             match focus {
                 MountScrollFocus::Workspace => apply_scrollbar_drag(
                     ScrollbarAxis::Vertical,
-                    &mut state.list_mounts_scroll_y,
+                    &mut state.list_mounts_scroll,
                     areas.workspace.area,
                     areas.workspace.content_height,
                     mouse.column,
@@ -165,7 +172,7 @@ pub fn try_drag_vertical_scrollbar(
                 ),
                 MountScrollFocus::Global => apply_scrollbar_drag(
                     ScrollbarAxis::Vertical,
-                    &mut state.list_global_mounts_scroll_y,
+                    &mut state.list_global_mounts_scroll,
                     areas.global.area,
                     areas.global.content_height,
                     mouse.column,
@@ -174,7 +181,7 @@ pub fn try_drag_vertical_scrollbar(
                 MountScrollFocus::RoleGlobal => areas.role_global.is_some_and(|area| {
                     apply_scrollbar_drag(
                         ScrollbarAxis::Vertical,
-                        &mut state.list_role_global_mounts_scroll_y,
+                        &mut state.list_role_global_mounts_scroll,
                         area.area,
                         area.content_height,
                         mouse.column,
@@ -184,7 +191,7 @@ pub fn try_drag_vertical_scrollbar(
                 MountScrollFocus::Roles => areas.roles.is_some_and(|area| {
                     apply_scrollbar_drag(
                         ScrollbarAxis::Vertical,
-                        &mut state.list_roles_scroll_y,
+                        &mut state.list_roles_scroll,
                         area.area,
                         area.content_height,
                         mouse.column,
@@ -201,7 +208,7 @@ pub fn try_drag_vertical_scrollbar(
             let content_height = editor.tab_content_height;
             apply_scrollbar_drag(
                 ScrollbarAxis::Vertical,
-                &mut editor.tab_scroll_y,
+                &mut editor.tab_scroll,
                 area,
                 content_height,
                 mouse.column,
@@ -224,7 +231,7 @@ pub fn try_drag_vertical_scrollbar(
                 SettingsTab::General => false,
                 SettingsTab::Mounts => apply_scrollbar_drag(
                     ScrollbarAxis::Vertical,
-                    &mut settings.mounts.scroll_y,
+                    &mut settings.mounts.scroll,
                     area,
                     content_height,
                     mouse.column,
@@ -232,7 +239,7 @@ pub fn try_drag_vertical_scrollbar(
                 ),
                 SettingsTab::Environments => apply_scrollbar_drag(
                     ScrollbarAxis::Vertical,
-                    &mut settings.env.scroll_y,
+                    &mut settings.env.scroll,
                     area,
                     content_height,
                     mouse.column,
@@ -240,7 +247,7 @@ pub fn try_drag_vertical_scrollbar(
                 ),
                 SettingsTab::Auth => apply_scrollbar_drag(
                     ScrollbarAxis::Vertical,
-                    settings.auth.scroll_y_mut(),
+                    settings.auth.scroll_state_mut(),
                     area,
                     content_height,
                     mouse.column,
@@ -248,7 +255,7 @@ pub fn try_drag_vertical_scrollbar(
                 ),
                 SettingsTab::Trust => apply_scrollbar_drag(
                     ScrollbarAxis::Vertical,
-                    &mut settings.trust.scroll_y,
+                    &mut settings.trust.scroll,
                     area,
                     content_height,
                     mouse.column,

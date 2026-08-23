@@ -41,6 +41,7 @@ fn handle_key(
 
     let stage_modal_facts = state.stage.modal_facts();
     let dispatch_plan = console_input_dispatch_plan(ConsoleInputDispatchFacts {
+        keyboard_help_open: state.keyboard_help.is_some(),
         list_modal_open: state.list_modal.is_some(),
         inline_new_session_picker_open: state.inline_new_session_picker.is_some(),
         inline_provider_picker_open: state.inline_provider_picker.is_some(),
@@ -90,14 +91,14 @@ fn handle_key(
                 instance_purge_key_plan(confirm_state.handle_key(key.into()), container.clone());
             match plan {
                 InstancePurgeKeyPlan::Purge { container } => {
-                    drop(update_manager(state, ManagerMessage::ReturnToList));
+                    update_manager(state, ManagerMessage::ReturnToList);
                     return Ok(InputOutcome::InstanceAction {
                         container,
                         action: ConsoleInstanceAction::Purge,
                     });
                 }
                 InstancePurgeKeyPlan::ReturnToList => {
-                    drop(update_manager(state, ManagerMessage::ReturnToList));
+                    update_manager(state, ManagerMessage::ReturnToList);
                     return Ok(InputOutcome::Continue);
                 }
                 InstancePurgeKeyPlan::Continue => return Ok(InputOutcome::Continue),
@@ -388,7 +389,7 @@ fn right_on_non_expandable_overflowing_sidebar_scrolls_horizontally() {
 
     assert!(matches!(outcome, InputOutcome::Continue));
     assert!(
-        state.list_names_scroll_x > 0,
+        state.list_names_scroll.offset_x() > 0,
         "→ should scroll the focused overflowing sidebar when the row has no expand action"
     );
 }
@@ -409,13 +410,13 @@ fn left_on_non_expandable_overflowing_sidebar_scrolls_horizontally() {
     state.selected = 1;
     state.cached_term_size = Rect::new(0, 0, 70, 24);
     state.set_list_names_focused(true);
-    state.list_names_scroll_x = 8;
+    crate::tui::scroll_block::scroll_area_set_x(&mut state.list_names_scroll, 8);
 
     let outcome = handle_key(&mut state, &mut config, &paths, cwd, key(KeyCode::Left)).unwrap();
 
     assert!(matches!(outcome, InputOutcome::Continue));
     assert!(
-        state.list_names_scroll_x < 8,
+        state.list_names_scroll.offset_x() < 8,
         "← should scroll the focused overflowing sidebar when the row has no collapse action"
     );
 }
@@ -966,17 +967,17 @@ fn moving_selection_resets_mount_scroll_state() {
     // When no block is focused, Down navigates the workspace list and resets scroll.
     let mut state = ManagerState::from_config(&config, cwd);
     state.selected = 0;
-    state.list_mounts_scroll_x = 24;
-    state.list_global_mounts_scroll_x = 16;
-    state.list_role_global_mounts_scroll_x = 8;
+    crate::tui::scroll_block::scroll_area_set_x(&mut state.list_mounts_scroll, 24);
+    crate::tui::scroll_block::scroll_area_set_x(&mut state.list_global_mounts_scroll, 16);
+    crate::tui::scroll_block::scroll_area_set_x(&mut state.list_role_global_mounts_scroll, 8);
     state.set_list_scroll_focus(None);
 
     handle_key(&mut state, &mut config, &paths, cwd, key(KeyCode::Down)).unwrap();
 
     assert_eq!(state.selected, 1);
-    assert_eq!(state.list_mounts_scroll_x, 0);
-    assert_eq!(state.list_global_mounts_scroll_x, 0);
-    assert_eq!(state.list_role_global_mounts_scroll_x, 0);
+    assert_eq!(state.list_mounts_scroll.offset_x(), 0);
+    assert_eq!(state.list_global_mounts_scroll.offset_x(), 0);
+    assert_eq!(state.list_role_global_mounts_scroll.offset_x(), 0);
     assert_eq!(state.list_scroll_focus(), None);
 }
 
@@ -1008,7 +1009,8 @@ fn down_key_with_focused_block_clamps_vertical_scroll_without_selection_move() {
         "selection must not change while block focused"
     );
     assert_eq!(
-        state.list_mounts_scroll_y, 0,
+        state.list_mounts_scroll.offset_y(),
+        0,
         "non-overflowing block stays clamped"
     );
 }

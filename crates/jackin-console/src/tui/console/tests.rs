@@ -44,7 +44,7 @@ use crate::tui::state::{
 };
 use jackin_config::{AppConfig, LoadWorkspaceInput, ResolvedWorkspace};
 use jackin_core::{Agent, RoleSelector};
-use jackin_tui::ModalOutcome;
+use jackin_oppicker::ModalOutcome;
 
 fn fresh_state() -> ConsoleState {
     let cwd = std::env::temp_dir();

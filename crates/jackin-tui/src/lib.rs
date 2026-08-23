@@ -12,9 +12,6 @@
 // SPDX-FileCopyrightText: 2026 Alexey Zhokhov
 // SPDX-License-Identifier: Apache-2.0
 
-mod modal_outcome;
 pub mod operator_info;
 pub mod runtime;
 pub mod tokens;
-
-pub use modal_outcome::ModalOutcome;

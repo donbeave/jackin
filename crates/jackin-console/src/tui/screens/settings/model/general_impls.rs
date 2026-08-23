@@ -45,7 +45,7 @@ impl SettingsGeneralState {
     }
 
     pub fn move_selection(&mut self, delta: isize) {
-        self.selected = crate::tui::focus::moved_selection(self.selected, 2, delta);
+        self.selected = crate::tui::focus::collection_move_index(self.selected, 2, delta);
     }
 
     pub const fn toggle_selected(&mut self) {

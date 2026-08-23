@@ -2,10 +2,21 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //! Product-owned console dialog state composed from canonical `TermRock` widgets.
+//!
+//! Plan 010 step 1 reviewed the named upstream pairings at rev `29a16b5b` and
+//! recorded behavior-preserving non-adoptions (commit-message carve-outs):
+//! `alert_dialog` paints a fixed risk-anatomy body (`build_body_text`) with no
+//! host free-text override; `error_state` is a centered inline/block anatomy
+//! without modal chrome; `question_flow` paints an option list, not the
+//! action-row choice body; `loading_overlay`'s `BusyBoundaryState` owns
+//! dismissal, which the product status overlay keeps host-side.
+
+#[cfg(test)]
+mod tests;
 
 use std::marker::PhantomData;
 
-use jackin_tui::ModalOutcome;
+use jackin_oppicker::ModalOutcome;
 use ratatui::{
     Frame,
     layout::Rect,

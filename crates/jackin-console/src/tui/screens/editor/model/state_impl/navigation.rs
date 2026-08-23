@@ -1,8 +1,8 @@
 use std::collections::BTreeSet;
 use std::marker::PhantomData;
 
+use crate::tui::focus::ConsoleFocusTarget;
 use jackin_config::WorkspaceConfig;
-use jackin_tui::runtime::SurfaceFocusTarget;
 
 use super::super::{
     EditorErrorPopupModal, EditorFocusTarget, EditorHoverTarget, EditorMode,
@@ -84,7 +84,7 @@ impl<
         Self {
             mode: EditorMode::Edit { name },
             active_tab: EditorTab::General,
-            focus_owner: jackin_tui::runtime::SurfaceFocus::tab_bar(EditorFocusTarget::TabContent),
+            focus_owner: crate::tui::focus::TabFocus::tab_bar(EditorFocusTarget::TabContent),
             hover_target: None,
             active_field: FieldFocus::Row(0),
             original: ws.clone(),
@@ -100,9 +100,8 @@ impl<
             auth_expanded: BTreeSet::default(),
             auth_selected_kind: None,
             _env_value: PhantomData,
-            workspace_mounts_scroll_x: 0,
-            tab_scroll_x: 0,
-            tab_scroll_y: 0,
+            workspace_mounts_scroll: crate::tui::scroll_block::console_scroll_area_state(),
+            tab_scroll: crate::tui::scroll_block::console_scroll_area_state(),
             tab_content_width: 0,
             tab_content_height: 0,
             generating_token_target: None,
@@ -116,14 +115,14 @@ impl<
     }
 
     #[must_use]
-    pub fn focus_owner(&self) -> SurfaceFocusTarget<EditorFocusTarget> {
+    pub fn focus_owner(&self) -> ConsoleFocusTarget<EditorFocusTarget> {
         self.focus_owner.focused()
     }
 
-    pub fn set_focus_owner(&mut self, owner: SurfaceFocusTarget<EditorFocusTarget>) {
+    pub fn set_focus_owner(&mut self, owner: ConsoleFocusTarget<EditorFocusTarget>) {
         match owner {
-            SurfaceFocusTarget::TabBar => self.focus_owner.focus_tab_bar(),
-            SurfaceFocusTarget::Content(content) => self.focus_owner.focus_content(content),
+            ConsoleFocusTarget::TabBar => self.focus_owner.focus_tab_bar(),
+            ConsoleFocusTarget::Content(content) => self.focus_owner.focus_content(content),
         }
     }
 
@@ -133,8 +132,8 @@ impl<
     ) {
         self.auth_selected_kind = plan.selected_kind;
         self.active_field = FieldFocus::Row(plan.active_row);
-        self.tab_scroll_x = plan.tab_scroll_x;
-        self.tab_scroll_y = plan.tab_scroll_y;
+        crate::tui::scroll_block::scroll_area_set_x(&mut self.tab_scroll, plan.tab_scroll_x);
+        crate::tui::scroll_block::scroll_area_set_y(&mut self.tab_scroll, plan.tab_scroll_y);
     }
 
     pub fn apply_tab_move_plan(
@@ -144,8 +143,8 @@ impl<
         self.active_tab = plan.active_tab;
         self.set_tab_bar_focused(plan.tab_bar_focused);
         self.active_field = FieldFocus::Row(plan.active_row);
-        self.tab_scroll_x = plan.tab_scroll_x;
-        self.tab_scroll_y = plan.tab_scroll_y;
+        crate::tui::scroll_block::scroll_area_set_x(&mut self.tab_scroll, plan.tab_scroll_x);
+        crate::tui::scroll_block::scroll_area_set_y(&mut self.tab_scroll, plan.tab_scroll_y);
         if plan.tab_bar_focused {
             self.set_workspace_mounts_scroll_focused(false);
             self.set_tab_content_scroll_focused(false);
@@ -181,7 +180,7 @@ impl<
         plan: crate::tui::screens::editor::update::EditorFieldSelectionPlan,
     ) {
         self.active_field = FieldFocus::Row(plan.active_row);
-        self.tab_scroll_y = plan.tab_scroll_y;
+        crate::tui::scroll_block::scroll_area_set_y(&mut self.tab_scroll, plan.tab_scroll_y);
     }
 
     pub fn apply_mount_row_select_plan(
@@ -204,7 +203,7 @@ impl<
         &mut self,
         plan: crate::tui::screens::editor::update::EditorHorizontalScrollPlan,
     ) {
-        self.tab_scroll_x = plan.scroll_x;
+        crate::tui::scroll_block::scroll_area_set_x(&mut self.tab_scroll, plan.scroll_x);
         self.set_workspace_mounts_scroll_focused(plan.workspace_mounts_scroll_focused);
         self.set_tab_content_scroll_focused(plan.tab_content_scroll_focused);
     }
@@ -213,7 +212,10 @@ impl<
         &mut self,
         plan: crate::tui::screens::editor::update::EditorHorizontalScrollPlan,
     ) {
-        self.workspace_mounts_scroll_x = plan.scroll_x;
+        crate::tui::scroll_block::scroll_area_set_x(
+            &mut self.workspace_mounts_scroll,
+            plan.scroll_x,
+        );
         self.set_workspace_mounts_scroll_focused(plan.workspace_mounts_scroll_focused);
         self.set_tab_content_scroll_focused(plan.tab_content_scroll_focused);
     }

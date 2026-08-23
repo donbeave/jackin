@@ -3,7 +3,9 @@
 use crate::ModalOutcome;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
-use crate::state::{OpPickerState, list_state_for_count};
+use termrock::interaction::CollectionState;
+
+use crate::state::{OpPickerState, collection_state_for_count, index_collection_items};
 use crate::{
     AccountStageCommitPlan, ExistingFieldCommitSelectionInput, FieldStageCommitPlan,
     ItemStageCommitPlan, OpLoadState, OpPickerBlockedLoadKeyPlan, OpPickerCoreSelection,
@@ -65,7 +67,7 @@ impl OpPickerState {
                     self.accounts.clear();
                 }
                 if plan.reset_account_list {
-                    self.account_list_state = list_state_for_count(0);
+                    self.account_list_state = collection_state_for_count(0);
                 }
                 if plan.clear_selected_account {
                     self.selected_account = None;
@@ -90,7 +92,7 @@ impl OpPickerState {
             }
             KeyCode::Enter => {
                 let visible = self.filtered_accounts();
-                let picked = selected_choice(&visible, self.account_list_state.selected().copied())
+                let picked = selected_choice(&visible, self.account_list_state.active().copied())
                     .map(|a| (*a).clone());
                 if let AccountStageCommitPlan::ExistingAccount(a) =
                     account_stage_commit_plan(picked)
@@ -122,7 +124,7 @@ impl OpPickerState {
                     self.vaults.clear();
                 }
                 if plan.reset_vault_list {
-                    self.vault_list_state = list_state_for_count(0);
+                    self.vault_list_state = collection_state_for_count(0);
                 }
                 if plan.clear_selected_vault {
                     self.selected_vault = None;
@@ -147,7 +149,7 @@ impl OpPickerState {
                         self.vaults.clear();
                     }
                     if reset_vault_list {
-                        self.vault_list_state = list_state_for_count(0);
+                        self.vault_list_state = collection_state_for_count(0);
                     }
                     if ready_load_state {
                         self.load_state = OpLoadState::Ready;
@@ -173,7 +175,7 @@ impl OpPickerState {
             }
             KeyCode::Enter => {
                 let visible = self.filtered_vaults();
-                let picked = selected_choice(&visible, self.vault_list_state.selected().copied())
+                let picked = selected_choice(&visible, self.vault_list_state.active().copied())
                     .map(|v| (*v).clone());
                 if let VaultStageCommitPlan::ExistingVault(v) = vault_stage_commit_plan(picked) {
                     let id = v.id.clone();
@@ -205,7 +207,7 @@ impl OpPickerState {
                     self.items.clear();
                 }
                 if plan.reset_item_list {
-                    self.item_list_state = list_state_for_count(0);
+                    self.item_list_state = collection_state_for_count(0);
                 }
                 self.start_item_load(vault_id, account_id);
                 ModalOutcome::Continue
@@ -241,7 +243,7 @@ impl OpPickerState {
                 // `None` is the `+ New item` sentinel (Create mode only).
                 let visible = self.filtered_item_choices();
                 let picked: Option<Option<OpPickerItem>> =
-                    selected_choice(&visible, self.item_list_state.selected().copied())
+                    selected_choice(&visible, self.item_list_state.active().copied())
                         .map(|choice| choice.map(Clone::clone));
                 match item_stage_commit_plan(picked) {
                     ItemStageCommitPlan::ExistingItem(item) => {
@@ -302,10 +304,8 @@ impl OpPickerState {
                 ModalOutcome::Continue
             }
             KeyCode::Enter => {
-                match section_stage_commit_plan(
-                    self.section_list_state.selected().copied(),
-                    &choices,
-                ) {
+                match section_stage_commit_plan(self.section_list_state.active().copied(), &choices)
+                {
                     SectionStageCommitPlan::NewSectionName => {
                         self.section_name_input = section_name_input_state("");
                         self.stage = OpPickerStage::NewSectionName;
@@ -315,7 +315,7 @@ impl OpPickerState {
                         self.stage = OpPickerStage::Field;
                         self.filter_buf.clear();
                         let n = self.build_field_display_rows().len();
-                        self.field_list_state.select(first_selection(n));
+                        self.field_list_state.set_active(first_selection(n));
                     }
                     SectionStageCommitPlan::NoSelection => {}
                 }
@@ -335,7 +335,7 @@ impl OpPickerState {
             self.selected_section = None;
         }
         if plan.reset_section_list {
-            self.section_list_state = list_state_for_count(self.section_choices().len() + 1);
+            self.section_list_state = collection_state_for_count(self.section_choices().len() + 1);
         }
         if plan.clear_fields {
             self.fields.clear();
@@ -364,7 +364,7 @@ impl OpPickerState {
                     self.fields.clear();
                 }
                 if plan.reset_field_list {
-                    self.field_list_state = list_state_for_count(0);
+                    self.field_list_state = collection_state_for_count(0);
                 }
                 if plan.clear_collapsed_sections {
                     self.collapsed_sections.clear();
@@ -388,7 +388,7 @@ impl OpPickerState {
                 ModalOutcome::Continue
             }
             KeyCode::Left => {
-                let cur = self.field_list_state.selected().copied().unwrap_or(0);
+                let cur = self.field_list_state.active().copied().unwrap_or(0);
                 let rows = self.build_field_display_rows();
                 if let Some((name, collapsed)) = section_header_collapse_target(
                     rows.get(cur),
@@ -400,7 +400,7 @@ impl OpPickerState {
                 ModalOutcome::Continue
             }
             KeyCode::Right => {
-                let cur = self.field_list_state.selected().copied().unwrap_or(0);
+                let cur = self.field_list_state.active().copied().unwrap_or(0);
                 let rows = self.build_field_display_rows();
                 if let Some((name, collapsed)) = section_header_collapse_target(
                     rows.get(cur),
@@ -418,7 +418,7 @@ impl OpPickerState {
             }
             KeyCode::Enter => {
                 let visible = self.filtered_fields();
-                let cur = self.field_list_state.selected().copied().unwrap_or(0);
+                let cur = self.field_list_state.active().copied().unwrap_or(0);
                 let rows = self.build_field_display_rows();
                 match field_stage_commit_plan(
                     rows.get(cur),
@@ -543,8 +543,8 @@ impl OpPickerState {
             self.collapsed_sections.remove(name.as_str());
         }
         let new_len = self.build_field_display_rows().len();
-        self.field_list_state.select(clamp_selection(
-            self.field_list_state.selected().copied(),
+        self.field_list_state.set_active(clamp_selection(
+            self.field_list_state.active().copied(),
             new_len,
         ));
     }
@@ -593,17 +593,28 @@ impl OpPickerState {
             return;
         };
         match stage {
-            OpPickerStage::Account => self.account_list_state.select(selection),
-            OpPickerStage::Vault => self.vault_list_state.select(selection),
-            OpPickerStage::Item => self.item_list_state.select(selection),
-            OpPickerStage::Field => self.field_list_state.select(selection),
+            OpPickerStage::Account => self.account_list_state.set_active(selection),
+            OpPickerStage::Vault => self.vault_list_state.set_active(selection),
+            OpPickerStage::Item => self.item_list_state.set_active(selection),
+            OpPickerStage::Field => self.field_list_state.set_active(selection),
             _ => {}
         }
     }
 }
 
-fn cycle_select(list_state: &mut termrock::widgets::ListState<usize>, count: usize, delta: isize) {
-    list_state.cycle_index(count, delta);
+/// Keyboard cycle WRAPS at the ends, replicating the retired list
+/// wrapper's cycling move exactly: count 0 clears the selection; a stale
+/// or missing selection normalizes to row 0 before the wrapping step
+/// (`CollectionState::move_by` with the state-level `wrap = true`).
+fn cycle_select(list_state: &mut CollectionState<usize>, count: usize, delta: isize) {
+    if count == 0 {
+        list_state.set_active(None);
+        return;
+    }
+    list_state.set_active(Some(
+        list_state.active().copied().unwrap_or(0).min(count - 1),
+    ));
+    let _ = list_state.move_by(&index_collection_items(count), delta);
 }
 
 #[must_use]

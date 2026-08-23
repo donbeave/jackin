@@ -10,10 +10,8 @@
 use ratatui::{CompletedFrame, Frame, Terminal, backend::Backend, layout::Rect};
 
 mod focus;
-mod modal_flow;
 
 pub use focus::{SurfaceFocus, SurfaceFocusTarget};
-pub use modal_flow::ModalFlow;
 
 /// The result of polling a jackin❯-owned external value source once.
 #[derive(Debug, Clone, PartialEq, Eq)]

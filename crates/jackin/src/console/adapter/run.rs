@@ -414,8 +414,8 @@ where
         split_debug_area(full_area, jackin_diagnostics::is_debug_mode());
     {
         // Scoped mutable borrow of `state.stage`: released before the
-        // `View<ConsoleState>` dispatch below needs an immutable borrow of
-        // the whole `state`.
+        // `Terminal::draw` below needs an immutable borrow of the whole
+        // `state`.
         let ConsoleStage::Manager(ms) = &mut state.stage;
         if *context.container_info_overlay_active
             && !matches!(
@@ -429,18 +429,10 @@ where
         crate::console::adapter::prepare_for_render(ms, context.config, context.cwd, main_area);
     }
 
-    // Route the primary render through the shared `View<ConsoleState>`
-    // dispatch instead of calling `crate::console::adapter::render`
-    // directly. The confirm-dialog/debug-bar overlay compositing that used to
-    // share the same `terminal.draw` closure is not part of the `View`
-    // contract — it stays an `overlay` closure that `drive_frame` runs
-    // against the same in-progress frame, unchanged from before.
-    let view = jackin_console::tui::runtime::ConsoleView {
-        context: jackin_console::tui::runtime::ConsoleViewContext {
-            config: context.config,
-            cwd: context.cwd,
-        },
-    };
+    // Primary render: a direct `Terminal::draw` with the confirm-dialog /
+    // debug-bar overlay composited into the same in-progress frame — exactly
+    // what the retired facade frame driver wrapped. The run loop stays
+    // surface-owned (arch gate).
     let confirm_state = state.quit_confirm.as_ref();
     let screen = screen_of(state);
     let render_started = std::time::Instant::now();
@@ -453,92 +445,93 @@ where
             jackin_telemetry::operation(&jackin_telemetry::operation::UI_RENDER, &render_attrs).ok()
         })
     });
-    let render_result =
-        jackin_tui::runtime::drive_frame(terminal, &view, &*state, main_area, |frame| {
-            if let Some(confirm) = confirm_state {
-                let hint_row = ratatui::layout::Rect {
-                    x: main_area.x,
-                    y: main_area.bottom().saturating_sub(1),
-                    width: main_area.width,
-                    height: 1,
-                };
-                let body = ratatui::layout::Rect {
-                    height: main_area.height.saturating_sub(1),
-                    ..main_area
-                };
-                jackin_console::tui::view::render_modal_backdrop(frame, body);
-                let area = quit_confirm_area(body, confirm);
-                jackin_console::tui::components::render_confirm_dialog(frame, area, confirm);
-                termrock::widgets::render_hint_bar(
-                    frame,
-                    hint_row,
-                    &jackin_console::tui::components::confirm_hint_spans(),
-                    &termrock::style::DesignSystem::default(),
-                );
+    let render_result = terminal.draw(|frame| {
+        let ConsoleStage::Manager(ms) = &state.stage;
+        jackin_console::tui::view::render(frame, main_area, ms, context.config, context.cwd);
+        if let Some(confirm) = confirm_state {
+            let hint_row = ratatui::layout::Rect {
+                x: main_area.x,
+                y: main_area.bottom().saturating_sub(1),
+                width: main_area.width,
+                height: 1,
+            };
+            let body = ratatui::layout::Rect {
+                height: main_area.height.saturating_sub(1),
+                ..main_area
+            };
+            jackin_console::tui::view::render_modal_backdrop(frame, body);
+            let area = quit_confirm_area(body, confirm);
+            jackin_console::tui::components::render_confirm_dialog(frame, area, confirm);
+            termrock::widgets::render_hint_bar(
+                frame,
+                hint_row,
+                &jackin_console::tui::components::confirm_hint_spans(),
+                &termrock::style::DesignSystem::default(),
+            );
+        }
+        context.mouse_state.chrome_regions.clear();
+        if let Some(bar_area) = debug_bar_area {
+            let invocation_id = jackin_telemetry::identity::current_invocation()
+                .map(|invocation_id| invocation_id.to_string());
+            let invocation_id = debug_invocation_id_label(invocation_id.as_deref());
+            let chip_row = debug_chip_row(bar_area);
+            let content = format!(" {invocation_id} ");
+            let slots =
+                [
+                    termrock::widgets::StatusSlot::new(ConsoleChromeHover::DebugChip, &content)
+                        .priority(1)
+                        .min_width(0)
+                        .enabled(true)
+                        .style(
+                            ratatui::style::Style::default()
+                                .bg(termrock::style::DesignSystem::default()
+                                    .style(termrock::style::Role::Danger)
+                                    .fg
+                                    .unwrap_or_default())
+                                .fg(termrock::style::DesignSystem::default()
+                                    .style(termrock::style::Role::Text)
+                                    .fg
+                                    .unwrap_or_default())
+                                .add_modifier(ratatui::style::Modifier::BOLD),
+                        )
+                        .hover_style(
+                            ratatui::style::Style::default()
+                                .bg(termrock::style::DesignSystem::default()
+                                    .style(termrock::style::Role::Text)
+                                    .fg
+                                    .unwrap_or_default())
+                                .fg(termrock::style::DesignSystem::default()
+                                    .style(termrock::style::Role::Danger)
+                                    .fg
+                                    .unwrap_or_default())
+                                .add_modifier(ratatui::style::Modifier::BOLD),
+                        ),
+                ];
+            // Head made the state's region storage private; hovered
+            // stays public.
+            let mut status_state = termrock::widgets::StatusBarState::new();
+            status_state.hovered = (context.mouse_state.chrome_hover
+                == Some(ConsoleChromeHover::DebugChip))
+            .then_some(ConsoleChromeHover::DebugChip);
+            let theme = termrock::style::DesignSystem::default().with_role(
+                termrock::style::Role::StatusBar,
+                ratatui::style::Style::default()
+                    .bg(termrock::style::DesignSystem::default()
+                        .style(termrock::style::Role::Text)
+                        .fg
+                        .unwrap_or_default())
+                    .fg(jackin_tui::tokens::INK),
+            );
+            frame.render_stateful_widget(
+                &termrock::widgets::StatusBar::new(&[], &slots, &theme),
+                chip_row,
+                &mut status_state,
+            );
+            for region in status_state.regions {
+                context.mouse_state.chrome_regions.push(region);
             }
-            context.mouse_state.chrome_regions.clear();
-            if let Some(bar_area) = debug_bar_area {
-                let invocation_id = jackin_telemetry::identity::current_invocation()
-                    .map(|invocation_id| invocation_id.to_string());
-                let invocation_id = debug_invocation_id_label(invocation_id.as_deref());
-                let chip_row = debug_chip_row(bar_area);
-                let content = format!(" {invocation_id} ");
-                let slots =
-                    [
-                        termrock::widgets::StatusSlot::new(ConsoleChromeHover::DebugChip, &content)
-                            .priority(1)
-                            .min_width(0)
-                            .enabled(true)
-                            .style(
-                                ratatui::style::Style::default()
-                                    .bg(termrock::style::DesignSystem::default()
-                                        .style(termrock::style::Role::Danger)
-                                        .fg
-                                        .unwrap_or_default())
-                                    .fg(termrock::style::DesignSystem::default()
-                                        .style(termrock::style::Role::Text)
-                                        .fg
-                                        .unwrap_or_default())
-                                    .add_modifier(ratatui::style::Modifier::BOLD),
-                            )
-                            .hover_style(
-                                ratatui::style::Style::default()
-                                    .bg(termrock::style::DesignSystem::default()
-                                        .style(termrock::style::Role::Text)
-                                        .fg
-                                        .unwrap_or_default())
-                                    .fg(termrock::style::DesignSystem::default()
-                                        .style(termrock::style::Role::Danger)
-                                        .fg
-                                        .unwrap_or_default())
-                                    .add_modifier(ratatui::style::Modifier::BOLD),
-                            ),
-                    ];
-                // Head made the state's region storage private; hovered
-                // stays public.
-                let mut status_state = termrock::widgets::StatusBarState::new();
-                status_state.hovered = (context.mouse_state.chrome_hover
-                    == Some(ConsoleChromeHover::DebugChip))
-                .then_some(ConsoleChromeHover::DebugChip);
-                let theme = termrock::style::DesignSystem::default().with_role(
-                    termrock::style::Role::StatusBar,
-                    ratatui::style::Style::default()
-                        .bg(termrock::style::DesignSystem::default()
-                            .style(termrock::style::Role::Text)
-                            .fg
-                            .unwrap_or_default())
-                        .fg(jackin_tui::tokens::INK),
-                );
-                frame.render_stateful_widget(
-                    &termrock::widgets::StatusBar::new(&[], &slots, &theme),
-                    chip_row,
-                    &mut status_state,
-                );
-                for region in status_state.regions {
-                    context.mouse_state.chrome_regions.push(region);
-                }
-            }
-        });
+        }
+    });
     if let Some(operation) = render_operation {
         operation.complete(
             if render_result.is_ok() {
@@ -571,6 +564,35 @@ where
         }
         *context.container_info_overlay_active = true;
     }
+    Ok(())
+}
+
+/// Frame pacing lives in the console-owned pacer (upstream Presenter +
+/// FrameClock): sample the clock once per loop turn, mark dirty when the
+/// product flagged a redraw, and draw exactly when a frame is owed. The 50 ms
+/// animation interval stays the product cadence driving `needs_redraw`.
+fn present_owed_frame<B>(
+    pacer: &mut jackin_console::tui::runtime::ConsoleFramePacer,
+    needs_redraw: &mut bool,
+    terminal: &mut ratatui::Terminal<B>,
+    state: &mut ConsoleState,
+    context: DrawConsoleContext<'_>,
+) -> anyhow::Result<()>
+where
+    B: ratatui::backend::Backend,
+    B::Error: std::error::Error + Send + Sync + 'static,
+{
+    if *needs_redraw {
+        pacer.mark_dirty();
+    }
+    let tick = pacer.tick();
+    if !pacer.should_draw(tick.now()) {
+        return Ok(());
+    }
+    pacer.begin_draw(tick.now());
+    draw_console_frame(terminal, state, context)?;
+    pacer.end_draw(tick.now());
+    *needs_redraw = false;
     Ok(())
 }
 
@@ -639,7 +661,7 @@ where
         let action_fact = action.workspace_action_fact();
         let busy_title = instance_action_busy_title(action_fact);
         let busy_body = instance_action_busy_message(action_fact, container);
-        let _unused = crate::console::adapter::update_manager(
+        crate::console::adapter::update_manager(
             ms,
             crate::console::adapter::ManagerMessage::OpenStatusPopup {
                 title: busy_title.into(),
@@ -655,13 +677,13 @@ where
     }
     let result = inputs.action_handler.run_in_place(container, action).await;
     let ConsoleStage::Manager(ms) = &mut state.stage;
-    let _unused = crate::console::adapter::update_manager(
+    crate::console::adapter::update_manager(
         ms,
         crate::console::adapter::ManagerMessage::DismissStatusPopup,
     );
     if let Err(error) = result {
         let err_title = instance_action_failed_error_title(action.workspace_action_fact());
-        let _unused = crate::console::adapter::update_manager(
+        crate::console::adapter::update_manager(
             ms,
             crate::console::adapter::ManagerMessage::OpenListErrorPopup {
                 title: err_title.into(),
@@ -949,7 +971,7 @@ fn handle_mouse_event<H, R>(
     }
     if modal_plan.dismiss_list_modal {
         let ConsoleStage::Manager(ms) = &mut state.stage;
-        let _unused = crate::console::adapter::update_manager(
+        crate::console::adapter::update_manager(
             ms,
             crate::console::adapter::ManagerMessage::DismissListModal,
         );
@@ -973,7 +995,7 @@ fn handle_mouse_event<H, R>(
         active_run.is_some(),
     ) && let Some(run) = active_run
     {
-        let _unused = crate::console::adapter::update_manager(
+        crate::console::adapter::update_manager(
             ms,
             crate::console::adapter::ManagerMessage::OpenListContainerInfo {
                 state: jackin_console::tui::components::container_info::debug_run_info_state(
@@ -1083,6 +1105,7 @@ pub async fn run_console<H: InstanceActionHandler<jackin_core::Agent>>(
     // the op-picker panel rain, and other animations stay live.
     let mut animation_tick = tokio::time::interval(Duration::from_millis(TICK_MS));
     animation_tick.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
+    let mut pacer = jackin_console::tui::runtime::ConsoleFramePacer::new();
     let mut pending_events = std::collections::VecDeque::new();
     let mut needs_redraw = true;
 
@@ -1119,21 +1142,20 @@ pub async fn run_console<H: InstanceActionHandler<jackin_core::Agent>>(
         // this frame instead of a stale Loading one.
         drain_background_messages(&mut state, &mut config, paths, cwd, &mut needs_redraw);
 
-        if needs_redraw {
-            draw_console_frame(
-                &mut terminal,
-                &mut state,
-                DrawConsoleContext {
-                    config: &config,
-                    cwd,
-                    mouse_state: &mut mouse_state,
-                    container_info_overlay_active: &mut container_info_overlay_active,
-                    action_parent: action_parent.as_ref(),
-                    jank_monitor: &mut jank_monitor,
-                },
-            )?;
-            needs_redraw = false;
-        }
+        present_owed_frame(
+            &mut pacer,
+            &mut needs_redraw,
+            &mut terminal,
+            &mut state,
+            DrawConsoleContext {
+                config: &config,
+                cwd,
+                mouse_state: &mut mouse_state,
+                container_info_overlay_active: &mut container_info_overlay_active,
+                action_parent: action_parent.as_ref(),
+                jank_monitor: &mut jank_monitor,
+            },
+        )?;
         drop(action_parent);
         if jackin_telemetry::ui::has_pending_actions() {
             continue;

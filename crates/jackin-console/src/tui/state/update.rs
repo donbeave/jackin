@@ -80,8 +80,6 @@ pub type ManagerBackgroundEvent = crate::tui::message::BackgroundEvent<
     ManagerConfigSaveResult,
 >;
 
-pub type ManagerUpdate = crate::tui::update::ConsoleUpdate<ManagerEffect>;
-
 // ── Reducer ───────────────────────────────────────────────────────────────
 
 #[expect(
@@ -90,7 +88,7 @@ pub type ManagerUpdate = crate::tui::update::ConsoleUpdate<ManagerEffect>;
               per-message-arm state mutation + per-stage emit + per-Update \
               branch. Inline shape preserves the per-message-arm state machine."
 )]
-pub fn update_manager(state: &mut ManagerState<'_>, message: ManagerMessage) -> ManagerUpdate {
+pub fn update_manager(state: &mut ManagerState<'_>, message: ManagerMessage) {
     let action = action_of(&message);
     let action_guard = action.and_then(|name| start_manager_action(state, name));
     let action_span = action_guard.as_ref().map(|guard| guard.span().enter());
@@ -304,7 +302,6 @@ pub fn update_manager(state: &mut ManagerState<'_>, message: ManagerMessage) -> 
     if let Some(guard) = action_guard {
         jackin_telemetry::ui::remember_action_parent(guard);
     }
-    ManagerUpdate::redraw()
 }
 
 fn request_poll_effect(state: &mut ManagerState<'_>, message: ManagerMessage) {
@@ -596,7 +593,7 @@ fn move_editor_field_selection(
         delta,
         max_row,
         skipped_rows,
-        editor.tab_scroll_y,
+        editor.tab_scroll.offset_y(),
         term.height,
         footer_h,
     );
@@ -697,8 +694,12 @@ fn scroll_editor_tab_horizontal(
     let ManagerStage::Editor(editor) = &mut state.stage else {
         return;
     };
-    let plan =
-        editor_tab_horizontal_scroll_plan(editor.tab_scroll_x, delta, term_width, content_width);
+    let plan = editor_tab_horizontal_scroll_plan(
+        editor.tab_scroll.offset_x(),
+        delta,
+        term_width,
+        content_width,
+    );
     editor.apply_tab_horizontal_scroll_plan(plan);
 }
 
@@ -712,7 +713,7 @@ fn scroll_editor_workspace_mounts_horizontal(
         return;
     };
     let plan = editor_workspace_mounts_horizontal_scroll_plan(
-        editor.workspace_mounts_scroll_x,
+        editor.workspace_mounts_scroll.offset_x(),
         delta,
         term_width,
         content_width,
@@ -729,8 +730,12 @@ fn scroll_settings_global_mounts_horizontal(
     let ManagerStage::Settings(settings) = &mut state.stage else {
         return;
     };
-    let scroll_x =
-        settings_horizontal_scroll_plan(settings.mounts.scroll_x, delta, term_width, content_width);
+    let scroll_x = settings_horizontal_scroll_plan(
+        settings.mounts.scroll.offset_x(),
+        delta,
+        term_width,
+        content_width,
+    );
     settings.mounts.apply_horizontal_scroll(scroll_x);
 }
 
@@ -743,8 +748,12 @@ fn scroll_settings_trust_horizontal(
     let ManagerStage::Settings(settings) = &mut state.stage else {
         return;
     };
-    let scroll_x =
-        settings_horizontal_scroll_plan(settings.trust.scroll_x, delta, term_width, content_width);
+    let scroll_x = settings_horizontal_scroll_plan(
+        settings.trust.scroll.offset_x(),
+        delta,
+        term_width,
+        content_width,
+    );
     settings.trust.apply_horizontal_scroll(scroll_x);
 }
 
@@ -761,7 +770,7 @@ fn move_settings_global_mounts_selection(
         settings.mounts.selected,
         settings.mounts.pending.len(),
         delta,
-        settings.mounts.scroll_y,
+        settings.mounts.scroll.offset_y(),
         term.height,
         footer_h,
     );
@@ -782,7 +791,7 @@ fn move_settings_env_selection(
         settings.env.selected,
         &rows,
         delta,
-        settings.env.scroll_y,
+        settings.env.scroll.offset_y(),
         term.height,
         footer_h,
     );
@@ -802,7 +811,7 @@ fn move_settings_trust_selection(
         settings.trust.selected,
         settings.trust.pending.len(),
         delta,
-        settings.trust.scroll_y,
+        settings.trust.scroll.offset_y(),
         term.height,
         footer_h,
     );
@@ -969,7 +978,7 @@ fn report_token_generate_error(state: &mut ManagerState<'_>, error: anyhow::Erro
             });
         }
         ManagerStage::Settings(_) => {
-            let _unused = update_manager(
+            update_manager(
                 state,
                 ManagerMessage::OpenSettingsErrorPopup {
                     title: error_popup::token_generation_failed_error_title().into(),
@@ -1002,7 +1011,7 @@ pub fn report_open_url_error(state: &mut ManagerState<'_>, error: anyhow::Error)
             });
         }
         ManagerStage::Settings(_) => {
-            let _unused = update_manager(
+            update_manager(
                 state,
                 ManagerMessage::OpenSettingsErrorPopup {
                     title: error_popup::failed_to_open_url_error_title().into(),
@@ -1011,7 +1020,7 @@ pub fn report_open_url_error(state: &mut ManagerState<'_>, error: anyhow::Error)
             );
         }
         _ => {
-            let _unused = update_manager(
+            update_manager(
                 state,
                 ManagerMessage::OpenListErrorPopup {
                     title: error_popup::failed_to_open_url_error_title().into(),

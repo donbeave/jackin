@@ -7,8 +7,7 @@
 use super::{
     ManagerMessage, ManagerStage, ManagerState, MouseEvent, Rect, SettingsTab, dispatch_manager,
     editor_auth_row_index_at_position, editor_mount_index_at_position, editor_scroll_area,
-    editor_tab_at_position, editor_tab_hover_target_plan, settings_tab_at_position,
-    settings_tab_hover_target_plan, settings_trust_row_at_position,
+    editor_tab_at_position, settings_tab_at_position, settings_trust_row_at_position,
 };
 
 pub fn try_select_editor_tab(state: &mut ManagerState<'_>, mouse: MouseEvent) -> bool {
@@ -25,30 +24,6 @@ pub fn try_select_editor_tab(state: &mut ManagerState<'_>, mouse: MouseEvent) ->
 
     dispatch_manager(state, ManagerMessage::SelectEditorTab(tab));
     true
-}
-
-/// Repaint the hovered tab index on mouse motion so the strip lifts under the
-/// pointer like the in-container multiplexer tabs. A motion off the strip
-/// clears the highlight.
-pub fn update_tab_hover(state: &mut ManagerState<'_>, mouse: MouseEvent) {
-    match &mut state.stage {
-        ManagerStage::Editor(editor) => {
-            editor.set_hover_target(editor_tab_hover_target_plan(
-                editor.modal.is_some(),
-                mouse.row,
-                mouse.column,
-            ));
-        }
-        ManagerStage::Settings(settings) => {
-            settings.set_hover_target(settings_tab_hover_target_plan(
-                settings.mounts.modals.is_open(),
-                settings.env.modals.is_open(),
-                mouse.row,
-                mouse.column,
-            ));
-        }
-        _ => {}
-    }
 }
 
 pub fn try_select_settings_tab(state: &mut ManagerState<'_>, mouse: MouseEvent) -> bool {
@@ -83,11 +58,14 @@ pub fn try_select_settings_trust_row(
         area,
         mouse.column,
         mouse.row,
-        settings.trust.scroll_y,
+        settings.trust.scroll.offset_y(),
         settings.trust.pending.len(),
     ) {
         dispatch_manager(state, ManagerMessage::SelectSettingsTrustRow(row));
     } else {
+        // Mouse parity matrix row 18 carve-out: click on a non-row in the
+        // Trust block deselects via the `usize::MAX` sentinel — upstream
+        // scene outside-click carries layer dismiss policy only.
         dispatch_manager(state, ManagerMessage::SelectSettingsTrustRow(usize::MAX));
     }
     true
@@ -107,7 +85,7 @@ pub fn editor_mount_index_at(
         editor_scroll_area(editor, term_size).area,
         mouse.column,
         mouse.row,
-        editor.tab_scroll_y,
+        editor.tab_scroll.offset_y(),
         editor.pending.mounts.as_slice(),
     )
 }
@@ -159,7 +137,7 @@ pub fn editor_auth_row_index_at(
         editor.content_area(term_size),
         mouse.column,
         mouse.row,
-        editor.tab_scroll_y,
+        editor.tab_scroll.offset_y(),
         &rows,
     )
 }

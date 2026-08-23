@@ -2,6 +2,23 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //! Workspaces screen view helpers.
+//!
+//! Composition copy-adapted from the upstream `patterns/project_launcher.rs`
+//! and `patterns/session_picker.rs` recipes (composition reference, never a
+//! type dependency — no `termrock::patterns` import):
+//!
+//! - workspace/instance sidebar list = the recipe's master list pane
+//!   (`ProjectLauncherPane::Projects`),
+//! - detail/preview pane = the recipe's preview region
+//!   (`ProjectLauncherPane::Preview`),
+//! - inline pickers (role/agent/provider) = the recipe's popover selectors
+//!   (`QuickOpen`),
+//! - footer action hints = the recipe's action/status strip (chrome-only).
+//!
+//! The focus cycle follows the recipe's `focus_order()` pattern: one ordered
+//! owner chain (`workspace_list_focus_order` in `update.rs`) that enter/exit
+//! transitions walk. Domain types, wording, and effects stay jackin❯-owned
+//! per the copy-adapt law.
 
 use ratatui::{
     Frame,
@@ -475,13 +492,39 @@ pub fn workspace_list_names_render_plan(
     let viewport_h = usize::from(facts.area.height.saturating_sub(2));
     WorkspaceListNamesRenderPlan {
         viewport_width: termrock::scroll::viewport_width(facts.area),
-        follow_scroll_y: crate::tui::focus::follow_cursor_y(
+        follow_scroll_y: names_window_follow_y(
             facts.selected_index,
             facts.row_count,
             viewport_h,
             facts.scroll_y,
         ),
     }
+}
+
+/// Names-list vertical window, driven by upstream `VirtualListState`
+/// (plan 009): the stored offset seeds the virtualizer (`set_offset`, same
+/// clamp) and `reveal` moves it only when the cursor leaves the view —
+/// byte-identical to the retired `cursor_follow_offset` call. Zero height
+/// short-circuits first: upstream `cursor_follow_offset` returns 0 there
+/// while `VirtualListState` floors the viewport at 1, which would diverge.
+/// One-shot construction per frame: the list keeps no persistent
+/// virtual-list state of its own (the stored offset lives in
+/// `ManagerState::list_names_scroll`, read by paint through this plan).
+fn names_window_follow_y(
+    selected_index: usize,
+    row_count: usize,
+    viewport_h: usize,
+    scroll_y: u16,
+) -> u16 {
+    if viewport_h == 0 {
+        return 0;
+    }
+    let mut window = termrock::widgets::VirtualListState::<usize>::new();
+    window.set_logical_len(u64::try_from(row_count).unwrap_or(u64::MAX));
+    window.set_viewport_extent(u16::try_from(viewport_h).unwrap_or(u16::MAX));
+    window.set_offset(u64::from(scroll_y));
+    let _ = window.reveal(u64::try_from(selected_index).unwrap_or(u64::MAX));
+    u16::try_from(window.offset()).unwrap_or(u16::MAX)
 }
 
 pub fn render_list_names_block(

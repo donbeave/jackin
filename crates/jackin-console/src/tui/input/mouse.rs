@@ -12,31 +12,30 @@ mod hover;
 mod modal_scroll;
 mod scroll_bars;
 mod scroll_pan;
+mod scroll_registry;
 mod selection;
 
 use crossterm::event::{MouseButton, MouseEvent, MouseEventKind};
 use ratatui::layout::Rect;
 
 use crate::tui::components::file_browser::FileBrowserState;
-use crate::tui::components::modal_rects::{self, ModalRectMode};
+use crate::tui::components::modal_overlay;
 use crate::tui::layout::{
     LIST_FOOTER_HEIGHT, LIST_HEADER_HEIGHT, MIN_DRAGGABLE_WIDTH, MOUSE_VERTICAL_SCROLL_STEP,
-    SCREEN_HEADER_HEIGHT, ScrollbarAxis, TAB_STRIP_HEIGHT, apply_horizontal_scroll,
-    apply_scrollbar_drag, apply_vertical_scroll, horizontal_split_pane_dims,
-    is_horizontally_scrollable, point_in_rect, scroll_selection_at_position, scroll_viewport_width,
-    split_seam_column,
+    SCREEN_HEADER_HEIGHT, ScrollbarAxis, TAB_STRIP_HEIGHT, apply_scrollbar_drag,
+    horizontal_split_pane_dims, is_horizontally_scrollable, point_in_rect,
+    scroll_selection_at_position, split_seam_column,
 };
 use crate::tui::run::{ConsoleClickStageFacts, ConsoleClickabilityFacts, console_clickable_at};
 use crate::tui::screens::editor::update::{
     editor_auth_row_index_at_position, editor_mount_hover_target_at_position,
     editor_mount_index_at_position, editor_scroll_focus_plan, editor_tab_at_position,
-    editor_tab_bar_focus_plan, editor_tab_hover_target_plan,
+    editor_tab_bar_focus_plan,
 };
 use crate::tui::screens::settings::update::{
     settings_modal_open as settings_modal_open_fact, settings_scroll_focus_plan,
-    settings_tab_at_position, settings_tab_bar_focus_plan, settings_tab_hover_target_plan,
-    settings_trust_clickable_at_position, settings_trust_hover_target_at_position,
-    settings_trust_row_at_position,
+    settings_tab_at_position, settings_tab_bar_focus_plan, settings_trust_clickable_at_position,
+    settings_trust_hover_target_at_position, settings_trust_row_at_position,
 };
 use crate::tui::screens::workspaces::update::{
     WorkspaceListMousePlan, apply_workspace_list_hover_target,
@@ -55,9 +54,9 @@ use crate::tui::update::{
 };
 
 pub use hover::{
-    container_info_copyable_row_at, file_browser_modal_and_state, file_browser_url_row_at,
-    list_row_hover_at, try_copy_container_info_value, update_container_info_hover,
-    update_list_row_hover, update_row_hover,
+    ConsoleHoverTarget, container_info_copyable_row_at, file_browser_modal_and_state,
+    file_browser_url_row_at, list_row_hover_at, try_copy_container_info_value,
+    update_container_info_hover, update_hover,
 };
 pub use modal_scroll::{
     scroll_file_browser_state_at, scroll_global_mount_modal_selection, scroll_list_modal_selection,
@@ -65,13 +64,12 @@ pub use modal_scroll::{
     scroll_settings_env_modal_selection, try_scroll_file_browser_modal, try_scroll_picker_modal,
 };
 pub use scroll_bars::{try_drag_horizontal_scrollbar, try_drag_vertical_scrollbar};
-pub use scroll_pan::{
-    scroll_active_panel, scroll_active_panel_vertical, settings_modal_open, update_scroll_focus,
-};
+pub use scroll_pan::{dispatch_wheel, settings_modal_open, update_scroll_focus};
+pub use scroll_registry::{ConsoleScrollBlock, ScrollBlockRegion, hit, scroll_block_registry};
 pub use selection::{
     editor_auth_row_index_at, editor_mount_index_at, try_select_editor_auth_row,
     try_select_editor_mount_row, try_select_editor_tab, try_select_settings_tab,
-    try_select_settings_trust_row, update_tab_hover,
+    try_select_settings_trust_row,
 };
 
 #[cfg(test)]
@@ -97,6 +95,14 @@ fn handle_mouse(
     handle_mouse_with_config(state, mouse, term_size, None)
 }
 
+/// Dispatch a mouse event into the workspace manager.
+///
+/// Mouse parity matrix row 7 carve-out: the routing precedence chain
+/// (container-info copy → container scroll → picker modal → file-browser
+/// modal → tab select → click focus → scrollbar drags → wheel → row
+/// select → URL open → seam/list) stays consumer code in exactly this
+/// order; upstream supplies the z-ordered hit + overlay routing
+/// primitives, no single carrier.
 pub fn handle_mouse_with_config(
     state: &mut ManagerState<'_>,
     mouse: MouseEvent,
@@ -108,10 +114,7 @@ pub fn handle_mouse_with_config(
     }
 
     if matches!(mouse.kind, MouseEventKind::Moved) {
-        update_tab_hover(state, mouse);
-        update_list_row_hover(state, mouse, term_size);
-        update_row_hover(state, mouse, term_size);
-        update_container_info_hover(state, mouse, term_size);
+        update_hover(state, mouse, term_size);
         return super::InputOutcome::Continue;
     }
 
@@ -180,14 +183,17 @@ pub fn handle_mouse_with_config(
                     delta,
                     vertical_fallback,
                 } => {
-                    if !scroll_active_panel(state, mouse, term_size, config, delta)
+                    let outcome = dispatch_wheel(state, mouse, term_size, config, 0, delta);
+                    // Matrix row 3: upstream never retries vertical — the
+                    // Shift-fallback is the consumer retry on `Ignored`.
+                    if matches!(outcome, termrock::widgets::ScrollOutcome::Ignored)
                         && let Some(fallback) = vertical_fallback
                     {
-                        scroll_active_panel_vertical(state, mouse, term_size, config, fallback);
+                        let _ = dispatch_wheel(state, mouse, term_size, config, fallback, 0);
                     }
                 }
                 ConsoleMouseWheelPlan::Vertical(delta) => {
-                    scroll_active_panel_vertical(state, mouse, term_size, config, delta);
+                    let _ = dispatch_wheel(state, mouse, term_size, config, delta, 0);
                 }
                 ConsoleMouseWheelPlan::None => {}
             }
@@ -263,7 +269,7 @@ pub fn handle_mouse_with_config(
 }
 
 fn dispatch_manager(state: &mut ManagerState<'_>, message: ManagerMessage) {
-    let _dirty = update_manager(state, message);
+    update_manager(state, message);
 }
 
 /// Whether a left-click at the pointer would act on a clickable element.
@@ -338,8 +344,8 @@ fn try_open_file_browser_git_url(
 
 #[derive(Clone, Copy, Debug)]
 pub struct ScrollArea {
-    area: Rect,
-    content_width: usize,
+    pub area: Rect,
+    pub content_width: usize,
 }
 
 #[must_use]

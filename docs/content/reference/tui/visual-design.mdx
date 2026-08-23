@@ -57,7 +57,7 @@ Every row that begins with `+` is an add/create action and must render through t
 ## Block Border Colors
 
 - **Active interaction container**: `PHOSPHOR_GREEN` border — dialogs, pickers, forms, tab panels, and the currently active list/sidebar use the bright border whenever they own keyboard or scroll interaction. The paint path maps `focused = true` → `PanelChrome::Focused` with no overflow gate.
-- **Passive list-detail scroll block that still owns focus**: `PHOSPHOR_GREEN` border — state keeps `focused = true` only while content overflows (see focusability / `focused_block_still_scrollable`). The renderer does not second-guess `focused`.
+- **Passive list-detail scroll block that still owns focus**: `PHOSPHOR_GREEN` border — state keeps `focused = true` only while content overflows (see focusability / `list_pre_render_focus_plan`). The renderer does not second-guess `focused`.
 - **Passive list-detail block after content fits**: `BORDER_GRAY` border — callers clear focus in pre-render state so `focused` is already false; there is no false scroll affordance.
 - **Unfocused / background container**: `BORDER_GRAY` border regardless of scrollability.
 

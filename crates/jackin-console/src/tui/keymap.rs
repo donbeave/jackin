@@ -8,8 +8,53 @@
 //! its keymap here. `Keymap::dispatch(chord)` replaces plan-function calls in
 //! `input/*.rs`; `Keymap::hint_spans()` derives footer hints.
 
-use termrock::input::KeyCode;
+use termrock::input::{KeyCode, KeyEvent};
+use termrock::interaction::{
+    InteractionElement, InteractionLayer, InteractionOutcome, InteractionScene, LayerDismissPolicy,
+    LayerKind, dispatch_keymap_action,
+};
 use termrock::keymap::{KeyBinding, KeyChord, Keymap, Visibility};
+
+/// Dispatch a key through the upstream keymap bridge.
+///
+/// Chord resolution comes from `map` exactly as the retired direct
+/// `Keymap::dispatch` calls did; the transient single-element scene
+/// advertises every action the keymap carries, so the bridge's availability
+/// gate passes precisely what the keymap resolves, and context folding
+/// stays at the call sites unchanged. `UiIntent` is not bridged: no console
+/// keymap matches the intent granularity 1:1 (research ch04), so the
+/// product action enums stay the bridge payload everywhere.
+pub(crate) fn bridged_keymap_action<A>(map: &Keymap<A>, key: KeyEvent) -> Option<A>
+where
+    A: Clone + Copy + PartialEq + 'static,
+{
+    let mut scene: InteractionScene<(), (), A> = InteractionScene::new();
+    scene.ensure_root(InteractionLayer {
+        id: (),
+        kind: LayerKind::Root,
+        owns_input: true,
+        esc: LayerDismissPolicy::Ignore,
+        outside: LayerDismissPolicy::Ignore,
+        focus_return: None,
+    });
+    let actions = map
+        .bindings()
+        .iter()
+        .map(|binding| *binding.action())
+        .collect();
+    if scene
+        .register(
+            InteractionElement::control((), (), ratatui::layout::Rect::default()).actions(actions),
+        )
+        .is_err()
+    {
+        return None;
+    }
+    match dispatch_keymap_action(&scene, map, key) {
+        InteractionOutcome::Action { action, .. } => Some(action),
+        _ => None,
+    }
+}
 
 // ── Editor global (fired in both tab-bar and content modes) ──────────────────
 
@@ -1288,6 +1333,30 @@ pub(crate) static PREVIEW_PANE_KEYMAP_BINDINGS: &[KeyBinding<PreviewPaneAction>]
 ];
 pub(crate) static PREVIEW_PANE_KEYMAP: Keymap<PreviewPaneAction> =
     Keymap::from_static(PREVIEW_PANE_KEYMAP_BINDINGS);
+
+// ── Console-global (intercepted centrally before per-screen planners) ────────
+
+/// Console-global actions. `?` is intercepted by `should_open_keyboard_help`
+/// inside the dispatch `Stage` arm — per-screen planners never see the key
+/// (same central-interception pattern as Ctrl+Q, but modal-safe: the consult
+/// point guarantees no modal owns input). The binding exists so the
+/// keyboard-help overlay and the footer hints derive the `?` glyph from live
+/// keymap data.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum ConsoleGlobalAction {
+    OpenKeyboardHelp,
+}
+
+pub(crate) static CONSOLE_GLOBAL_KEYMAP_BINDINGS: &[KeyBinding<ConsoleGlobalAction>] =
+    &[KeyBinding::borrowed(
+        &[KeyChord::plain(KeyCode::Char('?'))],
+        ConsoleGlobalAction::OpenKeyboardHelp,
+        Some("help"),
+        Visibility::Shown,
+        Some("?"),
+    )];
+pub(crate) static CONSOLE_GLOBAL_KEYMAP: Keymap<ConsoleGlobalAction> =
+    Keymap::from_static(CONSOLE_GLOBAL_KEYMAP_BINDINGS);
 
 #[cfg(test)]
 mod tests;
