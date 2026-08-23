@@ -267,6 +267,12 @@ jobs:
       - name: Bind nested cache save into admitted closure
         if: github.event_name == 'velnor-admission-closure'
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      - name: Bind CI xtask resolver into admitted closure
+        if: github.event_name == 'velnor-admission-closure'
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+      - name: Bind CI xtask fallback toolchain into admitted closure
+        if: github.event_name == 'velnor-admission-closure'
+        uses: jdx/mise-action@7e36c90d9ab29c415a2384db3006f3ec8a8cc654 # v4.2.4
       - name: Bind nested xtask resolver into admitted closure
         if: github.event_name == 'velnor-admission-closure'
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
@@ -366,6 +372,12 @@ jobs:
       - name: Bind nested cache save into admitted closure
         if: github.event_name == 'velnor-admission-closure'
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      - name: Bind CI xtask resolver into admitted closure
+        if: github.event_name == 'velnor-admission-closure'
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+      - name: Bind CI xtask fallback toolchain into admitted closure
+        if: github.event_name == 'velnor-admission-closure'
+        uses: jdx/mise-action@7e36c90d9ab29c415a2384db3006f3ec8a8cc654 # v4.2.4
       - name: Bind nested xtask resolver into admitted closure
         if: github.event_name == 'velnor-admission-closure'
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
@@ -492,6 +504,12 @@ jobs:
           pattern: preview-${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'github') && 'GitHub' || 'Velnor' }}-*
           merge-multiple: true
 
+      - name: Bind CI xtask resolver into admitted closure
+        if: github.event_name == 'velnor-admission-closure'
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+      - name: Bind CI xtask fallback toolchain into admitted closure
+        if: github.event_name == 'velnor-admission-closure'
+        uses: jdx/mise-action@7e36c90d9ab29c415a2384db3006f3ec8a8cc654 # v4.2.4
       - name: Restore prepared CI xtask
         uses: ./.github/actions/download-ci-xtask
         with:
