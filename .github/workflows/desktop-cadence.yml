@@ -16,6 +16,12 @@ on:
   schedule:
     - cron: "41 4 * * 1"
   workflow_dispatch:
+    inputs:
+      lanes:
+        description: velnor (default) | github | both
+        type: choice
+        default: velnor
+        options: [velnor, github, both]
 
 permissions:
   contents: read
@@ -25,6 +31,10 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # macOS-only workflow: the desktop cadence needs Xcode/Swift (boltffi,
+  # xcodegen, UI tests). The Velnor fleet has no macOS runners, so these jobs
+  # stay on GitHub-hosted macOS on every lane — a documented fleet gap, not a
+  # lane difference. Steps and toolchain are identical regardless of `lanes`.
   merge:
     name: merge cadence (desktop-merge)
     if: github.event_name != 'schedule'
@@ -41,7 +51,7 @@ jobs:
         with:
           version: "2026.7.12"
           cache_key_prefix: "mise-v2"
-          install_args: "cargo-binstall rust aqua:nextest-rs/nextest/cargo-nextest cargo:boltffi_cli xcodegen swiftlint xcbeautify"
+          install_args: "cargo-binstall rust aqua:nextest-rs/nextest/cargo-nextest cargo:boltffi_cli xcodegen swiftlint xcbeautify ripgrep"
           github_token: ${{ secrets.GH_READONLY_TOKEN }}
 
       - name: Verify toolchain
@@ -69,7 +79,7 @@ jobs:
         with:
           version: "2026.7.12"
           cache_key_prefix: "mise-v2"
-          install_args: "cargo-binstall rust aqua:nextest-rs/nextest/cargo-nextest cargo:boltffi_cli xcodegen swiftlint xcbeautify periphery"
+          install_args: "cargo-binstall rust aqua:nextest-rs/nextest/cargo-nextest cargo:boltffi_cli xcodegen swiftlint xcbeautify periphery ripgrep"
           github_token: ${{ secrets.GH_READONLY_TOKEN }}
 
       - name: Verify toolchain

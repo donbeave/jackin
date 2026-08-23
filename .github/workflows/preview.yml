@@ -9,10 +9,10 @@ on:
   workflow_dispatch:
     inputs:
       lanes:
-        description: "Which runner(s) to run on. Velnor is the default; use both for parity runs."
+        description: velnor (default) | github | both
         type: choice
-        options: [velnor, github, both]
         default: velnor
+        options: [velnor, github, both]
 
 permissions:
   actions: read

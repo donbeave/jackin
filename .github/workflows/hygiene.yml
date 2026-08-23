@@ -9,10 +9,10 @@ on:
   workflow_dispatch:
     inputs:
       lanes:
-        description: velnor (default) | github
+        description: velnor (default) | github | both
         type: choice
         default: velnor
-        options: [velnor, github]
+        options: [velnor, github, both]
       chaos_seed:
         description: "Optional JACKIN_CHAOS_SEED for dind-chaos lane"
         required: false
@@ -105,6 +105,12 @@ jobs:
             ${{ env.CI_TOOLS_HIT != 'true' &&
                 'cargo-binstall cargo:cargo-deny cargo:cargo-fuzz cargo:cargo-hack' || '' }}
           github_token: ${{ secrets.GH_READONLY_TOKEN }}
+      - name: Bind Cargo cache actions into admitted closure
+        if: github.event_name == 'velnor-admission-closure'
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      - name: Bind Cargo cache save into admitted closure
+        if: github.event_name == 'velnor-admission-closure'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       - id: cargo-registry-cache
         uses: ./.github/actions/cache-cargo-registry
       - name: Cache Cargo and fuzz targets
@@ -182,6 +188,12 @@ jobs:
           cache_save: ${{ github.ref == 'refs/heads/main' }}
           install_args: "rust aqua:nextest-rs/nextest/cargo-nextest github:open-telemetry/weaver"
           github_token: ${{ secrets.GH_READONLY_TOKEN }}
+      - name: Bind Cargo cache actions into admitted closure
+        if: github.event_name == 'velnor-admission-closure'
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      - name: Bind Cargo cache save into admitted closure
+        if: github.event_name == 'velnor-admission-closure'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       - id: cargo-registry-cache
         uses: ./.github/actions/cache-cargo-registry
       - name: Cache Cargo target
@@ -229,6 +241,12 @@ jobs:
           cache_save: ${{ github.ref == 'refs/heads/main' }}
           install_args: "rust aqua:nextest-rs/nextest/cargo-nextest"
           github_token: ${{ secrets.GH_READONLY_TOKEN }}
+      - name: Bind Cargo cache actions into admitted closure
+        if: github.event_name == 'velnor-admission-closure'
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      - name: Bind Cargo cache save into admitted closure
+        if: github.event_name == 'velnor-admission-closure'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       - id: cargo-registry-cache
         uses: ./.github/actions/cache-cargo-registry
       - &cargo-target-cache
@@ -300,6 +318,12 @@ jobs:
           cache_save: ${{ github.ref == 'refs/heads/main' }}
           install_args: "rust aqua:nextest-rs/nextest/cargo-nextest"
           github_token: ${{ secrets.GH_READONLY_TOKEN }}
+      - name: Bind Cargo cache actions into admitted closure
+        if: github.event_name == 'velnor-admission-closure'
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      - name: Bind Cargo cache save into admitted closure
+        if: github.event_name == 'velnor-admission-closure'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       - id: cargo-registry-cache
         uses: ./.github/actions/cache-cargo-registry
       - *cargo-target-cache
@@ -349,6 +373,12 @@ jobs:
           cache_save: ${{ github.ref == 'refs/heads/main' }}
           install_args: "rust hyperfine"
           github_token: ${{ secrets.GH_READONLY_TOKEN }}
+      - name: Bind Cargo cache actions into admitted closure
+        if: github.event_name == 'velnor-admission-closure'
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      - name: Bind Cargo cache save into admitted closure
+        if: github.event_name == 'velnor-admission-closure'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       - id: cargo-registry-cache
         uses: ./.github/actions/cache-cargo-registry
       - *cargo-target-cache
@@ -414,6 +444,12 @@ jobs:
           cache_save: ${{ github.ref == 'refs/heads/main' }}
           install_args: "rust"
           github_token: ${{ secrets.GH_READONLY_TOKEN }}
+      - name: Bind Cargo cache actions into admitted closure
+        if: github.event_name == 'velnor-admission-closure'
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      - name: Bind Cargo cache save into admitted closure
+        if: github.event_name == 'velnor-admission-closure'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       - id: cargo-registry-cache
         uses: ./.github/actions/cache-cargo-registry
       - run: rustup component add rust-analyzer
@@ -476,6 +512,12 @@ jobs:
           cache_save: ${{ github.ref == 'refs/heads/main' }}
           install_args: "rust"
           github_token: ${{ secrets.GH_READONLY_TOKEN }}
+      - name: Bind Cargo cache actions into admitted closure
+        if: github.event_name == 'velnor-admission-closure'
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      - name: Bind Cargo cache save into admitted closure
+        if: github.event_name == 'velnor-admission-closure'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       - id: cargo-registry-cache
         uses: ./.github/actions/cache-cargo-registry
       - name: Measure clean + incremental builds
@@ -519,6 +561,12 @@ jobs:
           cache_save: ${{ github.ref == 'refs/heads/main' }}
           install_args: "rust"
           github_token: ${{ secrets.GH_READONLY_TOKEN }}
+      - name: Bind Cargo cache actions into admitted closure
+        if: github.event_name == 'velnor-admission-closure'
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      - name: Bind Cargo cache save into admitted closure
+        if: github.event_name == 'velnor-admission-closure'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       - id: cargo-registry-cache
         uses: ./.github/actions/cache-cargo-registry
       - name: Install beta toolchain + clippy
@@ -573,6 +621,12 @@ jobs:
             ${{ env.CI_TOOLS_HIT != 'true' &&
                 'cargo-binstall cargo:cargo-llvm-cov aqua:nextest-rs/nextest/cargo-nextest' || '' }}
           github_token: ${{ secrets.GH_READONLY_TOKEN }}
+      - name: Bind Cargo cache actions into admitted closure
+        if: github.event_name == 'velnor-admission-closure'
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      - name: Bind Cargo cache save into admitted closure
+        if: github.event_name == 'velnor-admission-closure'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       - id: cargo-registry-cache
         uses: ./.github/actions/cache-cargo-registry
       - run: rustup component add llvm-tools
@@ -622,6 +676,12 @@ jobs:
           cache_save: ${{ github.ref == 'refs/heads/main' }}
           install_args: "rust"
           github_token: ${{ secrets.GH_READONLY_TOKEN }}
+      - name: Bind Cargo cache actions into admitted closure
+        if: github.event_name == 'velnor-admission-closure'
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      - name: Bind Cargo cache save into admitted closure
+        if: github.event_name == 'velnor-admission-closure'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       - id: cargo-registry-cache
         uses: ./.github/actions/cache-cargo-registry
       - name: Install nightly + miri
@@ -678,6 +738,12 @@ jobs:
             ${{ env.CI_TOOLS_HIT != 'true' &&
                 'cargo-binstall cargo:cargo-mutants' || '' }}
           github_token: ${{ secrets.GH_READONLY_TOKEN }}
+      - name: Bind Cargo cache actions into admitted closure
+        if: github.event_name == 'velnor-admission-closure'
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      - name: Bind Cargo cache save into admitted closure
+        if: github.event_name == 'velnor-admission-closure'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       - id: cargo-registry-cache
         uses: ./.github/actions/cache-cargo-registry
       - name: cargo mutants (manifest + config)
@@ -743,6 +809,12 @@ jobs:
             ${{ env.CI_TOOLS_HIT != 'true' &&
                 'cargo-binstall cargo:cargo-hakari' || '' }}
           github_token: ${{ secrets.GH_READONLY_TOKEN }}
+      - name: Bind Cargo cache actions into admitted closure
+        if: github.event_name == 'velnor-admission-closure'
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      - name: Bind Cargo cache save into admitted closure
+        if: github.event_name == 'velnor-admission-closure'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       - id: cargo-registry-cache
         uses: ./.github/actions/cache-cargo-registry
       - *cargo-target-cache
@@ -850,6 +922,12 @@ jobs:
             ${{ env.CI_TOOLS_HIT != 'true' &&
                 'cargo-binstall cargo:cargo-dylint cargo:dylint-link' || '' }}
           github_token: ${{ secrets.GH_READONLY_TOKEN }}
+      - name: Bind Cargo cache actions into admitted closure
+        if: github.event_name == 'velnor-admission-closure'
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      - name: Bind Cargo cache save into admitted closure
+        if: github.event_name == 'velnor-admission-closure'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       - id: cargo-registry-cache
         uses: ./.github/actions/cache-cargo-registry
       - name: cargo dylint
@@ -917,6 +995,12 @@ jobs:
             ${{ env.CI_TOOLS_HIT != 'true' &&
                 'cargo-binstall aqua:nextest-rs/nextest/cargo-nextest cargo:cargo-zigbuild' || '' }}
           github_token: ${{ secrets.GH_READONLY_TOKEN }}
+      - name: Bind Cargo cache actions into admitted closure
+        if: github.event_name == 'velnor-admission-closure'
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      - name: Bind Cargo cache save into admitted closure
+        if: github.event_name == 'velnor-admission-closure'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       - id: cargo-registry-cache
         uses: ./.github/actions/cache-cargo-registry
       - name: Run full DinD E2E suite

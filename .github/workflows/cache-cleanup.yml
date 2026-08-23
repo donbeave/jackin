@@ -7,10 +7,10 @@ on:
   workflow_dispatch:
     inputs:
       lanes:
-        description: velnor (default) | github
+        description: velnor (default) | github | both
         type: choice
         default: velnor
-        options: [velnor, github]
+        options: [velnor, github, both]
       ref:
         description: Cache ref to delete, for example refs/pull/632/merge.
         required: true

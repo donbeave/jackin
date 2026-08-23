@@ -16,10 +16,10 @@ on:
         type: choice
         default: validate
         options: [validate]
+      # Menu-bar signing always uses GitHub-hosted macOS (never Velnor) — the
+      # Velnor fleet has no macOS runners (Apple credential boundary).
       lanes:
-        description: |
-          Which runner(s) to run on for Linux CLI/capsule builds. Default Velnor; use both for parity runs.
-          Menu-bar signing always uses GitHub-hosted macOS (never Velnor).
+        description: velnor (default) | github | both
         type: choice
         default: velnor
         options: [velnor, github, both]
@@ -214,6 +214,12 @@ jobs:
           cache_save: false
           install_args: "cargo-binstall rust aqua:nextest-rs/nextest/cargo-nextest github:open-telemetry/weaver@0.24.2"
           github_token: ${{ secrets.GH_READONLY_TOKEN }}
+      - name: Bind Cargo cache actions into admitted closure
+        if: github.event_name == 'velnor-admission-closure'
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      - name: Bind Cargo cache save into admitted closure
+        if: github.event_name == 'velnor-admission-closure'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       - uses: ./.github/actions/cache-cargo-registry
       - name: Cache Cargo target
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
@@ -276,6 +282,12 @@ jobs:
           cache_save: ${{ github.ref == 'refs/heads/main' }}
           install_args: "cargo-binstall rust zig cargo:cargo-zigbuild cosign syft cargo:sccache"
           github_token: ${{ secrets.GH_READONLY_TOKEN }}
+      - name: Bind Cargo cache actions into admitted closure
+        if: github.event_name == 'velnor-admission-closure'
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      - name: Bind Cargo cache save into admitted closure
+        if: github.event_name == 'velnor-admission-closure'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       - id: cargo-registry-cache
         uses: ./.github/actions/cache-cargo-registry
       - uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
@@ -369,6 +381,12 @@ jobs:
           cache_save: ${{ github.ref == 'refs/heads/main' }}
           install_args: "cargo-binstall rust zig cargo:cargo-zigbuild cosign syft cargo:sccache"
           github_token: ${{ secrets.GH_READONLY_TOKEN }}
+      - name: Bind Cargo cache actions into admitted closure
+        if: github.event_name == 'velnor-admission-closure'
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      - name: Bind Cargo cache save into admitted closure
+        if: github.event_name == 'velnor-admission-closure'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       - id: cargo-registry-cache
         uses: ./.github/actions/cache-cargo-registry
       - uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
@@ -448,6 +466,12 @@ jobs:
           install_args: "cargo-binstall rust cosign syft aqua:nextest-rs/nextest/cargo-nextest cargo:boltffi_cli"
           github_token: ${{ secrets.GH_READONLY_TOKEN }}
 
+      - name: Bind Cargo cache actions into admitted closure
+        if: github.event_name == 'velnor-admission-closure'
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      - name: Bind Cargo cache save into admitted closure
+        if: github.event_name == 'velnor-admission-closure'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       - uses: ./.github/actions/cache-cargo-registry
 
       - name: Cache Cargo target
@@ -642,7 +666,7 @@ jobs:
       needs.check-version.outputs.published != 'true' &&
       needs.check-version.outputs.mode == 'publish'
     needs: [check-version, matrix-setup, test, build, build-jackin-capsule, build-usage-menu-bar]
-    runs-on: ubuntu-26.04
+    runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'github') && 'ubuntu-26.04' || fromJSON('["self-hosted","velnor-target-mvp"]') }}
     timeout-minutes: 60
     permissions:
       contents: write
@@ -756,7 +780,7 @@ jobs:
 
   publish-release:
     needs: [release, sign-packages]
-    runs-on: ubuntu-26.04
+    runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'github') && 'ubuntu-26.04' || fromJSON('["self-hosted","velnor-target-mvp"]') }}
     timeout-minutes: 15
     permissions:
       contents: write
