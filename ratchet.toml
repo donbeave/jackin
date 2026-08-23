@@ -524,7 +524,7 @@ key = "crates/jackin-oppicker/README.md"
 bound = 1575
 [[family.entry]]
 key = "crates/jackin-console/README.md"
-bound = 2505
+bound = 2779
 [[family.entry]]
 key = "crates/jackin-core/README.md"
 bound = 5618
