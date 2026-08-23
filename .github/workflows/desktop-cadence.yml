@@ -31,10 +31,10 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # macOS-only workflow: the desktop cadence needs Xcode/Swift (boltffi,
-  # xcodegen, UI tests). The Velnor fleet has no macOS runners, so these jobs
-  # stay on GitHub-hosted macOS on every lane — a documented fleet gap, not a
-  # lane difference. Steps and toolchain are identical regardless of `lanes`.
+  # macOS-only workflow: the desktop cadence needs the Xcode/Swift toolchain
+  # and UI tests. The Velnor fleet has no macOS runners, so these jobs stay
+  # on GitHub-hosted macOS on every lane — a documented fleet gap, not a lane
+  # difference. Steps and toolchain are identical regardless of `lanes`.
   merge:
     name: merge cadence (desktop-merge)
     if: github.event_name != 'schedule'

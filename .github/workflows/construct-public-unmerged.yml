@@ -475,6 +475,12 @@ jobs:
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Bind Cargo cache actions into admitted closure
+        if: github.event_name == 'velnor-admission-closure'
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      - name: Bind Cargo cache save into admitted closure
+        if: github.event_name == 'velnor-admission-closure'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       - uses: ./.github/actions/aggregate-needs
         with:
           needs-json: ${{ toJSON(needs) }}
