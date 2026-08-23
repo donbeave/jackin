@@ -173,6 +173,9 @@ impl ManagerState<'_> {
             instance_snapshots: HashMap::new(),
             preview_focused: false,
             preview_pane_cursor: HashMap::new(),
+            usage_screen: None,
+            usage_accounts: Vec::new(),
+            usage_notice: None,
         }
     }
 
