@@ -1013,7 +1013,10 @@ jobs:
           set -euo pipefail
           brew install --cask orbstack
           brew install docker
-          open -g -a OrbStack
+          # LaunchServices may not yet index a freshly poured cask, so the
+          # `open -a OrbStack` name form races; launch by path via orbctl
+          # with the direct bundle path as fallback.
+          orbctl start || open -g /Applications/OrbStack.app
           for _ in $(seq 1 90); do
             if docker info --format '{{.OperatingSystem}}' 2>/dev/null | grep -q '^OrbStack$'; then
               docker info --format 'engine {{.OperatingSystem}} {{.ServerVersion}}'
