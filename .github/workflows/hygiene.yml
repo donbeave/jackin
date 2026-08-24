@@ -1008,6 +1008,21 @@ jobs:
       CARGO_TERM_COLOR: always
       JACKIN_CHAOS_SEED: ${{ inputs.chaos_seed }}
     steps:
+      - name: Provision OrbStack Docker engine
+        run: |
+          set -euo pipefail
+          brew install --cask orbstack
+          brew install docker
+          open -g -a OrbStack
+          for _ in $(seq 1 90); do
+            if docker info --format '{{.OperatingSystem}}' 2>/dev/null | grep -q '^OrbStack$'; then
+              docker info --format 'engine {{.OperatingSystem}} {{.ServerVersion}}'
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "::error::OrbStack engine did not become reachable within 450s"
+          exit 1
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Cache Rust toolchain
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
