@@ -501,7 +501,7 @@ jobs:
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           path: artifacts
-          pattern: preview-${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'github') && 'GitHub' || 'Velnor' }}-*
+          pattern: preview-${{ ((github.event_name == 'workflow_dispatch' && inputs.lanes == 'github') || github.event_name == 'push') && 'GitHub' || 'Velnor' }}-*
           merge-multiple: true
 
       - name: Bind CI xtask resolver into admitted closure
@@ -514,7 +514,7 @@ jobs:
         uses: ./.github/actions/download-ci-xtask
         with:
           token: ${{ github.token }}
-          lane: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'github') && 'GitHub' || 'Velnor' }}
+          lane: ${{ ((github.event_name == 'workflow_dispatch' && inputs.lanes == 'github') || github.event_name == 'push') && 'GitHub' || 'Velnor' }}
           xtask-contract: ${{ hashFiles('Cargo.lock', 'Cargo.toml', 'rust-toolchain.toml', '.cargo/**', 'crates/*/Cargo.toml', 'crates/jackin-xtask/src/**', 'crates/jackin-process/src/**') }}
           include-tools: "false"
 
