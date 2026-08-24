@@ -21,6 +21,13 @@ name: Renovate Validate (public unmerged)
 on:
   pull_request:
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      lanes:
+        description: velnor (default) | github | both
+        type: choice
+        default: velnor
+        options: [velnor, github, both]
 
 permissions:
   contents: read
@@ -31,7 +38,7 @@ concurrency:
 
 jobs:
   validate:
-    runs-on: ubuntu-26.04
+    runs-on: ${{ ((github.event_name == 'workflow_dispatch' && inputs.lanes == 'github') || github.event_name == 'push') && 'ubuntu-26.04' || fromJSON('["self-hosted","velnor-target-mvp"]') }}
     timeout-minutes: 10
     steps:
       - name: Checkout repository

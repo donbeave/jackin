@@ -3,6 +3,13 @@
 name: reuse-compliance (public unmerged)
 on:
   pull_request:
+  workflow_dispatch:
+    inputs:
+      lanes:
+        description: velnor (default) | github | both
+        type: choice
+        default: velnor
+        options: [velnor, github, both]
 permissions:
   contents: read
 concurrency:
@@ -14,9 +21,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        config: [{"lane":"GitHub","runner":"ubuntu-26.04","writer":true}]
+        config: ${{ fromJSON((github.event_name == 'workflow_dispatch' && inputs.lanes == 'both') && '[{"lane":"Velnor","runner":["self-hosted","velnor-target-mvp"],"writer":true},{"lane":"GitHub","runner":"ubuntu-26.04","writer":false}]' || (github.event_name == 'workflow_dispatch' && inputs.lanes == 'github') && '[{"lane":"GitHub","runner":"ubuntu-26.04","writer":true}]' || '[{"lane":"Velnor","runner":["self-hosted","velnor-target-mvp"],"writer":true}]') }}
     runs-on: ${{ matrix.config.runner }}
-    timeout-minutes: 10
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
