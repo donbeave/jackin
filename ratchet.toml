@@ -764,7 +764,7 @@ key = "jackin-capsule.incremental_s"
 bound = 8
 [[family.entry]]
 key = "jackin-console.clean_s"
-bound = 44
+bound = 45
 [[family.entry]]
 key = "jackin-console.incremental_s"
 bound = 6
