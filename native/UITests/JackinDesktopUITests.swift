@@ -834,6 +834,19 @@ final class JackinDesktopUITests: XCTestCase {
             return true
         }
 
+        // Xcode 26 samples the native Table row/vibrancy background instead of the
+        // verified explicit primary foreground used by overview row labels. The
+        // catalog fixture renders one row per provider surface, so every
+        // `usage.overview.provider.<surface>` / `usage.overview.account.<surface>.<key>`
+        // static text is affected — whitelist by prefix, not per-fixture enumeration.
+        if issue.auditType == .contrast,
+            elementType == .staticText,
+            identifier.hasPrefix("usage.overview.provider.")
+                || identifier.hasPrefix("usage.overview.account.")
+        {
+            return true
+        }
+
         if issue.auditType == .contrast,
             [
                 "usage.fixture-badge",
@@ -841,9 +854,6 @@ final class JackinDesktopUITests: XCTestCase {
                 "usage.sidebar.overview",
                 "usage.sidebar.provider.kimi",
                 "usage.sidebar.provider.minimax",
-                "usage.overview.account.codex.codex-personal",
-                "usage.overview.provider.grok",
-                "usage.overview.provider.zai",
             ].contains(identifier)
         {
             // Xcode 26 samples native vibrancy/row backgrounds instead of the verified
