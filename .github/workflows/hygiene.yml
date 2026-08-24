@@ -400,9 +400,14 @@ jobs:
           # real reinstall before resolving through `mise x`.
           mise where hyperfine 2>/dev/null | xargs -r ls -la || true
           mise install --force hyperfine
+          bin="$PWD/target/release/jackin"
+          test -x "$bin"
+          # Preflight: fail with the binary's own output instead of an opaque
+          # hyperfine "exit code 127 in the first warmup run".
+          "$bin" --help >/dev/null
           mise x hyperfine -- hyperfine --warmup 3 --min-runs 10 --export-json cold-start.json \
-            'target/release/jackin --help' \
-            'target/release/jackin console --help'
+            "$bin --help" \
+            "$bin console --help"
           {
             echo "### Cold-start hyperfine (advisory)"
             echo
