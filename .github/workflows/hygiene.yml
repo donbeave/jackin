@@ -1014,12 +1014,14 @@ jobs:
           brew install --cask orbstack
           brew install docker
           # LaunchServices may not yet index a freshly poured cask, so the
-          # `open -a OrbStack` name form races; open the bundle path
-          # directly instead. `orbctl start` is NOT used because it blocks
-          # in the foreground on ephemeral runners. `open` returns once the
-          # app is handed to launchd, and the engine keeps running for the
-          # rest of the job.
-          open -g /Applications/OrbStack.app
+          # `open -a OrbStack` name form races. The path form finds the
+          # bundle, but `open` waits for the app's launch acknowledgement,
+          # which OrbStack's headless first run never sends — so background
+          # it and let the readiness loop below decide. The app process is
+          # spawned by launchd, not by `open`, so it outlives this step.
+          # `orbctl start` is NOT used because it blocks in the foreground
+          # on ephemeral runners.
+          open -g /Applications/OrbStack.app &
           for _ in $(seq 1 90); do
             if docker info --format '{{.OperatingSystem}}' 2>/dev/null | grep -q '^OrbStack$'; then
               docker info --format 'engine {{.OperatingSystem}} {{.ServerVersion}}'
