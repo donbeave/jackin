@@ -48,10 +48,21 @@ filter = 'test(/load_agent_skips|load_agent_cleans_up_when_parallel_sidecar/)'
 test-group = 'load-agent'
 slow-timeout = { period = "90s", terminate-after = 3, grace-period = "5s" }
 
+[[profile.default.overrides]]
+# png_baselines_screens_match renders PNG baselines for every console screen;
+# on the shared Velnor runners it can exceed the default 180s terminate budget
+# under parallel suite load (the same shape as the load-agent budget below).
+filter = 'test(/png_baselines_screens_match/)'
+slow-timeout = { period = "120s", terminate-after = 3, grace-period = "5s" }
+
 [[profile.ci.overrides]]
 filter = 'test(/load_agent_skips|load_agent_cleans_up_when_parallel_sidecar/)'
 test-group = 'load-agent'
 slow-timeout = { period = "90s", terminate-after = 3, grace-period = "5s" }
+
+[[profile.ci.overrides]]
+filter = 'test(/png_baselines_screens_match/)'
+slow-timeout = { period = "120s", terminate-after = 3, grace-period = "5s" }
 
 [[profile.docker-e2e.overrides]]
 filter = 'binary(/dind_e2e|usage_broker_e2e/)'
