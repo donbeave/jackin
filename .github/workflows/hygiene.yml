@@ -392,7 +392,7 @@ jobs:
       - name: Hyperfine cold-start
         run: |
           set -euo pipefail
-          hyperfine --warmup 3 --min-runs 10 --export-json cold-start.json \
+          mise x hyperfine -- hyperfine --warmup 3 --min-runs 10 --export-json cold-start.json \
             'target/release/jackin --help' \
             'target/release/jackin console --help'
           {
@@ -489,7 +489,12 @@ jobs:
   # Scheduled per-crate clean + incremental build-time ceiling (plans 026/048).
   build-time-measure:
     name: Per-crate build-time ratchet
-    runs-on: ${{ ((github.event_name == 'workflow_dispatch' && inputs.lanes == 'github') || github.event_name == 'push') && 'ubuntu-26.04' || fromJSON('["self-hosted","velnor-target-mvp"]') }}
+    # Platform-only (calibration contract): ratchet.toml's build-time ceilings
+    # are sampled exclusively on GitHub-hosted runners and must be measured on
+    # comparable hardware. Velnor runners are materially slower (run 32711045540:
+    # jackin-runtime.clean_s 220 -> 322), which would force ceiling inflation or
+    # flapping, so this job always measures on the GitHub lane.
+    runs-on: ubuntu-26.04
     timeout-minutes: 90
     env:
       CARGO_INCREMENTAL: "0"
