@@ -5,6 +5,13 @@ name: Docs (public unmerged)
 
 on:
   pull_request:
+  workflow_dispatch:
+    inputs:
+      lanes:
+        description: velnor (default) | github | both
+        type: choice
+        default: velnor
+        options: [velnor, github, both]
 
 permissions:
   actions: read
@@ -26,7 +33,7 @@ jobs:
   # validate against the source tree at schedule time.
   changes:
     if: github.event_name != 'schedule'
-    runs-on: ubuntu-26.04
+    runs-on: ${{ ((github.event_name == 'workflow_dispatch' && inputs.lanes == 'github') || github.event_name == 'push') && 'ubuntu-26.04' || fromJSON('["self-hosted","velnor-target-mvp"]') }}
     timeout-minutes: 5
     outputs:
       docs: ${{ steps.dispatch.outputs.docs || steps.filter.outputs.docs }}
@@ -62,7 +69,7 @@ jobs:
       - name: Classify changed paths
         id: filter
         if: github.event_name != 'workflow_dispatch'
-        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        uses: dorny/paths-filter@7b450fff21473bca461d4b92ce414b9d0420d706 # v4
         with:
           token: ""
           base: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
@@ -178,7 +185,7 @@ jobs:
   repo-link-check:
     if: github.event_name != 'schedule' && needs.changes.outputs.result-reuse != 'true'
     needs: changes
-    runs-on: ubuntu-26.04
+    runs-on: ${{ ((github.event_name == 'workflow_dispatch' && inputs.lanes == 'github') || github.event_name == 'push') && 'ubuntu-26.04' || fromJSON('["self-hosted","velnor-target-mvp"]') }}
     timeout-minutes: 15
     env:
       CI_LANE: GitHub
@@ -187,6 +194,18 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
+      - name: Bind Cargo cache actions into admitted closure
+        if: github.event_name == 'velnor-admission-closure'
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      - name: Bind Cargo cache save into admitted closure
+        if: github.event_name == 'velnor-admission-closure'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      - name: Bind CI xtask resolver into admitted closure
+        if: github.event_name == 'velnor-admission-closure'
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+      - name: Bind CI xtask fallback toolchain into admitted closure
+        if: github.event_name == 'velnor-admission-closure'
+        uses: jdx/mise-action@7e36c90d9ab29c415a2384db3006f3ec8a8cc654 # v4.2.4
       - name: Setup mise
         uses: jdx/mise-action@3c2e0cf82a5b2e5249f0d3635a4d83d0ae861518 # v4
         with:
@@ -255,12 +274,24 @@ jobs:
       (needs.changes.outputs.result-reuse != 'true' ||
        (github.ref == 'refs/heads/main' &&
         needs.changes.outputs.deployment-reuse != 'true'))
-    runs-on: ubuntu-26.04
+    runs-on: ${{ ((github.event_name == 'workflow_dispatch' && inputs.lanes == 'github') || github.event_name == 'push') && 'ubuntu-26.04' || fromJSON('["self-hosted","velnor-target-mvp"]') }}
     timeout-minutes: 20
     env:
       CI_LANE: GitHub
       DOCS_XTASK: ${{ github.workspace }}/.ci-prebuilt-xtask/jackin-xtask
     steps:
+      - name: Bind Cargo cache actions into admitted closure
+        if: github.event_name == 'velnor-admission-closure'
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      - name: Bind Cargo cache save into admitted closure
+        if: github.event_name == 'velnor-admission-closure'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      - name: Bind CI xtask resolver into admitted closure
+        if: github.event_name == 'velnor-admission-closure'
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+      - name: Bind CI xtask fallback toolchain into admitted closure
+        if: github.event_name == 'velnor-admission-closure'
+        uses: jdx/mise-action@7e36c90d9ab29c415a2384db3006f3ec8a8cc654 # v4.2.4
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -440,7 +471,7 @@ jobs:
       github.event_name != 'schedule' &&
       needs.changes.outputs.result-reuse != 'true' &&
       (needs.changes.outputs.docs == 'true' || needs.changes.outputs.source == 'true')
-    runs-on: ubuntu-26.04
+    runs-on: ${{ ((github.event_name == 'workflow_dispatch' && inputs.lanes == 'github') || github.event_name == 'push') && 'ubuntu-26.04' || fromJSON('["self-hosted","velnor-target-mvp"]') }}
     timeout-minutes: 10
     steps:
       - name: Checkout repository
@@ -520,7 +551,7 @@ jobs:
       github.event_name != 'schedule' &&
       needs.changes.outputs.result-reuse != 'true' &&
       needs.changes.outputs.docs == 'true'
-    runs-on: ubuntu-26.04
+    runs-on: ${{ ((github.event_name == 'workflow_dispatch' && inputs.lanes == 'github') || github.event_name == 'push') && 'ubuntu-26.04' || fromJSON('["self-hosted","velnor-target-mvp"]') }}
     timeout-minutes: 10
     steps:
       - name: Checkout repository
@@ -565,7 +596,7 @@ jobs:
       github.event_name != 'schedule' &&
       needs.changes.outputs.result-reuse != 'true' &&
       needs.changes.outputs.source == 'true'
-    runs-on: ubuntu-26.04
+    runs-on: ${{ ((github.event_name == 'workflow_dispatch' && inputs.lanes == 'github') || github.event_name == 'push') && 'ubuntu-26.04' || fromJSON('["self-hosted","velnor-target-mvp"]') }}
     timeout-minutes: 10
     steps:
       - name: Checkout repository
@@ -614,7 +645,7 @@ jobs:
       needs.docs-link-check.result == 'success' &&
       (needs.repo-link-check.result == 'success' ||
        needs.repo-link-check.result == 'skipped')
-    runs-on: ubuntu-26.04
+    runs-on: ${{ ((github.event_name == 'workflow_dispatch' && inputs.lanes == 'github') || github.event_name == 'push') && 'ubuntu-26.04' || fromJSON('["self-hosted","velnor-target-mvp"]') }}
     timeout-minutes: 35
     outputs:
       page-url: ${{ steps.deploy1.outputs.page_url || steps.deploy2.outputs.page_url || steps.deploy3.outputs.page_url }}
@@ -675,7 +706,7 @@ jobs:
       needs.deploy.result == 'success' &&
       (github.event_name == 'push' ||
        (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'))
-    runs-on: ubuntu-26.04
+    runs-on: ${{ ((github.event_name == 'workflow_dispatch' && inputs.lanes == 'github') || github.event_name == 'push') && 'ubuntu-26.04' || fromJSON('["self-hosted","velnor-target-mvp"]') }}
     timeout-minutes: 10
     permissions:
       contents: read
@@ -712,7 +743,7 @@ jobs:
     # surface only; remapping the deployed main site against a feature checkout
     # produces false missing-file failures after source moves.
     if: github.event_name == 'schedule'
-    runs-on: ubuntu-26.04
+    runs-on: ${{ ((github.event_name == 'workflow_dispatch' && inputs.lanes == 'github') || github.event_name == 'push') && 'ubuntu-26.04' || fromJSON('["self-hosted","velnor-target-mvp"]') }}
     timeout-minutes: 10
     permissions:
       contents: read
@@ -733,7 +764,7 @@ jobs:
   docs-required:
     if: always() && github.event_name != 'schedule'
     needs: [changes, repo-link-check, docs-link-check, prepare-codebook, spell-check-docs, spell-check-source, deploy, verify-deployed, check-deployed]
-    runs-on: ubuntu-26.04
+    runs-on: ${{ ((github.event_name == 'workflow_dispatch' && inputs.lanes == 'github') || github.event_name == 'push') && 'ubuntu-26.04' || fromJSON('["self-hosted","velnor-target-mvp"]') }}
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
