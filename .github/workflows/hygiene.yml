@@ -66,7 +66,7 @@ jobs:
     env:
       CARGO_INCREMENTAL: "0"
       CARGO_TERM_COLOR: always
-      CI_LANE: ${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'github') && 'GitHub' || 'Velnor' }}
+      CI_LANE: ${{ ((github.event_name == 'workflow_dispatch' && inputs.lanes == 'github') || github.event_name == 'push') && 'GitHub' || 'Velnor' }}
       RUSTC_WRAPPER: sccache
       RUSTFLAGS: "-C link-arg=-fuse-ld=mold"
       SCCACHE_GHA_ENABLED: "false"
