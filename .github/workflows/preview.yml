@@ -9,10 +9,10 @@ on:
   workflow_dispatch:
     inputs:
       lanes:
-        description: "Which runner(s) to run on. Velnor is the default; use both for parity runs."
+        description: velnor (default) | github | both
         type: choice
-        options: [velnor, github, both]
         default: velnor
+        options: [velnor, github, both]
 
 permissions:
   actions: read
@@ -28,7 +28,7 @@ jobs:
     if: >-
       github.ref == 'refs/heads/main' &&
       (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
-    runs-on: ${{ (github.event_name != 'workflow_dispatch' || inputs.lanes == 'velnor') && fromJSON('["self-hosted","velnor-target-mvp"]') || 'ubuntu-26.04' }}
+    runs-on: ${{ (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.lanes != 'velnor')) && 'ubuntu-26.04' || fromJSON('["self-hosted","velnor-target-mvp"]') }}
     timeout-minutes: 5
     outputs:
       source: ${{ steps.filter.outputs.source }}
@@ -257,7 +257,7 @@ jobs:
       fail-fast: false
       max-parallel: 1
       matrix:
-        config: ${{ fromJSON((github.event_name == 'workflow_dispatch' && inputs.lanes == 'both') && '[{"lane":"Velnor","runner":"[\"self-hosted\",\"velnor-target-mvp\"]","mise_data_dir":"/opt/mise"},{"lane":"GitHub","runner":"\"ubuntu-26.04\"","mise_data_dir":"/home/runner/.local/share/mise"}]' || (github.event_name == 'workflow_dispatch' && inputs.lanes == 'github') && '[{"lane":"GitHub","runner":"\"ubuntu-26.04\"","mise_data_dir":"/home/runner/.local/share/mise"}]' || '[{"lane":"Velnor","runner":"[\"self-hosted\",\"velnor-target-mvp\"]","mise_data_dir":"/opt/mise"}]') }}
+        config: ${{ fromJSON((github.event_name == 'workflow_dispatch' && inputs.lanes == 'both') && '[{"lane":"Velnor","runner":"[\"self-hosted\",\"velnor-target-mvp\"]","mise_data_dir":"/opt/mise"},{"lane":"GitHub","runner":"\"ubuntu-26.04\"","mise_data_dir":"/home/runner/.local/share/mise"}]' || ((github.event_name == 'workflow_dispatch' && inputs.lanes == 'github') || github.event_name == 'push') && '[{"lane":"GitHub","runner":"\"ubuntu-26.04\"","mise_data_dir":"/home/runner/.local/share/mise"}]' || '[{"lane":"Velnor","runner":"[\"self-hosted\",\"velnor-target-mvp\"]","mise_data_dir":"/opt/mise"}]') }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -267,6 +267,12 @@ jobs:
       - name: Bind nested cache save into admitted closure
         if: github.event_name == 'velnor-admission-closure'
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      - name: Bind CI xtask resolver into admitted closure
+        if: github.event_name == 'velnor-admission-closure'
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+      - name: Bind CI xtask fallback toolchain into admitted closure
+        if: github.event_name == 'velnor-admission-closure'
+        uses: jdx/mise-action@7e36c90d9ab29c415a2384db3006f3ec8a8cc654 # v4.2.4
       - name: Bind nested xtask resolver into admitted closure
         if: github.event_name == 'velnor-admission-closure'
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
@@ -358,7 +364,7 @@ jobs:
       fail-fast: false
       max-parallel: 1
       matrix:
-        config: ${{ fromJSON((github.event_name == 'workflow_dispatch' && inputs.lanes == 'both') && '[{"lane":"Velnor","runner":"[\"self-hosted\",\"velnor-target-mvp\"]","mise_data_dir":"/opt/mise"},{"lane":"GitHub","runner":"\"ubuntu-26.04\"","mise_data_dir":"/home/runner/.local/share/mise"}]' || (github.event_name == 'workflow_dispatch' && inputs.lanes == 'github') && '[{"lane":"GitHub","runner":"\"ubuntu-26.04\"","mise_data_dir":"/home/runner/.local/share/mise"}]' || '[{"lane":"Velnor","runner":"[\"self-hosted\",\"velnor-target-mvp\"]","mise_data_dir":"/opt/mise"}]') }}
+        config: ${{ fromJSON((github.event_name == 'workflow_dispatch' && inputs.lanes == 'both') && '[{"lane":"Velnor","runner":"[\"self-hosted\",\"velnor-target-mvp\"]","mise_data_dir":"/opt/mise"},{"lane":"GitHub","runner":"\"ubuntu-26.04\"","mise_data_dir":"/home/runner/.local/share/mise"}]' || ((github.event_name == 'workflow_dispatch' && inputs.lanes == 'github') || github.event_name == 'push') && '[{"lane":"GitHub","runner":"\"ubuntu-26.04\"","mise_data_dir":"/home/runner/.local/share/mise"}]' || '[{"lane":"Velnor","runner":"[\"self-hosted\",\"velnor-target-mvp\"]","mise_data_dir":"/opt/mise"}]') }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -366,6 +372,12 @@ jobs:
       - name: Bind nested cache save into admitted closure
         if: github.event_name == 'velnor-admission-closure'
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      - name: Bind CI xtask resolver into admitted closure
+        if: github.event_name == 'velnor-admission-closure'
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+      - name: Bind CI xtask fallback toolchain into admitted closure
+        if: github.event_name == 'velnor-admission-closure'
+        uses: jdx/mise-action@7e36c90d9ab29c415a2384db3006f3ec8a8cc654 # v4.2.4
       - name: Bind nested xtask resolver into admitted closure
         if: github.event_name == 'velnor-admission-closure'
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
@@ -430,7 +442,7 @@ jobs:
     if: >-
       github.ref == 'refs/heads/main' &&
       needs.source-changed.outputs.source == 'true'
-    runs-on: ${{ (github.event_name != 'workflow_dispatch' || inputs.lanes == 'velnor') && fromJSON('["self-hosted","velnor-target-mvp"]') || 'ubuntu-26.04' }}
+    runs-on: ${{ (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.lanes != 'velnor')) && 'ubuntu-26.04' || fromJSON('["self-hosted","velnor-target-mvp"]') }}
     timeout-minutes: 45
     outputs:
       ci_ok: ${{ steps.ci.outputs.ok }}
@@ -459,7 +471,7 @@ jobs:
       github.ref == 'refs/heads/main' &&
       needs.source-changed.outputs.source == 'true' &&
       needs.publish-gate.outputs.ci_ok == 'true'
-    runs-on: ${{ (github.event_name != 'workflow_dispatch' || inputs.lanes == 'velnor') && fromJSON('["self-hosted","velnor-target-mvp"]') || 'ubuntu-26.04' }}
+    runs-on: ${{ (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.lanes != 'velnor')) && 'ubuntu-26.04' || fromJSON('["self-hosted","velnor-target-mvp"]') }}
     timeout-minutes: 60
     concurrency:
       group: homebrew-tap-publish
@@ -492,6 +504,12 @@ jobs:
           pattern: preview-${{ (github.event_name == 'workflow_dispatch' && inputs.lanes == 'github') && 'GitHub' || 'Velnor' }}-*
           merge-multiple: true
 
+      - name: Bind CI xtask resolver into admitted closure
+        if: github.event_name == 'velnor-admission-closure'
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+      - name: Bind CI xtask fallback toolchain into admitted closure
+        if: github.event_name == 'velnor-admission-closure'
+        uses: jdx/mise-action@7e36c90d9ab29c415a2384db3006f3ec8a8cc654 # v4.2.4
       - name: Restore prepared CI xtask
         uses: ./.github/actions/download-ci-xtask
         with:
