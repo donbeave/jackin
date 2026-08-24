@@ -160,7 +160,7 @@ jobs:
           fi
 
           # Independent states: formula alone is not enough when menu-bar assets exist.
-          state="$(mise run desktop-release-state "$VERSION" --repo "$GITHUB_REPOSITORY" || true)"
+          state="$(mise run desktop-release-state "$VERSION" "$GITHUB_REPOSITORY" || true)"
           echo "$state"
           cask_complete=$(printf '%s\n' "$state" | sed -n 's/^cask_complete=//p')
           app_complete=$(printf '%s\n' "$state" | sed -n 's/^app_file_assets_complete=//p')
@@ -523,9 +523,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          mise run desktop-release-state "$VERSION" --repo "$GITHUB_REPOSITORY" | tee state.env
+          mise run desktop-release-state "$VERSION" "$GITHUB_REPOSITORY" | tee state.env
           # Second run is identical (no writes).
-          mise run desktop-release-state "$VERSION" --repo "$GITHUB_REPOSITORY" | tee state2.env
+          mise run desktop-release-state "$VERSION" "$GITHUB_REPOSITORY" | tee state2.env
           diff -u state.env state2.env
 
       - name: Import Developer ID + notarize (publish only)
