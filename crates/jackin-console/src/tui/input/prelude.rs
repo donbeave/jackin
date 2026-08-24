@@ -55,7 +55,11 @@ pub fn handle_prelude_key(
 /// current step index must name the step that modal belongs to. Steps with
 /// no open modal (cancelled, or completed before the outer dispatcher
 /// reacts) are exempt.
-#[cfg(debug_assertions)]
+///
+/// Compiled unconditionally: `debug_assert!` still type-checks its
+/// expression in release builds, so a `#[cfg(debug_assertions)]` helper
+/// breaks `cargo build --release` (E0425, seen in the preview workflow's
+/// cross-build).
 fn create_prelude_step_matches_modal(step: usize, modal: Option<&Modal<'_>>) -> bool {
     use crate::tui::state::{FileBrowserTarget, Modal, TextInputTarget};
     let Some(modal) = modal else {
