@@ -319,8 +319,8 @@ cargo xtask desktop sign-notarize "${args[@]}"
 description = "Print independent Desktop release/cask state KEY=value lines"
 usage = '''
 arg "<version>" help="Release version without leading v"
-arg "--repo" help="GitHub owner/name" default="jackin-project/jackin"
-arg "--tap" help="Homebrew tap owner/name" default="jackin-project/homebrew-tap"
+arg "<repo>" help="GitHub owner/name" default="jackin-project/jackin"
+arg "<tap>" help="Homebrew tap owner/name" default="jackin-project/homebrew-tap"
 '''
 run = 'cargo xtask desktop release-state "$usage_version" --repo "$usage_repo" --tap "$usage_tap"'
 

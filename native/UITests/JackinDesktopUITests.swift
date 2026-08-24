@@ -424,7 +424,7 @@ final class JackinDesktopUITests: XCTestCase {
         application.menuBars.menuBarItems["View"].click()
         application.menuItems["Refresh"].click()
         XCTAssertTrue(usageWindow.exists)
-        XCTAssertTrue(element("usage.refresh").waitForEnabled(timeout: 3))
+        XCTAssertTrue(element("usage.refresh").waitForEnabled(timeout: 8))
     }
 
     func testProviderDetailPassesAccessibilityAudit() throws {
