@@ -716,12 +716,18 @@ jobs:
         run: cargo +nightly miri test -p "${{ matrix.crate }}" --no-default-features --locked
       - name: miri summary
         if: always()
+        # Bind step/matrix context through `env` instead of inline `${{ }}`
+        # in the run script: the Velnor runner does not interpolate
+        # expressions inside run: blocks (bash "bad substitution").
+        env:
+          MIRI_OUTCOME: ${{ steps.miri-crate.outcome }}
+          MIRI_CRATE: ${{ matrix.crate }}
         run: |
           echo "### Miri pure crates" >> "$GITHUB_STEP_SUMMARY"
-          if [ "${{ steps.miri-crate.outcome }}" = "success" ]; then
-            echo "miri ${{ matrix.crate }}: PASS" >> "$GITHUB_STEP_SUMMARY"
+          if [ "$MIRI_OUTCOME" = "success" ]; then
+            echo "miri $MIRI_CRATE: PASS" >> "$GITHUB_STEP_SUMMARY"
           else
-            echo "miri ${{ matrix.crate }}: FAIL(${{ steps.miri-crate.outcome }})" >> "$GITHUB_STEP_SUMMARY"
+            echo "miri $MIRI_CRATE: FAIL($MIRI_OUTCOME)" >> "$GITHUB_STEP_SUMMARY"
           fi
 
   # Plan 035: cargo-mutants on smallest pure crates (advisory; never fails job).
@@ -905,17 +911,24 @@ jobs:
           if-no-files-found: warn
       - name: hakari summary
         if: always()
+        # Bind step outputs through `env` instead of inline `${{ }}` in the
+        # run script: the Velnor runner does not interpolate expressions
+        # inside run: blocks (bash "bad substitution").
+        env:
+          HAKARI_OUTCOME: ${{ steps.hakari-tool.outcome }}
+          HAKARI_BEFORE: ${{ steps.hakari-before.outputs.before_secs }}
+          HAKARI_AFTER: ${{ steps.hakari-after.outputs.after_secs }}
         run: |
           {
             echo ""
             echo "### hakari result"
-            if [ "${{ steps.hakari-tool.outcome }}" = "success" ]; then
+            if [ "$HAKARI_OUTCOME" = "success" ]; then
               echo "hakari tool: CLEAN (exit 0)"
             else
-              echo "hakari tool: TOOL FAILURE (outcome=${{ steps.hakari-tool.outcome }})"
+              echo "hakari tool: TOOL FAILURE (outcome=$HAKARI_OUTCOME)"
             fi
-            echo "before wall-clock (s): ${{ steps.hakari-before.outputs.before_secs }}"
-            echo "after wall-clock (s): ${{ steps.hakari-after.outputs.after_secs }}"
+            echo "before wall-clock (s): $HAKARI_BEFORE"
+            echo "after wall-clock (s): $HAKARI_AFTER"
             echo "Comparison uses shell wall-clock of the two \`cargo build --workspace --timings\` steps (stable cargo; no -Z JSON timings)."
             echo "Adopt/no-adopt decision: update rust-ci-tooling.mdx from this observed delta."
           } >> "$GITHUB_STEP_SUMMARY"
