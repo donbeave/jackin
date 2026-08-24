@@ -996,7 +996,12 @@ jobs:
 
   dind-chaos:
     name: Full DinD E2E
-    runs-on: ${{ ((github.event_name == 'workflow_dispatch' && inputs.lanes == 'github') || github.event_name == 'push') && 'ubuntu-26.04' || fromJSON('["self-hosted","velnor-target-mvp"]') }}
+    # Platform-only (fleet-design exception): these usage-broker E2E tests
+    # hard-require OrbStack — a macOS Docker engine (see require_orbstack in
+    # crates/jackin/tests/usage_broker_e2e/docker.rs). The Velnor fleet has no
+    # macOS runners, so this job always runs GitHub-hosted macOS regardless of
+    # the lane selector, like every other macos-26 leg.
+    runs-on: macos-26
     timeout-minutes: 90
     env:
       CARGO_INCREMENTAL: "0"
