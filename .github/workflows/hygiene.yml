@@ -392,7 +392,15 @@ jobs:
       - name: Hyperfine cold-start
         run: |
           set -euo pipefail
-          hyperfine --warmup 3 --min-runs 10 --export-json cold-start.json \
+          # The Velnor persistent mise store (/opt/mise) can hold a poisoned
+          # hyperfine entry — a version dir mise treats as installed even
+          # though its bin/ layout does not yield an executable (see Velnor
+          # #275/#277 for the cargo-backend variant; the aqua backend has the
+          # same failure shape). Diagnose the stored layout, then force a
+          # real reinstall before resolving through `mise x`.
+          mise where hyperfine 2>/dev/null | xargs -r ls -la || true
+          mise install --force hyperfine
+          mise x hyperfine -- hyperfine --warmup 3 --min-runs 10 --export-json cold-start.json \
             'target/release/jackin --help' \
             'target/release/jackin console --help'
           {
@@ -489,7 +497,12 @@ jobs:
   # Scheduled per-crate clean + incremental build-time ceiling (plans 026/048).
   build-time-measure:
     name: Per-crate build-time ratchet
-    runs-on: ${{ ((github.event_name == 'workflow_dispatch' && inputs.lanes == 'github') || github.event_name == 'push') && 'ubuntu-26.04' || fromJSON('["self-hosted","velnor-target-mvp"]') }}
+    # Platform-only (calibration contract): ratchet.toml's build-time ceilings
+    # are sampled exclusively on GitHub-hosted runners and must be measured on
+    # comparable hardware. Velnor runners are materially slower (run 32711045540:
+    # jackin-runtime.clean_s 220 -> 322), which would force ceiling inflation or
+    # flapping, so this job always measures on the GitHub lane.
+    runs-on: ubuntu-26.04
     timeout-minutes: 90
     env:
       CARGO_INCREMENTAL: "0"
@@ -977,7 +990,7 @@ jobs:
           set -o pipefail
           set +e
           PATH="$PWD/target/dylint-tools/bin:$PATH" \
-            cargo dylint --all -- --workspace 2>&1 | tee dylint-findings.txt
+            cargo dylint --all -- --workspace --ignore-rust-version 2>&1 | tee dylint-findings.txt
           status=${PIPESTATUS[0]}
           set -e
           tail -n 80 dylint-findings.txt >> "$GITHUB_STEP_SUMMARY" || true
@@ -996,13 +1009,48 @@ jobs:
 
   dind-chaos:
     name: Full DinD E2E
-    runs-on: ${{ ((github.event_name == 'workflow_dispatch' && inputs.lanes == 'github') || github.event_name == 'push') && 'ubuntu-26.04' || fromJSON('["self-hosted","velnor-target-mvp"]') }}
+    # Platform-only (fleet-design exception): these usage-broker E2E tests
+    # hard-require OrbStack — a macOS Docker engine (see require_orbstack in
+    # crates/jackin/tests/usage_broker_e2e/docker.rs). The Velnor fleet has no
+    # macOS runners, so this job always runs GitHub-hosted macOS regardless of
+    # the lane selector. KNOWN FLEET GAP: OrbStack's VM manager panics at
+    # boot on GitHub-hosted macOS runners (both macos-15 and macos-26 images)
+    # with "vm config get max ipa size: unsupported" — those runners are
+    # themselves VMs whose Apple Virtualization framework does not expose
+    # what OrbStack's macvirt requires. Until the fleet gains a self-hosted
+    # macOS runner with working VZ support, this job cannot pass anywhere;
+    # the provisioning step below fails with an explicit error instead of
+    # hanging.
+    runs-on: macos-26
     timeout-minutes: 90
     env:
       CARGO_INCREMENTAL: "0"
       CARGO_TERM_COLOR: always
       JACKIN_CHAOS_SEED: ${{ inputs.chaos_seed }}
     steps:
+      - name: Provision OrbStack Docker engine
+        run: |
+          set -euo pipefail
+          brew install --cask orbstack
+          brew install docker
+          # Per OrbStack's documented headless/CI path (docs.orbstack.dev/
+          # headless): drive setup through the `orb` CLI instead of the GUI
+          # app. `orb start` performs first-run setup and boots the Docker
+          # engine without the onboarding UI (a plain `open` of the app
+          # leaves the engine waiting for GUI setup that never completes
+          # on ephemeral runners). Disable admin prompts, background the
+          # start, and gate on the readiness loop below.
+          orb config set setup.use_admin false || true
+          orb start &
+          for _ in $(seq 1 90); do
+            if docker info --format '{{.OperatingSystem}}' 2>/dev/null | grep -q '^OrbStack$'; then
+              docker info --format 'engine {{.OperatingSystem}} {{.ServerVersion}}'
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "::error::OrbStack engine did not become reachable within 450s"
+          exit 1
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Cache Rust toolchain
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
