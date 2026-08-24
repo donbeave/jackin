@@ -977,7 +977,7 @@ jobs:
           set -o pipefail
           set +e
           PATH="$PWD/target/dylint-tools/bin:$PATH" \
-            cargo dylint --all -- --workspace 2>&1 | tee dylint-findings.txt
+            cargo dylint --all -- --workspace --ignore-rust-version 2>&1 | tee dylint-findings.txt
           status=${PIPESTATUS[0]}
           set -e
           tail -n 80 dylint-findings.txt >> "$GITHUB_STEP_SUMMARY" || true
