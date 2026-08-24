@@ -392,6 +392,14 @@ jobs:
       - name: Hyperfine cold-start
         run: |
           set -euo pipefail
+          # The Velnor persistent mise store (/opt/mise) can hold a poisoned
+          # hyperfine entry — a version dir mise treats as installed even
+          # though its bin/ layout does not yield an executable (see Velnor
+          # #275/#277 for the cargo-backend variant; the aqua backend has the
+          # same failure shape). Diagnose the stored layout, then force a
+          # real reinstall before resolving through `mise x`.
+          mise where hyperfine 2>/dev/null | xargs -r ls -la || true
+          mise install --force hyperfine
           mise x hyperfine -- hyperfine --warmup 3 --min-runs 10 --export-json cold-start.json \
             'target/release/jackin --help' \
             'target/release/jackin console --help'
