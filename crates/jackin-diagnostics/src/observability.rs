@@ -1670,6 +1670,17 @@ mod otlp {
         use std::sync::atomic::Ordering;
 
         let snapshot = std::sync::Arc::new(ProcessSnapshot::default());
+        #[cfg(miri)]
+        {
+            // Miri implements none of the sysconf(3) names sysinfo's
+            // SystemInfo probes ("unimplemented sysconf name: 2"), so the
+            // sampler thread would abort the whole test binary. Process
+            // sampling is real-OS work outside Miri's model; skip the thread
+            // entirely and leave the snapshot permanently invalid.
+            let _ = (pid, cpu_count);
+            return snapshot;
+        }
+        #[cfg(not(miri))]
         let weak = std::sync::Arc::downgrade(&snapshot);
         drop(jackin_telemetry::spawn::thread_stream(
             "telemetry.process_sampler",
