@@ -772,7 +772,7 @@ jobs:
       attestations: write
       contents: read
       id-token: write
-    uses: jackin-project/velnor-actions/.github/workflows/package-signer.yml@643c5341b160be151a7fae19b89b6a4f8ab3b275 # 2026.8.6
+    uses: jackin-project/velnor-actions/.github/workflows/package-signer.yml@eeb8a182174f3c97c370ecf3f1e3e4689ae22cfe # 2026.8.31
     with:
       artifact-name: package-release-assets
       subject-path: ${{ matrix.subject }}
