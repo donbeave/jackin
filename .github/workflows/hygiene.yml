@@ -262,14 +262,24 @@ jobs:
           path: target
           key: cargo-target-GitHub-${{ runner.os }}-${{ runner.arch }}-${{ github.job }}-${{ hashFiles('rust-toolchain.toml', '.cargo/config.toml', '**/Cargo.toml', '**/Cargo.lock') }}-${{ github.sha }}
           restore-keys: cargo-target-GitHub-${{ runner.os }}-${{ runner.arch }}-${{ github.job }}-${{ hashFiles('rust-toolchain.toml', '.cargo/config.toml', '**/Cargo.toml', '**/Cargo.lock') }}-
-      - name: Compile all benchmarks and run telemetry baselines
+      - name: Compile all benchmarks
         run: |
-          set -o pipefail
+          set -euo pipefail
           cargo bench --workspace --locked --no-run 2>&1 | tee bench-output.txt
-          cargo bench -p jackin-telemetry --bench disabled_fast_path --locked -- --quick 2>&1 | tee -a bench-output.txt
-          cargo bench -p jackin-runtime --bench launch_pipeline --locked -- --quick 2>&1 | tee -a bench-output.txt
-          cargo bench -p jackin --bench console_frame --locked -- --quick 2>&1 | tee -a bench-output.txt
-          cargo bench -p jackin-capsule --bench pane_body --locked -- --quick 2>&1 | tee -a bench-output.txt
+      # One bench invocation per step: on the Velnor runner a multi-command
+      # run block has been observed to complete "successfully" while only the
+      # first pipeline really executed (the artifact showed an unfinished
+      # compile and no criterion output), leaving the baseline reader below
+      # without its estimates.json files. Separate steps make each bench's
+      # execution and output independently observable.
+      - name: Bench telemetry disabled_fast_path
+        run: cargo bench -p jackin-telemetry --bench disabled_fast_path --locked -- --quick 2>&1 | tee -a bench-output.txt
+      - name: Bench runtime launch_pipeline
+        run: cargo bench -p jackin-runtime --bench launch_pipeline --locked -- --quick 2>&1 | tee -a bench-output.txt
+      - name: Bench console_frame
+        run: cargo bench -p jackin --bench console_frame --locked -- --quick 2>&1 | tee -a bench-output.txt
+      - name: Bench capsule pane_body
+        run: cargo bench -p jackin-capsule --bench pane_body --locked -- --quick 2>&1 | tee -a bench-output.txt
       - name: Accelerated telemetry lifecycle soak
         run: cargo nextest run --profile soak -p jackin-telemetry -p jackin-diagnostics --all-features --locked --run-ignored ignored-only
       - name: Enforce telemetry performance baseline
