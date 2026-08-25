@@ -1701,7 +1701,9 @@ mod otlp {
             system.refresh_processes_specifics(
                 sysinfo::ProcessesToUpdate::Some(&[pid]),
                 true,
-                sysinfo::ProcessRefreshKind::nothing().with_cpu().with_memory(),
+                sysinfo::ProcessRefreshKind::nothing()
+                    .with_cpu()
+                    .with_memory(),
             );
             if let Some(process) = system.process(pid) {
                 let utilization = f64::from(process.cpu_usage()) / 100.0 / cpu_count;
