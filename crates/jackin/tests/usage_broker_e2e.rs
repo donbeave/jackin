@@ -142,11 +142,28 @@ fn usage_broker_child() -> Result<()> {
         root: root.clone(),
         release: None,
     });
-    let client = ensure_usage_broker_with_executor(
-        UsageBrokerConfig::for_data_dir(root.join("data")),
-        executor,
-    )
-    .test_result()?;
+    // The broker lease is a process-independent authority: a killed owner's
+    // lease stays valid for its full duration, so takeover — and therefore
+    // this client's connect — legitimately fails with Unavailable until the
+    // lease expires. Retry like a real desktop client instead of assuming
+    // recovery is instantaneous.
+    const ENSURE_DEADLINE: Duration = Duration::from_secs(90);
+    let deadline = Instant::now() + ENSURE_DEADLINE;
+    let client = loop {
+        match ensure_usage_broker_with_executor(
+            UsageBrokerConfig::for_data_dir(root.join("data")),
+            Arc::clone(&executor),
+        ) {
+            Ok(client) => break client,
+            Err(error)
+                if error.kind == UsageCoordinationErrorKind::Unavailable
+                    && Instant::now() < deadline =>
+            {
+                std::thread::park_timeout(Duration::from_millis(500));
+            }
+            Err(error) => return Err(error).test_result(),
+        }
+    };
     let state = client.refresh(capability(), 0, true).test_result()?;
     let terminal = client
         .join(capability(), state.generation, Duration::from_secs(5))
