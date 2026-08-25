@@ -196,7 +196,7 @@ async fn usage_broker_desktop_and_twenty_docker_capsules_make_one_provider_call(
 
 #[tokio::test]
 async fn usage_broker_capsule_refresh_is_same_updating_generation_in_desktop() -> Result<()> {
-    require_orbstack()?;
+    require_docker()?;
     let temp = short_tempdir()?;
     let root = temp.path().to_path_buf();
     let calls = Arc::new(AtomicUsize::new(0));
@@ -230,7 +230,7 @@ async fn usage_broker_capsule_refresh_is_same_updating_generation_in_desktop() -
 
 #[tokio::test]
 async fn usage_broker_docker_capsule_cannot_access_another_account_or_global_tree() -> Result<()> {
-    require_orbstack()?;
+    require_docker()?;
     let temp = short_tempdir()?;
     let root = temp.path().to_path_buf();
     let calls = Arc::new(AtomicUsize::new(0));
@@ -414,7 +414,7 @@ fn usage_broker_unavailable_state_makes_zero_provider_calls() -> Result<()> {
 }
 
 async fn assert_desktop_capsule_singleflight(capsules: usize) -> Result<()> {
-    require_orbstack()?;
+    require_docker()?;
     let temp = short_tempdir()?;
     let root = temp.path().to_path_buf();
     let calls = Arc::new(AtomicUsize::new(0));
@@ -609,21 +609,20 @@ fn run_capsule(container_name: &str, mode: &str) -> Result<UsageBrokerResponse> 
     serde_json::from_str(response).context("decoding container broker response")
 }
 
-fn require_orbstack() -> Result<()> {
+fn require_docker() -> Result<()> {
     let output = jackin_process::exec_sync(&jackin_process::ExecRequest::new(
         "docker",
         ["info", "--format", "{{.OperatingSystem}}"],
     ))
-    .context("OrbStack Docker command must be installed for this mandatory lane")?;
+    .context("Docker command must be installed for this mandatory lane")?;
     ensure!(
         output.success,
-        "OrbStack daemon must be running for this mandatory lane"
+        "Docker daemon must be running for this mandatory lane"
     );
     let operating_system = String::from_utf8(output.stdout)?;
     ensure!(
-        operating_system.trim() == "OrbStack",
-        "mandatory macOS usage-broker lane requires OrbStack; active Docker engine reports `{}`",
-        operating_system.trim()
+        !operating_system.trim().is_empty(),
+        "Docker daemon reported an empty operating system"
     );
     Ok(())
 }

@@ -1037,48 +1037,28 @@ jobs:
 
   dind-chaos:
     name: Full DinD E2E
-    # Platform-only (fleet-design exception): these usage-broker E2E tests
-    # hard-require OrbStack — a macOS Docker engine (see require_orbstack in
-    # crates/jackin/tests/usage_broker_e2e/docker.rs). The Velnor fleet has no
-    # macOS runners, so this job always runs GitHub-hosted macOS regardless of
-    # the lane selector. KNOWN FLEET GAP: OrbStack's VM manager panics at
-    # boot on GitHub-hosted macOS runners (both macos-15 and macos-26 images)
-    # with "vm config get max ipa size: unsupported" — those runners are
-    # themselves VMs whose Apple Virtualization framework does not expose
-    # what OrbStack's macvirt requires. Until the fleet gains a self-hosted
-    # macOS runner with working VZ support, this job cannot pass anywhere;
-    # the provisioning step below fails with an explicit error instead of
-    # hanging.
-    runs-on: macos-26
+    # Platform-only (fleet-design exception): the DinD + usage-broker E2E
+    # suites only need a working Docker daemon (docker info + buildx), not a
+    # specific engine, so this job always runs GitHub-hosted Linux where
+    # Docker is preinstalled — regardless of the lane selector. The previous
+    # macOS/OrbStack incarnation could not pass anywhere: OrbStack's VM
+    # manager panics at boot on GitHub-hosted macOS runners (both macos-15
+    # and macos-26 images) with "vm config get max ipa size: unsupported"
+    # because those runners are themselves VMs whose Apple Virtualization
+    # framework does not expose what OrbStack's macvirt requires, and the
+    # Velnor fleet has no macOS runners.
+    runs-on: ubuntu-26.04
     timeout-minutes: 90
     env:
       CARGO_INCREMENTAL: "0"
       CARGO_TERM_COLOR: always
       JACKIN_CHAOS_SEED: ${{ inputs.chaos_seed }}
     steps:
-      - name: Provision OrbStack Docker engine
+      - name: Verify Docker engine
         run: |
           set -euo pipefail
-          brew install --cask orbstack
-          brew install docker
-          # Per OrbStack's documented headless/CI path (docs.orbstack.dev/
-          # headless): drive setup through the `orb` CLI instead of the GUI
-          # app. `orb start` performs first-run setup and boots the Docker
-          # engine without the onboarding UI (a plain `open` of the app
-          # leaves the engine waiting for GUI setup that never completes
-          # on ephemeral runners). Disable admin prompts, background the
-          # start, and gate on the readiness loop below.
-          orb config set setup.use_admin false || true
-          orb start &
-          for _ in $(seq 1 90); do
-            if docker info --format '{{.OperatingSystem}}' 2>/dev/null | grep -q '^OrbStack$'; then
-              docker info --format 'engine {{.OperatingSystem}} {{.ServerVersion}}'
-              exit 0
-            fi
-            sleep 5
-          done
-          echo "::error::OrbStack engine did not become reachable within 450s"
-          exit 1
+          docker info --format 'engine {{.OperatingSystem}} {{.ServerVersion}}'
+          docker buildx version
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Cache Rust toolchain
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
