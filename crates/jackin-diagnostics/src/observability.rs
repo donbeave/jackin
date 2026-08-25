@@ -1670,46 +1670,45 @@ mod otlp {
         use std::sync::atomic::Ordering;
 
         let snapshot = std::sync::Arc::new(ProcessSnapshot::default());
-        #[cfg(miri)]
-        {
-            // Miri implements none of the sysconf(3) names probed by
-            // sysinfo ("unimplemented sysconf name: 2"), so the sampler
-            // thread would abort the whole test binary. Process sampling is
-            // real-OS work outside what Miri models; skip the thread
-            // entirely and leave the snapshot permanently invalid.
-            let _ = (pid, cpu_count);
-            return snapshot;
-        }
+        // Miri implements none of the sysconf(3) names probed by sysinfo
+        // ("unimplemented sysconf name: 2"), so the sampler thread would
+        // abort the whole test binary. Process sampling is real-OS work
+        // outside what Miri models; under Miri skip the thread entirely and
+        // leave the snapshot permanently invalid.
         #[cfg(not(miri))]
-        let weak = std::sync::Arc::downgrade(&snapshot);
-        drop(jackin_telemetry::spawn::thread_stream(
-            "telemetry.process_sampler",
-            move || {
-                let mut system = sysinfo::System::new();
-                while let Some(snapshot) = weak.upgrade() {
-                    system.refresh_processes_specifics(
-                        sysinfo::ProcessesToUpdate::Some(&[pid]),
-                        true,
-                        sysinfo::ProcessRefreshKind::nothing()
-                            .with_cpu()
-                            .with_memory(),
-                    );
-                    if let Some(process) = system.process(pid) {
-                        let utilization = f64::from(process.cpu_usage()) / 100.0 / cpu_count;
-                        snapshot
-                            .cpu_utilization_bits
-                            .store(utilization.to_bits(), Ordering::Relaxed);
-                        snapshot.memory_bytes.store(
-                            i64::try_from(process.memory()).unwrap_or(i64::MAX),
-                            Ordering::Relaxed,
+        {
+            let weak = std::sync::Arc::downgrade(&snapshot);
+            drop(jackin_telemetry::spawn::thread_stream(
+                "telemetry.process_sampler",
+                move || {
+                    let mut system = sysinfo::System::new();
+                    while let Some(snapshot) = weak.upgrade() {
+                        system.refresh_processes_specifics(
+                            sysinfo::ProcessesToUpdate::Some(&[pid]),
+                            true,
+                            sysinfo::ProcessRefreshKind::nothing()
+                                .with_cpu()
+                                .with_memory(),
                         );
-                        snapshot.valid.store(true, Ordering::Release);
+                        if let Some(process) = system.process(pid) {
+                            let utilization = f64::from(process.cpu_usage()) / 100.0 / cpu_count;
+                            snapshot
+                                .cpu_utilization_bits
+                                .store(utilization.to_bits(), Ordering::Relaxed);
+                            snapshot.memory_bytes.store(
+                                i64::try_from(process.memory()).unwrap_or(i64::MAX),
+                                Ordering::Relaxed,
+                            );
+                            snapshot.valid.store(true, Ordering::Release);
+                        }
+                        drop(snapshot);
+                        std::thread::park_timeout(std::time::Duration::from_millis(2_500));
                     }
-                    drop(snapshot);
-                    std::thread::park_timeout(std::time::Duration::from_millis(2_500));
-                }
-            },
-        ));
+                },
+            ));
+        }
+        #[cfg(miri)]
+        let _ = (pid, cpu_count);
         snapshot
     }
 
