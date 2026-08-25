@@ -76,7 +76,8 @@ fn config_lock_timeout_uses_injected_clock_without_sleeping() {
 #[cfg(unix)]
 // Re-spawns the test binary as a lock-holding child that must die with a
 // real OS signal; process spawning and kernel flock semantics are outside
-// Miri's model (posix_spawnattr_init is unsupported), so skip under Miri.
+// what Miri models (posix spawn attributes are unsupported), so skip under
+// Miri.
 #[cfg_attr(miri, ignore)]
 fn config_lock_process_death_releases_ownership() {
     const CHILD_PATH: &str = "JACKIN_CONFIG_LOCK_TEST_CHILD";
