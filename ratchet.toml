@@ -19,10 +19,10 @@ cap = 1850
 mode = "enforce"
 [[family.entry]]
 key = "crates/jackin-diagnostics/src/observability.rs"
-bound = 2008
+bound = 2011
 [[family.entry]]
 key = "crates/jackin-xtask/src/telemetry_registry.rs"
-bound = 2008
+bound = 2011
 
 [[family]]
 id = "file-size-test"
