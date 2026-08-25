@@ -838,6 +838,8 @@ words = [
   "sysbox",
   "syscall",
   "syscalls",
+  "sysconf",
+  "sysinfo",
   "systempaths",
   "taiki",
   "tailrocks",
