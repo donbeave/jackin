@@ -337,8 +337,7 @@ fn check_jackin_dir(data_dir: &Path) -> CheckResult {
 
 fn check_capsule_cache(paths: &jackin_core::JackinPaths) -> CheckResult {
     let version = jackin_image::capsule_binary::REQUIRED_VERSION;
-    let arch = std::env::consts::ARCH;
-    let cached = jackin_image::capsule_binary::cached_binary_path(&paths.cache_dir, version, arch);
+    let cached = jackin_image::capsule_binary::resolved_cache_path(&paths.cache_dir);
     if cached.exists() {
         CheckResult::ok(
             "capsule_cache",

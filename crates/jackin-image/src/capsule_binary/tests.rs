@@ -211,3 +211,21 @@ fn is_allowed_signer_san_accepts_release_and_preview_workflows() {
     // Rejected: empty string.
     assert!(!is_allowed_signer_san(""));
 }
+
+#[test]
+fn resolved_cache_path_uses_container_arch_not_host_arch() {
+    let path = resolved_cache_path(Path::new("/cache"));
+    let s = path.to_string_lossy();
+    assert!(s.contains(&format!("linux-{}", container_arch())), "{s}");
+    assert!(!s.contains(std::env::consts::ARCH), "{s}");
+}
+
+#[test]
+fn resolved_cache_path_matches_the_path_the_resolver_reads() {
+    let expected = cached_binary_path(
+        Path::new("/cache"),
+        &cache_key_version(REQUIRED_VERSION),
+        container_arch(),
+    );
+    assert_eq!(resolved_cache_path(Path::new("/cache")), expected);
+}

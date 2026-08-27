@@ -88,7 +88,7 @@ pub async fn ensure_available(paths: &JackinPaths) -> Result<PathBuf> {
 async fn resolve_cached_or_fetch(paths: &JackinPaths) -> Result<PathBuf> {
     let arch = container_arch();
     let cache_version = cache_key_version(REQUIRED_VERSION);
-    let cached = cached_binary_path(&paths.cache_dir, &cache_version, arch);
+    let cached = resolved_cache_path(&paths.cache_dir);
 
     if is_executable_file(&cached) {
         crate::telemetry_boundary::cache_decision(
@@ -158,6 +158,23 @@ pub fn cached_binary_path(cache_dir: &Path, version: &str, arch: &str) -> PathBu
         .join(safe_version)
         .join(format!("linux-{arch}"))
         .join("jackin-capsule")
+}
+
+/// Path this host's resolver consults for the required capsule version.
+///
+/// The single composition of cache directory, cache-key version, and
+/// container architecture. Callers that only want to know whether the
+/// cache is warm (`jackin doctor`) must use this instead of composing the
+/// path themselves: `std::env::consts::ARCH` (`aarch64`) is not the
+/// container architecture (`arm64`), and a preview version collapses to
+/// the rolling `preview` cache key.
+#[must_use]
+pub fn resolved_cache_path(cache_dir: &Path) -> PathBuf {
+    cached_binary_path(
+        cache_dir,
+        &cache_key_version(REQUIRED_VERSION),
+        container_arch(),
+    )
 }
 
 fn cache_key_version(version: &str) -> String {
