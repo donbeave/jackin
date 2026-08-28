@@ -193,6 +193,7 @@ Set or overwrite an env var at the chosen scope.
 |---|---|
 | `--role <SELECTOR>` | Apply to the per-(workspace × role) scope instead of the workspace-wide one |
 | `--comment <TEXT>` | Attach an inline comment to the key |
+| `--on-demand` | Inject the value at `jackin-exec` time instead of at launch |
 
 ```bash
 # Workspace scope
@@ -203,6 +204,9 @@ jackin workspace env set prod OPENAI_KEY "op://Work/OpenAI/key" --role agent-smi
 
 # Attach a comment
 jackin workspace env set prod DEBUG "1" --comment "temporary; remove after Q2"
+
+# On-demand credential: never resolved at launch, approved per use
+jackin workspace env set prod OP_TOKEN "op://Work/svc-account/credential" --on-demand
 ```
 
 ### `workspace env unset`
@@ -228,7 +232,7 @@ jackin workspace env unset prod OPENAI_KEY --role agent-smith
 jackin workspace env list <WORKSPACE> [OPTIONS]
 ```
 
-Show the env vars registered at the chosen scope as a table with `Key` and `Value` columns. Prints `No env vars set.` when the scope is empty. Values are shown as-stored (no resolution, no masking). Fails fast if `<WORKSPACE>` does not exist.
+Show the env vars registered at the chosen scope as a table with `Key`, `Value`, and `On demand` columns. Prints `No env vars set.` when the scope is empty. Values are shown as-stored (no resolution, no masking); `On demand` is `yes` for a value resolved at `jackin-exec` time rather than injected at launch. Fails fast if `<WORKSPACE>` does not exist.
 
 | Option | Description |
 |---|---|

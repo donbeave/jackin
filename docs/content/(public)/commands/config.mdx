@@ -143,6 +143,7 @@ Set or overwrite an env var at the chosen scope.
 |---|---|
 | `--role <SELECTOR>` | Apply to the per-role scope instead of the global scope |
 | `--comment <TEXT>` | Attach an inline comment to the key |
+| `--on-demand` | Inject the value at `jackin-exec` time instead of at launch |
 
 ```bash
 # Global scope — 1Password reference
@@ -153,7 +154,16 @@ jackin config env set LOG_LEVEL debug --role agent-smith
 
 # Attach a comment (useful for rotation reminders)
 jackin config env set OPENAI_KEY "op://Work/OpenAI/key" --comment "rotate quarterly"
+
+# On-demand credential: never resolved at launch, approved per use
+jackin config env set OP_TOKEN "op://Work/svc-account/credential" --on-demand
 ```
+
+An `--on-demand` value is left out of the launch environment entirely. Only its
+*name* reaches the container; the agent asks for the value through
+`jackin-exec`, and the host resolves it after the operator approves that use.
+Use it for credentials that must not sit in a long-lived container's
+environment.
 
 ### `config env unset`
 
@@ -178,7 +188,7 @@ jackin config env unset LOG_LEVEL --role agent-smith
 jackin config env list [OPTIONS]
 ```
 
-Show the env vars registered at the chosen scope as a table with `Key` and `Value` columns. Prints `No env vars set.` when the scope is empty. Values are shown as-stored (no resolution, no masking).
+Show the env vars registered at the chosen scope as a table with `Key`, `Value`, and `On demand` columns. Prints `No env vars set.` when the scope is empty. Values are shown as-stored (no resolution, no masking); `On demand` is `yes` for a value that is resolved at `jackin-exec` time rather than injected at launch.
 
 | Option | Description |
 |---|---|

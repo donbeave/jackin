@@ -98,6 +98,20 @@ pub(super) async fn handle_load(
     lifecycle.ready();
 
     if dry_run {
+        // The image half of the plan is only knowable after the role manifest
+        // is read: `published_image` is a manifest field and the
+        // reuse-vs-build decision derives from it. Resolving it here is what
+        // makes `--dry-run` the resolved plan rather than a guess (D-078).
+        let image_plan = runtime::resolve_launch_image_plan(
+            paths,
+            config,
+            &class,
+            &docker,
+            runner,
+            rebuild,
+            role_branch.as_deref(),
+        )
+        .await?;
         return print_dry_run_plan(
             &class,
             &resolved_workspace,
@@ -105,6 +119,7 @@ pub(super) async fn handle_load(
             role_branch.as_deref(),
             rebuild,
             &format,
+            &image_plan,
         );
     }
 
@@ -664,6 +679,45 @@ pub(super) async fn handle_eject(
     result
 }
 
+/// Machine-readable `--dry-run --format json` plan.
+///
+/// Split out from printing so the wire shape is asserted directly, without a
+/// Docker daemon or a captured stdout.
+pub(crate) fn dry_run_plan_json(
+    class: &RoleSelector,
+    workspace: &crate::workspace::ResolvedWorkspace,
+    agent_slug: &str,
+    role_branch: Option<&str>,
+    rebuild: bool,
+    image_plan: &runtime::LaunchImagePlan,
+) -> serde_json::Value {
+    let mounts: Vec<serde_json::Value> = workspace
+        .mounts
+        .iter()
+        .map(|m| {
+            serde_json::json!({
+                "host_src": m.src,
+                "container_dest": m.dst,
+                "isolation": m.isolation.to_string(),
+            })
+        })
+        .collect();
+    serde_json::json!({
+        "schema_version": "v1",
+        "data": {
+            "workspace": workspace.label,
+            "workdir": workspace.workdir,
+            "role": class.to_string(),
+            "role_branch": role_branch,
+            "agent": agent_slug,
+            "rebuild": rebuild,
+            "mounts": mounts,
+            "image_decision": image_plan.to_json(),
+            "published_image": image_plan.published_image,
+        }
+    })
+}
+
 /// Print the resolved load plan for `--dry-run` and exit without launching.
 fn print_dry_run_plan(
     class: &RoleSelector,
@@ -672,6 +726,7 @@ fn print_dry_run_plan(
     role_branch: Option<&str>,
     rebuild: bool,
     format: &str,
+    image_plan: &runtime::LaunchImagePlan,
 ) -> Result<()> {
     let agent_slug = agent
         .map(|a| a.slug().to_owned())
@@ -685,29 +740,14 @@ fn print_dry_run_plan(
         .collect();
 
     if format == "json" {
-        let mounts: Vec<serde_json::Value> = workspace
-            .mounts
-            .iter()
-            .map(|m| {
-                serde_json::json!({
-                    "host_src": m.src,
-                    "container_dest": m.dst,
-                    "isolation": m.isolation.to_string(),
-                })
-            })
-            .collect();
-        let plan = serde_json::json!({
-            "schema_version": "v1",
-            "data": {
-                "workspace": workspace.label,
-                "workdir": workspace.workdir,
-                "role": class.to_string(),
-                "role_branch": role_branch,
-                "agent": agent_slug,
-                "rebuild": rebuild,
-                "mounts": mounts,
-            }
-        });
+        let plan = dry_run_plan_json(
+            class,
+            workspace,
+            &agent_slug,
+            role_branch,
+            rebuild,
+            image_plan,
+        );
         println!("{}", serde_json::to_string_pretty(&plan)?);
     } else {
         println!("Workspace:  {} ({})", workspace.label, workspace.workdir);
@@ -717,6 +757,14 @@ fn print_dry_run_plan(
         );
         println!("Role:       {role_display}");
         println!("Agent:      {agent_slug}");
+        println!("Image:      {} ({})", image_plan.image, image_plan.decision);
+        if let Some(reason) = image_plan.reason {
+            println!("Reason:     {reason}");
+        }
+        println!(
+            "Published:  {}",
+            image_plan.published_image.as_deref().unwrap_or("none")
+        );
         if rebuild {
             println!("Rebuild:    yes");
         }

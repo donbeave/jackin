@@ -247,7 +247,7 @@ pub fn split_buildkit_duration(rest: &str) -> (&str, Option<u64>) {
 
 pub fn parse_buildkit_duration_ms(value: &str) -> Option<u64> {
     let seconds = value.strip_suffix('s')?;
-    let (whole, fraction) = seconds.split_once('.').map_or((seconds, ""), |parts| parts);
+    let (whole, fraction) = seconds.split_once('.').unwrap_or((seconds, ""));
     if whole.is_empty() || !whole.chars().all(|c| c.is_ascii_digit()) {
         return None;
     }

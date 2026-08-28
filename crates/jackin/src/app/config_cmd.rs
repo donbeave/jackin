@@ -17,10 +17,40 @@ pub(super) struct EnvRow {
     key: String,
     #[tabled(rename = "Value")]
     value: String,
+    /// Whether the value is resolved at `jackin-exec` time rather than at
+    /// launch. Visible in the table because the two kinds behave differently
+    /// at launch and an operator cannot otherwise tell them apart.
+    #[tabled(rename = "On demand")]
+    on_demand: String,
 }
 
-pub(super) fn resolve_env_value_for_cli(value: &str) -> Result<jackin_core::EnvValue> {
+/// One `env list` row: name, display value, and whether it is on-demand.
+pub(super) type EnvListRow = (String, String, bool);
+
+/// Project a config env map onto `env list` rows.
+pub(super) fn env_rows<'a>(
+    env: impl IntoIterator<Item = (&'a String, &'a jackin_core::EnvValue)>,
+) -> Vec<EnvListRow> {
+    env.into_iter()
+        .map(|(k, v)| (k.clone(), v.as_display_str().to_owned(), v.is_on_demand()))
+        .collect()
+}
+
+/// Build the `EnvValue` a `env set` writes.
+///
+/// `on_demand` is carried by the table forms only: a bare scalar has nowhere
+/// to record it, so an on-demand literal is stored as the `Extended` table.
+pub(super) fn resolve_env_value_for_cli(
+    value: &str,
+    on_demand: bool,
+) -> Result<jackin_core::EnvValue> {
     if !value.starts_with("op://") {
+        if on_demand {
+            return Ok(jackin_core::EnvValue::Extended(jackin_core::Extended {
+                value: value.to_owned(),
+                on_demand: true,
+            }));
+        }
         return Ok(jackin_core::EnvValue::Plain(value.to_owned()));
     }
 
@@ -34,11 +64,12 @@ pub(super) fn resolve_env_value_for_cli(value: &str) -> Result<jackin_core::EnvV
         )
     })?;
 
-    let op_ref = jackin_env::resolve_op_uri_to_ref(value, &op_cli, None)?;
+    let mut op_ref = jackin_env::resolve_op_uri_to_ref(value, &op_cli, None)?;
+    op_ref.on_demand = on_demand;
     Ok(jackin_core::EnvValue::OpRef(op_ref))
 }
 
-pub(super) fn print_env_table(vars: &[(String, String)]) {
+pub(super) fn print_env_table(vars: &[EnvListRow]) {
     use tabled::Table;
     use tabled::settings::Style;
     if vars.is_empty() {
@@ -47,9 +78,10 @@ pub(super) fn print_env_table(vars: &[(String, String)]) {
     }
     let rows: Vec<EnvRow> = vars
         .iter()
-        .map(|(k, v)| EnvRow {
+        .map(|(k, v, on_demand)| EnvRow {
             key: k.clone(),
             value: v.clone(),
+            on_demand: if *on_demand { "yes" } else { "no" }.to_owned(),
         })
         .collect();
     let mut table = Table::new(rows);
@@ -337,6 +369,7 @@ fn handle_env_cmd(env_cmd: cli::EnvCommand, config: &AppConfig, paths: &JackinPa
             value,
             role,
             comment,
+            on_demand,
         } => {
             if key.is_empty() {
                 anyhow::bail!("env var key cannot be empty");
@@ -355,7 +388,7 @@ fn handle_env_cmd(env_cmd: cli::EnvCommand, config: &AppConfig, paths: &JackinPa
                          before setting role-scoped env vars"
                 );
             }
-            let env_value = resolve_env_value_for_cli(&value)?;
+            let env_value = resolve_env_value_for_cli(&value, on_demand)?;
             let scope = role.map_or(
                 jackin_config::EnvScope::Global,
                 jackin_config::EnvScope::Role,
@@ -388,21 +421,13 @@ fn handle_env_cmd(env_cmd: cli::EnvCommand, config: &AppConfig, paths: &JackinPa
             Ok(())
         }
         cli::EnvCommand::List { role } => {
-            let vars: Vec<(String, String)> = role.as_ref().map_or_else(
-                || {
-                    config
-                        .env
-                        .iter()
-                        .map(|(k, v)| (k.clone(), v.as_display_str().to_owned()))
-                        .collect()
-                },
+            let vars: Vec<EnvListRow> = role.as_ref().map_or_else(
+                || env_rows(&config.env),
                 |a| {
-                    config.roles.get(a).map_or_else(Vec::new, |src| {
-                        src.env
-                            .iter()
-                            .map(|(k, v)| (k.clone(), v.as_display_str().to_owned()))
-                            .collect()
-                    })
+                    config
+                        .roles
+                        .get(a)
+                        .map_or_else(Vec::new, |src| env_rows(&src.env))
                 },
             );
             print_env_table(&vars);

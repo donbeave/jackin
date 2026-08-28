@@ -403,7 +403,8 @@ pub enum WorkspaceEnvCommand {
 Examples:
   jackin workspace env set prod DB_URL \"op://Work/Prod/db-url\"
   jackin workspace env set prod OPENAI_KEY \"op://Work/OpenAI/key\" --role agent-smith
-  jackin workspace env set prod DEBUG \"1\" --comment \"temporary; remove after Q2\""
+  jackin workspace env set prod DEBUG \"1\" --comment \"temporary; remove after Q2\"
+  jackin workspace env set prod OP_TOKEN \"op://Work/svc/credential\" --on-demand"
     )]
     Set {
         /// Workspace name
@@ -418,6 +419,11 @@ Examples:
         /// Attach a comment to the key (recorded alongside the value)
         #[arg(long)]
         comment: Option<String>,
+        /// Inject on demand at `jackin-exec` time instead of at launch. The
+        /// value is never resolved during launch; the agent asks for it and
+        /// the operator approves each use.
+        #[arg(long = "on-demand")]
+        on_demand: bool,
     },
     /// Unset an env var at workspace or workspace-role scope
     ///

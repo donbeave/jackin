@@ -70,6 +70,10 @@ pub(crate) struct LaunchContext<'a> {
     pub(crate) sidecar_prewarm_replenish: SidecarPrewarmReplenish,
     pub(crate) sibling_prewarm: SiblingPrewarm<'a>,
     pub(crate) sibling_auth_prewarm: SiblingAuthPrewarm<'a>,
+    /// Non-TTY programmatic launch: the container is started and left running,
+    /// and no foreground session is attached. There is no terminal to hand the
+    /// capsule multiplexer, so attaching would fail rather than degrade.
+    pub(crate) non_interactive: bool,
 }
 
 pub(crate) struct SelectedImageRefresh<'a> {
@@ -309,6 +313,7 @@ pub(crate) async fn launch_role_runtime(
         sidecar_prewarm_replenish,
         sibling_prewarm,
         sibling_auth_prewarm,
+        non_interactive,
     } = ctx;
 
     let certs_volume = dind_certs_volume(container_name);
@@ -1190,6 +1195,23 @@ pub(crate) async fn launch_role_runtime(
     );
     let _sibling_auth_prewarm =
         spawn_sibling_auth_prewarm(paths, container_name, sibling_auth_prewarm, *agent);
+    if *non_interactive {
+        // The container is up and the capsule daemon answered its pre-attach
+        // health check above; a programmatic caller reconnects later with
+        // `jackin hardline`, so the launch returns here instead of blocking on
+        // a foreground session it has no terminal for.
+        steps.stage_done(
+            crate::runtime::progress::LaunchStage::Hardline,
+            "detached (non-interactive launch)",
+        );
+        if matches!(
+            sidecar_prewarm_replenish,
+            SidecarPrewarmReplenish::AfterAttach
+        ) {
+            crate::runtime::prewarm_trigger::spawn_background_sidecar_prewarm(paths, *debug);
+        }
+        return Ok(());
+    }
     let session_result = crate::runtime::attach::reconnect_or_create_session_with_focus(
         paths,
         container_name,

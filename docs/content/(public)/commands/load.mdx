@@ -43,6 +43,12 @@ Contributors can force the boundary rituals for local visual QA with env vars in
 | `--force` | Acknowledge a dirty host working tree when materializing an isolated mount in non-interactive mode. Required only when (a) the workspace has at least one `worktree`-isolated mount and (b) the host repo's tree has staged, unstaged-tracked, or untracked files. Ignored otherwise. |
 | `--dry-run` | Resolve and print the launch plan (workspace, role, agent, mounts) then exit without spawning any containers. Nothing is changed. Combine with `--format json` for scriptable plan inspection. |
 | `--format <human\|json>` | Output format for `--dry-run`. `human` (default) prints a readable plan summary. `json` emits a structured plan envelope. Has no effect without `--dry-run`. |
+
+The plan is resolved, not guessed: `--dry-run` fetches the role repository and
+reads its manifest, so the JSON envelope's `data` carries `published_image`
+(the manifest's warm base, or `null`) alongside `image_decision` — the same
+reuse-vs-build decision the launch itself would take, with `decision`,
+`reason`, `image`, `base_image`, and `role_git_sha`.
 | `--debug` | Enable operator troubleshooting output while keeping the launch surface clean. It does not create a telemetry file. |
 | `--agent <NAME>` | Override the launch agent (`claude`, `codex`, `amp`, `kimi`, `opencode`, or `grok`). When omitted, a workspace `default_agent` wins first, a single-agent role uses its only runtime, and a multi-agent role prompts in the rich launch surface. |
 

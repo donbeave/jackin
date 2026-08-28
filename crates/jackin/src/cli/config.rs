@@ -78,7 +78,8 @@ pub enum EnvCommand {
 Examples:
   jackin config env set API_TOKEN \"op://Personal/api/token\"
   jackin config env set LOG_LEVEL debug --role agent-smith
-  jackin config env set OPENAI_KEY \"op://Work/OpenAI/key\" --comment \"rotate quarterly\""
+  jackin config env set OPENAI_KEY \"op://Work/OpenAI/key\" --comment \"rotate quarterly\"
+  jackin config env set OP_TOKEN \"op://Work/svc/credential\" --on-demand"
     )]
     Set {
         /// Env var name (stored verbatim; no POSIX validation)
@@ -91,6 +92,11 @@ Examples:
         /// Attach a comment to the key (recorded alongside the value)
         #[arg(long)]
         comment: Option<String>,
+        /// Inject on demand at `jackin-exec` time instead of at launch. The
+        /// value is never resolved during launch; the agent asks for it and
+        /// the operator approves each use.
+        #[arg(long = "on-demand")]
+        on_demand: bool,
     },
     /// Unset an env var at global or per-role scope
     ///
