@@ -289,7 +289,7 @@ pub(crate) async fn build_agent_image(
     branch_override: Option<&str>,
     docker: &impl DockerApi,
     runner: &mut impl CommandRunner,
-    repo_lock: std::fs::File,
+    repo_lock: crate::runtime::repo_cache::RepoLock,
     known_head_sha: Option<&str>,
     mut progress: Option<&mut LaunchProgress>,
 ) -> anyhow::Result<String> {

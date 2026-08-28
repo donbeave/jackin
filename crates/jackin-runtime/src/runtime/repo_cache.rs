@@ -49,6 +49,85 @@ pub enum RepoError {
     InvalidRoleRepo(#[from] jackin_manifest::repo::RoleRepoValidationError),
 }
 
+/// Process-reentrant guard over the per-role repo `flock`.
+///
+/// `flock(2)` is owned by the open file description, not by the process, so a
+/// second `File::create` + `flock` in the *same* process blocks forever behind
+/// the first. The launch pipeline does exactly that: it holds this lock across
+/// `decide_role_image`, whose prewarm, sibling-prewarm and staleness-sentinel
+/// paths call `resolve_agent_repo_with` again. That self-deadlock presents as a
+/// silent hang at "Resolving role identity" with no diagnostic at all.
+///
+/// Sharing one open file description per lock path removes the deadlock class:
+/// a same-process re-acquire clones the live handle and never touches `flock`,
+/// so only genuine cross-process contention ever waits. The lock is released
+/// when the last clone is dropped.
+#[derive(Clone, Debug)]
+pub struct RepoLock(
+    #[cfg_attr(
+        not(test),
+        expect(
+            dead_code,
+            reason = "guard only: the flock is released when the last handle is dropped"
+        )
+    )]
+    Arc<std::fs::File>,
+);
+
+/// Per-lock-path gates, so acquiring one role's lock never blocks another's.
+///
+/// The outer map is held only long enough to hand out a gate; the `flock`
+/// itself happens under that gate, where the `Weak` records the live handle.
+type RepoLockGate = std::sync::Mutex<std::sync::Weak<std::fs::File>>;
+
+static REPO_LOCK_GATES: std::sync::LazyLock<
+    std::sync::Mutex<std::collections::HashMap<std::path::PathBuf, Arc<RepoLockGate>>>,
+> = std::sync::LazyLock::new(|| std::sync::Mutex::new(std::collections::HashMap::new()));
+
+fn repo_lock_gate(path: &std::path::Path) -> Arc<RepoLockGate> {
+    let mut gates = REPO_LOCK_GATES
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    // Drop gates whose handle is gone and which nobody else is holding, so a
+    // long-lived process does not accumulate one entry per role branch ever
+    // launched.
+    gates.retain(|_, gate| {
+        Arc::strong_count(gate) > 1
+            || gate
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .strong_count()
+                > 0
+    });
+    Arc::clone(gates.entry(path.to_path_buf()).or_default())
+}
+
+fn acquire_repo_lock_blocking(path: &std::path::Path) -> anyhow::Result<RepoLock> {
+    let gate = repo_lock_gate(path);
+    let mut held = gate
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    if let Some(existing) = held.upgrade() {
+        return Ok(RepoLock(existing));
+    }
+    let file = std::fs::File::create(path)?;
+    FileExt::lock(&file)?;
+    let handle = Arc::new(file);
+    *held = Arc::downgrade(&handle);
+    Ok(RepoLock(handle))
+}
+
+/// Acquire the repo lock at `path` without blocking an async worker thread.
+///
+/// The wait can be arbitrarily long (another process may be cloning), so the
+/// blocking `flock` runs on the blocking pool rather than on the runtime.
+async fn acquire_repo_lock(path: &std::path::Path) -> anyhow::Result<RepoLock> {
+    let owned = path.to_path_buf();
+    tokio::task::spawn_blocking(move || acquire_repo_lock_blocking(&owned))
+        .await
+        .context("repo lock acquisition task failed")?
+}
+
 /// Extract `owner/repo` from a git remote URL.
 pub(super) fn parse_repo_name(url: &str) -> Option<String> {
     let url = url.trim();
@@ -187,7 +266,7 @@ async fn resolve_agent_repo(
 ) -> anyhow::Result<(
     CachedRepo,
     jackin_manifest::repo::ValidatedRoleRepo,
-    std::fs::File,
+    RepoLock,
 )> {
     resolve_agent_repo_with(
         paths,
@@ -262,8 +341,8 @@ pub async fn register_agent_repo(
     let lock_path = paths
         .data_dir
         .join(format!("{}.repo.lock", runtime_slug(selector)));
-    let lock_file = std::fs::File::create(&lock_path)?;
-    FileExt::lock(&lock_file)
+    let _lock_file = acquire_repo_lock(&lock_path)
+        .await
         .map_err(|e| anyhow::anyhow!("failed to acquire repo lock for {}: {e}", selector.key()))?;
 
     let temp_dir = tempfile::Builder::new()
@@ -426,7 +505,7 @@ pub(super) async fn resolve_agent_repo_with(
 ) -> anyhow::Result<(
     CachedRepo,
     jackin_manifest::repo::ValidatedRoleRepo,
-    std::fs::File,
+    RepoLock,
 )> {
     let normalized = normalize_github_url(git_url);
     let git_url = normalized.as_str();
@@ -471,8 +550,8 @@ pub(super) async fn resolve_agent_repo_with(
             .join(file_name)
     };
     std::fs::create_dir_all(lock_path.parent().unwrap_or(&paths.data_dir))?;
-    let lock_file = std::fs::File::create(&lock_path)?;
-    FileExt::lock(&lock_file)
+    let lock_file = acquire_repo_lock(&lock_path)
+        .await
         .map_err(|e| anyhow::anyhow!("failed to acquire repo lock for {}: {e}", selector.key()))?;
 
     let non_interactive = matches!(opts.git_interactivity, GitInteractivity::NonInteractive)

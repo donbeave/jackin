@@ -41,7 +41,7 @@ where
     pub backend: super::super::Backend,
 
     pub image_decision: crate::runtime::image::ImageDecision,
-    pub repo_lock: Option<std::fs::File>,
+    pub repo_lock: Option<crate::runtime::repo_cache::RepoLock>,
     pub restoring: bool,
     pub container_name: String,
     pub exec_bindings: Vec<jackin_protocol::ExecBinding>,
