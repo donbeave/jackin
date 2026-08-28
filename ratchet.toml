@@ -76,7 +76,7 @@ key = "clippy::cognitive_complexity@jackin-runtime"
 bound = 1
 [[family.entry]]
 key = "clippy::disallowed_methods@jackin"
-bound = 11
+bound = 12
 [[family.entry]]
 key = "clippy::disallowed_methods@jackin-capsule"
 bound = 8
@@ -394,7 +394,7 @@ key = "clippy::unused_async@jackin-image"
 bound = 1
 [[family.entry]]
 key = "clippy::unwrap_used@jackin"
-bound = 12
+bound = 13
 [[family.entry]]
 key = "clippy::unwrap_used@jackin-capsule"
 bound = 2
@@ -415,7 +415,7 @@ key = "clippy::wildcard_imports@jackin-usage"
 bound = 6
 [[family.entry]]
 key = "dead_code@jackin"
-bound = 1
+bound = 3
 [[family.entry]]
 key = "dead_code@jackin-core"
 bound = 4

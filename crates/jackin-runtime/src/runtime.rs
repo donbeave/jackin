@@ -23,6 +23,7 @@ pub mod prewarm_trigger;
 pub mod progress;
 pub mod prune_output;
 pub mod repo_cache;
+pub mod session_control;
 pub(crate) mod shared_runner;
 pub mod snapshot;
 pub mod universe;

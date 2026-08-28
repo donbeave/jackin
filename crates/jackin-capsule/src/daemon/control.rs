@@ -13,6 +13,7 @@ use jackin_core::container_paths;
 use jackin_protocol::attach::{
     AttachControlOperation, AttachControlRequest, AttachControlResponse, AttachControlResult,
 };
+use jackin_protocol::control::SessionSendRejection;
 use jackin_telemetry::ResultTelemetryExt as _;
 
 const RPC_ERROR: jackin_telemetry::schema::enums::ErrorType =
@@ -179,6 +180,43 @@ pub fn control_reply_for_request(mux: &mut Multiplexer, msg: ClientMsg) -> Serve
                 .totals(session_id)
                 .map(TokenTotals::to_summary),
         },
+        // `session.send`: write the payload into the addressed PTY verbatim.
+        // Input never authors state — the terminal-observation arbitration
+        // decides what the agent is doing — so this only records the input as
+        // recency evidence and reports what it wrote.
+        ClientMsg::SessionSend { session, text } => {
+            let bytes = text.len() as u64;
+            let mut unblocked = false;
+            let outcome = match mux.session_supervisor.sessions.get_mut(session) {
+                None => {
+                    let _error = jackin_telemetry::record_error(RPC_ERROR);
+                    Err(SessionSendRejection::UnknownSession)
+                }
+                Some(target) if !target.send_input(text.as_bytes()) => {
+                    let _error = jackin_telemetry::record_error(RPC_ERROR);
+                    Err(SessionSendRejection::WriterClosed)
+                }
+                Some(target) => {
+                    unblocked = target.mark_operator_input();
+                    Ok(bytes)
+                }
+            };
+            // Same chrome refresh the keyboard path takes: input that clears a
+            // latched blocked pane must repaint it, whether an operator typed
+            // it or a host client sent it.
+            if let Some(reason) = crate::tui::update::pane_data_redraw_reason(false, unblocked) {
+                mux.invalidate(reason);
+            }
+            super::events::session_send_reply(session, outcome)
+        }
+        ClientMsg::Events { .. } => {
+            // Defensive only: `Events` is a subscription, intercepted before
+            // this synchronous path by `handle_control_request` (it registers
+            // the stream instead of producing one reply). Fail closed if a
+            // future caller ever routes it here.
+            let _error = jackin_telemetry::record_error(RPC_ERROR);
+            ServerMsg::Unknown
+        }
         ClientMsg::Unknown => {
             let _error = jackin_telemetry::record_error(RPC_ERROR);
             ServerMsg::Unknown

@@ -140,7 +140,7 @@ use crate::tui::view::spawn_request_failure_message;
 use crate::usage::UsageCache;
 use jackin_core::Agent;
 use jackin_core::{Clock, SessionId, SystemClock};
-use jackin_protocol::control::{ClientMsg, ServerMsg};
+use jackin_protocol::control::{ClientMsg, ServerMsg, SessionEventKind};
 
 // Presentation Multiplexer impls live under `src/tui/daemon/` (TUI source
 // location rule) but remain daemon submodules so `impl Multiplexer` and
@@ -151,6 +151,8 @@ mod context_mgmt;
 mod control_reply;
 #[path = "tui/daemon/dialog_mgmt.rs"]
 mod dialog_mgmt;
+mod events;
+use events::{handle_control_subscription, publish_status_events, session_observation};
 mod file_export;
 #[path = "tui/daemon/input_dispatch.rs"]
 mod input_dispatch;
@@ -331,11 +333,21 @@ pub(super) struct ControlRouting {
     pub(crate) input_parser: InputParser,
     pub(crate) event_tx: mpsc::UnboundedSender<SessionEvent>,
     pub(crate) event_rx: mpsc::UnboundedReceiver<SessionEvent>,
+    /// Open `events` subscriptions. Empty in the common case (no host client
+    /// listening), which is what keeps the emit sites free.
+    pub(crate) event_subscribers: events::EventSubscribers,
 }
 
 fn handle_control_request(mux: &mut Multiplexer, request: ControlRequest) {
+    let reply_tx = match request.reply {
+        crate::attach_protocol::ControlReply::Stream(tx) => {
+            handle_control_subscription(mux, &request.ctx, &request.msg, tx);
+            return;
+        }
+        crate::attach_protocol::ControlReply::Once(reply_tx) => reply_tx,
+    };
     let Some(operation) = control_server_operation(&request.ctx, &request.msg) else {
-        drop(request.reply_tx.send(ControlResponse {
+        drop(reply_tx.send(ControlResponse {
             msg: ServerMsg::Unknown,
             operation: None,
             outcome: jackin_telemetry::schema::enums::OutcomeValue::Failure,
@@ -344,7 +356,7 @@ fn handle_control_request(mux: &mut Multiplexer, request: ControlRequest) {
         return;
     };
     if let ClientMsg::ExecCommand { command, args } = request.msg {
-        mux.begin_exec_picker(command, args, request.reply_tx, operation);
+        mux.begin_exec_picker(command, args, reply_tx, operation);
         return;
     }
     let reply = if let Some(guard) = operation.as_ref() {
@@ -365,7 +377,7 @@ fn handle_control_request(mux: &mut Multiplexer, request: ControlRequest) {
         },
         error_type: unknown.then_some(RPC_ERROR),
     };
-    if let Err(response) = request.reply_tx.send(response) {
+    if let Err(response) = reply_tx.send(response) {
         response.complete_delivery_failure();
     }
 }
@@ -622,6 +634,7 @@ impl Multiplexer {
                 input_parser,
                 event_tx,
                 event_rx,
+                event_subscribers: events::EventSubscribers::default(),
             },
             render: RenderState {
                 term_rows: rows,
@@ -1071,6 +1084,7 @@ async fn handle_state_tick(mux: &mut Multiplexer, rule_registry: Option<&RulePac
         .iter()
         .map(|(id, s)| (id, s.state))
         .collect();
+    publish_status_events(mux, &states_before, &states_after, now);
     if mux.expire_dialog_copy_feedback(Instant::now()) {
         mux.invalidate(dialog_change_redraw_reason());
         return;
@@ -1575,6 +1589,23 @@ pub async fn run_daemon(
                                 Some(tail) => format!("{base}\nlast pane output:\n{tail}"),
                                 None => base,
                             });
+                        }
+                        // Last record for this session on the event stream.
+                        // Emitted before removal so the observation still
+                        // carries the session's real agent, state and
+                        // activity rather than a placeholder.
+                        if !mux.control.event_subscribers.is_empty()
+                            && let Some(session) =
+                                mux.session_supervisor.sessions.get(session_id)
+                        {
+                            let observation = session_observation(session_id, session);
+                            mux.control.event_subscribers.publish(
+                                Instant::now(),
+                                &observation,
+                                &SessionEventKind::Exited {
+                                    reason: reason.clone(),
+                                },
+                            );
                         }
                         // Remove the pane / tab immediately rather than
                         // leaving a stale `○ Done` placeholder behind.

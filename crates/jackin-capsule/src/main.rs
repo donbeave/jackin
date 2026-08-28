@@ -90,6 +90,8 @@ SUBCOMMANDS:
     new [<agent>]                  Spawn a new agent session (default: shell)
     status                         Print daemon status to stdout
     snapshot                       Write a screen snapshot to stdout
+    send <session_id> <text>       Type text into a running session's PTY (verbatim)
+    events [--session <id>]        Stream session state/exit/activity events as NDJSON
     attach-proxy                   Relay attach protocol bytes over stdio
     usage accounts                 Print cached account quota rows as JSON
     usage verify                   Verify all provider quota rows are cached and trusted
@@ -120,6 +122,8 @@ connecting as a client.",
             }
             Some("status") => client::run_status().await,
             Some("snapshot") => client::run_snapshot().await,
+            Some("send") => client::run_session_send(&args).await,
+            Some("events") => client::run_session_events(&args).await,
             Some("report-event") => client::run_report_event(&args).await,
             Some("token-usage") => client::run_token_usage(&args).await,
             Some("attach-proxy") => client::run_attach_proxy().await,
@@ -237,8 +241,8 @@ fn is_daemon_entrypoint_args(args: &[String]) -> bool {
         // Known client subcommands → client (must keep this list in sync with
         // the client-mode dispatch match in `main`).
         Some(
-            "status" | "snapshot" | "usage" | "agents" | "runtime-setup" | "mcp-server"
-            | "prepare-commit-msg" | "new" | "--version" | "-V" | "--help" | "-h",
+            "status" | "snapshot" | "send" | "events" | "usage" | "agents" | "runtime-setup"
+            | "mcp-server" | "prepare-commit-msg" | "new" | "--version" | "-V" | "--help" | "-h",
         ) => false,
         // Anything else is the initial agent slug → daemon entrypoint.
         Some(_) => true,
@@ -290,9 +294,9 @@ fn parse_focus_flag(args: &[String]) -> Option<u64> {
         // --focus. Scan past the end of args so a stray --focus is
         // ignored instead of silently consumed.
         Some(
-            "status" | "snapshot" | "attach-proxy" | "usage" | "agents" | "runtime-setup"
-            | "mcp-server" | "prepare-commit-msg" | "sudo-provision" | "firewall-apply"
-            | "--version" | "-V" | "--help" | "-h",
+            "status" | "snapshot" | "send" | "events" | "attach-proxy" | "usage" | "agents"
+            | "runtime-setup" | "mcp-server" | "prepare-commit-msg" | "sudo-provision"
+            | "firewall-apply" | "--version" | "-V" | "--help" | "-h",
         ) => args.len(),
         // `jackin-capsule --focus 5` (no subcommand) or no args at
         // all — scan from index 1.

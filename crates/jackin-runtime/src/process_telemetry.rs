@@ -72,6 +72,16 @@ impl ChildOperation {
         }
     }
 
+    /// Close the span as successful without an exit status.
+    ///
+    /// For a child the host deliberately terminates when it is done with it —
+    /// a long-lived stream reader, not a command whose exit code is the
+    /// result. Reaping such a child yields a signal status that
+    /// [`Self::complete_status`] would mislabel as a failure.
+    pub(crate) fn complete_success(self) {
+        self.finish(OutcomeValue::Success, None);
+    }
+
     pub(crate) fn complete_timeout(self) {
         self.finish(OutcomeValue::Timeout, Some(ErrorType::Timeout));
     }

@@ -142,7 +142,7 @@ pub fn fetch_usage_accounts(
     }
 }
 
-fn request_control_inner(path: &Path, request: &ClientMsg) -> Result<ServerMsg> {
+pub(crate) fn request_control_inner(path: &Path, request: &ClientMsg) -> Result<ServerMsg> {
     let mut stream = jackin_diagnostics::operation::connection_attempt_sync(
         jackin_telemetry::schema::enums::ConnectionPeerType::CapsuleControl,
         || UnixStream::connect(path),
@@ -247,7 +247,10 @@ fn stale_usage_subcommand_hint(container_name: &str, stderr: &str) -> Option<Str
     None
 }
 
-fn run_docker_exec_capsule(container_name: &str, script: &str) -> Result<std::process::Output> {
+pub(crate) fn run_docker_exec_capsule(
+    container_name: &str,
+    script: &str,
+) -> Result<std::process::Output> {
     // Match the container's run-time UID (`--user` on docker run) so fallback
     // exec reads host-UID-owned state, not as the image's baked UID 1000.
     let run_as_user = crate::runtime::identity::host_run_as_user();
