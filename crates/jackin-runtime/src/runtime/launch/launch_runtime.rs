@@ -32,6 +32,10 @@ use super::diagnose_with_state;
 use super::exit_diagnosis::{ExitPhase, diagnose_premature_exit};
 use crate::runtime::progress::launch_output;
 
+#[expect(
+    clippy::struct_excessive_bools,
+    reason = "LaunchContext carries independent launch switches (debug, git_coauthor_trailer, git_dco, non_interactive) resolved upstream, not a state machine."
+)]
 pub(crate) struct LaunchContext<'a> {
     pub(crate) container_name: &'a str,
     pub(crate) image: &'a str,

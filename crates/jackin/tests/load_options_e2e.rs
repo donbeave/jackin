@@ -16,8 +16,6 @@
 #![cfg_attr(
     feature = "e2e",
     expect(
-        clippy::unwrap_used,
-        clippy::panic,
         clippy::disallowed_methods,
         reason = "integration tests: fail-fast fixtures and host-side blocking helpers"
     )

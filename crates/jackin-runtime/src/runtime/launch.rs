@@ -92,6 +92,10 @@ use std::path::PathBuf;
     missing_debug_implementations,
     reason = "LoadOptions contains an injected OpRunner trait object that cannot expose Debug."
 )]
+#[expect(
+    clippy::struct_excessive_bools,
+    reason = "LoadOptions is a caller-supplied options bag whose flags (debug, rebuild, force, non_interactive) are independent switches, not a state machine."
+)]
 #[derive(Default)]
 pub struct LoadOptions {
     pub debug: bool,

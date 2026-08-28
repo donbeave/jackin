@@ -76,7 +76,7 @@ key = "clippy::cognitive_complexity@jackin-runtime"
 bound = 1
 [[family.entry]]
 key = "clippy::disallowed_methods@jackin"
-bound = 12
+bound = 13
 [[family.entry]]
 key = "clippy::disallowed_methods@jackin-capsule"
 bound = 8
@@ -320,6 +320,9 @@ bound = 2
 [[family.entry]]
 key = "clippy::struct_excessive_bools@jackin-protocol"
 bound = 3
+[[family.entry]]
+key = "clippy::struct_excessive_bools@jackin-runtime"
+bound = 2
 [[family.entry]]
 key = "clippy::struct_excessive_bools@jackin-term"
 bound = 3
@@ -832,7 +835,7 @@ key = "jackin-protocol"
 bound = 80
 [[family.entry]]
 key = "jackin-runtime"
-bound = 90
+bound = 92
 [[family.entry]]
 key = "jackin-telemetry"
 bound = 24
