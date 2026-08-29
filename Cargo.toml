@@ -140,7 +140,7 @@ tempfile = "=3.27.0"
 thiserror = "2.0"
 # Renovate exact pin (#394 → workspace #713); keep it at the newest stable
 # release and validate every runtime target before advancing the pin.
-tokio = { version = "=1.53.0", default-features = false }
+tokio = { version = "=1.53.1", default-features = false }
 tokio-util = "0.7"
 tokio-rustls = { version = "0.26", default-features = false, features = ["ring", "tls12"] }
 # Exact pin from workspace virtualization (#713); no recovered bug citation.
