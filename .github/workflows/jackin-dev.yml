@@ -8,6 +8,15 @@ on:
     branches: [main]
     paths:
       - "crates/jackin-dev/**"
+  pull_request:
+    paths:
+      - ".github/actions/sign-and-attest-archive/**"
+      - ".github/workflows/jackin-dev.yml"
+      - "Cargo.lock"
+      - "Cargo.toml"
+      - "crates/jackin-dev/**"
+      - "mise.toml"
+      - "rust-toolchain.toml"
   workflow_dispatch:
     inputs:
       lanes:
@@ -63,7 +72,9 @@ jobs:
           cache_key_prefix: "mise-v2"
           cache_save: ${{ github.ref == 'refs/heads/main' }}
           install_args: "rust"
-          github_token: ${{ secrets.GH_READONLY_TOKEN }}
+          # This job only runs on pull_request events, where fork PRs have no
+          # GH_READONLY_TOKEN — resolve through the workflow's own token there.
+          github_token: ${{ github.event_name == 'pull_request' && github.token || secrets.GH_READONLY_TOKEN }}
       - name: Bind Cargo cache actions into admitted closure
         if: github.event_name == 'velnor-admission-closure'
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0

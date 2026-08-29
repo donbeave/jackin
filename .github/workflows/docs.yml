@@ -6,6 +6,7 @@ name: Docs
 on:
   push:
     branches: [main]
+  pull_request:
   workflow_dispatch:
     inputs:
       lanes:
@@ -191,7 +192,9 @@ jobs:
     runs-on: ${{ ((github.event_name == 'workflow_dispatch' && inputs.lanes == 'github') || github.event_name == 'push') && 'ubuntu-26.04' || fromJSON('["self-hosted","velnor-target-mvp"]') }}
     timeout-minutes: 15
     env:
-      CI_LANE: ${{ ((github.event_name == 'workflow_dispatch' && inputs.lanes == 'github') || github.event_name == 'push') && 'GitHub' || 'Velnor' }}
+      # Fork PRs have no GH_READONLY_TOKEN and resolve cross-repository reads
+      # through the workflow token on the GitHub lane.
+      CI_LANE: ${{ github.event_name == 'pull_request' && 'GitHub' || ((github.event_name == 'workflow_dispatch' && inputs.lanes == 'github') || github.event_name == 'push') && 'GitHub' || 'Velnor' }}
       DOCS_XTASK: ${{ github.workspace }}/.ci-prebuilt-xtask/jackin-xtask
     steps:
       - name: Checkout repository
@@ -217,7 +220,9 @@ jobs:
           cache_save: ${{ github.ref == 'refs/heads/main' }}
           working_directory: docs
           install_args: "bun lychee"
-          github_token: ${{ secrets.GH_READONLY_TOKEN }}
+          # Fork PRs have no GH_READONLY_TOKEN; the workflow token covers
+          # same-repository reads on the pull_request lane.
+          github_token: ${{ github.event_name == 'pull_request' && github.token || secrets.GH_READONLY_TOKEN }}
 
       - uses: ./.github/actions/download-ci-xtask
         with:
@@ -280,7 +285,9 @@ jobs:
     runs-on: ${{ ((github.event_name == 'workflow_dispatch' && inputs.lanes == 'github') || github.event_name == 'push') && 'ubuntu-26.04' || fromJSON('["self-hosted","velnor-target-mvp"]') }}
     timeout-minutes: 20
     env:
-      CI_LANE: ${{ ((github.event_name == 'workflow_dispatch' && inputs.lanes == 'github') || github.event_name == 'push') && 'GitHub' || 'Velnor' }}
+      # Fork PRs have no GH_READONLY_TOKEN and resolve cross-repository reads
+      # through the workflow token on the GitHub lane.
+      CI_LANE: ${{ github.event_name == 'pull_request' && 'GitHub' || ((github.event_name == 'workflow_dispatch' && inputs.lanes == 'github') || github.event_name == 'push') && 'GitHub' || 'Velnor' }}
       DOCS_XTASK: ${{ github.workspace }}/.ci-prebuilt-xtask/jackin-xtask
     steps:
       - name: Checkout repository
@@ -377,7 +384,9 @@ jobs:
           cache_save: ${{ github.ref == 'refs/heads/main' }}
           working_directory: docs
           install_args: ${{ steps.built-site.outputs.hit == 'true' && 'lychee' || 'bun node lychee' }}
-          github_token: ${{ secrets.GH_READONLY_TOKEN }}
+          # Fork PRs have no GH_READONLY_TOKEN; the workflow token covers
+          # same-repository reads on the pull_request lane.
+          github_token: ${{ github.event_name == 'pull_request' && github.token || secrets.GH_READONLY_TOKEN }}
 
       - name: Cache bun modules
         if: >-
@@ -522,7 +531,9 @@ jobs:
           cache_key_prefix: "mise-v2"
           cache_save: ${{ github.ref == 'refs/heads/main' }}
           install_args: "cargo-binstall cargo:codebook-lsp"
-          github_token: ${{ secrets.GH_READONLY_TOKEN }}
+          # Fork PRs have no GH_READONLY_TOKEN; the workflow token covers
+          # same-repository reads on the pull_request lane.
+          github_token: ${{ github.event_name == 'pull_request' && github.token || secrets.GH_READONLY_TOKEN }}
 
       - name: Stage Codebook binary
         shell: bash

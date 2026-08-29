@@ -21,6 +21,8 @@ name: Renovate Validate
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
     inputs:
       lanes:
