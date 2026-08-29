@@ -48,6 +48,9 @@ jobs:
           RENOVATE_REPOSITORIES: ${{ github.repository }}
           RENOVATE_BASE_DIR: /tmp/renovate
           RENOVATE_ONBOARDING: false
+          # Let Renovate run `mise lock` so mise.toml tool bumps refresh
+          # mise.lock in the same PR (CI installs mise tools in locked mode).
+          RENOVATE_ALLOWED_UNSAFE_EXECUTIONS: "mise"
           RENOVATE_REPOSITORY_CACHE: enabled
           # Pin the git author identity so the DCO sign-off trailer in
           # renovate.json::commitBody always matches the commit-author
