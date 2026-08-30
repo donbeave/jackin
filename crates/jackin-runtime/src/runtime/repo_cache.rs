@@ -123,7 +123,7 @@ fn acquire_repo_lock_blocking(path: &std::path::Path) -> anyhow::Result<RepoLock
 /// blocking `flock` runs on the blocking pool rather than on the runtime.
 async fn acquire_repo_lock(path: &std::path::Path) -> anyhow::Result<RepoLock> {
     let owned = path.to_path_buf();
-    tokio::task::spawn_blocking(move || acquire_repo_lock_blocking(&owned))
+    jackin_telemetry::spawn::joined_blocking(move || acquire_repo_lock_blocking(&owned))
         .await
         .context("repo lock acquisition task failed")?
 }

@@ -427,7 +427,8 @@ key = "dead_code@jackin-env"
 bound = 3
 [[family.entry]]
 key = "dead_code@jackin-runtime"
-bound = 3
+# 4th entry: repo_cache RepoLock guard-only Arc<std::fs::File> (flock releases on last drop).
+bound = 4
 [[family.entry]]
 key = "dead_code@jackin-usage"
 bound = 1
