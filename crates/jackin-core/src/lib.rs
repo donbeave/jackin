@@ -44,6 +44,7 @@ mod operator_notice;
 mod path_text;
 mod paths;
 mod prompt_result;
+mod reasoning_effort;
 mod runner;
 mod selector;
 mod session_id;
@@ -84,6 +85,7 @@ pub use operator_notice::{
 pub use path_text::*;
 pub use paths::*;
 pub use prompt_result::*;
+pub use reasoning_effort::{ParseReasoningEffortError, ReasoningEffort};
 pub use runner::*;
 pub use selector::*;
 pub use session_id::*;

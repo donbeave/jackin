@@ -241,8 +241,18 @@ pub fn load_role<'a>(
 
     Box::pin(
         async move {
-            let result =
-                load_role_inner(paths, config, selector, workspace, docker, runner, opts).await;
+            // Programmatic launches are validated at the public boundary: every
+            // decision the interactive path would prompt for must already be
+            // supplied, and a missing one fails here rather than reaching a
+            // dialog the caller has no terminal for.
+            let result = match opts.validate_programmatic(config, selector) {
+                Ok(()) => {
+                    let merged = with_extra_mounts(workspace, &opts.extra_mounts);
+                    let workspace = merged.as_ref().unwrap_or(workspace);
+                    load_role_inner(paths, config, selector, workspace, docker, runner, opts).await
+                }
+                Err(error) => Err(anyhow::Error::new(error)),
+            };
             match &result {
                 Ok(()) => {
                     operation
@@ -261,6 +271,27 @@ pub fn load_role<'a>(
         }
         .instrument(span),
     )
+}
+
+/// Append a programmatic launch's ad-hoc mounts to the resolved workspace.
+///
+/// Returns `None` when there is nothing to add, so an interactive launch keeps
+/// using the workspace it was handed rather than a clone of it.
+fn with_extra_mounts(
+    workspace: &jackin_config::ResolvedWorkspace,
+    extra: &[jackin_config::MountConfig],
+) -> Option<jackin_config::ResolvedWorkspace> {
+    if extra.is_empty() {
+        return None;
+    }
+    let mut merged = workspace.clone();
+    for mount in extra {
+        // Last writer wins on a destination collision, matching the CLI's
+        // `--mount` override of a saved workspace mount.
+        merged.mounts.retain(|existing| existing.dst != mount.dst);
+        merged.mounts.push(mount.clone());
+    }
+    Some(merged)
 }
 
 // Boxed internal future permits related-role rebuild recursion without
@@ -406,6 +437,7 @@ async fn restore_explicit_container(
     docker: &impl DockerApi,
     runner: &mut impl CommandRunner,
     steps: &mut super::StepCounter,
+    opts: &super::LoadOptions,
 ) -> anyhow::Result<bool> {
     let Some(container) = container else {
         return Ok(false);
@@ -448,6 +480,7 @@ async fn restore_explicit_container(
         },
         Some(container),
     );
+    opts.record_launched_instance(container);
     restore_current_role_now(paths, container, docker, runner, steps, start).await?;
     Ok(true)
 }
@@ -797,6 +830,7 @@ pub(crate) async fn load_role_with(
                 .await?
                 {
                     Some(super::RestoreResolution::StartCurrentRole(container)) => {
+                        opts.record_launched_instance(&container);
                         return restore_current_role_now(
                             paths, &container, docker, runner, &mut steps, true,
                         )
@@ -841,6 +875,7 @@ pub(crate) async fn load_role_with(
                         resolution: super::RestoreResolution::StartCurrentRole(container),
                         ..
                     }) => {
+                        opts.record_launched_instance(&container);
                         return restore_current_role_now(
                             paths, &container, docker, runner, &mut steps, true,
                         )
@@ -898,6 +933,7 @@ pub(crate) async fn load_role_with(
         docker,
         runner,
         &mut steps,
+        opts,
     )
     .await?
     {
@@ -1034,6 +1070,7 @@ pub(crate) async fn load_role_with(
         {
             super::RestoreResolution::StartFresh => None,
             super::RestoreResolution::StartCurrentRole(container) => {
+                opts.record_launched_instance(&container);
                 return restore_current_role_now(
                     paths, &container, docker, runner, &mut steps, true,
                 )
@@ -1184,6 +1221,9 @@ pub(crate) async fn load_role_with(
             claim_container_name(paths, workspace_typed.as_ref(), selector, docker).await?
         }
     };
+    // The container base is the launch's identity: a programmatic caller waits
+    // for it, and it is locked here, before any further phase can fail.
+    opts.record_launched_instance(&container_name);
 
     // Preliminary panel name only. The authoritative, commit-tagged image name
     // (`jk_<role>:<sha>`) is resolved in the image decision below, which is the
@@ -1328,6 +1368,23 @@ pub(crate) async fn load_role_with(
             merged_vars.push((k.clone(), v.clone()));
         }
     }
+    // Programmatic env last: a caller that pre-supplied a value did so instead
+    // of answering a prompt, so it outranks both the manifest default and the
+    // operator layer (validation already rejected reserved names).
+    for (k, v) in &opts.env {
+        if let Some(slot) = merged_vars.iter_mut().find(|(mk, _)| mk == k) {
+            slot.1.clone_from(v);
+        } else {
+            merged_vars.push((k.clone(), v.clone()));
+        }
+    }
+    // Model and effort travel as the exact keys the in-container role hook
+    // writes into `$CODEX_HOME/config.toml` (Codex) or Claude Code reads from
+    // the environment, so the hook and the capsule daemon agree (D-078).
+    for (k, v) in super::lane_agent_env(agent, opts.model.as_deref(), opts.effort) {
+        merged_vars.retain(|(mk, _)| *mk != k);
+        merged_vars.push((k, v));
+    }
     inject_workspace_mise_env(&mut merged_vars, workspace);
 
     // On-demand credential bindings (jackin-exec). These were filtered out of
@@ -1339,8 +1396,17 @@ pub(crate) async fn load_role_with(
     let exec_ws = workspace_name
         .as_deref()
         .and_then(|n| WorkspaceName::parse(n).ok());
-    let exec_bindings =
+    let mut exec_bindings =
         jackin_env::collect_on_demand_bindings(config, Some(role_key.as_str()), exec_ws.as_ref());
+    // Pre-approved bindings from a programmatic caller stand in for the
+    // interactive credential picker, which is the only other way an on-demand
+    // binding is approved (D-082). A caller-supplied binding replaces the
+    // config-collected one of the same name.
+    for binding in &opts.on_demand_bindings {
+        exec_bindings.retain(|existing| existing.name != binding.name);
+        exec_bindings.push(binding.clone());
+    }
+    exec_bindings.sort_by(|a, b| a.name.cmp(&b.name));
     if !exec_bindings.is_empty() {
         let names = super::exec_binding_names(&exec_bindings);
         merged_vars.retain(|(k, _)| k != "JACKIN_EXEC_BINDINGS");

@@ -9168,3 +9168,143 @@ async fn common_path_single_current_inspect_with_early_then_reuse() {
         "common path must inspect current-role candidate once, not twice; recorded: {inspects:?}"
     );
 }
+
+/// A programmatic launch is validated at the public `load_role` boundary, so a
+/// decision the caller failed to supply is reported before the pipeline
+/// touches Docker at all. The `DockerApi` fake stands in for the daemon: these
+/// launches must never reach it.
+fn programmatic_role_fixture(
+    paths: &JackinPaths,
+    selector: &RoleSelector,
+) -> jackin_config::ResolvedWorkspace {
+    let repo_dir = jackin_manifest::repo::CachedRepo::new(paths, selector).repo_dir;
+    std::fs::create_dir_all(&repo_dir).unwrap();
+    std::fs::write(
+        repo_dir.join("Dockerfile"),
+        "FROM projectjackin/construct:0.1-trixie\n",
+    )
+    .unwrap();
+    std::fs::write(
+        repo_dir.join("jackin.role.toml"),
+        "version = \"v1alpha3\"\ndockerfile = \"Dockerfile\"\n",
+    )
+    .unwrap();
+    repo_workspace(&repo_dir)
+}
+
+#[tokio::test]
+async fn programmatic_launch_without_a_trust_grant_fails_before_docker() {
+    let temp = tempdir().unwrap();
+    let paths = JackinPaths::for_tests(temp.path());
+    crate::runtime::test_support::install_all_test_stubs(&paths);
+    let mut config = AppConfig::load_or_init(&paths).unwrap();
+    let selector = RoleSelector::new(Some("chainargos"), "the-architect");
+    let workspace = programmatic_role_fixture(&paths, &selector);
+    let docker = jackin_test_support::FakeDockerClient::default();
+    let mut runner = FakeRunner::for_load_agent([]);
+
+    let error = load_role(
+        &paths,
+        &mut config,
+        &selector,
+        &workspace,
+        &docker,
+        &mut runner,
+        &LoadOptions::programmatic(jackin_core::Agent::Claude),
+    )
+    .await
+    .expect_err("an untrusted role must not launch non-interactively");
+
+    assert!(
+        error.to_string().contains("is not trusted"),
+        "expected the trust validation failure, got {error:#}"
+    );
+    assert!(
+        error
+            .downcast_ref::<LoadOptionsError>()
+            .is_some_and(|e| matches!(e, LoadOptionsError::TrustNotGranted { .. })),
+        "the failure must be a typed validation error, got {error:#}"
+    );
+}
+
+#[tokio::test]
+async fn programmatic_launch_without_an_agent_fails_before_docker() {
+    let temp = tempdir().unwrap();
+    let paths = JackinPaths::for_tests(temp.path());
+    crate::runtime::test_support::install_all_test_stubs(&paths);
+    let mut config = AppConfig::load_or_init(&paths).unwrap();
+    let selector = RoleSelector::new(Some("chainargos"), "the-architect");
+    config.roles.insert(
+        selector.key(),
+        jackin_config::RoleSource {
+            git: "https://github.com/chainargos/the-architect".to_owned(),
+            trusted: true,
+            ..jackin_config::RoleSource::default()
+        },
+    );
+    let workspace = programmatic_role_fixture(&paths, &selector);
+    let docker = jackin_test_support::FakeDockerClient::default();
+    let mut runner = FakeRunner::for_load_agent([]);
+
+    let mut opts = LoadOptions::programmatic(jackin_core::Agent::Claude);
+    opts.agent = None;
+    let error = load_role(
+        &paths,
+        &mut config,
+        &selector,
+        &workspace,
+        &docker,
+        &mut runner,
+        &opts,
+    )
+    .await
+    .expect_err("a non-TTY launch cannot open the agent picker");
+
+    assert!(
+        error
+            .downcast_ref::<LoadOptionsError>()
+            .is_some_and(|e| matches!(e, LoadOptionsError::AgentNotResolved { .. })),
+        "expected the agent validation failure, got {error:#}"
+    );
+}
+
+#[tokio::test]
+async fn programmatic_launch_refuses_a_role_branch_before_docker() {
+    let temp = tempdir().unwrap();
+    let paths = JackinPaths::for_tests(temp.path());
+    crate::runtime::test_support::install_all_test_stubs(&paths);
+    let mut config = AppConfig::load_or_init(&paths).unwrap();
+    let selector = RoleSelector::new(Some("chainargos"), "the-architect");
+    config.roles.insert(
+        selector.key(),
+        jackin_config::RoleSource {
+            git: "https://github.com/chainargos/the-architect".to_owned(),
+            trusted: true,
+            ..jackin_config::RoleSource::default()
+        },
+    );
+    let workspace = programmatic_role_fixture(&paths, &selector);
+    let docker = jackin_test_support::FakeDockerClient::default();
+    let mut runner = FakeRunner::for_load_agent([]);
+
+    let mut opts = LoadOptions::programmatic(jackin_core::Agent::Claude);
+    opts.role_branch = Some("feat/my-pr".to_owned());
+    let error = load_role(
+        &paths,
+        &mut config,
+        &selector,
+        &workspace,
+        &docker,
+        &mut runner,
+        &opts,
+    )
+    .await
+    .expect_err("an unreviewed branch needs the interactive branch-trust prompt");
+
+    assert!(
+        error
+            .downcast_ref::<LoadOptionsError>()
+            .is_some_and(|e| matches!(e, LoadOptionsError::RoleBranchNotAllowed { .. })),
+        "expected the role-branch validation failure, got {error:#}"
+    );
+}

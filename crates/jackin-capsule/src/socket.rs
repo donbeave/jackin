@@ -267,6 +267,13 @@ async fn read_payload_lazy(
 }
 
 pub async fn write_control_reply(mut stream: UnixStream, reply: &ServerMsg) -> Result<()> {
+    write_control_frame(&mut stream, reply).await
+}
+
+/// Write one framed `ServerMsg` without consuming the stream. Subscriptions
+/// (`events`) write many frames over one connection, so they borrow; the
+/// one-shot path calls this once and drops the stream afterwards.
+pub async fn write_control_frame(stream: &mut UnixStream, reply: &ServerMsg) -> Result<()> {
     match tokio::time::timeout(Duration::from_secs(2), stream.write_all(&frame(reply))).await {
         Ok(result) => result.context("control reply write failed"),
         Err(_) => anyhow::bail!("control reply write timed out after 2 s"),

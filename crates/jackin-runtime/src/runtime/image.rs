@@ -1018,7 +1018,7 @@ async fn prewarm_agent_image_from_validated_repo(
     agent: Agent,
     docker: &impl DockerApi,
     runner: &mut impl CommandRunner,
-    repo_lock: std::fs::File,
+    repo_lock: crate::runtime::repo_cache::RepoLock,
     debug: bool,
 ) -> anyhow::Result<RoleImagePrewarmRow> {
     let decision = decide_role_image(
@@ -1141,7 +1141,7 @@ async fn refresh_agent_image_from_validated_repo(
     agent: Agent,
     docker: &impl DockerApi,
     runner: &mut impl CommandRunner,
-    repo_lock: std::fs::File,
+    repo_lock: crate::runtime::repo_cache::RepoLock,
     debug: bool,
     reason: ImageInvalidationReason,
     role_git_sha: Option<&str>,

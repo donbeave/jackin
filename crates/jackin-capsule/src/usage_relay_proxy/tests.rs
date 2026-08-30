@@ -1,12 +1,11 @@
 // SPDX-FileCopyrightText: 2026 Alexey Zhokhov
 // SPDX-License-Identifier: Apache-2.0
 
+use super::*;
 use jackin_protocol::usage_broker::{
     USAGE_BROKER_PROTOCOL_VERSION, UsageBrokerOperation, UsageCoordinationError,
 };
-use tokio::io::{AsyncBufReadExt as _, AsyncWriteExt as _, BufReader};
-
-use super::*;
+use tokio::io::BufReader;
 
 #[tokio::test]
 async fn broker_client_stdio_proxy_multiplexes_out_of_order_responses() {

@@ -257,3 +257,135 @@ fn refreshing_placeholder_rejects_state_and_string_lookalikes() {
         assert!(!view.is_refreshing_placeholder());
     }
 }
+
+#[test]
+fn session_send_roundtrips_text_verbatim() {
+    // The submit key is part of `text` — the daemon appends nothing, so a
+    // payload carrying `\r` must survive the round trip byte for byte.
+    let msg = ClientMsg::SessionSend {
+        session: 3,
+        text: "ship it\r".to_owned(),
+    };
+    let json = serde_json::to_string(&msg).unwrap();
+    match serde_json::from_str::<ClientMsg>(&json).unwrap() {
+        ClientMsg::SessionSend { session, text } => {
+            assert_eq!(session, 3);
+            assert_eq!(text, "ship it\r");
+        }
+        other => panic!("decoded wrong variant: {other:?}"),
+    }
+    assert_eq!(msg.rpc_method(), "jackin.capsule.Control/SessionSend");
+    assert!(!msg.is_subscription());
+}
+
+#[test]
+fn session_send_replies_roundtrip() {
+    let json = serde_json::to_string(&ServerMsg::SessionSent {
+        session: 3,
+        bytes: 8,
+    })
+    .unwrap();
+    match serde_json::from_str::<ServerMsg>(&json).unwrap() {
+        ServerMsg::SessionSent { session, bytes } => {
+            assert_eq!((session, bytes), (3, 8));
+        }
+        other => panic!("decoded wrong variant: {other:?}"),
+    }
+
+    let json = serde_json::to_string(&ServerMsg::SessionSendDenied {
+        session: 9,
+        reason: SessionSendRejection::UnknownSession,
+    })
+    .unwrap();
+    match serde_json::from_str::<ServerMsg>(&json).unwrap() {
+        ServerMsg::SessionSendDenied { session, reason } => {
+            assert_eq!(session, 9);
+            assert_eq!(reason, SessionSendRejection::UnknownSession);
+            assert_eq!(reason.label(), "no such session");
+        }
+        other => panic!("decoded wrong variant: {other:?}"),
+    }
+}
+
+#[test]
+fn events_request_omits_absent_filter_and_declares_itself_a_subscription() {
+    let all = ClientMsg::Events { session: None };
+    let json = serde_json::to_string(&all).unwrap();
+    assert_eq!(json, r#"{"type":"events"}"#);
+    assert!(all.is_subscription());
+    assert_eq!(all.rpc_method(), "jackin.capsule.Control/Events");
+
+    let one = ClientMsg::Events { session: Some(4) };
+    let json = serde_json::to_string(&one).unwrap();
+    assert!(json.contains(r#""session":4"#), "{json}");
+    assert!(matches!(
+        serde_json::from_str::<ClientMsg>(&json).unwrap(),
+        ClientMsg::Events { session: Some(4) }
+    ));
+}
+
+#[test]
+fn session_event_records_roundtrip_every_kind() {
+    let kinds = [
+        SessionEventKind::Subscribed,
+        SessionEventKind::StateChanged {
+            previous: AgentState::Idle,
+        },
+        SessionEventKind::Activity,
+        SessionEventKind::Exited {
+            reason: Some("exit status 1".to_owned()),
+        },
+        SessionEventKind::Exited { reason: None },
+    ];
+    for (seq, kind) in kinds.into_iter().enumerate() {
+        let record = SessionEventRecord {
+            seq: seq as u64,
+            session: 1,
+            agent: Some("claude".to_owned()),
+            state: AgentState::Working,
+            last_output_ms: Some(120),
+            last_input_ms: None,
+            kind,
+        };
+        let json = serde_json::to_string(&ServerMsg::SessionEvent {
+            event: Box::new(record.clone()),
+        })
+        .unwrap();
+        assert!(
+            !json.contains("last_input_ms"),
+            "an absent activity timestamp must be omitted: {json}"
+        );
+        match serde_json::from_str::<ServerMsg>(&json).unwrap() {
+            ServerMsg::SessionEvent { event } => assert_eq!(*event, record),
+            other => panic!("decoded wrong variant: {other:?}"),
+        }
+    }
+}
+
+#[test]
+fn state_changed_carries_the_working_transition_the_host_waits_on() {
+    // The host-side wait in the managed run is "an idle session became
+    // Working": `previous` is the old state, `state` the new one. Guard the
+    // direction so the two are never swapped on the wire.
+    let json = serde_json::to_string(&SessionEventRecord {
+        seq: 0,
+        session: 1,
+        agent: None,
+        state: AgentState::Working,
+        last_output_ms: Some(3),
+        last_input_ms: Some(5),
+        kind: SessionEventKind::StateChanged {
+            previous: AgentState::Idle,
+        },
+    })
+    .unwrap();
+    let decoded: SessionEventRecord = serde_json::from_str(&json).unwrap();
+    assert_eq!(decoded.state, AgentState::Working);
+    assert_eq!(decoded.kind.label(), "state_changed");
+    assert!(matches!(
+        decoded.kind,
+        SessionEventKind::StateChanged {
+            previous: AgentState::Idle
+        }
+    ));
+}

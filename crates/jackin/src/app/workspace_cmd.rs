@@ -732,6 +732,7 @@ fn handle_workspace_env(
             value,
             role,
             comment,
+            on_demand,
         } => {
             if key.is_empty() {
                 anyhow::bail!("env var key cannot be empty");
@@ -753,7 +754,7 @@ fn handle_workspace_env(
                          before setting role-scoped env vars"
                 );
             }
-            let env_value = super::config_cmd::resolve_env_value_for_cli(&value)?;
+            let env_value = super::config_cmd::resolve_env_value_for_cli(&value, on_demand)?;
             let scope = super::workspace_env_scope(workspace, role);
             let mut editor = jackin_config::ConfigEditor::open(paths)?;
             editor.set_env_var(&scope, &key, env_value)?;
@@ -805,20 +806,12 @@ fn handle_workspace_env(
             let ws = config.require_workspace(
                 &WorkspaceName::parse(&workspace).map_err(anyhow::Error::from)?,
             )?;
-            let vars: Vec<(String, String)> = role.as_ref().map_or_else(
-                || {
-                    ws.env
-                        .iter()
-                        .map(|(k, v)| (k.clone(), v.as_display_str().to_owned()))
-                        .collect()
-                },
+            let vars: Vec<super::config_cmd::EnvListRow> = role.as_ref().map_or_else(
+                || super::config_cmd::env_rows(&ws.env),
                 |a| {
-                    ws.roles.get(a).map_or_else(Vec::new, |ov| {
-                        ov.env
-                            .iter()
-                            .map(|(k, v)| (k.clone(), v.as_display_str().to_owned()))
-                            .collect()
-                    })
+                    ws.roles
+                        .get(a)
+                        .map_or_else(Vec::new, |ov| super::config_cmd::env_rows(&ov.env))
                 },
             );
             super::config_cmd::print_env_table(&vars);

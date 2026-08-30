@@ -23,6 +23,7 @@ pub mod prewarm_trigger;
 pub mod progress;
 pub mod prune_output;
 pub mod repo_cache;
+pub mod session_control;
 pub(crate) mod shared_runner;
 pub mod snapshot;
 pub mod universe;
@@ -48,8 +49,10 @@ pub use self::docker_profile::{DockerSecurityProfile, ProfileSource, resolve_pro
 #[cfg(not(test))]
 pub use self::image::{ImagePrewarmStatus, RoleImagePrewarmRow, prewarm_role_images};
 pub use self::launch::{
-    DIND_IMAGE, DindSidecarPrewarm, LoadOptions, load_role, prewarm_dind_sidecar_container,
-    write_prewarmed_dind_state,
+    CLAUDE_EFFORT_ENV, CLAUDE_MODEL_ENV, CODEX_LANE_EFFORT_ENV, CODEX_LANE_MODEL_ENV, DIND_IMAGE,
+    DindSidecarPrewarm, IdentitySink, LaunchImagePlan, LaunchedInstance, LoadOptions,
+    LoadOptionsError, lane_agent_env, load_role, prewarm_dind_sidecar_container,
+    resolve_launch_image_plan, write_prewarmed_dind_state,
 };
 pub use self::naming::matching_family;
 pub use self::prewarm_trigger::{

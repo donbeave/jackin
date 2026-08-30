@@ -59,8 +59,10 @@ async fn control_socket_exports_client_parent_server_and_completes_after_reply_w
     let server_operation =
         crate::daemon::control_server_operation(&dispatched.ctx, &dispatched.msg)
             .expect("valid correlation");
-    dispatched
-        .reply_tx
+    let super::ControlReply::Once(reply_tx) = dispatched.reply else {
+        panic!("a one-shot control request must be answered on a oneshot channel");
+    };
+    reply_tx
         .send(super::ControlResponse {
             msg: jackin_protocol::control::ServerMsg::SessionList {
                 sessions: Vec::new(),
@@ -135,8 +137,10 @@ async fn control_socket_marks_server_failure_when_peer_closes_before_reply() {
         crate::daemon::control_server_operation(&dispatched.ctx, &dispatched.msg)
             .expect("valid correlation");
     drop(client);
-    dispatched
-        .reply_tx
+    let super::ControlReply::Once(reply_tx) = dispatched.reply else {
+        panic!("a one-shot control request must be answered on a oneshot channel");
+    };
+    reply_tx
         .send(super::ControlResponse {
             msg: jackin_protocol::control::ServerMsg::SessionList {
                 sessions: Vec::new(),

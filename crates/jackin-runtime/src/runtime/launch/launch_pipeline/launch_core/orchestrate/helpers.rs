@@ -126,5 +126,17 @@ pub(super) fn workspace_launch_config(
         &validated_repo.manifest,
     );
     launch_config.exec_bindings = exec_bindings;
+    // A per-launch model overrides the role manifest's `[<agent>].model` for
+    // the agent this launch selected. The same value also travels as the
+    // Codex role hook's config key, so the daemon that spawns the agent and
+    // the hook that writes `$CODEX_HOME/config.toml` cannot disagree (D-078).
+    if let (Some(model), Some(agent)) = (opts.model.as_deref(), opts.agent) {
+        let model = model.trim();
+        if !model.is_empty() {
+            launch_config
+                .models
+                .insert(agent.slug().to_owned(), model.to_owned());
+        }
+    }
     launch_config
 }

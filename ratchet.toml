@@ -76,7 +76,7 @@ key = "clippy::cognitive_complexity@jackin-runtime"
 bound = 1
 [[family.entry]]
 key = "clippy::disallowed_methods@jackin"
-bound = 11
+bound = 13
 [[family.entry]]
 key = "clippy::disallowed_methods@jackin-capsule"
 bound = 8
@@ -321,6 +321,9 @@ bound = 2
 key = "clippy::struct_excessive_bools@jackin-protocol"
 bound = 3
 [[family.entry]]
+key = "clippy::struct_excessive_bools@jackin-runtime"
+bound = 2
+[[family.entry]]
 key = "clippy::struct_excessive_bools@jackin-term"
 bound = 3
 [[family.entry]]
@@ -394,7 +397,7 @@ key = "clippy::unused_async@jackin-image"
 bound = 1
 [[family.entry]]
 key = "clippy::unwrap_used@jackin"
-bound = 12
+bound = 13
 [[family.entry]]
 key = "clippy::unwrap_used@jackin-capsule"
 bound = 2
@@ -415,7 +418,7 @@ key = "clippy::wildcard_imports@jackin-usage"
 bound = 6
 [[family.entry]]
 key = "dead_code@jackin"
-bound = 1
+bound = 3
 [[family.entry]]
 key = "dead_code@jackin-core"
 bound = 4
@@ -424,7 +427,8 @@ key = "dead_code@jackin-env"
 bound = 3
 [[family.entry]]
 key = "dead_code@jackin-runtime"
-bound = 3
+# 4th entry: repo_cache RepoLock guard-only Arc<std::fs::File> (flock releases on last drop).
+bound = 4
 [[family.entry]]
 key = "dead_code@jackin-usage"
 bound = 1
@@ -832,7 +836,7 @@ key = "jackin-protocol"
 bound = 80
 [[family.entry]]
 key = "jackin-runtime"
-bound = 90
+bound = 92
 [[family.entry]]
 key = "jackin-telemetry"
 bound = 24

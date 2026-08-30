@@ -647,6 +647,7 @@ struct PrepareEnvironment<'a, D> {
     cleanup: &'a super::super::super::LoadCleanup,
     docker: &'a D,
     configured: EnvironmentConfigured,
+    opts: &'a super::super::super::LoadOptions,
 }
 
 async fn prepare_environment<D, S>(
@@ -670,6 +671,7 @@ where
         cleanup,
         docker,
         configured,
+        opts,
     } = input;
     jackin_diagnostics::active_timing_started(
         jackin_diagnostics::DiagnosticStage::Credentials,
@@ -683,6 +685,9 @@ where
     let workspace_opt_owned = configured.workspace_opt.clone();
     let role_key_owned = role_key.to_owned();
     let github_ctx_owned = configured.github_ctx.clone();
+    // A programmatic launch pins the account (auth source folder) per launch;
+    // the interactive path resolves it per workspace/role/global config.
+    let account_override = opts.account.clone();
     let role_state_future = async move {
         jackin_telemetry::spawn::joined_blocking(move || {
             let resolve_mode = |candidate| {
@@ -694,11 +699,14 @@ where
                 )
             };
             let resolve_sync_src = |candidate| {
-                jackin_config::resolve_sync_source_dir(
-                    &config_owned,
-                    candidate,
-                    workspace_opt_owned.as_ref(),
-                    &role_key_owned,
+                super::super::super::programmatic::resolve_account_source(
+                    account_override.as_deref(),
+                    jackin_config::resolve_sync_source_dir(
+                        &config_owned,
+                        candidate,
+                        workspace_opt_owned.as_ref(),
+                        &role_key_owned,
+                    ),
                 )
             };
             let provision_agents = manifest_owned.supported_agents();
@@ -786,7 +794,7 @@ struct MaterializeImage<'a, D, R> {
     runner: &'a mut R,
     restoring: bool,
     container_name: &'a str,
-    repo_lock: &'a mut Option<std::fs::File>,
+    repo_lock: &'a mut Option<crate::runtime::repo_cache::RepoLock>,
     cleanup: &'a super::super::super::LoadCleanup,
     classified: ImagePhaseClassified,
     decision: Option<crate::runtime::image::ImageDecision>,
@@ -1173,7 +1181,7 @@ struct ActiveLaunch<'a, D, R> {
     auth_mode: jackin_core::AuthForwardMode,
     backend: super::super::super::Backend,
     image_decision: Option<crate::runtime::image::ImageDecision>,
-    repo_lock: Option<std::fs::File>,
+    repo_lock: Option<crate::runtime::repo_cache::RepoLock>,
     restoring: bool,
     container_name: String,
     exec_bindings: Vec<jackin_protocol::ExecBinding>,
@@ -1274,6 +1282,7 @@ where
             cleanup: &launch.initialized.cleanup,
             docker: launch.docker,
             configured,
+            opts: launch.opts,
         },
         sidecar.as_mut(),
         early_sidecar_result,
@@ -1668,6 +1677,7 @@ where
             workspace_name: &workspace_name_str,
             role_key,
         },
+        non_interactive: opts.non_interactive,
     };
     let launch_result = super::super::super::launch_role_runtime(&ctx, steps, docker, runner).await;
     if launch_result.is_err() {

@@ -82,6 +82,41 @@ impl ImageDecision {
         }
     }
 
+    /// Stable machine-readable name of this decision variant.
+    ///
+    /// Shared by the `--dry-run --format json` plan and any other machine
+    /// surface, so the wire spelling has exactly one definition.
+    #[must_use]
+    pub const fn kind(&self) -> &'static str {
+        match self {
+            Self::Reuse { .. } => "reuse",
+            Self::RefreshInBackground { .. } => "refresh_in_background",
+            Self::BuildFromPublished { .. } => "build_from_published",
+            Self::BuildFromWorkspace { .. } => "build_from_workspace",
+        }
+    }
+
+    /// Why the image is being rebuilt or refreshed; `None` for a plain reuse.
+    #[must_use]
+    pub const fn reason(&self) -> Option<ImageInvalidationReason> {
+        match self {
+            Self::Reuse { .. } => None,
+            Self::RefreshInBackground { reason, .. }
+            | Self::BuildFromPublished { reason, .. }
+            | Self::BuildFromWorkspace { reason, .. } => Some(*reason),
+        }
+    }
+
+    /// Concrete image tag this decision resolved to, when it already has one.
+    /// `None` for the build variants, whose tag is derived from the role SHA.
+    #[must_use]
+    pub fn resolved_image(&self) -> Option<&str> {
+        match self {
+            Self::Reuse { image } | Self::RefreshInBackground { image, .. } => Some(image.as_str()),
+            Self::BuildFromPublished { .. } | Self::BuildFromWorkspace { .. } => None,
+        }
+    }
+
     /// Base/construct image reference for this decision; `None` for Reuse/Refresh.
     pub fn base_image_ref(&self) -> Option<&str> {
         match self {

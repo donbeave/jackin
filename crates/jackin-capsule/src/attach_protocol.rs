@@ -40,7 +40,23 @@ pub(crate) struct AttachHandshake {
 pub(crate) struct ControlRequest {
     pub(crate) ctx: jackin_protocol::TelemetryContext,
     pub(crate) msg: jackin_protocol::control::ClientMsg,
-    pub(crate) reply_tx: oneshot::Sender<ControlResponse>,
+    pub(crate) reply: ControlReply,
+}
+
+/// Where the daemon writes the answer to a control request.
+///
+/// Almost every control RPC is one framed reply followed by a close, so the
+/// channel is a `oneshot`. `events` is a subscription: the daemon keeps
+/// writing frames for as long as the peer reads them, so it needs a stream
+/// sender the multiplexer can hold on to. Making the difference a sum type
+/// means a subscription can never be answered with a single frame (nor a
+/// query left hanging on a stream that never closes).
+pub(crate) enum ControlReply {
+    /// One framed reply, then the connection closes.
+    Once(oneshot::Sender<ControlResponse>),
+    /// A long-lived subscription. The daemon holds the sender; dropping the
+    /// receiver (the peer hung up) is what unsubscribes.
+    Stream(mpsc::UnboundedSender<jackin_protocol::control::ServerMsg>),
 }
 
 #[derive(Debug)]
@@ -236,12 +252,18 @@ async fn perform_control_handshake(
             jackin_telemetry::schema::enums::ErrorType::RpcError,
         );
     };
+    if request.msg.is_subscription() {
+        let completion =
+            serve_control_subscription(stream, request.ctx, request.msg, control_tx).await;
+        drop(client_permit);
+        return completion;
+    }
     let (reply_tx, reply_rx) = oneshot::channel();
     if control_tx
         .send(ControlRequest {
             ctx: request.ctx,
             msg: request.msg,
-            reply_tx,
+            reply: ControlReply::Once(reply_tx),
         })
         .is_err()
     {
@@ -269,6 +291,64 @@ async fn perform_control_handshake(
     };
     drop(client_permit);
     completion
+}
+
+/// Serve one `events` subscription for as long as the peer reads it.
+///
+/// Unlike every other control RPC this connection is long-lived, so it holds
+/// its `MAX_CONCURRENT_CLIENTS` permit for its whole lifetime — a subscription
+/// is an attached client, not a query. Two things end it: the daemon dropping
+/// the sender (shutdown), or the peer going away. The peer's departure is
+/// detected from either side of the socket — a failed write, or EOF on the
+/// read half — so a subscriber that hangs up while the container is quiet is
+/// still reaped rather than lingering until the next event.
+async fn serve_control_subscription(
+    mut stream: UnixStream,
+    ctx: jackin_protocol::TelemetryContext,
+    msg: jackin_protocol::control::ClientMsg,
+    control_tx: mpsc::UnboundedSender<ControlRequest>,
+) -> jackin_telemetry::spawn::DetachedCompletion {
+    let (event_tx, mut event_rx) = mpsc::unbounded_channel();
+    if control_tx
+        .send(ControlRequest {
+            ctx,
+            msg,
+            reply: ControlReply::Stream(event_tx),
+        })
+        .is_err()
+    {
+        return jackin_telemetry::spawn::DetachedCompletion::error(
+            jackin_telemetry::schema::enums::ErrorType::RpcError,
+        );
+    }
+    let mut discard = [0u8; 64];
+    loop {
+        tokio::select! {
+            event = event_rx.recv() => {
+                let Some(event) = event else {
+                    // Daemon shutdown dropped the sender: a clean end of stream.
+                    return jackin_telemetry::spawn::DetachedCompletion::success();
+                };
+                if socket::write_control_frame(&mut stream, &event).await.is_err() {
+                    return jackin_telemetry::spawn::DetachedCompletion::error(
+                        jackin_telemetry::schema::enums::ErrorType::RpcError,
+                    );
+                }
+            }
+            // The peer sends nothing on an events connection, so any readable
+            // event is EOF (hang-up) or a protocol violation. Both end the
+            // subscription; dropping `event_rx` unsubscribes on the next
+            // publish.
+            read = stream.read(&mut discard) => {
+                return match read {
+                    Ok(0) => jackin_telemetry::spawn::DetachedCompletion::success(),
+                    _ => jackin_telemetry::spawn::DetachedCompletion::failure(
+                        jackin_telemetry::schema::enums::ErrorType::RpcError,
+                    ),
+                };
+            }
+        }
+    }
 }
 
 pub(crate) async fn drain_and_exit(mux: &mut Multiplexer) {

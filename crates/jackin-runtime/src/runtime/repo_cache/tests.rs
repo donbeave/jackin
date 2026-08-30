@@ -804,3 +804,43 @@ fn fetch_head_age_at_is_deterministic() {
         "fresh within ttl"
     );
 }
+
+/// A launch holds the role repo lock across `decide_role_image`, whose prewarm
+/// and staleness paths resolve the same role again. `flock(2)` belongs to the
+/// open file description, so a second `File::create` + `flock` in the same
+/// process used to block on the first one forever — the launch hung at
+/// "Resolving role identity" with no diagnostic. The guard is now shared per
+/// lock path, so a re-acquire while the first is alive must return at once.
+#[test]
+fn repo_lock_reacquires_in_the_same_process_without_deadlocking() {
+    let dir = tempdir().unwrap();
+    let lock_path = dir.path().join("the-architect.locks/default.repo.lock");
+    std::fs::create_dir_all(lock_path.parent().unwrap()).unwrap();
+
+    let first = acquire_repo_lock_blocking(&lock_path).expect("first acquisition");
+    let second = acquire_repo_lock_blocking(&lock_path).expect("re-acquisition must not block");
+    assert!(
+        Arc::ptr_eq(&first.0, &second.0),
+        "a same-process re-acquire must share the first open file description"
+    );
+
+    // Dropping every handle releases the flock and clears the registry entry,
+    // so the next launch in this process takes a fresh lock rather than
+    // reviving a dead one.
+    drop(second);
+    drop(first);
+    let third = acquire_repo_lock_blocking(&lock_path).expect("acquisition after release");
+    drop(third);
+}
+
+/// Two different roles must never gate on each other: the registry is keyed by
+/// lock path, not by a single global mutex.
+#[test]
+fn repo_lock_paths_are_independent() {
+    let dir = tempdir().unwrap();
+    let one = dir.path().join("one.repo.lock");
+    let two = dir.path().join("two.repo.lock");
+    let held_one = acquire_repo_lock_blocking(&one).expect("first role");
+    let held_two = acquire_repo_lock_blocking(&two).expect("second role");
+    assert!(!Arc::ptr_eq(&held_one.0, &held_two.0));
+}

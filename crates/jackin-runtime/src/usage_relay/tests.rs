@@ -6,6 +6,7 @@ use std::path::Path;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::{SystemTime, UNIX_EPOCH};
 
+use super::*;
 use jackin_protocol::control::{
     FocusedUsageView, QuotaBucketView, UsageConfidence, UsageSeverity, UsageSnapshotStatus,
     UsageSource,
@@ -13,9 +14,6 @@ use jackin_protocol::control::{
 use jackin_protocol::usage_broker::UsageRefreshPhase;
 use jackin_usage::coordinator::{ProviderProbeOutcome, UsageProviderExecutor};
 use jackin_usage::host::ensure_usage_broker_with_executor;
-use tokio::io::{AsyncBufReadExt as _, AsyncWriteExt as _};
-
-use super::*;
 
 #[test]
 fn resolved_launch_inventory_deduplicates_only_launch_agents() {

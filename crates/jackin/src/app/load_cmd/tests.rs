@@ -132,3 +132,122 @@ fn saved_console_config_feeds_post_console_launch_path() {
         "control: disk never received the save; only the returned model carries it"
     );
 }
+
+/// `--dry-run --format json` promises the *resolved* plan. `image_decision`
+/// and `published_image` are resolvable only after the role manifest is read,
+/// so their presence in the JSON is the contract these tests hold (D-078).
+fn dry_run_workspace() -> crate::workspace::ResolvedWorkspace {
+    crate::workspace::ResolvedWorkspace {
+        name: "big-monorepo".to_owned(),
+        label: "big-monorepo".to_owned(),
+        workdir: "/workspace/big-monorepo".to_owned(),
+        mounts: vec![MountConfig {
+            src: "/host/big-monorepo".to_owned(),
+            dst: "/workspace/big-monorepo".to_owned(),
+            readonly: false,
+            isolation: MountIsolation::Shared,
+        }],
+        keep_awake_enabled: false,
+        default_agent: Some(Agent::Claude),
+        git_pull_on_entry: false,
+    }
+}
+
+fn dry_run_image_plan() -> jackin_runtime::runtime::LaunchImagePlan {
+    jackin_runtime::runtime::LaunchImagePlan {
+        decision: "build_from_published",
+        reason: Some("role_git_sha_changed"),
+        image: "jk_the-architect:deadbee".to_owned(),
+        base_image: Some("projectjackin/the-architect:latest".to_owned()),
+        role_git_sha: Some("deadbee".to_owned()),
+        published_image: Some("projectjackin/the-architect:latest".to_owned()),
+    }
+}
+
+#[test]
+fn dry_run_json_carries_the_resolved_image_decision_and_published_image() {
+    let selector = jackin_core::RoleSelector::parse("donbeave/the-architect").unwrap();
+    let plan = super::dry_run_plan_json(
+        &selector,
+        &dry_run_workspace(),
+        "claude",
+        None,
+        false,
+        &dry_run_image_plan(),
+    );
+    let data = &plan["data"];
+    assert_eq!(plan["schema_version"], "v1");
+    assert_eq!(
+        data["published_image"],
+        "projectjackin/the-architect:latest"
+    );
+    assert_eq!(data["image_decision"]["decision"], "build_from_published");
+    assert_eq!(data["image_decision"]["reason"], "role_git_sha_changed");
+    assert_eq!(data["image_decision"]["image"], "jk_the-architect:deadbee");
+    assert_eq!(
+        data["image_decision"]["base_image"],
+        "projectjackin/the-architect:latest"
+    );
+    assert_eq!(data["image_decision"]["role_git_sha"], "deadbee");
+}
+
+#[test]
+fn dry_run_json_keeps_every_pre_existing_key() {
+    let selector = jackin_core::RoleSelector::parse("donbeave/the-architect").unwrap();
+    let plan = super::dry_run_plan_json(
+        &selector,
+        &dry_run_workspace(),
+        "codex",
+        Some("feat/my-pr"),
+        true,
+        &dry_run_image_plan(),
+    );
+    let data = &plan["data"];
+    for key in [
+        "workspace",
+        "workdir",
+        "role",
+        "role_branch",
+        "agent",
+        "rebuild",
+        "mounts",
+        "image_decision",
+        "published_image",
+    ] {
+        assert!(
+            data.get(key).is_some(),
+            "the dry-run plan must keep carrying {key}, got {data}"
+        );
+    }
+    assert_eq!(data["agent"], "codex");
+    assert_eq!(data["role_branch"], "feat/my-pr");
+    assert_eq!(data["rebuild"], true);
+    assert_eq!(
+        data["mounts"][0]["container_dest"],
+        "/workspace/big-monorepo"
+    );
+}
+
+#[test]
+fn a_role_without_a_published_image_reports_it_as_null_not_missing() {
+    let selector = jackin_core::RoleSelector::parse("donbeave/the-architect").unwrap();
+    let mut image_plan = dry_run_image_plan();
+    image_plan.published_image = None;
+    image_plan.base_image = None;
+    image_plan.decision = "build_from_workspace";
+    let plan = super::dry_run_plan_json(
+        &selector,
+        &dry_run_workspace(),
+        "claude",
+        None,
+        false,
+        &image_plan,
+    );
+    let data = &plan["data"];
+    assert!(
+        data["published_image"].is_null(),
+        "an absent published_image must be an explicit null, not an absent key"
+    );
+    assert!(data["image_decision"]["base_image"].is_null());
+    assert_eq!(data["image_decision"]["decision"], "build_from_workspace");
+}

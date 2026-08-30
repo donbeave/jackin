@@ -219,7 +219,7 @@ async fn conformance_wire_real_capsule_control_status_preserves_parent_and_deliv
         ControlRequest {
             ctx: decoded.ctx,
             msg: decoded.msg,
-            reply_tx,
+            reply: crate::attach_protocol::ControlReply::Once(reply_tx),
         },
     );
     let response = reply_rx.await.expect("receive control response");
@@ -8881,5 +8881,284 @@ async fn last_session_exit_defers_when_dialog_already_open_inv_d19() {
     assert!(
         mux.dialog_open(),
         "dialog must remain open after deferred last-session exit"
+    );
+}
+
+#[test]
+fn session_send_writes_the_payload_verbatim_into_the_addressed_pty() {
+    let mut mux = single_pane_tab_mux();
+    let (session, mut input_rx) = test_session_with_agent(24, 80, Some("claude".to_owned()));
+    mux.session_supervisor.sessions.insert(1, session);
+
+    let reply = control_reply_for_request(
+        &mut mux,
+        ClientMsg::SessionSend {
+            session: 1,
+            text: "review the diff\r".to_owned(),
+        },
+    );
+
+    assert!(matches!(
+        reply,
+        ServerMsg::SessionSent {
+            session: 1,
+            bytes: 16
+        }
+    ));
+    // Verbatim: the daemon appends no newline, no bracketed-paste wrapper.
+    // The submit key is the caller's to include.
+    assert_eq!(
+        input_rx.try_recv().expect("payload reached the PTY writer"),
+        b"review the diff\r".to_vec()
+    );
+    assert!(
+        matches!(input_rx.try_recv(), Err(mpsc::error::TryRecvError::Empty)),
+        "exactly one write"
+    );
+}
+
+#[test]
+fn session_send_to_an_unknown_session_denies_and_writes_nothing() {
+    let mut mux = single_pane_tab_mux();
+    let (session, mut input_rx) = test_session_with_agent(24, 80, Some("claude".to_owned()));
+    mux.session_supervisor.sessions.insert(1, session);
+
+    let reply = control_reply_for_request(
+        &mut mux,
+        ClientMsg::SessionSend {
+            session: 999,
+            text: "hello".to_owned(),
+        },
+    );
+
+    assert!(matches!(
+        reply,
+        ServerMsg::SessionSendDenied {
+            session: 999,
+            reason: jackin_protocol::control::SessionSendRejection::UnknownSession,
+        }
+    ));
+    assert!(
+        matches!(input_rx.try_recv(), Err(mpsc::error::TryRecvError::Empty)),
+        "a misaddressed send must never reach another session's PTY"
+    );
+}
+
+#[test]
+fn session_send_reports_a_closed_writer_instead_of_claiming_delivery() {
+    let mut mux = single_pane_tab_mux();
+    let (session, input_rx) = test_session_with_agent(24, 80, Some("claude".to_owned()));
+    mux.session_supervisor.sessions.insert(1, session);
+    // The writer task owns the receiver; dropping it is exactly the state a
+    // session is in between process exit and the daemon reaping it.
+    drop(input_rx);
+
+    let reply = control_reply_for_request(
+        &mut mux,
+        ClientMsg::SessionSend {
+            session: 1,
+            text: "hello".to_owned(),
+        },
+    );
+
+    assert!(matches!(
+        reply,
+        ServerMsg::SessionSendDenied {
+            session: 1,
+            reason: jackin_protocol::control::SessionSendRejection::WriterClosed,
+        }
+    ));
+}
+
+#[test]
+fn session_send_records_input_recency_but_never_authors_state() {
+    let mut mux = single_pane_tab_mux();
+    let (mut session, _input_rx) = test_session_with_agent(24, 80, Some("claude".to_owned()));
+    // A pane latched on `Blocked` by evidence arbitration. Input is recency
+    // evidence only — the same rule the keyboard path follows — so the state
+    // must survive the send unchanged and wait for the next arbitration tick.
+    session.state = crate::protocol::AgentState::Blocked;
+    let before_input_at = session.last_input_at;
+    mux.session_supervisor.sessions.insert(1, session);
+
+    drop(control_reply_for_request(
+        &mut mux,
+        ClientMsg::SessionSend {
+            session: 1,
+            text: "y\r".to_owned(),
+        },
+    ));
+
+    let session = mux
+        .session_supervisor
+        .sessions
+        .get(1)
+        .expect("session is registered");
+    assert_eq!(session.state, crate::protocol::AgentState::Blocked);
+    assert!(
+        session.last_input_at > before_input_at,
+        "the send must land as input recency evidence"
+    );
+}
+
+/// Register an `events` subscription the way `handle_control_request` does for
+/// a stream-declared control connection.
+fn subscribe_events(
+    mux: &mut Multiplexer,
+    session: Option<u64>,
+) -> mpsc::UnboundedReceiver<ServerMsg> {
+    let (tx, rx) = mpsc::unbounded_channel();
+    handle_control_request(
+        mux,
+        ControlRequest {
+            ctx: jackin_protocol::TelemetryContext::v1(),
+            msg: ClientMsg::Events { session },
+            reply: crate::attach_protocol::ControlReply::Stream(tx),
+        },
+    );
+    rx
+}
+
+fn next_event(
+    rx: &mut mpsc::UnboundedReceiver<ServerMsg>,
+) -> jackin_protocol::control::SessionEventRecord {
+    match rx.try_recv().expect("an event was published") {
+        ServerMsg::SessionEvent { event } => *event,
+        other => panic!("expected a session event, got {}", other.kind()),
+    }
+}
+
+#[test]
+fn events_subscription_opens_with_a_baseline_record_per_live_session() {
+    let mut mux = single_pane_tab_mux();
+    let (mut session, _rx) = test_session_with_agent(24, 80, Some("codex".to_owned()));
+    session.state = crate::protocol::AgentState::Working;
+    mux.session_supervisor.sessions.insert(1, session);
+
+    let mut events = subscribe_events(&mut mux, None);
+
+    let baseline = next_event(&mut events);
+    assert_eq!(baseline.session, 1);
+    assert_eq!(baseline.seq, 0);
+    assert_eq!(baseline.agent.as_deref(), Some("codex"));
+    // The stream reports the arbitrated state as-is; it never recomputes it.
+    assert_eq!(baseline.state, crate::protocol::AgentState::Working);
+    assert_eq!(baseline.kind, SessionEventKind::Subscribed);
+}
+
+#[test]
+fn events_subscription_filters_to_the_requested_session() {
+    let mut mux = single_pane_tab_mux();
+    for id in [1, 2] {
+        let (session, _rx) = test_session_with_agent(24, 80, Some("claude".to_owned()));
+        mux.session_supervisor.sessions.insert(id, session);
+    }
+
+    let mut events = subscribe_events(&mut mux, Some(2));
+
+    assert_eq!(next_event(&mut events).session, 2);
+    assert!(
+        matches!(events.try_recv(), Err(mpsc::error::TryRecvError::Empty)),
+        "a filtered subscription must not see other sessions"
+    );
+}
+
+#[test]
+fn a_status_tick_publishes_the_working_transition_the_host_waits_on() {
+    let mut mux = single_pane_tab_mux();
+    let (session, _rx) = test_session_with_agent(24, 80, Some("claude".to_owned()));
+    mux.session_supervisor.sessions.insert(1, session);
+    let mut events = subscribe_events(&mut mux, None);
+    drop(next_event(&mut events));
+
+    // Exactly what the tick loop does: diff the state vectors it captured
+    // around `advance_status` and fan the difference out.
+    let now = Instant::now();
+    mux.session_supervisor
+        .sessions
+        .get_mut(1)
+        .expect("session is registered")
+        .state = crate::protocol::AgentState::Working;
+    publish_status_events(
+        &mut mux,
+        &[(1, crate::protocol::AgentState::Idle)],
+        &[(1, crate::protocol::AgentState::Working)],
+        now,
+    );
+
+    let event = next_event(&mut events);
+    assert_eq!(event.seq, 1);
+    assert_eq!(event.state, crate::protocol::AgentState::Working);
+    assert_eq!(
+        event.kind,
+        SessionEventKind::StateChanged {
+            previous: crate::protocol::AgentState::Idle
+        }
+    );
+}
+
+#[test]
+fn an_unchanged_status_tick_publishes_no_state_record() {
+    let mut mux = single_pane_tab_mux();
+    let (mut session, _rx) = test_session_with_agent(24, 80, Some("claude".to_owned()));
+    // Push the last output well outside the activity window so the quiet tick
+    // is genuinely silent rather than merely free of state records.
+    session.last_output_at = Instant::now()
+        .checked_sub(Duration::from_mins(1))
+        .expect("a minute before now is representable");
+    mux.session_supervisor.sessions.insert(1, session);
+    let mut events = subscribe_events(&mut mux, None);
+    drop(next_event(&mut events));
+
+    let states = [(1, crate::protocol::AgentState::Idle)];
+    publish_status_events(&mut mux, &states, &states, Instant::now());
+
+    assert!(
+        matches!(events.try_recv(), Err(mpsc::error::TryRecvError::Empty)),
+        "a quiet tick must not push anything to subscribers"
+    );
+}
+
+#[test]
+fn session_send_then_status_tick_is_observable_end_to_end_in_process() {
+    // The in-process shape of the host integration test: subscribe, send text
+    // into a running session, then let the status tick report the transition.
+    let mut mux = single_pane_tab_mux();
+    let (session, mut input_rx) = test_session_with_agent(24, 80, Some("claude".to_owned()));
+    mux.session_supervisor.sessions.insert(1, session);
+    let mut events = subscribe_events(&mut mux, Some(1));
+    assert_eq!(next_event(&mut events).kind, SessionEventKind::Subscribed);
+
+    let reply = control_reply_for_request(
+        &mut mux,
+        ClientMsg::SessionSend {
+            session: 1,
+            text: "go\r".to_owned(),
+        },
+    );
+    assert!(matches!(reply, ServerMsg::SessionSent { session: 1, .. }));
+    assert_eq!(
+        input_rx.try_recv().expect("payload reached the PTY"),
+        b"go\r".to_vec()
+    );
+
+    mux.session_supervisor
+        .sessions
+        .get_mut(1)
+        .expect("session is registered")
+        .state = crate::protocol::AgentState::Working;
+    publish_status_events(
+        &mut mux,
+        &[(1, crate::protocol::AgentState::Idle)],
+        &[(1, crate::protocol::AgentState::Working)],
+        Instant::now(),
+    );
+
+    let event = next_event(&mut events);
+    assert_eq!(event.session, 1);
+    assert_eq!(event.state, crate::protocol::AgentState::Working);
+    assert!(
+        event.last_input_ms.is_some(),
+        "the record must carry input recency from the send"
     );
 }

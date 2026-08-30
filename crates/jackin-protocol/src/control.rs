@@ -4,10 +4,17 @@
 //! Control channel: length-prefixed JSON request / response messages.
 //!
 //! Used by the host CLI for one-shot queries — `status`, `snapshot`,
-//! and future `session.create` / `session.kill` / `session.title` /
-//! `events`. The host opens a Unix socket connection, writes one
+//! `session.send`, and future `session.create` / `session.kill` /
+//! `session.title`. The host opens a Unix socket connection, writes one
 //! framed JSON request, reads one framed JSON response, and
 //! disconnects.
+//!
+//! [`ClientMsg::Events`] is the one exception to the one-shot shape: it
+//! is a **subscription**. The daemon keeps the connection open and writes
+//! a stream of identically-framed [`ServerMsg::SessionEvent`] replies until
+//! the peer disconnects or the daemon exits. Every other request is
+//! request/reply/close, so a client can tell the two apart from the request
+//! it sent rather than from the bytes it reads back.
 use serde::{Deserialize, Serialize};
 
 use crate::TelemetryContext;
@@ -82,6 +89,28 @@ pub enum ClientMsg {
         /// Session whose token spend should be summarized.
         session_id: u64,
     },
+    /// `session.send` — write `text` verbatim into a running session's PTY, as
+    /// if the operator had typed it.
+    ///
+    /// The bytes are delivered unchanged: no newline, carriage return, or
+    /// bracketed-paste wrapper is appended. A caller that wants the agent to
+    /// *submit* the text includes the submit key itself (`"\r"`) — the daemon
+    /// never guesses, because "type this into the composer" and "type this and
+    /// send it" are different operations for every runtime we support.
+    SessionSend {
+        /// Target session id, as reported by [`SessionInfo::id`].
+        session: u64,
+        /// Literal UTF-8 payload to write into that session's PTY.
+        text: String,
+    },
+    /// `events` — subscribe to the session event stream instead of asking one
+    /// question. See the module docs: the reply to this request is a stream of
+    /// [`ServerMsg::SessionEvent`] frames, not a single frame.
+    Events {
+        /// Restrict the stream to one session. `None` streams every session.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        session: Option<u64>,
+    },
     /// Forward-compat sink for variants added by a newer peer.
     #[serde(other)]
     Unknown,
@@ -103,8 +132,19 @@ impl ClientMsg {
             Self::UsageAccountList => "jackin.capsule.Control/UsageAccountList",
             Self::ExecCommand { .. } => "jackin.capsule.Control/ExecCommand",
             Self::TokenUsage { .. } => "jackin.capsule.Control/TokenUsage",
+            Self::SessionSend { .. } => "jackin.capsule.Control/SessionSend",
+            Self::Events { .. } => "jackin.capsule.Control/Events",
             Self::Unknown => "jackin.capsule.Control/Unknown",
         }
+    }
+
+    /// True when the reply to this request is a stream of frames on a
+    /// connection the daemon holds open, rather than one frame followed by a
+    /// close. The daemon and the host client both branch on this instead of
+    /// re-spelling the variant list.
+    #[must_use]
+    pub const fn is_subscription(&self) -> bool {
+        matches!(self, Self::Events { .. })
     }
 }
 
@@ -122,6 +162,9 @@ impl ServerMsg {
             Self::ExecResult { .. } => "ExecResult",
             Self::ExecDenied { .. } => "ExecDenied",
             Self::TokenUsage { .. } => "TokenUsage",
+            Self::SessionSent { .. } => "SessionSent",
+            Self::SessionSendDenied { .. } => "SessionSendDenied",
+            Self::SessionEvent { .. } => "SessionEvent",
             Self::Ack => "Ack",
             Self::Unknown => "Unknown",
         }
@@ -196,9 +239,129 @@ pub enum ServerMsg {
         /// Per-session token summary, if the monitor knows the session.
         summary: Option<TokenUsageSummary>,
     },
+    /// A [`ClientMsg::SessionSend`] whose payload reached the session's PTY
+    /// writer.
+    SessionSent {
+        /// Session the bytes were written to.
+        session: u64,
+        /// Number of bytes handed to the PTY writer.
+        bytes: u64,
+    },
+    /// A [`ClientMsg::SessionSend`] the daemon refused: the session id is
+    /// unknown, or its PTY writer has already exited. Nothing was written.
+    SessionSendDenied {
+        /// Session the request addressed.
+        session: u64,
+        /// Why nothing was written.
+        reason: SessionSendRejection,
+    },
+    /// One frame of the [`ClientMsg::Events`] stream. Many of these arrive on
+    /// one connection, in `seq` order, until the peer disconnects.
+    SessionEvent {
+        /// The observation.
+        event: Box<SessionEventRecord>,
+    },
     /// Forward-compat sink for variants added by a newer peer.
     #[serde(other)]
     Unknown,
+}
+
+/// Why the daemon wrote nothing for a [`ClientMsg::SessionSend`].
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum SessionSendRejection {
+    /// No session with that id exists in this container.
+    UnknownSession,
+    /// The session exists but its PTY writer task has exited, so the bytes
+    /// would have been dropped on the floor.
+    WriterClosed,
+}
+
+impl SessionSendRejection {
+    /// Operator-facing phrase for CLI and log output.
+    #[must_use]
+    pub const fn label(self) -> &'static str {
+        match self {
+            Self::UnknownSession => "no such session",
+            Self::WriterClosed => "session PTY writer has exited",
+        }
+    }
+}
+
+/// One observation on the [`ClientMsg::Events`] stream.
+///
+/// Every record carries the session's effective state and its activity
+/// recency *at emit time*, so a subscriber that joins mid-run learns the
+/// whole picture from the first frame it reads rather than having to
+/// correlate three event kinds. `kind` says what caused this particular
+/// record to be emitted.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct SessionEventRecord {
+    /// Per-subscription counter starting at 0, incremented for every record
+    /// written to that subscriber. A gap means the daemon dropped a record
+    /// because the subscriber was not reading; there is no gap on a healthy
+    /// stream.
+    pub seq: u64,
+    /// Session this observation is about.
+    pub session: u64,
+    /// Agent slug (`"claude"`, `"codex"`, …), or `None` for a shell session.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub agent: Option<String>,
+    /// Effective agent state at emit time — the same arbitrated value
+    /// [`SessionInfo::state`] and [`PaneSnapshot::state`] carry, from the one
+    /// terminal-observation authority. Never recomputed for the stream.
+    pub state: AgentState,
+    /// Milliseconds since this session last produced PTY output, at emit time.
+    /// `None` when the session has produced no output yet.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub last_output_ms: Option<u64>,
+    /// Milliseconds since input was last written into this session's PTY, at
+    /// emit time. `None` when nothing has been sent yet.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub last_input_ms: Option<u64>,
+    /// What produced this record.
+    pub kind: SessionEventKind,
+}
+
+/// What caused a [`SessionEventRecord`] to be emitted.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(tag = "type", rename_all = "snake_case")]
+pub enum SessionEventKind {
+    /// Baseline: emitted once per live session when a subscription opens, so
+    /// the subscriber's first read is a complete picture instead of a wait for
+    /// the next change. Carries no `previous` because nothing changed.
+    Subscribed,
+    /// The arbitrated effective state changed. `previous` is the state the
+    /// session held before this transition; the new state is the record's
+    /// [`SessionEventRecord::state`].
+    StateChanged {
+        /// State held before this transition.
+        previous: AgentState,
+    },
+    /// The session produced PTY output since the last activity record. Emitted
+    /// at most once per activity-report interval per session so a chatty agent
+    /// cannot flood the stream; `last_output_ms` carries the real recency.
+    Activity,
+    /// The session's process exited and its pane was removed. This is the last
+    /// record for that session id.
+    Exited {
+        /// Failure detail on a non-clean exit; `None` on clean teardown.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        reason: Option<String>,
+    },
+}
+
+impl SessionEventKind {
+    /// Variant label for diagnostics and CLI output.
+    #[must_use]
+    pub const fn label(&self) -> &'static str {
+        match self {
+            Self::Subscribed => "subscribed",
+            Self::StateChanged { .. } => "state_changed",
+            Self::Activity => "activity",
+            Self::Exited { .. } => "exited",
+        }
+    }
 }
 
 /// Sanitized Capsule telemetry configuration and process health.
