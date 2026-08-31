@@ -217,6 +217,7 @@ jobs:
     name: Criterion bench run (advisory)
     runs-on: ${{ ((github.event_name == 'workflow_dispatch' && inputs.lanes == 'github') || github.event_name == 'push') && 'ubuntu-26.04' || fromJSON('["self-hosted","velnor-target-mvp"]') }}
     timeout-minutes: 90
+    continue-on-error: true
     env:
       CARGO_INCREMENTAL: "0"
       CARGO_TERM_COLOR: always
@@ -359,6 +360,7 @@ jobs:
     name: Cold-start and PTY frame timing (advisory)
     runs-on: ${{ ((github.event_name == 'workflow_dispatch' && inputs.lanes == 'github') || github.event_name == 'push') && 'ubuntu-26.04' || fromJSON('["self-hosted","velnor-target-mvp"]') }}
     timeout-minutes: 45
+    continue-on-error: true
     env:
       CARGO_INCREMENTAL: "0"
       CARGO_TERM_COLOR: always
@@ -629,6 +631,7 @@ jobs:
     name: Coverage (advisory)
     runs-on: ${{ ((github.event_name == 'workflow_dispatch' && inputs.lanes == 'github') || github.event_name == 'push') && 'ubuntu-26.04' || fromJSON('["self-hosted","velnor-target-mvp"]') }}
     timeout-minutes: 45
+    continue-on-error: true
     env:
       CARGO_INCREMENTAL: "0"
       CARGO_TERM_COLOR: always
@@ -758,6 +761,7 @@ jobs:
     name: cargo-mutants pure crates (advisory)
     runs-on: ${{ ((github.event_name == 'workflow_dispatch' && inputs.lanes == 'github') || github.event_name == 'push') && 'ubuntu-26.04' || fromJSON('["self-hosted","velnor-target-mvp"]') }}
     timeout-minutes: 90
+    continue-on-error: true
     env:
       CARGO_INCREMENTAL: "0"
       CARGO_TERM_COLOR: always
